@@ -1,7 +1,7 @@
 #ifndef _SBSERVER_H
 #define _SBSERVER_H
 #include <stdint.h>
-#include "../NetServer.h"
+#include <OS/Net/NetServer.h>
 
 class SBServer : public INetServer {
 public:

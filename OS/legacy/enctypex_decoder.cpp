@@ -28,6 +28,9 @@ if you want to understand something take a look to gslist.c
 */
 #define _CRT_SECURE_NO_WARNINGS
 #include "enctypex_decoder.h"
+#ifndef LIST_CHALLENGE_LEN
+#define LIST_CHALLENGE_LEN 8
+#endif
 
 
 int enctypex_func5(unsigned char *encxkey, int cnt, unsigned char *id, int idlen, int *n1, int *n2) {

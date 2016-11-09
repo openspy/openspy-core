@@ -1,9 +1,9 @@
 #include "SBPeer.h"
 #include "SBDriver.h"
-#include "../legacy/buffreader.h"
-#include "../legacy/buffwriter.h"
-#include "../legacy/enctypex_decoder.h"
-#include "../socketlib/socketlib.h"
+#include <OS/legacy/buffreader.h>
+#include <OS/legacy/buffwriter.h>
+#include <OS/legacy/enctypex_decoder.h>
+#include <OS/socketlib/socketlib.h>
 #define CRYPTCHAL_LEN 10
 #define SERVCHAL_LEN 25
 namespace SB {

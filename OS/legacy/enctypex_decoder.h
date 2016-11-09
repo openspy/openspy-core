@@ -8,7 +8,7 @@
 #include <ctype.h>
 #define _JUST_STRUCTS
 #define _NO_CPP
-#include "../server/SBPeer.h"
+#include <OS/OpenSpy.h>
 #undef _NO_CPP
 #undef _JUST_STRUCTS
 typedef struct {

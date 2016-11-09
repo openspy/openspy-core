@@ -4,20 +4,35 @@ project(serverbrowsing)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-file (GLOB MAIN_SOURCES "*.cpp" "*.h")
-file (GLOB SOCKET_SOURCES "socketlib/*.cpp" "socketlib/*.h")
-file (GLOB SERVER_SOURCES "server/*.cpp" "server/*.h")
-file (GLOB LEGACY_SOURCES "legacy/*.cpp" "legacy/*.h")
+file (GLOB MAIN_SRCS "*.cpp")
+file (GLOB MAIN_HDRS "*.h")
+file (GLOB OS_SRCS "OS/*.cpp")
+file (GLOB OS_HDRS "OS/*.h")
+file (GLOB NET_SRCS "OS/Net/*.cpp")
+file (GLOB NET_HDRS "OS/Net/*.h")
+file (GLOB SOCKET_SRCS "OS/socketlib/*.cpp")
+file (GLOB SOCKET_HDRS "OS/socketlib/*.h")
+file (GLOB SERVER_SRCS "server/*.cpp")
+file (GLOB SERVER_HDRS "server/*.h")
+file (GLOB LEGACY_SRCS "OS/legacy/*.cpp" "OS/legacy/*.c")
+file (GLOB LEGACY_HDRS "OS/legacy/*.h")
 
 
-set (ALL_SRCS ${MAIN_SOURCES} ${SOCKET_SOURCES} ${SERVER_SOURCES} ${LEGACY_SOURCES})
+set (ALL_SRCS ${MAIN_SRCS} ${MAIN_HDRS}  ${SOCKET_SRCS} ${SOCKET_HDRS}  ${SERVER_SRCS} ${SERVER_HDRS}  ${LEGACY_SRCS} ${LEGACY_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
-source_group("" FILES ${MAIN_SOURCES})
-source_group("Legacy" FILES ${LEGACY_SOURCES})
-source_group("Server" FILES ${SERVER_SOURCES})
-source_group("socketlib" FILES ${EXTERNAL_SOURCES})
+source_group("Sources" FILES ${MAIN_SRCS})
+source_group("Sources\\Server" FILES ${SERVER_SRCS})
+source_group("Sources\\OS\\Net" FILES ${NET_SRCS})
+source_group("Sources\\OS\\Legacy" FILES ${LEGACY_SRCS})
+source_group("Sources\\OS\\socketlib" FILES ${SOCKET_SRCS})
+
+source_group("Headers" FILES ${MAIN_HDRS})
+source_group("Headers\\Server" FILES ${SERVER_HDRS})
+source_group("Headers\\OS\\Legacy" FILES ${LEGACY_HDRS})
+source_group("Headers\\OS\\Net" FILES ${NET_HDRS})
+source_group("Headers\\OS\\socketlib" FILES ${SOCKET_HDRS})
 
 
 

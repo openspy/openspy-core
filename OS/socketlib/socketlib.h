@@ -1,6 +1,6 @@
 #ifndef _SOCKETLIB_H
 #define _SOCKETLIB_H
-#include "../main.h"
+#include <OS/OpenSpy.h>
 #include <stdint.h>
 namespace Socket {
 	// API prototypes must match the unix implementation

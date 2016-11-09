@@ -3,10 +3,10 @@
 #include <stdlib.h>
 
 #include "SBServer.h"
-#include "../legacy/buffwriter.h"
+#include <OS/legacy/buffwriter.h>
 
 #include "SBPeer.h"
-#include "../socketlib/socketlib.h"
+#include <OS/socketlib/socketlib.h>
 typedef u_short(*fdapi_htons)(u_short hostshort);
 namespace SB {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {

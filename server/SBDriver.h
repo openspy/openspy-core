@@ -2,10 +2,10 @@
 #define _SBDRIVER_H
 #include <stdint.h>
 #include "../main.h"
-#include "../NetDriver.h"
+#include <OS/Net/NetDriver.h>
 
 #include "SBPeer.h"
-#include "../MMQuery.h"
+#include "MMQuery.h"
 
 #include <map>
 #include <vector>
