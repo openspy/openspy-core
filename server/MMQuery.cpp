@@ -1,5 +1,5 @@
 #include "main.h"
-#include <hiredis.h>
+#include <hiredis/hiredis.h>
 #include "server\SBDriver.h"
 #include "MMQuery.h"
 

@@ -25,7 +25,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <vector>
 #include <stdint.h>
 #include <memory.h>
-#include <hiredis.h>
+#include <hiredis/hiredis.h>
 namespace OS {
 
 	///////////////////////
