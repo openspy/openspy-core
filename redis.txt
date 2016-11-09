@@ -1,0 +1,38 @@
+#redis hosted servers database
+
+
+#QR database index 0
+select 0
+hset gslive:1000:{guid}:custkeys hostname "The test server"
+hset gslive:1000:{guid}:custkeys maxplayers 100
+hset gslive:1000:{guid}:custkeys numplayers 0
+hset gslive:1000:{guid}:custkeys password 1
+hset gslive:1000:{guid}:custkeys num_beats 1
+hset gslive:1000:{guid}: num_beats 1
+hset gslive:1000:{guid}: gameid 666
+hset gslive:1000:{guid}: wan_ip "99.52.7.2"
+hset gslive:1000:{guid}: lan_ip "192.168.0.66"
+hset gslive:1000:{guid}: wan_port 6600
+hset gslive:1000:{guid}: lan_port 6600
+EXPIRE gslive:1000:{guid}: 300
+EXPIRE gslive:1000:{guid}:custkeys 300
+HINCRBY gslive:1000:{guid}:custkeys num_beats 1
+HINCRBY gslive:1000:{guid}: num_beats 1
+#create num_beats variable incrementer for . and :custkeys
+KEYS gslive:1000:*.
+
+
+#SB groups database index 1
+select 1
+hset gslive:2300: gameid 666
+hset gslive:2300: groupid 2300
+hset gslive:2300: maxwaiting 100
+hset gslive:2300: name "The Lobby"
+hset gslive:2300: password 0
+hset gslive:2300: numwaiting 111
+hset gslive:2300: numservers 111
+hset gslive:2300: numplayers 111 #from peerchat
+hset gslive:2300:custkeys cat {02}
+hset gslive:2300:custkeys desc "Play Vampire Slayer here."
+hset gslive:2300:custkeys asvcs "halflife"
+hset gslive:2300:custkeys filter "esf"
