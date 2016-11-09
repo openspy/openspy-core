@@ -19,7 +19,7 @@ namespace MM {
 	typedef struct {
 		Address wan_address;
 		Address lan_address;
-		OS::GameData *game;
+		OS::GameData game;
 		OS::countryRegion region;
 		std::map<std::string, std::string> kvFields;
 		

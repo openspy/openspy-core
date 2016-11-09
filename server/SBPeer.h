@@ -109,7 +109,7 @@ namespace SB {
 
 		uint8_t m_challenge[LIST_CHALLENGE_LEN];
 		unsigned char   encxkeyb[261];
-		OS::GameData *mp_game;
+		OS::GameData m_game;
 
 		int m_sd;
 

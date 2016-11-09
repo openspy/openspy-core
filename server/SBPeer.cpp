@@ -54,19 +54,14 @@ namespace SB {
 		for_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
 
 		if (from_gamename) {
-			req.mp_from_game = OS::GetGameByName(from_gamename);
+			req.m_from_game = OS::GetGameByName(from_gamename);
 			free((void *)from_gamename);
 		}
-		else
-			req.mp_from_game = NULL;
 
 		if (from_gamename) {
-			req.mp_for_game = OS::GetGameByName(for_gamename);
+			req.m_for_game = OS::GetGameByName(for_gamename);
 			free((void *)for_gamename);
 		}
-		else
-			req.mp_for_game = NULL;
-
 		
 
 		BufferReadData(&buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
@@ -75,11 +70,11 @@ namespace SB {
 		field_list = (const char *)BufferReadNTS(&buffer, &buf_remain);
 
 		if (field_list) {
-			req.field_list = KeyStringToMap(field_list);
+			req.field_list = OS::KeyStringToMap(field_list);
 			free((void *)field_list);
 		}
 		if (!req.field_list.size())
-			req.field_list = KeyStringToMap("\\hostname\\numplayers\\maxplayers\\password\\region");
+			req.field_list = OS::KeyStringToMap("\\hostname\\numplayers\\maxplayers\\password\\region");
 
 		options = BufferReadIntRE(&buffer, &buf_remain);
 
@@ -108,7 +103,7 @@ namespace SB {
 		uint32_t len = 0;
 
 		BufferWriteInt(&p, &len, m_address_info.sin_addr.S_un.S_addr);
-		BufferWriteShortRE(&p, &len, list_req->mp_from_game->queryport);
+		BufferWriteShortRE(&p, &len, list_req->m_from_game.queryport);
 
 		BufferWriteShort(&p, &len, list_req->field_list.size());
 
@@ -124,7 +119,7 @@ namespace SB {
 			uint8_t flags = HAS_KEYS_FLAG;
 			MM::Server *server = *it;
 
-			if (server->wan_address.port != server->game->queryport) {
+			if (server->wan_address.port != server->game.queryport) {
 				flags |= NONSTANDARD_PORT_FLAG;
 			}
 			BufferWriteByte(&p, &len, flags); //flags
@@ -188,9 +183,7 @@ namespace SB {
 
 		sServerListReq list_req = this->ParseListRequest(buffer, remain);
 
-		mp_game = list_req.mp_from_game;
-
-		printf("Got list req game: %s\n", list_req.mp_for_game->gamename);
+		m_game = list_req.m_from_game;
 
 		MM::ServerListQuery servers;
 
@@ -238,6 +231,6 @@ namespace SB {
 		BufferWriteData(dst, len, (uint8_t *)&cryptchal, cryptlen);
 		BufferWriteByte(dst, len, servchallen ^ 0xEA);
 		BufferWriteData(dst, len, (uint8_t *)&servchal, servchallen);
-		enctypex_funcx((unsigned char *)&encxkeyb, (unsigned char *)mp_game->secretkey, (unsigned char *)m_challenge, (unsigned char *)&servchal, servchallen);
+		enctypex_funcx((unsigned char *)&encxkeyb, (unsigned char *)&m_game.secretkey, (unsigned char *)m_challenge, (unsigned char *)&servchal, servchallen);
 	}
 }

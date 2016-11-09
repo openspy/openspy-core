@@ -38,8 +38,8 @@ namespace SB {
 		bool send_push_keys;
 		bool no_server_list;
 		
-		OS::GameData *mp_for_game;
-		OS::GameData *mp_from_game;
+		OS::GameData m_for_game;
+		OS::GameData m_from_game;
 
 	};
 

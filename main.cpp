@@ -6,22 +6,9 @@
 #include "server/SBServer.h"
 #include "server/SBDriver.h"
 INetServer *g_gameserver = NULL;
-std::vector<std::string> KeyStringToMap(std::string input) {
-	std::vector<std::string> ret;
-	std::stringstream ss(input);
 
-	std::string token;
-
-	while (std::getline(ss, token, '\\')) {
-		if (!token.length())
-			continue;
-		ret.push_back(token);
-	}
-	return ret;
-
-}
 int main() {
-
+	OS::Init();
 	g_gameserver = new SBServer();
 	g_gameserver->addNetworkDriver(new SB::Driver(g_gameserver, "0.0.0.0", 28910));
 	g_gameserver->init();
@@ -30,15 +17,6 @@ int main() {
 	}
 }
 
-//move into OS lib
-OS::GameData *OS::GetGameByName(const char *from_gamename) {
-	static OS::GameData testGame = { 111, 6700, "gslive", "Xn221z" };
-	return &testGame;
-}
-OS::GameData *OS::GetGameByID(int gameid) {
-	static OS::GameData testGame = { 111, 6700, "gslive", "Xn221z" };
-	return &testGame;
-}
 
 #ifdef _WIN32
 
