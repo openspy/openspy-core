@@ -19,6 +19,7 @@
 #define sprintf_s snprintf
 #define strnicmp strncasecmp
 #define vsprintf_s vsnprintf
+#define _strnicmp strnicmp
 #endif
 
 char *find_last(char *buff, char delim, int len);

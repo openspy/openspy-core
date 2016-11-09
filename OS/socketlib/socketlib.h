@@ -26,7 +26,6 @@ namespace Socket {
 	typedef u_int(*fdapi_ntohl)(u_int netlong);
 	typedef int(*fdapi_fstat)(int fd, struct __stat64 *buffer);
 
-	typedef BOOL fnWSIOCP_CloseSocketStateRFD(int rfd);
 
 	extern fdapi_accept			accept;
 	extern fdapi_bind           bind;

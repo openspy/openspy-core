@@ -37,10 +37,16 @@ source_group("Headers\\OS\\socketlib" FILES ${SOCKET_HDRS})
 
 
 IF(WIN32)
-add_executable (serverbrowsing ${ALL_SRCS})
+file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Win32/*.cpp")
+source_group("Sources\\OS\\socketlib\\Win32\\" FILES ${PLAT_SOCKETLIB_SRCS})
+set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS})
+add_executable (serverbrowsing ${ALL_SRCS} ${ALL_PLAT})
 target_link_libraries(serverbrowsing ws2_32.lib hiredis.lib Win32_Interop.lib)
 
 ELSE() #unix
-add_executable (serverbrowsing ${ALL_SRCS})
+file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Unix/*.cpp")
+source_group("Sources\\OS\\socketlib\\Unix\\" FILES ${PLAT_SOCKETLIB_SRCS})
+set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS})
+add_executable (serverbrowsing ${ALL_SRCS} ${ALL_PLAT})
 target_link_libraries(serverbrowsing hiredis)
 ENDIF()

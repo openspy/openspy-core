@@ -102,7 +102,7 @@ namespace SB {
 		uint8_t *p = (uint8_t *)&buff;
 		uint32_t len = 0;
 
-		BufferWriteInt(&p, &len, m_address_info.sin_addr.S_un.S_addr);
+		BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
 		BufferWriteShortRE(&p, &len, list_req->m_from_game.queryport);
 
 		BufferWriteShort(&p, &len, list_req->field_list.size());

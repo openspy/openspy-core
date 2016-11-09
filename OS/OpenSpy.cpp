@@ -25,17 +25,17 @@ namespace OS {
 
 		reply = (redisReply *)redisCommand(OS::redis_connection, "HGET %s secretkey", key);
 		if (reply->type == REDIS_REPLY_STRING)
-			strcpy_s(game.secretkey, sizeof(game.secretkey), reply->str);
+			strcpy(game.secretkey, reply->str);
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(OS::redis_connection, "HGET %s description", key);
 		if (reply->type == REDIS_REPLY_STRING)
-			strcpy_s(game.description, sizeof(game.description), reply->str);
+			strcpy(game.description, reply->str);
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(OS::redis_connection, "HGET %s gamename", key);
 		if (reply->type == REDIS_REPLY_STRING)
-			strcpy_s(game.gamename, sizeof(game.gamename), reply->str);
+			strcpy(game.gamename, reply->str);
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(OS::redis_connection, "HGET %s disabled_services", key);
