@@ -23,7 +23,7 @@ source_group("socketlib" FILES ${EXTERNAL_SOURCES})
 
 IF(WIN32)
 add_executable (serverbrowsing ${ALL_SRCS})
-target_link_libraries(serverbrowsing ws2_32.lib hiredis.lib Win32_Interop.lib)
+target_link_libraries(serverbrowsing hiredis.lib Win32_Interop.lib ws2_32.lib)
 
 ELSE() #unix
 add_executable (serverbrowsing ${ALL_SRCS})
