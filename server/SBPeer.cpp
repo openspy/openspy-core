@@ -185,7 +185,11 @@ namespace SB {
 
 		m_game = list_req.m_from_game;
 
+		if (m_game.secretkey[0] == 0)
+			return;
+
 		MM::ServerListQuery servers;
+
 
 		if (list_req.send_groups) {
 			servers = MM::GetGroups(&list_req);

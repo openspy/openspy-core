@@ -7,7 +7,7 @@
 
 #include "SBPeer.h"
 #include <OS/socketlib/socketlib.h>
-typedef u_short(*fdapi_htons)(u_short hostshort);
+
 namespace SB {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		

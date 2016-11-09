@@ -52,10 +52,34 @@ namespace OS {
 		
 	}
 	OS::GameData GetGameByName(const char *from_gamename) {
-		return GetGameByRedisKey("gslive:1:");
+		redisReply *reply;
+		freeReplyObject(redisCommand(OS::redis_connection, "SELECT %d", ERedisDB_Game));
+		OS::GameData ret;
+		memset(&ret, 0, sizeof(ret));
+		reply = (redisReply *)redisCommand(OS::redis_connection, "KEYS %s:*",from_gamename);
+		if (reply->type == REDIS_REPLY_ARRAY) {
+			for (int j = 0; j < reply->elements; j++) {
+				ret = GetGameByRedisKey(reply->element[j]->str);
+				break;
+			}
+		}
+		freeReplyObject(reply);
+		return ret;
 	}
 	OS::GameData GetGameByID(int gameid) {
-		return GetGameByRedisKey("gslive:1:");
+		redisReply *reply;
+		freeReplyObject(redisCommand(OS::redis_connection, "SELECT %d", ERedisDB_Game));
+		OS::GameData ret;
+		memset(&ret, 0, sizeof(ret));
+		reply = (redisReply *)redisCommand(OS::redis_connection, "KEYS *:%d:", gameid);
+		if (reply->type == REDIS_REPLY_ARRAY) {
+			for (int j = 0; j < reply->elements; j++) {
+				ret = GetGameByRedisKey(reply->element[j]->str);
+				break;
+			}
+		}
+		freeReplyObject(reply);
+		return ret;
 	}
 	std::vector<std::string> KeyStringToMap(std::string input) {
 		std::vector<std::string> ret;
