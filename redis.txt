@@ -36,3 +36,13 @@ hset gslive:2300:custkeys cat {02}
 hset gslive:2300:custkeys desc "Play Vampire Slayer here."
 hset gslive:2300:custkeys asvcs "halflife"
 hset gslive:2300:custkeys filter "esf"
+
+
+#game keys db
+select 2
+hset gslive:1 gameid 1
+hset gslive:1 gamename gslive
+hset gslive:1 secretkey Xn221z
+hset gslive:1 description "gamespy arcade"
+hset gslive:1 disabled_services 0
+hset gslive:1 queryport 6500
