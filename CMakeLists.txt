@@ -37,16 +37,34 @@ source_group("Headers\\OS\\socketlib" FILES ${SOCKET_HDRS})
 
 
 IF(WIN32)
-file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Win32/*.cpp")
-source_group("Sources\\OS\\socketlib\\Win32\\" FILES ${PLAT_SOCKETLIB_SRCS})
-set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS})
-add_executable (serverbrowsing ${ALL_SRCS} ${ALL_PLAT})
-target_link_libraries(serverbrowsing ws2_32.lib hiredis.lib Win32_Interop.lib)
+	file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Win32/*.cpp")
+	source_group("Sources\\OS\\socketlib\\Win32\\" FILES ${PLAT_SOCKETLIB_SRCS})
+
+
+	file(GLOB PLAT_THREAD_SRCS "OS/Threads/Win32/*.cpp")
+	source_group("Sources\\OS\\Threads\\Win32\\" FILES ${PLAT_THREAD_SRCS})
+
+	file(GLOB PLAT_THREAD_HDRS "OS/Threads/Win32/*.h")	
+	source_group("Headers\\OS\\Threads\\Win32\\" FILES ${PLAT_THREAD_HDRS})
+
+
+	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS})
+	add_executable (serverbrowsing ${ALL_SRCS} ${ALL_PLAT})
+	target_link_libraries(serverbrowsing ws2_32.lib hiredis.lib Win32_Interop.lib)
 
 ELSE() #unix
-file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Unix/*.cpp")
-source_group("Sources\\OS\\socketlib\\Unix\\" FILES ${PLAT_SOCKETLIB_SRCS})
-set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS})
-add_executable (serverbrowsing ${ALL_SRCS} ${ALL_PLAT})
-target_link_libraries(serverbrowsing hiredis)
+	file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Unix/*.cpp")
+	source_group("Sources\\OS\\socketlib\\Unix\\" FILES ${PLAT_SOCKETLIB_SRCS})
+	
+
+	file(GLOB PLAT_THREAD_SRCS "OS/Threads/PThreads/*.cpp")
+	source_group("Sources\\OS\\Threads\\PThreads\\" FILES ${PLAT_THREAD_SRCS})
+
+	file(GLOB PLAT_THREAD_HDRS "OS/Threads/PThreads/*.h")	
+	source_group("Headers\\OS\\Threads\\PThreads\\" FILES ${PLAT_THREAD_HDRS})
+
+
+	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS})
+	add_executable (serverbrowsing ${ALL_SRCS} ${ALL_PLAT})
+	target_link_libraries(serverbrowsing hiredis event pthread)
 ENDIF()

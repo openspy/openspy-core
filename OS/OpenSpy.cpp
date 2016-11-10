@@ -3,15 +3,12 @@
 #include <sstream>
 
 namespace OS {
-	redisContext *redis_connection = NULL;
 	redisContext *redis_internal_connection = NULL;
 	void Init() {
 		
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 3;
-
-		redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 
 		redis_internal_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 	}
@@ -97,5 +94,13 @@ namespace OS {
 		}
 		return ret;
 
+	}
+	CThread *CreateThread(OS::ThreadEntry *entry, void *param,  bool auto_start) {
+		#if _WIN32
+			return new OS::CWin32Thread(entry, param, auto_start);
+		#else
+			return new OS::CPThread(entry, param, auto_start);
+		#endif
+		
 	}
 }

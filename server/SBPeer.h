@@ -50,6 +50,9 @@
 #define HAS_FULL_RULES_FLAG				128
 
 
+
+
+
 namespace MM {
 	struct ServerListQuery;
 };
@@ -72,7 +75,7 @@ namespace SB {
 		void think(bool packet_waiting); //called when no data is recieved
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
 
-		void SendPacket(uint8_t *buff, int len);;
+		void SendPacket(uint8_t *buff, int len, bool prepend_length);
 
 		int GetSocket() { return m_sd; };
 
@@ -102,9 +105,11 @@ namespace SB {
 
 		struct sockaddr_in m_address_info;
 
-		struct timeval m_last_ping;
+		struct timeval m_last_recv, m_last_ping;
+
 		bool m_delete_flag;
 		bool m_timeout_flag;
+
 		bool m_sent_crypt_header;
 
 		uint8_t m_challenge[LIST_CHALLENGE_LEN];

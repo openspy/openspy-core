@@ -13,8 +13,12 @@ namespace SB {
 		m_address_info = *address_info;
 	}
 	Peer::~Peer() {
+		printf("delete peer\n");
 	}
 	void Peer::handle_packet(char *data, int len) {
+		if(len == 0)
+			return;
+
 		uint8_t *buffer = (uint8_t *)data;
 		uint32_t pos = len;
 		
@@ -22,6 +26,8 @@ namespace SB {
 
 		BufferReadShort(&buffer, &pos);
 		request_type = BufferReadByte(&buffer, &pos);
+
+		gettimeofday(&m_last_recv, NULL);
 
 		switch (request_type) {
 			case SERVER_LIST_REQUEST:
@@ -156,12 +162,9 @@ namespace SB {
 		BufferWriteByte((uint8_t **)&p, (uint32_t *)&len, 0x00);
 		BufferWriteInt((uint8_t **)&p, (uint32_t *)&len, -1);
 
-		uint32_t *packet_len = (uint32_t *)&buff;
-		*packet_len = reverse_endian16(len);
-
-		SendPacket((uint8_t *)&buff, len);
+		SendPacket((uint8_t *)&buff, len, false);
 	}
-	void Peer::SendPacket(uint8_t *buff, int len) {
+	void Peer::SendPacket(uint8_t *buff, int len, bool prepend_length) {
 		uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = (uint8_t*)&out_buff;
 		uint32_t out_len = 0;
@@ -171,9 +174,13 @@ namespace SB {
  			header_len = out_len;
 			m_sent_crypt_header = true;
 		}
+		if(prepend_length) {
+			BufferWriteShortRE(&p, &out_len, len);
+		}
 		BufferWriteData(&p, &out_len, buff, len);
 		enctypex_func6e((unsigned char *)&encxkeyb, ((unsigned char *)&out_buff) + header_len, out_len - header_len);
-		send(m_sd, (const char *)&out_buff, out_len, 0);
+		if(send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL) < 0)
+			m_delete_flag = true;
 	}
 	void Peer::ProcessListRequset(uint8_t *buffer, int remain) {
 
@@ -201,7 +208,20 @@ namespace SB {
 
 	}
 	void Peer::send_ping() {
-
+		//check for timeout
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
+			gettimeofday(&m_last_ping, NULL);
+			printf("Would send ping\n");
+			//send actual ping
+		}
+		uint8_t buff[4];
+		uint8_t *p = (uint8_t *)&buff;
+		uint32_t len = 0;
+		BufferWriteByte(&p, &len, KEEPALIVE_MESSAGE);
+		SendPacket((uint8_t *)&buff, len, true);
+		
 	}
 	void Peer::think(bool waiting_packet) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
@@ -211,8 +231,15 @@ namespace SB {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
 			this->handle_packet(buf, len);
 		}
-		else {
+		
+		send_ping();
 
+		//check for timeout
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME) {
+			m_delete_flag = true;
+			m_timeout_flag = true;
 		}
 	}
 	void Peer::setupCryptHeader(uint8_t **dst, uint32_t *len) {

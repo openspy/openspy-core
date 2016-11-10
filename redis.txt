@@ -2,6 +2,10 @@
 
 
 #QR database index 0
+#channel "serverbrowsing.servers" for notifications
+#	send \del\{redis_key}
+#	\update\{redis_key}
+#	\insert\{redis_key}
 select 0
 hset gslive:1000:{guid}:custkeys hostname "The test server"
 hset gslive:1000:{guid}:custkeys maxplayers 100
@@ -19,6 +23,7 @@ HINCRBY gslive:1000:{guid}:custkeys num_beats 1
 HINCRBY gslive:1000:{guid}: num_beats 1
 #create num_beats variable incrementer for . and :custkeys
 KEYS gslive:1000:*.
+
 
 
 #SB groups database index 1

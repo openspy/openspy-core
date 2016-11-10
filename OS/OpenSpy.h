@@ -3,6 +3,7 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <WinSock.h>
+#include "Threads/Win32/WinThread.h"
 typedef int socklen_t;
 #define snprintf sprintf_s
 #define strcasecmp _stricmp
@@ -19,6 +20,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <netdb.h>
 #include <pthread.h>
 #include <sys/times.h>
+#include "Threads/PThreads/PThread.h"
 
 #endif
 #include <stdlib.h>
@@ -55,8 +57,11 @@ namespace OS {
 	};
 	
 	void Init();
-	extern redisContext *redis_connection;
 	std::vector<std::string> KeyStringToMap(std::string input);
+
+
+	//thread
+	CThread *CreateThread(ThreadEntry *entry, void *param, bool auto_start);
 }
 
 

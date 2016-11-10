@@ -12,7 +12,7 @@ namespace SB {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		
 		Socket::Init();
-		MM::Init();
+		MM::Init(this);
 		uint32_t bind_ip = INADDR_ANY;
 		
 		if ((m_sd = Socket::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
@@ -101,19 +101,10 @@ namespace SB {
 		int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
 		if (sda <= 0) return;
 		Peer *mp_peer = new Peer(this, &peer, sda);
+		m_connections.push_back(mp_peer);
+		printf("New peer\n");
 		mp_peer->think(true);
-		/*
-		char recvbuf[1024];
 
-		struct sockaddr_in si_other;
-		socklen_t slen = sizeof(struct sockaddr_in);
-
-		int len = recv(m_sd, (char *)&recvbuf, sizeof(recvbuf), 0);
-
-
-		Peer *mp_peer = find_or_create(&si_other);
-		mp_peer->handle_packet((char *)&recvbuf, len);
-		*/
 	}
 
 
@@ -161,5 +152,14 @@ namespace SB {
 			p->think(FD_ISSET(p->GetSocket(), fdset));
 			it++;
 		}
+	}
+	void Driver::SendDeleteServer(MM::ServerListQuery servers) {
+		printf("!!!! Should send delete to clients\n");
+	}
+	void Driver::SendNewServer(MM::ServerListQuery servers) {
+		printf("!!!! Should send new server to clients\n");
+	}
+	void Driver::SendUpdateServer(MM::ServerListQuery servers) {
+		printf("!!!! Should send update server to clients\n");
 	}
 }

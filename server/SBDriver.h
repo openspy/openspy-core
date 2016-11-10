@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #endif
 
+#define SB_PING_TIME 3
 
 namespace SB {
 	class Peer;
@@ -60,7 +61,9 @@ namespace SB {
 
 		int setup_fdset(fd_set *fdset);
 		
-		
+		void SendDeleteServer(MM::ServerListQuery servers);
+	    void SendNewServer(MM::ServerListQuery servers);
+	    void SendUpdateServer(MM::ServerListQuery servers);
 
 
 		int GetNumConnections();
