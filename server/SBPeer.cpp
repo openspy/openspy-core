@@ -210,17 +210,15 @@ namespace SB {
 	void Peer::send_ping() {
 		//check for timeout
 		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
-			gettimeofday(&m_last_ping, NULL);
-			printf("Would send ping\n");
-			//send actual ping
-		}
 		uint8_t buff[4];
 		uint8_t *p = (uint8_t *)&buff;
 		uint32_t len = 0;
-		BufferWriteByte(&p, &len, KEEPALIVE_MESSAGE);
-		SendPacket((uint8_t *)&buff, len, true);
+		gettimeofday(&current_time, NULL);
+		if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
+			gettimeofday(&m_last_ping, NULL);
+			BufferWriteByte(&p, &len, KEEPALIVE_MESSAGE);
+			SendPacket((uint8_t *)&buff, len, true);
+		}
 		
 	}
 	void Peer::think(bool waiting_packet) {
