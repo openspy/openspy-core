@@ -6,65 +6,24 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 file (GLOB MAIN_SRCS "*.cpp")
 file (GLOB MAIN_HDRS "*.h")
-file (GLOB OS_SRCS "OS/*.cpp")
-file (GLOB OS_HDRS "OS/*.h")
-file (GLOB NET_SRCS "OS/Net/*.cpp")
-file (GLOB NET_HDRS "OS/Net/*.h")
-file (GLOB SOCKET_SRCS "OS/socketlib/*.cpp")
-file (GLOB SOCKET_HDRS "OS/socketlib/*.h")
 file (GLOB SERVER_SRCS "server/*.cpp")
 file (GLOB SERVER_HDRS "server/*.h")
-file (GLOB LEGACY_SRCS "OS/legacy/*.cpp" "OS/legacy/*.c")
-file (GLOB LEGACY_HDRS "OS/legacy/*.h")
 
 
-set (ALL_SRCS ${MAIN_SRCS} ${MAIN_HDRS}  ${SOCKET_SRCS} ${SOCKET_HDRS}  ${SERVER_SRCS} ${SERVER_HDRS}  ${LEGACY_SRCS} ${LEGACY_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS})
+set (ALL_SRCS ${MAIN_SRCS} ${MAIN_HDRS} ${SERVER_SRCS} ${SERVER_HDRS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 source_group("Sources" FILES ${MAIN_SRCS})
 source_group("Sources\\Server" FILES ${SERVER_SRCS})
-source_group("Sources\\OS\\Net" FILES ${NET_SRCS})
-source_group("Sources\\OS\\Legacy" FILES ${LEGACY_SRCS})
-source_group("Sources\\OS\\socketlib" FILES ${SOCKET_SRCS})
 
 source_group("Headers" FILES ${MAIN_HDRS})
 source_group("Headers\\Server" FILES ${SERVER_HDRS})
-source_group("Headers\\OS\\Legacy" FILES ${LEGACY_HDRS})
-source_group("Headers\\OS\\Net" FILES ${NET_HDRS})
-source_group("Headers\\OS\\socketlib" FILES ${SOCKET_HDRS})
 
+add_executable (serverbrowsing ${ALL_SRCS})
 
-
-IF(WIN32)
-	file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Win32/*.cpp")
-	source_group("Sources\\OS\\socketlib\\Win32\\" FILES ${PLAT_SOCKETLIB_SRCS})
-
-
-	file(GLOB PLAT_THREAD_SRCS "OS/Threads/Win32/*.cpp")
-	source_group("Sources\\OS\\Threads\\Win32\\" FILES ${PLAT_THREAD_SRCS})
-
-	file(GLOB PLAT_THREAD_HDRS "OS/Threads/Win32/*.h")	
-	source_group("Headers\\OS\\Threads\\Win32\\" FILES ${PLAT_THREAD_HDRS})
-
-
-	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS})
-	add_executable (serverbrowsing ${ALL_SRCS} ${ALL_PLAT})
+IF(WIN32)	
 	target_link_libraries(serverbrowsing ws2_32.lib hiredis.lib Win32_Interop.lib openspy.lib)
-
 ELSE() #unix
-	file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Unix/*.cpp")
-	source_group("Sources\\OS\\socketlib\\Unix\\" FILES ${PLAT_SOCKETLIB_SRCS})
-	
-
-	file(GLOB PLAT_THREAD_SRCS "OS/Threads/PThreads/*.cpp")
-	source_group("Sources\\OS\\Threads\\PThreads\\" FILES ${PLAT_THREAD_SRCS})
-
-	file(GLOB PLAT_THREAD_HDRS "OS/Threads/PThreads/*.h")	
-	source_group("Headers\\OS\\Threads\\PThreads\\" FILES ${PLAT_THREAD_HDRS})
-
-
-	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS})
-	add_executable (serverbrowsing ${ALL_SRCS} ${ALL_PLAT})
 	target_link_libraries(serverbrowsing hiredis event pthread openspy)
 ENDIF()
