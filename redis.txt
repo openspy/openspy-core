@@ -13,6 +13,7 @@ hset gslive:1000:{guid}:custkeys numplayers 0
 hset gslive:1000:{guid}:custkeys password 1
 hset gslive:1000:{guid}:custkeys num_beats 1
 hset gslive:1000:{guid}: num_beats 1
+hset gslive:1000:{guid}: gameid 1
 hset gslive:1000:{guid}: wan_ip "99.52.7.2"
 hset gslive:1000:{guid}: lan_ip "192.168.0.66"
 hset gslive:1000:{guid}: wan_port 6600

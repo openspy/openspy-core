@@ -15,7 +15,7 @@
 #include <sys/time.h>
 #endif
 
-#define SB_PING_TIME 3
+#define SB_PING_TIME 30
 
 namespace SB {
 	class Peer;
