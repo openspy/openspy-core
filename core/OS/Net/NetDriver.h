@@ -1,6 +1,6 @@
 #ifndef _NETDRIVER_H
 #define _NETDRIVER_H
-#include "main.h"
+#include <OS/OpenSpy.h>
 class INetServer;
 class INetDriver {
 public:

@@ -1,6 +1,6 @@
 #ifndef _SELECTNETEVENTMGR_H
 #define _SELECTNETEVENTMGR_H
-#include "main.h"
+#include <OS/OpenSpy.h>
 #include "NetEventManager.h"
 #include <vector>
 class SelectNetEventManager : public INetEventManager {

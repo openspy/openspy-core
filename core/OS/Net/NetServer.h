@@ -1,7 +1,7 @@
 #ifndef _INETSERVER_H
 #define _INETSERVER_H
 #include <vector>
-#include "main.h"
+#include <OS/OpenSpy.h>
 #include "NetDriver.h"
 #include "NetEventManager.h"
 class INetServer {
