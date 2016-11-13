@@ -20,7 +20,7 @@ namespace SB {
 			return;
 
 		uint8_t *buffer = (uint8_t *)data;
-		uint32_t pos = len;
+		int pos = len;
 		
 		uint8_t request_type;
 
@@ -42,7 +42,7 @@ namespace SB {
 		uint32_t srcip = 0;
 		uint32_t maxServers = 0;
 		uint32_t options;
-		uint32_t buf_remain = remain;
+		int buf_remain = remain;
 
 		const char *from_gamename, *for_gamename, *filter, *field_list;
 
@@ -106,7 +106,7 @@ namespace SB {
 		std::vector<MM::Server *>::iterator it = servers.list.begin();
 		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = (uint8_t *)&buff;
-		uint32_t len = 0;
+		int len = 0;
 
 		BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
 		BufferWriteShortRE(&p, &len, list_req->m_from_game.queryport);
@@ -159,18 +159,18 @@ namespace SB {
 		}
 
 		//terminator
-		BufferWriteByte((uint8_t **)&p, (uint32_t *)&len, 0x00);
-		BufferWriteInt((uint8_t **)&p, (uint32_t *)&len, -1);
+		BufferWriteByte((uint8_t **)&p, &len, 0x00);
+		BufferWriteInt((uint8_t **)&p, &len, -1);
 
 		SendPacket((uint8_t *)&buff, len, false);
 	}
 	void Peer::SendPacket(uint8_t *buff, int len, bool prepend_length) {
 		uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = (uint8_t*)&out_buff;
-		uint32_t out_len = 0;
-		uint32_t header_len = 0;
+		int out_len = 0;
+		int header_len = 0;
 		if (!m_sent_crypt_header) {
-			setupCryptHeader(&p, (uint32_t *)&out_len);
+			setupCryptHeader(&p, &out_len);
  			header_len = out_len;
 			m_sent_crypt_header = true;
 		}
@@ -213,7 +213,7 @@ namespace SB {
 		
 		uint8_t buff[4];
 		uint8_t *p = (uint8_t *)&buff;
-		uint32_t len = 0;
+		int len = 0;
 
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
@@ -242,7 +242,7 @@ namespace SB {
 			m_timeout_flag = true;
 		}
 	}
-	void Peer::setupCryptHeader(uint8_t **dst, uint32_t *len) {
+	void Peer::setupCryptHeader(uint8_t **dst, int *len) {
 		//	memset(&options->cryptkey,0,sizeof(options->cryptkey));
 		srand(time(NULL));
 		uint32_t cryptlen = CRYPTCHAL_LEN;

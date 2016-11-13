@@ -88,7 +88,7 @@ namespace SB {
 	private:
 		void handle_packet(char *data, int len);
 		void set_connection_state(EConnectionState state);
-		void setupCryptHeader(uint8_t **dst, uint32_t *len);
+		void setupCryptHeader(uint8_t **dst, int *len);
 
 		//request type handles
 		void ProcessListRequset(uint8_t *buffer, int remain);
