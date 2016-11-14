@@ -21,6 +21,7 @@ namespace MM {
 		server->groupid = groupid;
 
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: gameid %d",server->m_game.gamename,groupid,id,server->m_game.gameid));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: id %d",server->m_game.gamename,groupid,id,id));
 
 
 		char ipinput[INET_ADDRSTRLEN];
@@ -98,8 +99,8 @@ namespace MM {
 		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\update\\%s:%d:%d:",sb_mm_channel,server->m_game.gamename,server->groupid,server->id));
 	}
 	void DeleteServer(ServerInfo *server, bool publish) {
-		freeReplyObject(redisCommand(mp_redis_connection, "HDEL %s:%d:%d: ",server->m_game.gamename,server->groupid,server->id));
-		freeReplyObject(redisCommand(mp_redis_connection, "HDEL %s:%d:%d:custkeys ",server->m_game.gamename,server->groupid,server->id));
+		freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:",server->m_game.gamename,server->groupid,server->id));
+		freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys",server->m_game.gamename,server->groupid,server->id));
 		
 		int i =0;
 		int groupid = server->groupid;
@@ -114,7 +115,7 @@ namespace MM {
 			it3 = p.second.begin();
 			while(it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
 				std::string s = *it3;
-				freeReplyObject(redisCommand(mp_redis_connection, "HDEL %s:%d:%d:custkeys_player_%d",server->m_game.gamename,groupid,id, i));
+				freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys_player_%d",server->m_game.gamename,groupid,id, i));
 				i++;
 				it3++;
 			}
@@ -130,7 +131,7 @@ namespace MM {
 			it3 = p.second.begin();
 			while(it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
 				std::string s = *it3;
-				freeReplyObject(redisCommand(mp_redis_connection, "HDEL %s:%d:%d:custkeys_team_%d",server->m_game.gamename,groupid,id, i));
+				freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys_team_%d",server->m_game.gamename,groupid,id, i));
 				i++;
 				it3++;
 			}

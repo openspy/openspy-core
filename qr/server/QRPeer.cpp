@@ -33,7 +33,9 @@ namespace QR {
 		memset(&m_challenge, 0, sizeof(m_challenge));
 	}
 	Peer::~Peer() {
-		printf("delete peer\n");
+		if(m_server_pushed) {
+			MM::DeleteServer(&m_server_info);
+		}
 	}
 
 	void Peer::SendPacket(uint8_t *buff, int len) {

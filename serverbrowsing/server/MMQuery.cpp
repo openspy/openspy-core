@@ -34,12 +34,14 @@ namespace MM {
 	    		if(strcmp(r->element[1]->str,sb_mm_channel) == 0) {
 	    			find_param(0, r->element[2]->str,(char *)&msg_type, sizeof(msg_type));
 	    			find_param(1, r->element[2]->str, (char *)&server_key, sizeof(server_key));
-	    			AppendServerEntry(server_key, &servers, true);
+	    			
 	    			if(strcmp(msg_type,"del") == 0) {
 	    				mp_driver->SendDeleteServer(servers);
 	    			} else if(strcmp(msg_type,"new") == 0) {
+	    				AppendServerEntry(server_key, &servers, true);
 	    				mp_driver->SendNewServer(servers);
 	    			} else if(strcmp(msg_type,"update") == 0) {
+	    				AppendServerEntry(server_key, &servers, true);
 	    				mp_driver->SendUpdateServer(servers);
 	    			}
 	    		}
