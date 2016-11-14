@@ -55,10 +55,15 @@ namespace OS {
 		ERedisDB_SBGroups,
 		ERedisDB_Game,
 	};
+
+	typedef struct {
+		uint32_t ip;
+		uint16_t port;
+	} Address;
 	
 	void Init();
 	std::vector<std::string> KeyStringToMap(std::string input);
-
+	std::string strip_quotes(std::string s);
 
 	//thread
 	CThread *CreateThread(ThreadEntry *entry, void *param, bool auto_start);

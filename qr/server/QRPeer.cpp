@@ -28,6 +28,7 @@ namespace QR {
 		m_sd = sd;
 		m_address_info = *address_info;
 		m_recv_instance_key = false;
+		m_server_pushed = false;
 		m_sent_challenge = false;
 		memset(&m_challenge, 0, sizeof(m_challenge));
 	}
@@ -82,16 +83,25 @@ namespace QR {
 		char challenge_resp[90] = { 0 };
 		int outlen = 0;
 		uint8_t *p = (uint8_t *)challenge_resp;
-		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (unsigned char *)&m_game.secretkey, 0);
+		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (unsigned char *)&m_server_info.m_game.secretkey, 0);
 		if(strcmp(buff,challenge_resp) == 0) { //matching challenge
 			BufferWriteByte((uint8_t**)&p, &outlen,PACKET_CLIENT_REGISTERED);
 			BufferWriteData((uint8_t **)&p, &outlen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
 			SendPacket((uint8_t *)&challenge_resp, outlen);
+			if(m_sent_challenge) {
+				MM::PushServer(&m_server_info);
+				m_server_pushed = true;
+			}
+			m_sent_challenge = true;
 		}
 	}
 	void Peer::handle_heartbeat(char *buff, int len) {
 		int i = 0;
 		uint8_t *x;
+
+		std::map<std::string, std::string> server_keys;
+		std::map<std::string, std::vector<std::string> > player_keys;
+		std::map<std::string, std::vector<std::string> > team_keys;
 		
 		std::string key, value;
 
@@ -110,7 +120,7 @@ namespace QR {
 			}
 
 			if(value.length() > 0) {
-				m_server_keys[key] = value;
+				server_keys[key] = value;
 				value = std::string();
 			}
 			free((void *)x);
@@ -140,9 +150,9 @@ namespace QR {
 				x = BufferReadNTS((uint8_t **)&buff,&len);	
 
 				if(isTeamString(name.c_str())) {
-					m_team_keys[name].push_back(std::string((const char *)x));
+					team_keys[name].push_back(std::string((const char *)x));
 				} else {
-					m_player_keys[name].push_back(std::string((const char *)x));
+					player_keys[name].push_back(std::string((const char *)x));
 				}
 				free((void *)x);
 				i++;
@@ -151,8 +161,20 @@ namespace QR {
 			}
 		}
 
+		m_server_info.m_keys = server_keys;
+		m_server_info.m_player_keys = player_keys;
+		m_server_info.m_team_keys 	= team_keys;
+
 		//register gamename
-		m_game = OS::GetGameByName(m_server_keys["gamename"].c_str());
+		m_server_info.m_game = OS::GetGameByName(m_server_info.m_keys["gamename"].c_str());
+
+		m_server_info.m_address.port = Socket::htons(m_address_info.sin_port);
+		m_server_info.m_address.ip = Socket::htonl(m_address_info.sin_addr.s_addr);
+
+		//TODO: check if changed and only push changes
+		if(m_server_pushed) {
+			MM::UpdateServer(&m_server_info);
+		}
 	}
 	void Peer::send_ping() {
 		//check for timeout

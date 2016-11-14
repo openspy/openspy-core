@@ -12,15 +12,11 @@ namespace SB {
 
 
 namespace MM {
-	typedef struct {
-		uint32_t ip;
-		uint16_t port;
-	} Address;
 	void Init(SB::Driver *driver);
 	void Think(); //check for push notifications, etc
 	typedef struct {
-		Address wan_address;
-		Address lan_address;
+		OS::Address wan_address;
+		OS::Address lan_address;
 		OS::GameData game;
 		OS::countryRegion region;
 		std::map<std::string, std::string> kvFields;
@@ -33,7 +29,7 @@ namespace MM {
 	};
 	
 
-	void AppendServerEntry(const char *entry_name, ServerListQuery *ret, bool all_keys);
+	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys);
 	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key);
 	
 	struct MM::ServerListQuery GetServers(const SB::sServerListReq *req);

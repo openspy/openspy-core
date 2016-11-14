@@ -34,7 +34,6 @@ namespace MM {
 	    		if(strcmp(r->element[1]->str,sb_mm_channel) == 0) {
 	    			find_param(0, r->element[2]->str,(char *)&msg_type, sizeof(msg_type));
 	    			find_param(1, r->element[2]->str, (char *)&server_key, sizeof(server_key));
-
 	    			AppendServerEntry(server_key, &servers, true);
 	    			if(strcmp(msg_type,"del") == 0) {
 	    				mp_driver->SendDeleteServer(servers);
@@ -68,7 +67,7 @@ namespace MM {
 
 
 	}
-	void AppendServerEntry(const char *entry_name, ServerListQuery *ret, bool all_keys) {
+	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys) {
 		redisReply *reply;
 
 		/*
@@ -78,27 +77,29 @@ namespace MM {
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
 		Server *server = new MM::Server();
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s gameid", entry_name);
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s gameid", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
-		server->game = OS::GetGameByID(atoi(reply->str));
+
+		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s wan_port", entry_name);
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s wan_port", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
 		server->wan_address.port = atoi(reply->str);
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s wan_ip", entry_name);
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s wan_ip", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
-		server->wan_address.ip = Socket::htonl(inet_addr(reply->str));
+
+		server->wan_address.ip = Socket::htonl(inet_addr(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
 
 
 		if(all_keys) {
-			reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS %scustkeys", entry_name);
+			reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS %scustkeys", entry_name.c_str());
 			if (!reply)
 				goto error_cleanup;
 			if (reply->type == REDIS_REPLY_ARRAY) {
@@ -111,10 +112,10 @@ namespace MM {
 		} else {
 			while (it != ret->requested_fields.end()) {
 				std::string field = *it;
-				reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %scustkeys %s", entry_name, field.c_str());
+				reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %scustkeys %s", entry_name.c_str(), field.c_str());
 				if (reply) {
 					if (reply->str) {
-						server->kvFields[field] = reply->str;
+						server->kvFields[field] = OS::strip_quotes(reply->str);
 					}
 					freeReplyObject(reply);
 				}
@@ -134,7 +135,7 @@ namespace MM {
 		if (!reply)
 			return false;
 		if (reply->type == REDIS_REPLY_STRING) {
-			server->kvFields[key] = reply->str;
+			server->kvFields[key] = OS::strip_quotes(reply->str);
 		}
 		else if(reply->type == REDIS_REPLY_INTEGER) {
 			server->kvFields[key] = reply->integer;
@@ -157,13 +158,13 @@ namespace MM {
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s gameid", entry_name);
 		if (!reply)
 			goto error_cleanup;
-		server->game = OS::GetGameByID(atoi(reply->str));
+		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s groupid", entry_name);
 		if (!reply)
 			goto error_cleanup;
-		server->wan_address.ip = atoi(reply->str);
+		server->wan_address.ip = atoi(OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
 		FindAppend_ServKVFields(server, entry_name, "maxwaiting");
@@ -200,7 +201,7 @@ namespace MM {
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, cmd.c_str());
 		if (reply->type == REDIS_REPLY_ARRAY) {
 			for (int j = 0; j < reply->elements; j++) {
-				AppendServerEntry(reply->element[j]->str, &ret, false);
+				AppendServerEntry(std::string(reply->element[j]->str), &ret, false);
 			}
 		}
 		freeReplyObject(reply);

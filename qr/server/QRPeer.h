@@ -5,6 +5,9 @@
 #include "QRDriver.h"
 
 #include <OS/legacy/gsmsalg.h>
+
+#include "MMPush.h"
+
 #define REQUEST_KEY_LEN 4
 #define CHALLENGE_LEN 20
 namespace QR {
@@ -47,18 +50,15 @@ namespace QR {
 		bool m_delete_flag;
 		bool m_timeout_flag;
 
-		OS::GameData m_game;
-
 		int m_sd;
 
 		bool m_recv_instance_key;
 		uint8_t m_instance_key[REQUEST_KEY_LEN];
 		char m_challenge[CHALLENGE_LEN + 1];
 		bool m_sent_challenge;
+		bool m_server_pushed;
 
-		std::map<std::string, std::string> m_server_keys;
-		std::map<std::string, std::vector<std::string> > m_player_keys;
-		std::map<std::string, std::vector<std::string> > m_team_keys;
+		MM::ServerInfo m_server_info;
 	};
 }
 #endif //_QRPEER_H

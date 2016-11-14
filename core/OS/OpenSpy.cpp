@@ -101,6 +101,8 @@ namespace OS {
 		#else
 			return new OS::CPThread(entry, param, auto_start);
 		#endif
-		
+	}
+	std::string strip_quotes(std::string s) {
+		return s.substr(1, s.size() - 2);
 	}
 }
