@@ -31,7 +31,7 @@ namespace QR {
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
-
+		void send_error(const char *msg, bool die = true);
 	private:
 
 		bool isTeamString(const char *string);

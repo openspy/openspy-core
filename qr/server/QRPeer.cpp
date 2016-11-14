@@ -180,12 +180,26 @@ namespace QR {
 		//register gamename
 		m_server_info.m_game = OS::GetGameByName(m_server_info.m_keys["gamename"].c_str());
 
+		if(m_server_info.m_game.gameid == 0) {
+			send_error("Game not found", true);
+			return;
+		}
+
 		m_server_info.m_address.port = Socket::htons(m_address_info.sin_port);
 		m_server_info.m_address.ip = Socket::htonl(m_address_info.sin_addr.s_addr);
 
 		//TODO: check if changed and only push changes
 		if(m_server_pushed) {
 			MM::UpdateServer(&m_server_info);
+		}
+	}
+	void Peer::send_error(const char *msg, bool die) {
+
+		//XXX: make all these support const vars
+		SendPacket((uint8_t*)msg, strlen(msg));
+		if(die) {
+			m_timeout_flag = false;
+			m_delete_flag = true;
 		}
 	}
 	void Peer::send_ping() {
@@ -221,6 +235,8 @@ namespace QR {
 	}
 	bool Peer::isTeamString(const char *string) {
 		int len = strlen(string);
+		if(len < 2)
+			return false;
 		if(string[len-2] == '_' && string[len-1] == 't') {
 			return true;
 		}
