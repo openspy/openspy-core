@@ -1,16 +1,15 @@
 cmake_minimum_required (VERSION 2.6)
 
-project(serverbrowsing)
+project(openspy)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-file (GLOB MAIN_SOURCES "*.cpp" "*.h")
-file (GLOB SOCKET_SOURCES "socketlib/*.cpp" "socketlib/*.h")
-file (GLOB SERVER_SOURCES "server/*.cpp" "server/*.h")
-file (GLOB LEGACY_SOURCES "legacy/*.cpp" "legacy/*.h")
+include_directories("core")
 
 
-set (ALL_SRCS ${MAIN_SOURCES} ${SOCKET_SOURCES} ${SERVER_SOURCES} ${LEGACY_SOURCES})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/")
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -20,12 +19,6 @@ source_group("Server" FILES ${SERVER_SOURCES})
 source_group("socketlib" FILES ${EXTERNAL_SOURCES})
 
 
-
-IF(WIN32)
-add_executable (serverbrowsing ${ALL_SRCS})
-target_link_libraries(serverbrowsing hiredis.lib Win32_Interop.lib ws2_32.lib)
-
-ELSE() #unix
-add_executable (serverbrowsing ${ALL_SRCS})
-target_link_libraries(serverbrowsing hiredis)
-ENDIF()
+add_subdirectory(core)
+add_subdirectory(serverbrowsing)
+add_subdirectory(qr)
