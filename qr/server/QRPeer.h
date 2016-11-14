@@ -38,6 +38,7 @@ namespace QR {
 
 		void handle_heartbeat(char *buff, int len);
 		void handle_challenge(char *buff, int len);
+		void handle_keepalive(char *buff, int len);
 
 		void send_challenge();
 		Driver *mp_driver;

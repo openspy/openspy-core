@@ -49,7 +49,7 @@ namespace QR {
 	}
 	void Peer::handle_packet(char *recvbuf, int len) {
 		printf("QR2 handle packet %d\n", len);
-		gettimeofday(&m_last_recv, NULL);
+		
 
 		uint8_t *buff = (uint8_t *)recvbuf;
 		int buflen = len;
@@ -65,6 +65,8 @@ namespace QR {
 			}
 		}
 
+		gettimeofday(&m_last_recv, NULL);
+
 		printf("QR got type: %02x || %d\n",type, len);
 		switch(type) {
 			case PACKET_HEARTBEAT:
@@ -74,6 +76,9 @@ namespace QR {
 			case PACKET_CHALLENGE:
 				printf("Got qr challenge\n");
 				handle_challenge((char *)buff, buflen);
+			break;
+			case PACKET_KEEPALIVE:
+				handle_keepalive((char *)buff, buflen);
 			break;
 		}
 
@@ -96,6 +101,11 @@ namespace QR {
 			}
 			m_sent_challenge = true;
 		}
+	}
+	void Peer::handle_keepalive(char *buff, int len) {
+		uint32_t *key = (uint32_t *)buff;
+		if(*key == *(uint32_t *)&m_instance_key)
+			SendPacket((uint8_t*)buff, len);
 	}
 	void Peer::handle_heartbeat(char *buff, int len) {
 		int i = 0;
@@ -185,10 +195,16 @@ namespace QR {
 
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > QR_PING_TIME) {
+
+			char data[sizeof(m_instance_key) + 1];
+			uint8_t *p = (uint8_t *)&data;
+			int len = 0;
+
 			gettimeofday(&m_last_ping, NULL);
 			
-			//BufferWriteByte(&p, &len, KEEPALIVE_MESSAGE);
-			//SendPacket((uint8_t *)&buff, len, true);
+			BufferWriteByte(&p, &len, PACKET_KEEPALIVE);
+			BufferWriteData(&p, &len, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
+			SendPacket((uint8_t *)&data, len);
 		}
 		
 	}
