@@ -20,7 +20,8 @@ namespace MM {
 		OS::GameData game;
 		OS::countryRegion region;
 		std::map<std::string, std::string> kvFields;
-		
+
+		int id;		
 	} Server;
 
 	struct ServerListQuery{

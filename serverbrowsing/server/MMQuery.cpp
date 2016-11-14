@@ -86,6 +86,14 @@ namespace MM {
 		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
 
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", entry_name.c_str());
+		if (!reply)
+			goto error_cleanup;
+
+		server->id = atoi(OS::strip_quotes(reply->str).c_str());
+		freeReplyObject(reply);
+
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s wan_port", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
