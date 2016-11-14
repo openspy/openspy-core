@@ -25,7 +25,7 @@ namespace QR {
 		void handle_packet(char *recvbuf, int len);
 
 
-		void SendPacket(uint8_t *buff, int len);
+		void SendPacket(const uint8_t *buff, int len);
 
 		int GetSocket() { return m_sd; };
 

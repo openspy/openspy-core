@@ -38,7 +38,7 @@ namespace QR {
 		}
 	}
 
-	void Peer::SendPacket(uint8_t *buff, int len) {
+	void Peer::SendPacket(const uint8_t *buff, int len) {
 		char sendbuf[MAX_DATA_SIZE + 1];
 		uint8_t *p = (uint8_t *)&sendbuf;
 		int blen = 0;
