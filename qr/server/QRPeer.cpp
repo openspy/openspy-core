@@ -98,7 +98,7 @@ namespace QR {
 			BufferWriteData((uint8_t **)&p, &outlen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
 			SendPacket((uint8_t *)&challenge_resp, outlen);
 			if(m_sent_challenge) {
-				MM::PushServer(&m_server_info);
+				MM::PushServer(&m_server_info, true);
 				m_server_pushed = true;
 			}
 			m_sent_challenge = true;
