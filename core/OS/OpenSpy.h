@@ -34,6 +34,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <vector>
 #include <stdint.h>
 #include <memory.h>
+#include <map>
 #include <hiredis/hiredis.h>
 namespace OS {
 
@@ -46,6 +47,13 @@ namespace OS {
 	} countryRegion;
 	///////////////////
 	//// XXX: put in os/game.h
+
+	//key types for the key type list
+	#define KEYTYPE_STRING	0
+	#define KEYTYPE_BYTE	1
+	#define KEYTYPE_SHORT	2
+
+
 	typedef struct {
 		int gameid;
 		int queryport;
@@ -53,6 +61,7 @@ namespace OS {
 		char description[64];
 		char secretkey[7];
 		char disabled_services; //0= ok, 1 = temp, 2 = perm
+		std::map<std::string, uint8_t> popular_values;
 	} GameData;
 	GameData GetGameByName(const char *from_gamename);
 	GameData GetGameByID(int gameid);

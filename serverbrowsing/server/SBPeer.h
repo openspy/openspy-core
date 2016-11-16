@@ -1,7 +1,7 @@
 #ifndef _SBPEER_H
 #define _SBPEER_H
 #include "../main.h"
-
+#include "MMQuery.h"
 
 //message types for outgoing requests
 #define SERVER_LIST_REQUEST		0
@@ -53,13 +53,32 @@
 
 
 
-namespace MM {
-	struct ServerListQuery;
-};
-
 namespace SB {
-	struct sServerListReq;
+	struct sServerListReq {
+		uint8_t protocol_version;
+		uint8_t encoding_version;
+		uint32_t game_version;
+		
+		char challenge[LIST_CHALLENGE_LEN];
+		
+		const char *filter;
+		//const char *field_list;
+		std::vector<std::string> field_list;
+		
+		uint32_t source_ip; //not entire sure what this is for atm
+		uint32_t max_results;
+		
+		bool send_groups;
+		bool send_wan_ip;
+		bool push_updates;
+		bool no_server_list;
+		
+		OS::GameData m_for_game;
+		OS::GameData m_from_game;
+
+	};
 	class Driver;
+	class Server;
 
 	enum EConnectionState {
 		EConnectionState_NoInit,
@@ -85,6 +104,12 @@ namespace SB {
 		bool IsTimeout() { return m_timeout_flag; }
 
 		int GetPing();
+
+		bool serverMatchesLastReq(MM::Server *server, bool require_push_Flag = true);
+
+		void informDeleteServers(MM::ServerListQuery servers);
+		void informNewServers(MM::ServerListQuery servers);
+		void informUpdateServers(MM::ServerListQuery servers);
 	private:
 		void handle_packet(char *data, int len);
 		void set_connection_state(EConnectionState state);
@@ -97,7 +122,8 @@ namespace SB {
 		//request processors
 		sServerListReq ParseListRequest(uint8_t *buffer, int remain);
 
-		void SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req);
+		void SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist = 1);
+		void pushServerUpdate(MM::Server *server);
 
 		Driver *mp_driver;
 		EConnectionState m_state;
@@ -117,6 +143,8 @@ namespace SB {
 		OS::GameData m_game;
 
 		int m_sd;
+
+		sServerListReq m_last_list_req;
 
 	};
 }

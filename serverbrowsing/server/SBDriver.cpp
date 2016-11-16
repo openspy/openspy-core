@@ -102,7 +102,6 @@ namespace SB {
 		if (sda <= 0) return;
 		Peer *mp_peer = new Peer(this, &peer, sda);
 		m_connections.push_back(mp_peer);
-		printf("New peer\n");
 		mp_peer->think(true);
 
 	}
@@ -154,12 +153,28 @@ namespace SB {
 		}
 	}
 	void Driver::SendDeleteServer(MM::ServerListQuery servers) {
-		printf("!!!! Should send delete to clients\n");
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			printf("Inform client delete\n");
+			p->informDeleteServers(servers);
+			it++;
+		}
 	}
 	void Driver::SendNewServer(MM::ServerListQuery servers) {
-		printf("!!!! Should send new server to clients\n");
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			p->informNewServers(servers);
+			it++;
+		}
 	}
 	void Driver::SendUpdateServer(MM::ServerListQuery servers) {
-		printf("!!!! Should send update server to clients\n");
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			p->informUpdateServers(servers);
+			it++;
+		}
 	}
 }

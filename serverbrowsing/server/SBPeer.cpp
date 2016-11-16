@@ -10,28 +10,39 @@ namespace SB {
 	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) {
 		m_sd = sd;
 		m_sent_crypt_header = false;
+		m_delete_flag = false;
+		m_timeout_flag = false;
 		m_address_info = *address_info;
+		gettimeofday(&m_last_ping, NULL);
+		printf("new Peer\n");
 	}
 	Peer::~Peer() {
-		printf("delete peer\n");
+		printf("Peer delete\n");
 	}
 	void Peer::handle_packet(char *data, int len) {
 		if(len == 0)
 			return;
 
+
 		uint8_t *buffer = (uint8_t *)data;
 		int pos = len;
 		
-		uint8_t request_type;
+		uint8_t request_type = 0;
 
-		BufferReadShort(&buffer, &pos);
+		if(len >= 2) {
+			BufferReadShort(&buffer, &pos);
+		} else pos = len;
 		request_type = BufferReadByte(&buffer, &pos);
 
 		gettimeofday(&m_last_recv, NULL);
 
 		switch (request_type) {
 			case SERVER_LIST_REQUEST:
+				printf("Got server list request\n");
 				ProcessListRequset(buffer, pos);
+				break;
+			case KEEPALIVE_MESSAGE:
+				printf("Got keepalive\n");
 				break;
 		}
 
@@ -59,6 +70,8 @@ namespace SB {
 		from_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
 		for_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
 
+		printf("Parse list (%s,%s)\n",from_gamename, for_gamename);
+
 		if (from_gamename) {
 			req.m_from_game = OS::GetGameByName(from_gamename);
 			free((void *)from_gamename);
@@ -85,7 +98,7 @@ namespace SB {
 		options = BufferReadIntRE(&buffer, &buf_remain);
 
 		req.send_groups = options & SEND_GROUPS;
-		req.send_push_keys = options & PUSH_UPDATES; //requesting updates, 
+		req.push_updates = options & PUSH_UPDATES; //requesting updates, 
 		req.no_server_list = options & NO_SERVER_LIST;
 
 		if (options & ALTERNATE_SOURCE_IP) {
@@ -99,7 +112,7 @@ namespace SB {
 		return req;
 
 	}
-	void Peer::SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req) {
+	void Peer::SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist) {
 		/*
 		TODO: make support split packets
 		*/
@@ -113,13 +126,24 @@ namespace SB {
 
 		BufferWriteShort(&p, &len, list_req->field_list.size());
 
+		//send fields
 		std::vector<std::string>::iterator field_it = list_req->field_list.begin();
 		while (field_it != list_req->field_list.end()) {
 			std::string str = *field_it;
 			BufferWriteNTS(&p, &len, (uint8_t *)str.c_str());
-			BufferWriteByte(&p, &len, 0); //on gamespys server there is a bug where a 2nd null byte is put after each word here so do it too for compatibility
+			BufferWriteByte(&p, &len, 0);	
 			field_it++;
 		}
+		//send popular key list
+		/*
+		if(usepopularlist) {
+			BufferWriteByte(&p, &len, list_req->m_for_game.popular_values.size());
+		} else {
+			BufferWriteByte(&p, &len, 0);	
+		}
+		*/
+
+		
 
 		while (it != servers.list.end()) {
 			uint8_t flags = HAS_KEYS_FLAG;
@@ -170,12 +194,13 @@ namespace SB {
 		int out_len = 0;
 		int header_len = 0;
 		if (!m_sent_crypt_header) {
+			//this is actually part of the main key list, not to be sent on each packet
 			setupCryptHeader(&p, &out_len);
  			header_len = out_len;
 			m_sent_crypt_header = true;
 		}
 		if(prepend_length) {
-			BufferWriteShortRE(&p, &out_len, len);
+			BufferWriteShortRE(&p, &out_len, len + sizeof(uint16_t));
 		}
 		BufferWriteData(&p, &out_len, buff, len);
 		enctypex_func6e((unsigned char *)&encxkeyb, ((unsigned char *)&out_buff) + header_len, out_len - header_len);
@@ -189,6 +214,10 @@ namespace SB {
 		uint32_t len = 0;
 
 		sServerListReq list_req = this->ParseListRequest(buffer, remain);
+
+		m_last_list_req = list_req;
+
+		printf("list ids: %d\n", m_last_list_req.m_for_game.gameid);
 
 		m_game = list_req.m_from_game;
 
@@ -211,14 +240,18 @@ namespace SB {
 		//check for timeout
 		struct timeval current_time;
 		
-		uint8_t buff[4];
+		uint8_t buff[10];
 		uint8_t *p = (uint8_t *)&buff;
 		int len = 0;
 
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
+			printf("Sending ping\n");
 			gettimeofday(&m_last_ping, NULL);
 			BufferWriteByte(&p, &len, KEEPALIVE_MESSAGE);
+
+			//embed response into reply, as SB client just sends same data back
+			BufferWriteByte(&p, &len, KEEPALIVE_REPLY);
 			SendPacket((uint8_t *)&buff, len, true);
 		}
 		
@@ -237,7 +270,7 @@ namespace SB {
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME) {
+		if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
 		}
@@ -263,5 +296,72 @@ namespace SB {
 		BufferWriteByte(dst, len, servchallen ^ 0xEA);
 		BufferWriteData(dst, len, (uint8_t *)&servchal, servchallen);
 		enctypex_funcx((unsigned char *)&encxkeyb, (unsigned char *)&m_game.secretkey, (unsigned char *)m_challenge, (unsigned char *)&servchal, servchallen);
+	}
+
+	bool Peer::serverMatchesLastReq(MM::Server *server, bool require_push_flag) {
+		/*
+		if(require_push_flag && !m_last_list_req.push_updates) {
+			return false;
+		}*/
+		printf("Match: %d == %d\n", server->game.gameid, m_last_list_req.m_for_game.gameid);
+		if(server->game.gameid == m_last_list_req.m_for_game.gameid) {
+			return true;
+		}
+		return false;
+	}
+
+	void Peer::informDeleteServers(MM::ServerListQuery servers) {
+
+		std::vector<MM::Server *>::iterator it = servers.list.begin();
+		printf("Inform delete\n");
+		while(it != servers.list.end()) {
+			MM::Server *s = *it;
+			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
+			uint8_t *p = (uint8_t *)&buf;
+			int len = 0;
+			if(serverMatchesLastReq(s)) {
+				printf("Inform delete matches\n");
+				BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
+				BufferWriteInt(&p, &len, Socket::htonl(s->wan_address.ip));
+				BufferWriteShort(&p, &len, Socket::htons(s->wan_address.port));
+				SendPacket((uint8_t *)&buf, len, true);
+			}
+			it++;
+		}
+	}
+	void Peer::pushServerUpdate(MM::Server *server) {
+		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
+		uint8_t *p = (uint8_t *)&buf;
+		int len = 0;
+		uint8_t flags = 0;
+		if(server->wan_address.port != m_last_list_req.m_for_game.queryport) {
+			flags |= NONSTANDARD_PORT_FLAG;
+		}
+		BufferWriteByte(&p, &len, PUSH_SERVER_MESSAGE);
+		BufferWriteByte(&p, &len, flags);
+		BufferWriteInt(&p, &len, server->wan_address.ip);
+		if(flags & NONSTANDARD_PORT_FLAG) {
+			BufferWriteShort(&p, &len, server->wan_address.port);
+		}
+	}
+	void Peer::informNewServers(MM::ServerListQuery servers) {
+		std::vector<MM::Server *>::iterator it = servers.list.begin();
+		while(it != servers.list.end()) {
+			MM::Server *s = *it;
+			if(serverMatchesLastReq(s)) {
+				pushServerUpdate(s);
+			}
+			it++;
+		}
+	}
+	void Peer::informUpdateServers(MM::ServerListQuery servers) {
+		std::vector<MM::Server *>::iterator it = servers.list.begin();
+		while(it != servers.list.end()) {
+			MM::Server *s = *it;
+			if(serverMatchesLastReq(s)) {
+				
+			}
+			it++;
+		}
 	}
 }

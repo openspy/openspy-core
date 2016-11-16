@@ -15,38 +15,46 @@ namespace OS {
 	OS::GameData GetGameByRedisKey(const char *key) {
 		GameData game;
 		redisReply *reply;	
+		printf("Lookup game by key: %s\n",key);
+
 		freeReplyObject(redisCommand(OS::redis_internal_connection, "SELECT %d", ERedisDB_Game));
 
 		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s gameid", key);
-		if (reply->type == REDIS_REPLY_STRING)
-			game.gameid = atoi(reply->str);
+		if (reply->type == REDIS_REPLY_STRING) {
+			game.gameid = atoi(OS::strip_quotes(reply->str).c_str());
+		}
 		freeReplyObject(reply);
 
 
 		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s secretkey", key);
 		if (reply->type == REDIS_REPLY_STRING)
-			strcpy(game.secretkey, reply->str);
+			strcpy(game.secretkey, OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s description", key);
 		if (reply->type == REDIS_REPLY_STRING)
-			strcpy(game.description, reply->str);
+			strcpy(game.description, OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s gamename", key);
 		if (reply->type == REDIS_REPLY_STRING)
-			strcpy(game.gamename, reply->str);
+			strcpy(game.gamename, OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s disabled_services", key);
 		if (reply->type == REDIS_REPLY_STRING)
-			game.disabled_services = atoi(reply->str);
+			game.disabled_services = atoi(OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s queryport", key);
 		if (reply->type == REDIS_REPLY_STRING)
-			game.queryport = atoi(reply->str);
+			game.queryport = atoi(OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
+
+
+		game.popular_values["hostname"] = KEYTYPE_STRING;
+		game.popular_values["numplayers"] = KEYTYPE_BYTE;
+		game.popular_values["maxplayers"] = KEYTYPE_SHORT;
 
 		return game;
 		
@@ -71,7 +79,7 @@ namespace OS {
 		freeReplyObject(redisCommand(OS::redis_internal_connection, "SELECT %d", ERedisDB_Game));
 		OS::GameData ret;
 		memset(&ret, 0, sizeof(ret));
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "KEYS *:%d:", gameid);
+		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "KEYS *:%d", gameid);
 		if (reply->type == REDIS_REPLY_ARRAY) {
 			for (int j = 0; j < reply->elements; j++) {
 				ret = GetGameByRedisKey(reply->element[j]->str);
@@ -83,6 +91,8 @@ namespace OS {
 	}
 	std::vector<std::string> KeyStringToMap(std::string input) {
 		std::vector<std::string> ret;
+
+		printf("key to str map: %s\n", input.c_str());
 		std::stringstream ss(input);
 
 		std::string token;
@@ -103,6 +113,8 @@ namespace OS {
 		#endif
 	}
 	std::string strip_quotes(std::string s) {
+		if(s[0] != '"' || s[s.length()-1] != '"')
+			return s;
 		return s.substr(1, s.size() - 2);
 	}
 }

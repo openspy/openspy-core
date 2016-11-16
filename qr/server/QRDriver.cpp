@@ -38,6 +38,7 @@ namespace QR {
 
 	}
 	void Driver::think(fd_set *fdset) {
+		TickConnections(fdset);
 
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
@@ -132,6 +133,7 @@ namespace QR {
 
 	void Driver::TickConnections(fd_set *fdset) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
+		printf("Driver tick\n");;
 		while (it != m_connections.end()) {
 			Peer *p = *it;
 			p->think(FD_ISSET(p->GetSocket(), fdset));

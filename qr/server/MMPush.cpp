@@ -99,6 +99,9 @@ namespace MM {
 		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\update\\%s:%d:%d:",sb_mm_channel,server->m_game.gamename,server->groupid,server->id));
 	}
 	void DeleteServer(ServerInfo *server, bool publish) {
+		int groupid = server->groupid;
+		int id = server->id;
+		/*
 		freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:",server->m_game.gamename,server->groupid,server->id));
 		freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys",server->m_game.gamename,server->groupid,server->id));
 		
@@ -139,7 +142,8 @@ namespace MM {
 			i=0;
 			it2++;
 		}
-
+		*/
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: deleted 1",server->m_game.gamename,server->groupid,server->id));
 		if(publish)
 			freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\del\\%s:%d:%d:",sb_mm_channel,server->m_game.gamename,groupid,id));
 	}

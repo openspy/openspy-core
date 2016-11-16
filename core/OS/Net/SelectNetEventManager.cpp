@@ -15,7 +15,7 @@ void SelectNetEventManager::run() {
     timeout.tv_usec = 16000;
 
     int hsock = setup_fdset();
-    if(Socket::select(hsock, &m_fdset, NULL, NULL, &timeout) < 0) {
+    if(Socket::select(hsock + 1, &m_fdset, NULL, NULL, &timeout) < 0) {
     	return;
     }
 

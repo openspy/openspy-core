@@ -15,35 +15,10 @@
 #include <sys/time.h>
 #endif
 
-#define SB_PING_TIME 30
+#define SB_PING_TIME 5
 
 namespace SB {
 	class Peer;
-
-	struct sServerListReq {
-		uint8_t protocol_version;
-		uint8_t encoding_version;
-		uint32_t game_version;
-		
-		char challenge[LIST_CHALLENGE_LEN];
-		
-		const char *filter;
-		//const char *field_list;
-		std::vector<std::string> field_list;
-		
-		uint32_t source_ip; //not entire sure what this is for atm
-		uint32_t max_results;
-		
-		bool send_groups;
-		bool send_wan_ip;
-		bool send_push_keys;
-		bool no_server_list;
-		
-		OS::GameData m_for_game;
-		OS::GameData m_from_game;
-
-	};
-
 
 	class Driver : public INetDriver {
 	public:

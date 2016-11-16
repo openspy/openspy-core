@@ -30,6 +30,8 @@ namespace QR {
 		m_recv_instance_key = false;
 		m_server_pushed = false;
 		m_sent_challenge = false;
+		m_delete_flag = false;
+		m_timeout_flag = false;
 		memset(&m_challenge, 0, sizeof(m_challenge));
 	}
 	Peer::~Peer() {
@@ -224,6 +226,7 @@ namespace QR {
 	}
 	void Peer::think(bool waiting_packet) {
 		send_ping();
+		printf("Peer think\n");
 
 		//check for timeout
 		struct timeval current_time;

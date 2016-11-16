@@ -30,7 +30,7 @@ namespace MM {
 	};
 	
 
-	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys);
+	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted = false);
 	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key);
 	
 	struct MM::ServerListQuery GetServers(const SB::sServerListReq *req);

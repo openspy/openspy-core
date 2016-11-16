@@ -38,8 +38,13 @@ namespace MM {
 	    		if(strcmp(r->element[1]->str,sb_mm_channel) == 0) {
 	    			find_param(0, r->element[2]->str,(char *)&msg_type, sizeof(msg_type));
 	    			find_param(1, r->element[2]->str, (char *)&server_key, sizeof(server_key));
+
+
+	    			
 	    			
 	    			if(strcmp(msg_type,"del") == 0) {
+	    				AppendServerEntry(server_key, &servers, true, true);
+	    				printf("Got server delete\n");
 	    				mp_driver->SendDeleteServer(servers);
 	    			} else if(strcmp(msg_type,"new") == 0) {
 	    				AppendServerEntry(server_key, &servers, true);
@@ -75,7 +80,7 @@ namespace MM {
 
 
 	}
-	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys) {
+	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted) {
 		redisReply *reply;
 
 		/*
@@ -83,13 +88,25 @@ namespace MM {
 		*/
 
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s deleted", entry_name.c_str());
+		if(reply->type != REDIS_REPLY_NIL && !include_deleted) {
+			freeReplyObject(reply);
+			printf("skip deleted server\n");
+			return;	
+		}
+		freeReplyObject(reply);
+		
+
 		Server *server = new MM::Server();
 
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s gameid", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
-
+		printf("Got str: %s | %s\n", reply->str, entry_name.c_str());
+		printf("Stripped: %s\n", OS::strip_quotes(reply->str).c_str());
+		printf("Stripped: %s %d\n",OS::strip_quotes(reply->str).c_str(), atoi(OS::strip_quotes(reply->str).c_str()));
 		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
+		printf("Game: %s %d\n",server->game.gamename,server->game.gameid);
 		freeReplyObject(reply);
 
 
