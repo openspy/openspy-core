@@ -25,6 +25,8 @@ namespace Socket {
 	typedef int(*fdapi_select)(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 	typedef u_int(*fdapi_ntohl)(u_int netlong);
 	typedef int(*fdapi_fstat)(int fd, struct __stat64 *buffer);
+	typedef char *(*sktlib_inetntoa)(struct in_addr in);
+	typedef unsigned long(*sktlib_inetaddr)(const char *cp);
 
 
 	extern fdapi_accept			accept;
@@ -47,7 +49,8 @@ namespace Socket {
 	extern fdapi_select         select;
 	extern fdapi_setsockopt     setsockopt;
 	extern fdapi_socket         socket;
-
+	extern sktlib_inetaddr		inet_addr;
+	extern sktlib_inetntoa 		inet_ntoa;
 	void Init();
 }
 #endif //_SOCKETLIB_H

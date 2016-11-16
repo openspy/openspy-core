@@ -24,11 +24,11 @@ namespace MM {
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: id %d",server->m_game.gamename,groupid,id,id));
 
 
-		char ipinput[INET_ADDRSTRLEN];
 		struct sockaddr_in addr;
 		addr.sin_port = Socket::htons(server->m_address.port);
 		addr.sin_addr.s_addr = Socket::htonl(server->m_address.ip);
-		inet_ntop(AF_INET, &(addr.sin_addr), ipinput, INET_ADDRSTRLEN);
+		const char *ipinput = inet_ntoa(addr.sin_addr);
+		
 
 
 

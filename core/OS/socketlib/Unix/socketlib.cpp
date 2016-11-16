@@ -21,6 +21,8 @@ namespace Socket {
 	fdapi_select         select;
 	fdapi_setsockopt     setsockopt;
 	fdapi_socket         socket;
+	sktlib_inetaddr		inet_addr;
+	sktlib_inetntoa 		inet_ntoa;
 	void Init() {
 		accept = (fdapi_accept)::accept;
 		bind = (fdapi_bind)::bind;
@@ -41,5 +43,7 @@ namespace Socket {
 		select = (fdapi_select)::select;
 		setsockopt = (fdapi_setsockopt)::setsockopt;
 		socket = (fdapi_socket)::socket;
+		inet_addr = (sktlib_inetaddr)::inet_addr;
+		inet_ntoa	= (sktlib_inetntoa)::inet_ntoa;
 	}
 }

@@ -1,6 +1,6 @@
 #include <OS/socketlib/socketlib.h>
-
 namespace Socket {
+	
 	fdapi_accept		 accept;
 	fdapi_bind           bind;
 	fdapi_connect        connect;
@@ -21,6 +21,8 @@ namespace Socket {
 	fdapi_select         select;
 	fdapi_setsockopt     setsockopt;
 	fdapi_socket         socket;
+
+	sktlib_inetaddr		inet_addr;
 	void Init() {
 		WSADATA wsdata;
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
@@ -45,5 +47,9 @@ namespace Socket {
 		select = (fdapi_select)GetProcAddress(mdl, "select");
 		setsockopt = (fdapi_setsockopt)GetProcAddress(mdl, "setsockopt");
 		socket = (fdapi_socket)GetProcAddress(mdl, "socket");
+
+		inet_addr = (sktlib_inetaddr)GetProcAddress(mdl, "inet_addr");
+
+		inet_ntoa	= (sktlib_inetntoa)GetProcAddress(mdl, "inet_ntoa");
 	}
 }

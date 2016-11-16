@@ -1,0 +1,5 @@
+= core os
+ - game lookup
+= sb specific
+- qr2 messages
+- push notifications (subscribe from redis/push to client)

@@ -5,14 +5,18 @@
 
 #include <OS/socketlib/socketlib.h>
 
-#include <signal.h>
-#include <hiredis/hiredis.h>
-#include <hiredis/async.h>
-#include <hiredis/adapters/libevent.h>
-
 #include <OS/legacy/helpers.h>
 
 #include <OS/Thread.h>
+
+//#include <signal.h>
+#include <hiredis/hiredis.h>
+#include <hiredis/async.h>
+#define _WINSOCK2API_
+#include <stdint.h>
+#include <hiredis/adapters/libevent.h>
+#undef _WINSOCK2API_
+
 
 namespace MM {
 	SB::Driver *mp_driver;
@@ -49,6 +53,7 @@ namespace MM {
 	    }
 	}
 
+
 	void *setup_redis_async(OS::CThread *) {
 	    mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
 
@@ -56,6 +61,7 @@ namespace MM {
 	    redisLibeventAttach(mp_redis_async_connection, base);
 	    redisAsyncCommand(mp_redis_async_connection, onRedisMessage, NULL, "SUBSCRIBE %s",sb_mm_channel);
 	    event_base_dispatch(base);
+		return NULL;
 	}
 	void Init(SB::Driver *driver) {
 		struct timeval t;
@@ -104,7 +110,7 @@ namespace MM {
 		if (!reply)
 			goto error_cleanup;
 
-		server->wan_address.ip = Socket::htonl(inet_addr(OS::strip_quotes(reply->str).c_str()));
+		server->wan_address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
 
 

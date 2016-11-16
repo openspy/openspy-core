@@ -6,21 +6,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef _WIN32
-#include <WinSock.h>
-#define strcasecmp stricmp
-#define strncasecmp strnicmp
-#define snprintf sprintf_s
-#define MSG_NOSIGNAL 0
-#else
-#include <arpa/inet.h>
-#include <netdb.h>
-#define stricmp strcasecmp
-#define sprintf_s snprintf
-#define strnicmp strncasecmp
-#define vsprintf_s vsnprintf
-#define _strnicmp strnicmp
-#endif
+
 
 char *find_last(char *buff, char delim, int len);
 int find_end(char *buff, int len);

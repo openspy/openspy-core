@@ -8,7 +8,7 @@ typedef int socklen_t;
 #define snprintf sprintf_s
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
-
+#define MSG_NOSIGNAL 0
 int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #else
 #include <unistd.h>
@@ -21,6 +21,12 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <pthread.h>
 #include <sys/times.h>
 #include "Threads/PThreads/PThread.h"
+
+#define stricmp strcasecmp
+#define sprintf_s snprintf
+#define strnicmp strncasecmp
+#define vsprintf_s vsnprintf
+#define _strnicmp strnicmp
 
 #endif
 #include <stdlib.h>
