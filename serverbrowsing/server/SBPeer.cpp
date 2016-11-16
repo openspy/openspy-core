@@ -330,19 +330,7 @@ namespace SB {
 		}
 	}
 	void Peer::pushServerUpdate(MM::Server *server) {
-		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
-		uint8_t *p = (uint8_t *)&buf;
-		int len = 0;
-		uint8_t flags = 0;
-		if(server->wan_address.port != m_last_list_req.m_for_game.queryport) {
-			flags |= NONSTANDARD_PORT_FLAG;
-		}
-		BufferWriteByte(&p, &len, PUSH_SERVER_MESSAGE);
-		BufferWriteByte(&p, &len, flags);
-		BufferWriteInt(&p, &len, server->wan_address.ip);
-		if(flags & NONSTANDARD_PORT_FLAG) {
-			BufferWriteShort(&p, &len, server->wan_address.port);
-		}
+		printf("Push update server\n");
 	}
 	void Peer::informNewServers(MM::ServerListQuery servers) {
 		std::vector<MM::Server *>::iterator it = servers.list.begin();
