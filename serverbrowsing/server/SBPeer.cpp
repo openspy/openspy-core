@@ -116,7 +116,6 @@ namespace SB {
 		/*
 		TODO: make support split packets
 		*/
-		std::vector<MM::Server *>::iterator it = servers.list.begin();
 		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = (uint8_t *)&buff;
 		int len = 0;
@@ -124,61 +123,36 @@ namespace SB {
 		BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
 		BufferWriteShortRE(&p, &len, list_req->m_from_game.queryport);
 
-		BufferWriteShort(&p, &len, list_req->field_list.size());
+		BufferWriteByte(&p, &len, list_req->field_list.size());
 
 		//send fields
 		std::vector<std::string>::iterator field_it = list_req->field_list.begin();
 		while (field_it != list_req->field_list.end()) {
 			std::string str = *field_it;
+			BufferWriteByte(&p, &len, 0x00); //key type, 0 = str, 1 = uint8, 2 = uint16
 			BufferWriteNTS(&p, &len, (uint8_t *)str.c_str());
-			BufferWriteByte(&p, &len, 0);	
 			field_it++;
 		}
 		//send popular key list
-		/*
 		if(usepopularlist) {
 			BufferWriteByte(&p, &len, list_req->m_for_game.popular_values.size());
+			//list_req->m_for_game.popular_values
+			std::map<std::string, uint8_t>::iterator it_v = list_req->m_for_game.popular_values.begin();
+			while(it_v != list_req->m_for_game.popular_values.end()) {
+				std::pair<std::string, uint8_t> v = *it_v;
+				BufferWriteNTS(&p, &len, (const uint8_t*)v.first.c_str());
+				it_v++;
+			}
 		} else {
 			BufferWriteByte(&p, &len, 0);	
 		}
-		*/
-
 		
 
+		
+		std::vector<MM::Server *>::iterator it = servers.list.begin();
 		while (it != servers.list.end()) {
-			uint8_t flags = HAS_KEYS_FLAG;
 			MM::Server *server = *it;
-
-			if (server->wan_address.port != server->game.queryport) {
-				flags |= NONSTANDARD_PORT_FLAG;
-			}
-			BufferWriteByte(&p, &len, flags); //flags
-			BufferWriteInt(&p, &len, Socket::htonl(server->wan_address.ip)); //ip
-
-			if (flags & NONSTANDARD_PORT_FLAG) {
-				BufferWriteShort(&p, &len, Socket::htons(server->wan_address.port));
-			}
-			
-			if (flags & PRIVATE_IP_FLAG) {
-				BufferWriteInt(&p, &len, Socket::htonl(server->lan_address.ip));
-			}
-			if (flags & NONSTANDARD_PRIVATE_PORT_FLAG) {
-				BufferWriteShort(&p, &len, Socket::htons(server->lan_address.port));
-			}
-			
-
-			std::vector<std::string>::iterator tok_it = list_req->field_list.begin();
-			while (tok_it != list_req->field_list.end()) {
-				BufferWriteByte(&p, &len, 0xFF);
-				if (server->kvFields.find((*tok_it)) != server->kvFields.end()) {
-					std::string value = server->kvFields[*tok_it].c_str();
-					BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
-				}
-				else {
-					BufferWriteByte(&p, &len, 0);
-				}
-				tok_it++;
-			}
+			sendServerData(server, true, false, &p, &len);
 			it++;
 		}
 
@@ -329,15 +303,65 @@ namespace SB {
 			it++;
 		}
 	}
-	void Peer::pushServerUpdate(MM::Server *server) {
-		printf("Push update server\n");
+	void Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len) {
+		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
+		uint8_t *p = (uint8_t *)&buf;
+
+		if(out) {
+			p = *out;
+		}
+		int len = 0;
+		uint8_t flags = HAS_KEYS_FLAG;
+
+		if (server->wan_address.port != server->game.queryport) {
+			flags |= NONSTANDARD_PORT_FLAG;
+		}
+		if(push) {
+			BufferWriteByte(&p, &len, PUSH_SERVER_MESSAGE);	
+		}
+		
+		BufferWriteByte(&p, &len, flags); //flags
+		BufferWriteInt(&p, &len, Socket::htonl(server->wan_address.ip)); //ip
+
+		if (flags & NONSTANDARD_PORT_FLAG) {
+			BufferWriteShort(&p, &len, Socket::htons(server->wan_address.port));
+		}
+		
+		if (flags & PRIVATE_IP_FLAG) {
+			BufferWriteInt(&p, &len, Socket::htonl(server->lan_address.ip));
+		}
+		if (flags & NONSTANDARD_PRIVATE_PORT_FLAG) {
+			BufferWriteShort(&p, &len, Socket::htons(server->lan_address.port));
+		}
+		
+
+		std::vector<std::string>::iterator tok_it = m_last_list_req.field_list.begin();
+		while (tok_it != m_last_list_req.field_list.end()) {
+			if(usepopularlist) {
+				BufferWriteByte(&p, &len, 0xFF);
+			}
+			if (server->kvFields.find((*tok_it)) != server->kvFields.end()) {
+				std::string value = server->kvFields[*tok_it].c_str();
+				BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
+			}
+			else {
+				BufferWriteByte(&p, &len, 0);
+			}
+			tok_it++;
+		}
+		if(out) {
+			*out = p;
+			*out_len += len;
+		} else {
+			SendPacket((uint8_t *)&buf, len, push);
+		}
 	}
 	void Peer::informNewServers(MM::ServerListQuery servers) {
 		std::vector<MM::Server *>::iterator it = servers.list.begin();
 		while(it != servers.list.end()) {
 			MM::Server *s = *it;
 			if(serverMatchesLastReq(s)) {
-				pushServerUpdate(s);
+				sendServerData(s, false, true, NULL, NULL);
 			}
 			it++;
 		}
@@ -347,7 +371,7 @@ namespace SB {
 		while(it != servers.list.end()) {
 			MM::Server *s = *it;
 			if(serverMatchesLastReq(s)) {
-				
+				sendServerData(s, false, true, NULL, NULL);
 			}
 			it++;
 		}

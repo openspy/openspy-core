@@ -123,7 +123,7 @@ namespace SB {
 		sServerListReq ParseListRequest(uint8_t *buffer, int remain);
 
 		void SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist = 1);
-		void pushServerUpdate(MM::Server *server);
+		void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len);
 
 		Driver *mp_driver;
 		EConnectionState m_state;
