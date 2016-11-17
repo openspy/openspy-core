@@ -64,7 +64,7 @@ namespace QR {
 			uint8_t instance_key[REQUEST_KEY_LEN];
 			BufferReadData((uint8_t **)&buff, (int *)&len, (uint8_t *)&instance_key, sizeof(instance_key));
 			if(memcmp((uint8_t *)&instance_key, (uint8_t *)&m_instance_key, sizeof(instance_key)) != 0) {
-				printf("possible spoofed packet\n");
+				printf("possible spoofed packet\n"); //TODO: send echo and capture response
 				return;
 			}
 		}
@@ -98,6 +98,7 @@ namespace QR {
 		int outlen = 0;
 		uint8_t *p = (uint8_t *)challenge_resp;
 		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (unsigned char *)&m_server_info.m_game.secretkey, 0);
+		printf("%s == %s\n",buff,challenge_resp);
 		if(strcmp(buff,challenge_resp) == 0) { //matching challenge
 			BufferWriteByte((uint8_t**)&p, &outlen,PACKET_CLIENT_REGISTERED);
 			BufferWriteData((uint8_t **)&p, &outlen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
@@ -265,7 +266,6 @@ namespace QR {
 
 		BufferWriteByte((uint8_t**)&p,&blen,PACKET_CHALLENGE);
 		BufferWriteData((uint8_t **)&p, &blen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
-		BufferWriteShort(&p, &blen, 0);
 
 		BufferWriteNTS((uint8_t**)&p,&blen,(uint8_t *)&m_challenge);
 

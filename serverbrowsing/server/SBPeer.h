@@ -84,6 +84,12 @@ namespace SB {
 		EConnectionState_NoInit,
 	};
 
+	struct sServerCache {
+		char key[64];
+		OS::Address wan_address;
+		bool full_keys;
+	};
+
 
 	class Peer {
 	public:
@@ -118,12 +124,13 @@ namespace SB {
 		//request type handles
 		void ProcessListRequset(uint8_t *buffer, int remain);
 		void ProcessSendMessage(uint8_t *buffer, int remain);
+		void ProcessInfoRequest(uint8_t *buffer, int remain);
 
 		//request processors
 		sServerListReq ParseListRequest(uint8_t *buffer, int remain);
 
-		void SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist = 1);
-		void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len);
+		void SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist = true, bool send_fullkeys = false);
+		void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false);
 
 		Driver *mp_driver;
 		EConnectionState m_state;
@@ -149,6 +156,11 @@ namespace SB {
 		sServerListReq m_last_list_req;
 
 		struct sockaddr_in m_send_msg_to;
+
+		std::vector<sServerCache> m_visible_servers;
+		void cacheServer(MM::Server *server);
+		void DeleteServerFromCacheByIP(OS::Address address);
+		sServerCache FindServerByIP(OS::Address address);
 
 	};
 }

@@ -17,6 +17,7 @@
 #include <hiredis/adapters/libevent.h>
 #undef _WINSOCK2API_
 
+#include <sstream>
 
 namespace MM {
 	SB::Driver *mp_driver;
@@ -90,7 +91,6 @@ namespace MM {
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s deleted", entry_name.c_str());
 		if(reply->type != REDIS_REPLY_NIL && !include_deleted) {
 			freeReplyObject(reply);
-			printf("skip deleted server\n");
 			return;	
 		}
 		freeReplyObject(reply);
@@ -103,6 +103,8 @@ namespace MM {
 			goto error_cleanup;
 		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
+
+		server->key = entry_name;
 
 
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", entry_name.c_str());
@@ -137,6 +139,52 @@ namespace MM {
 					FindAppend_ServKVFields(server, search_key, reply->element[j]->str);
 				}
 			}
+
+			int idx = 0;
+			uint8_t last_type = REDIS_REPLY_NIL;
+			std::string key;
+			std::ostringstream s;
+			do {
+				s << entry_name << "custkeys_player_" << idx;
+				key = s.str();
+				reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS %s", key.c_str());
+				if(!reply)
+					break;
+				last_type = reply->type;
+				if (reply->type == REDIS_REPLY_ARRAY) {
+					if(reply->elements == 0)  {
+						freeReplyObject(reply);
+						break;
+					}
+					for (int j = 0; j < reply->elements; j++) {
+						FindAppend_PlayerKVFields(server, key, reply->element[j]->str, idx);
+					}
+				}
+				s.str("");
+				freeReplyObject(reply);
+				idx++;
+			} while(last_type != REDIS_REPLY_NIL);
+
+			do {
+				s << entry_name << "custkeys_team_" << idx;
+				key = s.str();
+				reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS %s", key.c_str());
+				if(!reply)
+					break;
+				last_type = reply->type;
+				if (reply->type == REDIS_REPLY_ARRAY) {
+					if(reply->elements == 0)  {
+						freeReplyObject(reply);
+						break;
+					}
+					for (int j = 0; j < reply->elements; j++) {
+						FindAppend_TeamKVFields(server, key, reply->element[j]->str, idx);
+					}
+				}
+				freeReplyObject(reply);
+				s.str("");
+				idx++;
+			} while(last_type != REDIS_REPLY_NIL);
 		} else {
 			while (it != ret->requested_fields.end()) {
 				std::string field = *it;
@@ -156,6 +204,37 @@ namespace MM {
 
 		error_cleanup:
 			delete server;
+
+	}
+	bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index)
+	 {
+		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s %s", entry_name.c_str(), key.c_str());
+		if (!reply)
+			return false;
+		if (reply->type == REDIS_REPLY_STRING) {
+			server->kvPlayers[index][key] = OS::strip_quotes(reply->str);
+		}
+		else if(reply->type == REDIS_REPLY_INTEGER) {
+			server->kvPlayers[index][key] = reply->integer;
+		}
+		freeReplyObject(reply);
+
+		return true;
+
+	}
+	bool FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index) {
+		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s %s", entry_name.c_str(), key.c_str());
+		if (!reply)
+			return false;
+		if (reply->type == REDIS_REPLY_STRING) {
+			server->kvTeams[index][key] = OS::strip_quotes(reply->str);
+		}
+		else if(reply->type == REDIS_REPLY_INTEGER) {
+			server->kvTeams[index][key] = reply->integer;
+		}
+		freeReplyObject(reply);
+
+		return true;
 
 	}
 	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key) {
@@ -252,6 +331,13 @@ namespace MM {
 		freeReplyObject(reply);
 		return ret;
 	}
-	
+	Server *GetServerByKey(std::string key) {
+		ServerListQuery ret;
+		AppendServerEntry(key, &ret, true, false);
+		if(ret.list.size() < 1)
+			return NULL;
+
+		return ret.list[0];
+	}
 
 }

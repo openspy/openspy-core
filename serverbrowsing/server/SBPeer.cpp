@@ -1,9 +1,11 @@
 #include "SBPeer.h"
 #include "SBDriver.h"
+#include <OS/OpenSpy.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
 #include <OS/legacy/enctypex_decoder.h>
 #include <OS/socketlib/socketlib.h>
+#include <sstream>
 #define CRYPTCHAL_LEN 10
 #define SERVCHAL_LEN 25
 namespace SB {
@@ -53,6 +55,10 @@ namespace SB {
 			break;
 			case PLAYERSEARCH_REQUEST:
 				printf("playersearch request\n");
+			break;
+			case SERVER_INFO_REQUEST:
+				printf("GOT INFO REQUEST!!\n");
+				ProcessInfoRequest(buffer, pos);
 			break;
 		}
 
@@ -135,7 +141,7 @@ namespace SB {
 		m_next_packet_send_msg = true;
 
 	}
-	void Peer::SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist) {
+	void Peer::SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist, bool send_fullkeys) {
 		/*
 		TODO: make support split packets
 		*/
@@ -152,17 +158,17 @@ namespace SB {
 		std::vector<std::string>::iterator field_it = list_req->field_list.begin();
 		while (field_it != list_req->field_list.end()) {
 			std::string str = *field_it;
-			BufferWriteByte(&p, &len, 0x00); //key type, 0 = str, 1 = uint8, 2 = uint16
+			BufferWriteByte(&p, &len, 0x00); //key type, 0 = str, 1 = uint8, 2 = uint16 TODO: determine type
 			BufferWriteNTS(&p, &len, (uint8_t *)str.c_str());
 			field_it++;
 		}
-		//send popular key list
+		//send popular string values list
 		if(usepopularlist) {
 			BufferWriteByte(&p, &len, list_req->m_for_game.popular_values.size());
-			std::map<std::string, uint8_t>::iterator it_v = list_req->m_for_game.popular_values.begin();
+			std::vector<std::string>::iterator it_v = list_req->m_for_game.popular_values.begin();
 			while(it_v != list_req->m_for_game.popular_values.end()) {
-				std::pair<std::string, uint8_t> v = *it_v;
-				BufferWriteNTS(&p, &len, (const uint8_t*)v.first.c_str());
+				std::string v = *it_v;
+				BufferWriteNTS(&p, &len, (const uint8_t*)v.c_str());
 				it_v++;
 			}
 		} else {
@@ -219,13 +225,17 @@ namespace SB {
 			return;
 
 		MM::ServerListQuery servers;
+		servers.requested_fields = list_req.field_list;
 
+		if(list_req.no_server_list) {
 
-		if (list_req.send_groups) {
-			servers = MM::GetGroups(&list_req);
-		}
-		else {
-			servers = MM::GetServers(&list_req);
+		} else {
+			if (list_req.send_groups) {
+				servers = MM::GetGroups(&list_req);
+			}
+			else {
+				servers = MM::GetServers(&list_req);
+			}
 		}
 		SendListQueryResp(servers, &list_req);
 
@@ -318,24 +328,33 @@ namespace SB {
 			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 			uint8_t *p = (uint8_t *)&buf;
 			int len = 0;
-			if(serverMatchesLastReq(s)) {
-				BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
-				BufferWriteInt(&p, &len, Socket::htonl(s->wan_address.ip));
-				BufferWriteShort(&p, &len, Socket::htons(s->wan_address.port));
-				SendPacket((uint8_t *)&buf, len, true);
+			
+			if(FindServerByIP(s->wan_address).key[0] != 0) {
+				DeleteServerFromCacheByIP(s->wan_address);
+				if(serverMatchesLastReq(s)) {
+					BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
+					BufferWriteInt(&p, &len, Socket::htonl(s->wan_address.ip));
+					BufferWriteShort(&p, &len, Socket::htons(s->wan_address.port));
+					SendPacket((uint8_t *)&buf, len, true);
+				}
 			}
 			it++;
 		}
 	}
-	void Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len) {
+	void Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 		uint8_t *p = (uint8_t *)&buf;
+
+		cacheServer(server);
 
 		if(out) {
 			p = *out;
 		}
 		int len = 0;
 		uint8_t flags = HAS_KEYS_FLAG;
+		if(full_keys) {
+			flags |= HAS_FULL_RULES_FLAG;
+		}
 
 		if (server->wan_address.port != server->game.queryport) {
 			flags |= NONSTANDARD_PORT_FLAG;
@@ -373,6 +392,48 @@ namespace SB {
 			}
 			tok_it++;
 		}
+
+		if(full_keys) {
+			//std::map<int, std::map<std::string, std::string> > kvPlayers;
+			std::map<int, std::map<std::string, std::string> >::iterator it = server->kvPlayers.begin();
+			std::ostringstream s;
+			std::pair<int, std::map<std::string, std::string> > index_mappair;
+			std::map<std::string, std::string>::iterator it2;
+			std::pair<std::string, std::string> kvp;
+
+			
+
+			it = server->kvPlayers.begin();
+			while(it != server->kvPlayers.end()) {
+				index_mappair = *it;
+				it2 = index_mappair.second.begin();
+				while(it2 != index_mappair.second.end()) {
+					kvp = *it2;
+					s << kvp.first << index_mappair.first;
+					BufferWriteNTS(&p, &len, (const uint8_t *)s.str().c_str());
+					BufferWriteNTS(&p, &len, (const uint8_t *)kvp.second.c_str());
+					s.str("");
+					it2++;
+				}
+				it++;
+			}
+
+			it = server->kvTeams.begin();
+			while(it != server->kvTeams.end()) {
+				index_mappair = *it;
+				it2 = index_mappair.second.begin();
+				while(it2 != index_mappair.second.end()) {
+					kvp = *it2;
+					s << kvp.first << index_mappair.first;
+					BufferWriteNTS(&p, &len, (const uint8_t *)s.str().c_str());
+					BufferWriteNTS(&p, &len, (const uint8_t *)kvp.second.c_str());
+					s.str("");
+					it2++;
+				}
+				it++;
+			}
+		}
+
 		if(out) {
 			*out = p;
 			*out_len += len;
@@ -385,7 +446,9 @@ namespace SB {
 		while(it != servers.list.end()) {
 			MM::Server *s = *it;
 			if(serverMatchesLastReq(s)) {
-				sendServerData(s, false, true, NULL, NULL);
+				if(FindServerByIP(s->wan_address).key[0] == 0) {
+					sendServerData(s, false, true, NULL, NULL);
+				}
 			}
 			it++;
 		}
@@ -395,9 +458,62 @@ namespace SB {
 		while(it != servers.list.end()) {
 			MM::Server *s = *it;
 			if(serverMatchesLastReq(s)) {
-				sendServerData(s, false, true, NULL, NULL);
+				sServerCache cache = FindServerByIP(s->wan_address);
+				if(cache.key[0] == 0 /*|| server matches new filter*/) {
+					sendServerData(s, false, true, NULL, NULL, cache.full_keys);
+				}
 			}
 			it++;
+		}
+	}
+	sServerCache Peer::FindServerByIP(OS::Address address) {
+		sServerCache ret;
+		ret.full_keys = false;
+		ret.key[0] = 0;
+		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
+		while(it != m_visible_servers.end()) {
+			sServerCache cache = *it;
+			if(cache.wan_address.ip == address.ip && cache.wan_address.port == address.port) {
+				return cache;
+			}
+			it++;
+		}
+		return ret;		
+	}
+	void Peer::DeleteServerFromCacheByIP(OS::Address address) {
+		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
+		while(it != m_visible_servers.end()) {
+			sServerCache cache = *it;
+			if(cache.wan_address.ip == address.ip && cache.wan_address.port == address.port) {
+				it = m_visible_servers.erase(it);
+				continue;
+			}
+			it++;
+		}
+	}
+	void Peer::cacheServer(MM::Server *server) {
+		sServerCache item;
+		if(FindServerByIP(server->wan_address).key[0] == 0) {
+			item.wan_address = server->wan_address;
+			strcpy(item.key,server->key.c_str());
+			item.full_keys = false;
+			m_visible_servers.push_back(item);
+		}
+	}
+	void Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
+		uint8_t *p = (uint8_t *)buffer;
+		int len = remain;
+		OS::Address address;
+		address.ip = Socket::htonl(BufferReadInt(&p, &len));
+		address.port = Socket::htons(BufferReadShort(&p, &len));
+		sServerCache cache = FindServerByIP(address);
+		if(cache.key[0] != 0) {
+			MM::Server *server = MM::GetServerByKey(cache.key);
+			cache.full_keys = true;
+			if(server) {
+				sendServerData(server, false, true, NULL, NULL, true);
+				delete server;
+			}
 		}
 	}
 }

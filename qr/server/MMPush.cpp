@@ -32,15 +32,12 @@ namespace MM {
 	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
 	    			find_param(0, r->element[2]->str,(char *)&type, sizeof(type)-1);
 	    			if(!strcmp(type,"send_msg")) {
-		    			printf("Got raw: %s\n", r->element[2]->str);
 		    			find_param(1, r->element[2]->str,(char *)&gamename, sizeof(gamename)-1);
 		    			find_param(2, r->element[2]->str,(char *)&from_ip, sizeof(from_ip)-1);
 		    			find_param(3, r->element[2]->str,(char *)&from_port, sizeof(from_port)-1);
 		    			find_param(4, r->element[2]->str, (char *)&to_ip, sizeof(to_ip)-1);
 		    			find_param(5, r->element[2]->str,(char *)&to_port, sizeof(to_port)-1);
 		    			find_param(6, r->element[2]->str, (char *)&data, sizeof(data)-1);
-		    			printf("Send msg to %s | %s | %s\n", gamename, from_ip, to_ip);
-		    			printf("Data: %s\n",data);
 		    			struct sockaddr_in address;
 		    			address.sin_port = Socket::htons(atoi(to_port));
 		    			address.sin_addr.s_addr = Socket::inet_addr((const char *)&to_ip);

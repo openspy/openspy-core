@@ -51,9 +51,9 @@ namespace OS {
 		freeReplyObject(reply);
 
 
-		game.popular_values["hostname"] = KEYTYPE_STRING;
-		game.popular_values["numplayers"] = KEYTYPE_BYTE;
-		game.popular_values["maxplayers"] = KEYTYPE_SHORT;
+		game.popular_values.push_back("hostname");
+		game.popular_values.push_back("numplayers");
+		game.popular_values.push_back("maxplayers");
 
 		return game;
 		
