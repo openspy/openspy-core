@@ -40,25 +40,21 @@ namespace SB {
 
 		switch (request_type) {
 			case SERVER_LIST_REQUEST:
-				printf("Got server list request\n");
 				ProcessListRequset(buffer, pos);
 				break;
 			case KEEPALIVE_MESSAGE:
-				printf("Got keepalive\n");
 				break;
 			case SEND_MESSAGE_REQUEST:
 				ProcessSendMessage(buffer, pos);
-				printf("msg request\n");
+			break;
+			case SERVER_INFO_REQUEST:
+				ProcessInfoRequest(buffer, pos);
 			break;
 			case MAPLOOP_REQUEST:
 				printf("maploop request\n");
 			break;
 			case PLAYERSEARCH_REQUEST:
 				printf("playersearch request\n");
-			break;
-			case SERVER_INFO_REQUEST:
-				printf("GOT INFO REQUEST!!\n");
-				ProcessInfoRequest(buffer, pos);
 			break;
 		}
 
@@ -85,8 +81,6 @@ namespace SB {
 
 		from_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
 		for_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
-
-		printf("Parse list (%s,%s)\n",from_gamename, for_gamename);
 
 		if (from_gamename) {
 			req.m_from_game = OS::GetGameByName(from_gamename);

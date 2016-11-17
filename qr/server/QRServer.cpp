@@ -2,6 +2,7 @@
 #include "QRServer.h"
 #include "QRDriver.h"
 #include "MMPush.h"
+
 namespace QR {
 
 	Server::Server() {

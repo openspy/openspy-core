@@ -33,7 +33,7 @@ namespace QR {
 		uint32_t getDeltaTime();
 
 		Peer *find_client(struct sockaddr_in *address);
-		Peer *find_or_create(struct sockaddr_in *address);
+		Peer *find_or_create(struct sockaddr_in *address, int version = 2);
 
 		int setup_fdset(fd_set *fdset);
 
