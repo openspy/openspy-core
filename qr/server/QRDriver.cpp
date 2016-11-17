@@ -11,6 +11,7 @@ namespace QR {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		
 		Socket::Init();
+		MM::Init(this);
 		uint32_t bind_ip = INADDR_ANY;
 		
 		if ((m_sd = Socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0){
@@ -60,6 +61,8 @@ namespace QR {
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			const struct sockaddr_in *peer_address = peer->getAddress();
+			printf("IP: %d == %d\n", address->sin_addr.s_addr, peer_address->sin_addr.s_addr);
+			printf("Port: %d == %d\n", address->sin_port, peer_address->sin_port);
 			if (address->sin_port == peer_address->sin_port && address->sin_addr.s_addr == peer_address->sin_addr.s_addr) {
 				return peer;
 			}

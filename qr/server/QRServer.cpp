@@ -8,7 +8,6 @@ namespace QR {
 		
 	}
 	void Server::init() {
-		MM::Init();
 	}
 	void Server::tick() {
 		NetworkTick();

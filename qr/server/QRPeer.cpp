@@ -19,6 +19,8 @@
 #define PACKET_AVAILABLE          0x09  //C -> S
 #define PACKET_CLIENT_REGISTERED  0x0A  //S -> C
 
+#define QR2_OPTION_USE_QUERY_CHALLENGE 128 //backend flag
+
 #define QR_MAGIC_1 0xFE
 #define QR_MAGIC_2 0xFD
 
@@ -81,6 +83,9 @@ namespace QR {
 			break;
 			case PACKET_KEEPALIVE:
 				handle_keepalive((char *)buff, buflen);
+			break;
+			case PACKET_CLIENT_MESSAGE_ACK:
+				printf("Got client msg ack %d\n",buflen);
 			break;
 		}
 
@@ -251,14 +256,34 @@ namespace QR {
 		uint8_t *p = (uint8_t *)buff;
 		int blen = 0;
 
+		memset(&m_challenge, 0, sizeof(m_challenge));
 		gen_random((char *)&m_challenge,sizeof(m_challenge)-1);
+
+		uint16_t *backend_flags = (uint16_t *)&m_challenge[13];
+		*backend_flags &= ~QR2_OPTION_USE_QUERY_CHALLENGE;
+		
+
 		BufferWriteByte((uint8_t**)&p,&blen,PACKET_CHALLENGE);
 		BufferWriteData((uint8_t **)&p, &blen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
+		BufferWriteShort(&p, &blen, 0);
 
 		BufferWriteNTS((uint8_t**)&p,&blen,(uint8_t *)&m_challenge);
 
 
 		SendPacket((uint8_t *)&buff, blen);
 		m_sent_challenge = true;
+	}
+	void Peer::SendClientMessage(uint8_t *data, int data_len) {
+		char buff[MAX_DATA_SIZE];
+		uint8_t *p = (uint8_t *)buff;
+		int blen = 0;
+		uint32_t key = rand() % 100000 + 1;	
+
+		BufferWriteByte(&p, &blen, PACKET_CLIENT_MESSAGE);
+		BufferWriteInt(&p, &blen, key);
+
+		BufferWriteData(&p, &blen, data, data_len);
+		SendPacket((uint8_t *)&buff, blen);
+		
 	}
 }

@@ -54,7 +54,7 @@ namespace MM {
 	}
 
 	void SubmitData(const char *base64, struct sockaddr_in *from, struct sockaddr_in *to, OS::GameData *game) {
-		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\send_msg\\%s\\%s:%d\\%s:%d\\%s\n",sb_mm_channel,game->gamename,Socket::inet_ntoa(from->sin_addr),from->sin_port,Socket::inet_ntoa(to->sin_addr),to->sin_port,base64));
+		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\send_msg\\%s\\%s\\%d\\%s\\%d\\%s\n",sb_mm_channel,game->gamename,Socket::inet_ntoa(from->sin_addr),from->sin_port,Socket::inet_ntoa(to->sin_addr),to->sin_port,base64));
 	}
 
 

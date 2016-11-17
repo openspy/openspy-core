@@ -9,7 +9,7 @@
 #include "MMPush.h"
 
 #define REQUEST_KEY_LEN 4
-#define CHALLENGE_LEN 20
+#define CHALLENGE_LEN 64
 namespace QR {
 	class Driver;
 
@@ -32,6 +32,7 @@ namespace QR {
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 		void send_error(const char *msg, bool die = true);
+		void SendClientMessage(uint8_t *data, int data_len);
 	private:
 
 		bool isTeamString(const char *string);

@@ -4,6 +4,9 @@
 #include <map>
 #include <vector>
 #include <string>
+namespace QR {
+	class Driver;
+}
 namespace MM {
 	typedef struct {
 		OS::GameData m_game;
@@ -18,7 +21,7 @@ namespace MM {
 
 	extern redisContext *mp_redis_connection;
 
-	void Init();
+	void Init(QR::Driver *driver);
 	void PushServer(ServerInfo *server, bool publish = true);
 	void UpdateServer(ServerInfo *server);
 	void DeleteServer(ServerInfo *server, bool publish = true);

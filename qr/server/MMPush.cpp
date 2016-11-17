@@ -9,19 +9,24 @@
 #include <hiredis/adapters/libevent.h>
 #undef _WINSOCK2API_
 #include <OS/legacy/helpers.h>
+#include "QRDriver.h"
+#include "QRPeer.h"
 
 namespace MM {
 	redisContext *mp_redis_connection;
 	const char *sb_mm_channel = "serverbrowsing.servers";
 
 	const char *mp_pk_name = "QRID";
+	QR::Driver *mp_driver;
 	redisAsyncContext *mp_redis_async_connection;
 	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
 	    redisReply *r = (redisReply*)reply;
 	    printf("Got reply: %p\n",r);
 	    if (reply == NULL) return;
 
-	    char gamename[OS_MAX_GAMENAME+1],from_ip[32], to_ip[32], data[MAX_BASE64_STR+1], type[32];
+	    char gamename[OS_MAX_GAMENAME+1],from_ip[32], to_ip[32], from_port[16], to_port[16], data[MAX_BASE64_STR+1], type[32];
+		uint8_t *data_out;
+		int data_len;
 
 	    if (r->type == REDIS_REPLY_ARRAY) {
 	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
@@ -30,10 +35,21 @@ namespace MM {
 		    			printf("Got raw: %s\n", r->element[2]->str);
 		    			find_param(1, r->element[2]->str,(char *)&gamename, sizeof(gamename)-1);
 		    			find_param(2, r->element[2]->str,(char *)&from_ip, sizeof(from_ip)-1);
-		    			find_param(3, r->element[2]->str, (char *)&to_ip, sizeof(to_ip)-1);
-		    			find_param(4, r->element[2]->str, (char *)&data, sizeof(data)-1);
+		    			find_param(3, r->element[2]->str,(char *)&from_port, sizeof(from_port)-1);
+		    			find_param(4, r->element[2]->str, (char *)&to_ip, sizeof(to_ip)-1);
+		    			find_param(5, r->element[2]->str,(char *)&to_port, sizeof(to_port)-1);
+		    			find_param(6, r->element[2]->str, (char *)&data, sizeof(data)-1);
 		    			printf("Send msg to %s | %s | %s\n", gamename, from_ip, to_ip);
 		    			printf("Data: %s\n",data);
+		    			struct sockaddr_in address;
+		    			address.sin_port = Socket::htons(atoi(to_port));
+		    			address.sin_addr.s_addr = Socket::inet_addr((const char *)&to_ip);
+		    			QR::Peer *peer = mp_driver->find_client(&address);
+		    			if(!peer)
+		    				return;
+						OS::Base64StrToBin((const char *)&data, &data_out, data_len);
+		    			peer->SendClientMessage((uint8_t*)data_out, data_len);
+		    			free(data_out);
 	    			}
 	    		
 	    	}
@@ -47,7 +63,8 @@ namespace MM {
 	    event_base_dispatch(base);
 	    return NULL;
 	}
-	void Init() {
+	void Init(QR::Driver *driver) {
+		mp_driver = driver;
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 3;
