@@ -54,12 +54,15 @@ namespace OS {
 	#define KEYTYPE_SHORT	2
 
 
+	#define OS_MAX_GAMENAME 32
+	#define OS_MAX_DESCRIPTION 64
+	#define OS_MAX_SECRETKEY 7
 	typedef struct {
 		int gameid;
 		int queryport;
-		char gamename[32];
-		char description[64];
-		char secretkey[7];
+		char gamename[OS_MAX_GAMENAME];
+		char description[OS_MAX_DESCRIPTION];
+		char secretkey[OS_MAX_SECRETKEY];
 		char disabled_services; //0= ok, 1 = temp, 2 = perm
 		std::map<std::string, uint8_t> popular_values;
 	} GameData;
@@ -79,6 +82,10 @@ namespace OS {
 	void Init();
 	std::vector<std::string> KeyStringToMap(std::string input);
 	std::string strip_quotes(std::string s);
+
+	#define MAX_BASE64_STR 768
+	void Base64StrToBin(const char *str, uint8_t **out, int &len);
+	const char *BinToBase64Str(uint8_t *in, int in_len);
 
 	//thread
 	CThread *CreateThread(ThreadEntry *entry, void *param, bool auto_start);

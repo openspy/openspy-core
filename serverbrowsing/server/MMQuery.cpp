@@ -24,7 +24,6 @@ namespace MM {
 	redisAsyncContext *mp_redis_async_connection;
 
 	const char *sb_mm_channel = "serverbrowsing.servers";
-
 	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
 	    redisReply *r = (redisReply*)reply;
 
@@ -39,12 +38,8 @@ namespace MM {
 	    			find_param(0, r->element[2]->str,(char *)&msg_type, sizeof(msg_type));
 	    			find_param(1, r->element[2]->str, (char *)&server_key, sizeof(server_key));
 
-
-	    			
-	    			
-	    			if(strcmp(msg_type,"del") == 0) {
+		   			if(strcmp(msg_type,"del") == 0) {
 	    				AppendServerEntry(server_key, &servers, true, true);
-	    				printf("Got server delete\n");
 	    				mp_driver->SendDeleteServer(servers);
 	    			} else if(strcmp(msg_type,"new") == 0) {
 	    				AppendServerEntry(server_key, &servers, true);
@@ -56,6 +51,10 @@ namespace MM {
 	    		}
 	    	}
 	    }
+	}
+
+	void SubmitData(const char *base64, struct sockaddr_in *from, struct sockaddr_in *to, OS::GameData *game) {
+		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\send_msg\\%s\\%s:%d\\%s:%d\\%s\n",sb_mm_channel,game->gamename,Socket::inet_ntoa(from->sin_addr),from->sin_port,Socket::inet_ntoa(to->sin_addr),to->sin_port,base64));
 	}
 
 
@@ -102,11 +101,7 @@ namespace MM {
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s gameid", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
-		printf("Got str: %s | %s\n", reply->str, entry_name.c_str());
-		printf("Stripped: %s\n", OS::strip_quotes(reply->str).c_str());
-		printf("Stripped: %s %d\n",OS::strip_quotes(reply->str).c_str(), atoi(OS::strip_quotes(reply->str).c_str()));
 		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
-		printf("Game: %s %d\n",server->game.gamename,server->game.gameid);
 		freeReplyObject(reply);
 
 

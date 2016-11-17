@@ -12,6 +12,7 @@ namespace SB {
 		m_sent_crypt_header = false;
 		m_delete_flag = false;
 		m_timeout_flag = false;
+		m_next_packet_send_msg = false;
 		m_address_info = *address_info;
 		gettimeofday(&m_last_ping, NULL);
 		printf("new Peer\n");
@@ -29,9 +30,8 @@ namespace SB {
 		
 		uint8_t request_type = 0;
 
-		if(len >= 2) {
-			BufferReadShort(&buffer, &pos);
-		} else pos = len;
+		BufferReadShort(&buffer, &pos);
+
 		request_type = BufferReadByte(&buffer, &pos);
 
 		gettimeofday(&m_last_recv, NULL);
@@ -44,6 +44,16 @@ namespace SB {
 			case KEEPALIVE_MESSAGE:
 				printf("Got keepalive\n");
 				break;
+			case SEND_MESSAGE_REQUEST:
+				ProcessSendMessage(buffer, pos);
+				printf("msg request\n");
+			break;
+			case MAPLOOP_REQUEST:
+				printf("maploop request\n");
+			break;
+			case PLAYERSEARCH_REQUEST:
+				printf("playersearch request\n");
+			break;
 		}
 
 	}
@@ -112,6 +122,19 @@ namespace SB {
 		return req;
 
 	}
+	void Peer::ProcessSendMessage(uint8_t *buffer, int remain) {
+		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
+		uint8_t *p = buffer;
+		int len = remain;
+
+		
+		m_send_msg_to.sin_addr.s_addr = (BufferReadInt(&p, &len));
+		m_send_msg_to.sin_port = Socket::htons(BufferReadShort(&p, &len));
+		const char *ipinput = Socket::inet_ntoa(m_send_msg_to.sin_addr);
+
+		m_next_packet_send_msg = true;
+
+	}
 	void Peer::SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist) {
 		/*
 		TODO: make support split packets
@@ -136,7 +159,6 @@ namespace SB {
 		//send popular key list
 		if(usepopularlist) {
 			BufferWriteByte(&p, &len, list_req->m_for_game.popular_values.size());
-			//list_req->m_for_game.popular_values
 			std::map<std::string, uint8_t>::iterator it_v = list_req->m_for_game.popular_values.begin();
 			while(it_v != list_req->m_for_game.popular_values.end()) {
 				std::pair<std::string, uint8_t> v = *it_v;
@@ -191,8 +213,6 @@ namespace SB {
 
 		m_last_list_req = list_req;
 
-		printf("list ids: %d\n", m_last_list_req.m_for_game.gameid);
-
 		m_game = list_req.m_from_game;
 
 		if (m_game.secretkey[0] == 0)
@@ -220,7 +240,6 @@ namespace SB {
 
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
-			printf("Sending ping\n");
 			gettimeofday(&m_last_ping, NULL);
 			BufferWriteByte(&p, &len, KEEPALIVE_MESSAGE);
 
@@ -236,7 +255,15 @@ namespace SB {
 		int len;
 		if (waiting_packet) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
-			this->handle_packet(buf, len);
+			if(m_next_packet_send_msg) {
+				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);
+				MM::SubmitData(base64, &m_address_info, &m_send_msg_to, &m_last_list_req.m_for_game);
+
+				free((void *)base64);
+				m_next_packet_send_msg = false;
+			} else {
+				this->handle_packet(buf, len);
+			}
 		}
 		
 		send_ping();
@@ -277,7 +304,6 @@ namespace SB {
 		if(require_push_flag && !m_last_list_req.push_updates) {
 			return false;
 		}*/
-		printf("Match: %d == %d\n", server->game.gameid, m_last_list_req.m_for_game.gameid);
 		if(server->game.gameid == m_last_list_req.m_for_game.gameid) {
 			return true;
 		}
@@ -287,14 +313,12 @@ namespace SB {
 	void Peer::informDeleteServers(MM::ServerListQuery servers) {
 
 		std::vector<MM::Server *>::iterator it = servers.list.begin();
-		printf("Inform delete\n");
 		while(it != servers.list.end()) {
 			MM::Server *s = *it;
 			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 			uint8_t *p = (uint8_t *)&buf;
 			int len = 0;
 			if(serverMatchesLastReq(s)) {
-				printf("Inform delete matches\n");
 				BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
 				BufferWriteInt(&p, &len, Socket::htonl(s->wan_address.ip));
 				BufferWriteShort(&p, &len, Socket::htons(s->wan_address.port));

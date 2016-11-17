@@ -92,7 +92,6 @@ namespace QR {
 		struct sockaddr_in si_other;
 		socklen_t slen = sizeof(struct sockaddr_in);
 
-		printf("Got recv\n");
 		int len = recvfrom(m_sd,(char *)&recvbuf,sizeof(recvbuf),0,(struct sockaddr *)&si_other,&slen);
 		Peer *peer = find_or_create(&si_other);
 		peer->handle_packet((char *)&recvbuf, len);
@@ -133,7 +132,6 @@ namespace QR {
 
 	void Driver::TickConnections(fd_set *fdset) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
-		printf("Driver tick\n");;
 		while (it != m_connections.end()) {
 			Peer *p = *it;
 			p->think(FD_ISSET(p->GetSocket(), fdset));

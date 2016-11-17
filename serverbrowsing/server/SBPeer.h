@@ -117,7 +117,7 @@ namespace SB {
 
 		//request type handles
 		void ProcessListRequset(uint8_t *buffer, int remain);
-
+		void ProcessSendMessage(uint8_t *buffer, int remain);
 
 		//request processors
 		sServerListReq ParseListRequest(uint8_t *buffer, int remain);
@@ -144,7 +144,11 @@ namespace SB {
 
 		int m_sd;
 
+		bool m_next_packet_send_msg;
+
 		sServerListReq m_last_list_req;
+
+		struct sockaddr_in m_send_msg_to;
 
 	};
 }

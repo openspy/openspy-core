@@ -226,7 +226,6 @@ namespace QR {
 	}
 	void Peer::think(bool waiting_packet) {
 		send_ping();
-		printf("Peer think\n");
 
 		//check for timeout
 		struct timeval current_time;

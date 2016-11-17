@@ -32,6 +32,8 @@ namespace MM {
 
 	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted = false);
 	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key);
+
+	void SubmitData(const char *base64, struct sockaddr_in *from, struct sockaddr_in *to, OS::GameData *game);
 	
 	struct MM::ServerListQuery GetServers(const SB::sServerListReq *req);
 	struct MM::ServerListQuery GetGroups(const SB::sServerListReq *req);

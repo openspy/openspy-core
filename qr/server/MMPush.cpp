@@ -1,16 +1,60 @@
 #include "MMPush.h"
 #include <OS/socketlib/socketlib.h>
+
+//#include <signal.h>
+#include <hiredis/hiredis.h>
+#include <hiredis/async.h>
+#define _WINSOCK2API_
+#include <stdint.h>
+#include <hiredis/adapters/libevent.h>
+#undef _WINSOCK2API_
+#include <OS/legacy/helpers.h>
+
 namespace MM {
 	redisContext *mp_redis_connection;
 	const char *sb_mm_channel = "serverbrowsing.servers";
 
 	const char *mp_pk_name = "QRID";
+	redisAsyncContext *mp_redis_async_connection;
+	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
+	    redisReply *r = (redisReply*)reply;
+	    printf("Got reply: %p\n",r);
+	    if (reply == NULL) return;
+
+	    char gamename[OS_MAX_GAMENAME+1],from_ip[32], to_ip[32], data[MAX_BASE64_STR+1], type[32];
+
+	    if (r->type == REDIS_REPLY_ARRAY) {
+	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
+	    			find_param(0, r->element[2]->str,(char *)&type, sizeof(type)-1);
+	    			if(!strcmp(type,"send_msg")) {
+		    			printf("Got raw: %s\n", r->element[2]->str);
+		    			find_param(1, r->element[2]->str,(char *)&gamename, sizeof(gamename)-1);
+		    			find_param(2, r->element[2]->str,(char *)&from_ip, sizeof(from_ip)-1);
+		    			find_param(3, r->element[2]->str, (char *)&to_ip, sizeof(to_ip)-1);
+		    			find_param(4, r->element[2]->str, (char *)&data, sizeof(data)-1);
+		    			printf("Send msg to %s | %s | %s\n", gamename, from_ip, to_ip);
+		    			printf("Data: %s\n",data);
+	    			}
+	    		
+	    	}
+	    }
+	}
+	void *setup_redis_async(OS::CThread *) {
+		struct event_base *base = event_base_new();
+		mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
+	    redisLibeventAttach(mp_redis_async_connection, base);
+	    redisAsyncCommand(mp_redis_async_connection, onRedisMessage, NULL, "SUBSCRIBE %s",sb_mm_channel);
+	    event_base_dispatch(base);
+	    return NULL;
+	}
 	void Init() {
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
 		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+
+	    OS::CreateThread(setup_redis_async, NULL, true);
 
 	}
 	void PushServer(ServerInfo *server, bool publish) {
@@ -27,7 +71,7 @@ namespace MM {
 		struct sockaddr_in addr;
 		addr.sin_port = Socket::htons(server->m_address.port);
 		addr.sin_addr.s_addr = Socket::htonl(server->m_address.ip);
-		const char *ipinput = inet_ntoa(addr.sin_addr);
+		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
 		
 
 
@@ -91,7 +135,6 @@ namespace MM {
 
 	}
 	void UpdateServer(ServerInfo *server) {
-		printf("server Updating\n");
 		//remove all keys and readd
 		DeleteServer(server, false);
 		PushServer(server, false);

@@ -59,5 +59,5 @@ ELSE() #unix
 
 	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS})
 	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
-	target_link_libraries(openspy hiredis event pthread)
+	target_link_libraries(openspy hiredis event pthread ssl crypto)
 ENDIF()

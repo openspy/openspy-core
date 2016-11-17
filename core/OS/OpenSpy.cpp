@@ -15,7 +15,6 @@ namespace OS {
 	OS::GameData GetGameByRedisKey(const char *key) {
 		GameData game;
 		redisReply *reply;	
-		printf("Lookup game by key: %s\n",key);
 
 		freeReplyObject(redisCommand(OS::redis_internal_connection, "SELECT %d", ERedisDB_Game));
 
@@ -92,7 +91,6 @@ namespace OS {
 	std::vector<std::string> KeyStringToMap(std::string input) {
 		std::vector<std::string> ret;
 
-		printf("key to str map: %s\n", input.c_str());
 		std::stringstream ss(input);
 
 		std::string token;

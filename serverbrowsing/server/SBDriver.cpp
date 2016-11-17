@@ -156,7 +156,6 @@ namespace SB {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			printf("Inform client delete\n");
 			p->informDeleteServers(servers);
 			it++;
 		}
