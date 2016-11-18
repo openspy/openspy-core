@@ -10,7 +10,8 @@ INetServer *g_gameserver = NULL;
 int main() {
 	OS::Init();
 	g_gameserver = new SBServer();
-	g_gameserver->addNetworkDriver(new SB::Driver(g_gameserver, "0.0.0.0", 28910));
+    g_gameserver->addNetworkDriver(new SB::Driver(g_gameserver, "0.0.0.0", 28900, 1));
+	g_gameserver->addNetworkDriver(new SB::Driver(g_gameserver, "0.0.0.0", 28910, 2));
 	g_gameserver->init();
 	while(true) {
 		g_gameserver->tick();

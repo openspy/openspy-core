@@ -5,6 +5,8 @@
 #include <OS/Net/NetDriver.h>
 
 #include "SBPeer.h"
+#include "V2Peer.h"
+#include "V1Peer.h"
 #include "MMQuery.h"
 
 #include <map>
@@ -22,7 +24,7 @@ namespace SB {
 
 	class Driver : public INetDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port);
+		Driver(INetServer *server, const char *host, uint16_t port, int version = 2);
 		~Driver();
 		void tick(fd_set *fdset);
 		void think(fd_set *fdset);
@@ -54,6 +56,8 @@ namespace SB {
 		struct sockaddr_in m_local_addr;
 
 		struct timeval m_server_start;
+
+		int m_sb_version;
 
 	};
 }
