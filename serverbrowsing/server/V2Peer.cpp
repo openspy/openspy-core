@@ -1,25 +1,21 @@
+#include "SBPeer.h"
+#include "SBDriver.h"
+#include "V2Peer.h"
 #include <OS/OpenSpy.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
-#include <OS/socketlib/socketlib.h>
 #include <OS/legacy/enctypex_decoder.h>
+#include <OS/socketlib/socketlib.h>
 #include <sstream>
-#include "SBDriver.h"
-#include "SBPeer.h"
-#include "V2Peer.h"
-
 #define CRYPTCHAL_LEN 10
 #define SERVCHAL_LEN 25
-
 namespace SB {
-	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver,address_info, sd) {
-		m_sent_crypt_header = false;
-
+	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd) {
 		m_next_packet_send_msg = false;
-		printf("V2 peer\n");
+		m_sent_crypt_header = false;
 	}
 	V2Peer::~V2Peer() {
-		printf("Peer delete\n");
+
 	}
 	void V2Peer::handle_packet(char *data, int len) {
 		if(len == 0)
@@ -39,21 +35,25 @@ namespace SB {
 
 		switch (request_type) {
 			case SERVER_LIST_REQUEST:
+				printf("Got server list request\n");
 				ProcessListRequset(buffer, pos);
 				break;
 			case KEEPALIVE_MESSAGE:
+				printf("Got keepalive\n");
 				break;
 			case SEND_MESSAGE_REQUEST:
 				ProcessSendMessage(buffer, pos);
-			break;
-			case SERVER_INFO_REQUEST:
-				ProcessInfoRequest(buffer, pos);
+				printf("msg request\n");
 			break;
 			case MAPLOOP_REQUEST:
 				printf("maploop request\n");
 			break;
 			case PLAYERSEARCH_REQUEST:
 				printf("playersearch request\n");
+			break;
+			case SERVER_INFO_REQUEST:
+				printf("GOT INFO REQUEST!!\n");
+				ProcessInfoRequest(buffer, pos);
 			break;
 		}
 
@@ -80,6 +80,8 @@ namespace SB {
 
 		from_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
 		for_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
+
+		printf("Parse list (%s,%s)\n",from_gamename, for_gamename);
 
 		if (from_gamename) {
 			req.m_from_game = OS::GetGameByName(from_gamename);
@@ -221,7 +223,6 @@ namespace SB {
 		servers.requested_fields = list_req.field_list;
 
 		if(list_req.no_server_list) {
-
 		} else {
 			if (list_req.send_groups) {
 				servers = MM::GetGroups(&list_req);
@@ -231,7 +232,22 @@ namespace SB {
 			}
 		}
 		SendListQueryResp(servers, &list_req);
-
+	}
+	void V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
+		uint8_t *p = (uint8_t *)buffer;
+		int len = remain;
+		OS::Address address;
+		address.ip = Socket::htonl(BufferReadInt(&p, &len));
+		address.port = Socket::htons(BufferReadShort(&p, &len));
+		sServerCache cache = FindServerByIP(address);
+		if(cache.key[0] != 0) {
+			MM::Server *server = MM::GetServerByKey(cache.key);
+			cache.full_keys = true;
+			if(server) {
+				sendServerData(server, false, true, NULL, NULL, true);
+				delete server;
+			}
+		}
 	}
 	void V2Peer::send_ping() {
 		//check for timeout
@@ -301,29 +317,6 @@ namespace SB {
 		BufferWriteData(dst, len, (uint8_t *)&servchal, servchallen);
 		enctypex_funcx((unsigned char *)&encxkeyb, (unsigned char *)&m_game.secretkey, (unsigned char *)m_challenge, (unsigned char *)&servchal, servchallen);
 	}
-
-
-	void V2Peer::informDeleteServers(MM::ServerListQuery servers) {
-
-		std::vector<MM::Server *>::iterator it = servers.list.begin();
-		while(it != servers.list.end()) {
-			MM::Server *s = *it;
-			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
-			uint8_t *p = (uint8_t *)&buf;
-			int len = 0;
-			
-			if(FindServerByIP(s->wan_address).key[0] != 0) {
-				DeleteServerFromCacheByIP(s->wan_address);
-				if(serverMatchesLastReq(s)) {
-					BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
-					BufferWriteInt(&p, &len, Socket::htonl(s->wan_address.ip));
-					BufferWriteShort(&p, &len, Socket::htons(s->wan_address.port));
-					SendPacket((uint8_t *)&buf, len, true);
-				}
-			}
-			it++;
-		}
-	}
 	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 		uint8_t *p = (uint8_t *)&buf;
@@ -364,7 +357,7 @@ namespace SB {
 		std::vector<std::string>::iterator tok_it = m_last_list_req.field_list.begin();
 		while (tok_it != m_last_list_req.field_list.end()) {
 			if(usepopularlist) {
-				BufferWriteByte(&p, &len, 0xFF);
+				BufferWriteByte(&p, &len, 0xFF); //string index, -1 = no index
 			}
 			if (server->kvFields.find((*tok_it)) != server->kvFields.end()) {
 				std::string value = server->kvFields[*tok_it].c_str();
@@ -424,6 +417,27 @@ namespace SB {
 			SendPacket((uint8_t *)&buf, len, push);
 		}
 	}
+	void V2Peer::informDeleteServers(MM::ServerListQuery servers) {
+
+		std::vector<MM::Server *>::iterator it = servers.list.begin();
+		while(it != servers.list.end()) {
+			MM::Server *s = *it;
+			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
+			uint8_t *p = (uint8_t *)&buf;
+			int len = 0;
+			
+			if(FindServerByIP(s->wan_address).key[0] != 0) {
+				DeleteServerFromCacheByIP(s->wan_address);
+				if(serverMatchesLastReq(s)) {
+					BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
+					BufferWriteInt(&p, &len, Socket::htonl(s->wan_address.ip));
+					BufferWriteShort(&p, &len, Socket::htons(s->wan_address.port));
+					SendPacket((uint8_t *)&buf, len, true);
+				}
+			}
+			it++;
+		}
+	}
 	void V2Peer::informNewServers(MM::ServerListQuery servers) {
 		std::vector<MM::Server *>::iterator it = servers.list.begin();
 		while(it != servers.list.end()) {
@@ -449,54 +463,5 @@ namespace SB {
 			it++;
 		}
 	}
-	sServerCache V2Peer::FindServerByIP(OS::Address address) {
-		sServerCache ret;
-		ret.full_keys = false;
-		ret.key[0] = 0;
-		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
-		while(it != m_visible_servers.end()) {
-			sServerCache cache = *it;
-			if(cache.wan_address.ip == address.ip && cache.wan_address.port == address.port) {
-				return cache;
-			}
-			it++;
-		}
-		return ret;		
-	}
-	void V2Peer::DeleteServerFromCacheByIP(OS::Address address) {
-		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
-		while(it != m_visible_servers.end()) {
-			sServerCache cache = *it;
-			if(cache.wan_address.ip == address.ip && cache.wan_address.port == address.port) {
-				it = m_visible_servers.erase(it);
-				continue;
-			}
-			it++;
-		}
-	}
-	void V2Peer::cacheServer(MM::Server *server) {
-		sServerCache item;
-		if(FindServerByIP(server->wan_address).key[0] == 0) {
-			item.wan_address = server->wan_address;
-			strcpy(item.key,server->key.c_str());
-			item.full_keys = false;
-			m_visible_servers.push_back(item);
-		}
-	}
-	void V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
-		uint8_t *p = (uint8_t *)buffer;
-		int len = remain;
-		OS::Address address;
-		address.ip = Socket::htonl(BufferReadInt(&p, &len));
-		address.port = Socket::htons(BufferReadShort(&p, &len));
-		sServerCache cache = FindServerByIP(address);
-		if(cache.key[0] != 0) {
-			MM::Server *server = MM::GetServerByKey(cache.key);
-			cache.full_keys = true;
-			if(server) {
-				sendServerData(server, false, true, NULL, NULL, true);
-				delete server;
-			}
-		}
-	}
+
 }

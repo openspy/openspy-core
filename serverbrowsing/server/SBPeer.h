@@ -3,9 +3,51 @@
 #include "../main.h"
 #include "MMQuery.h"
 
+//message types for outgoing requests
+#define SERVER_LIST_REQUEST		0
+#define SERVER_INFO_REQUEST		1
+#define SEND_MESSAGE_REQUEST	2
+#define KEEPALIVE_REPLY			3
+#define MAPLOOP_REQUEST			4
+#define PLAYERSEARCH_REQUEST	5
+
+//message types for incoming requests
+#define PUSH_KEYS_MESSAGE		1
+#define PUSH_SERVER_MESSAGE		2
+#define KEEPALIVE_MESSAGE		3
+#define DELETE_SERVER_MESSAGE	4
+#define MAPLOOP_MESSAGE			5
+#define PLAYERSEARCH_MESSAGE	6
+
+//server list update options
+#define SEND_FIELDS_FOR_ALL		1
+#define NO_SERVER_LIST			2
+#define PUSH_UPDATES			4
+#define SEND_GROUPS				32
+#define NO_LIST_CACHE			64
+#define LIMIT_RESULT_COUNT		128
+
+#define ALTERNATE_SOURCE_IP 8
+
+//Maximum length for the SQL filter string
+#define MAX_FILTER_LEN 511
+
+#define MAX_FIELD_LIST_LEN 256
+
 #define MAX_OUTGOING_REQUEST_SIZE (MAX_FIELD_LIST_LEN + MAX_FILTER_LEN + 255)
 
 #define LIST_CHALLENGE_LEN 8
+
+
+//game server flags
+#define UNSOLICITED_UDP_FLAG	1
+#define PRIVATE_IP_FLAG			2
+#define CONNECT_NEGOTIATE_FLAG	4
+#define ICMP_IP_FLAG			8
+#define NONSTANDARD_PORT_FLAG	16
+#define NONSTANDARD_PRIVATE_PORT_FLAG	32
+#define HAS_KEYS_FLAG					64
+#define HAS_FULL_RULES_FLAG				128
 
 
 
@@ -34,13 +76,11 @@ namespace SB {
 		OS::GameData m_for_game;
 		OS::GameData m_from_game;
 
+		bool all_keys;
+
 	};
 	class Driver;
 	class Server;
-
-	enum EConnectionState {
-		EConnectionState_NoInit,
-	};
 
 	struct sServerCache {
 		char key[64];
@@ -54,8 +94,7 @@ namespace SB {
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~Peer();
 		
-		virtual void send_ping() = 0;
-		virtual void think(bool packet_waiting) = 0; //called when no data is recieved
+		virtual void think(bool packet_waiting) = 0;
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
 
 		int GetSocket() { return m_sd; };
@@ -65,17 +104,22 @@ namespace SB {
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 
-		bool serverMatchesLastReq(MM::Server *server, bool require_push_Flag = true);
+		int GetPing();
+
+		bool serverMatchesLastReq(MM::Server *server, bool require_push_flag = true);
 
 		virtual void informDeleteServers(MM::ServerListQuery servers) = 0;
 		virtual void informNewServers(MM::ServerListQuery servers) = 0;
 		virtual void informUpdateServers(MM::ServerListQuery servers) = 0;
 	protected:
+		void cacheServer(MM::Server *server);
+		void DeleteServerFromCacheByIP(OS::Address address);
+		sServerCache FindServerByIP(OS::Address address);
 
-		Driver *mp_driver;
+
 		int m_sd;
-		EConnectionState m_state;
-
+		OS::GameData m_game;
+		Driver *mp_driver;
 
 		struct sockaddr_in m_address_info;
 
@@ -84,18 +128,13 @@ namespace SB {
 		bool m_delete_flag;
 		bool m_timeout_flag;
 
-
-
-		OS::GameData m_game;		
+		std::vector<sServerCache> m_visible_servers;
 
 		sServerListReq m_last_list_req;
+	private:
 
-		std::vector<sServerCache> m_visible_servers;
-		void cacheServer(MM::Server *server);
-		void DeleteServerFromCacheByIP(OS::Address address);
-		sServerCache FindServerByIP(OS::Address address);
 
-		virtual void SendPacket(uint8_t *buff, int len, bool prepend_length) = 0;
+
 
 	};
 }

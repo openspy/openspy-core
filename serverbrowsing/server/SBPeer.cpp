@@ -15,8 +15,10 @@ namespace SB {
 		gettimeofday(&m_last_ping, NULL);
 	}
 	Peer::~Peer() {
-
+		close(m_sd);
+		printf("Peer delete\n");
 	}
+
 	bool Peer::serverMatchesLastReq(MM::Server *server, bool require_push_flag) {
 		/*
 		if(require_push_flag && !m_last_list_req.push_updates) {
@@ -26,5 +28,39 @@ namespace SB {
 			return true;
 		}
 		return false;
+	}
+	sServerCache Peer::FindServerByIP(OS::Address address) {
+		sServerCache ret;
+		ret.full_keys = false;
+		ret.key[0] = 0;
+		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
+		while(it != m_visible_servers.end()) {
+			sServerCache cache = *it;
+			if(cache.wan_address.ip == address.ip && cache.wan_address.port == address.port) {
+				return cache;
+			}
+			it++;
+		}
+		return ret;		
+	}
+	void Peer::DeleteServerFromCacheByIP(OS::Address address) {
+		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
+		while(it != m_visible_servers.end()) {
+			sServerCache cache = *it;
+			if(cache.wan_address.ip == address.ip && cache.wan_address.port == address.port) {
+				it = m_visible_servers.erase(it);
+				continue;
+			}
+			it++;
+		}
+	}
+	void Peer::cacheServer(MM::Server *server) {
+		sServerCache item;
+		if(FindServerByIP(server->wan_address).key[0] == 0) {
+			item.wan_address = server->wan_address;
+			strcpy(item.key,server->key.c_str());
+			item.full_keys = false;
+			m_visible_servers.push_back(item);
+		}
 	}
 }

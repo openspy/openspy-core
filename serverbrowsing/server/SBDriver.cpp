@@ -44,7 +44,7 @@ namespace SB {
 
 		gettimeofday(&m_server_start, NULL);
 
-		m_sb_version = version;
+		m_version = version;
 	}
 	Driver::~Driver() {
 
@@ -88,11 +88,14 @@ namespace SB {
 			}
 			it++;
 		}
-		Peer *ret;
-		if(m_sb_version == 1) {
-			 ret = new SB::V1Peer(this, address, m_sd);
-		} else {
-			 ret = new SB::V2Peer(this, address, m_sd);
+		Peer *ret = NULL;
+		switch(m_version) {
+			case 1:
+				ret = new V1Peer(this, address, m_sd);
+				break;
+			case 2:
+				ret = new V2Peer(this, address, m_sd);
+			break;
 		}
 		m_connections.push_back(ret);
 		return ret;
@@ -108,10 +111,13 @@ namespace SB {
 		int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
 		if (sda <= 0) return;
 		Peer *mp_peer = NULL;
-		if(m_sb_version == 1) {
-			 mp_peer = new SB::V1Peer(this, &peer, sda);
-		} else {
-			 mp_peer = new SB::V2Peer(this, &peer, sda);
+		switch(m_version) {
+			case 1:
+				mp_peer = new V1Peer(this, &peer, sda);
+				break;
+			case 2:
+				mp_peer = new V2Peer(this, &peer, sda);
+			break;
 		}
 		m_connections.push_back(mp_peer);
 		mp_peer->think(true);

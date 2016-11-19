@@ -26,26 +26,31 @@ namespace MM {
 
 		std::string key;
 
+
 		int id;		
 	} Server;
 
 	struct ServerListQuery{
 		std::vector<std::string> requested_fields;
+
+		std::vector<std::string> captured_basic_fields;
+		std::vector<std::string> captured_player_fields;
+		std::vector<std::string> captured_team_fields;
 		std::vector<Server *> list;
 	};
 	
 
-	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted = false);
-	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key);
-	bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index);
-	bool FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index);
+	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx);
+	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key, redisContext *redis_ctx);
+	bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx);
+	bool FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx);
 
 	void SubmitData(const char *base64, struct sockaddr_in *from, struct sockaddr_in *to, OS::GameData *game);
 	
 	struct MM::ServerListQuery GetServers(const SB::sServerListReq *req);
 	struct MM::ServerListQuery GetGroups(const SB::sServerListReq *req);
 
-	Server *GetServerByKey(std::string key);
+	Server *GetServerByKey(std::string key, redisContext *redis_ctx = NULL);
 	extern SB::Driver *mp_driver;
 	extern redisContext *mp_redis_connection;
 };

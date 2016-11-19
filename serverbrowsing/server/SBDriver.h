@@ -50,6 +50,7 @@ namespace SB {
 		void TickConnections(fd_set *fdset);
 
 		int m_sd;
+		int m_version;
 
 		std::vector<Peer *> m_connections;
 		

@@ -18,15 +18,19 @@
 #undef _WINSOCK2API_
 
 #include <sstream>
+#include <algorithm>
 
 namespace MM {
 	SB::Driver *mp_driver;
 	redisContext *mp_redis_connection;
+	redisContext *mp_redis_async_retrival_connection;
 	redisAsyncContext *mp_redis_async_connection;
 
 	const char *sb_mm_channel = "serverbrowsing.servers";
 	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
 	    redisReply *r = (redisReply*)reply;
+
+
 
 	    ServerListQuery servers;
 	    if (reply == NULL) return;
@@ -40,13 +44,13 @@ namespace MM {
 	    			find_param(1, r->element[2]->str, (char *)&server_key, sizeof(server_key));
 
 		   			if(strcmp(msg_type,"del") == 0) {
-	    				AppendServerEntry(server_key, &servers, true, true);
+	    				AppendServerEntry(server_key, &servers, true, true, mp_redis_async_retrival_connection);
 	    				mp_driver->SendDeleteServer(servers);
 	    			} else if(strcmp(msg_type,"new") == 0) {
-	    				AppendServerEntry(server_key, &servers, true);
+	    				AppendServerEntry(server_key, &servers, true, false, mp_redis_async_retrival_connection);
 	    				mp_driver->SendNewServer(servers);
 	    			} else if(strcmp(msg_type,"update") == 0) {
-	    				AppendServerEntry(server_key, &servers, true);
+	    				AppendServerEntry(server_key, &servers, true, false,mp_redis_async_retrival_connection);
 	    				mp_driver->SendUpdateServer(servers);
 	    			}
 	    		}
@@ -75,12 +79,13 @@ namespace MM {
 
 		mp_driver = driver;
 		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+		mp_redis_async_retrival_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 
 		OS::CreateThread(setup_redis_async, NULL, true);
 
 
 	}
-	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted) {
+	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx) {
 		redisReply *reply;
 
 		/*
@@ -88,7 +93,7 @@ namespace MM {
 		*/
 
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s deleted", entry_name.c_str());
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s deleted", entry_name.c_str());
 		if(reply->type != REDIS_REPLY_NIL && !include_deleted) {
 			freeReplyObject(reply);
 			return;	
@@ -98,45 +103,52 @@ namespace MM {
 
 		Server *server = new MM::Server();
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s gameid", entry_name.c_str());
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s gameid", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
-		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
+		if(reply->type == REDIS_REPLY_STRING)
+			server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
 
 		server->key = entry_name;
 
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", entry_name.c_str());
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s id", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
 
-		server->id = atoi(OS::strip_quotes(reply->str).c_str());
+		if(reply->type == REDIS_REPLY_STRING)
+			server->id = atoi(OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s wan_port", entry_name.c_str());
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s wan_port", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
-		server->wan_address.port = atoi(reply->str);
+
+		if(reply->type == REDIS_REPLY_STRING)
+			server->wan_address.port = atoi(reply->str);
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s wan_ip", entry_name.c_str());
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s wan_ip", entry_name.c_str());
 		if (!reply)
 			goto error_cleanup;
-
-		server->wan_address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reply->str).c_str()));
+		if(reply->type == REDIS_REPLY_STRING)
+			server->wan_address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
 
 
 		if(all_keys) {
-			reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS %scustkeys", entry_name.c_str());
+			reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name.c_str());
 			if (!reply)
 				goto error_cleanup;
 			if (reply->type == REDIS_REPLY_ARRAY) {
 				for (int j = 0; j < reply->elements; j++) {
 					std::string search_key = entry_name;
 					search_key += "custkeys";
-					FindAppend_ServKVFields(server, search_key, reply->element[j]->str);
+					FindAppend_ServKVFields(server, search_key, reply->element[j]->str, redis_ctx);
+					if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), reply->element[j]->str) == ret->captured_basic_fields.end()) {
+						ret->captured_basic_fields.push_back(reply->element[j]->str);
+					}
 				}
 			}
 
@@ -147,7 +159,7 @@ namespace MM {
 			do {
 				s << entry_name << "custkeys_player_" << idx;
 				key = s.str();
-				reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS %s", key.c_str());
+				reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %s", key.c_str());
 				if(!reply)
 					break;
 				last_type = reply->type;
@@ -157,7 +169,10 @@ namespace MM {
 						break;
 					}
 					for (int j = 0; j < reply->elements; j++) {
-						FindAppend_PlayerKVFields(server, key, reply->element[j]->str, idx);
+						FindAppend_PlayerKVFields(server, key, reply->element[j]->str, idx, redis_ctx);
+						if(std::find(ret->captured_player_fields.begin(), ret->captured_player_fields.end(), reply->element[j]->str) == ret->captured_player_fields.end()) {
+							ret->captured_player_fields.push_back(reply->element[j]->str);
+						}
 					}
 				}
 				s.str("");
@@ -168,7 +183,7 @@ namespace MM {
 			do {
 				s << entry_name << "custkeys_team_" << idx;
 				key = s.str();
-				reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS %s", key.c_str());
+				reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %s", key.c_str());
 				if(!reply)
 					break;
 				last_type = reply->type;
@@ -178,7 +193,10 @@ namespace MM {
 						break;
 					}
 					for (int j = 0; j < reply->elements; j++) {
-						FindAppend_TeamKVFields(server, key, reply->element[j]->str, idx);
+						FindAppend_TeamKVFields(server, key, reply->element[j]->str, idx, redis_ctx);
+						if(std::find(ret->captured_team_fields.begin(), ret->captured_team_fields.end(), reply->element[j]->str) == ret->captured_team_fields.end()) {
+							ret->captured_team_fields.push_back(reply->element[j]->str);
+						}
 					}
 				}
 				freeReplyObject(reply);
@@ -188,7 +206,7 @@ namespace MM {
 		} else {
 			while (it != ret->requested_fields.end()) {
 				std::string field = *it;
-				reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %scustkeys %s", entry_name.c_str(), field.c_str());
+				reply = (redisReply *)redisCommand(redis_ctx, "HGET %scustkeys %s", entry_name.c_str(), field.c_str());
 				if (reply) {
 					if (reply->str) {
 						server->kvFields[field] = OS::strip_quotes(reply->str);
@@ -206,9 +224,9 @@ namespace MM {
 			delete server;
 
 	}
-	bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index)
+	bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx)
 	 {
-		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s %s", entry_name.c_str(), key.c_str());
+		redisReply *reply = (redisReply *)redisCommand(redis_ctx, "HGET %s %s", entry_name.c_str(), key.c_str());
 		if (!reply)
 			return false;
 		if (reply->type == REDIS_REPLY_STRING) {
@@ -222,7 +240,7 @@ namespace MM {
 		return true;
 
 	}
-	bool FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index) {
+	bool FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx) {
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s %s", entry_name.c_str(), key.c_str());
 		if (!reply)
 			return false;
@@ -237,7 +255,7 @@ namespace MM {
 		return true;
 
 	}
-	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key) {
+	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key, redisContext *redis_ctx) {
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s %s", entry_name.c_str(), key.c_str());
 		if (!reply)
 			return false;
@@ -252,7 +270,7 @@ namespace MM {
 		return true;
 
 	}
-	void AppendGroupEntry(const char *entry_name, ServerListQuery *ret) {
+	void AppendGroupEntry(const char *entry_name, ServerListQuery *ret, redisContext *redis_ctx, bool all_keys) {
 		redisReply *reply;
 
 		/*
@@ -262,33 +280,51 @@ namespace MM {
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
 		Server *server = new MM::Server();
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s gameid", entry_name);
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s gameid", entry_name);
 		if (!reply)
 			goto error_cleanup;
 		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s groupid", entry_name);
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s groupid", entry_name);
 		if (!reply)
 			goto error_cleanup;
-		server->wan_address.ip = atoi(OS::strip_quotes(reply->str).c_str());
+		server->wan_address.ip = atoi(OS::strip_quotes(reply->str).c_str()); //for V2
+		server->kvFields["groupid"] = OS::strip_quotes(reply->str).c_str(); //for V1
+
 		freeReplyObject(reply);
 
-		FindAppend_ServKVFields(server, entry_name, "maxwaiting");
-		FindAppend_ServKVFields(server, entry_name, "name");
-		FindAppend_ServKVFields(server, entry_name, "password");
-		FindAppend_ServKVFields(server, entry_name, "numwaiting");
-		FindAppend_ServKVFields(server, entry_name, "numservers");
+		FindAppend_ServKVFields(server, entry_name, "maxwaiting", redis_ctx);
+		FindAppend_ServKVFields(server, entry_name, "hostname", redis_ctx);
+		FindAppend_ServKVFields(server, entry_name, "password", redis_ctx);
+		FindAppend_ServKVFields(server, entry_name, "numwaiting", redis_ctx);
+		FindAppend_ServKVFields(server, entry_name, "numservers", redis_ctx);
 
-
-		while (it != ret->requested_fields.end()) {
-			std::string field = *it;
-			std::string entry = entry_name;
-			entry += "custkeys";
-			reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %scustkeys %s", entry_name, field.c_str());
-			FindAppend_ServKVFields(server, entry, field);
-			it++;
-		}
+		printf("All keys: %d\n", all_keys);
+		if(all_keys) {
+			reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name);
+			if (!reply)
+				goto error_cleanup;
+			if (reply->type == REDIS_REPLY_ARRAY) {
+				for (int j = 0; j < reply->elements; j++) {
+					std::string search_key = entry_name;
+					search_key += "custkeys";
+					FindAppend_ServKVFields(server, search_key, reply->element[j]->str, redis_ctx);
+					if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), reply->element[j]->str) == ret->captured_basic_fields.end()) {
+						ret->captured_basic_fields.push_back(reply->element[j]->str);
+					}
+				}
+			}
+		} else {
+			while (it != ret->requested_fields.end()) {
+				std::string field = *it;
+				std::string entry = entry_name;
+				entry += "custkeys";
+				reply = (redisReply *)redisCommand(redis_ctx, "HGET %scustkeys %s", entry_name, field.c_str());
+				FindAppend_ServKVFields(server, entry, field, redis_ctx);
+				it++;
+			}
+	}
 
 		ret->list.push_back(server);
 		return;
@@ -308,7 +344,7 @@ namespace MM {
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, cmd.c_str());
 		if (reply->type == REDIS_REPLY_ARRAY) {
 			for (int j = 0; j < reply->elements; j++) {
-				AppendServerEntry(std::string(reply->element[j]->str), &ret, false);
+				AppendServerEntry(std::string(reply->element[j]->str), &ret, req->all_keys, false, mp_redis_connection);
 			}
 		}
 		freeReplyObject(reply);
@@ -325,15 +361,18 @@ namespace MM {
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, cmd.c_str());
 		if (reply->type == REDIS_REPLY_ARRAY) {
 			for (int j = 0; j < reply->elements; j++) {
-				AppendGroupEntry(reply->element[j]->str, &ret);
+				AppendGroupEntry(reply->element[j]->str, &ret, mp_redis_connection, req->all_keys);
 			}
 		}
 		freeReplyObject(reply);
 		return ret;
 	}
-	Server *GetServerByKey(std::string key) {
+	Server *GetServerByKey(std::string key, redisContext *redis_ctx) {
+		if(redis_ctx == NULL) {
+			redis_ctx = mp_redis_connection;
+		}
 		ServerListQuery ret;
-		AppendServerEntry(key, &ret, true, false);
+		AppendServerEntry(key, &ret, true, false, redis_ctx);
 		if(ret.list.size() < 1)
 			return NULL;
 
