@@ -6,8 +6,6 @@
 
 #include "QRPeer.h"
 #include "QRDriver.h"
-#include "V1Peer.h"
-#include "V2Peer.h"
 #include <OS/socketlib/socketlib.h>
 namespace QR {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
@@ -63,6 +61,8 @@ namespace QR {
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			const struct sockaddr_in *peer_address = peer->getAddress();
+			printf("IP: %d == %d\n", address->sin_addr.s_addr, peer_address->sin_addr.s_addr);
+			printf("Port: %d == %d\n", address->sin_port, peer_address->sin_port);
 			if (address->sin_port == peer_address->sin_port && address->sin_addr.s_addr == peer_address->sin_addr.s_addr) {
 				return peer;
 			}
@@ -70,7 +70,7 @@ namespace QR {
 		}
 		return NULL;
 	}
-	Peer *Driver::find_or_create(struct sockaddr_in *address, int version) {
+	Peer *Driver::find_or_create(struct sockaddr_in *address) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
@@ -80,15 +80,7 @@ namespace QR {
 			}
 			it++;
 		}
-		Peer *ret = NULL;
-		//new Peer(this, address, m_sd);
-		switch(version) {
-			case 1:
-				ret = new V1Peer(this, address, m_sd);
-			case 2:
-				ret = new V2Peer(this, address, m_sd);
-				break;
-		}
+		Peer *ret = new Peer(this, address, m_sd);
 		m_connections.push_back(ret);
 		return ret;
 	}
@@ -104,11 +96,7 @@ namespace QR {
 		socklen_t slen = sizeof(struct sockaddr_in);
 
 		int len = recvfrom(m_sd,(char *)&recvbuf,sizeof(recvbuf),0,(struct sockaddr *)&si_other,&slen);
-		int version = 2;
-		if(recvbuf[0] == '\\') {
-			version = 1;
-		}
-		Peer *peer = find_or_create(&si_other, version);
+		Peer *peer = find_or_create(&si_other);
 		peer->handle_packet((char *)&recvbuf, len);
 
 
