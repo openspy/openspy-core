@@ -34,6 +34,7 @@ namespace QR {
 		m_sent_challenge = false;
 		m_delete_flag = false;
 		m_timeout_flag = false;
+		m_server_info.m_game.gameid = 0;
 		memset(&m_challenge, 0, sizeof(m_challenge));
 	}
 	Peer::~Peer() {
@@ -97,8 +98,11 @@ namespace QR {
 		char challenge_resp[90] = { 0 };
 		int outlen = 0;
 		uint8_t *p = (uint8_t *)challenge_resp;
+		if(!m_server_info.m_game.gameid) {
+			send_error("Unknown game", true);
+			return;
+		}
 		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (unsigned char *)&m_server_info.m_game.secretkey, 0);
-		printf("%s == %s\n",buff,challenge_resp);
 		if(strcmp(buff,challenge_resp) == 0) { //matching challenge
 			BufferWriteByte((uint8_t**)&p, &outlen,PACKET_CLIENT_REGISTERED);
 			BufferWriteData((uint8_t **)&p, &outlen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));

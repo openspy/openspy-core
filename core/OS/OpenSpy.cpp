@@ -59,10 +59,14 @@ namespace OS {
 		
 	}
 	OS::GameData GetGameByName(const char *from_gamename) {
-		redisReply *reply;
-		freeReplyObject(redisCommand(OS::redis_internal_connection, "SELECT %d", ERedisDB_Game));
 		OS::GameData ret;
 		memset(&ret, 0, sizeof(ret));
+
+		redisReply *reply;
+		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "SELECT %d", ERedisDB_Game);
+		if(!reply)
+			return ret;
+		freeReplyObject(reply);
 		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "KEYS %s:*",from_gamename);
 		if (reply->type == REDIS_REPLY_ARRAY) {
 			for (int j = 0; j < reply->elements; j++) {
