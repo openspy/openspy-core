@@ -6,10 +6,12 @@
 #include <OS/legacy/buffwriter.h>
 
 #include "SBPeer.h"
+#include "V1Peer.h"
+#include "V2Peer.h"
 #include <OS/socketlib/socketlib.h>
 
 namespace SB {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version) : INetDriver(server) {
 		
 		Socket::Init();
 		MM::Init(this);
@@ -41,6 +43,8 @@ namespace SB {
 		}
 
 		gettimeofday(&m_server_start, NULL);
+
+		m_version = version;
 
 
 	}
@@ -86,7 +90,15 @@ namespace SB {
 			}
 			it++;
 		}
-		Peer *ret = new Peer(this, address, m_sd);
+		Peer *ret = NULL;
+		switch(m_version) {
+			case 1:
+				ret = new V1Peer(this, address, m_sd);
+				break;
+			case 2:
+				ret = new V2Peer(this, address, m_sd);
+			break;
+		}
 		m_connections.push_back(ret);
 		return ret;
 	}
@@ -100,7 +112,15 @@ namespace SB {
 		struct sockaddr_in peer;
 		int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
 		if (sda <= 0) return;
-		Peer *mp_peer = new Peer(this, &peer, sda);
+		Peer *mp_peer = NULL;
+		switch(m_version) {
+			case 1:
+				mp_peer = new V1Peer(this, &peer, sda);
+				break;
+			case 2:
+				mp_peer = new V2Peer(this, &peer, sda);
+			break;
+		}
 		m_connections.push_back(mp_peer);
 		mp_peer->think(true);
 

@@ -22,7 +22,7 @@ namespace SB {
 
 	class Driver : public INetDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port);
+		Driver(INetServer *server, const char *host, uint16_t port, int version);
 		~Driver();
 		void tick(fd_set *fdset);
 		void think(fd_set *fdset);
@@ -48,6 +48,7 @@ namespace SB {
 		void TickConnections(fd_set *fdset);
 
 		int m_sd;
+		int m_version;
 
 		std::vector<Peer *> m_connections;
 		

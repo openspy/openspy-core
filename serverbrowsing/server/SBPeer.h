@@ -76,13 +76,11 @@ namespace SB {
 		OS::GameData m_for_game;
 		OS::GameData m_from_game;
 
+		bool all_keys;
+
 	};
 	class Driver;
 	class Server;
-
-	enum EConnectionState {
-		EConnectionState_NoInit,
-	};
 
 	struct sServerCache {
 		char key[64];
@@ -96,11 +94,8 @@ namespace SB {
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~Peer();
 		
-		void send_ping();
-		void think(bool packet_waiting); //called when no data is recieved
+		virtual void think(bool packet_waiting) = 0;
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
-
-		void SendPacket(uint8_t *buff, int len, bool prepend_length);
 
 		int GetSocket() { return m_sd; };
 
@@ -111,30 +106,20 @@ namespace SB {
 
 		int GetPing();
 
-		bool serverMatchesLastReq(MM::Server *server, bool require_push_Flag = true);
+		bool serverMatchesLastReq(MM::Server *server, bool require_push_flag = true);
 
-		void informDeleteServers(MM::ServerListQuery servers);
-		void informNewServers(MM::ServerListQuery servers);
-		void informUpdateServers(MM::ServerListQuery servers);
-	private:
-		void handle_packet(char *data, int len);
-		void set_connection_state(EConnectionState state);
-		void setupCryptHeader(uint8_t **dst, int *len);
+		virtual void informDeleteServers(MM::ServerListQuery servers) = 0;
+		virtual void informNewServers(MM::ServerListQuery servers) = 0;
+		virtual void informUpdateServers(MM::ServerListQuery servers) = 0;
+	protected:
+		void cacheServer(MM::Server *server);
+		void DeleteServerFromCacheByIP(OS::Address address);
+		sServerCache FindServerByIP(OS::Address address);
 
-		//request type handles
-		void ProcessListRequset(uint8_t *buffer, int remain);
-		void ProcessSendMessage(uint8_t *buffer, int remain);
-		void ProcessInfoRequest(uint8_t *buffer, int remain);
 
-		//request processors
-		sServerListReq ParseListRequest(uint8_t *buffer, int remain);
-
-		void SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist = true, bool send_fullkeys = false);
-		void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false);
-
+		int m_sd;
+		OS::GameData m_game;
 		Driver *mp_driver;
-		EConnectionState m_state;
-
 
 		struct sockaddr_in m_address_info;
 
@@ -143,24 +128,13 @@ namespace SB {
 		bool m_delete_flag;
 		bool m_timeout_flag;
 
-		bool m_sent_crypt_header;
-
-		uint8_t m_challenge[LIST_CHALLENGE_LEN];
-		unsigned char   encxkeyb[261];
-		OS::GameData m_game;
-
-		int m_sd;
-
-		bool m_next_packet_send_msg;
+		std::vector<sServerCache> m_visible_servers;
 
 		sServerListReq m_last_list_req;
+	private:
 
-		struct sockaddr_in m_send_msg_to;
 
-		std::vector<sServerCache> m_visible_servers;
-		void cacheServer(MM::Server *server);
-		void DeleteServerFromCacheByIP(OS::Address address);
-		sServerCache FindServerByIP(OS::Address address);
+
 
 	};
 }
