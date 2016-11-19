@@ -205,7 +205,7 @@ namespace QR {
 			MM::UpdateServer(&m_server_info);
 		}
 	}
-	void Peer::send_error(const char *msg, bool die) {
+	void Peer::send_error(bool die, const char *fmt, ...) {
 
 		//XXX: make all these support const vars
 		SendPacket((uint8_t*)msg, strlen(msg));

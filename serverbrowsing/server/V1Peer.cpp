@@ -247,7 +247,6 @@ namespace SB {
 				it++;
 			}
 
-			//void BufferWriteData(uint8_t **buffer, int *len, const uint8_t *data, int writelen);
 			BufferWriteData(&p, &len, (const uint8_t *)resp.str().c_str(), resp.str().length());
 
 			std::vector<MM::Server *>::iterator it2 = results.list.begin();
