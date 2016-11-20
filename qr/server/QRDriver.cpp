@@ -47,7 +47,7 @@ namespace QR {
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			if (!peer->ShouldDelete())
-				peer->think(FD_ISSET(peer->GetSocket(), fdset));
+				peer->think();
 			else {
 				//delete if marked for deletiontel
 				delete peer;
@@ -81,6 +81,7 @@ namespace QR {
 			it++;
 		}
 		Peer *ret = NULL;
+		printf("Creating peer version %d\n", version);
 		switch(version) {
 			case 1:
 				ret = new V1Peer(this, address, m_sd);
@@ -94,7 +95,7 @@ namespace QR {
 	}
 	void Driver::tick(fd_set *fdset) {
 
-		//TickConnections(fdset);
+		TickConnections(fdset);
 		if (!FD_ISSET(m_sd, fdset)) {
 			return;
 		}
@@ -104,7 +105,8 @@ namespace QR {
 		socklen_t slen = sizeof(struct sockaddr_in);
 
 		int len = recvfrom(m_sd,(char *)&recvbuf,sizeof(recvbuf),0,(struct sockaddr *)&si_other,&slen);
-		Peer *peer = find_or_create(&si_other, recvbuf[0] == '\'' ? 1 : 2);
+		recvbuf[len] = 0;
+		Peer *peer = find_or_create(&si_other, recvbuf[0] == '\\' ? 1 : 2);
 		peer->handle_packet((char *)&recvbuf, len);
 
 
@@ -129,6 +131,7 @@ namespace QR {
 		int hsock = m_sd;
 		FD_SET(m_sd, fdset);
 		
+		/* not needed because UDP
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
@@ -138,6 +141,7 @@ namespace QR {
 				hsock = sd;
 			it++;
 		}
+		*/
 		return hsock + 1;
 	}
 
@@ -145,7 +149,7 @@ namespace QR {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			p->think(FD_ISSET(p->GetSocket(), fdset));
+			p->think();
 			it++;
 		}
 	}

@@ -21,7 +21,6 @@ namespace MM {
 	redisAsyncContext *mp_redis_async_connection;
 	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
 	    redisReply *r = (redisReply*)reply;
-	    printf("Got reply: %p\n",r);
 	    if (reply == NULL) return;
 
 	    char gamename[OS_MAX_GAMENAME+1],from_ip[32], to_ip[32], from_port[16], to_port[16], data[MAX_BASE64_STR+1], type[32];
@@ -71,9 +70,14 @@ namespace MM {
 	    OS::CreateThread(setup_redis_async, NULL, true);
 
 	}
-	void PushServer(ServerInfo *server, bool publish) {
-		int id = GetServerID();
+	void PushServer(ServerInfo *server, bool publish, int pk_id) {
+		int id = pk_id;
 		int groupid = 0;
+
+		printf("PK ID is: %d\n", pk_id);
+		if(id == -1) {
+			id = GetServerID();
+		}
 
 		server->id = id;
 		server->groupid = groupid;
@@ -151,58 +155,60 @@ namespace MM {
 	void UpdateServer(ServerInfo *server) {
 		//remove all keys and readd
 		DeleteServer(server, false);
-		PushServer(server, false);
+		PushServer(server, false, server->id);
 
 		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\update\\%s:%d:%d:",sb_mm_channel,server->m_game.gamename,server->groupid,server->id));
 	}
 	void DeleteServer(ServerInfo *server, bool publish) {
 		int groupid = server->groupid;
 		int id = server->id;
-		/*
-		freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:",server->m_game.gamename,server->groupid,server->id));
-		freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys",server->m_game.gamename,server->groupid,server->id));
 		
-		int i =0;
-		int groupid = server->groupid;
-		int id = server->id;
-
-		std::map<std::string, std::vector<std::string> >::iterator it2 = server->m_player_keys.begin();
-
-		std::pair<std::string, std::vector<std::string> > p;
-		std::vector<std::string>::iterator it3;
-		while(it2 != server->m_player_keys.end()) {
-			p = *it2;
-			it3 = p.second.begin();
-			while(it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
-				std::string s = *it3;
-				freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys_player_%d",server->m_game.gamename,groupid,id, i));
-				i++;
-				it3++;
-			}
-
-			i=0;
-			it2++;
-		}
-
-
-		it2 = server->m_team_keys.begin();
-		while(it2 != server->m_team_keys.end()) {
-			p = *it2;
-			it3 = p.second.begin();
-			while(it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
-				std::string s = *it3;
-				freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys_team_%d",server->m_game.gamename,groupid,id, i));
-				i++;
-				it3++;
-			}
-
-			i=0;
-			it2++;
-		}
-		*/
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: deleted 1",server->m_game.gamename,server->groupid,server->id));
-		if(publish)
+		if(publish) {
+			freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: deleted 1",server->m_game.gamename,server->groupid,server->id));
 			freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\del\\%s:%d:%d:",sb_mm_channel,server->m_game.gamename,groupid,id));
+		}
+		else {
+			freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:",server->m_game.gamename,server->groupid,server->id));
+			freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys",server->m_game.gamename,server->groupid,server->id));
+			
+			int i =0;
+			int groupid = server->groupid;
+			int id = server->id;
+
+			std::map<std::string, std::vector<std::string> >::iterator it2 = server->m_player_keys.begin();
+
+			std::pair<std::string, std::vector<std::string> > p;
+			std::vector<std::string>::iterator it3;
+			while(it2 != server->m_player_keys.end()) {
+				p = *it2;
+				it3 = p.second.begin();
+				while(it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
+					std::string s = *it3;
+					freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys_player_%d",server->m_game.gamename,groupid,id, i));
+					i++;
+					it3++;
+				}
+
+				i=0;
+				it2++;
+			}
+
+
+			it2 = server->m_team_keys.begin();
+			while(it2 != server->m_team_keys.end()) {
+				p = *it2;
+				it3 = p.second.begin();
+				while(it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
+					std::string s = *it3;
+					freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys_team_%d",server->m_game.gamename,groupid,id, i));
+					i++;
+					it3++;
+				}
+
+				i=0;
+				it2++;
+			}
+		}
 	}
 	int GetServerID() {
 		redisReply *reply;

@@ -42,6 +42,9 @@ namespace QR {
 		m_server_info.m_game.gameid = 0;
 		memset(&m_challenge, 0, sizeof(m_challenge));
 
+		m_server_info.m_address.port = Socket::htons(m_address_info.sin_port);
+		m_server_info.m_address.ip = Socket::htonl(m_address_info.sin_addr.s_addr);
+
 	}
 	V2Peer::~V2Peer() {
 		if(m_server_pushed) {
@@ -203,9 +206,6 @@ namespace QR {
 			return;
 		}
 
-		m_server_info.m_address.port = Socket::htons(m_address_info.sin_port);
-		m_server_info.m_address.ip = Socket::htonl(m_address_info.sin_addr.s_addr);
-
 		//TODO: check if changed and only push changes
 		if(m_server_pushed) {
 			MM::UpdateServer(&m_server_info);
@@ -226,7 +226,7 @@ namespace QR {
 		
 
 		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_ping.tv_sec > QR_PING_TIME) {
+		if(current_time.tv_sec - m_last_ping.tv_sec > QR2_PING_TIME) {
 
 			char data[sizeof(m_instance_key) + 1];
 			uint8_t *p = (uint8_t *)&data;
@@ -240,13 +240,13 @@ namespace QR {
 		}
 		
 	}
-	void V2Peer::think(bool waiting_packet) {
+	void V2Peer::think() {
 		send_ping();
 
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_recv.tv_sec > QR_PING_TIME) {
+		if(current_time.tv_sec - m_last_recv.tv_sec > QR2_PING_TIME) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
 		}

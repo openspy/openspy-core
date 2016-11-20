@@ -10,6 +10,7 @@
 
 #define REQUEST_KEY_LEN 4
 #define CHALLENGE_LEN 64
+#define KV_MAX_LEN 64
 namespace QR {
 	class Driver;
 
@@ -18,17 +19,19 @@ namespace QR {
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~Peer();
 		
-		virtual void think(bool packet_waiting) = 0;
+		virtual void think() = 0;
 		virtual void handle_packet(char *recvbuf, int len) = 0;		
 
 		int GetSocket() { return m_sd; };
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
-		
+
 		virtual void send_error(bool die, const char *fmt, ...) = 0;
 		virtual void SendClientMessage(uint8_t *data, int data_len) = 0;
 	protected:
+
+
 
 		bool isTeamString(const char *string);
 

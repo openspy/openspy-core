@@ -82,6 +82,7 @@ namespace OS {
 	void Init();
 	std::vector<std::string> KeyStringToMap(std::string input);
 	std::string strip_quotes(std::string s);
+	std::string strip_whitespace(std::string s);
 
 	#define MAX_BASE64_STR 768
 	void Base64StrToBin(const char *str, uint8_t **out, int &len);

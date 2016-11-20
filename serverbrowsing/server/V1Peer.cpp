@@ -20,8 +20,6 @@
 
 namespace SB {
 		V1Peer::V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : SB::Peer(driver, address_info, sd) {
-			printf("V1 peer\n");
-
 			std::ostringstream s;
 
 			memset(&m_challenge,0,sizeof(m_challenge));
@@ -32,7 +30,7 @@ namespace SB {
 			m_keyptr = NULL;
 
 			s << "\\basic\\\\secure\\" << m_challenge;
-			SendPacket((const uint8_t*)s.str().c_str(),s.str().length()+1, true);
+			SendPacket((const uint8_t*)s.str().c_str(),s.str().length(), true);
 		}
 		V1Peer::~V1Peer() {
 
@@ -108,9 +106,11 @@ namespace SB {
 			char validation[16],realvalidate[16];
 			char gamename[64];
 
-			int enctype = find_paramint("enctype",(char *)&data);
+			int enctype = find_paramint("enctype",(char *)data);
 			find_param("gamename",(char *)data, (char *)&gamename,sizeof(gamename));
 			m_game = OS::GetGameByName(gamename);
+
+			printf("GOt game: %s\n",m_game.gamename);
 
 			if(!m_game.gameid) {
 				send_error(true, "Gamename not found");
@@ -120,13 +120,13 @@ namespace SB {
 			if(enctype != 0) {
 				find_param("validate",(char *)data,(char *)&validation,sizeof(validation));
 				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (unsigned char *)m_game.secretkey, enctype);	
-			}
-			if(strcmp(realvalidate,validation) == 0) {
-				send_crypt_header(enctype);
-				m_validated = true;
-			} else {
-				send_error(true, "Validation error");
-				return;
+				if(strcmp(realvalidate,validation) == 0) {
+					send_crypt_header(enctype);
+					m_validated = true;
+				} else {
+					send_error(true, "Validation error");
+					return;
+				}
 			}
 
 			m_enctype = enctype;
@@ -158,16 +158,15 @@ namespace SB {
 				return;
 			}
 
-
 			sServerListReq req;
 			MM::ServerListQuery servers;
-			req.m_from_game = OS::GetGameByName(gamename);
+			req.m_for_game = OS::GetGameByName(gamename);
+			req.m_from_game = m_game;
+
 			if(req.m_from_game.gameid == 0) {
 				send_error(false, "Gamename not found");
 				return;
 			}
-
-			req.m_for_game = m_game;
 
 
 			if(strcmp(mode,"cmp") == 0) {				

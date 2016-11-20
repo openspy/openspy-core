@@ -119,4 +119,15 @@ namespace OS {
 			return s;
 		return s.substr(1, s.size() - 2);
 	}
+	std::string strip_whitespace(std::string s) {
+		std::string ret;
+		std::string::iterator it = s.begin();
+		while(it != s.end()) {
+			char ch = *(it++);
+			if(isspace(ch))
+				continue;
+			ret += ch;
+		}
+		return ret;
+	}
 }

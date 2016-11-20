@@ -14,7 +14,6 @@
 #include <sys/time.h>
 #endif
 
-#define QR_PING_TIME 30
 #define MAX_DATA_SIZE 1400
 namespace QR {
 	class Peer;

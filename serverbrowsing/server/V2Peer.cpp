@@ -78,8 +78,8 @@ namespace SB {
 		req.protocol_version = listversion;
 		req.encoding_version = encodingversion;
 
-		from_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
 		for_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
+		from_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
 
 		printf("Parse list (%s,%s)\n",from_gamename, for_gamename);
 
@@ -145,7 +145,7 @@ namespace SB {
 		int len = 0;
 
 		BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
-		BufferWriteShortRE(&p, &len, list_req->m_from_game.queryport);
+		BufferWriteShort(&p, &len, Socket::htons(list_req->m_from_game.queryport));
 
 		BufferWriteByte(&p, &len, list_req->field_list.size());
 
@@ -185,6 +185,30 @@ namespace SB {
 
 		SendPacket((uint8_t *)&buff, len, false);
 	}
+	void V2Peer::setupCryptHeader(uint8_t **dst, int *len) {
+		//	memset(&options->cryptkey,0,sizeof(options->cryptkey));
+		srand(time(NULL));
+		uint32_t cryptlen = CRYPTCHAL_LEN;
+		uint8_t cryptchal[CRYPTCHAL_LEN];
+		uint32_t servchallen = SERVCHAL_LEN;
+		uint8_t servchal[SERVCHAL_LEN];
+		int headerLen = (servchallen + cryptlen) + (sizeof(uint8_t) * 2);
+		uint16_t *backendflags = (uint16_t *)(&cryptchal);
+		for (uint32_t i = 0; i<cryptlen; i++) {
+			cryptchal[i] = (uint8_t)rand();
+		}
+		*backendflags = 0;
+		for (uint32_t i = 0; i<servchallen; i++) {
+			servchal[i] = (uint8_t)rand();
+		}
+		BufferWriteByte(dst, len, cryptlen ^ 0xEC);
+		BufferWriteData(dst, len, (uint8_t *)&cryptchal, cryptlen);
+		BufferWriteByte(dst, len, servchallen ^ 0xEA);
+		BufferWriteData(dst, len, (uint8_t *)&servchal, servchallen);
+
+		printf("setup crypt for key %s %s\n",m_game.gamename,m_game.secretkey);
+		enctypex_funcx((unsigned char *)&encxkeyb, (unsigned char *)&m_game.secretkey, (unsigned char *)m_challenge, (unsigned char *)&servchal, servchallen);
+	}
 	void V2Peer::SendPacket(uint8_t *buff, int len, bool prepend_length) {
 		uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = (uint8_t*)&out_buff;
@@ -216,6 +240,9 @@ namespace SB {
 
 		m_game = list_req.m_from_game;
 
+
+		printf("Key req: %s | %s | %s\n",list_req.m_from_game.gamename,list_req.m_for_game.gamename, m_game.gamename);
+
 		if (m_game.secretkey[0] == 0)
 			return;
 
@@ -229,6 +256,7 @@ namespace SB {
 			}
 			else {
 				servers = MM::GetServers(&list_req);
+				printf("GOt %d servers\n",servers.list.size());
 			}
 		}
 		SendListQueryResp(servers, &list_req);
@@ -294,28 +322,6 @@ namespace SB {
 			m_delete_flag = true;
 			m_timeout_flag = true;
 		}
-	}
-	void V2Peer::setupCryptHeader(uint8_t **dst, int *len) {
-		//	memset(&options->cryptkey,0,sizeof(options->cryptkey));
-		srand(time(NULL));
-		uint32_t cryptlen = CRYPTCHAL_LEN;
-		uint8_t cryptchal[CRYPTCHAL_LEN];
-		uint32_t servchallen = SERVCHAL_LEN;
-		uint8_t servchal[SERVCHAL_LEN];
-		int headerLen = (servchallen + cryptlen) + (sizeof(uint8_t) * 2);
-		uint16_t *backendflags = (uint16_t *)(&cryptchal);
-		for (uint32_t i = 0; i<cryptlen; i++) {
-			cryptchal[i] = (uint8_t)rand();
-		}
-		*backendflags = 0;
-		for (uint32_t i = 0; i<servchallen; i++) {
-			servchal[i] = (uint8_t)rand();
-		}
-		BufferWriteByte(dst, len, cryptlen ^ 0xEC);
-		BufferWriteData(dst, len, (uint8_t *)&cryptchal, cryptlen);
-		BufferWriteByte(dst, len, servchallen ^ 0xEA);
-		BufferWriteData(dst, len, (uint8_t *)&servchal, servchallen);
-		enctypex_funcx((unsigned char *)&encxkeyb, (unsigned char *)&m_game.secretkey, (unsigned char *)m_challenge, (unsigned char *)&servchal, servchallen);
 	}
 	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];

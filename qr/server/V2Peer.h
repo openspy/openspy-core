@@ -11,6 +11,7 @@
 
 #define REQUEST_KEY_LEN 4
 #define CHALLENGE_LEN 64
+#define QR2_PING_TIME 30
 namespace QR {
 	class Driver;
 
@@ -19,7 +20,7 @@ namespace QR {
 		V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~V2Peer();
 		
-		void think(bool packet_waiting);
+		void think();
 
 		void handle_packet(char *recvbuf, int len);
 
