@@ -179,7 +179,8 @@ namespace MM {
 				freeReplyObject(reply);
 				idx++;
 			} while(last_type != REDIS_REPLY_NIL);
-
+			s.str("");
+			
 			do {
 				s << entry_name << "custkeys_team_" << idx;
 				key = s.str();
