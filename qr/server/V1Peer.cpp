@@ -32,11 +32,8 @@ namespace QR {
 
 		gettimeofday(&m_last_recv, NULL);
 		gettimeofday(&m_last_ping, NULL);
-		
-		printf("New QR1 peer\n");
 	}
 	V1Peer::~V1Peer() {
-		printf("V1 peer delete\n");
 		if(m_server_pushed) {
 			MM::DeleteServer(&m_server_info);
 		}
@@ -84,7 +81,6 @@ namespace QR {
 
 
 		s << "\\error\\" << fmt << "\\fatal\\" << m_delete_flag;
-		printf("V1 peer error: %s\n",s.str().c_str());
 		SendPacket((const uint8_t*)s.str().c_str(),s.str().length(), true);
 	}
 	void V1Peer::SendClientMessage(uint8_t *data, int data_len) {
@@ -136,13 +132,11 @@ namespace QR {
 	void V1Peer::handle_ready_query_state(char *recvbuf, int len) {
 		std::ostringstream s;
 		char challenge[32];
-		printf("Handle query resp: %s\n", recvbuf);
 		if(!find_param("echo",(char *)recvbuf, (char *)&challenge,sizeof(challenge))) {
 			send_error(true, "Missing echo param in query response");
 			return;
 		} else {
 			if(strcmp(OS::strip_whitespace(challenge).c_str(), (char *)&m_challenge)) {
-				printf("Chall: (%s) == (%s)\n",OS::strip_whitespace(challenge).c_str(),m_challenge);
 				send_error(true, "incorrect challenge response in query response");
 				return;
 			}
@@ -225,7 +219,6 @@ namespace QR {
 		find_param("echo",(char *)recvbuf, (char *)&validation,sizeof(validation));
 
 		if(memcmp(validation, m_challenge, sizeof(m_challenge)) == 0) {
-			printf("Validated!\n");
 			gettimeofday(&m_last_recv, NULL);
 			if(m_validated) {
 				//already validated, ping request
