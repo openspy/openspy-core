@@ -4,7 +4,6 @@
 #include <OS/OpenSpy.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
-#include <OS/legacy/enctypex_decoder.h>
 #include <OS/socketlib/socketlib.h>
 #include <sstream>
 #define CRYPTCHAL_LEN 10
@@ -201,13 +200,23 @@ namespace SB {
 		for (uint32_t i = 0; i<servchallen; i++) {
 			servchal[i] = (uint8_t)rand();
 		}
+
 		BufferWriteByte(dst, len, cryptlen ^ 0xEC);
 		BufferWriteData(dst, len, (uint8_t *)&cryptchal, cryptlen);
 		BufferWriteByte(dst, len, servchallen ^ 0xEA);
 		BufferWriteData(dst, len, (uint8_t *)&servchal, servchallen);
 
 		printf("setup crypt for key %s %s\n",m_game.gamename,m_game.secretkey);
-		enctypex_funcx((unsigned char *)&encxkeyb, (unsigned char *)&m_game.secretkey, (unsigned char *)m_challenge, (unsigned char *)&servchal, servchallen);
+
+
+		//combine our secret key, our challenge, and the server's challenge into a crypt key
+		int seckeylen = (int)strlen(m_game.secretkey);
+		char *seckey = (char *)&m_game.secretkey;
+		for (int i = 0 ; i < servchallen ; i++)
+		{
+			m_challenge[(i *  seckey[i % seckeylen]) % LIST_CHALLENGE_LEN] ^= (char)((m_challenge[i % LIST_CHALLENGE_LEN] ^ servchal[i]) & 0xFF);
+		}
+		GOACryptInit(&(m_crypt_state), (unsigned char *)(&m_challenge), LIST_CHALLENGE_LEN);
 	}
 	void V2Peer::SendPacket(uint8_t *buff, int len, bool prepend_length) {
 		uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
@@ -224,7 +233,7 @@ namespace SB {
 			BufferWriteShortRE(&p, &out_len, len + sizeof(uint16_t));
 		}
 		BufferWriteData(&p, &out_len, buff, len);
-		enctypex_func6e((unsigned char *)&encxkeyb, ((unsigned char *)&out_buff) + header_len, out_len - header_len);
+		GOAEncrypt(&m_crypt_state, ((unsigned char *)&out_buff) + header_len, out_len - header_len);
 		if(send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL) < 0)
 			m_delete_flag = true;
 	}

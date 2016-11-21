@@ -2,6 +2,7 @@
 #define _V2PEER_H
 #include "SBPeer.h"
 #include "SBDriver.h"
+#include "sb_crypt.h"
 //message types for outgoing requests
 #define SERVER_LIST_REQUEST		0
 #define SERVER_INFO_REQUEST		1
@@ -53,6 +54,10 @@ namespace SB {
 				void informNewServers(MM::ServerListQuery servers);
 				void informUpdateServers(MM::ServerListQuery servers);
 			private:
+
+
+
+				
 				void SendPacket(uint8_t *buff, int len, bool prepend_length);
 				void send_ping();
 				void handle_packet(char *data, int len);
@@ -76,6 +81,8 @@ namespace SB {
 
 				bool m_next_packet_send_msg;
 				struct sockaddr_in m_send_msg_to;
+
+				GOACryptState m_crypt_state;
 		};
 
 }
