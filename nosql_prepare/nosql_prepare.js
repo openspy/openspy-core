@@ -35,7 +35,7 @@ connection.query('SELECT id, gamename, secretkey,description from games', functi
  
 });
 
-connection.query('SELECT grp.gameid `gameid`, grp.groupid `groupid`,grp.name `name`,grp.numservers `numservers`,grp.numwaiting `numwaiting`,grp.password `pass`,g.gamename `gamename`, grp.maxwaiting `maxwaiting` from grouplist grp' +
+connection.query('SELECT grp.gameid `gameid`, grp.groupid `groupid`,grp.name `name`,grp.numservers `numservers`,grp.numwaiting `numwaiting`,grp.password `pass`,g.gamename `gamename`, grp.maxwaiting `maxwaiting`, grp.other `other` from grouplist grp' +
 		' INNER JOIN games g on g.id = grp.gameid', function(err, rows, fields) {
   if (err) throw err;
   client.select(1);
@@ -48,7 +48,8 @@ connection.query('SELECT grp.gameid `gameid`, grp.groupid `groupid`,grp.name `na
 		maxwaiting = rows[i].maxwaiting,
 		name = rows[i].name,
 		groupid = rows[i].groupid,
-		gameid = rows[i].gameid;
+		gameid = rows[i].gameid,
+		other = rows[i].other;
 		
 	var redis_key = gamename + ":" + groupid + ":";
 	client.hset(redis_key, "gameid", gameid);
@@ -58,6 +59,18 @@ connection.query('SELECT grp.gameid `gameid`, grp.groupid `groupid`,grp.name `na
 	client.hset(redis_key, "password", pass);
 	client.hset(redis_key, "numwaiting", numwaiting);
 	client.hset(redis_key, "numservers", numservers);
+	
+	var res = other.split("\\");
+	var key,value;
+	for(var j = 1;j<res.length;j++) {
+		var other_key = redis_key + "custkeys";
+		if((j % 2) != 0) {
+			key = res[j];
+		} else {
+			value = res[j];
+			client.hset(other_key, key, value);
+		}
+	}
    }
 });
 
