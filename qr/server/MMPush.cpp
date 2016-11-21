@@ -74,7 +74,6 @@ namespace MM {
 		int id = pk_id;
 		int groupid = 0;
 
-		printf("PK ID is: %d\n", pk_id);
 		if(id == -1) {
 			id = GetServerID();
 		}

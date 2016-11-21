@@ -14,7 +14,6 @@ namespace SB {
 		m_sent_crypt_header = false;
 	}
 	V2Peer::~V2Peer() {
-
 	}
 	void V2Peer::handle_packet(char *data, int len) {
 		if(len == 0)
