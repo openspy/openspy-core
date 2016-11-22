@@ -94,11 +94,15 @@ namespace MM {
 
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
 		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s deleted", entry_name.c_str());
-		if(reply->type != REDIS_REPLY_NIL && !include_deleted) {
+		if(reply) {
+			if(reply->type != REDIS_REPLY_NIL && !include_deleted) {
+				freeReplyObject(reply);
+				return;	
+			}
 			freeReplyObject(reply);
-			return;	
+		} else {
+			return;			
 		}
-		freeReplyObject(reply);
 		
 
 		Server *server = new MM::Server();

@@ -65,6 +65,8 @@ namespace OS {
 		char secretkey[OS_MAX_SECRETKEY];
 		char disabled_services; //0= ok, 1 = temp, 2 = perm
 		std::vector<std::string> popular_values;
+
+		std::map<std::string, uint8_t> push_keys; //SB push keys + type(hostname/KEYTYPE_STRING)
 	} GameData;
 	GameData GetGameByName(const char *from_gamename);
 	GameData GetGameByID(int gameid);

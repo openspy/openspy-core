@@ -6,6 +6,7 @@
 #include <OS/legacy/buffwriter.h>
 #include <OS/socketlib/socketlib.h>
 #include <sstream>
+#include  <algorithm>
 #define CRYPTCHAL_LEN 10
 #define SERVCHAL_LEN 25
 namespace SB {
@@ -84,25 +85,34 @@ namespace SB {
 		if (from_gamename) {
 			req.m_from_game = OS::GetGameByName(from_gamename);
 			free((void *)from_gamename);
+		} else {
+			send_error(true, "No from gamename");
+			return req;
 		}
 
-		if (from_gamename) {
+		if (for_gamename) {
 			req.m_for_game = OS::GetGameByName(for_gamename);
 			free((void *)for_gamename);
+		} else {
+			send_error(true, "No for gamename");
+			return req;
 		}
 		
 
 		BufferReadData(&buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
 
-		req.filter = (const char *)BufferReadNTS(&buffer, &buf_remain);
+		filter = (const char *)BufferReadNTS(&buffer, &buf_remain);
+		if(filter) {
+			req.filter = filter;
+			free((void *)filter);
+		}
 		field_list = (const char *)BufferReadNTS(&buffer, &buf_remain);
 
 		if (field_list) {
 			req.field_list = OS::KeyStringToMap(field_list);
 			free((void *)field_list);
 		}
-		if (!req.field_list.size())
-			req.field_list = OS::KeyStringToMap("\\hostname\\numplayers\\maxplayers\\password\\region");
+
 
 		options = BufferReadIntRE(&buffer, &buf_remain);
 
@@ -115,6 +125,15 @@ namespace SB {
 		}
 		if (options & LIMIT_RESULT_COUNT) {
 			req.max_results = BufferReadInt(&buffer, &buf_remain);
+		}
+
+		if (req.no_server_list && !req.field_list.size()) { //no requested field, send defaults
+			std::map<std::string, uint8_t>::iterator it = req.m_for_game.push_keys.begin();
+			while(it != req.m_for_game.push_keys.end()) {
+				std::pair<std::string, uint8_t> pair = *it;
+				req.field_list.push_back(pair.first);
+				it++;
+			}
 		}
 		
 
@@ -151,7 +170,7 @@ namespace SB {
 		std::vector<std::string>::iterator field_it = list_req->field_list.begin();
 		while (field_it != list_req->field_list.end()) {
 			std::string str = *field_it;
-			BufferWriteByte(&p, &len, 0x00); //key type, 0 = str, 1 = uint8, 2 = uint16 TODO: determine type
+			BufferWriteByte(&p, &len, KEYTYPE_STRING); //key type, 0 = str, 1 = uint8, 2 = uint16 TODO: determine type
 			BufferWriteNTS(&p, &len, (uint8_t *)str.c_str());
 			field_it++;
 		}
@@ -268,6 +287,8 @@ namespace SB {
 			}
 		}
 		SendListQueryResp(servers, &list_req);
+		if(!list_req.send_groups)
+			SendPushKeys();
 	}
 	void V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
 		uint8_t *p = (uint8_t *)buffer;
@@ -283,6 +304,8 @@ namespace SB {
 				sendServerData(server, false, true, NULL, NULL, true);
 				delete server;
 			}
+		} else {
+			printf("Didn't find server\n");
 		}
 	}
 	void V2Peer::send_ping() {
@@ -341,9 +364,11 @@ namespace SB {
 			p = *out;
 		}
 		int len = 0;
-		uint8_t flags = HAS_KEYS_FLAG;
+		uint8_t flags = 0;
 		if(full_keys) {
 			flags |= HAS_FULL_RULES_FLAG;
+		} else {
+			flags |= HAS_KEYS_FLAG;
 		}
 
 		if (server->wan_address.port != server->game.queryport) {
@@ -366,24 +391,38 @@ namespace SB {
 		if (flags & NONSTANDARD_PRIVATE_PORT_FLAG) {
 			BufferWriteShort(&p, &len, Socket::htons(server->lan_address.port));
 		}
-		
 
-		std::vector<std::string>::iterator tok_it = m_last_list_req.field_list.begin();
-		while (tok_it != m_last_list_req.field_list.end()) {
-			if(usepopularlist) {
-				BufferWriteByte(&p, &len, 0xFF); //string index, -1 = no index
+		if(flags & HAS_KEYS_FLAG) {
+			std::vector<std::string>::iterator tok_it = m_last_list_req.field_list.begin();
+			while (tok_it != m_last_list_req.field_list.end()) {
+				std::vector<std::string>::iterator push_it = server->game.popular_values.end();
+				std::string value;
+				if(server->kvFields.find((*tok_it)) != server->kvFields.end()) {
+					value = server->kvFields[*tok_it].c_str();
+					push_it = std::find(server->game.popular_values.begin(),server->game.popular_values.end(),value);
+				}
+				if(usepopularlist) {
+					if(push_it == server->game.popular_values.end()) {
+						BufferWriteByte(&p, &len, 0xFF); //string index, -1 = no index
+						printf("Writing idx -1 for %s\n", value.c_str());
+						if (value.length() > 0) {
+							BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
+						}
+						else {
+							BufferWriteByte(&p, &len, 0);
+						}
+					}
+					else {
+						BufferWriteByte(&p, &len, std::distance(server->game.popular_values.begin(), push_it));
+						printf("Writing idx %d for (%s)%s\n", std::distance(server->game.popular_values.begin(), push_it), (*tok_it).c_str(), value.c_str());
+					}
+				}
+				tok_it++;
 			}
-			if (server->kvFields.find((*tok_it)) != server->kvFields.end()) {
-				std::string value = server->kvFields[*tok_it].c_str();
-				BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
-			}
-			else {
-				BufferWriteByte(&p, &len, 0);
-			}
-			tok_it++;
 		}
 
-		if(full_keys) {
+		if(flags & HAS_FULL_RULES_FLAG) {
+		
 			//std::map<int, std::map<std::string, std::string> > kvPlayers;
 			std::map<int, std::map<std::string, std::string> >::iterator it = server->kvPlayers.begin();
 			std::ostringstream s;
@@ -391,6 +430,14 @@ namespace SB {
 			std::map<std::string, std::string>::iterator it2;
 			std::pair<std::string, std::string> kvp;
 
+
+			std::map<std::string, std::string>::iterator field_it = server->kvFields.begin();
+			while(field_it != server->kvFields.end()) {
+				std::pair<std::string, std::string> pair = *field_it;
+				BufferWriteNTS(&p, &len, (const uint8_t *)pair.first.c_str());
+				BufferWriteNTS(&p, &len, (const uint8_t *)pair.second.c_str());				
+				field_it++;
+			}
 			
 
 			it = server->kvPlayers.begin();
@@ -478,4 +525,26 @@ namespace SB {
 		}
 	}
 
+	void V2Peer::SendPushKeys() {
+		//list_req->m_from_game
+		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
+		uint8_t *p = (uint8_t *)&buff;
+		int len = 0;
+		std::map<std::string, uint8_t>::iterator it = m_last_list_req.m_from_game.push_keys.begin();
+		//m_last_list_req.m_from_game.push_keys
+		BufferWriteByte(&p, &len, m_last_list_req.m_from_game.push_keys.size());
+		while(it != m_last_list_req.m_from_game.push_keys.end()) {
+			std::pair<std::string, uint8_t> pair = *it;
+			BufferWriteByte(&p, &len, pair.second);
+			BufferWriteNTS(&p, &len, (const uint8_t*)pair.first.c_str());
+			it++;
+		}
+		SendPacket((uint8_t *)&buff, len, true);
+	}
+	void V2Peer::send_error(bool die, const char *fmt, ...) {
+		if(die) {
+			m_delete_flag = true;
+		}
+		printf("SBV2 die: %s\n", fmt);
+	}
 }

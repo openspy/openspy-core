@@ -51,9 +51,23 @@ namespace OS {
 		freeReplyObject(reply);
 
 
-		game.popular_values.push_back("hostname");
-		game.popular_values.push_back("numplayers");
-		game.popular_values.push_back("maxplayers");
+		//for thugpro
+		game.popular_values.push_back("SKATOPIA");
+		game.popular_values.push_back("NEW ORLEANS");
+		game.popular_values.push_back("LOS ANGELES");
+		game.popular_values.push_back("SCHOOL");
+		game.popular_values.push_back("Graffiti");
+
+		//thugpro test
+		game.push_keys["country"] = KEYTYPE_STRING;
+		game.push_keys["gamemode"] = KEYTYPE_STRING;
+		game.push_keys["gametype"] = KEYTYPE_STRING;
+		game.push_keys["gamever"] = KEYTYPE_STRING;
+		game.push_keys["hostname"] = KEYTYPE_STRING;
+		game.push_keys["mapname"] = KEYTYPE_STRING;
+		game.push_keys["maxplayers"] = KEYTYPE_BYTE;
+		game.push_keys["numplayers"] = KEYTYPE_BYTE;
+		game.push_keys["password"] = KEYTYPE_BYTE;
 
 		return game;
 		

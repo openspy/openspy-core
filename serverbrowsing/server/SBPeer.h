@@ -17,7 +17,7 @@ namespace SB {
 		uint8_t encoding_version;
 		uint32_t game_version;
 		
-		const char *filter;
+		std::string filter;
 		//const char *field_list;
 		std::vector<std::string> field_list;
 		

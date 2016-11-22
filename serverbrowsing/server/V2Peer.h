@@ -73,6 +73,8 @@ namespace SB {
 
 				void SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist = true, bool send_fullkeys = false);
 				void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false);
+				void SendPushKeys();
+				void send_error(bool die, const char *fmt, ...);
 
 				bool m_sent_crypt_header;
 				uint8_t m_challenge[LIST_CHALLENGE_LEN];
