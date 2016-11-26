@@ -12,6 +12,9 @@
 #include "QRDriver.h"
 #include "QRPeer.h"
 
+#include <sstream>
+#include <algorithm>
+
 namespace MM {
 	redisContext *mp_redis_connection;
 	const char *sb_mm_channel = "serverbrowsing.servers";
@@ -81,36 +84,43 @@ namespace MM {
 		server->id = id;
 		server->groupid = groupid;
 
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: gameid %d",server->m_game.gamename,groupid,id,server->m_game.gameid));
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: id %d",server->m_game.gamename,groupid,id,id));
+		std::ostringstream s;
+		s << server->m_game.gamename << ":" << groupid << ":" << id << ":";
+		std::string server_key = s.str();
+
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s gameid %d",server_key.c_str(),server->m_game.gameid));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s id %d",server_key.c_str(),id));
 
 
 		struct sockaddr_in addr;
 		addr.sin_port = Socket::htons(server->m_address.port);
 		addr.sin_addr.s_addr = Socket::htonl(server->m_address.ip);
 		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
+
+
 		
+		freeReplyObject(redisCommand(mp_redis_connection, "SET IPMAP_%s_%s-%d %s", server->m_game.gamename,ipinput, server->m_address.port, server_key.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE IPMAP_%s_%s-%d 300", server->m_game.gamename,ipinput, server->m_address.port));
 
 
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s gameid %d",server_key.c_str(),server->m_game.gameid));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s wan_port %d",server_key.c_str(),server->m_address.port));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s wan_ip \"%s\"",server_key.c_str(),ipinput));
 
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: gameid %d",server->m_game.gamename,groupid,id,server->m_game.gameid));
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: wan_port %d",server->m_game.gamename,groupid,id,server->m_address.port));
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: wan_ip \"%s\"",server->m_game.gamename,groupid,id,ipinput));
-
-		freeReplyObject(redisCommand(mp_redis_connection, "INCR %s:%d:%d: num_beats",server->m_game.gamename,groupid,id));
+		freeReplyObject(redisCommand(mp_redis_connection, "INCR %s num_beats",server_key.c_str()));
 
 
-		freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %s:%d:%d: 300",server->m_game.gamename,groupid,id));
+		freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %s 300",server_key.c_str()));
 
 		std::map<std::string, std::string>::iterator it = server->m_keys.begin();
 		while(it != server->m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;
-			freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d:custkeys %s \"%s\"",server->m_game.gamename,groupid,id,p.first.c_str(),p.second.c_str()));
+			freeReplyObject(redisCommand(mp_redis_connection, "HSET %scustkeys %s \"%s\"",server_key.c_str(),p.first.c_str(),p.second.c_str()));
 			it++;
 		}
-		freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %s:%d:%d:custkeys 300",server->m_game.gamename,groupid,id));
+		freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %scustkeys 300",server_key.c_str()));
 
-		//std::map<std::string, std::vector<std::string> > m_player_keys;
+		//std::m,server->m_game.gamename,groupid,idap<std::string, std::vector<std::string> > m_player_keys;
 		std::map<std::string, std::vector<std::string> >::iterator it2 = server->m_player_keys.begin();
 
 		int i =0;
@@ -121,11 +131,11 @@ namespace MM {
 			it3 = p.second.begin();
 			while(it3 != p.second.end()) {
 				std::string s = *it3;
-				freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d:custkeys_player_%d %s \"%s\"",server->m_game.gamename,groupid,id, i,p.first.c_str(),s.c_str()));
+				freeReplyObject(redisCommand(mp_redis_connection, "HSET %scustkeys_player_%d %s \"%s\"",server_key.c_str(), i,p.first.c_str(),s.c_str()));
 				i++;
 				it3++;
 			}
-			freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %s:%d:%d:custkeys_player_%d 300",server->m_game.gamename,groupid,id, i,p.first.c_str()));
+			freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %scustkeys_player_%d 300",server_key.c_str(), i,p.first.c_str()));
 			i=0;
 			it2++;
 		}
@@ -138,17 +148,17 @@ namespace MM {
 			while(it3 != p.second.end()) {
 				
 				std::string s = *it3;
-				freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d:custkeys_team_%d %s \"%s\"",server->m_game.gamename,groupid,id, i,p.first.c_str(),s.c_str()));
+				freeReplyObject(redisCommand(mp_redis_connection, "HSET %scustkeys_team_%d %s \"%s\"",server_key.c_str(), i,p.first.c_str(),s.c_str()));
 				i++;
 				it3++;
 			}
-			freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %s:%d:%d:custkeys_team_%d 300",server->m_game.gamename,groupid,id, i));
+			freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %scustkeys_team_%d 300",server_key.c_str(), i));
 			i=0;
 			it2++;
 		}
 
 		if(publish)
-			freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\new\\%s:%d:%d:",sb_mm_channel,server->m_game.gamename,groupid,id));
+			freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\new\\%s",sb_mm_channel,server_key.c_str()));
 
 	}
 	void UpdateServer(ServerInfo *server) {

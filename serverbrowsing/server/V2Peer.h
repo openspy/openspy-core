@@ -64,12 +64,12 @@ namespace SB {
 				void setupCryptHeader(uint8_t **dst, int *len);
 
 				//request type handles
-				void ProcessListRequset(uint8_t *buffer, int remain);
-				void ProcessSendMessage(uint8_t *buffer, int remain);
-				void ProcessInfoRequest(uint8_t *buffer, int remain);
+				uint8_t *ProcessListRequset(uint8_t *buffer, int remain);
+				uint8_t *ProcessSendMessage(uint8_t *buffer, int remain);
+				uint8_t *ProcessInfoRequest(uint8_t *buffer, int remain);
 
 				//request processors
-				sServerListReq ParseListRequest(uint8_t *buffer, int remain);
+				sServerListReq ParseListRequest(uint8_t **buffer, int remain);
 
 				void SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist = true, bool send_fullkeys = false);
 				void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false);

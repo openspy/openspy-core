@@ -54,12 +54,12 @@ namespace SB {
 			it++;
 		}
 	}
-	void Peer::cacheServer(MM::Server *server) {
+	void Peer::cacheServer(MM::Server *server, bool full_keys) {
 		sServerCache item;
 		if(FindServerByIP(server->wan_address).key[0] == 0) {
 			item.wan_address = server->wan_address;
 			strcpy(item.key,server->key.c_str());
-			item.full_keys = false;
+			item.full_keys = full_keys;
 			m_visible_servers.push_back(item);
 		}
 	}

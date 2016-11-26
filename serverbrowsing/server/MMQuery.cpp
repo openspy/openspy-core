@@ -383,5 +383,27 @@ namespace MM {
 
 		return ret.list[0];
 	}
+	Server *GetServerByIP(OS::Address address, OS::GameData game, redisContext *redis_ctx) {
+		Server *server = NULL;
+		if(redis_ctx == NULL) {
+			redis_ctx = mp_redis_connection;
+		}
+		std::ostringstream s;
+		
+		struct sockaddr_in addr;
+		addr.sin_port = Socket::htons(address.port);
+		addr.sin_addr.s_addr = Socket::htonl(address.ip);
+		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
+
+		s << "GET IPMAP_" << game.gamename << "_" << ipinput << "-" << address.port;
+		std::string cmd = s.str();
+		redisReply *reply = (redisReply *)redisCommand(redis_ctx, cmd.c_str());
+		if(reply->type == REDIS_REPLY_STRING) {
+			server = GetServerByKey(reply->str, redis_ctx);
+		}
+
+		freeReplyObject(reply);
+		return server;
+	}
 
 }

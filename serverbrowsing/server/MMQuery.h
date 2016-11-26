@@ -51,6 +51,7 @@ namespace MM {
 	struct MM::ServerListQuery GetGroups(const SB::sServerListReq *req);
 
 	Server *GetServerByKey(std::string key, redisContext *redis_ctx = NULL);
+	Server *GetServerByIP(OS::Address address, OS::GameData game, redisContext *redis_ctx = NULL);
 	extern SB::Driver *mp_driver;
 	extern redisContext *mp_redis_connection;
 };

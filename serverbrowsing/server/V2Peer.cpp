@@ -22,42 +22,55 @@ namespace SB {
 
 
 		uint8_t *buffer = (uint8_t *)data;
+		void *end = (void *)((void *)data + len);
 		int pos = len;
 		
 		uint8_t request_type = 0;
 
-		BufferReadShort(&buffer, &pos);
 
-		request_type = BufferReadByte(&buffer, &pos);
+		while((buffer - (uint8_t*)data) < len) {
+			uint32_t buff_len = Socket::htons(BufferReadShort(&buffer, &pos)); //length
 
-		gettimeofday(&m_last_recv, NULL);
+			buff_len -= sizeof(uint16_t);
 
-		switch (request_type) {
-			case SERVER_LIST_REQUEST:
-				printf("Got server list request\n");
-				ProcessListRequset(buffer, pos);
+			
+			if(pos > len || ((void *)buffer + buff_len) > end) { //TODO: get expected lengths for each packet type and test!
 				break;
-			case KEEPALIVE_MESSAGE:
-				printf("Got keepalive\n");
+			}
+
+			request_type = BufferReadByte(&buffer, &pos);
+			printf("Got request %d\n", request_type);
+
+			gettimeofday(&m_last_recv, NULL);
+
+			switch (request_type) {
+				case SERVER_LIST_REQUEST:
+					printf("Got server list request\n");
+					buffer = ProcessListRequset(buffer, pos);
+					break;
+				case KEEPALIVE_MESSAGE:
+					printf("Got keepalive\n");
+					break;
+				case SEND_MESSAGE_REQUEST:
+					buffer = ProcessSendMessage(buffer, pos);
+					printf("msg request\n");
 				break;
-			case SEND_MESSAGE_REQUEST:
-				ProcessSendMessage(buffer, pos);
-				printf("msg request\n");
-			break;
-			case MAPLOOP_REQUEST:
-				printf("maploop request\n");
-			break;
-			case PLAYERSEARCH_REQUEST:
-				printf("playersearch request\n");
-			break;
-			case SERVER_INFO_REQUEST:
-				printf("GOT INFO REQUEST!!\n");
-				ProcessInfoRequest(buffer, pos);
-			break;
+				case MAPLOOP_REQUEST:
+					printf("maploop request\n");
+				break;
+				case PLAYERSEARCH_REQUEST:
+					printf("playersearch request\n");
+				break;
+				case SERVER_INFO_REQUEST:
+					printf("GOT INFO REQUEST!!\n");
+					buffer = ProcessInfoRequest(buffer, pos);
+				break;
+			}
+			pos = buffer - (uint8_t*)data;
 		}
 
 	}
-	sServerListReq V2Peer::ParseListRequest(uint8_t *buffer, int remain) {
+	sServerListReq V2Peer::ParseListRequest(uint8_t **buffer, int remain) {
 		uint8_t listversion, encodingversion;
 		uint32_t fromgamever; //game version
 		uint32_t srcip = 0;
@@ -69,16 +82,16 @@ namespace SB {
 
 		sServerListReq req;
 
-		listversion = BufferReadByte(&buffer, &buf_remain);
-		encodingversion = BufferReadByte(&buffer, &buf_remain);
+		listversion = BufferReadByte(buffer, &buf_remain);
+		encodingversion = BufferReadByte(buffer, &buf_remain);
 
-		fromgamever = BufferReadInt(&buffer, &buf_remain);
+		fromgamever = BufferReadInt(buffer, &buf_remain);
 
 		req.protocol_version = listversion;
 		req.encoding_version = encodingversion;
 
-		for_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
-		from_gamename = (const char *)BufferReadNTS(&buffer, &buf_remain);
+		for_gamename = (const char *)BufferReadNTS(buffer, &buf_remain);
+		from_gamename = (const char *)BufferReadNTS(buffer, &buf_remain);
 
 		printf("Parse list (%s,%s)\n",from_gamename, for_gamename);
 
@@ -99,14 +112,14 @@ namespace SB {
 		}
 		
 
-		BufferReadData(&buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
+		BufferReadData(buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
 
-		filter = (const char *)BufferReadNTS(&buffer, &buf_remain);
+		filter = (const char *)BufferReadNTS(buffer, &buf_remain);
 		if(filter) {
 			req.filter = filter;
 			free((void *)filter);
 		}
-		field_list = (const char *)BufferReadNTS(&buffer, &buf_remain);
+		field_list = (const char *)BufferReadNTS(buffer, &buf_remain);
 
 		if (field_list) {
 			req.field_list = OS::KeyStringToMap(field_list);
@@ -114,17 +127,17 @@ namespace SB {
 		}
 
 
-		options = BufferReadIntRE(&buffer, &buf_remain);
+		options = BufferReadIntRE(buffer, &buf_remain);
 
 		req.send_groups = options & SEND_GROUPS;
 		req.push_updates = options & PUSH_UPDATES; //requesting updates, 
 		req.no_server_list = options & NO_SERVER_LIST;
 
 		if (options & ALTERNATE_SOURCE_IP) {
-			req.source_ip = BufferReadInt(&buffer, &buf_remain);
+			req.source_ip = BufferReadInt(buffer, &buf_remain);
 		}
 		if (options & LIMIT_RESULT_COUNT) {
-			req.max_results = BufferReadInt(&buffer, &buf_remain);
+			req.max_results = BufferReadInt(buffer, &buf_remain);
 		}
 
 		if (req.no_server_list && !req.field_list.size()) { //no requested field, send defaults
@@ -140,7 +153,7 @@ namespace SB {
 		return req;
 
 	}
-	void V2Peer::ProcessSendMessage(uint8_t *buffer, int remain) {
+	uint8_t *V2Peer::ProcessSendMessage(uint8_t *buffer, int remain) {
 		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = buffer;
 		int len = remain;
@@ -151,6 +164,8 @@ namespace SB {
 		const char *ipinput = Socket::inet_ntoa(m_send_msg_to.sin_addr);
 
 		m_next_packet_send_msg = true;
+
+		return p;
 
 	}
 	void V2Peer::SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist, bool send_fullkeys) {
@@ -164,41 +179,43 @@ namespace SB {
 		BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
 		BufferWriteShort(&p, &len, Socket::htons(list_req->m_from_game.queryport));
 
-		BufferWriteByte(&p, &len, list_req->field_list.size());
+		if(!list_req->no_server_list) {
+			BufferWriteByte(&p, &len, list_req->field_list.size());
 
-		//send fields
-		std::vector<std::string>::iterator field_it = list_req->field_list.begin();
-		while (field_it != list_req->field_list.end()) {
-			std::string str = *field_it;
-			BufferWriteByte(&p, &len, KEYTYPE_STRING); //key type, 0 = str, 1 = uint8, 2 = uint16 TODO: determine type
-			BufferWriteNTS(&p, &len, (uint8_t *)str.c_str());
-			field_it++;
-		}
-		//send popular string values list
-		if(usepopularlist) {
-			BufferWriteByte(&p, &len, list_req->m_for_game.popular_values.size());
-			std::vector<std::string>::iterator it_v = list_req->m_for_game.popular_values.begin();
-			while(it_v != list_req->m_for_game.popular_values.end()) {
-				std::string v = *it_v;
-				BufferWriteNTS(&p, &len, (const uint8_t*)v.c_str());
-				it_v++;
+			//send fields
+			std::vector<std::string>::iterator field_it = list_req->field_list.begin();
+			while (field_it != list_req->field_list.end()) {
+				std::string str = *field_it;
+				BufferWriteByte(&p, &len, KEYTYPE_STRING); //key type, 0 = str, 1 = uint8, 2 = uint16 TODO: determine type
+				BufferWriteNTS(&p, &len, (uint8_t *)str.c_str());
+				field_it++;
 			}
-		} else {
-			BufferWriteByte(&p, &len, 0);	
-		}
-		
+			//send popular string values list
+			if(usepopularlist) {
+				BufferWriteByte(&p, &len, list_req->m_for_game.popular_values.size());
+				std::vector<std::string>::iterator it_v = list_req->m_for_game.popular_values.begin();
+				while(it_v != list_req->m_for_game.popular_values.end()) {
+					std::string v = *it_v;
+					BufferWriteNTS(&p, &len, (const uint8_t*)v.c_str());
+					it_v++;
+				}
+			} else {
+				BufferWriteByte(&p, &len, 0);	
+			}
+			
 
-		
-		std::vector<MM::Server *>::iterator it = servers.list.begin();
-		while (it != servers.list.end()) {
-			MM::Server *server = *it;
-			sendServerData(server, true, false, &p, &len);
-			it++;
-		}
+			
+			std::vector<MM::Server *>::iterator it = servers.list.begin();
+			while (it != servers.list.end()) {
+				MM::Server *server = *it;
+				sendServerData(server, true, false, &p, &len);
+				it++;
+			}
 
-		//terminator
-		BufferWriteByte((uint8_t **)&p, &len, 0x00);
-		BufferWriteInt((uint8_t **)&p, &len, -1);
+			//terminator
+			BufferWriteByte((uint8_t **)&p, &len, 0x00);
+			BufferWriteInt((uint8_t **)&p, &len, -1);
+		}
 
 		SendPacket((uint8_t *)&buff, len, false);
 	}
@@ -255,13 +272,13 @@ namespace SB {
 		if(send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL) < 0)
 			m_delete_flag = true;
 	}
-	void V2Peer::ProcessListRequset(uint8_t *buffer, int remain) {
+	uint8_t *V2Peer::ProcessListRequset(uint8_t *buffer, int remain) {
 
 		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p;
 		uint32_t len = 0;
 
-		sServerListReq list_req = this->ParseListRequest(buffer, remain);
+		sServerListReq list_req = this->ParseListRequest(&buffer, remain);
 
 		m_last_list_req = list_req;
 
@@ -271,13 +288,12 @@ namespace SB {
 		printf("Key req: %s | %s | %s\n",list_req.m_from_game.gamename,list_req.m_for_game.gamename, m_game.gamename);
 
 		if (m_game.secretkey[0] == 0)
-			return;
+			return buffer;
 
 		MM::ServerListQuery servers;
 		servers.requested_fields = list_req.field_list;
 
-		if(list_req.no_server_list) {
-		} else {
+		 if(!list_req.no_server_list) {
 			if (list_req.send_groups) {
 				servers = MM::GetGroups(&list_req);
 			}
@@ -287,26 +303,32 @@ namespace SB {
 			}
 		}
 		SendListQueryResp(servers, &list_req);
-		if(!list_req.send_groups)
+		if(!list_req.send_groups && list_req.no_server_list)
 			SendPushKeys();
+
+		return buffer;
 	}
-	void V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
+	uint8_t *V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
 		uint8_t *p = (uint8_t *)buffer;
 		int len = remain;
 		OS::Address address;
 		address.ip = Socket::htonl(BufferReadInt(&p, &len));
 		address.port = Socket::htons(BufferReadShort(&p, &len));
 		sServerCache cache = FindServerByIP(address);
+		MM::Server *server = NULL;
 		if(cache.key[0] != 0) {
-			MM::Server *server = MM::GetServerByKey(cache.key);
+			server = MM::GetServerByKey(cache.key);
 			cache.full_keys = true;
-			if(server) {
-				sendServerData(server, false, true, NULL, NULL, true);
-				delete server;
-			}
 		} else {
-			printf("Didn't find server\n");
+			server = MM::GetServerByIP(address, m_last_list_req.m_for_game);
+			if(server) {
+				cacheServer(server, true);
+			}
 		}
+		if(server) {
+			sendServerData(server, false, true, NULL, NULL, true);
+		}
+		return p;
 	}
 	void V2Peer::send_ping() {
 		//check for timeout

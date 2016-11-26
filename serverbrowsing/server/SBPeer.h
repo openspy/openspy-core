@@ -68,7 +68,7 @@ namespace SB {
 		virtual void informNewServers(MM::ServerListQuery servers) = 0;
 		virtual void informUpdateServers(MM::ServerListQuery servers) = 0;
 	protected:
-		void cacheServer(MM::Server *server);
+		void cacheServer(MM::Server *server, bool full_keys = false);
 		void DeleteServerFromCacheByIP(OS::Address address);
 		sServerCache FindServerByIP(OS::Address address);
 
