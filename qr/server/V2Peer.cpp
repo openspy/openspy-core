@@ -183,14 +183,26 @@ namespace QR {
 				x = BufferReadNTS((uint8_t **)&buff,&len);	
 
 				if(isTeamString(name.c_str())) {
-					team_keys[name].push_back(std::string((const char *)x));
+					if(team_keys[name].size() <= player) {
+						team_keys[name].push_back(std::string((const char *)x));
+					}
+					else {
+						team_keys[name][player] = std::string((const char *)x);
+					}
+					
 				} else {
-					player_keys[name].push_back(std::string((const char *)x));
+					if(player_keys[name].size() <= player) {
+						player_keys[name].push_back(std::string((const char *)x));
+					} else {
+						player_keys[name][player] = std::string((const char *)x);
+					}
 				}
 				free((void *)x);
 				i++;
-				if(i >= num_keys)
+				if(i >= num_keys) {
+					player++;
 					i = 0;
+				}
 			}
 		}
 

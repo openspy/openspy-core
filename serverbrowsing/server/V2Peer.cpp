@@ -34,7 +34,7 @@ namespace SB {
 			buff_len -= sizeof(uint16_t);
 
 			
-			if(pos > len || ((void *)buffer + buff_len) > end) { //TODO: get expected lengths for each packet type and test!
+			if(pos > len || ((void *)buffer + buff_len) > end) {
 				break;
 			}
 
@@ -43,6 +43,8 @@ namespace SB {
 
 			gettimeofday(&m_last_recv, NULL);
 
+
+ 			//TODO: get expected lengths for each packet type and test, prior to execution
 			switch (request_type) {
 				case SERVER_LIST_REQUEST:
 					printf("Got server list request\n");
@@ -127,7 +129,7 @@ namespace SB {
 		}
 
 
-		options = BufferReadIntRE(buffer, &buf_remain);
+		options = Socket::htonl(BufferReadInt(buffer, &buf_remain));
 
 		req.send_groups = options & SEND_GROUPS;
 		req.push_updates = options & PUSH_UPDATES; //requesting updates, 
@@ -265,7 +267,7 @@ namespace SB {
 			m_sent_crypt_header = true;
 		}
 		if(prepend_length) {
-			BufferWriteShortRE(&p, &out_len, len + sizeof(uint16_t));
+			BufferWriteShort(&p, &out_len, Socket::htons(len + sizeof(uint16_t)));
 		}
 		BufferWriteData(&p, &out_len, buff, len);
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)&out_buff) + header_len, out_len - header_len);
