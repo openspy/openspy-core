@@ -206,6 +206,7 @@ namespace QR {
 		} else if(state_changed == 2) {
 			m_validated = false;
 			MM::DeleteServer(&m_server_info, true);
+			m_delete_flag = true;
 			return;
 		}
 

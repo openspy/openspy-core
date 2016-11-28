@@ -219,6 +219,11 @@ namespace QR {
 			return;
 		}
 
+		if(atoi(server_keys["statechanged"].c_str()) == 2) {
+			m_delete_flag = true;
+			return;
+		}
+
 		//TODO: check if changed and only push changes
 		if(m_server_pushed) {
 			MM::UpdateServer(&m_server_info);
