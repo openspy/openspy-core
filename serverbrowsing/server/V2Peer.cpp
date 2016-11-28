@@ -602,7 +602,7 @@ namespace SB {
 			cacheServer(server);
 		}
 		if(server && serverMatchesLastReq(server)) {
-			sendServerData(server, false, true, NULL, NULL);
+			sendServerData(server, false, true, NULL, NULL, true);
 		}
 	}
 

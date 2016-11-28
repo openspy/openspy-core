@@ -304,14 +304,14 @@ namespace MM {
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
 		Server *server = new MM::Server();
 
-		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR));
+		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_SBGroups));
 
 		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s gameid", entry_name);
 		if (!reply)
 			goto error_cleanup;
 		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
-		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR)); //change context back to SB db id
+		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_SBGroups)); //change context back to SB db id
 
 		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s groupid", entry_name);
 		if (!reply)
