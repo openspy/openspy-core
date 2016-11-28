@@ -5,8 +5,9 @@
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
 #include <OS/socketlib/socketlib.h>
+#include <limits.h>
 #include <sstream>
-#include  <algorithm>
+#include <algorithm>
 #define CRYPTCHAL_LEN 10
 #define SERVCHAL_LEN 25
 namespace SB {
@@ -42,6 +43,9 @@ namespace SB {
 			printf("Got request %d\n", request_type);
 
 			gettimeofday(&m_last_recv, NULL);
+
+			if (m_game.secretkey[0] == 0 && request_type != SERVER_LIST_REQUEST) //only list req can define the game, anything else will result in a crash
+				return;
 
 
  			//TODO: get expected lengths for each packet type and test, prior to execution
@@ -170,6 +174,44 @@ namespace SB {
 		return p;
 
 	}
+	uint8_t *V2Peer::WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, uint8_t *buff, int *len, std::map<std::string, int> &field_types) {
+		uint8_t *out = buff;
+		uint8_t var = KEYTYPE_STRING;
+		std::vector<MM::Server *>::iterator it = servers.list.begin();
+		int highest_value = 0;
+		while (it != servers.list.end()) {
+			MM::Server *server = *it;
+			std::string value = server->kvFields[field_name];
+			int val = abs(atoi(value.c_str()));;
+			if(val > highest_value)
+				highest_value = val;
+			it++;
+		}
+
+		if(highest_value != 0) {
+			std::vector<std::string>::iterator push_it;
+			std::ostringstream s;
+			s << highest_value;
+
+			/*
+				Check if the highest value is a popular value, if so this will be more efficent
+			*/
+			push_it = std::find(m_last_list_req.m_for_game.popular_values.begin(),m_last_list_req.m_for_game.popular_values.end(),s.str());
+			if(push_it == m_last_list_req.m_for_game.popular_values.end()) {
+				if(highest_value <= SCHAR_MAX) {
+					var = KEYTYPE_BYTE;
+				} else if(highest_value <= SHRT_MAX) {
+					var = KEYTYPE_SHORT;
+				}
+			}
+		}
+		BufferWriteByte(&out, len, var); //key type, 0 = str, 1 = uint8, 2 = uint16 TODO: determine type
+		BufferWriteNTS(&out, len, (uint8_t *)field_name.c_str());
+
+		field_types[field_name] = var;
+
+		return out;
+	}
 	void V2Peer::SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist, bool send_fullkeys) {
 		/*
 		TODO: make support split packets
@@ -185,11 +227,11 @@ namespace SB {
 			BufferWriteByte(&p, &len, list_req->field_list.size());
 
 			//send fields
+			std::map<std::string, int> field_types;
 			std::vector<std::string>::iterator field_it = list_req->field_list.begin();
 			while (field_it != list_req->field_list.end()) {
 				std::string str = *field_it;
-				BufferWriteByte(&p, &len, KEYTYPE_STRING); //key type, 0 = str, 1 = uint8, 2 = uint16 TODO: determine type
-				BufferWriteNTS(&p, &len, (uint8_t *)str.c_str());
+				p = WriteOptimizedField(servers, str, p, &len, field_types);
 				field_it++;
 			}
 			//send popular string values list
@@ -210,7 +252,7 @@ namespace SB {
 			std::vector<MM::Server *>::iterator it = servers.list.begin();
 			while (it != servers.list.end()) {
 				MM::Server *server = *it;
-				sendServerData(server, true, false, &p, &len);
+				sendServerData(server, true, false, &p, &len, false, &field_types);
 				it++;
 			}
 
@@ -301,7 +343,7 @@ namespace SB {
 			}
 			else {
 				servers = MM::GetServers(&list_req);
-				printf("GOt %d servers\n",servers.list.size());
+				printf("Got %d servers\n",servers.list.size());
 			}
 		}
 		SendListQueryResp(servers, &list_req);
@@ -323,10 +365,10 @@ namespace SB {
 			cache.full_keys = true;
 		} else {
 			server = MM::GetServerByIP(address, m_last_list_req.m_for_game);
+		}
 			if(server) {
 				cacheServer(server, true);
 			}
-		}
 		if(server) {
 			sendServerData(server, false, true, NULL, NULL, true);
 		}
@@ -378,7 +420,7 @@ namespace SB {
 			m_timeout_flag = true;
 		}
 	}
-	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys) {
+	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys, const std::map<std::string, int> *optimized_fields) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 		uint8_t *p = (uint8_t *)&buf;
 
@@ -425,12 +467,37 @@ namespace SB {
 					value = server->kvFields[*tok_it].c_str();
 					push_it = std::find(server->game.popular_values.begin(),server->game.popular_values.end(),value);
 				}
+
+				/*
+					Write values
+				*/
 				if(usepopularlist) {
 					if(push_it == server->game.popular_values.end()) {
-						BufferWriteByte(&p, &len, 0xFF); //string index, -1 = no index
-						printf("Writing idx -1 for %s\n", value.c_str());
+						int type = KEYTYPE_STRING;
+						if(optimized_fields) {
+							if(optimized_fields->find(*tok_it) != optimized_fields->end())
+								type = (*(optimized_fields->find(*tok_it))).second;
+						}
+						/*
+							This optimziation works on HAS_KEY_FLAG only
+						*/
+						if(type == KEYTYPE_STRING)
+							BufferWriteByte(&p, &len, 0xFF); //string index, -1 = no index
 						if (value.length() > 0) {
-							BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
+
+							switch(type) {
+								case KEYTYPE_BYTE:
+									BufferWriteByte(&p, &len, (atoi(value.c_str())));
+									break;
+								case KEYTYPE_SHORT:
+									BufferWriteShort(&p, &len, Socket::htons(atoi(value.c_str())));
+									break;
+								case KEYTYPE_STRING:
+									BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
+									break;
+								break;	
+							}
+							
 						}
 						else {
 							BufferWriteByte(&p, &len, 0);
@@ -438,7 +505,7 @@ namespace SB {
 					}
 					else {
 						BufferWriteByte(&p, &len, std::distance(server->game.popular_values.begin(), push_it));
-						printf("Writing idx %d for (%s)%s\n", std::distance(server->game.popular_values.begin(), push_it), (*tok_it).c_str(), value.c_str());
+						//printf("Writing idx %d for (%s)%s\n", std::distance(server->game.popular_values.begin(), push_it), (*tok_it).c_str(), value.c_str());
 					}
 				}
 				tok_it++;
@@ -502,50 +569,40 @@ namespace SB {
 			SendPacket((uint8_t *)&buf, len, push);
 		}
 	}
-	void V2Peer::informDeleteServers(MM::ServerListQuery servers) {
+	void V2Peer::informDeleteServers(MM::Server *server) {
+		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
+		uint8_t *p = (uint8_t *)&buf;
+		int len = 0;
 
-		std::vector<MM::Server *>::iterator it = servers.list.begin();
-		while(it != servers.list.end()) {
-			MM::Server *s = *it;
-			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
-			uint8_t *p = (uint8_t *)&buf;
-			int len = 0;
-			
-			if(FindServerByIP(s->wan_address).key[0] != 0) {
-				DeleteServerFromCacheByIP(s->wan_address);
-				if(serverMatchesLastReq(s)) {
-					BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
-					BufferWriteInt(&p, &len, Socket::htonl(s->wan_address.ip));
-					BufferWriteShort(&p, &len, Socket::htons(s->wan_address.port));
-					SendPacket((uint8_t *)&buf, len, true);
-				}
+		sServerCache cache = FindServerByKey(server->key);
+		if(cache.key[0] == 0) return;
+
+		DeleteServerFromCacheByKey(server->key);
+
+		BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
+		BufferWriteInt(&p, &len, Socket::htonl(server->wan_address.ip));
+		BufferWriteShort(&p, &len, Socket::htons(server->wan_address.port));
+		SendPacket((uint8_t *)&buf, len, true);
+	}
+	void V2Peer::informNewServers(MM::Server *server) {
+		sServerCache cache = FindServerByKey(server->key);
+		if(cache.key[0] != 0) return;
+		if(server) {
+			if(serverMatchesLastReq(server)) {
+				cacheServer(server);
+				sendServerData(server, false, true, NULL, NULL, true);
 			}
-			it++;
 		}
 	}
-	void V2Peer::informNewServers(MM::ServerListQuery servers) {
-		std::vector<MM::Server *>::iterator it = servers.list.begin();
-		while(it != servers.list.end()) {
-			MM::Server *s = *it;
-			if(serverMatchesLastReq(s)) {
-				if(FindServerByIP(s->wan_address).key[0] == 0) {
-					sendServerData(s, false, true, NULL, NULL);
-				}
-			}
-			it++;
+	void V2Peer::informUpdateServers(MM::Server *server) {
+		sServerCache cache = FindServerByKey(server->key);
+
+		//client never recieved server notification, add to cache and send anyways, as it will be registered as a new server by the SB SDK
+		if(cache.key[0] == 0 && server && serverMatchesLastReq(server)) {
+			cacheServer(server);
 		}
-	}
-	void V2Peer::informUpdateServers(MM::ServerListQuery servers) {
-		std::vector<MM::Server *>::iterator it = servers.list.begin();
-		while(it != servers.list.end()) {
-			MM::Server *s = *it;
-			if(serverMatchesLastReq(s)) {
-				sServerCache cache = FindServerByIP(s->wan_address);
-				if(cache.key[0] == 0 /*|| server matches new filter*/) {
-					sendServerData(s, false, true, NULL, NULL, cache.full_keys);
-				}
-			}
-			it++;
+		if(server && serverMatchesLastReq(server)) {
+			sendServerData(server, false, true, NULL, NULL);
 		}
 	}
 

@@ -17,7 +17,7 @@ namespace QR {
 	class Peer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
-		~Peer();
+		virtual ~Peer();
 		
 		virtual void think() = 0;
 		virtual void handle_packet(char *recvbuf, int len) = 0;		

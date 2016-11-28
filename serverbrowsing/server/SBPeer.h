@@ -39,7 +39,7 @@ namespace SB {
 	class Server;
 
 	struct sServerCache {
-		char key[64];
+		std::string key;
 		OS::Address wan_address;
 		bool full_keys;
 	};
@@ -48,7 +48,7 @@ namespace SB {
 	class Peer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
-		~Peer();
+		virtual ~Peer();
 		
 		virtual void think(bool packet_waiting) = 0;
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
@@ -64,13 +64,15 @@ namespace SB {
 
 		bool serverMatchesLastReq(MM::Server *server, bool require_push_flag = true);
 
-		virtual void informDeleteServers(MM::ServerListQuery servers) = 0;
-		virtual void informNewServers(MM::ServerListQuery servers) = 0;
-		virtual void informUpdateServers(MM::ServerListQuery servers) = 0;
+		virtual void informDeleteServers(MM::Server *server) = 0;
+		virtual void informNewServers(MM::Server *server) = 0;
+		virtual void informUpdateServers(MM::Server *server) = 0;
 	protected:
 		void cacheServer(MM::Server *server, bool full_keys = false);
 		void DeleteServerFromCacheByIP(OS::Address address);
+		void DeleteServerFromCacheByKey(std::string key);
 		sServerCache FindServerByIP(OS::Address address);
+		sServerCache FindServerByKey(std::string key);
 
 
 		int m_sd;

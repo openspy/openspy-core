@@ -21,7 +21,7 @@
 #include <algorithm>
 
 namespace MM {
-	SB::Driver *mp_driver;
+	std::vector<SB::Driver *> m_drivers;
 	redisContext *mp_redis_connection;
 	redisContext *mp_redis_async_retrival_connection;
 	redisAsyncContext *mp_redis_async_connection;
@@ -30,28 +30,30 @@ namespace MM {
 	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
 	    redisReply *r = (redisReply*)reply;
 
-
-
-	    ServerListQuery servers;
+	    Server *server = NULL;
 	    if (reply == NULL) return;
 
 	    char msg_type[16], server_key[64];
-
 	    if (r->type == REDIS_REPLY_ARRAY) {
 	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
 	    		if(strcmp(r->element[1]->str,sb_mm_channel) == 0) {
 	    			find_param(0, r->element[2]->str,(char *)&msg_type, sizeof(msg_type));
 	    			find_param(1, r->element[2]->str, (char *)&server_key, sizeof(server_key));
 
-		   			if(strcmp(msg_type,"del") == 0) {
-	    				AppendServerEntry(server_key, &servers, true, true, mp_redis_async_retrival_connection);
-	    				mp_driver->SendDeleteServer(servers);
-	    			} else if(strcmp(msg_type,"new") == 0) {
-	    				AppendServerEntry(server_key, &servers, true, false, mp_redis_async_retrival_connection);
-	    				mp_driver->SendNewServer(servers);
-	    			} else if(strcmp(msg_type,"update") == 0) {
-	    				AppendServerEntry(server_key, &servers, true, false,mp_redis_async_retrival_connection);
-	    				mp_driver->SendUpdateServer(servers);
+	    			server = GetServerByKey(server_key, mp_redis_async_retrival_connection, strcmp(msg_type,"del") == 0);
+	    			if(!server) return;
+
+	    			std::vector<SB::Driver *>::iterator it = m_drivers.begin();
+	    			while(it != m_drivers.end()) {
+	    				SB::Driver *driver = *it;
+			   			if(strcmp(msg_type,"del") == 0) {
+		    				driver->SendDeleteServer(server);
+		    			} else if(strcmp(msg_type,"new") == 0) {
+		    				driver->SendNewServer(server);
+		    			} else if(strcmp(msg_type,"update") == 0) {
+		    				driver->SendUpdateServer(server);
+		    			}
+	    				it++;
 	    			}
 	    		}
 	    	}
@@ -64,20 +66,27 @@ namespace MM {
 
 
 	void *setup_redis_async(OS::CThread *) {
+
+		struct event_base *base = event_base_new();
+
 	    mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
 
-	    struct event_base *base = event_base_new();
 	    redisLibeventAttach(mp_redis_async_connection, base);
 	    redisAsyncCommand(mp_redis_async_connection, onRedisMessage, NULL, "SUBSCRIBE %s",sb_mm_channel);
 	    event_base_dispatch(base);
 		return NULL;
 	}
-	void Init(SB::Driver *driver) {
+	void AddDriver(SB::Driver *driver) {
+		m_drivers.push_back(driver);
+	}
+	void RemoveDriver(SB::Driver *driver) {
+
+	}
+	void Init() {
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
-		mp_driver = driver;
 		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 		mp_redis_async_retrival_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 
@@ -92,6 +101,8 @@ namespace MM {
 		XXX: add redis error checks, cleanup on error, etc
 		*/
 
+		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR));
+
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
 		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s deleted", entry_name.c_str());
 		if(reply) {
@@ -101,17 +112,23 @@ namespace MM {
 			}
 			freeReplyObject(reply);
 		} else {
-			return;			
+			return;
 		}
 		
 
 		Server *server = new MM::Server();
 
 		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s gameid", entry_name.c_str());
+
 		if (!reply)
 			goto error_cleanup;
-		if(reply->type == REDIS_REPLY_STRING)
-			server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
+
+		if(reply->type == REDIS_REPLY_STRING) {
+			std::string gameid_reply = OS::strip_quotes(reply->str).c_str();
+			int gameid = atoi(gameid_reply.c_str());
+			server->game = OS::GetGameByID(gameid, redis_ctx);
+			freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR));
+		}
 		freeReplyObject(reply);
 
 		server->key = entry_name;
@@ -138,6 +155,7 @@ namespace MM {
 			goto error_cleanup;
 		if(reply->type == REDIS_REPLY_STRING)
 			server->wan_address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reply->str).c_str()));
+
 		freeReplyObject(reply);
 
 
@@ -226,6 +244,7 @@ namespace MM {
 		return;
 
 		error_cleanup:
+			printf("appendserver Error cleanup\n");
 			delete server;
 
 	}
@@ -285,11 +304,14 @@ namespace MM {
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
 		Server *server = new MM::Server();
 
+		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR));
+
 		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s gameid", entry_name);
 		if (!reply)
 			goto error_cleanup;
 		server->game = OS::GetGameByID(atoi(OS::strip_quotes(reply->str).c_str()));
 		freeReplyObject(reply);
+		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR)); //change context back to SB db id
 
 		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s groupid", entry_name);
 		if (!reply)
@@ -305,7 +327,6 @@ namespace MM {
 		FindAppend_ServKVFields(server, entry_name, "numwaiting", redis_ctx);
 		FindAppend_ServKVFields(server, entry_name, "numservers", redis_ctx);
 
-		printf("All keys: %d\n", all_keys);
 		if(all_keys) {
 			reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name);
 			if (!reply)
@@ -372,12 +393,12 @@ namespace MM {
 		freeReplyObject(reply);
 		return ret;
 	}
-	Server *GetServerByKey(std::string key, redisContext *redis_ctx) {
+	Server *GetServerByKey(std::string key, redisContext *redis_ctx, bool include_deleted) {
 		if(redis_ctx == NULL) {
 			redis_ctx = mp_redis_connection;
 		}
 		ServerListQuery ret;
-		AppendServerEntry(key, &ret, true, false, redis_ctx);
+		AppendServerEntry(key, &ret, true, include_deleted, redis_ctx);
 		if(ret.list.size() < 1)
 			return NULL;
 
@@ -394,6 +415,8 @@ namespace MM {
 		addr.sin_port = Socket::htons(address.port);
 		addr.sin_addr.s_addr = Socket::htonl(address.ip);
 		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
+
+		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR));
 
 		s << "GET IPMAP_" << game.gamename << "_" << ipinput << "-" << address.port;
 		std::string cmd = s.str();

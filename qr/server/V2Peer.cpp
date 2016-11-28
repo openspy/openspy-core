@@ -47,6 +47,7 @@ namespace QR {
 
 	}
 	V2Peer::~V2Peer() {
+		printf("V2 client deleted pushed: %d\n", m_server_pushed);
 		if(m_server_pushed) {
 			MM::DeleteServer(&m_server_info);
 		}

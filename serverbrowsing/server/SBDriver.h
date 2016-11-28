@@ -38,9 +38,9 @@ namespace SB {
 
 		int setup_fdset(fd_set *fdset);
 		
-		void SendDeleteServer(MM::ServerListQuery servers);
-	    void SendNewServer(MM::ServerListQuery servers);
-	    void SendUpdateServer(MM::ServerListQuery servers);
+		void SendDeleteServer(MM::Server *server);
+	    void SendNewServer(MM::Server *server);
+	    void SendUpdateServer(MM::Server *server);
 
 
 		int GetNumConnections();

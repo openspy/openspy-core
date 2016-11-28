@@ -54,13 +54,39 @@ namespace SB {
 			it++;
 		}
 	}
+	void Peer::DeleteServerFromCacheByKey(std::string key) {
+		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
+		while(it != m_visible_servers.end()) {
+			sServerCache cache = *it;
+			if(cache.key.compare(key) == 0) {
+				it = m_visible_servers.erase(it);
+				continue;
+			}
+			it++;
+		}
+	}
 	void Peer::cacheServer(MM::Server *server, bool full_keys) {
 		sServerCache item;
 		if(FindServerByIP(server->wan_address).key[0] == 0) {
 			item.wan_address = server->wan_address;
-			strcpy(item.key,server->key.c_str());
+			//strcpy(item.key,server->key.c_str());
+			item.key = server->key;
 			item.full_keys = full_keys;
 			m_visible_servers.push_back(item);
 		}
+	}
+	sServerCache Peer::FindServerByKey(std::string key) {
+		sServerCache ret;
+		ret.full_keys = false;
+		ret.key[0] = 0;
+		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
+		while(it != m_visible_servers.end()) {
+			sServerCache cache = *it;
+			if(cache.key.compare(key) == 0) {
+				return cache;
+			}
+			it++;
+		}
+		return ret;		
 	}
 }

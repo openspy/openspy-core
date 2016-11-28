@@ -87,13 +87,13 @@ namespace SB {
 			}
 		}
 
-		void V1Peer::informDeleteServers(MM::ServerListQuery servers) {
+		void V1Peer::informDeleteServers(MM::Server *server) {
 
 		}
-		void V1Peer::informNewServers(MM::ServerListQuery servers) {
+		void V1Peer::informNewServers(MM::Server *server) {
 
 		}
-		void V1Peer::informUpdateServers(MM::ServerListQuery servers) {
+		void V1Peer::informUpdateServers(MM::Server *server) {
 
 		}
 		void V1Peer::send_error(bool disconnect, const char *fmt, ...) {

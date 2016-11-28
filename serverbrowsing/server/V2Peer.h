@@ -3,6 +3,8 @@
 #include "SBPeer.h"
 #include "SBDriver.h"
 #include "sb_crypt.h"
+#include <map>
+#include <string>
 //message types for outgoing requests
 #define SERVER_LIST_REQUEST		0
 #define SERVER_INFO_REQUEST		1
@@ -50,9 +52,9 @@ namespace SB {
 				V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 				~V2Peer();
 				void think(bool packet_waiting);
-				void informDeleteServers(MM::ServerListQuery servers);
-				void informNewServers(MM::ServerListQuery servers);
-				void informUpdateServers(MM::ServerListQuery servers);
+				void informDeleteServers(MM::Server *server);
+				void informNewServers(MM::Server *server);
+				void informUpdateServers(MM::Server *server);
 			private:
 
 
@@ -72,7 +74,8 @@ namespace SB {
 				sServerListReq ParseListRequest(uint8_t **buffer, int remain);
 
 				void SendListQueryResp(struct MM::ServerListQuery servers, sServerListReq *list_req, bool usepopularlist = true, bool send_fullkeys = false);
-				void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false);
+				void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false, const std::map<std::string, int> *optimized_fields = NULL);
+				uint8_t *WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, uint8_t *buff, int *len, std::map<std::string, int> &field_types);
 				void SendPushKeys();
 				void send_error(bool die, const char *fmt, ...);
 

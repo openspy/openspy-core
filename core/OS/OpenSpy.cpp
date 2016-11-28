@@ -12,40 +12,44 @@ namespace OS {
 
 		redis_internal_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 	}
-	OS::GameData GetGameByRedisKey(const char *key) {
+	OS::GameData GetGameByRedisKey(const char *key, redisContext *redis_ctx = NULL) {
 		GameData game;
 		redisReply *reply;	
 
-		freeReplyObject(redisCommand(OS::redis_internal_connection, "SELECT %d", ERedisDB_Game));
+		if(redis_ctx == NULL) {
+			redis_ctx = OS::redis_internal_connection;
+		}
 
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s gameid", key);
+		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game));
+
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s gameid", key);
 		if (reply->type == REDIS_REPLY_STRING) {
 			game.gameid = atoi(OS::strip_quotes(reply->str).c_str());
 		}
 		freeReplyObject(reply);
 
 
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s secretkey", key);
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s secretkey", key);
 		if (reply->type == REDIS_REPLY_STRING)
 			strcpy(game.secretkey, OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s description", key);
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s description", key);
 		if (reply->type == REDIS_REPLY_STRING)
 			strcpy(game.description, OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s gamename", key);
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s gamename", key);
 		if (reply->type == REDIS_REPLY_STRING)
 			strcpy(game.gamename, OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s disabled_services", key);
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s disabled_services", key);
 		if (reply->type == REDIS_REPLY_STRING)
 			game.disabled_services = atoi(OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "HGET %s queryport", key);
+		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s queryport", key);
 		if (reply->type == REDIS_REPLY_STRING)
 			game.queryport = atoi(OS::strip_quotes(reply->str).c_str());
 		freeReplyObject(reply);
@@ -72,34 +76,42 @@ namespace OS {
 		return game;
 		
 	}
-	OS::GameData GetGameByName(const char *from_gamename) {
+	OS::GameData GetGameByName(const char *from_gamename, redisContext *redis_ctx) {
 		OS::GameData ret;
 		memset(&ret, 0, sizeof(ret));
 
+		if(redis_ctx == NULL) {
+			redis_ctx = OS::redis_internal_connection;
+		}
+
 		redisReply *reply;
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "SELECT %d", ERedisDB_Game);
+		reply = (redisReply *)redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game);
 		if(!reply)
 			return ret;
 		freeReplyObject(reply);
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "KEYS %s:*",from_gamename);
+		reply = (redisReply *)redisCommand(redis_ctx, "KEYS %s:*",from_gamename);
 		if (reply->type == REDIS_REPLY_ARRAY) {
 			for (int j = 0; j < reply->elements; j++) {
-				ret = GetGameByRedisKey(reply->element[j]->str);
+				ret = GetGameByRedisKey(reply->element[j]->str, redis_ctx);
 				break;
 			}
 		}
 		freeReplyObject(reply);
 		return ret;
 	}
-	OS::GameData GetGameByID(int gameid) {
+	OS::GameData GetGameByID(int gameid, redisContext *redis_ctx) {
 		redisReply *reply;
-		freeReplyObject(redisCommand(OS::redis_internal_connection, "SELECT %d", ERedisDB_Game));
 		OS::GameData ret;
+		if(redis_ctx == NULL) {
+			redis_ctx = OS::redis_internal_connection;
+		}
+		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game));
+		
 		memset(&ret, 0, sizeof(ret));
-		reply = (redisReply *)redisCommand(OS::redis_internal_connection, "KEYS *:%d", gameid);
+		reply = (redisReply *)redisCommand(redis_ctx, "KEYS *:%d", gameid);
 		if (reply->type == REDIS_REPLY_ARRAY) {
 			for (int j = 0; j < reply->elements; j++) {
-				ret = GetGameByRedisKey(reply->element[j]->str);
+				ret = GetGameByRedisKey(reply->element[j]->str, redis_ctx);
 				break;
 			}
 		}

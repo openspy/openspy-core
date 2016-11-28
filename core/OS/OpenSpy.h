@@ -68,8 +68,8 @@ namespace OS {
 
 		std::map<std::string, uint8_t> push_keys; //SB push keys + type(hostname/KEYTYPE_STRING)
 	} GameData;
-	GameData GetGameByName(const char *from_gamename);
-	GameData GetGameByID(int gameid);
+	GameData GetGameByName(const char *from_gamename, redisContext *redis_ctx = NULL);
+	GameData GetGameByID(int gameid, redisContext *redis_ctx = NULL);
 	enum ERedisDB {
 		ERedisDB_QR,
 		ERedisDB_SBGroups,

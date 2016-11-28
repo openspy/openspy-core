@@ -10,11 +10,9 @@
 #include "V2Peer.h"
 #include <OS/socketlib/socketlib.h>
 
+#include "MMQuery.h"
 namespace SB {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version) : INetDriver(server) {
-		
-		Socket::Init();
-		MM::Init(this);
 		uint32_t bind_ip = INADDR_ANY;
 		
 		if ((m_sd = Socket::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
@@ -45,9 +43,12 @@ namespace SB {
 		gettimeofday(&m_server_start, NULL);
 
 		m_version = version;
+
+		MM::AddDriver(this);
+
 	}
 	Driver::~Driver() {
-
+		MM::RemoveDriver(this);
 	}
 	void Driver::think(fd_set *fdset) {
 
@@ -170,27 +171,30 @@ namespace SB {
 			it++;
 		}
 	}
-	void Driver::SendDeleteServer(MM::ServerListQuery servers) {
+	void Driver::SendDeleteServer(MM::Server *server) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			p->informDeleteServers(servers);
+			p->informDeleteServers(server);
 			it++;
 		}
 	}
-	void Driver::SendNewServer(MM::ServerListQuery servers) {
+	void Driver::SendNewServer(MM::Server *server) {
+		printf("Driver::SendNewServer\n");
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			p->informNewServers(servers);
+			printf("Send to client %p\n", p);
+			p->informNewServers(server);
 			it++;
 		}
 	}
-	void Driver::SendUpdateServer(MM::ServerListQuery servers) {
+	void Driver::SendUpdateServer(MM::Server *server) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			p->informUpdateServers(servers);
+			printf("Send update to client %p\n", p);
+			p->informUpdateServers(server);
 			it++;
 		}
 	}

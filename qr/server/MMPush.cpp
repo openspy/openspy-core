@@ -132,10 +132,10 @@ namespace MM {
 			while(it3 != p.second.end()) {
 				std::string s = *it3;
 				freeReplyObject(redisCommand(mp_redis_connection, "HSET %scustkeys_player_%d %s \"%s\"",server_key.c_str(), i,p.first.c_str(),s.c_str()));
+				freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %scustkeys_player_%d 300",server_key.c_str(), i,p.first.c_str()));
 				i++;
 				it3++;
 			}
-			freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %scustkeys_player_%d 300",server_key.c_str(), i,p.first.c_str()));
 			i=0;
 			it2++;
 		}
@@ -149,10 +149,11 @@ namespace MM {
 				
 				std::string s = *it3;
 				freeReplyObject(redisCommand(mp_redis_connection, "HSET %scustkeys_team_%d %s \"%s\"",server_key.c_str(), i,p.first.c_str(),s.c_str()));
+				freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %scustkeys_team_%d 300",server_key.c_str(), i));
 				i++;
 				it3++;
 			}
-			freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %scustkeys_team_%d 300",server_key.c_str(), i));
+
 			i=0;
 			it2++;
 		}

@@ -18,9 +18,9 @@ namespace SB {
 		void think(bool packet_waiting); //called when no data is recieved
 		
 
-		void informDeleteServers(MM::ServerListQuery servers);
-		void informNewServers(MM::ServerListQuery servers);
-		void informUpdateServers(MM::ServerListQuery servers);
+		void informDeleteServers(MM::Server *server);
+		void informNewServers(MM::Server *server);
+		void informUpdateServers(MM::Server *server);
 	protected:
 		void SendPacket(const uint8_t *buff, int len, bool attach_final);
 		void SendServers(MM::ServerListQuery results);

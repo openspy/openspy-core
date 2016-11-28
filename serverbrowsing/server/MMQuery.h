@@ -12,7 +12,9 @@ namespace SB {
 
 
 namespace MM {
-	void Init(SB::Driver *driver);
+	void AddDriver(SB::Driver *driver);
+	void RemoveDriver(SB::Driver *driver);
+	void Init();
 	void Think(); //check for push notifications, etc
 	typedef struct {
 		OS::Address wan_address;
@@ -50,9 +52,8 @@ namespace MM {
 	struct MM::ServerListQuery GetServers(const SB::sServerListReq *req);
 	struct MM::ServerListQuery GetGroups(const SB::sServerListReq *req);
 
-	Server *GetServerByKey(std::string key, redisContext *redis_ctx = NULL);
+	Server *GetServerByKey(std::string key, redisContext *redis_ctx = NULL, bool include_deleted = false);
 	Server *GetServerByIP(OS::Address address, OS::GameData game, redisContext *redis_ctx = NULL);
-	extern SB::Driver *mp_driver;
 	extern redisContext *mp_redis_connection;
 };
 

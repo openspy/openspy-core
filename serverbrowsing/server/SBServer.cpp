@@ -5,7 +5,6 @@ SBServer::SBServer() {
 	
 }
 void SBServer::init() {
-	
 }
 void SBServer::tick() {
 	NetworkTick();
