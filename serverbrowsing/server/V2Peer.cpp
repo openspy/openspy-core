@@ -347,6 +347,7 @@ namespace SB {
 			}
 		}
 		SendListQueryResp(servers, &list_req);
+		FreeServerListQuery(&servers);
 		if(!list_req.send_groups && list_req.no_server_list)
 			SendPushKeys();
 

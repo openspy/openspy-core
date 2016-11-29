@@ -54,6 +54,7 @@ namespace MM {
 
 	Server *GetServerByKey(std::string key, redisContext *redis_ctx = NULL, bool include_deleted = false);
 	Server *GetServerByIP(OS::Address address, OS::GameData game, redisContext *redis_ctx = NULL);
+	void FreeServerListQuery(struct MM::ServerListQuery *query);
 	extern redisContext *mp_redis_connection;
 };
 

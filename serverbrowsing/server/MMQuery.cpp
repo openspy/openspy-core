@@ -428,5 +428,12 @@ namespace MM {
 		freeReplyObject(reply);
 		return server;
 	}
-
+	void FreeServerListQuery(struct MM::ServerListQuery *query) {
+		std::vector<Server *>::iterator it = query->list.begin();
+		while(it != query->list.end()) {
+			Server *server = *it;
+			delete server;
+			it++;
+		}
+	}
 }

@@ -172,14 +172,17 @@ namespace SB {
 			if(strcmp(mode,"cmp") == 0) {				
 				servers = MM::GetServers(&req);
 				SendServers(servers);
+				FreeServerListQuery(&servers);
 			} else if(strcmp(mode,"info2") == 0) {
 				req.all_keys = true;
 				servers = MM::GetServers(&req);
 				SendServerInfo(servers);
+				FreeServerListQuery(&servers);
 			} else if(strcmp(mode,"groups") == 0) {
 				req.all_keys = true;
 				servers = MM::GetGroups(&req);
 				SendGroups(servers);
+				FreeServerListQuery(&servers);
 			} else {
 				send_error(true, "Unknown list mode");
 				return;
