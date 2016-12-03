@@ -60,10 +60,9 @@ def try_authenticate(login_data):
     conn = httplib.HTTPConnection(LOGIN_SERVER)
     conn.request("POST", LOGIN_SCRIPT, params, headers)
     response = conn.getresponse().read()
-
     response = jwt.decode(response, SECRET_AUTH_KEY, algorithm='HS256')
 
-    print("Got resp: {}".format(response))
+    
 
     if "success" in response and response["success"] == True:
         profile = response['profile']
@@ -260,8 +259,6 @@ def application(env, start_response):
 
     start_response('200 OK', [('Content-Type','text/html')])
 
-    mapping_file = open("post_data.txt","a")
-
     private_key_file = open("private_key.pem","r")
 
     bio = BIO.MemoryBuffer(private_key_file.read())
@@ -280,7 +277,6 @@ def application(env, start_response):
     if login_uniquenick_tree != None:
         resp = handle_unique_login(login_uniquenick_tree, rsa)
     elif login_profile_tree != None:
-        mapping_file.write("{}\n".format(ET.tostring(login_profile_tree, encoding='utf8', method='xml')))
         resp = handle_profile_login(login_profile_tree, rsa)
     elif login_remoteauth_tree != None:
         resp = handle_remoteauth_login(login_remoteauth_tree, rsa)
@@ -290,6 +286,5 @@ def application(env, start_response):
     #mapping_file.write("{}\n".format(rsa))
 
     if resp != None:
-        print("Sending resp: {}".format(ET.tostring(resp, encoding='utf8', method='xml')))
         return ET.tostring(resp, encoding='utf8', method='xml')
     return [b"Hello World"]
