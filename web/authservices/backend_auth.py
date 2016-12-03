@@ -3,6 +3,7 @@ from cgi import parse_qs, escape
 import jwt
 
 import MySQLdb
+import uuid
 
 SECRET_AUTH_KEY = "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
 
@@ -66,6 +67,11 @@ def test_pass_plain_by_userid(db_ctx, userid, password):
 
     cursor.close()
     return auth_success
+
+def create_auth_session(profile):
+    session_key = uuid.uuid1()
+    redis_key = '{}:{}:{}'.format(profile['userid'],profile['profileid'],session_key)
+    return {'redis_key': redis_key, 'session_key':
 def application(env, start_response):
     db_ctx = MySQLdb.connect(user='root', db='GameTracker')
 

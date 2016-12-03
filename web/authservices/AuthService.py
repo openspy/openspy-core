@@ -46,19 +46,6 @@ def generate_signature(rsa, length, version, auth_user_dir, peerkey, server_data
     return None
 
 
-def get_user_by_id(id):
-    ret = OrderedDict()
-    ret['partnercode'] = '777'
-    ret['namespaceid'] = '777'
-    ret['userid'] = '10000'
-    ret['profileid'] = '10000'
-    ret['expiretime'] = '10000'
-    ret['profilenick'] = 'Bobbeh'
-    ret['uniquenick'] = 'Bobby'
-    ret['cdkeyhash'] = '9f86d081884c7d659a2feaa0c55ad015'.upper()
-    return ret
-
-
 #will be used if LOGIN_RESPONE_* differs from backend auth
 def convert_reason_code(reason):
     return str(reason)
