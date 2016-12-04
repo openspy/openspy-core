@@ -64,6 +64,7 @@ hset gmtest:2 disabled_services 0
 hset gmtest:2 queryport 6500
 
 #auth session db
+select 3
 hset userid:profileid userid 1111
 hset 1111:profileid userid 1111
 hset 1111:666 logintime unix_timestamp

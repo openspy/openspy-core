@@ -12,11 +12,14 @@ from Model.Profile import Profile
 
 from BaseService import BaseService
 
+import redis
+from sha import sha
+
 class AuthService(BaseService):
 
     def __init__(self):
-        self.SECRET_AUTH_KEY = "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
-
+        BaseService.__init__(self)
+        self.redis_ctx = redis.StrictRedis(host='localhost', port=6379, db = 3)
         self.LOGIN_RESPONSE_SUCCESS = 0
         self.LOGIN_RESPONSE_SERVERINITFAILED = 1
         self.LOGIN_RESPONSE_USER_NOT_FOUND = 2
@@ -47,11 +50,36 @@ class AuthService(BaseService):
             return False
         return auth_success
 
-    def create_auth_session(self, profile):
-        session_key = uuid.uuid1()
-        redis_key = '{}:{}'.format(profile['userid'],session_key)
-        return {'redis_key': redis_key, 'session_key': session_key}
+    def create_auth_session(self, profile, user):
+        session_key = sha(str(uuid.uuid1()))
+        session_key.update(str(uuid.uuid4()))
 
+        session_key = session_key.hexdigest()
+        redis_key = '{}:{}'.format(user.id,session_key)
+
+        self.redis_ctx.hset(redis_key, 'userid', user.id)
+        if profile:
+            self.redis_ctx.hset(redis_key, 'profileid', profile.id)
+
+        self.redis_ctx.hset(redis_key, 'auth_token', session_key)
+        return {'redis_key': redis_key, 'session_key': session_key}
+    def set_auth_context(self, profile):
+        if profile == False:
+            self.redis_ctx.hdel(redis_key, 'profileid')
+        else:
+            self.redis_ctx.hset(redis_key, 'profileid', profile.id)
+
+    def get_user_by_email(self, email, partnercode):
+        return User.select().where((User.email == email) & (User.partnercode == partnercode)).get()
+
+    def test_session(self, params):
+        print("UserID: {}".format(params))
+        if "userid" not in params or "session_key" not in params:
+            return {"valid": False}
+        if self.redis_ctx.exists("{}:{}".format(int(params["userid"]), params["session_key"])):
+            return {"valid": True}
+        else:
+            return {"valid": False}
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -62,11 +90,18 @@ class AuthService(BaseService):
         response = {}
         response['success'] = False
 
+        start_response('200 OK', [('Content-Type','text/html')])
+
         # When the method is POST the variable will be sent
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
         request_body = env['wsgi.input'].read(request_body_size)
         jwt_decoded = jwt.decode(request_body, self.SECRET_AUTH_KEY, algorithm='HS256')
+
+        if 'mode' in jwt_decoded:
+            if jwt_decoded['mode'] == 'test_session':
+                response = self.test_session(jwt_decoded)
+                return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
 
         if 'namespaceid' not in jwt_decoded:
             jwt_decoded['namespaceid'] = 0
@@ -90,21 +125,35 @@ class AuthService(BaseService):
             profile = self.get_profile_by_nick_email(jwt_decoded['profilenick'], jwt_decoded['email'], jwt_decoded['partnercode'])
             if profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_INVALID_PROFILE
-        else:
+        elif "email" in jwt_decoded:
             response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
-            return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+            user = self.get_user_by_email(jwt_decoded['email'], jwt_decoded['partnercode'])
 
         auth_success = False
-        if hash_type == 'plain':
+        if hash_type == 'plain' and profile != None:
             auth_success = self.test_pass_plain_by_userid(profile.user.id, jwt_decoded['password'])
+        elif hash_type == 'plain' and user != None:
+            auth_success = self.test_pass_plain_by_userid(user.id, jwt_decoded['password'])
 
         if not auth_success:
             response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
         else:
             response['success'] = True
-            response['profile'] = model_to_dict(profile)
-            response['expiretime'] = 10000 #TODO: figure out what this is used for, should make unix timestamp of expire time
-            del response['profile']['user']['password']
+            if profile != None:
+                response['profile'] = model_to_dict(profile)
+                del response['profile']['user']['password']
+            elif user != None:
+                response['user'] = model_to_dict(user)
+                del response['user']['password']
 
+            response['expiretime'] = 10000 #TODO: figure out what this is used for, should make unix timestamp of expire time
+            
+        if "save_session" in jwt_decoded and jwt_decoded["save_session"] == True:
+
+            if profile != None:
+                session_data = self.create_auth_session(profile, profile.user)
+            elif user != None:
+                session_data = self.create_auth_session(False, user)
+            response['session_key'] = session_data['session_key']
 
         return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')

@@ -12,17 +12,22 @@ from Model import Profile
 
 from BaseService import BaseService
 import json
-
+import uuid
 
 class RegistrationService(BaseService):
 
     REGISTRATION_ERROR_NO_PASS = 1
     REGISTRATION_ERROR_NO_PARTNERCODE = 2
 
-
+    def __init__(self):
+        self.redis_ctx = redis.StrictRedis(host='localhost', port=6379, db = 4)
 
     def send_verification_email(self, user):
-        return None
+        if user['email_verified'] == True:
+            return None
+        verification_key = uuid.uuid1()
+        self.redis_ctx.set(redis_key, user['id'], verification_key)
+        return verification_key
 
     def try_register_user(self, register_data):
         try:
@@ -55,13 +60,11 @@ class RegistrationService(BaseService):
 
         if 'partnercode' not in jwt_decoded:
             response['reason'] = self.REGISTRATION_ERROR_NO_PARTNERCODE
-            return json.dumps(response)
-            #return jwt.encode(response, secret_auth_key, algorithm='HS256')
+            return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
 
         if 'password' not in jwt_decoded:
             response['reason'] = self.REGISTRATION_ERROR_NO_PASS
-            return json.dumps(response)
-            #return jwt.encode(response, secret_auth_key, algorithm='HS256')
+            return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
 
         user = self.try_register_user(jwt_decoded)
         if user != None:

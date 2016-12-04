@@ -12,10 +12,6 @@ from BaseService import BaseService
 import httplib, urllib
 
 class GS_AuthService(BaseService):
-    LOGIN_SERVER = 'localhost:80'
-    LOGIN_SCRIPT = '/backend/auth'
-    SECRET_AUTH_KEY = "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
-
     LOGIN_RESPONSE_SUCCESS = 0
     LOGIN_RESPONSE_SERVERINITFAILED = 1
     LOGIN_RESPONSE_USER_NOT_FOUND = 2
