@@ -7,7 +7,7 @@ class User(BaseModel):
 		db_table = "users"
 	id = PrimaryKeyField()
 	email = TextField()
-	#email_verified = BooleanField()
+	email_verified = BooleanField()
 
 	password = TextField()
 
