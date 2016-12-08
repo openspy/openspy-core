@@ -42,7 +42,7 @@ class RegistrationService(BaseService):
 
         return None
 
-    def application(self, env, start_response):
+    def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
             request_body_size = int(env.get('CONTENT_LENGTH', 0))

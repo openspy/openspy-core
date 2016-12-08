@@ -73,13 +73,23 @@ class AuthService(BaseService):
         return User.select().where((User.email == email) & (User.partnercode == partnercode)).get()
 
     def test_session(self, params):
-        print("UserID: {}".format(params))
         if "userid" not in params or "session_key" not in params:
             return {"valid": False}
         if self.redis_ctx.exists("{}:{}".format(int(params["userid"]), params["session_key"])):
             return {"valid": True}
         else:
             return {"valid": False}
+
+    def test_session_by_profileid(self, params):
+        if "profileid" not in params or "session_key" not in params:
+            return {'valid': False}
+        print("Profile Test: {}\n".format(params))
+        try 
+            profile = Profile.get((Profile.id == params["profileid"]))
+            test_params = {'session_key': params["session_key"], 'userid': profile.userid}
+            return self.test_session(test_params)
+        except Profile.DoesNotExist:
+            return {'valid': False}
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -101,6 +111,9 @@ class AuthService(BaseService):
         if 'mode' in jwt_decoded:
             if jwt_decoded['mode'] == 'test_session':
                 response = self.test_session(jwt_decoded)
+                return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+            elif jwt_decoded['mode'] == 'test_session_profileid':
+                response = self.test_session_by_profileid(jwt_decoded)
                 return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
 
         if 'namespaceid' not in jwt_decoded:

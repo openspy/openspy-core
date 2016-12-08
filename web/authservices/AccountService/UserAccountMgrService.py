@@ -1,0 +1,55 @@
+from cgi import parse_qs, escape
+
+import jwt
+
+import MySQLdb
+import uuid
+
+from playhouse.shortcuts import model_to_dict, dict_to_model
+from BaseModel import BaseModel
+from Model.User import User
+
+from BaseService import BaseService
+import json
+import uuid
+
+class UserAccountMgrService(BaseService):
+
+    def handle_update_user(self, data):
+        user_model = User.get((User.id == data['user']['id']))
+        for key in data['user']:
+            if key != "id":
+                setattr(user_model, key, data['user'][key])
+
+        user_model.save()
+        return True
+ 
+    def run(self, env, start_response):
+        # the environment variable CONTENT_LENGTH may be empty or missing
+        try:
+            request_body_size = int(env.get('CONTENT_LENGTH', 0))
+        except (ValueError):
+            request_body_size = 0
+
+        response = {}
+        response['success'] = False
+
+        # When the method is POST the variable will be sent
+        # in the HTTP request body which is passed by the WSGI server
+        # in the file like wsgi.input environment variable.
+        request_body = env['wsgi.input'].read(request_body_size)
+        jwt_decoded = jwt.decode(request_body, self.SECRET_USERMGR_KEY, algorithm='HS256')
+
+        print("UserMgrServ got: {}\n".format(jwt_decoded))
+
+        response = {}
+
+        success = False
+        if "mode" not in jwt_decoded:
+            response['error'] = "INVALID_MODE"
+
+        if jwt_decoded["mode"] == "update_user":
+            success = self.handle_update_user(jwt_decoded)
+     
+        response['success'] = success
+        return jwt.encode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
