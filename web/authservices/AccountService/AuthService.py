@@ -31,23 +31,25 @@ class AuthService(BaseService):
 
 
     def get_profile_by_uniquenick(self, uniquenick, namespaceid, partnercode):
-        if namespaceid == 0:
-            the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (User.partnercode == partnercode)).get()
-        else:
-            the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (Profile.namespaceid == namespaceid) & (User.partnercode == partnercode)).get()
-        return the_uniquenick
+        try:
+            if namespaceid == 0:
+                the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (User.partnercode == partnercode)).get()
+            else:
+                the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (Profile.namespaceid == namespaceid) & (User.partnercode == partnercode)).get()
+            return the_uniquenick
+        except User.DoesNotExist:
+            return False
 
     def get_profile_by_nick_email(self, nick, email, partnercode):
         return Profile.select().join(User).where((Profile.nick == nick) & (User.partnercode == partnercode) & (User.email == email)).get()
     def test_pass_plain_by_userid(self, userid, password):
         auth_success = False
-
         try:
             matched_user = User.select().where((User.id == userid) & (User.password == password)).get()
             if matched_user:
                 auth_success = True
         except User.DoesNotExist:
-            return False
+            auth_success = False
         return auth_success
 
     def create_auth_session(self, profile, user):
@@ -70,7 +72,10 @@ class AuthService(BaseService):
             self.redis_ctx.hset(redis_key, 'profileid', profile.id)
 
     def get_user_by_email(self, email, partnercode):
-        return User.select().where((User.email == email) & (User.partnercode == partnercode)).get()
+        try:
+            return User.select().where((User.email == email) & (User.partnercode == partnercode)).get()
+        except User.DoesNotExist:
+            return False
 
     def test_session(self, params):
         if "userid" not in params or "session_key" not in params:
@@ -84,7 +89,7 @@ class AuthService(BaseService):
         if "profileid" not in params or "session_key" not in params:
             return {'valid': False}
         print("Profile Test: {}\n".format(params))
-        try 
+        try:
             profile = Profile.get((Profile.id == params["profileid"]))
             test_params = {'session_key': params["session_key"], 'userid': profile.userid}
             return self.test_session(test_params)

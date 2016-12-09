@@ -17,7 +17,6 @@ class OS_WebProfileMgr(BaseService):
     def test_required_params(self, input, params):
         for param in params:
             if param not in input:
-                print("{} not in {}".format(param, input))
                 return False
 
         return True
@@ -34,31 +33,86 @@ class OS_WebProfileMgr(BaseService):
         response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
         return response['valid']
 
+    def test_user_session(self, session_key, userid):
+        send_data = {'session_key': session_key, 'userid': userid, 'mode': 'test_session'}
+        params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
+        
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        conn = httplib.HTTPConnection(self.LOGIN_SERVER)
+
+        conn.request("POST", self.LOGIN_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        return response['valid']
+
     def handle_update_profile(self, data):
 
         passthrough_params = ["session_key"]
+        passthrough_profile_params = ["uniquenick", "nick", "id"]
 
-        params = jwt.encode(send_data, self.SECRET_USERMGR_KEY, algorithm='HS256')
+        profile = {}
+        for key in passthrough_profile_params:
+            if key in data["profile"]:
+                profile[key] = data["profile"][key]
+        send_data = {'mode': 'update_profiles', 'profile': profile, 'session_key': data['session_key']}
+
+        #update_profiles
+
+        params = jwt.encode(send_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
         
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
-        conn = httplib.HTTPConnection(self.USER_MGR_SERVER)
+        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
 
-        conn.request("POST", self.USER_MGR_SCRIPT, params, headers)
+        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
         response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
+        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
 
 
         return response
+    def handle_get_profiles(self, data):
+
+        if "session_key" not in data or "userid" not in data:
+            return False
+        if not self.test_user_session(data["session_key"], data["userid"]):
+            return {'error': 'INVALID_SESSION'}
+        request_data = {'session_key': data['session_key'], 'userid': data['userid'], 'mode': 'get_profiles'}
+
+        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        
+        
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+
+        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+
+        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+
+        return response
+
     def process_request(self, data):
 
-        has_ownership = self.test_profile_ownership(data["session_key"], data["profile"]["id"])['valid']
+        if "mode" not in data:
+            return {'error': 'INVALID_MODE'}
+
+        print("WebProfileMgr: {}\n".format(data))
+
+        has_ownership = False
+        if "profile" in data:
+            has_ownership = self.test_profile_ownership(data["session_key"], data["profile"]["id"])
+        elif "userid" in data:
+            has_ownership = self.test_user_session(data["session_key"], data["userid"])
         if not has_ownership:
             return {'error': 'INVALID_PROFILEID'}
 
         if data["mode"] == "update_profile":
-            self.handle_update_profile(data)
+            return self.handle_update_profile(data)
+        elif data["mode"] == "get_profiles":
+            return self.handle_get_profiles(data)
+        else:
+            return {'error': 'INVALID_MODE'}
         
         
     def run(self, env, start_response):

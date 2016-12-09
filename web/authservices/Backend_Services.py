@@ -1,12 +1,11 @@
 from cgi import parse_qs, escape
 
 from BaseService import BaseService
-#from AccountService.AuthService import AuthService
-#from AccountService.RegistrationService import RegistrationService
-#import AccountService.AuthService as AuthService
+import AccountService.AuthService as AuthService
 from AccountService.AuthService import AuthService
 from AccountService.UserAccountMgrService import UserAccountMgrService
-import AccountService.RegistrationService as RegistrationService
+from AccountService.RegistrationService import RegistrationService
+from AccountService.UserProfileMgrService import UserProfileMgrService
 from public.GS_AuthService import GS_AuthService
 from public.OS_WebAuth import OS_WebAuth
 from public.OS_WebUserMgr import OS_WebUserMgr
@@ -27,8 +26,8 @@ def application(env, start_response):
 			service = RegistrationService()
 		elif path_split[2] == "useraccount":
 			service = UserAccountMgrService()
-		#elif path_split[2] == "userprofile":
-			#service = UserProfileMgrService()
+		elif path_split[2] == "userprofile":
+			service = UserProfileMgrService()
 
 
 	#the paths containing "web" are the publically accessable interfaces which theoretically can be accessed by any user anonymously, however typically is as an interface via another web backend
