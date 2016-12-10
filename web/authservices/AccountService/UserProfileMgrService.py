@@ -37,10 +37,24 @@ class UserProfileMgrService(BaseService):
             return []
         return profiles
 
+    def check_uniquenick_available(self, uniquenick, namespaceid):
+        try:
+            if namespaceid != 0:
+                profile = Profile.get((Profile.uniquenick == uniquenick) & (Profile.namespaceid == namespaceid) & (Profile.deleted == False))
+            else:
+                profile = Profile.get((Profile.uniquenick == uniquenick) & (Profile.deleted == False))
+            return False
+        except Profile.DoesNotExist:
+            return True
     def handle_create_profile(self, data):
-        print("Create Profile: {}\n".format(data))
         profile_data = data["profile"]
-        print("Profile: {}\n".format(profile_data))
+        if "uniquenick" in profile_data:
+            namespaceid = 0
+            if "namespaceid" in profile_data:
+                namespaceid = profile_data["namespaceid"]
+            nick_available = self.check_uniquenick_available(profile_data["uniquenick"], namespaceid)
+            if not nick_available:
+                return None
         user = User.get((User.id == data["userid"]))
         profile_data["user"] = user
         profile_pk = Profile.insert(**profile_data).execute()
@@ -89,8 +103,9 @@ class UserProfileMgrService(BaseService):
             response['profiles'] = profiles
         elif jwt_decoded["mode"] == "create_profile":
             profile = self.handle_create_profile(jwt_decoded)
-            success = True
-            response['profile'] = profile
+            if profile != None:
+                success = True
+                response['profile'] = profile
         elif jwt_decoded["mode"] == "delete_profile":
             success = self.handle_delete_profile(jwt_decoded)
      

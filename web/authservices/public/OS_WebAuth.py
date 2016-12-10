@@ -20,8 +20,6 @@ class OS_WebAuth(BaseService):
     #   email uniquenick namespaceid - profile login
     #   email nick namespaceid - profile login
     def try_login(self, login_options):
-        print("Try: {}".format(login_options))
-
         login_data = {}
         passthrough_params = ["email","partnercode","uniquenick","namespaceid", "nick", "password","mode", "session_key", "userid"]
         for n in passthrough_params:
@@ -40,7 +38,6 @@ class OS_WebAuth(BaseService):
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = conn.getresponse().read()
         response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
-        print("Got: {}\n".format(response))
         return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing

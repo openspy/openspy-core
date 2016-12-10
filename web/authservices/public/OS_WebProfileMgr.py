@@ -94,7 +94,6 @@ class OS_WebProfileMgr(BaseService):
         response = {}
 
         passthrough_profile_params = ["nick", "uniquenick", "namespaceid"]
-        print("Create profile: {}\n".format(data))
 
         profile = {}
         for key in passthrough_profile_params:

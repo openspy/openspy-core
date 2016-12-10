@@ -10,6 +10,7 @@ from public.GS_AuthService import GS_AuthService
 from public.OS_WebAuth import OS_WebAuth
 from public.OS_WebUserMgr import OS_WebUserMgr
 from public.OS_WebProfileMgr import OS_WebProfileMgr
+from public.OS_RegisterSvc import OS_RegisterSvc
 import re
 import json
 #import RegistrationService from RegistrationService
@@ -41,6 +42,8 @@ def application(env, start_response):
 			service = OS_WebUserMgr()
 		elif path_split[2] == "profilemgr":
 			service = OS_WebProfileMgr()
+		elif path_split[2] == "registersvc":
+			service = OS_RegisterSvc()
 
 	#GameSpy SDK files, publically accessable
 	elif path_split[1] == "AuthService":
