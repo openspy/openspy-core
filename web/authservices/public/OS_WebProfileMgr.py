@@ -73,10 +73,8 @@ class OS_WebProfileMgr(BaseService):
         return response
     def handle_get_profiles(self, data):
 
-        if "session_key" not in data or "userid" not in data:
+        if "userid" not in data:
             return False
-        if not self.test_user_session(data["session_key"], data["userid"]):
-            return {'error': 'INVALID_SESSION'}
         request_data = {'session_key': data['session_key'], 'userid': data['userid'], 'mode': 'get_profiles'}
 
         params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
@@ -92,25 +90,75 @@ class OS_WebProfileMgr(BaseService):
 
         return response
 
+    def handle_create_profile(self, data):
+        response = {}
+
+        passthrough_profile_params = ["nick", "uniquenick", "namespaceid"]
+        print("Create profile: {}\n".format(data))
+
+        profile = {}
+        for key in passthrough_profile_params:
+            if key in data["profile"]:
+                profile[key] = data["profile"][key]
+
+        request_data = {'session_key': data['session_key'], 'userid': data['userid'], 'mode': 'create_profile', 'profile': profile}
+
+        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        
+        
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+
+        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+
+        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+
+        return response
+
+    def handle_delete_profile(self, data):
+
+        request_data = {'session_key': data['session_key'], 'userid': data['userid'], 'mode': 'delete_profile', 'profileid': data["profile"]["id"]}
+
+        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')        
+        
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+
+        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+
+        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        return response
+
     def process_request(self, data):
 
         if "mode" not in data:
             return {'error': 'INVALID_MODE'}
 
-        print("WebProfileMgr: {}\n".format(data))
-
         has_ownership = False
-        if "profile" in data:
-            has_ownership = self.test_profile_ownership(data["session_key"], data["profile"]["id"])
-        elif "userid" in data:
-            has_ownership = self.test_user_session(data["session_key"], data["userid"])
+
+        profile_ownership_modes = ["update_profile", "delete_profile"]
+        user_ownership_modes = ["create_profile", "get_profiles"]
+
+        if data["mode"] in profile_ownership_modes:
+            if "session_key" in data and "profile" in data:
+                has_ownership = self.test_profile_ownership(data["session_key"], data["profile"]["id"])
+        elif data["mode"] in user_ownership_modes:
+            if "session_key" in data and "userid" in data:
+                has_ownership = self.test_user_session(data["session_key"], data["userid"])
+
         if not has_ownership:
-            return {'error': 'INVALID_PROFILEID'}
+            return {'error': 'INVALID_SESSION'}
 
         if data["mode"] == "update_profile":
             return self.handle_update_profile(data)
         elif data["mode"] == "get_profiles":
             return self.handle_get_profiles(data)
+        elif data["mode"] == "create_profile":
+            return self.handle_create_profile(data)
+        elif data["mode"] == "delete_profile":
+            return self.handle_delete_profile(data)
         else:
             return {'error': 'INVALID_MODE'}
         
