@@ -11,6 +11,7 @@ from public.OS_WebAuth import OS_WebAuth
 from public.OS_WebUserMgr import OS_WebUserMgr
 from public.OS_WebProfileMgr import OS_WebProfileMgr
 from public.OS_RegisterSvc import OS_RegisterSvc
+from public.OS_PWReset import OS_PWReset
 import re
 import json
 #import RegistrationService from RegistrationService
@@ -44,6 +45,8 @@ def application(env, start_response):
 			service = OS_WebProfileMgr()
 		elif path_split[2] == "registersvc":
 			service = OS_RegisterSvc()
+		elif path_split[2] == "pwreset":
+			service = OS_PWReset()
 
 	#GameSpy SDK files, publically accessable
 	elif path_split[1] == "AuthService":

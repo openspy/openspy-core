@@ -38,8 +38,6 @@ class OS_RegisterSvc(BaseService):
         response = conn.getresponse().read()
         response = jwt.decode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
 
-        print("Create user resp: {}\n".format(response))
-
         #perform profile creation
         if response["success"]:
         	user = response['user']
@@ -52,8 +50,7 @@ class OS_RegisterSvc(BaseService):
 
 	        request_data = {'userid': user['id'], 'mode': 'create_profile', 'profile': profile}
 
-	        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
-	        
+	        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')	        
 	        
 	        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
@@ -62,7 +59,6 @@ class OS_RegisterSvc(BaseService):
 	        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
 	        response = conn.getresponse().read()
 	        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
-	        print("Create profile: {}\n".format(response))
 	        response["user"] = user
 
 	        #create auth session
@@ -70,7 +66,7 @@ class OS_RegisterSvc(BaseService):
 
 	        login_data["save_session"] = True
 	        login_data["email"] = register_options["email"]
-	        login_data["password"] = register_options["password"]	        
+	        login_data["password"] = register_options["password"]
 	        login_data["partnercode"] = register_options["partnercode"]
 
 
