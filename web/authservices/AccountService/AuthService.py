@@ -37,7 +37,7 @@ class AuthService(BaseService):
                 the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (Profile.namespaceid == namespaceid) & (User.partnercode == partnercode) & (User.deleted == False) & (Profile.deleted == False)).get()
             return the_uniquenick
         except User.DoesNotExist:
-            return False
+            return None
 
     def get_profile_by_nick_email(self, nick, email, partnercode):
         return Profile.select().join(User).where((Profile.nick == nick) & (User.partnercode == partnercode) & (User.email == email) & (User.deleted == False) & (Profile.deleted == False)).get()
@@ -65,7 +65,7 @@ class AuthService(BaseService):
         self.redis_ctx.hset(redis_key, 'auth_token', session_key)
         return {'redis_key': redis_key, 'session_key': session_key}
     def set_auth_context(self, profile):
-        if profile == False:
+        if profile == None:
             self.redis_ctx.hdel(redis_key, 'profileid')
         else:
             self.redis_ctx.hset(redis_key, 'profileid', profile.id)
@@ -74,13 +74,13 @@ class AuthService(BaseService):
         try:
             return User.select().where((User.email == email) & (User.partnercode == partnercode) & (User.deleted == False)).get()
         except User.DoesNotExist:
-            return False
+            return None
 
     def get_user_by_userid(self, userid):
         try:
             return User.select().where((User.id == userid) & (User.deleted == False)).get()
         except User.DoesNotExist:
-            return False
+            return None
 
     def test_session(self, params):
         if "userid" not in params or "session_key" not in params:
@@ -215,7 +215,10 @@ class AuthService(BaseService):
             auth_success = self.test_pass_plain_by_userid(user.id, jwt_decoded['password'])
 
         if not auth_success:
-            response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
+            if user == None or profile == None:
+                response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND
+            else:
+                response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
         else:
             response['success'] = True
             if profile != None:
@@ -224,6 +227,8 @@ class AuthService(BaseService):
             elif user != None:
                 response['user'] = model_to_dict(user)
                 del response['user']['password']
+            else:
+                response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND
 
             response['expiretime'] = 10000 #TODO: figure out what this is used for, should make unix timestamp of expire time
             

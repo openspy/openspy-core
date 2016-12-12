@@ -23,6 +23,20 @@ class UserAccountMgrService(BaseService):
 
         user_model.save()
         return True
+
+    def handle_get_user(self, data):
+        user = None
+        try:
+            if "userid" in data:
+                user = User.get((User.id == data["userid"]))
+            elif "email" in data:
+                user = User.get((User.email == data["email"]) & (User.partnercode == data["partnercode"]))
+        except User.DoesNotExist:
+            return None
+
+        user = model_to_dict(user)
+        del user['password']
+        return user
  
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
@@ -50,6 +64,11 @@ class UserAccountMgrService(BaseService):
 
         if jwt_decoded["mode"] == "update_user":
             success = self.handle_update_user(jwt_decoded)
+        elif jwt_decoded['mode'] == 'get_user':
+            user = self.handle_get_user(jwt_decoded)
+            if user != None:
+                success = True
+                response['user'] = user
      
         response['success'] = success
         return jwt.encode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')

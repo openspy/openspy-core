@@ -34,7 +34,6 @@ class OS_WebAuth(BaseService):
         passthrough_params = ["email","partnercode","uniquenick","namespaceid", "nick", "password","mode", "session_key", "userid"]
         for n in passthrough_params:
             if n in login_options:
-                print("Login options: {}\n".format(n))
                 login_data[n] = login_options[n]
 
         login_data['save_session'] = True #force a session key to be returned

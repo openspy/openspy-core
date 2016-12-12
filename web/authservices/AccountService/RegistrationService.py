@@ -19,7 +19,8 @@ class RegistrationService(BaseService):
 
     REGISTRATION_ERROR_NO_PASS = 1
     REGISTRATION_ERROR_NO_PARTNERCODE = 2
-
+    REGISTRATION_EMAIL_PARTNERCODE_EXISTS = 3
+    VERIFICATION_KEY_EXPIRE_SECS = 21600 #6 hours
     def __init__(self):
         BaseService.__init__(self)
         self.redis_ctx = redis.StrictRedis(host='localhost', port=6379, db = 4)
@@ -27,10 +28,30 @@ class RegistrationService(BaseService):
     def send_verification_email(self, user):
         if user['email_verified'] == True:
             return None
-        verification_key = uuid.uuid1()
+        verification_key = sha(str(uuid.uuid1()))
+        verification_key.update(str(uuid.uuid4()))
+        verification_key = reset_key.hexdigest()
+
 
         redis_key = "emailveri_{}".format(user['id'])
         self.redis_ctx.set(redis_key, verification_key)
+        self.redis_ctx.expire(redis_key, self.VERIFICATION_KEY_EXPIRE_SECS)
+
+        email_body = """\
+        <html>
+            <body>
+                Hello, 
+
+                You may validate your email by going to the following link:
+                 http://accmgr.openspy.org/verify_email/{}/{}
+
+                Thanks,
+                    OpenSpy
+            </body>
+        </html>
+        """.format(user['id'], verification_key)
+        email_data = {'from': 'no-reply@openspy.org', 'to': user.email,  'subject': 'Email Verification', 'body': email_body}
+        self.sendEmail(email_data)
         return verification_key
 
     def try_register_user(self, register_data):
@@ -45,6 +66,49 @@ class RegistrationService(BaseService):
             return user
 
         return None
+
+    def handle_perform_verify_email(self, request_data):
+        response = {}
+        redis_key = "emailveri_{}".format(request_data['userid'])
+        success = False
+        user = None
+        try:
+            user = User.get((User.id == request_data['userid']))
+            if self.redis_ctx.exists(redis_key):
+                real_verification_key = self.redis_ctx.get(redis_key)
+                if request_data['verifykey'] == real_verification_key:
+                    success = True
+                    user.email_verified = True
+                    user.save()
+                    self.redis_ctx.delete(redis_key)
+        except User.DoesNotExist:
+            success = False
+
+        response['success'] = success
+        return response
+
+    def handle_resend_verify_email(self, request_data):
+        response = {}
+        success = False
+
+        user_id = False
+        if "id" in request_data:
+            user_id = request_data["id"]
+        elif "userid" in request_data:
+            user_id = request_data["userid"]
+
+        if user_id != False:
+            redis_key = "emailveri_{}".format(user_id)
+
+            if not self.redis_ctx.exists(redis_key):
+                try:
+                    user = User.get((User.id == user_id))
+                    self.send_verification_email(model_to_dict(user))
+                    success = True
+                except User.DoesNotExist:
+                    success = False
+        response['success'] = success
+        return response
 
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
@@ -62,18 +126,29 @@ class RegistrationService(BaseService):
         request_body = env['wsgi.input'].read(request_body_size)
         jwt_decoded = jwt.decode(request_body, self.SECRET_REGISTER_KEY, algorithm='HS256')
 
-        if 'partnercode' not in jwt_decoded:
-            response['reason'] = self.REGISTRATION_ERROR_NO_PARTNERCODE
-            return jwt.encode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
+        print("Register got: {}\n".format(jwt_decoded))
 
-        if 'password' not in jwt_decoded:
-            response['reason'] = self.REGISTRATION_ERROR_NO_PASS
-            return jwt.encode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
+        if "mode" in jwt_decoded:
+            if jwt_decoded["mode"] == "perform_verify_email":
+                response = self.handle_perform_verify_email(jwt_decoded)
+            elif jwt_decoded["mode"] == "resend_verify_email":
+                response = self.handle_resend_verify_email(jwt_decoded)
+        else:
+            if 'partnercode' not in jwt_decoded:
+                response['reason'] = self.REGISTRATION_ERROR_NO_PARTNERCODE
+                return jwt.encode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
 
-        user = self.try_register_user(jwt_decoded)
-        if user != None:
-            response['success'] = True
-            response['user'] = user
+            if 'password' not in jwt_decoded:
+                response['reason'] = self.REGISTRATION_ERROR_NO_PASS
+                return jwt.encode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
+
+            user = self.try_register_user(jwt_decoded)
+            if user != None:
+                response['success'] = True
+                response['user'] = user
+            else:
+                response['reason'] = self.REGISTRATION_EMAIL_PARTNERCODE_EXISTS
      
+        print("Register returning: {}\n".format(response))
 
         return jwt.encode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')

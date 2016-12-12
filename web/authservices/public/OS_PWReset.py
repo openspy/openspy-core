@@ -72,6 +72,44 @@ class OS_PWReset(BaseService):
 
 
         return response
+
+    def process_perform_verify_email(self, request_data):
+        response = {}
+
+        reset_data = {}
+        passthrough_params = ["userid", "verifykey"]
+        for key in request_data:
+            reset_data[key] = request_data[key]
+
+        reset_data["mode"] = "perform_verify_email"
+        params = jwt.encode(reset_data, self.SECRET_REGISTER_KEY, algorithm='HS256')
+        
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        conn = httplib.HTTPConnection(self.REGISTER_SERVER)
+
+        conn.request("POST", self.REGISTER_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
+        return response
+
+    def process_resend_verify_email(self, request_data):
+        response = {}
+
+        reset_data = {}
+        passthrough_params = ["userid"]
+        for key in request_data:
+            reset_data[key] = request_data[key]
+
+        reset_data["mode"] = "resend_verify_email"
+        params = jwt.encode(reset_data, self.SECRET_REGISTER_KEY, algorithm='HS256')
+        
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        conn = httplib.HTTPConnection(self.REGISTER_SERVER)
+
+        conn.request("POST", self.REGISTER_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
+        return response        
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -94,5 +132,9 @@ class OS_PWReset(BaseService):
                 response = self.process_initiate_pw_reset(request_body)
             elif request_body["mode"] == "perform":
                 response = self.process_perform_pw_reset(request_body)
+            elif request_body["mode"] == "verify_email":
+                response = self.process_perform_verify_email(request_body)
+            elif request_body["mode"] == "resend_verify_email":
+                response = self.process_resend_verify_email(request_body)
 
         return json.dumps(response)

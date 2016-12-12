@@ -19,7 +19,7 @@ class OS_RegisterSvc(BaseService):
     #   email - if only email provided its a userid login
     #   email uniquenick namespaceid - profile login
     #   email nick namespaceid - profile login
-    def try_login(self, register_options):
+    def try_register(self, register_options):
 
     	#perform user registration
         passthrough_user_params = ["password", "email", "partnercode"]
@@ -81,6 +81,39 @@ class OS_RegisterSvc(BaseService):
 	        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
 
         return response
+    def check_user_conflicts(self, request):
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+
+        conn = httplib.HTTPConnection(self.USER_MGR_SERVER)
+
+        params = {}
+        params['email'] = request['email']
+        params['partnercode'] = request['partnercode']
+        params['mode'] = 'get_user'
+
+        params = jwt.encode(params, self.SECRET_USERMGR_KEY, algorithm='HS256')
+
+        conn.request("POST", self.USER_MGR_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
+        return "user" in response
+    def check_profile_conflicts(self, request):
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+
+        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+
+        params = {}
+        params['uniquenick'] = request['uniquenick']
+        if request['namespaceid'] != 0:
+            params['namespaceid'] = request['namespaceid']
+        params['mode'] = 'get_profile'
+
+        params = jwt.encode(params, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+
+        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        return "profile" in response and response["profile"] != None
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -96,5 +129,31 @@ class OS_RegisterSvc(BaseService):
 
         start_response('200 OK', [('Content-Type','text/html')])
 
+        print("Register: {}\n".format(request_body))
+        #Register: {u'uniquenick': u'sctest01', u'namespaceid': u'0', u'nick': u'sctest01', u'mode': u'create_account', u'partnercode': u'0', u'password': u'gspy', u'email': u'sctest@gamespy.com'}
 
-        return json.dumps(self.try_login(request_body))
+        response = {}
+        required_params = ["email", "partnercode", "password", "uniquenick", "nick", "namespaceid"]
+        for key in required_params:
+            if key not in request_body:
+                response['success'] = False
+                response['error'] = "MISSING_PARAMS"
+                return json.dumps(response)
+
+        if self.check_user_conflicts(request_body):
+            response['success'] = False
+            response['error'] = "USER_EXISTS"
+        elif self.check_profile_conflicts(request_body):
+            response['success'] = False
+            response['error'] = "UNIQUENICK_EXISTS"
+            
+
+        if 'success' in response:
+            return json.dumps(response)
+
+
+
+        response = self.try_register(request_body)
+
+
+        return json.dumps(response)

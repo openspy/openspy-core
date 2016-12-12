@@ -37,6 +37,24 @@ class UserProfileMgrService(BaseService):
             return []
         return profiles
 
+
+    def handle_get_profile(self, data):
+        print("Get Profile: {}\n".format(data))
+        profile = None
+        try:
+            if "profileid" in data:
+                profile = Profile.get((Profile.id == data["profileid"]))
+            elif "uniquenick" in data:
+                if "namespaceid" in data:
+                    profile = Profile.get((Profile.uniquenick == data["uniquenick"]) & (Profile.namespaceid == data["namespaceid"]))
+                else:
+                    profile = Profile.get((Profile.uniquenick == data["uniquenick"]) & (Profile.namespaceid == 0))
+
+                return profile
+        except Profile.DoesNotExist:
+            return None
+        
+
     def check_uniquenick_available(self, uniquenick, namespaceid):
         try:
             if namespaceid != 0:
@@ -97,6 +115,10 @@ class UserProfileMgrService(BaseService):
 
         if jwt_decoded["mode"] == "update_profiles":
             success = self.handle_update_profile(jwt_decoded)
+        elif jwt_decoded["mode"] == "get_profile":
+            profile = self.handle_get_profile(jwt_decoded)
+            success = profile != None
+            response['profile'] = profile            
         elif jwt_decoded["mode"] == "get_profiles":
             profiles = self.handle_get_profiles(jwt_decoded)
             success = True

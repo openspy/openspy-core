@@ -38,7 +38,6 @@ class OS_WebUserMgr(BaseService):
         required_params = ['mode', 'user', 'session_key']
         required_user_params = ['email', 'id']
 
-        print("Login ops: {}\n".format(login_options));
 
         if not self.test_required_params(login_options, required_params):            
             return {'error': 'MISSING_REQUIRED_PARAMS_1'}
@@ -49,7 +48,7 @@ class OS_WebUserMgr(BaseService):
 
         mode = login_options['mode']
 
-        valid_modes = ["update_user"]
+        valid_modes = ["update_user", 'get_user']
 
         if mode not in valid_modes:
             return {'error': 'INVALID_OPERATION_MODE'}
@@ -62,8 +61,6 @@ class OS_WebUserMgr(BaseService):
         if not self.test_user_session(send_data['session_key'], user_data['id']):
             return {'error': 'INVALID_SESSION'}
         
-        print("Sending: {}\n".format(send_data))
-
         params = jwt.encode(send_data, self.SECRET_USERMGR_KEY, algorithm='HS256')
         
         
