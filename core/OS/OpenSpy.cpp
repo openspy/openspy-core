@@ -1,10 +1,13 @@
 #include "OpenSpy.h"
 
 #include <sstream>
+#include <curl/curl.h>
 
 namespace OS {
 	redisContext *redis_internal_connection = NULL;
 	void Init() {
+
+		curl_global_init(CURL_GLOBAL_SSL);
 		
 		struct timeval t;
 		t.tv_usec = 0;

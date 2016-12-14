@@ -36,6 +36,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <memory.h>
 #include <map>
 #include <hiredis/hiredis.h>
+#define OPENSPY_WEBSERVICES_URL "http://10.10.10.10"
 namespace OS {
 
 	///////////////////////

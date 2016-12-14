@@ -3,14 +3,16 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include "server/QRServer.h"
-#include "server/QRDriver.h"
+#include <OS/socketlib/socketlib.h>
+#include "server/GPServer.h"
+#include "server/GPDriver.h"
 INetServer *g_gameserver = NULL;
 
 int main() {
-	OS::Init();
-	g_gameserver = new QR::Server();
-	g_gameserver->addNetworkDriver(new QR::Driver(g_gameserver, "0.0.0.0", MASTER_PORT));
+    OS::Init();
+    Socket::Init();
+	g_gameserver = new GP::Server();
+	g_gameserver->addNetworkDriver(new GP::Driver(g_gameserver, "0.0.0.0", GP_SERVER_PORT));
 	g_gameserver->init();
 	while(true) {
 		g_gameserver->tick();

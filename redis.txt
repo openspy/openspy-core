@@ -71,3 +71,9 @@ hset 1111:666 logintime unix_timestamp
 hset 1111:666 profileid 666
 hset 1111:666 auth_token base64_token
 expire 1111:666 21600 #expire 6 hours
+
+#pw reset/email verification db
+select 4
+
+#presence status/profile cache db
+select 5

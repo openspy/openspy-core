@@ -43,7 +43,7 @@ IF(WIN32)
 
 	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS})
 	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
-	target_link_libraries(openspy ws2_32.lib hiredis.lib Win32_Interop.lib)
+	target_link_libraries(openspy ws2_32.lib hiredis.lib Win32_Interop.lib curl jwt jansson)
 
 ELSE() #unix
 	file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Unix/*.cpp")
@@ -59,5 +59,5 @@ ELSE() #unix
 
 	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS})
 	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
-	target_link_libraries(openspy hiredis event pthread ssl crypto)
+	target_link_libraries(openspy hiredis event pthread ssl crypto curl jwt jansson)
 ENDIF()

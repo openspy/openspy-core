@@ -2,8 +2,8 @@
 #include <map>
 #include <string>
 #include <sstream>
-#include "OS/socketlib/socketlib.h"
-#include "OS/Net/NetServer.h"
+#include <OS/socketlib/socketlib.h>
+#include <OS/Net/NetServer.h>
 #include "server/SBServer.h"
 #include "server/SBDriver.h"
 INetServer *g_gameserver = NULL;

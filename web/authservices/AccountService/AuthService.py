@@ -13,6 +13,7 @@ from Model.Profile import Profile
 from BaseService import BaseService
 
 import redis
+from md5 import md5
 from sha import sha
 
 class AuthService(BaseService):
@@ -28,6 +29,9 @@ class AuthService(BaseService):
         self.LOGIN_RESPONSE_DB_ERROR = 6
         self.LOGIN_RESPONSE_SERVER_ERROR = 7
 
+        self.PARTNERID_GAMESPY = 0
+        self.PARTNERID_IGN = 10
+
 
     def get_profile_by_uniquenick(self, uniquenick, namespaceid, partnercode):
         try:
@@ -36,11 +40,14 @@ class AuthService(BaseService):
             else:
                 the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (Profile.namespaceid == namespaceid) & (User.partnercode == partnercode) & (User.deleted == False) & (Profile.deleted == False)).get()
             return the_uniquenick
-        except User.DoesNotExist:
+        except Profile.DoesNotExist:
             return None
 
     def get_profile_by_nick_email(self, nick, email, partnercode):
-        return Profile.select().join(User).where((Profile.nick == nick) & (User.partnercode == partnercode) & (User.email == email) & (User.deleted == False) & (Profile.deleted == False)).get()
+        try:
+            return Profile.select().join(User).where((Profile.nick == nick) & (User.partnercode == partnercode) & (User.email == email) & (User.deleted == False) & (Profile.deleted == False)).get()
+        except Profile.DoesNotExist:
+            return None
     def test_pass_plain_by_userid(self, userid, password):
         auth_success = False
         try:
@@ -50,6 +57,20 @@ class AuthService(BaseService):
         except User.DoesNotExist:
             auth_success = False
         return auth_success
+
+    def test_gp_nick_email_by_profile(self, profile, client_challenge, server_challenge, client_response):
+        md5_pw = md5(profile.user.password).hexdigest()
+        crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email,client_challenge, server_challenge, md5_pw)
+        true_resp = md5(crypt_buf).hexdigest()
+
+        if profile.user.partnercode != self.PARTNERID_GAMESPY:
+            proof = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
+        else:
+            proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
+        proof = md5(proof).hexdigest()
+        if true_resp == client_response:
+            return proof
+        return None
 
     def create_auth_session(self, profile, user):
         session_key = sha(str(uuid.uuid1()))
@@ -64,11 +85,11 @@ class AuthService(BaseService):
 
         self.redis_ctx.hset(redis_key, 'auth_token', session_key)
         return {'redis_key': redis_key, 'session_key': session_key}
-    def set_auth_context(self, profile):
+    def set_auth_context(self, key, profile):
         if profile == None:
-            self.redis_ctx.hdel(redis_key, 'profileid')
+            self.redis_ctx.hdel(key, 'profileid')
         else:
-            self.redis_ctx.hset(redis_key, 'profileid', profile.id)
+            self.redis_ctx.hset(key, 'profileid', profile.id)
 
     def get_user_by_email(self, email, partnercode):
         try:
@@ -186,11 +207,11 @@ class AuthService(BaseService):
         if 'hash_type' in jwt_decoded:
             hash_type = jwt_decoded['hash_type']
 
-        if 'password' not in jwt_decoded:
+        if 'password' not in jwt_decoded and hash_type == 'plain':
             response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
             return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
-
         profile = None
+        user = None
         if 'uniquenick' in jwt_decoded:
             profile = self.get_profile_by_uniquenick(jwt_decoded['uniquenick'], jwt_decoded['namespaceid'], jwt_decoded['partnercode'])
             if profile == None:
@@ -213,7 +234,11 @@ class AuthService(BaseService):
             auth_success = self.test_pass_plain_by_userid(profile.user.id, jwt_decoded['password'])
         elif hash_type == 'plain' and user != None:
             auth_success = self.test_pass_plain_by_userid(user.id, jwt_decoded['password'])
-
+        elif hash_type == 'gp_nick_email' and profile != None:
+            proof = self.test_gp_nick_email_by_profile(profile, jwt_decoded['client_challenge'], jwt_decoded['server_challenge'], jwt_decoded['client_response'])
+            if proof != None:
+                auth_success = True
+                response['server_response'] = proof
         if not auth_success:
             if user == None or profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND
@@ -238,5 +263,9 @@ class AuthService(BaseService):
             elif user != None:
                 session_data = self.create_auth_session(False, user)
             response['session_key'] = session_data['session_key']
+
+        if "set_context" in jwt_decoded and "session_key" in response:
+            if jwt_decoded["set_context"] == "profile":
+                self.set_auth_context(response["session_key"], profile)
 
         return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
