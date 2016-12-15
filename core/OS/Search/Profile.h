@@ -1,5 +1,8 @@
 #ifndef _SEARCH_PROFILE_H
 #define _SEARCH_PROFILE_H
+#include <OS/Task.h>
+#include <OS/Thread.h>
+#include <OS/Mutex.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
 #include <string>
@@ -10,6 +13,11 @@
 #define OPENSPY_PROFILEMGR_KEY "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
 
 namespace OS {
+
+	/*
+		Called within the search task thread
+	*/
+	typedef void (*ProfileSearchCallback)(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
 	typedef struct {
 		int profileid;
@@ -22,15 +30,23 @@ namespace OS {
 		std::string lastname;
 		int icquin;
 		int skip;
+
+		void *extra;
+		ProfileSearchCallback callback;
 	} ProfileSearchRequest;
 
-	/*
-		Called within the search task thread
-	*/
-	typedef void (*ProfileSearchCallback)(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
-
-	void PerformSearch(ProfileSearchRequest request, ProfileSearchCallback cb, void *extra);
-
 	
+
+	class ProfileSearchTask : public Task<ProfileSearchRequest> {
+		public:
+			ProfileSearchTask();
+			~ProfileSearchTask();
+			void Process();
+			static ProfileSearchTask *getProfileTask();
+		private:
+			static void PerformSearch(ProfileSearchRequest request);
+			static ProfileSearchTask *m_task_singleton;
+			static void *TaskThread(CThread *thread);
+	};
 }
 #endif //_SEARCH_USER_H

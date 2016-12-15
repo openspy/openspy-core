@@ -53,6 +53,32 @@
 #define GP_RICH_STATUS_LEN          256
 #define GP_STATUS_BASIC_STR_LEN     33
 
+/////////
+// Types of bm's.
+/////////////////
+#define GPI_BM_MESSAGE                    1
+#define GPI_BM_REQUEST                    2
+#define GPI_BM_REPLY                      3  // only used on the backend
+#define GPI_BM_AUTH                       4
+#define GPI_BM_UTM                        5
+#define GPI_BM_REVOKE                     6  // remote buddy removed from local list
+#define GPI_BM_STATUS                   100						
+#define GPI_BM_INVITE                   101
+#define GPI_BM_PING                     102
+#define GPI_BM_PONG                     103
+#define GPI_BM_KEYS_REQUEST             104
+#define GPI_BM_KEYS_REPLY               105
+#define GPI_BM_FILE_SEND_REQUEST        200
+#define GPI_BM_FILE_SEND_REPLY          201
+#define GPI_BM_FILE_BEGIN               202
+#define GPI_BM_FILE_END                 203
+#define GPI_BM_FILE_DATA                204
+#define GPI_BM_FILE_SKIP                205
+#define GPI_BM_FILE_TRANSFER_THROTTLE   206
+#define GPI_BM_FILE_TRANSFER_CANCEL     207
+#define GPI_BM_FILE_TRANSFER_KEEPALIVE  208
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // GPEnum
 // Summary
@@ -452,15 +478,35 @@ namespace GP {
 		void send_login_challenge(int type);
 		void SendPacket(const uint8_t *buff, int len, bool attach_final = true);
 
+		void send_add_buddy_request(int from_profileid, const char *reason);
+
 	private:
 		//packet handlers
 		void handle_login(const char *data, int len);
+		void handle_auth(const char *data, int len); //possibly for unexpected loss of connection to retain existing session
+
 		void handle_status(const char *data, int len);
 		void handle_statusinfo(const char *data, int len);
+
+		void handle_addbuddy(const char *data, int len);
+		void handle_delbuddy(const char *data, int len);
+		void handle_authadd(const char *data, int len);
+
+		void handle_pinvite(const char *data, int len);
+
+		void handle_getprofile(const char *data, int len);
+
+		void handle_bm(const char *data, int len);
+
+		void handle_addblock(const char *data, int len);
+		void handle_removeblock(const char *data, int len);
+
+		void handle_updatepro(const char *data, int len);
+		void handle_updateui(const char *data, int len);
 		//
 
 		//login
-		void perform_uniquenick_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response);
+		void perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response);
 
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);
 
@@ -488,6 +534,9 @@ namespace GP {
 		std::vector<OS::Profile> m_buddies;
 
 		static GPErrorData m_error_data[];
+
+		OS::User m_user;
+		OS::Profile m_profile;
 
 	};
 }

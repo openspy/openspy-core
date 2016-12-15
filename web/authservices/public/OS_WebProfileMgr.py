@@ -48,7 +48,7 @@ class OS_WebProfileMgr(BaseService):
     def handle_update_profile(self, data):
 
         passthrough_params = ["session_key"]
-        passthrough_profile_params = ["uniquenick", "nick", "id"]
+        passthrough_profile_params = ["uniquenick", "nick", "id", "firstname", "lastname", "icquin", "sex", "homepage"]
 
         profile = {}
         for key in passthrough_profile_params:
@@ -93,7 +93,7 @@ class OS_WebProfileMgr(BaseService):
     def handle_create_profile(self, data):
         response = {}
 
-        passthrough_profile_params = ["nick", "uniquenick", "namespaceid"]
+        passthrough_profile_params = ["nick", "uniquenick", "namespaceid", "nick", "id", "firstname", "lastname", "icquin", "sex", "homepage"]
 
         profile = {}
         for key in passthrough_profile_params:

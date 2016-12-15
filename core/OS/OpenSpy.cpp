@@ -143,6 +143,13 @@ namespace OS {
 			return new OS::CPThread(entry, param, auto_start);
 		#endif
 	}
+	CMutex *CreateMutex() {
+		#if _WIN32
+			return new OS::CWin32Mutex();
+		#else
+			return new OS::CPMutex();
+		#endif
+	}
 	std::string strip_quotes(std::string s) {
 		if(s[0] != '"' || s[s.length()-1] != '"')
 			return s;

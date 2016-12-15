@@ -228,8 +228,18 @@ namespace GP {
 		}
 		if(!strcmp(command, "login")) {
 			handle_login(data, len);
-		} else if(!strcmp(command, "status")) {
-			handle_status(data, len);
+			return;
+		}
+		if(mp_backend_session_key) {
+			if(!strcmp(command, "status")) {
+				handle_status(data, len);
+			} else if(!strcmp(command, "addbuddy")) {
+				handle_addbuddy(data, len);
+			} else if(!strcmp(command, "delbuddy")) {
+				handle_addbuddy(data, len);
+			} else if(!strcmp(command, "authadd")) {
+				handle_authadd(data, len);
+			}
 		}
 		printf("Got cmd: %s\n", command);
 		gettimeofday(&m_last_recv, NULL);
@@ -264,8 +274,7 @@ namespace GP {
 		printf("Login got (%s) - (%s) - (%s)\n",challenge,user,response);
 
 		if(type == 1) {
-			//void TryAuthNickEmail_GPHash(const char *nick, const char *email, int partnercode, const char *server_chal, const char *client_chal, const char *client_response, AuthCallback cb) {
-			perform_uniquenick_auth(user, partnercode, m_challenge, challenge, response);
+			perform_nick_email_auth(user, partnercode, m_challenge, challenge, response);
 		}
 	}
 	void Peer::handle_status(const char *data, int len) {
@@ -276,6 +285,29 @@ namespace GP {
 	}
 	void Peer::handle_statusinfo(const char *data, int len) {
 
+	}
+	void Peer::handle_addbuddy(const char *data, int len) {
+		int newprofileid = find_paramint("newprofileid",(char *)data);
+		char reason[GP_REASON_LEN + 1];
+		find_param("reason",(char *)data, (char *)&reason,GP_REASON_LEN);
+
+		//CS::TryAddBuddy(m_profile.id, newprofileid, reason);
+	}
+	void Peer::send_add_buddy_request(int from_profileid, const char *reason) {
+		////\bm\1\f\157928340\msg\I have authorized your request to add me to your list\final
+		std::ostringstream s;
+		s << "\\bm\\" << GPI_BM_REQUEST;
+		s << "\\f\\" << from_profileid;
+		s << "\\msg\\" << reason;
+		s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+	}
+	void Peer::handle_delbuddy(const char *data, int len) {
+		int delprofileid = find_paramint("delprofileid",(char *)data);
+	}
+	void Peer::handle_authadd(const char *data, int len) {
+		int fromprofileid = find_paramint("fromprofileid",(char *)data);
+		//CS::AuthorizeBuddy(m_profile.id, fromprofileid);
 	}
 	void Peer::send_login_challenge(int type) {
 		std::ostringstream s;
@@ -288,7 +320,6 @@ namespace GP {
 				break;
 			}
 		}
-
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
@@ -314,7 +345,7 @@ namespace GP {
 			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
 		}
 	}
-	void Peer::perform_uniquenick_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response) {
+	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response) {
 		const char *email = NULL;
 		char nick[31 + 1];
 		const char *first_at = strchr(nick_email, '@');
@@ -330,8 +361,12 @@ namespace GP {
 
 	}
 	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
-		if(!((Peer *)extra)->mp_backend_session_key && auth_data.session_key)
-			((Peer *)extra)->mp_backend_session_key = strdup(auth_data.session_key);
+		Peer *peer = (Peer *)extra;
+		if(!peer->mp_backend_session_key && auth_data.session_key)
+			peer->mp_backend_session_key = strdup(auth_data.session_key);
+
+		peer->m_user = user;
+		peer->m_profile = profile;
 
 		std::ostringstream ss;
 		if(success) {
@@ -354,29 +389,29 @@ namespace GP {
 			}
 			ss << "\\id\\1";
 
-			((Peer *)extra)->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+			peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 
-			((Peer *)extra)->send_buddies();
+			peer->send_buddies();
 		} else {
 			switch(auth_data.response_code) {
 				case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
-					((Peer *)extra)->send_error(GP_LOGIN_BAD_EMAIL);
+					peer->send_error(GP_LOGIN_BAD_EMAIL);
 				break;
 				case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
-					((Peer *)extra)->send_error(GP_LOGIN_BAD_PASSWORD);
+					peer->send_error(GP_LOGIN_BAD_PASSWORD);
 				break;
 				case OS::LOGIN_RESPONSE_INVALID_PROFILE:
-					((Peer *)extra)->send_error(GP_LOGIN_BAD_PROFILE);
+					peer->send_error(GP_LOGIN_BAD_PROFILE);
 				break;
 				case OS::LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED:
-					((Peer *)extra)->send_error(GP_LOGIN_BAD_UNIQUENICK);
+					peer->send_error(GP_LOGIN_BAD_UNIQUENICK);
 				break;
 				case OS::LOGIN_RESPONSE_DB_ERROR:
-					((Peer *)extra)->send_error(GP_DATABASE);
+					peer->send_error(GP_DATABASE);
 				break;
 				case OS::LOGIN_RESPONSE_SERVERINITFAILED:
 				case OS::LOGIN_RESPONSE_SERVER_ERROR:
-					((Peer *)extra)->send_error(GP_NETWORK);
+					peer->send_error(GP_NETWORK);
 				break;
 			}
 		}

@@ -6,6 +6,7 @@
 #include <jwt.h>
 
 namespace OS {
+	ProfileSearchTask *ProfileSearchTask::m_task_singleton = NULL;
 	struct curl_data {
 	    json_t *json_data;
 	};
@@ -32,7 +33,7 @@ namespace OS {
 		jwt_free(jwt);
 	    return realsize;
 	}
-	void PerformSearch(ProfileSearchRequest request, ProfileSearchCallback cb, void *extra) {
+	void ProfileSearchTask::PerformSearch(ProfileSearchRequest request) {
 		curl_data recv_data;
 		std::vector<OS::Profile> results;
 		std::map<int, OS::User> users_map;
@@ -132,6 +133,39 @@ namespace OS {
 				}
 			}
 		}
-		cb(res == CURLE_OK, results, users_map, extra);
+		request.callback(res == CURLE_OK, results, users_map, request.extra);
+	}
+
+	void *ProfileSearchTask::TaskThread(CThread *thread) {
+		ProfileSearchTask *task = (ProfileSearchTask *)thread->getParams();
+		for(;;) {
+			std::vector<ProfileSearchRequest>::iterator it = task->m_request_list.begin();
+			task->mp_mutex->lock();
+			while(it != task->m_request_list.end()) {
+				ProfileSearchRequest task_params = *it;
+				PerformSearch(task_params);
+				it = task->m_request_list.erase(it);
+				continue;
+			}
+			task->mp_mutex->unlock();
+		}
+		return NULL;
+	}
+	ProfileSearchTask::ProfileSearchTask() : Task<ProfileSearchRequest>() {
+		mp_mutex = OS::CreateMutex();
+		mp_thread = OS::CreateThread(ProfileSearchTask::TaskThread, this, true);
+
+	}
+	ProfileSearchTask::~ProfileSearchTask() {
+		delete mp_mutex;
+	}
+	ProfileSearchTask *ProfileSearchTask::getProfileTask() {
+		if(!ProfileSearchTask::m_task_singleton) {
+			ProfileSearchTask::m_task_singleton = new ProfileSearchTask();
+		}
+		return ProfileSearchTask::m_task_singleton;
+	}
+	void ProfileSearchTask::Process() {
+
 	}
 }

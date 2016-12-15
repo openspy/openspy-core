@@ -21,6 +21,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <pthread.h>
 #include <sys/times.h>
 #include "Threads/PThreads/PThread.h"
+#include "Threads/PThreads/PMutex.h"
 
 #define stricmp strcasecmp
 #define sprintf_s snprintf
@@ -93,6 +94,7 @@ namespace OS {
 
 	//thread
 	CThread *CreateThread(ThreadEntry *entry, void *param, bool auto_start);
+	CMutex *CreateMutex();
 }
 
 

@@ -12,7 +12,9 @@ class Profile(BaseModel):
 
 	firstname = TextField()
 	lastname = TextField()
+	homepage = TextField()
 	icquin = IntegerField()
+	sex = IntegerField()
 
 	namespaceid = IntegerField()
 	deleted = BooleanField()

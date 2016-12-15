@@ -6,6 +6,7 @@
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
 #include <OS/socketlib/socketlib.h>
+#include <OS/Search/Profile.h>
 
 #include <sstream>
 
@@ -99,7 +100,10 @@ namespace SM {
 		*/
 
 		//void PerformSearch(ProfileSearchRequest request, void *extra);
-		OS::PerformSearch(request, Peer::m_search_callback, this);
+		//OS::PerformSearch(request, Peer::m_search_callback, this);
+		request.extra = this;
+		request.callback = Peer::m_search_callback;
+		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
 	void Peer::m_search_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		std::ostringstream s;
@@ -117,10 +121,7 @@ namespace SM {
 			it++;
 		}
 		s << "\\bsrdone\\";
-		/*
-			sprintf_s(tbuff,sizeof(tbuff),"\\bsr\\%d\\nick\\%s\\firstname\\%s\\lastname\\%s\\email\\%s\\uniquenick\\%s\\namespaceid\\%d",u_pid,nick,firstname,lastname,email,uniquenick,namespaceid);
-			strcat(query,"\\bsrdone\\");
-		*/
+
 		((Peer *)extra)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
 		((Peer *)extra)->m_delete_flag = true;
