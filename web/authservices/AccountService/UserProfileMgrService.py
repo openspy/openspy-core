@@ -28,7 +28,7 @@ class UserProfileMgrService(BaseService):
     def handle_get_profiles(self, data):
         profiles = []
         try:
-            for profile in Profile.select().where((Profile.userid == data["userid"]) & (Profile.deleted == False)):
+            for profile in Profile.select().join(User).where((User.id == data["userid"]) & (Profile.deleted == False)):
                 profile_dict = model_to_dict(profile)
                 del profile_dict['user']
                 profiles.append(profile_dict)
@@ -90,6 +90,59 @@ class UserProfileMgrService(BaseService):
             return False
         return True
 
+    def handle_profile_search(self, search_data):
+        response = []
+        #{u'partnercode': 0, u'profilenick': u'sctest01', u'email': u'sctest@gamespy.com', u'namespaceids': [1], u'mode': u'profile_search'}
+        #query = Profile.select().join(User)
+
+        hidden_str = "[hidden]"
+
+        where_expression = ((Profile.deleted == False) & (User.deleted == False))
+
+        #user search
+        if "email" in search_data:
+            where_expression = ((where_expression) & (User.email == search_data["email"]))
+            
+        if "partnercode" in search_data:
+            where_expression = ((where_expression) & (User.partnercode == search_data["partnercode"]))
+
+        #profile search
+        if "profilenick" in search_data:
+            where_expression = ((where_expression) & (Profile.nick == search_data["profilenick"]))
+
+        if "uniquenick" in search_data:
+            where_expression = ((where_expression) & (Profile.uniquenick == search_data["uniquenick"]))
+
+        if "firstname" in search_data:
+            where_expression = ((where_expression) & (Profile.firstname == search_data["firstname"]))
+
+        if "lastname" in search_data:
+            where_expression = ((where_expression) & (Profile.firstname == search_data["lastname"]))
+
+        if "icquin" in search_data:
+            where_expression = ((where_expression) & (Profile.icquin == search_data["icquin"]))
+
+        if "namespaceids" in search_data:
+            namespace_expression = None
+            for namespaceid in search_data["namespaceids"]:
+                if namespace_expression == None:
+                    namespace_expression = (Profile.namespaceid == namespaceid)
+                else:
+                    namespace_expression = ((Profile.namespaceid == namespaceid) | (namespace_expression))
+            if namespace_expression != None:
+                where_expression = (where_expression) & (namespace_expression)
+
+        profiles = Profile.select().join(User).where(where_expression)
+        ret_profiles = []
+        for profile in profiles:
+            append_profile = model_to_dict(profile)
+            append_profile['userid'] = append_profile['user']['id']
+            del append_profile['user']['password']
+
+            ret_profiles.append(append_profile)
+
+        return ret_profiles
+
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -130,6 +183,10 @@ class UserProfileMgrService(BaseService):
                 response['profile'] = profile
         elif jwt_decoded["mode"] == "delete_profile":
             success = self.handle_delete_profile(jwt_decoded)
+        elif jwt_decoded["mode"] == "profile_search":
+            profiles = self.handle_profile_search(jwt_decoded)
+            response['profiles'] = profiles
+            success = True
      
         response['success'] = success
         return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')

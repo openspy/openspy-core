@@ -10,6 +10,12 @@ namespace OS {
 		std::string uniquenick;
 		int namespaceid;
 		bool deleted;
+
+		std::string firstname;
+		std::string lastname;
+		int icquin;
+
+		
 	} Profile;
 
 	Profile LoadProfileFromJson(json_t *obj);

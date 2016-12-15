@@ -12,21 +12,25 @@ file (GLOB SOCKET_SRCS "OS/socketlib/*.cpp")
 file (GLOB SOCKET_HDRS "OS/socketlib/*.h")
 file (GLOB LEGACY_SRCS "OS/legacy/*.cpp" "OS/legacy/*.c")
 file (GLOB LEGACY_HDRS "OS/legacy/*.h")
+file (GLOB SEARCH_SRCS "OS/Search/*.cpp")
+file (GLOB SEARCH_HDRS "OS/Search/*.h")
 
 
-set (ALL_SRCS ${SOCKET_SRCS} ${SOCKET_HDRS} ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS})
+set (ALL_SRCS ${SOCKET_SRCS} ${SOCKET_HDRS} ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 source_group("Sources\\OS\\Net" FILES ${NET_SRCS})
 source_group("Sources\\OS\\Legacy" FILES ${LEGACY_SRCS})
 source_group("Sources\\OS\\socketlib" FILES ${SOCKET_SRCS})
+source_group("Sources\\OS\\Search" FILES ${SEARCH_SRCS})
 
 
 source_group("Headers\\OS\\Legacy" FILES ${LEGACY_HDRS})
 source_group("Headers\\OS\\Net" FILES ${NET_HDRS})
 source_group("Headers\\OS\\socketlib" FILES ${SOCKET_HDRS})
 
+source_group("Sources\\OS\\Search" FILES ${SEARCH_HDRS})
 
 
 IF(WIN32)

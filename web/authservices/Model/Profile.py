@@ -9,5 +9,10 @@ class Profile(BaseModel):
 	user = ForeignKeyField(User, db_column="userid", related_name='profiles')
 	nick = TextField()
 	uniquenick = TextField()
+
+	firstname = TextField()
+	lastname = TextField()
+	icquin = IntegerField()
+
 	namespaceid = IntegerField()
 	deleted = BooleanField()
