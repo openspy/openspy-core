@@ -158,14 +158,12 @@ namespace OS {
 	}
 	ProfileSearchTask::~ProfileSearchTask() {
 		delete mp_mutex;
+		delete mp_thread;
 	}
 	ProfileSearchTask *ProfileSearchTask::getProfileTask() {
 		if(!ProfileSearchTask::m_task_singleton) {
 			ProfileSearchTask::m_task_singleton = new ProfileSearchTask();
 		}
 		return ProfileSearchTask::m_task_singleton;
-	}
-	void ProfileSearchTask::Process() {
-
 	}
 }

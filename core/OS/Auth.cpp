@@ -7,11 +7,12 @@
 
 
 namespace OS {
+	AuthTask *AuthTask::m_task_singleton = NULL;
 	struct curl_data {
 	    json_t *json_data;
 	};
 	/* callback for curl fetch */
-	size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
+	size_t AuthTask::curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
 	    size_t realsize = size * nmemb;                             /* calculate buffer size */
 	    curl_data *data = (curl_data *)userp;
 
@@ -24,28 +25,27 @@ namespace OS {
 		jwt_decode(&jwt, (const char *)contents, NULL, 0);
 
 		char *json = jwt_get_grants_json(jwt, NULL);
-		printf("Json Data: %s\n", json);
 		data->json_data = json_loads(json, 0, NULL);
 
 		free(json);
 		jwt_free(jwt);
 	    return realsize;
 	}
-	void TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra) {
+	void AuthTask::PerformAuth_NickEMail_GPHash(AuthRequest request) {
 		curl_data recv_data;
 		//build json object
 		json_t *send_obj = json_object();
 
-		json_object_set_new(send_obj, "profilenick", json_string(nick.c_str()));
-		json_object_set_new(send_obj, "email", json_string(email.c_str()));
-		json_object_set_new(send_obj, "partnercode", json_integer(partnercode));
+		json_object_set_new(send_obj, "profilenick", json_string(request.nick.c_str()));
+		json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
+		json_object_set_new(send_obj, "partnercode", json_integer(request.partnercode));
 		json_object_set_new(send_obj, "hash_type", json_string("gp_nick_email"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
 		json_object_set_new(send_obj, "save_session", json_true());
 
-		json_object_set_new(send_obj, "server_challenge", json_string(server_chal.c_str()));
-		json_object_set_new(send_obj, "client_challenge", json_string(client_chal.c_str()));
-		json_object_set_new(send_obj, "client_response", json_string(client_response.c_str()));
+		json_object_set_new(send_obj, "server_challenge", json_string(request.server_challenge.c_str()));
+		json_object_set_new(send_obj, "client_challenge", json_string(request.client_challenge.c_str()));
+		json_object_set_new(send_obj, "client_response", json_string(request.client_response.c_str()));
 
 		char *json_data = json_dumps(send_obj, 0);
 
@@ -119,14 +119,60 @@ namespace OS {
 					auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 				}
 
-				printf("Response Code: %d\n", (int)auth_data.response_code);
 				//typedef void (*AuthCallback)(bool success, User user, Profile profile, void *extra);
-				cb(success, user, profile, auth_data, extra);
+				request.callback(success, user, profile, auth_data, request.extra);
 			}
 			curl_easy_cleanup(curl);
 		}
 		jwt_free(jwt);
 		free(json_data);
 		json_decref(send_obj);
+	}
+	void AuthTask::TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra) {
+		AuthRequest request;
+		request.type = EAuthType_NickEmail_GPHash;
+		request.email = email;
+		request.nick = nick;
+		request.partnercode = partnercode;
+		request.server_challenge = server_chal;
+		request.client_challenge = client_chal;
+		request.client_response = client_response;
+		request.extra = extra;
+		request.callback = cb;
+
+		AuthTask::getAuthTask()->AddRequest(request);
+	}
+	AuthTask::AuthTask() {
+		mp_mutex = OS::CreateMutex();
+		mp_thread = OS::CreateThread(AuthTask::TaskThread, this, true);
+	}
+	AuthTask::~AuthTask() {
+		delete mp_mutex;
+		delete mp_thread;
+	}
+	AuthTask *AuthTask::getAuthTask() {
+		if(!AuthTask::m_task_singleton) {
+			AuthTask::m_task_singleton = new AuthTask();
+		}
+		return AuthTask::m_task_singleton;
+	}
+	void *AuthTask::TaskThread(CThread *thread) {
+		AuthTask *task = (AuthTask *)thread->getParams();
+		for(;;) {
+			std::vector<AuthRequest>::iterator it = task->m_request_list.begin();
+			task->mp_mutex->lock();
+			while(it != task->m_request_list.end()) {
+				AuthRequest task_params = *it;
+				switch(task_params.type) {
+					case EAuthType_NickEmail_GPHash:
+						task->PerformAuth_NickEMail_GPHash(task_params);
+					break;
+				}
+				it = task->m_request_list.erase(it);
+				continue;
+			}
+			task->mp_mutex->unlock();
+		}
+		return NULL;
 	}
 }

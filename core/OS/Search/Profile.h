@@ -41,7 +41,6 @@ namespace OS {
 		public:
 			ProfileSearchTask();
 			~ProfileSearchTask();
-			void Process();
 			static ProfileSearchTask *getProfileTask();
 		private:
 			static void PerformSearch(ProfileSearchRequest request);

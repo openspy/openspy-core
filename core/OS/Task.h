@@ -16,7 +16,6 @@ namespace OS {
 			m_request_list.push_back(data);
 			mp_mutex->unlock();
 		}
-		virtual void Process() = 0;
 	protected:
 
 		CThread	*mp_thread;

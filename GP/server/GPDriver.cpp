@@ -7,7 +7,9 @@
 #include <OS/socketlib/socketlib.h>
 
 namespace GP {
+	Driver *g_gbl_gp_driver;
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
+		g_gbl_gp_driver = this;
 		uint32_t bind_ip = INADDR_ANY;
 		
 		if ((m_sd = Socket::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
@@ -82,6 +84,15 @@ namespace GP {
 		Peer *ret = new Peer(this, address, m_sd);
 		m_connections.push_back(ret);
 		return ret;
+	}
+	bool Driver::HasPeer(Peer *peer) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			if((*it) == peer)
+				return true;
+			it++;
+		}
+		return false;
 	}
 	void Driver::tick(fd_set *fdset) {
 

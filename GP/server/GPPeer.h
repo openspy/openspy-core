@@ -458,6 +458,7 @@ typedef struct {
 
 namespace GP {
 	class Driver;
+
 	class Peer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);

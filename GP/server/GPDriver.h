@@ -18,7 +18,8 @@
 
 namespace GP {
 	class Peer;
-
+	class Driver;
+	extern Driver *g_gbl_gp_driver;
 	class Driver : public INetDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
@@ -32,6 +33,8 @@ namespace GP {
 
 		Peer *find_client(struct sockaddr_in *address);
 		Peer *find_or_create(struct sockaddr_in *address);
+
+		bool HasPeer(Peer *);
 
 		int setup_fdset(fd_set *fdset);
 		

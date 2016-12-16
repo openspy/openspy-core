@@ -217,6 +217,7 @@ namespace GP {
 		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
+			printf("D/C from timeout\n");
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
@@ -226,6 +227,7 @@ namespace GP {
 			m_delete_flag = true;
 			return;
 		}
+		gettimeofday(&m_last_recv, NULL);
 		if(!strcmp(command, "login")) {
 			handle_login(data, len);
 			return;
@@ -242,7 +244,7 @@ namespace GP {
 			}
 		}
 		printf("Got cmd: %s\n", command);
-		gettimeofday(&m_last_recv, NULL);
+		
 	}
 	void Peer::handle_login(const char *data, int len) {
 		char challenge[128 + 1];
@@ -357,11 +359,14 @@ namespace GP {
 			}
 			email = first_at+1;
 		}
- 		OS::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this);
+ 		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this);
 
 	}
 	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
 		Peer *peer = (Peer *)extra;
+		if(!g_gbl_gp_driver->HasPeer(peer)) {
+			return;
+		}
 		if(!peer->mp_backend_session_key && auth_data.session_key)
 			peer->mp_backend_session_key = strdup(auth_data.session_key);
 
