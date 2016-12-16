@@ -28,6 +28,7 @@ namespace OS {
 		std::vector<int> namespaceids;
 		std::string firstname;
 		std::string lastname;
+		std::string homepage;
 		int icquin;
 		int skip;
 

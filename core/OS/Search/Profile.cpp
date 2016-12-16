@@ -42,43 +42,51 @@ namespace OS {
 
 		json_object_set_new(send_obj, "mode", json_string("profile_search"));
 
-		//user parameters
-		if(request.email.length())
-			json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
 
-		
-		json_object_set_new(send_obj, "partnercode", json_integer(request.partnercode));
+		if(request.profileid != 0) {
+			json_object_set_new(send_obj, "profileid", json_integer(request.profileid));
+		} else {
 
-		//profile parameters
-		if(request.nick.length())
-			json_object_set_new(send_obj, "profilenick", json_string(request.nick.c_str()));
+			//user parameters
+			if(request.email.length())
+				json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
 
-		if(request.uniquenick.length())
-			json_object_set_new(send_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+			
+			json_object_set_new(send_obj, "partnercode", json_integer(request.partnercode));
 
-		if(request.firstname.length())
-			json_object_set_new(send_obj, "firstname", json_string(request.firstname.c_str()));
 
-		if(request.lastname.length())
-			json_object_set_new(send_obj, "lastname", json_string(request.lastname.c_str()));
+			//profile parameters
+			if(request.nick.length())
+				json_object_set_new(send_obj, "profilenick", json_string(request.nick.c_str()));
 
-		if(request.icquin)
-			json_object_set_new(send_obj, "icquin", json_integer(request.icquin));
+			if(request.uniquenick.length())
+				json_object_set_new(send_obj, "uniquenick", json_string(request.uniquenick.c_str()));
 
-		if(request.namespaceids.size()) {
-			json_t *namespaceids_json = json_array();
+			if(request.firstname.length())
+				json_object_set_new(send_obj, "firstname", json_string(request.firstname.c_str()));
 
-			//json_array_append_new(v_array, json_real(v));
-			std::vector<int>::iterator it = request.namespaceids.begin();
-			while(it != request.namespaceids.end()) {
-				int v = *it;
-				json_array_append_new(namespaceids_json, json_integer(v));
-				it++;
+			if(request.lastname.length())
+				json_object_set_new(send_obj, "lastname", json_string(request.lastname.c_str()));
+
+			if(request.icquin)
+				json_object_set_new(send_obj, "icquin", json_integer(request.icquin));
+
+			if(request.namespaceids.size()) {
+				json_t *namespaceids_json = json_array();
+
+				//json_array_append_new(v_array, json_real(v));
+				std::vector<int>::iterator it = request.namespaceids.begin();
+				while(it != request.namespaceids.end()) {
+					int v = *it;
+					json_array_append_new(namespaceids_json, json_integer(v));
+					it++;
+				}
+
+				json_object_set_new(send_obj, "namespaceids", namespaceids_json);
+
 			}
-
-			json_object_set_new(send_obj, "namespaceids", namespaceids_json);
-
 		}
+
 
 		char *json_data = json_dumps(send_obj, 0);
 

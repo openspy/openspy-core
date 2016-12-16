@@ -78,6 +78,26 @@
 #define GPI_BM_FILE_TRANSFER_CANCEL     207
 #define GPI_BM_FILE_TRANSFER_KEEPALIVE  208
 
+//DEFINES
+/////////
+// Operation Types.
+///////////////////
+#define GPI_CONNECT                    0
+#define GPI_NEW_PROFILE                1
+#define GPI_GET_INFO                   2
+#define GPI_PROFILE_SEARCH             3
+#define GPI_REGISTER_UNIQUENICK        4
+#define GPI_DELETE_PROFILE             5
+#define GPI_REGISTER_CDKEY             6
+// Operation States.
+////////////////////
+#define GPI_START                      0
+//#define GPI_CONNECTING               1
+#define GPI_LOGIN                      2
+#define GPI_REQUESTING                 3
+#define GPI_WAITING                    4
+#define GPI_FINISHING                  5
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // GPEnum
@@ -496,6 +516,7 @@ namespace GP {
 		void handle_pinvite(const char *data, int len);
 
 		void handle_getprofile(const char *data, int len);
+		static void m_getprofile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
 		void handle_bm(const char *data, int len);
 
@@ -504,6 +525,8 @@ namespace GP {
 
 		void handle_updatepro(const char *data, int len);
 		void handle_updateui(const char *data, int len);
+
+		void handle_keepalive(const char *data, int len);
 		//
 
 		//login

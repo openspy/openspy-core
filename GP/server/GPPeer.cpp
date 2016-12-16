@@ -1,6 +1,7 @@
 #include "GPPeer.h"
 #include "GPDriver.h"
 #include <OS/OpenSpy.h>
+#include <OS/Search/Profile.h>
 #include <OS/legacy/helpers.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
@@ -231,6 +232,8 @@ namespace GP {
 		if(!strcmp(command, "login")) {
 			handle_login(data, len);
 			return;
+		} else if(strcmp(command, "ka")) {
+			handle_keepalive(data, len);
 		}
 		if(mp_backend_session_key) {
 			if(!strcmp(command, "status")) {
@@ -241,6 +244,8 @@ namespace GP {
 				handle_addbuddy(data, len);
 			} else if(!strcmp(command, "authadd")) {
 				handle_authadd(data, len);
+			} else if(!strcmp(command, "getprofile")) {
+				handle_getprofile(data, len);
 			}
 		}
 		printf("Got cmd: %s\n", command);
@@ -295,6 +300,8 @@ namespace GP {
 
 		//CS::TryAddBuddy(m_profile.id, newprofileid, reason);
 	}
+	void Peer::handle_keepalive(const char *data, int len) {
+	}
 	void Peer::send_add_buddy_request(int from_profileid, const char *reason) {
 		////\bm\1\f\157928340\msg\I have authorized your request to add me to your list\final
 		std::ostringstream s;
@@ -310,6 +317,66 @@ namespace GP {
 	void Peer::handle_authadd(const char *data, int len) {
 		int fromprofileid = find_paramint("fromprofileid",(char *)data);
 		//CS::AuthorizeBuddy(m_profile.id, fromprofileid);
+	}
+	void Peer::handle_getprofile(const char *data, int len) {
+		OS::ProfileSearchRequest request;
+		int profileid = find_paramint("profileid",(char *)data);		
+		request.profileid = profileid;
+		request.extra = this;
+		request.callback = Peer::m_getprofile_callback;
+		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+	}
+	void Peer::handle_keepalive(const char *data, int len) {
+		std::ostringstream s;
+		s << "\\ka\\";
+		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+	}
+	void Peer::m_getprofile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+		Peer *peer = (Peer *)extra;
+		if(!g_gbl_gp_driver->HasPeer(peer)) {
+			return;
+		}
+		std::vector<OS::Profile>::iterator it = results.begin();
+		while(it != results.end()) {
+			OS::Profile p = *it;
+			OS::User user = result_users[p.userid];
+			std::ostringstream s;
+
+			s << "\\pi\\";
+			s << "\\profileid\\" << p.id;
+
+			if(p.nick.length()) {
+				s << "\\nick\\" << p.nick;
+			}
+
+			if(p.uniquenick.length()) {
+				s << "\\uniquenick\\" << p.uniquenick;
+			}
+
+			if(user.email.length()) {
+				s << "\\email\\" << user.email;
+			}
+
+			if(p.firstname.length()) {
+				s << "\\firstname\\" << p.firstname;
+			}
+
+			if(p.lastname.length()) {
+				s << "\\lastname\\" << p.lastname;
+			}
+
+			if(p.icquin) {
+				s << "\\icquin\\" << p.icquin;
+			}
+
+			s << "\\sex\\" << p.sex;
+
+			s << "\\id\\" << GPI_GET_INFO;
+
+			s << "\\sig\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+			peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+			it++;
+		}
 	}
 	void Peer::send_login_challenge(int type) {
 		std::ostringstream s;
@@ -332,6 +399,7 @@ namespace GP {
 		if(attach_final) {
 			BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
 		}
+		printf("Sending: %s\n",out_buff);
 		int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
 		if(c < 0) {
 			m_delete_flag = true;

@@ -14,6 +14,9 @@ namespace OS {
 		std::string firstname;
 		std::string lastname;
 		int icquin;
+		int sex;
+
+		std::string homepage;
 
 		
 	} Profile;

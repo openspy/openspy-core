@@ -39,7 +39,6 @@ class UserProfileMgrService(BaseService):
 
 
     def handle_get_profile(self, data):
-        print("Get Profile: {}\n".format(data))
         profile = None
         try:
             if "profileid" in data:
@@ -100,6 +99,9 @@ class UserProfileMgrService(BaseService):
         where_expression = ((Profile.deleted == False) & (User.deleted == False))
 
         #user search
+        if "userid" in search_data:
+            where_expression = ((where_expression) & (User.id == search_data["userid"]))
+            
         if "email" in search_data:
             where_expression = ((where_expression) & (User.email == search_data["email"]))
             
@@ -107,6 +109,8 @@ class UserProfileMgrService(BaseService):
             where_expression = ((where_expression) & (User.partnercode == search_data["partnercode"]))
 
         #profile search
+        if "profileid" in search_data:
+            where_expression = ((where_expression) & (Profile.id == search_data["profileid"]))
         if "profilenick" in search_data:
             where_expression = ((where_expression) & (Profile.nick == search_data["profilenick"]))
 

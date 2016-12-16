@@ -99,8 +99,6 @@ namespace SM {
 		}
 		*/
 
-		//void PerformSearch(ProfileSearchRequest request, void *extra);
-		//OS::PerformSearch(request, Peer::m_search_callback, this);
 		request.extra = this;
 		request.callback = Peer::m_search_callback;
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
