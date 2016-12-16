@@ -2,7 +2,6 @@ from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
 import binascii
-from M2Crypto import RSA, BIO
 import md5, struct, os
 
 from collections import OrderedDict
@@ -95,6 +94,7 @@ class OS_RegisterSvc(BaseService):
 
         conn.request("POST", self.USER_MGR_SCRIPT, params, headers)
         response = conn.getresponse().read()
+        print("Resp: {}\n".format(response))
         response = jwt.decode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
         return "user" in response
     def check_profile_conflicts(self, request):

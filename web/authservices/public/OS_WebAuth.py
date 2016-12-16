@@ -2,7 +2,6 @@ from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
 import binascii
-from M2Crypto import RSA, BIO
 import md5, struct, os
 
 from collections import OrderedDict

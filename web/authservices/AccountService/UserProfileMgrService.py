@@ -75,7 +75,10 @@ class UserProfileMgrService(BaseService):
         user = User.get((User.id == data["userid"]))
         profile_data["user"] = user
         profile_pk = Profile.insert(**profile_data).execute()
-        profile = model_to_dict(Profile.get((Profile.id == profile_pk) & (Profile.deleted == False)))
+        print("Made PK: {}\n".format(profile_pk))
+        profile = Profile.get((Profile.id == profile_pk))
+        print("Profile: {}\n".format(profile))
+        profile = model_to_dict(profile)
         del profile["user"]
         return profile
     def handle_delete_profile(self, data):
@@ -193,4 +196,5 @@ class UserProfileMgrService(BaseService):
             success = True
      
         response['success'] = success
+        start_response('200 OK', [('Content-Type','text/html')])
         return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')

@@ -4,6 +4,7 @@ import jwt
 
 import MySQLdb
 import uuid
+import hashlib
 
 from playhouse.shortcuts import model_to_dict, dict_to_model
 from BaseModel import BaseModel
@@ -14,6 +15,7 @@ from BaseService import BaseService
 import json
 import uuid
 import redis
+
 
 class RegistrationService(BaseService):
 
@@ -28,9 +30,9 @@ class RegistrationService(BaseService):
     def send_verification_email(self, user):
         if user['email_verified'] == True:
             return None
-        verification_key = sha(str(uuid.uuid1()))
+        verification_key = hashlib.sha1(str(uuid.uuid1()))
         verification_key.update(str(uuid.uuid4()))
-        verification_key = reset_key.hexdigest()
+        verification_key = verification_key.hexdigest()
 
 
         redis_key = "emailveri_{}".format(user['id'])
@@ -50,15 +52,18 @@ class RegistrationService(BaseService):
             </body>
         </html>
         """.format(user['id'], verification_key)
-        email_data = {'from': 'no-reply@openspy.org', 'to': user.email,  'subject': 'Email Verification', 'body': email_body}
+        email_data = {'from': 'no-reply@openspy.org', 'to': user['email'],  'subject': 'Email Verification', 'body': email_body}
         self.sendEmail(email_data)
         return verification_key
 
     def try_register_user(self, register_data):
+        print("Try register: {}\n".format(register_data))
         try:
             existing_user = User.select().where((User.email == register_data['email']) & (User.partnercode == int(register_data['partnercode']))).get()        
         except User.DoesNotExist:
+            print("Not registered... registering\n")
             user = User.create(email=register_data['email'], partnercode=register_data['partnercode'], password=register_data['password'])
+            print("Created\n")
             user = model_to_dict(user)
             self.send_verification_email(user)            
             del user['password']
@@ -150,5 +155,7 @@ class RegistrationService(BaseService):
                 response['reason'] = self.REGISTRATION_EMAIL_PARTNERCODE_EXISTS
      
         print("Register returning: {}\n".format(response))
+
+        start_response('200 OK', [('Content-Type','text/html')])
 
         return jwt.encode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')

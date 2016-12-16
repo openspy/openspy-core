@@ -2,7 +2,7 @@
 #include <OS/Auth.h>
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt.h>
+#include <jwt/jwt.h>
 #include <string>
 
 
@@ -28,6 +28,8 @@ namespace OS {
 		if(json) {
 			data->json_data = json_loads(json, 0, NULL);
 			free(json);
+		} else {
+			data->json_data = NULL;
 		}
 		jwt_free(jwt);
 	    return realsize;
@@ -93,31 +95,36 @@ namespace OS {
 			bool success = false;
 
 			if(res == CURLE_OK) {
-				json_t *success_obj = json_object_get(recv_data.json_data, "success");
-				if(success_obj == json_true()) {
-					json_t *profile_json = json_object_get(recv_data.json_data, "profile");
-					if(profile_json) {
-						profile = LoadProfileFromJson(profile_json);
-						json_t *user_json = json_object_get(profile_json, "user");
-						if(user_json) {
-							user = LoadUserFromJson(user_json);
-							success = true;
+				if(recv_data.json_data) {
+					json_t *success_obj = json_object_get(recv_data.json_data, "success");
+					if(success_obj == json_true()) {
+						json_t *profile_json = json_object_get(recv_data.json_data, "profile");
+						if(profile_json) {
+							profile = LoadProfileFromJson(profile_json);
+							json_t *user_json = json_object_get(profile_json, "user");
+							if(user_json) {
+								user = LoadUserFromJson(user_json);
+								success = true;
+							}
 						}
-					}
-					json_t *server_response_json = json_object_get(recv_data.json_data, "server_response");
-					if(server_response_json) {
-						auth_data.hash_proof = json_string_value(server_response_json);
-					}
-					server_response_json = json_object_get(recv_data.json_data, "session_key");
-					if(server_response_json) {
-						auth_data.session_key = json_string_value(server_response_json);
-					}
+						json_t *server_response_json = json_object_get(recv_data.json_data, "server_response");
+						if(server_response_json) {
+							auth_data.hash_proof = json_string_value(server_response_json);
+						}
+						server_response_json = json_object_get(recv_data.json_data, "session_key");
+						if(server_response_json) {
+							auth_data.session_key = json_string_value(server_response_json);
+						}
 
+					} else {
+					}
+					json_t *reason_json = json_object_get(recv_data.json_data, "reason");
+					if(reason_json) {
+						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
+					}
 				} else {
-				}
-				json_t *reason_json = json_object_get(recv_data.json_data, "reason");
-				if(reason_json) {
-					auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
+					success = false;
+					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
 
 				//typedef void (*AuthCallback)(bool success, User user, Profile profile, void *extra);

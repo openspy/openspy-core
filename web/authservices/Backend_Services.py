@@ -1,12 +1,11 @@
 from cgi import parse_qs, escape
-
 from BaseService import BaseService
 import AccountService.AuthService as AuthService
 from AccountService.AuthService import AuthService
 from AccountService.UserAccountMgrService import UserAccountMgrService
 from AccountService.RegistrationService import RegistrationService
 from AccountService.UserProfileMgrService import UserProfileMgrService
-from public.GS_AuthService import GS_AuthService
+#from public.GS_AuthService import GS_AuthService
 from public.OS_WebAuth import OS_WebAuth
 from public.OS_WebUserMgr import OS_WebUserMgr
 from public.OS_WebProfileMgr import OS_WebProfileMgr
@@ -14,11 +13,12 @@ from public.OS_RegisterSvc import OS_RegisterSvc
 from public.OS_PWReset import OS_PWReset
 import re
 import json
+from wsgiref.util import request_uri
 #import RegistrationService from RegistrationService
 
 def application(env, start_response):
-
 	path_split = re.split('/', env.get('REQUEST_URI'))
+	
 	service = None
 	if path_split[1] == "backend":
 		#TODO: backend security check
@@ -49,9 +49,9 @@ def application(env, start_response):
 			service = OS_PWReset()
 
 	#GameSpy SDK files, publically accessable
-	elif path_split[1] == "AuthService":
-		if path_split[2] == "AuthService.asmx":
-			service = GS_AuthService()
+#	elif path_split[1] == "AuthService":
+#		if path_split[2] == "AuthService.asmx":
+#			service = GS_AuthService()
 	
 	if service == None:
 		start_response('400 BAD REQUEST', [('Content-Type','text/html')])

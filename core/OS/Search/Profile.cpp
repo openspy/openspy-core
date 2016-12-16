@@ -3,7 +3,7 @@
 
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt.h>
+#include <jwt/jwt.h>
 
 namespace OS {
 	ProfileSearchTask *ProfileSearchTask::m_task_singleton = NULL;
@@ -28,8 +28,9 @@ namespace OS {
 		char *json = jwt_get_grants_json(jwt, NULL);
 		if(json) {
 			data->json_data = json_loads(json, 0, NULL);
-
 			free(json);
+		} else {
+			data->json_data = NULL;
 		}
 		jwt_free(jwt);
 	    return realsize;
@@ -101,7 +102,7 @@ namespace OS {
 
 		CURL *curl = curl_easy_init();
 		CURLcode res;
-
+		bool success = false;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
@@ -123,26 +124,29 @@ namespace OS {
 
 			res = curl_easy_perform(curl);
 
-			bool success = false;
-
 			if(res == CURLE_OK) {
-				json_t *profiles_obj = json_object_get(recv_data.json_data, "profiles");
-				if(profiles_obj) {
-					int num_profiles = json_array_size(profiles_obj);
-					for(int i=0;i<num_profiles;i++) {
+				if(recv_data.json_data) {
+					success = true;
+					json_t *profiles_obj = json_object_get(recv_data.json_data, "profiles");
+					if(profiles_obj) {
+						int num_profiles = json_array_size(profiles_obj);
+						for(int i=0;i<num_profiles;i++) {
 
-						json_t *profile_obj = json_array_get(profiles_obj, i);
-						OS::Profile profile = OS::LoadProfileFromJson(profile_obj);
-						if(users_map.find(profile.userid) == users_map.end()) {
-							json_t *user_obj = json_object_get(profile_obj, "user");
-							users_map[profile.userid] = OS::LoadUserFromJson(user_obj);
+							json_t *profile_obj = json_array_get(profiles_obj, i);
+							OS::Profile profile = OS::LoadProfileFromJson(profile_obj);
+							if(users_map.find(profile.userid) == users_map.end()) {
+								json_t *user_obj = json_object_get(profile_obj, "user");
+								users_map[profile.userid] = OS::LoadUserFromJson(user_obj);
+							}
+							results.push_back(profile);
 						}
-						results.push_back(profile);
 					}
+				} else {
+					success = false;
 				}
 			}
 		}
-		request.callback(res == CURLE_OK, results, users_map, request.extra);
+		request.callback(success, results, users_map, request.extra);
 	}
 
 	void *ProfileSearchTask::TaskThread(CThread *thread) {

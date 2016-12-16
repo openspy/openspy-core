@@ -13,9 +13,7 @@ from Model.Profile import Profile
 from BaseService import BaseService
 
 import redis
-from md5 import md5
-from sha import sha
-
+import hashlib
 class AuthService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
@@ -59,21 +57,21 @@ class AuthService(BaseService):
         return auth_success
 
     def test_gp_nick_email_by_profile(self, profile, client_challenge, server_challenge, client_response):
-        md5_pw = md5(profile.user.password).hexdigest()
+        md5_pw = hashlib.md5(profile.user.password).hexdigest()
         crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email,client_challenge, server_challenge, md5_pw)
-        true_resp = md5(crypt_buf).hexdigest()
+        true_resp = hashlib.md5(crypt_buf).hexdigest()
 
         if profile.user.partnercode != self.PARTNERID_GAMESPY:
             proof = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
         else:
             proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
-        proof = md5(proof).hexdigest()
+        proof = hashlib.md5(proof).hexdigest()
         if true_resp == client_response:
             return proof
         return None
 
     def create_auth_session(self, profile, user):
-        session_key = sha(str(uuid.uuid1()))
+        session_key = hashlib.sha1(str(uuid.uuid1()))
         session_key.update(str(uuid.uuid4()))
 
         session_key = session_key.hexdigest()
@@ -267,5 +265,5 @@ class AuthService(BaseService):
         if "set_context" in jwt_decoded and "session_key" in response:
             if jwt_decoded["set_context"] == "profile":
                 self.set_auth_context(response["session_key"], profile)
-
+        start_response('200 OK', [('Content-Type','text/html')])
         return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')

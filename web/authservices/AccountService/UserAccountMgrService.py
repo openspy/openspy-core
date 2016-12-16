@@ -54,8 +54,6 @@ class UserAccountMgrService(BaseService):
         request_body = env['wsgi.input'].read(request_body_size)
         jwt_decoded = jwt.decode(request_body, self.SECRET_USERMGR_KEY, algorithm='HS256')
 
-        print("UserMgrServ got: {}\n".format(jwt_decoded))
-
         response = {}
 
         success = False
@@ -71,4 +69,6 @@ class UserAccountMgrService(BaseService):
                 response['user'] = user
      
         response['success'] = success
+
+        start_response('200 OK', [('Content-Type','text/html')])
         return jwt.encode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')

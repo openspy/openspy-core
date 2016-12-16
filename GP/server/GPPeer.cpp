@@ -9,6 +9,8 @@
 
 #include <sstream>
 
+#include "GPBackend.h"
+
 namespace GP {
 	GPErrorData Peer::m_error_data[] = {
 		// General error codes.
@@ -299,7 +301,7 @@ namespace GP {
 		char reason[GP_REASON_LEN + 1];
 		find_param("reason",(char *)data, (char *)&reason,GP_REASON_LEN);
 
-		//CS::TryAddBuddy(m_profile.id, newprofileid, reason);
+		GP::TryAddBuddy(m_profile.id, newprofileid, reason);
 	}
 	void Peer::send_add_buddy_request(int from_profileid, const char *reason) {
 		////\bm\1\f\157928340\msg\I have authorized your request to add me to your list\final
