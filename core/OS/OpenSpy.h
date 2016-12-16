@@ -95,6 +95,8 @@ namespace OS {
 	//thread
 	CThread *CreateThread(ThreadEntry *entry, void *param, bool auto_start);
 	CMutex *CreateMutex();
+
+	void Sleep(int time_ms);
 }
 
 

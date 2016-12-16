@@ -2,6 +2,7 @@
 #define _OS_TASK_H
 #include <vector>
 namespace OS {
+	#define TASK_SLEEP_TIME 1000
 	template<typename T>
 	class Task {
 	public:

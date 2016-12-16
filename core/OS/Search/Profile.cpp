@@ -147,15 +147,19 @@ namespace OS {
 	void *ProfileSearchTask::TaskThread(CThread *thread) {
 		ProfileSearchTask *task = (ProfileSearchTask *)thread->getParams();
 		for(;;) {
-			std::vector<ProfileSearchRequest>::iterator it = task->m_request_list.begin();
-			task->mp_mutex->lock();
-			while(it != task->m_request_list.end()) {
-				ProfileSearchRequest task_params = *it;
-				PerformSearch(task_params);
-				it = task->m_request_list.erase(it);
-				continue;
+			if(task->m_request_list.size() > 0) {
+				std::vector<ProfileSearchRequest>::iterator it = task->m_request_list.begin();
+				task->mp_mutex->lock();
+				while(it != task->m_request_list.end()) {
+					ProfileSearchRequest task_params = *it;
+					PerformSearch(task_params);
+					it = task->m_request_list.erase(it);
+					continue;
+				}
+				task->mp_mutex->unlock();
+			} else {
+				OS::Sleep(TASK_SLEEP_TIME);
 			}
-			task->mp_mutex->unlock();
 		}
 		return NULL;
 	}

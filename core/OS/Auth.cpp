@@ -159,19 +159,23 @@ namespace OS {
 	void *AuthTask::TaskThread(CThread *thread) {
 		AuthTask *task = (AuthTask *)thread->getParams();
 		for(;;) {
-			std::vector<AuthRequest>::iterator it = task->m_request_list.begin();
-			task->mp_mutex->lock();
-			while(it != task->m_request_list.end()) {
-				AuthRequest task_params = *it;
-				switch(task_params.type) {
-					case EAuthType_NickEmail_GPHash:
-						task->PerformAuth_NickEMail_GPHash(task_params);
-					break;
+			if(task->m_request_list.size() > 0) {
+				std::vector<AuthRequest>::iterator it = task->m_request_list.begin();
+				task->mp_mutex->lock();
+				while(it != task->m_request_list.end()) {
+					AuthRequest task_params = *it;
+					switch(task_params.type) {
+						case EAuthType_NickEmail_GPHash:
+							task->PerformAuth_NickEMail_GPHash(task_params);
+						break;
+					}
+					it = task->m_request_list.erase(it);
+					continue;
 				}
-				it = task->m_request_list.erase(it);
-				continue;
+				task->mp_mutex->unlock();
+			} else {
+				OS::Sleep(TASK_SLEEP_TIME);
 			}
-			task->mp_mutex->unlock();
 		}
 		return NULL;
 	}

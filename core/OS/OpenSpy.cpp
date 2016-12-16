@@ -166,4 +166,11 @@ namespace OS {
 		}
 		return ret;
 	}
+	void Sleep(int time_ms) {
+		#ifdef _WIN32
+		Sleep(time_ms);
+		#else
+		usleep(time_ms * 1000);
+		#endif
+	}
 }

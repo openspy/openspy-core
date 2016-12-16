@@ -300,8 +300,6 @@ namespace GP {
 
 		//CS::TryAddBuddy(m_profile.id, newprofileid, reason);
 	}
-	void Peer::handle_keepalive(const char *data, int len) {
-	}
 	void Peer::send_add_buddy_request(int from_profileid, const char *reason) {
 		////\bm\1\f\157928340\msg\I have authorized your request to add me to your list\final
 		std::ostringstream s;
