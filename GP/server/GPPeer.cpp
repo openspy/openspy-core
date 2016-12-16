@@ -262,6 +262,7 @@ namespace GP {
 		int namespaceid = find_paramint("namespaceid",(char *)data);
 		int quiet = find_paramint("quiet",(char *)data);
 
+		m_auth_operation_id = find_paramint("id",(char *)data);		
 		int type = 0;
 
 		if(!find_param("challenge",(char *)data, (char *)&challenge,sizeof(challenge)-1)) {
@@ -319,6 +320,7 @@ namespace GP {
 	void Peer::handle_getprofile(const char *data, int len) {
 		OS::ProfileSearchRequest request;
 		int profileid = find_paramint("profileid",(char *)data);		
+		m_search_operation_id = find_paramint("id",(char *)data);		
 		request.profileid = profileid;
 		request.extra = this;
 		request.callback = Peer::m_getprofile_callback;
@@ -367,9 +369,13 @@ namespace GP {
 				s << "\\icquin\\" << p.icquin;
 			}
 
+			if(p.zipcode) {
+				s << "\\zipcode\\" << p.zipcode;
+			}
+
 			s << "\\sex\\" << p.sex;
 
-			s << "\\id\\" << GPI_GET_INFO;
+			s << "\\id\\" << peer->m_search_operation_id;
 
 			s << "\\sig\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
 			peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
@@ -383,7 +389,7 @@ namespace GP {
 		switch(type) {
 			case 1: {
 				s << "\\challenge\\" << m_challenge;
-				s << "\\id\\1";
+				s << "\\id\\" << GPI_CONNECTING;
 				break;
 			}
 		}
@@ -397,7 +403,6 @@ namespace GP {
 		if(attach_final) {
 			BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
 		}
-		printf("Sending: %s\n",out_buff);
 		int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
 		if(c < 0) {
 			m_delete_flag = true;
@@ -458,7 +463,7 @@ namespace GP {
 			if(auth_data.hash_proof) {
 				ss << "\\proof\\" << auth_data.hash_proof;
 			}
-			ss << "\\id\\1";
+			ss << "\\id\\" << peer->m_auth_operation_id;
 
 			peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 

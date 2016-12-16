@@ -14,6 +14,7 @@ namespace OS {
 		std::string firstname;
 		std::string lastname;
 		int icquin;
+		int zipcode;
 		int sex;
 
 		std::string homepage;

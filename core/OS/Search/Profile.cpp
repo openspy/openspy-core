@@ -26,10 +26,11 @@ namespace OS {
 		jwt_decode(&jwt, (const char *)contents, NULL, 0);
 
 		char *json = jwt_get_grants_json(jwt, NULL);
-		printf("Json Data: %s\n", json);
-		data->json_data = json_loads(json, 0, NULL);
+		if(json) {
+			data->json_data = json_loads(json, 0, NULL);
 
-		free(json);
+			free(json);
+		}
 		jwt_free(jwt);
 	    return realsize;
 	}

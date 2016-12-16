@@ -92,7 +92,7 @@
 // Operation States.
 ////////////////////
 #define GPI_START                      0
-//#define GPI_CONNECTING               1
+#define GPI_CONNECTING               1
 #define GPI_LOGIN                      2
 #define GPI_REQUESTING                 3
 #define GPI_WAITING                    4
@@ -516,6 +516,7 @@ namespace GP {
 		void handle_pinvite(const char *data, int len);
 
 		void handle_getprofile(const char *data, int len);
+		int m_search_operation_id;
 		static void m_getprofile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
 		void handle_bm(const char *data, int len);
@@ -531,7 +532,7 @@ namespace GP {
 
 		//login
 		void perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response);
-
+		int m_auth_operation_id;
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);
 
 		void send_buddies();

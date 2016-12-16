@@ -44,6 +44,12 @@ namespace OS {
 		else 
 			ret.sex = 0;
 
+		j = json_object_get(obj, "zipcode");
+		if(j)
+			ret.zipcode = json_integer_value(j);
+		else 
+			ret.zipcode = 0;
+
 		j = json_object_get(obj, "deleted");
 		if(j)
 			ret.deleted = j == json_true();

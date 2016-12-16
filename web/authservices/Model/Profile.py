@@ -14,6 +14,7 @@ class Profile(BaseModel):
 	lastname = TextField()
 	homepage = TextField()
 	icquin = IntegerField()
+	zipcode = IntegerField()
 	sex = IntegerField()
 
 	namespaceid = IntegerField()
