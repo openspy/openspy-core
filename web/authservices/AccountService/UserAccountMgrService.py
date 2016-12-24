@@ -26,6 +26,7 @@ class UserAccountMgrService(BaseService):
 
     def handle_get_user(self, data):
         user = None
+        print("GetUser got: {}\n".format(data))
         try:
             if "userid" in data:
                 user = User.get((User.id == data["userid"]))
@@ -55,6 +56,8 @@ class UserAccountMgrService(BaseService):
         jwt_decoded = jwt.decode(request_body, self.SECRET_USERMGR_KEY, algorithm='HS256')
 
         response = {}
+
+        print("Run: {}\n".format(jwt_decoded))
 
         success = False
         if "mode" not in jwt_decoded:

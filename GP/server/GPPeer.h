@@ -468,6 +468,8 @@ typedef struct {
 	GPEnum status; //GP_OFFLINE
 	char status_str[GP_STATUS_STRING_LEN + 1];
 	char location_str[GP_LOCATION_STRING_LEN + 1];
+	OS::Address address;
+	uint8_t quiet_flags;
 } GPStatus;
 
 typedef struct {
@@ -488,6 +490,8 @@ namespace GP {
 		void handle_packet(char *data, int len);
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
 
+		int GetProfileID();
+
 		int GetSocket() { return m_sd; };
 
 		bool ShouldDelete() { return m_delete_flag; };
@@ -499,7 +503,13 @@ namespace GP {
 		void send_login_challenge(int type);
 		void SendPacket(const uint8_t *buff, int len, bool attach_final = true);
 
+		//event messages
 		void send_add_buddy_request(int from_profileid, const char *reason);
+		void send_authorize_add(int profileid);
+
+		void inform_status_update(int profileid, GPStatus status);
+		void send_revoke_message(int from_profileid, int date_unix_timestamp);
+		//
 
 	private:
 		//packet handlers
@@ -511,6 +521,7 @@ namespace GP {
 
 		void handle_addbuddy(const char *data, int len);
 		void handle_delbuddy(const char *data, int len);
+		void handle_revoke(const char *data, int len);
 		void handle_authadd(const char *data, int len);
 
 		void handle_pinvite(const char *data, int len);
@@ -534,8 +545,12 @@ namespace GP {
 		void perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response);
 		int m_auth_operation_id;
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);
+		static void m_buddy_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_block_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+
 
 		void send_buddies();
+		void send_blocks();
 		void send_error(GPErrorCode code);
 
 
@@ -556,13 +571,12 @@ namespace GP {
 
 		const char *mp_backend_session_key; //session key
 
-		std::vector<OS::Profile> m_buddies;
+		std::vector<int> m_buddies;
 
 		static GPErrorData m_error_data[];
 
 		OS::User m_user;
 		OS::Profile m_profile;
-
 	};
 }
 #endif //_GPPEER_H

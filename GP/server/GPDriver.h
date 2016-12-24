@@ -35,10 +35,11 @@ namespace GP {
 		Peer *find_or_create(struct sockaddr_in *address);
 
 		bool HasPeer(Peer *);
+		Peer *FindPeerByProfileID(int profileid);
 
 		int setup_fdset(fd_set *fdset);
 		
-
+		void InformStatusUpdate(int from_profileid, GPStatus status);
 
 		int GetNumConnections();
 

@@ -19,8 +19,16 @@ namespace OS {
 	*/
 	typedef void (*ProfileSearchCallback)(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
+	enum EProfileSearchType {
+		EProfileSearch_Profiles,
+		EProfileSearch_Buddies,
+		EProfileSearch_Buddies_Reverse,
+		EProfileSearch_Blocks,
+	};
+
 	typedef struct {
 		int profileid;
+		std::vector<int> target_profileids; //target search profile ids, only used for buddy reverse searches atm
 		std::string email;
 		std::string nick;
 		std::string uniquenick;
@@ -31,9 +39,9 @@ namespace OS {
 		std::string homepage;
 		int icquin;
 		int skip;
-
 		void *extra;
 		ProfileSearchCallback callback;
+		EProfileSearchType type;
 	} ProfileSearchRequest;
 
 	
@@ -47,6 +55,7 @@ namespace OS {
 			static void PerformSearch(ProfileSearchRequest request);
 			static ProfileSearchTask *m_task_singleton;
 			static void *TaskThread(CThread *thread);
+			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 	};
 }
 #endif //_SEARCH_USER_H

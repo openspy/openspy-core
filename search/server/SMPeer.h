@@ -56,6 +56,15 @@ namespace SM {
 		void handle_search(const char *buf, int len);
 		static void m_search_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
+		static void m_search_buddies_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		void handle_others(const char *buf, int len);
+
+		static void m_search_buddies_reverse_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		void handle_otherslist(const char *buf, int len);
+
+		static void m_search_valid_callback(bool success, std::vector<OS::User> results, void *extra);
+		void handle_valid(const char *buf, int len);
+
 		int m_sd;
 		Driver *mp_driver;
 

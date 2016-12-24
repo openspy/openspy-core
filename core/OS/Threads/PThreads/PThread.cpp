@@ -1,10 +1,15 @@
+#include <OS/OpenSpy.h>
 #include <OS/Thread.h>
+#include <OS/Task.h>
 #include "PThread.h"
 #include <stdio.h>
+#include <signal.h>
 namespace OS {
 	void *CPThread::cpthread_thread(void *thread) {
 		CPThread *t = (CPThread *)thread;
 		t->m_entry(t);
+		delete t;
+		OS::Sleep(TASK_SLEEP_TIME);
 		return NULL;
 	}
 	CPThread::CPThread(OS::ThreadEntry *entry, void *param, bool auto_start) : OS::CThread(entry, param, auto_start) {
@@ -18,6 +23,7 @@ namespace OS {
 
 	}
 	CPThread::~CPThread() {
+		pthread_kill(m_thread, SIGKILL);
 	}
 	void CPThread::start() {
 		if(!m_running) {

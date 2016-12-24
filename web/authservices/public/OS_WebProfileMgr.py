@@ -53,9 +53,7 @@ class OS_WebProfileMgr(BaseService):
         for key in passthrough_profile_params:
             if key in data["profile"]:
                 profile[key] = data["profile"][key]
-        send_data = {'mode': 'update_profiles', 'profile': profile, 'session_key': data['session_key']}
-
-        #update_profiles
+        send_data = {'mode': 'update_profile', 'profile': profile, 'session_key': data['session_key']}
 
         params = jwt.encode(send_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
         

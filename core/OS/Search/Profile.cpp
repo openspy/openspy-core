@@ -11,7 +11,7 @@ namespace OS {
 	    json_t *json_data;
 	};
 	/* callback for curl fetch */
-	size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
+	size_t ProfileSearchTask::curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
 		if(!contents) {
 			return 0;
 		}
@@ -26,6 +26,8 @@ namespace OS {
 		jwt_decode(&jwt, (const char *)contents, NULL, 0);
 
 		char *json = jwt_get_grants_json(jwt, NULL);
+
+		printf("Resp: %s\n", json);
 		if(json) {
 			data->json_data = json_loads(json, 0, NULL);
 			free(json);
@@ -42,7 +44,22 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object();
 
-		json_object_set_new(send_obj, "mode", json_string("profile_search"));
+		switch(request.type) {
+			default:
+			case EProfileSearch_Profiles:
+				json_object_set_new(send_obj, "mode", json_string("profile_search"));	
+			break;
+			case EProfileSearch_Buddies:
+				json_object_set_new(send_obj, "mode", json_string("buddies_search"));	
+			break;
+			case EProfileSearch_Blocks:
+				json_object_set_new(send_obj, "mode", json_string("block_search"));	
+			break;
+			case EProfileSearch_Buddies_Reverse:
+				json_object_set_new(send_obj, "mode", json_string("buddies_reverse_search"));	
+			break;
+		}
+		
 
 
 		if(request.profileid != 0) {
@@ -73,6 +90,7 @@ namespace OS {
 			if(request.icquin)
 				json_object_set_new(send_obj, "icquin", json_integer(request.icquin));
 
+
 			if(request.namespaceids.size()) {
 				json_t *namespaceids_json = json_array();
 
@@ -89,12 +107,25 @@ namespace OS {
 			}
 		}
 
+		if(request.target_profileids.size()) {
+			json_t *profileids_json = json_array();
+
+			std::vector<int>::iterator it = request.target_profileids.begin();
+			while(it != request.target_profileids.end()) {
+				int v = *it;
+				json_array_append_new(profileids_json, json_integer(v));
+				it++;
+			}
+
+			json_object_set_new(send_obj, "target_profileids", profileids_json);
+		}
+
 
 		char *json_data = json_dumps(send_obj, 0);
 
 		//build jwt
 		jwt_t *jwt;
-		jwt_new(&jwt);
+		jwt_new(&jwt); 
 		const char *server_response = NULL;
 		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
 		jwt_add_grants_json(jwt, json_data);
@@ -146,6 +177,15 @@ namespace OS {
 				}
 			}
 		}
+
+		if(json_data)
+			free((void *)json_data);
+
+		if(send_obj)
+			json_decref(send_obj);
+
+		if(jwt_encoded)
+			free((void *)jwt_encoded);
 		request.callback(success, results, users_map, request.extra);
 	}
 
@@ -162,9 +202,8 @@ namespace OS {
 					continue;
 				}
 				task->mp_mutex->unlock();
-			} else {
-				OS::Sleep(TASK_SLEEP_TIME);
 			}
+			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;
 	}

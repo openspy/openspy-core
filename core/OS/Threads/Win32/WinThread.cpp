@@ -4,6 +4,8 @@ namespace OS {
 	DWORD CWin32Thread::cwin32thread_thread(void *thread) {
 		CWin32Thread *t = (CWin32Thread *)thread;
 		t->m_entry(t);
+		OS::Sleep(TASK_SLEEP_TIME);
+		delete t;
 		return 0;
 	}
 	CWin32Thread::CWin32Thread(OS::ThreadEntry *entry, void *param, bool auto_start) : OS::CThread(entry, param, auto_start) {
@@ -16,6 +18,7 @@ namespace OS {
 
 	}
 	CWin32Thread::~CWin32Thread() {
+		TerminateThread(m_handle, 0);
 	}
 	void CWin32Thread::start() {
 		if(!m_running) {

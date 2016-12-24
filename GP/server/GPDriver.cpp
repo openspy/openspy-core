@@ -156,4 +156,23 @@ namespace GP {
 			it++;
 		}
 	}
+	Peer *Driver::FindPeerByProfileID(int profileid) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			if(p->GetProfileID() == profileid) {
+				return p;
+			}
+			it++;
+		}
+		return NULL;
+	}
+	void Driver::InformStatusUpdate(int from_profileid, GPStatus status) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			p->inform_status_update(from_profileid, status);
+			it++;
+		}
+	}
 }

@@ -181,9 +181,8 @@ namespace OS {
 					continue;
 				}
 				task->mp_mutex->unlock();
-			} else {
-				OS::Sleep(TASK_SLEEP_TIME);
 			}
+			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;
 	}

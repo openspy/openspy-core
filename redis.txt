@@ -75,5 +75,6 @@ expire 1111:666 21600 #expire 6 hours
 #pw reset/email verification db
 select 4
 
-#presence status/profile cache db
+#presence
 select 5
+set fromprofile_toprofile "this is my reason string"
