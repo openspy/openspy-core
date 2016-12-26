@@ -27,7 +27,6 @@ namespace OS {
 
 		char *json = jwt_get_grants_json(jwt, NULL);
 
-		printf("Resp: %s\n", json);
 		if(json) {
 			data->json_data = json_loads(json, 0, NULL);
 			free(json);
@@ -103,6 +102,10 @@ namespace OS {
 					success = false;
 				}
 			}
+		}
+		
+		if(recv_data.json_data) {
+			json_decref(recv_data.json_data);
 		}
 
 		if(json_data)

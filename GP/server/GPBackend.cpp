@@ -54,6 +54,7 @@ namespace GPBackend {
 		jwt_decode(&jwt, (const char *)contents, NULL, 0);
 
 		char *json = jwt_get_grants_json(jwt, NULL);
+
 		if(json) {
 			data->json_data = json_loads(json, 0, NULL);
 			free(json);
@@ -73,11 +74,12 @@ namespace GPBackend {
 	    GP::Peer *peer = NULL;
 	    if (r->type == REDIS_REPLY_ARRAY) {
 	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
+	    		printf("Redis got: %s %s\n", r->element[1]->str, r->element[2]->str);
 	    		if(strcmp(r->element[1]->str,gp_buddies_channel) == 0) {
 	    			if(!find_param("type", r->element[2]->str,(char *)&msg_type, sizeof(msg_type))) {
 	    					return;
 	    			}
-	    			find_param("reason", r->element[2]->str,(char *)&reason, sizeof(reason));
+	    			find_param("reason", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
 	    			if(!strcmp(msg_type, "add_request")) {
 	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
 	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);;
@@ -87,7 +89,7 @@ namespace GPBackend {
 	    				}
 	    			} else if(!strcmp(msg_type, "authorize_add")) {
 	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
-	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);;
+	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
 	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(from_profileid);
 	    				if(peer) {
 	    					peer->send_authorize_add(to_profileid);
@@ -97,20 +99,43 @@ namespace GPBackend {
 	    				from_profileid = find_paramint("profileid", r->element[2]->str);
 	    				status.status = (GPEnum)find_paramint("status", r->element[2]->str);
 	    				find_param("status_string", r->element[2]->str,(char *)&status.status_str, sizeof(status.status_str));
-	    				printf("Status Str: %s\n", status.status_str);
 	    				find_param("location_string", r->element[2]->str,(char *)&status.location_str, sizeof(status.location_str));
 	    				status.quiet_flags = (GPEnum)find_paramint("quiet_flags", r->element[2]->str);
-	    				find_param("ip", r->element[2]->str,(char *)&reason, sizeof(reason));
-	    				//Socket::htonl(Socket::inet_addr(OS::strip_quotes(reply->str).c_str()));
+	    				find_param("ip", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
 	    				status.address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reason).c_str()));
 	    				status.address.port = Socket::htons(find_paramint("port", r->element[2]->str));
 	    				GP::g_gbl_gp_driver->InformStatusUpdate(from_profileid, status);
 	    			} else if(!strcmp(msg_type, "del_buddy")) {
 	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
-	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);;
+	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
 	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
 	    				if(peer) {
 	    					peer->send_revoke_message(from_profileid, 0);
+	    				}
+	    			} else if(!strcmp(msg_type, "buddy_message")) {
+	    				char type = find_paramint("msg_type", r->element[2]->str);
+						int timestamp = find_paramint("timestamp", r->element[2]->str);
+	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
+	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
+	    				find_param("message", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
+	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
+	    				if(peer) {
+	    					peer->send_buddy_message(type, from_profileid, timestamp, reason);
+	    				}
+	    			} else if(!strcmp(msg_type, "block_buddy")) {
+	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
+	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
+	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
+	    				if(peer) {
+	    					peer->send_user_blocked(from_profileid);
+	    				}
+	    				
+	    			} else if(!strcmp(msg_type, "del_block_buddy")) {
+	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
+	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
+	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
+	    				if(peer) {
+	    					peer->send_user_block_deleted(from_profileid);
 	    				}
 	    			}
 	    		}
@@ -216,7 +241,22 @@ namespace GPBackend {
 							task->Perform_DelBuddy(task_params.uReqData.DelBuddy, false);
 						break;
 						case EGPRedisRequestType_RevokeAuth:
-						task->Perform_DelBuddy(task_params.uReqData.DelBuddy, true);
+							task->Perform_DelBuddy(task_params.uReqData.DelBuddy, true);
+						break;
+						case EGPRedisRequestType_SendLoginEvent:
+							task->Perform_SendLoginEvent((GP::Peer *)task_params.extra);
+						break;
+						case EGPRedisRequestType_BuddyMessage:
+							task->Perform_SendBuddyMessage((GP::Peer *)task_params.extra, task_params.uReqData.BuddyMessage);
+						break;
+						case EGPRedisRequestType_AddBlock:
+							task->Perform_BlockBuddy(task_params.uReqData.BlockMessage);
+						break;
+						case EGPRedisRequestType_DelBlock:
+							task->Perform_DelBuddyBlock(task_params.uReqData.BlockMessage);
+						break;
+						case EGPRedisRequestType_SendGPBuddyStatus:
+							task->Perform_SendGPBuddyStatus((GP::Peer *)task_params.extra);
 						break;
 					}
 					it = task->m_request_list.erase(it);
@@ -311,6 +351,11 @@ namespace GPBackend {
 
 			res = curl_easy_perform(curl);
 		}
+
+		if(recv_data.json_data) {
+			json_decref(recv_data.json_data);
+		}
+
 		if(json_data)
 			free((void *)json_data);
 
@@ -364,6 +409,10 @@ namespace GPBackend {
 
 			res = curl_easy_perform(curl);
 		}
+		if(recv_data.json_data) {
+			json_decref(recv_data.json_data);
+		}
+
 		if(json_data)
 			free((void *)json_data);
 
@@ -372,5 +421,384 @@ namespace GPBackend {
 
 		if(jwt_encoded)
 			free((void *)jwt_encoded);	
+	}
+	void GPBackendRedisTask::SendLoginEvent(GP::Peer *peer) {
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_SendLoginEvent;
+		req.extra = (void *)peer;
+		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+
+		req.type = EGPRedisRequestType_SendGPBuddyStatus;
+		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+
+	}
+	void GPBackendRedisTask::Perform_SendLoginEvent(GP::Peer *peer) {
+		curl_data recv_data;
+		json_t *send_obj = json_object();
+		json_object_set_new(send_obj, "mode", json_string("send_presence_login_messages"));
+		json_object_set_new(send_obj, "profileid", json_integer(peer->GetProfileID()));
+
+
+		CURL *curl = curl_easy_init();
+		CURLcode res;
+		bool success = false;
+
+		char *json_data = json_dumps(send_obj, 0);
+
+		jwt_t *jwt;
+		jwt_new(&jwt);
+		const char *server_response = NULL;
+		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
+		jwt_add_grants_json(jwt, json_data);
+		char *jwt_encoded = jwt_encode_str(jwt);
+
+
+		if(curl) {
+			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+
+			/* set default user agent */
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
+
+			/* set timeout */
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+
+			/* enable location redirects */
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+			/* set maximum allowed redirects */
+			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+
+			res = curl_easy_perform(curl);
+		}
+		if(recv_data.json_data) {
+			json_decref(recv_data.json_data);
+		}
+		if(json_data)
+			free((void *)json_data);
+
+		if(send_obj)
+			json_decref(send_obj);
+
+		if(jwt_encoded)
+			free((void *)jwt_encoded);
+	}
+	void GPBackendRedisTask::SendMessage(GP::Peer *peer, int to_profileid, char msg_type, const char *message) {
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_BuddyMessage;
+		req.extra = (void *)peer;
+		req.uReqData.BuddyMessage.to_profileid = to_profileid;
+
+
+		int len = strlen(message);
+		if(len > GP_REASON_LEN)
+			len = GP_REASON_LEN;
+
+		strncpy(req.uReqData.BuddyMessage.message, message, len);
+		req.uReqData.BuddyMessage.message[len] = 0;
+
+		req.uReqData.BuddyMessage.type = msg_type;
+
+		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+	}
+	void GPBackendRedisTask::Perform_SendBuddyMessage(GP::Peer *peer, struct sBuddyMessage msg) {
+		curl_data recv_data;
+		json_t *send_obj = json_object();
+		json_object_set_new(send_obj, "mode", json_string("send_buddy_message"));
+		json_object_set_new(send_obj, "to_profileid", json_integer(msg.to_profileid));
+		json_object_set_new(send_obj, "from_profileid", json_integer(peer->GetProfileID()));
+		json_object_set_new(send_obj, "type", json_integer(msg.type));
+		json_object_set_new(send_obj, "message", json_string(msg.message));
+
+
+		CURL *curl = curl_easy_init();
+		CURLcode res;
+		bool success = false;
+
+		char *json_data = json_dumps(send_obj, 0);
+
+		jwt_t *jwt;
+		jwt_new(&jwt);
+		const char *server_response = NULL;
+		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
+		jwt_add_grants_json(jwt, json_data);
+		char *jwt_encoded = jwt_encode_str(jwt);
+
+
+		if(curl) {
+			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+
+			/* set default user agent */
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
+
+			/* set timeout */
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+
+			/* enable location redirects */
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+			/* set maximum allowed redirects */
+			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+
+			res = curl_easy_perform(curl);
+		}
+
+		if(recv_data.json_data) {
+			json_decref(recv_data.json_data);
+		}
+		if(json_data)
+			free((void *)json_data);
+
+		if(send_obj)
+			json_decref(send_obj);
+
+		if(jwt_encoded)
+			free((void *)jwt_encoded);
+	}
+	void GPBackendRedisTask::MakeBlockRequest(int from_profileid, int block_id) {
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_AddBlock;
+		req.uReqData.BlockMessage.from_profileid = from_profileid;
+		req.uReqData.BlockMessage.to_profileid = block_id;
+		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+	}
+	void GPBackendRedisTask::MakeRemoveBlockRequest(int from_profileid, int block_id) {
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_DelBlock;
+		req.uReqData.BlockMessage.from_profileid = from_profileid;
+		req.uReqData.BlockMessage.to_profileid = block_id;
+		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+	}
+	void GPBackendRedisTask::Perform_BlockBuddy(struct sBlockBuddy msg) {
+		curl_data recv_data;
+		json_t *send_obj = json_object();
+		json_object_set_new(send_obj, "mode", json_string("block_buddy"));
+		json_object_set_new(send_obj, "to_profileid", json_integer(msg.to_profileid));
+		json_object_set_new(send_obj, "from_profileid", json_integer(msg.from_profileid));
+
+
+		CURL *curl = curl_easy_init();
+		CURLcode res;
+		bool success = false;
+
+		char *json_data = json_dumps(send_obj, 0);
+
+		jwt_t *jwt;
+		jwt_new(&jwt);
+		const char *server_response = NULL;
+		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
+		jwt_add_grants_json(jwt, json_data);
+		char *jwt_encoded = jwt_encode_str(jwt);
+
+
+		if(curl) {
+			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+
+			/* set default user agent */
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
+
+			/* set timeout */
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+
+			/* enable location redirects */
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+			/* set maximum allowed redirects */
+			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+
+			res = curl_easy_perform(curl);
+		}
+
+		if(recv_data.json_data) {
+			json_decref(recv_data.json_data);
+		}
+		if(json_data)
+			free((void *)json_data);
+
+		if(send_obj)
+			json_decref(send_obj);
+
+		if(jwt_encoded)
+			free((void *)jwt_encoded);
+	}
+	void GPBackendRedisTask::Perform_DelBuddyBlock(struct sBlockBuddy msg) {
+		curl_data recv_data;
+		json_t *send_obj = json_object();
+		json_object_set_new(send_obj, "mode", json_string("del_block_buddy"));
+		json_object_set_new(send_obj, "to_profileid", json_integer(msg.to_profileid));
+		json_object_set_new(send_obj, "from_profileid", json_integer(msg.from_profileid));
+
+
+		CURL *curl = curl_easy_init();
+		CURLcode res;
+		bool success = false;
+
+		char *json_data = json_dumps(send_obj, 0);
+
+		jwt_t *jwt;
+		jwt_new(&jwt);
+		const char *server_response = NULL;
+		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
+		jwt_add_grants_json(jwt, json_data);
+		char *jwt_encoded = jwt_encode_str(jwt);
+
+
+		if(curl) {
+			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+
+			/* set default user agent */
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
+
+			/* set timeout */
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+
+			/* enable location redirects */
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+			/* set maximum allowed redirects */
+			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+
+			res = curl_easy_perform(curl);
+		}
+
+		if(recv_data.json_data) {
+			json_decref(recv_data.json_data);
+		}
+		if(json_data)
+			free((void *)json_data);
+
+		if(send_obj)
+			json_decref(send_obj);
+
+		if(jwt_encoded)
+			free((void *)jwt_encoded);
+	}
+	void GPBackendRedisTask::load_and_send_gpstatus(GP::Peer *peer, json_t *json) {
+		GPStatus status;
+		json_t* json_obj = json_object_get(json, "profileid");
+		const char *str;
+		int len;
+		if(!json_obj)
+			return;
+		int profileid = json_integer_value(json_obj);
+
+		//[{'status': 1, 'location_string': '', 'ip': '10.10.10.1', 'status_string': 'Online', 'quiet_flags': 0, 'profileid': 10000, 'port': 28762}]
+		json_obj = json_object_get(json, "status_string");
+		if(!json_obj)
+			return;
+		str = json_string_value(json_obj);
+		len = strlen(str);
+		if(len > GP_STATUS_STRING_LEN)
+			len = GP_STATUS_STRING_LEN;
+		strncpy(status.status_str, str, len);
+		status.status_str[len] = 0;
+
+
+		json_obj = json_object_get(json, "location_string");
+		if(!json_obj)
+			return;
+		len = strlen(str);
+		if(len > GP_LOCATION_STRING_LEN)
+			len = GP_LOCATION_STRING_LEN;
+		strncpy(status.location_str, str, len);
+		status.location_str[len] = 0;
+
+		status.quiet_flags = json_integer_value(json_obj);
+
+		json_obj = json_object_get(json, "ip");
+		if(!json_obj)
+			return;
+
+		str = json_string_value(json_obj);
+		status.address.ip = Socket::htonl(Socket::inet_addr(str));
+
+		json_obj = json_object_get(json, "port");
+		if(!json_obj)
+			return;
+		len = json_integer_value(json_obj);
+		status.address.port = Socket::htons(len);
+
+		peer->inform_status_update(profileid, status, true);
+
+	}
+	void GPBackendRedisTask::Perform_SendGPBuddyStatus(GP::Peer *peer) {
+		curl_data recv_data;
+		json_t *send_obj = json_object();
+		json_object_set_new(send_obj, "mode", json_string("get_buddies_status"));
+		json_object_set_new(send_obj, "profileid", json_integer(peer->GetProfileID()));
+
+
+		CURL *curl = curl_easy_init();
+		CURLcode res;
+		bool success = false;
+
+		char *json_data = json_dumps(send_obj, 0);
+
+		jwt_t *jwt;
+		jwt_new(&jwt);
+		const char *server_response = NULL;
+		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
+		jwt_add_grants_json(jwt, json_data);
+		char *jwt_encoded = jwt_encode_str(jwt);
+
+
+		if(curl) {
+			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+
+			/* set default user agent */
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
+
+			/* set timeout */
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+
+			/* enable location redirects */
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+			/* set maximum allowed redirects */
+			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+
+			res = curl_easy_perform(curl);
+
+			json_t *status_array = json_object_get(recv_data.json_data, "statuses");
+			if(status_array) {
+				int num_items = json_array_size(status_array);
+				for(int i=0;i<num_items;i++) {
+					json_t *status = json_array_get(status_array, i);
+					load_and_send_gpstatus(peer, status);
+				}
+			}
+
+		}
+
+		if(recv_data.json_data) {
+			json_decref(recv_data.json_data);
+		}
+		if(json_data)
+			free((void *)json_data);
+
+		if(send_obj)
+			json_decref(send_obj);
+
+		if(jwt_encoded)
+			free((void *)jwt_encoded);
 	}
 }

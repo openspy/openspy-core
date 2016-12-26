@@ -26,8 +26,6 @@ namespace OS {
 		jwt_decode(&jwt, (const char *)contents, NULL, 0);
 
 		char *json = jwt_get_grants_json(jwt, NULL);
-
-		printf("Resp: %s\n", json);
 		if(json) {
 			data->json_data = json_loads(json, 0, NULL);
 			free(json);
@@ -53,7 +51,7 @@ namespace OS {
 				json_object_set_new(send_obj, "mode", json_string("buddies_search"));	
 			break;
 			case EProfileSearch_Blocks:
-				json_object_set_new(send_obj, "mode", json_string("block_search"));	
+				json_object_set_new(send_obj, "mode", json_string("blocks_search"));	
 			break;
 			case EProfileSearch_Buddies_Reverse:
 				json_object_set_new(send_obj, "mode", json_string("buddies_reverse_search"));	
@@ -178,6 +176,9 @@ namespace OS {
 			}
 		}
 
+		if(recv_data.json_data) {
+			json_decref(recv_data.json_data);
+		}
 		if(json_data)
 			free((void *)json_data);
 

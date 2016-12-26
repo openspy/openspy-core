@@ -13,6 +13,7 @@
 #include "GPBackend.h"
 
 namespace GP {
+	const GPStatus default_status = {GP_OFFLINE, "Offline", "", {0,0}, GP_SILENCE_NONE};
 	GPErrorData Peer::m_error_data[] = {
 		// General error codes.
 		{GP_GENERAL, "There was an unknown error. ", true},
@@ -151,9 +152,8 @@ namespace GP {
 		m_address_info = *address_info;
 		m_delete_flag = false;
 		m_timeout_flag = false;
-		mp_backend_session_key = NULL;
+		mp_mutex = OS::CreateMutex();
 		gettimeofday(&m_last_ping, NULL);
-		printf("GP New peer\n");
 
 		m_status.status = GP_OFFLINE;
 		m_status.status_str[0] = 0;
@@ -166,11 +166,9 @@ namespace GP {
 		send_login_challenge(1);
 	}
 	Peer::~Peer() {
-		if(mp_backend_session_key) {
-			free((void *)mp_backend_session_key);
-		}
+		delete mp_mutex;
+		//XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX KILL GPBACKEND EVENTS
 		close(m_sd);
-		printf("Peer delete\n");
 	}
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];
@@ -209,6 +207,8 @@ namespace GP {
 		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
+		} else if(len == 0 && packet_waiting) {
+			m_delete_flag = true;
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
@@ -225,19 +225,27 @@ namespace GP {
 		} else if(strcmp(command, "ka")) {
 			handle_keepalive(data, len);
 		}
-		if(mp_backend_session_key) {
+		if(m_backend_session_key.length() > 0) {
 			if(!strcmp(command, "status")) {
 				handle_status(data, len);
 			} else if(!strcmp(command, "addbuddy")) {
 				handle_addbuddy(data, len);
 			} else if(!strcmp(command, "delbuddy")) {
 				handle_delbuddy(data, len);
+			} else if(!strcmp(command, "addblock")) {
+				handle_addblock(data, len);
+			} else if(!strcmp(command, "removeblock")) {
+				handle_removeblock(data, len);
 			} else if(!strcmp(command, "revoke")) {
 				handle_revoke(data, len);
 			} else if(!strcmp(command, "authadd")) {
 				handle_authadd(data, len);
 			} else if(!strcmp(command, "getprofile")) {
 				handle_getprofile(data, len);
+			} else if(!strcmp(command, "bm")) {
+				handle_bm(data, len);
+			} else if(!strcmp(command, "pinvite")) {
+				handle_pinvite(data, len);
 			}
 		}		
 	}
@@ -269,11 +277,21 @@ namespace GP {
 			m_delete_flag = true;
 			return;
 		}
-		printf("Login got (%s) - (%s) - (%s)\n",challenge,user,response);
 
 		if(type == 1) {
 			perform_nick_email_auth(user, partnercode, m_challenge, challenge, response);
 		}
+	}
+	void Peer::handle_pinvite(const char *data, int len) {
+		//profileid\10000\productid\1
+		std::ostringstream s;
+		int profileid = find_paramint("profileid", (char *)data);
+		int productid = find_paramint("productid", (char *)data);
+
+		s << "|p|" << productid;
+		s << "|l|" << m_status.location_str;
+		s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+		GPBackend::GPBackendRedisTask::SendMessage(this, profileid, GPI_BM_INVITE, s.str().c_str());
 	}
 	void Peer::handle_status(const char *data, int len) {
 		m_status.status = (GPEnum)find_paramint("status",(char *)data);
@@ -300,6 +318,7 @@ namespace GP {
 		s << "\\f\\" << from_profileid;
 		s << "\\msg\\" << reason;
 		s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::m_buddy_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
@@ -307,38 +326,45 @@ namespace GP {
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		Peer *peer = (Peer *)extra;
+		peer->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\bdy\\" << results.size();
 			s << "\\list\\";
 			while(it != results.end()) {
 				OS::Profile p = *it;
 				s << p.id << ",";
-				peer->m_buddies.push_back(p.id);
+
+				if(peer->m_buddies.find(p.id) == peer->m_buddies.end())
+					peer->m_buddies[p.id] = default_status;
+
 				it++;
 			}
 			str = s.str();
 			str = str.substr(0, str.size()-1);
 			peer->SendPacket((const uint8_t *)str.c_str(),str.length());
 		}
+		peer->mp_mutex->unlock();
 	}
 	void Peer::m_block_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		Peer *peer = (Peer *)extra;
+		peer->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\blk\\" << results.size();
 			s << "\\list\\";
 			while(it != results.end()) {
 				OS::Profile p = *it;
 				s << p.id << ",";
-				peer->m_buddies.push_back(p.id);
+				peer->m_blocks.push_back(p.id);
 				it++;
 			}
 			str = s.str();
 			str = str.substr(0, str.size()-1);
 			peer->SendPacket((const uint8_t *)str.c_str(),str.length());
 		}
+		peer->mp_mutex->unlock();
 	}
 	void Peer::send_buddies() {
 		OS::ProfileSearchRequest request;
@@ -390,8 +416,15 @@ namespace GP {
 		s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
 		if(date_unix_timestamp != 0)
 			s << "\\date\\" << date_unix_timestamp;
-
-		printf("Send revoke (%s)\n",s.str().c_str());
+		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+	}
+	void Peer::send_buddy_message(char type, int from_profileid, int timestamp, const char *msg) {
+		std::ostringstream s;
+		s << "\\bm\\" << ((int)type);
+		s << "\\f\\" << from_profileid;
+		if(timestamp != 0)
+			s << "\\date\\" << timestamp;
+		s << "\\msg\\" << msg;
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::handle_getprofile(const char *data, int len) {
@@ -403,10 +436,38 @@ namespace GP {
 		request.callback = Peer::m_getprofile_callback;
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
+	void Peer::handle_addblock(const char *data, int len) {
+		int profileid = find_paramint("profileid",(char *)data);
+		GPBackend::GPBackendRedisTask::MakeBlockRequest(m_profile.id, profileid);
+	}
+	void Peer::handle_removeblock(const char *data, int len) {
+		int profileid = find_paramint("profileid",(char *)data);
+		GPBackend::GPBackendRedisTask::MakeRemoveBlockRequest(m_profile.id, profileid);
+	}
 	void Peer::handle_keepalive(const char *data, int len) {
 		std::ostringstream s;
 		s << "\\ka\\";
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+	}
+	void Peer::handle_bm(const char *data, int len) {
+		char msg[GP_REASON_LEN+1];
+		int to_profileid = find_paramint("t", (char *)data);
+		int msg_type = find_paramint("bm", (char *)data);
+		if(!find_param("msg",(char *)data, (char *)&msg,GP_REASON_LEN)) {
+			return;
+		}
+
+		switch(msg_type) {
+			case GPI_BM_MESSAGE:
+			case GPI_BM_UTM:
+			case GPI_BM_PING:
+			case GPI_BM_PONG:
+				break;
+			default:
+				return;
+		}
+
+		GPBackend::GPBackendRedisTask::SendMessage(this, to_profileid, msg_type, msg);
 	}
 	void Peer::m_getprofile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		Peer *peer = (Peer *)extra;
@@ -508,15 +569,14 @@ namespace GP {
 			email = first_at+1;
 		}
  		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this);
-
 	}
 	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_gp_driver->HasPeer(peer)) {
 			return;
 		}
-		if(!peer->mp_backend_session_key && auth_data.session_key)
-			peer->mp_backend_session_key = strdup(auth_data.session_key);
+		if(!peer->m_backend_session_key.length() && auth_data.session_key)
+			peer->m_backend_session_key = auth_data.session_key;
 
 		peer->m_user = user;
 		peer->m_profile = profile;
@@ -545,6 +605,9 @@ namespace GP {
 			peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 
 			peer->send_buddies();
+			peer->send_blocks();
+
+			peer->send_backend_auth_event();
 		} else {
 			switch(auth_data.response_code) {
 				case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
@@ -569,9 +632,19 @@ namespace GP {
 			}
 		}
 	}
-	void Peer::inform_status_update(int profileid, GPStatus status) {
+	void Peer::inform_status_update(int profileid, GPStatus status, bool no_update) {
 		std::ostringstream ss;
-		if(std::find(m_buddies.begin(),m_buddies.end(),profileid) != m_buddies.end()) {
+		if(!no_update)
+			mp_mutex->lock();
+		if(m_buddies.find(profileid) != m_buddies.end()) {
+
+			if(!no_update)
+				m_buddies[profileid] = status;
+
+			if(std::find(m_blocked_by.begin(), m_blocked_by.end(), profileid) != m_blocked_by.end()) {
+				status = default_status;
+			}
+
 			ss << "\\bm\\" << GPI_BM_STATUS;
 
 			ss << "\\f\\" << profileid;
@@ -585,14 +658,21 @@ namespace GP {
 			if(status.location_str[0] != 0)
 				ss << "|ls|" << status.location_str;
 
-			ss << "|ip|" << status.address.ip;
-			ss << "|p|" << status.address.port;
+			if(status.address.ip != 0) {
+				ss << "|ip|" << status.address.ip;
+				ss << "|p|" << status.address.port;
+			}
 
 			if(status.quiet_flags != GP_SILENCE_NONE) {
 				ss << "|qm|" << status.quiet_flags;
 			}
 			SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 		}
+		if(!no_update)
+			mp_mutex->unlock();
+	}
+	void Peer::send_backend_auth_event() {
+		GPBackend::GPBackendRedisTask::SendLoginEvent(this);
 	}
 	void Peer::send_error(GPErrorCode code) {
 		for(int i=0;i<sizeof(Peer::m_error_data)/sizeof(GPErrorData);i++) {
@@ -604,6 +684,31 @@ namespace GP {
 				if(Peer::m_error_data[i].die)
 					ss << "\\fatal\\" << Peer::m_error_data[i].die;
 				SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+			}
+		}
+	}
+	void Peer::send_user_blocked(int from_profileid) {
+		if(std::find(m_blocked_by.begin(), m_blocked_by.end(), from_profileid) == m_blocked_by.end()) {
+			m_blocked_by.push_back(from_profileid);
+			if(m_buddies.find(from_profileid) != m_buddies.end()) {
+				inform_status_update(from_profileid, m_buddies[from_profileid], true);
+			}
+		}
+	}
+	void Peer::send_user_block_deleted(int from_profileid) {
+		if(std::find(m_blocked_by.begin(), m_blocked_by.end(), from_profileid) != m_blocked_by.end()) {
+			std::vector<int>::iterator it = m_blocked_by.begin();
+			while(it != m_blocked_by.end()) {
+				int pid = *it;
+				if(pid == from_profileid) {
+					m_blocked_by.erase(it);
+
+					if(m_buddies.find(pid) != m_buddies.end()) {
+						inform_status_update(pid, m_buddies[pid], true);
+					}
+					return;
+				}
+				it++;
 			}
 		}
 	}

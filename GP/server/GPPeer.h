@@ -4,6 +4,7 @@
 #include <OS/Auth.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
+#include <OS/Mutex.h>
 
 #define GPI_READ_SIZE                  (16 * 1024)
 #define CHALLENGE_LEN 10
@@ -472,6 +473,8 @@ typedef struct {
 	uint8_t quiet_flags;
 } GPStatus;
 
+extern const GPStatus default_status;
+
 typedef struct {
 	GPErrorCode error;
 	const char *msg;
@@ -507,8 +510,12 @@ namespace GP {
 		void send_add_buddy_request(int from_profileid, const char *reason);
 		void send_authorize_add(int profileid);
 
-		void inform_status_update(int profileid, GPStatus status);
+		void inform_status_update(int profileid, GPStatus status, bool no_update = false);
 		void send_revoke_message(int from_profileid, int date_unix_timestamp);
+		void send_buddy_message(char type, int from_profileid, int timestamp, const char *msg);
+
+		void send_user_blocked(int from_profileid);
+		void send_user_block_deleted(int from_profileid);
 		//
 
 	private:
@@ -552,6 +559,7 @@ namespace GP {
 		void send_buddies();
 		void send_blocks();
 		void send_error(GPErrorCode code);
+		void send_backend_auth_event();
 
 
 		int m_sd;
@@ -569,14 +577,20 @@ namespace GP {
 
 		GPStatus m_status;
 
-		const char *mp_backend_session_key; //session key
+		std::string m_backend_session_key; //session key
 
-		std::vector<int> m_buddies;
+		//these are modified by other threads
+		//std::vector<int> m_buddies;
+		std::map<int, GPStatus> m_buddies;
+		std::vector<int> m_blocks;
+		std::vector<int> m_blocked_by;
 
 		static GPErrorData m_error_data[];
 
 		OS::User m_user;
 		OS::Profile m_profile;
+
+		OS::CMutex *mp_mutex;
 	};
 }
 #endif //_GPPEER_H

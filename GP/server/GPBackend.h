@@ -11,6 +11,11 @@ namespace GPBackend {
 		EGPRedisRequestType_UpdateStatus,
 		EGPRedisRequestType_DelBuddy,
 		EGPRedisRequestType_RevokeAuth,
+		EGPRedisRequestType_SendLoginEvent,
+		EGPRedisRequestType_BuddyMessage,
+		EGPRedisRequestType_AddBlock,
+		EGPRedisRequestType_DelBlock,
+		EGPRedisRequestType_SendGPBuddyStatus,
 	};
 
 	
@@ -37,12 +42,25 @@ namespace GPBackend {
 		int to_profileid;
 	};
 
+	struct sBlockBuddy {
+		int from_profileid;
+		int to_profileid;
+	};
+
+	struct sBuddyMessage {
+		char type;
+		int to_profileid;
+		char message[GP_REASON_LEN+1];
+	};
+
 	typedef struct {
 		EGPRedisRequestType type;
 		union {
 			struct sBuddyRequest BuddyRequest;
 			struct sAuthorizeAdd AuthorizeAdd;
 			struct sDelBuddy DelBuddy;
+			struct sBuddyMessage BuddyMessage;
+			struct sBlockBuddy BlockMessage;
 			GPStatus StatusInfo;
 		} uReqData;
 		void *extra;
@@ -64,6 +82,10 @@ namespace GPBackend {
 			static void MakeAuthorizeBuddyRequest(int adding_target, int adding_source);
 			static void MakeDelBuddyRequest(int adding_target, int adding_source);
 			static void MakeRevokeAuthRequest(int adding_target, int adding_source);
+			static void SendLoginEvent(GP::Peer *peer);
+			static void SendMessage(GP::Peer *peer, int to_profileid, char msg_type, const char *message);
+			static void MakeBlockRequest(int from_profileid, int block_id);
+			static void MakeRemoveBlockRequest(int from_profileid, int block_id);
 		private:
 			static GPBackendRedisTask *m_task_singleton;
 			static void *TaskThread(OS::CThread *thread);
@@ -71,6 +93,13 @@ namespace GPBackend {
 			void Perform_AuthorizeAdd(struct sAuthorizeAdd request);
 			void Perform_DelBuddy(struct sDelBuddy request, bool send_revoke);
 			void Perform_SetPresenceStatus(GPStatus status, void *extra);
+			void Perform_SendLoginEvent(GP::Peer *peer);
+			void Perform_SendBuddyMessage(GP::Peer *peer, struct sBuddyMessage msg);
+			void Perform_BlockBuddy(struct sBlockBuddy msg);
+			void Perform_DelBuddyBlock(struct sBlockBuddy msg);
+			void Perform_SendGPBuddyStatus(GP::Peer *peer);
+
+			void load_and_send_gpstatus(GP::Peer *peer, json_t *json);
 
 			redisContext *mp_redis_connection;
 			redisAsyncContext *mp_redis_subscribe_connection;

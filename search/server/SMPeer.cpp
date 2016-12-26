@@ -54,7 +54,11 @@ namespace SM {
 				this->handle_packet(x, piece_len);
 			}
 		}
+
 		//end:
+ 		if(len == 0 && packet_waiting) {
+			m_delete_flag = true;
+		}
 	}
 	void Peer::handle_packet(char *data, int len) {
 		printf("SM Handle(%d): %s\n", len,data);
