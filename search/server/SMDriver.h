@@ -30,6 +30,7 @@ namespace SM {
 
 		Peer *find_client(struct sockaddr_in *address);
 		Peer *find_or_create(struct sockaddr_in *address);
+		bool HasPeer(Peer *);
 
 		int setup_fdset(fd_set *fdset);
 		
@@ -48,5 +49,6 @@ namespace SM {
 		struct timeval m_server_start;
 
 	};
+	extern Driver *g_gbl_sm_driver;
 }
 #endif //_SBDRIVER_H

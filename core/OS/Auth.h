@@ -20,6 +20,9 @@ namespace OS {
 		LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED,
 		LOGIN_RESPONSE_DB_ERROR,
 		LOGIN_RESPONSE_SERVER_ERROR,
+		CREATE_RESPONE_UNIQUENICK_IN_USE,
+		CREATE_RESPONSE_INVALID_NICK,
+		CREATE_RESPONSE_INVALID_UNIQUENICK,
 	};
 	typedef struct {
 		const char *session_key;
@@ -30,6 +33,8 @@ namespace OS {
 
 	enum EAuthType {
 		EAuthType_NickEmail_GPHash,
+		EAuthType_NickEmail,
+		EAuthType_CreateUser_OrProfile
 	};
 
 	typedef struct {
@@ -37,6 +42,11 @@ namespace OS {
 		std::string nick;
 		std::string email;
 		int partnercode;
+		bool create_session;
+		std::string password;
+
+		std::string uniquenick;
+		int namespaceid;
 
 		//gp hash specific
 		std::string server_challenge;
@@ -53,11 +63,15 @@ namespace OS {
 			~AuthTask();
 			static AuthTask *getAuthTask();
 			static void TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra);
+			static void TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra);
+			static void TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra);
 		private:
 			static void PerformSearch(AuthRequest request);
 			static AuthTask *m_task_singleton;
 			static void *TaskThread(CThread *thread);
 			void PerformAuth_NickEMail_GPHash(AuthRequest request);
+			void PerformAuth_NickEMail(AuthRequest request);
+			void PerformAuth_CreateUser_OrProfile(AuthRequest request);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 	};
 }

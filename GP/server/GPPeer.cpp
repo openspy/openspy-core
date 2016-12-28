@@ -167,7 +167,6 @@ namespace GP {
 	}
 	Peer::~Peer() {
 		delete mp_mutex;
-		//XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX KILL GPBACKEND EVENTS
 		close(m_sd);
 	}
 	void Peer::think(bool packet_waiting) {
@@ -246,8 +245,58 @@ namespace GP {
 				handle_bm(data, len);
 			} else if(!strcmp(command, "pinvite")) {
 				handle_pinvite(data, len);
+			} else if(!strcmp(command, "newprofile")) {
+				handle_newprofile(data, len);
+			} else if(!strcmp(command, "delprofile")) {
+				handle_delprofile(data, len);
+			} else if(!strcmp(command, "registernick")) {
+				handle_registernick(data, len);
+			} else if(!strcmp(command, "registercdkey")) {
+				handle_registercdkey(data, len);
 			}
-		}		
+		}
+	}
+	void Peer::handle_registernick(const char *data, int len) {
+		
+	}
+	void Peer::handle_registercdkey(const char *data, int len) {
+
+	}
+	void Peer::m_create_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+		if(success && results.size() > 0) {
+			OS::Profile profile = results.front();
+		}
+	}
+	void Peer::handle_newprofile(const char *data, int len) {
+		OS::ProfileSearchRequest request;
+		char nick[GP_NICK_LEN + 1], oldnick[GP_NICK_LEN + 1];
+		bool replace = find_paramint("replace", (char *)data) != 0;
+		find_param("nick",(char *)data, (char *)&nick,GP_NICK_LEN);
+		if(replace) { //TODO: figure out replaces functionality
+			find_param("oldnick",(char *)data, (char *)&oldnick,GP_NICK_LEN);
+		}
+		request.profileid = m_profile.id;
+		request.extra = this;
+		request.type = OS::EProfileSearch_CreateProfile;
+		request.callback = Peer::m_create_profile_callback;
+		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+	}
+	void Peer::m_delete_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+		std::ostringstream s;
+		Peer *peer = (Peer *)extra;
+		if(!g_gbl_gp_driver->HasPeer(peer))
+			return;
+
+		s << "\\dpr\\" << success;
+		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+	}
+	void Peer::handle_delprofile(const char *data, int len) {
+		OS::ProfileSearchRequest request;
+		request.profileid = m_profile.id;
+		request.extra = this;
+		request.type = OS::EProfileSearch_DeleteProfile;
+		request.callback = Peer::m_delete_profile_callback;
+		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
 	void Peer::handle_login(const char *data, int len) {
 		char challenge[128 + 1];
@@ -326,6 +375,8 @@ namespace GP {
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		Peer *peer = (Peer *)extra;
+		if(!g_gbl_gp_driver->HasPeer(peer))
+			return;
 		peer->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\bdy\\" << results.size();
@@ -350,6 +401,8 @@ namespace GP {
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		Peer *peer = (Peer *)extra;
+		if(!g_gbl_gp_driver->HasPeer(peer))
+			return;
 		peer->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\blk\\" << results.size();

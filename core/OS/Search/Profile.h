@@ -24,6 +24,8 @@ namespace OS {
 		EProfileSearch_Buddies,
 		EProfileSearch_Buddies_Reverse,
 		EProfileSearch_Blocks,
+		EProfileSearch_CreateProfile,
+		EProfileSearch_DeleteProfile,
 	};
 
 	typedef struct {

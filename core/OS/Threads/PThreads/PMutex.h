@@ -11,6 +11,7 @@ namespace OS {
 		void unlock();
 	private:
 		pthread_mutex_t m_mutex;
+		pthread_mutexattr_t   m_mutex_attrs;
 	};
 }
 #endif //_CPMUTEX_H

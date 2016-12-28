@@ -7,6 +7,7 @@
 #include <OS/socketlib/socketlib.h>
 
 namespace SM {
+	Driver *g_gbl_sm_driver;
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		uint32_t bind_ip = INADDR_ANY;
 		
@@ -36,6 +37,8 @@ namespace SM {
 		}
 
 		gettimeofday(&m_server_start, NULL);
+
+		g_gbl_sm_driver = this;
 
 	}
 	Driver::~Driver() {
@@ -82,6 +85,15 @@ namespace SM {
 		Peer *ret = new Peer(this, address, m_sd);
 		m_connections.push_back(ret);
 		return ret;
+	}
+	bool Driver::HasPeer(Peer *peer) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			if((*it) == peer)
+				return true;
+			it++;
+		}
+		return false;
 	}
 	void Driver::tick(fd_set *fdset) {
 

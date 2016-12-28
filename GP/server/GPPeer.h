@@ -534,6 +534,13 @@ namespace GP {
 		void handle_pinvite(const char *data, int len);
 
 		void handle_getprofile(const char *data, int len);
+
+		void handle_newprofile(const char *data, int len);
+		void handle_delprofile(const char *data, int len);
+
+		void handle_registernick(const char *data, int len);
+		void handle_registercdkey(const char *data, int len);
+
 		int m_search_operation_id;
 		static void m_getprofile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
@@ -554,6 +561,8 @@ namespace GP {
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);
 		static void m_buddy_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 		static void m_block_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_create_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_delete_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
 
 		void send_buddies();

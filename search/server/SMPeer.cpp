@@ -8,8 +8,17 @@
 #include <OS/socketlib/socketlib.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
+#include <OS/Auth.h>
 
 #include <sstream>
+
+enum { //TODO: move into shared header
+	GP_NEWUSER						= 512, // 0x200, There was an error creating a new user.
+	GP_NEWUSER_BAD_NICK				= 513, // 0x201, A profile with that nick already exists.
+	GP_NEWUSER_BAD_PASSWORD			= 514, // 0x202, The password does not match the email address.
+	GP_NEWUSER_UNIQUENICK_INVALID	= 515, // 0x203, The uniquenick is invalid.
+	GP_NEWUSER_UNIQUENICK_INUSE		= 516, // 0x204, The uniquenick is already in use.
+};
 
 namespace SM {
 
@@ -20,11 +29,9 @@ namespace SM {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		gettimeofday(&m_last_ping, NULL);
-		printf("SM New peer\n");
 	}
 	Peer::~Peer() {
 		close(m_sd);
-		printf("Peer delete\n");
 	}
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];
@@ -56,18 +63,22 @@ namespace SM {
 		}
 
 		//end:
- 		if(len == 0 && packet_waiting) {
+		//check for timeout
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if(current_time.tv_sec - m_last_recv.tv_sec > SP_PING_TIME*2) {
+			m_delete_flag = true;
+			m_timeout_flag = true;
+		} else if(len == 0 && packet_waiting) {
 			m_delete_flag = true;
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
-		printf("SM Handle(%d): %s\n", len,data);
 		char command[32];
 		if(!find_param(0, data,(char *)&command, sizeof(command))) {
 			m_delete_flag = true;
 			return;
 		}
-		printf("Got cmd: %s\n", command);
 		if(!strcmp("search", command)) {
 			handle_search(data, len);
 		} else if(!strcmp("others", command)) {
@@ -81,9 +92,9 @@ namespace SM {
 		} else if(!strcmp("pmatch", command)) {
 
 		} else if(!strcmp("check", command)) {
-
+			handle_check(data, len);
 		} else if(!strcmp("newuser", command)) {
-			
+			handle_newuser(data, len);
 		} else if(!strcmp("uniquesearch", command)) {
 			
 		} else if(!strcmp("profilelist", command)) {
@@ -91,6 +102,99 @@ namespace SM {
 		}
 
 		gettimeofday(&m_last_recv, NULL);
+	}
+	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
+		int err_code = 0;
+		if(auth_data.response_code != -1) {
+			switch(auth_data.response_code) {
+				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+					err_code = GP_NEWUSER_UNIQUENICK_INUSE;
+					break;
+				case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
+					err_code = GP_NEWUSER_BAD_PASSWORD;
+					break;
+				case OS::CREATE_RESPONSE_INVALID_NICK:
+					err_code = GP_NEWUSER_BAD_NICK;
+				break;
+				case OS::CREATE_RESPONSE_INVALID_UNIQUENICK:
+					err_code = GP_NEWUSER_UNIQUENICK_INVALID;
+				break;
+			}
+		}
+		Peer *peer = (Peer *)extra;
+		if(!g_gbl_sm_driver->HasPeer(peer))
+			return;
+		std::ostringstream s;
+		s << "\\nur\\" << err_code;
+		s << "\\pid\\" << profile.id;
+
+		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+
+		peer->m_delete_flag = true;
+	}
+	void Peer::handle_newuser(const char *buf, int len) {
+		char nick[GP_NICK_LEN + 1];
+		char uniquenick[GP_UNIQUENICK_LEN + 1];
+		char email[GP_EMAIL_LEN + 1];
+		char passenc[45 + 1];
+		int partnercode = find_paramint("partnerid", (char *)buf);
+		int namespaceid = find_paramint("namespaceid", (char *)buf);
+		if(!find_param("email", (char*)buf, (char*)&email, GP_EMAIL_LEN)) {
+			return;
+		}
+		if(!find_param("nick", (char*)buf, (char*)&nick, GP_NICK_LEN)) {
+			return;
+		}
+		if(!find_param("uniquenick", (char*)buf, (char*)&uniquenick, GP_UNIQUENICK_LEN)) {
+			uniquenick[0] = 0;
+		}
+		if(!find_param("passenc", (char*)buf, (char*)&passenc, sizeof(passenc) - 1)) {
+			return;
+		}
+		int passlen = strlen(passenc);
+		char *dpass = (char *)base64_decode((uint8_t *)passenc, &passlen);
+		passlen = gspassenc((uint8_t *)dpass);
+
+		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, dpass, false, m_newuser_cb, this);
+		if(dpass)
+			free((void *)dpass);
+
+	}
+	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
+		Peer *peer = (Peer *)extra;
+		if(!g_gbl_sm_driver->HasPeer(peer))
+			return;
+		std::ostringstream s;
+		s << "\\cur\\" << (int)success;
+		s << "\\pid\\" << profile.id;
+
+		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+
+		peer->m_delete_flag = true;
+	}
+	void Peer::handle_check(const char *buf, int len) {
+
+		char nick[GP_NICK_LEN + 1];
+		char email[GP_EMAIL_LEN + 1];
+		char passenc[45 + 1];
+		int partnercode = find_paramint("partnerid", (char *)buf);
+		if(!find_param("email", (char*)buf, (char*)&email, GP_EMAIL_LEN)) {
+			return;
+		}
+		if(!find_param("nick", (char*)buf, (char*)&nick, GP_NICK_LEN)) {
+			return;
+		}
+		if(!find_param("passenc", (char*)buf, (char*)&passenc, sizeof(passenc) - 1)) {
+			return;
+		}
+		int passlen = strlen(passenc);
+		char *dpass = (char *)base64_decode((uint8_t *)passenc, &passlen);
+		passlen = gspassenc((uint8_t *)dpass);
+	
+		OS::AuthTask::TryAuthNickEmail(nick, email, partnercode, dpass, false, m_nick_email_auth_cb, this);
+
+		if(dpass)
+			free((void *)dpass);
 	}
 	void Peer::handle_search(const char *buf, int len) {
 		OS::ProfileSearchRequest request;
@@ -127,6 +231,9 @@ namespace SM {
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
 	void Peer::m_search_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+		Peer *peer = (Peer *)extra;
+		if(!g_gbl_sm_driver->HasPeer(peer))
+			return;
 		std::ostringstream s;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		while(it != results.end()) {
@@ -143,12 +250,15 @@ namespace SM {
 		}
 		s << "\\bsrdone\\";
 
-		((Peer *)extra)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)extra)->m_delete_flag = true;
+		peer->m_delete_flag = true;
 	}
 	void Peer::m_search_buddies_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		std::ostringstream s;
+		Peer *peer = (Peer *)extra;
+		if(!g_gbl_sm_driver->HasPeer(peer))
+			return;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		s << "\\otherslist\\";
 		while(it != results.end()) {
@@ -165,9 +275,9 @@ namespace SM {
 		}
 		s << "\\oldone\\";
 
-		((Peer *)extra)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)extra)->m_delete_flag = true;
+		peer->m_delete_flag = true;
 	}
 	void Peer::handle_others(const char *buf, int len) {
 		OS::ProfileSearchRequest request;
@@ -184,6 +294,9 @@ namespace SM {
 	}
 
 	void Peer::m_search_buddies_reverse_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+		Peer *peer = (Peer *)extra;
+		if(!g_gbl_sm_driver->HasPeer(peer))
+			return;
 		std::ostringstream s;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		s << "\\others\\";
@@ -201,9 +314,9 @@ namespace SM {
 		}
 		s << "\\odone\\";
 
-		((Peer *)extra)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)extra)->m_delete_flag = true;
+		peer->m_delete_flag = true;
 	}
 	void Peer::handle_otherslist(const char *buf, int len) {
 		char pid_buffer[256 + 1];
@@ -230,13 +343,16 @@ namespace SM {
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
 	void Peer::m_search_valid_callback(bool success, std::vector<OS::User> results, void *extra) {
+		Peer *peer = (Peer *)extra;
+		if(!g_gbl_sm_driver->HasPeer(peer))
+			return;
 		std::ostringstream s;
 
 		s << "\\vr\\" << ((results.size() > 0) ? 1 : 0) << "\\final\\";
 
-		((Peer *)extra)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)extra)->m_delete_flag = true;
+		peer->m_delete_flag = true;
 	}
 	void Peer::handle_valid(const char *buf, int len) {
 		OS::UserSearchRequest request;

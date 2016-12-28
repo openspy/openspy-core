@@ -697,7 +697,6 @@ namespace GPBackend {
 			return;
 		int profileid = json_integer_value(json_obj);
 
-		//[{'status': 1, 'location_string': '', 'ip': '10.10.10.1', 'status_string': 'Online', 'quiet_flags': 0, 'profileid': 10000, 'port': 28762}]
 		json_obj = json_object_get(json, "status_string");
 		if(!json_obj)
 			return;

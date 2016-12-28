@@ -22,18 +22,29 @@ import time
 class UserProfileMgrService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
+        self.valid_characters = "1234567890#_-`()$-=;/@+&abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
         self.redis_presence_channel = "presence.buddies"
         self.redis_presence_ctx = redis.StrictRedis(host='localhost', port=6379, db = 5)
         
     def handle_update_profile(self, data):
         profile_model = Profile.get((Profile.id == data['profile']['id']))
+        namespaceid = 0
+        if "namespaceid" in data['profile']:
+            namespaceid = data['profile']['namespaceid']
+        if "uniquenick" in data['profile']:
+            if not self.check_uniquenick_available(data['profile']['uniquenick'], namespaceid):
+                return False
         for key in data['profile']:
             if key != "id":
                 setattr(profile_model, key, data['profile'][key])
 
         profile_model.save()
         return True
-
+    def is_name_valid(self, name):
+        for n in name:
+            if n not in self.valid_characters:
+                return False
+        return True
     def handle_get_profiles(self, data):
         profiles = []
         try:
@@ -74,14 +85,20 @@ class UserProfileMgrService(BaseService):
             return True
     def handle_create_profile(self, data):
         profile_data = data["profile"]
-        if "uniquenick" in profile_data:
-            namespaceid = 0
-            if "namespaceid" in profile_data:
+        if "namespaceid" in profile_data:
                 namespaceid = profile_data["namespaceid"]
+        else:
+            namespaceid = 0
+        if "uniquenick" in profile_data:            
+            if not self.is_name_valid(profile_data["uniquenick"]):
+                return {'error': 'INVALID_UNIQUENICK'}
             nick_available = self.check_uniquenick_available(profile_data["uniquenick"], namespaceid)
             if not nick_available:
-                return None
+                return {'error': 'UNIQUENICK_IN_USE'}
         user = User.get((User.id == data["userid"]))
+        if "nick" in profile_data:
+            if not self.is_name_valid(profile_data["nick"]):
+                return {'error': 'INVALID_NICK'}
         profile_data["user"] = user
         profile_pk = Profile.insert(**profile_data).execute()
         profile = Profile.get((Profile.id == profile_pk))
@@ -244,7 +261,6 @@ class UserProfileMgrService(BaseService):
 
         return ret
     def handle_get_buddies_status(self, request_data):
-        print("Get buddy status: {}\n".format(request_data))
         ret = []
         try:
             profile = Profile.get(Profile.id == request_data["profileid"])
@@ -258,7 +274,6 @@ class UserProfileMgrService(BaseService):
         except Profile.DoesNotExist:
             return []
 
-        print("Returning: {}\n".format(ret))
         return ret
     #Get the buddies for a profile.
     def handle_buddies_search(self, request_data):
@@ -398,7 +413,9 @@ class UserProfileMgrService(BaseService):
             response['profiles'] = profiles
         elif jwt_decoded["mode"] == "create_profile":
             profile = self.handle_create_profile(jwt_decoded)
-            if profile != None:
+            if "error" in profile:
+                response['error'] = profile['error']
+            elif profile != None:
                 success = True
                 response['profile'] = profile
         elif jwt_decoded["mode"] == "delete_profile":

@@ -45,16 +45,22 @@ namespace OS {
 		switch(request.type) {
 			default:
 			case EProfileSearch_Profiles:
-				json_object_set_new(send_obj, "mode", json_string("profile_search"));	
+				json_object_set_new(send_obj, "mode", json_string("profile_search"));
 			break;
 			case EProfileSearch_Buddies:
-				json_object_set_new(send_obj, "mode", json_string("buddies_search"));	
+				json_object_set_new(send_obj, "mode", json_string("buddies_search"));
 			break;
 			case EProfileSearch_Blocks:
-				json_object_set_new(send_obj, "mode", json_string("blocks_search"));	
+				json_object_set_new(send_obj, "mode", json_string("blocks_search"));
 			break;
 			case EProfileSearch_Buddies_Reverse:
-				json_object_set_new(send_obj, "mode", json_string("buddies_reverse_search"));	
+				json_object_set_new(send_obj, "mode", json_string("buddies_reverse_search"));
+			break;
+			case EProfileSearch_CreateProfile:
+				json_object_set_new(send_obj, "mode", json_string("create_profile"));
+			break;
+			case EProfileSearch_DeleteProfile:
+				json_object_set_new(send_obj, "mode", json_string("delete_profile"));
 			break;
 		}
 		
@@ -167,6 +173,13 @@ namespace OS {
 								json_t *user_obj = json_object_get(profile_obj, "user");
 								users_map[profile.userid] = OS::LoadUserFromJson(user_obj);
 							}
+							results.push_back(profile);
+						}
+					} else {
+						//check for single profile
+						profiles_obj = json_object_get(recv_data.json_data, "profile");
+						if(profiles_obj) {
+							OS::Profile profile = OS::LoadProfileFromJson(profiles_obj);
 							results.push_back(profile);
 						}
 					}

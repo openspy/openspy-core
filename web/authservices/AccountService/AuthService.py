@@ -14,6 +14,9 @@ from BaseService import BaseService
 
 import redis
 import hashlib
+
+from RegistrationService import RegistrationService
+from UserProfileMgrService import UserProfileMgrService
 class AuthService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
@@ -26,6 +29,9 @@ class AuthService(BaseService):
         self.LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED = 5
         self.LOGIN_RESPONSE_DB_ERROR = 6
         self.LOGIN_RESPONSE_SERVER_ERROR = 7
+        self.CREATE_RESPONSE_UNIQUENICK_IN_USE = 8
+        self.LOGIN_CREATE_RESPONSE_INVALID_NICK = 9
+        self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK = 10
 
         self.PARTNERID_GAMESPY = 0
         self.PARTNERID_IGN = 10
@@ -69,7 +75,8 @@ class AuthService(BaseService):
         if true_resp == client_response:
             return proof
         return None
-
+    def test_nick_email_by_profile(self, profile, password):
+        return profile.user.password == password
     def create_auth_session(self, profile, user):
         session_key = hashlib.sha1(str(uuid.uuid1()))
         session_key.update(str(uuid.uuid4()))
@@ -163,6 +170,79 @@ class AuthService(BaseService):
                 return {'success': False}
         except User.DoesNotExist:
             return {'success': False}
+
+    def auth_or_create_profile(self, request_body):
+        #{u'profilenick': u'sctest01', u'save_session': True, u'set_context': u'profile', u'hash_type': u'auth_or_create_profile', u'namespaceid': 1, 
+        #u'uniquenick': u'', u'partnercode': 0, u'password': u'gspy', u'email': u'sctest@gamespy.com'}
+        user_where = (User.deleted == False)
+        user_data = {}
+        if "email" in request_body:
+            user_data['email'] = request_body["email"]
+            user_where = (user_where) & (User.email == request_body["email"])
+        if "partnercode" in request_body:
+            user_data['partnercode'] = request_body["partnercode"]
+            partnercode = request_body["partnercode"]
+        else:
+            partnercode = 0
+
+        if "password" in request_body:
+            user_data['password'] = request_body["password"]
+        else:
+            return None
+
+        user_where = (user_where) & (User.partnercode == partnercode)
+
+        try:
+            user = User.get(user_where)
+            user = model_to_dict(user)
+            if user['password'] != request_body["password"]:
+                return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
+        except User.DoesNotExist:
+            register_svc = RegistrationService()
+            user = register_svc.try_register_user(user_data)
+
+        
+
+        profile_data = {} #create data
+        profile_where = (Profile.deleted == False)
+        if "uniquenick" in request_body:
+            profile_where = (profile_where) & (Profile.uniquenick == request_body["uniquenick"])
+            profile_data['uniquenick'] = request_body["uniquenick"]
+        if "profilenick" in request_body:
+            profile_where = (profile_where) & (Profile.nick == request_body["profilenick"])
+            profile_data['nick'] = request_body["profilenick"]
+            profile_data['nick'] = request_body["profilenick"]
+
+        if "namespaceid" in request_body:
+            namespaceid = request_body["namespaceid"]
+        else:
+            namespaceid = 0
+
+        profile_data['namespaceid'] = namespaceid
+
+        profile_where = (profile_where) & (Profile.namespaceid == namespaceid)
+
+
+        try:
+            profile = Profile.get(profile_where)
+            profile = model_to_dict(profile)
+            del profile['user']['password']
+        except Profile.DoesNotExist:
+            user_profile_srv = UserProfileMgrService()
+            
+            profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'userid': user['id']})
+            print("Create profile: {}\n".format(profile))
+            if "error" in profile:
+                reason = 0
+                if profile["error"] == "INVALID_UNIQUENICK":
+                    reason = self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK
+                elif profile["error"] == "INVALID_NICK":
+                    reason = self.LOGIN_CREATE_RESPONSE_INVALID_NICK
+                elif profile["error"] == "UNIQUENICK_IN_USE":
+                    reason = self.CREATE_RESPONSE_UNIQUENICK_IN_USE                
+                return {'reason' : reason}
+
+        return profile
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -237,12 +317,27 @@ class AuthService(BaseService):
             if proof != None:
                 auth_success = True
                 response['server_response'] = proof
-        if not auth_success:
+        elif hash_type == 'nick_email' and profile != None:
+            auth_success = self.test_nick_email_by_profile(profile, jwt_decoded['password'])
+        elif hash_type == 'auth_or_create_profile':
+            auth_resp = self.auth_or_create_profile(jwt_decoded)
+            if "reason" in auth_resp:
+                response['reason'] = auth_resp['reason']
+                success = False
+            elif isinstance(auth_resp, dict):
+                response['profile'] = auth_resp
+                auth_success = True
+                #retrieve profile for save_session
+                profile = Profile.get((Profile.id == response['profile']['id']))
+                user = profile.user
+                success = True
+
+        if not auth_success and "reason" not in response:
             if user == None or profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND
             else:
                 response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
-        else:
+        elif "reason" not in response:
             response['success'] = True
             if profile != None:
                 response['profile'] = model_to_dict(profile)
@@ -254,7 +349,7 @@ class AuthService(BaseService):
                 response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND
 
             response['expiretime'] = 10000 #TODO: figure out what this is used for, should make unix timestamp of expire time
-            
+        
         if "save_session" in jwt_decoded and jwt_decoded["save_session"] == True and response['success'] == True:
             if profile != None:
                 session_data = self.create_auth_session(profile, profile.user)
@@ -266,4 +361,5 @@ class AuthService(BaseService):
             if jwt_decoded["set_context"] == "profile":
                 self.set_auth_context(response["session_key"], profile)
         start_response('200 OK', [('Content-Type','text/html')])
+
         return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
