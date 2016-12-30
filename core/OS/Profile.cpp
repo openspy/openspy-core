@@ -50,6 +50,68 @@ namespace OS {
 		else 
 			ret.zipcode = 0;
 
+		j = json_object_get(obj, "pic");
+		if(j && json_is_integer(j))
+			ret.pic = json_integer_value(j);
+		else 
+			ret.pic = 0;
+
+		j = json_object_get(obj, "ooc");
+		if(j && json_is_integer(j))
+			ret.ooc = json_integer_value(j);
+		else 
+			ret.ooc = 0;
+
+		j = json_object_get(obj, "ind");
+		if(j && json_is_integer(j))
+			ret.ind = json_integer_value(j);
+		else 
+			ret.ind = 0;
+
+		j = json_object_get(obj, "mar");
+		if(j && json_is_integer(j))
+			ret.mar = json_integer_value(j);
+		else 
+			ret.mar = 0;
+
+		j = json_object_get(obj, "chc");
+		if(j && json_is_integer(j))
+			ret.chc = json_integer_value(j);
+		else 
+			ret.chc = 0;
+
+		j = json_object_get(obj, "i1");
+		if(j && json_is_integer(j))
+			ret.i1 = json_integer_value(j);
+		else 
+			ret.i1 = 0;
+
+		j = json_object_get(obj, "birthday");
+		if(j && json_is_integer(j))
+			ret.birthday = json_integer_value(j);
+		else 
+			ret.birthday = 0;
+
+		j = json_object_get(obj, "countrycode");
+		if(j && json_is_string(j))
+			ret.countrycode = json_string_value(j);
+
+		j = json_object_get(obj, "videocard1string");
+		if(j && json_is_string(j))
+			ret.videocardstring[0] = json_string_value(j);
+
+		j = json_object_get(obj, "videocard2string");
+		if(j && json_is_string(j))
+			ret.videocardstring[1] = json_string_value(j);
+
+		j = json_object_get(obj, "osstring");
+		if(j && json_is_string(j))
+			ret.osstring = json_string_value(j);
+
+		j = json_object_get(obj, "aim");
+		if(j && json_is_string(j))
+			ret.aim = json_string_value(j);
+
 		j = json_object_get(obj, "deleted");
 		if(j && json_is_boolean(j))
 			ret.deleted = j == json_true();

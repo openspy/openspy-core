@@ -54,6 +54,7 @@ namespace OS {
 	#define KEYTYPE_STRING	0
 	#define KEYTYPE_BYTE	1
 	#define KEYTYPE_SHORT	2
+	#define KEYTYPE_INT		3
 
 
 	#define OS_MAX_GAMENAME 32

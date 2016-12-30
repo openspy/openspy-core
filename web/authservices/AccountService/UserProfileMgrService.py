@@ -27,19 +27,33 @@ class UserProfileMgrService(BaseService):
         self.redis_presence_ctx = redis.StrictRedis(host='localhost', port=6379, db = 5)
         
     def handle_update_profile(self, data):
+        
+        if "profile" not in data:
+            data = {'profile': data}
+        if "profileid" in data["profile"]:
+            data["profile"]["id"] = data["profile"]["profileid"]
+            del data["profile"]["profileid"]
+        if "profilenick" in data["profile"]:
+            data["profile"]["nick"] = data["profile"]["profilenick"]
+            del data["profile"]["profilenick"]
+
         profile_model = Profile.get((Profile.id == data['profile']['id']))
         namespaceid = 0
         if "namespaceid" in data['profile']:
             namespaceid = data['profile']['namespaceid']
+        if "nick" in data['profile']:
+            if not self.is_name_valid(data['profile']['nick']):
+                return {'error': 'NICK_INVALID'}
         if "uniquenick" in data['profile']:
-            if not self.check_uniquenick_available(data['profile']['uniquenick'], namespaceid):
-                return False
+            if not self.is_name_valid(data['profile']['uniquenick']):
+                return {'error': 'UNIQUENICK_INVALID'}
+            if data['profile']['uniquenick'] != data["profile"]["uniquenick"] and not self.check_uniquenick_available(data['profile']['uniquenick'], namespaceid):
+                return {'error': 'UNIQUENICK_INUSE'}
         for key in data['profile']:
             if key != "id":
                 setattr(profile_model, key, data['profile'][key])
-
         profile_model.save()
-        return True
+        return {"success": True}
     def is_name_valid(self, name):
         for n in name:
             if n not in self.valid_characters:
@@ -402,7 +416,11 @@ class UserProfileMgrService(BaseService):
             return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')    
 
         if jwt_decoded["mode"] == "update_profile":
-            success = self.handle_update_profile(jwt_decoded)
+            resp = self.handle_update_profile(jwt_decoded)
+            if "error" in resp:
+                response['error'] = resp["error"]
+            else:
+                success = True
         elif jwt_decoded["mode"] == "get_profile":
             profile = self.handle_get_profile(jwt_decoded)
             success = profile != None

@@ -8,6 +8,7 @@ namespace OS {
 		std::string email;
 		int partnercode;
 		bool email_verified;
+		int publicmask;
 		bool deleted;
 	} User;
 

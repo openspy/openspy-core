@@ -74,7 +74,6 @@ namespace GPBackend {
 	    GP::Peer *peer = NULL;
 	    if (r->type == REDIS_REPLY_ARRAY) {
 	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
-	    		printf("Redis got: %s %s\n", r->element[1]->str, r->element[2]->str);
 	    		if(strcmp(r->element[1]->str,gp_buddies_channel) == 0) {
 	    			if(!find_param("type", r->element[2]->str,(char *)&msg_type, sizeof(msg_type))) {
 	    					return;

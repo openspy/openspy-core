@@ -200,21 +200,21 @@ namespace SM {
 		OS::ProfileSearchRequest request;
 		char temp[GP_REASON_LEN + 1];
 		int temp_int;
-		request.profileid = 0;
+		request.profile_search_details.id = 0;
 		if(find_param("email", (char*)buf, (char*)&temp, GP_EMAIL_LEN)) {
-			request.email = temp;
+			request.user_search_details.email = temp;
 		}
 		if(find_param("nick", (char*)buf, (char*)&temp, GP_NICK_LEN)) {
-			request.nick = temp;
+			request.profile_search_details.nick = temp;
 		}
 		if(find_param("uniquenick", (char*)buf, (char*)&temp, GP_UNIQUENICK_LEN)) {
-			request.uniquenick = temp;
+			request.profile_search_details.uniquenick = temp;
 		}
 		if(find_param("firstname", (char*)buf, (char*)&temp, GP_FIRSTNAME_LEN)) {
-			request.firstname = temp;
+			request.profile_search_details.firstname = temp;
 		}
 		if(find_param("lastname", (char*)buf, (char*)&temp, GP_LASTNAME_LEN)) {
-			request.lastname = temp;
+			request.profile_search_details.lastname = temp;
 		}
 		temp_int = find_paramint("namespaceid", (char*)buf);
 		if(temp_int != 0) {
@@ -284,7 +284,7 @@ namespace SM {
 		int profileid = find_paramint("profileid", (char *)buf);
 		int namespaceid = find_paramint("namespaceid", (char *)buf);
 
-		request.profileid = profileid;
+		request.profile_search_details.id = profileid;
 		request.namespaceids.push_back(namespaceid);
 
 		request.type = OS::EProfileSearch_Buddies;
@@ -325,7 +325,7 @@ namespace SM {
 		int profileid = find_paramint("profileid", (char *)buf);
 		int namespaceid = find_paramint("namespaceid", (char *)buf);
 
-		request.profileid = profileid;
+		request.profile_search_details.id = profileid;
 		request.namespaceids.push_back(namespaceid);
 
 		if(find_param("opids", (char*)buf, (char*)&pid_buffer, sizeof(pid_buffer)-1)) {

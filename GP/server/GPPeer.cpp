@@ -253,8 +253,86 @@ namespace GP {
 				handle_registernick(data, len);
 			} else if(!strcmp(command, "registercdkey")) {
 				handle_registercdkey(data, len);
+			} else if(!strcmp(command, "updatepro")) {
+				handle_updatepro(data, len);
 			}
 		}
+	}
+	void Peer::m_update_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	}
+	/*
+		Updates profile specific information
+	*/
+	void Peer::handle_updatepro(const char *data, int len) {
+		char buff[GP_STATUS_STRING_LEN + 1];
+		OS::ProfileSearchRequest request;
+		if(find_param("zipcode", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.zipcode = atoi(buff);
+		}
+		if(find_param("sex", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.sex = atoi(buff);
+		}
+		if(find_param("pic", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.pic = atoi(buff);
+		}
+		if(find_param("ooc", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.ooc = atoi(buff);
+		}
+		if(find_param("ind", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.ind = atoi(buff);
+		}
+		if(find_param("mar", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.mar = atoi(buff);
+		}
+		if(find_param("chc", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.chc = atoi(buff);
+		}
+		if(find_param("i1", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.i1 = atoi(buff);
+		}
+		if(find_param("birthday", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.birthday = atoi(buff);
+		}
+		if(find_param("publicmask", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_user.publicmask = atoi(buff);
+		}
+
+		if(find_param("nick", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.nick = buff;
+		}
+
+		if(find_param("uniquenick", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.uniquenick = buff;
+		}
+		if(find_param("firstname", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.firstname = buff;
+		}
+		if(find_param("lastname", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.lastname = buff;
+		}
+		if(find_param("countrycode", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.countrycode = buff;
+		}
+		if(find_param("videocard1string", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.videocardstring[0] = buff;
+		}
+		if(find_param("videocard2string", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.videocardstring[1] = buff;
+		}
+		if(find_param("osstring", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.osstring = buff;
+		}
+		if(find_param("aim", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_profile.aim = buff;
+		}
+		request.profile_search_details = m_profile;
+		request.extra = this;
+		request.type = OS::EProfileSearch_UpdateProfile;
+		request.callback = Peer::m_update_profile_callback;
+		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+	}
+	void Peer::handle_updateui(const char *data, int len) {
+
 	}
 	void Peer::handle_registernick(const char *data, int len) {
 		
@@ -275,7 +353,7 @@ namespace GP {
 		if(replace) { //TODO: figure out replaces functionality
 			find_param("oldnick",(char *)data, (char *)&oldnick,GP_NICK_LEN);
 		}
-		request.profileid = m_profile.id;
+		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
 		request.type = OS::EProfileSearch_CreateProfile;
 		request.callback = Peer::m_create_profile_callback;
@@ -292,7 +370,7 @@ namespace GP {
 	}
 	void Peer::handle_delprofile(const char *data, int len) {
 		OS::ProfileSearchRequest request;
-		request.profileid = m_profile.id;
+		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
 		request.type = OS::EProfileSearch_DeleteProfile;
 		request.callback = Peer::m_delete_profile_callback;
@@ -357,6 +435,17 @@ namespace GP {
 		int newprofileid = find_paramint("newprofileid",(char *)data);
 		char reason[GP_REASON_LEN + 1];
 		find_param("reason",(char *)data, (char *)&reason,GP_REASON_LEN);
+		mp_mutex->lock();
+		if(m_buddies.find(newprofileid) != m_buddies.end()) {
+			mp_mutex->unlock();
+			send_error(GP_ADDBUDDY_ALREADY_BUDDY);
+			return;
+		} else if(std::find(m_blocks.begin(),m_blocks.end(), newprofileid) == m_blocks.end()) {
+			mp_mutex->unlock();
+			send_error(GP_ADDBUDDY_IS_ON_BLOCKLIST);
+			return;
+		}
+		mp_mutex->unlock();
 
 		GPBackend::GPBackendRedisTask::MakeBuddyRequest(m_profile.id, newprofileid, reason);
 	}
@@ -421,7 +510,7 @@ namespace GP {
 	}
 	void Peer::send_buddies() {
 		OS::ProfileSearchRequest request;
-		request.profileid = m_profile.id;
+		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
 		request.type = OS::EProfileSearch_Buddies;
 		request.callback = Peer::m_buddy_list_lookup_callback;
@@ -429,7 +518,7 @@ namespace GP {
 	}
 	void Peer::send_blocks() {
 		OS::ProfileSearchRequest request;
-		request.profileid = m_profile.id;
+		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
 		request.type = OS::EProfileSearch_Blocks;
 		request.callback = Peer::m_block_list_lookup_callback;
@@ -484,7 +573,7 @@ namespace GP {
 		OS::ProfileSearchRequest request;
 		int profileid = find_paramint("profileid",(char *)data);		
 		m_search_operation_id = find_paramint("id",(char *)data);		
-		request.profileid = profileid;
+		request.profile_search_details.id = profileid;
 		request.extra = this;
 		request.callback = Peer::m_getprofile_callback;
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);

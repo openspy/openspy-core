@@ -16,6 +16,12 @@ namespace OS {
 		if(j)
 			ret.partnercode = json_integer_value(j);
 
+		j = json_object_get(obj, "publicmask");
+		if(j && json_is_integer(j))
+			ret.publicmask = json_integer_value(j);
+		else 
+			ret.publicmask = 0;
+
 		ret.email_verified = json_object_get(obj, "email_verified") == json_true();
 		ret.deleted = json_object_get(obj, "deleted") == json_true();
 

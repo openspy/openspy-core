@@ -62,37 +62,59 @@ namespace OS {
 			case EProfileSearch_DeleteProfile:
 				json_object_set_new(send_obj, "mode", json_string("delete_profile"));
 			break;
+			case EProfileSearch_UpdateProfile:
+				json_object_set_new(send_obj, "mode", json_string("update_profile"));
+			break;
 		}
 		
 
 
-		if(request.profileid != 0) {
-			json_object_set_new(send_obj, "profileid", json_integer(request.profileid));
+		if(request.profile_search_details.id != 0 && request.type != EProfileSearch_UpdateProfile) {
+			json_object_set_new(send_obj, "profileid", json_integer(request.profile_search_details.id));
 		} else {
 
+			if(request.profile_search_details.id != 0)
+				json_object_set_new(send_obj, "profileid", json_integer(request.profile_search_details.id));
+
 			//user parameters
-			if(request.email.length())
-				json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
+			if(request.user_search_details.email.length())
+				json_object_set_new(send_obj, "email", json_string(request.user_search_details.email.c_str()));
 
 			
-			json_object_set_new(send_obj, "partnercode", json_integer(request.partnercode));
+			json_object_set_new(send_obj, "partnercode", json_integer(request.user_search_details.partnercode));
 
 
 			//profile parameters
-			if(request.nick.length())
-				json_object_set_new(send_obj, "profilenick", json_string(request.nick.c_str()));
+			if(request.profile_search_details.nick.length())
+				json_object_set_new(send_obj, "profilenick", json_string(request.profile_search_details.nick.c_str()));
 
-			if(request.uniquenick.length())
-				json_object_set_new(send_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+			if(request.profile_search_details.uniquenick.length())
+				json_object_set_new(send_obj, "uniquenick", json_string(request.profile_search_details.uniquenick.c_str()));
 
-			if(request.firstname.length())
-				json_object_set_new(send_obj, "firstname", json_string(request.firstname.c_str()));
+			if(request.profile_search_details.firstname.length())
+				json_object_set_new(send_obj, "firstname", json_string(request.profile_search_details.firstname.c_str()));
 
-			if(request.lastname.length())
-				json_object_set_new(send_obj, "lastname", json_string(request.lastname.c_str()));
+			if(request.profile_search_details.lastname.length())
+				json_object_set_new(send_obj, "lastname", json_string(request.profile_search_details.lastname.c_str()));
 
-			if(request.icquin)
-				json_object_set_new(send_obj, "icquin", json_integer(request.icquin));
+			if(request.profile_search_details.icquin)
+				json_object_set_new(send_obj, "icquin", json_integer(request.profile_search_details.icquin));
+
+			if(request.profile_search_details.zipcode)
+				json_object_set_new(send_obj, "zipcode", json_integer(request.profile_search_details.zipcode));
+
+			json_object_set_new(send_obj, "sex", json_integer(request.profile_search_details.sex));
+
+			json_object_set_new(send_obj, "pic", json_integer(request.profile_search_details.pic));
+			json_object_set_new(send_obj, "ooc", json_integer(request.profile_search_details.ooc));
+			json_object_set_new(send_obj, "ind", json_integer(request.profile_search_details.ind));
+			json_object_set_new(send_obj, "mar", json_integer(request.profile_search_details.mar));
+			json_object_set_new(send_obj, "chc", json_integer(request.profile_search_details.chc));
+			json_object_set_new(send_obj, "i1", json_integer(request.profile_search_details.i1));
+			json_object_set_new(send_obj, "birthday", json_integer(request.profile_search_details.birthday));
+
+			json_object_set_new(send_obj, "lon", json_real(request.profile_search_details.lon));
+			json_object_set_new(send_obj, "lat", json_real(request.profile_search_details.lat));
 
 
 			if(request.namespaceids.size()) {

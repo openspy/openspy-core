@@ -26,20 +26,14 @@ namespace OS {
 		EProfileSearch_Blocks,
 		EProfileSearch_CreateProfile,
 		EProfileSearch_DeleteProfile,
+		EProfileSearch_UpdateProfile,
 	};
 
 	typedef struct {
-		int profileid;
 		std::vector<int> target_profileids; //target search profile ids, only used for buddy reverse searches atm
-		std::string email;
-		std::string nick;
-		std::string uniquenick;
-		int partnercode;
 		std::vector<int> namespaceids;
-		std::string firstname;
-		std::string lastname;
-		std::string homepage;
-		int icquin;
+		OS::Profile profile_search_details;
+		OS::User user_search_details;
 		int skip;
 		void *extra;
 		ProfileSearchCallback callback;

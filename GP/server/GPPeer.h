@@ -563,6 +563,7 @@ namespace GP {
 		static void m_block_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 		static void m_create_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 		static void m_delete_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_update_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
 
 		void send_buddies();
