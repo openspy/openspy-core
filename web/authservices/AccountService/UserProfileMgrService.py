@@ -410,8 +410,6 @@ class UserProfileMgrService(BaseService):
 
         success = False
 
-        print("profilemgr got: {}\n".format(jwt_decoded))
-
         if "mode" not in jwt_decoded:
             response['error'] = "INVALID_MODE"
             return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')    
@@ -481,6 +479,4 @@ class UserProfileMgrService(BaseService):
 
         response['success'] = success
         start_response('200 OK', [('Content-Type','text/html')])
-        resp = jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
-        print("resp: {}\n".format(resp))
-        return resp
+        return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')

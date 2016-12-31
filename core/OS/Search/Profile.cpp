@@ -182,8 +182,7 @@ namespace OS {
 
 				jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
 
-				int r = jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
-				printf("The R val is: %d\n%s\n", r,recv_data.buffer.c_str());
+				jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
 
 				char *json = jwt_get_grants_json(jwt, NULL);
 
@@ -195,10 +194,8 @@ namespace OS {
 				if(json_data) {
 					error = EProfileResponseType_Success;
 					json_t *profiles_obj = json_object_get(json_data, "profiles");
-					printf("Profiles obj: %p\n", profiles_obj);
 					if(profiles_obj) {
 						int num_profiles = json_array_size(profiles_obj);
-						printf("Arr got %d profiles\n", num_profiles);
 						for(int i=0;i<num_profiles;i++) {
 
 							json_t *profile_obj = json_array_get(profiles_obj, i);
