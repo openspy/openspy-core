@@ -132,10 +132,9 @@ class UserProfileMgrService(BaseService):
 
     def handle_profile_search(self, search_data):
         response = []
-        #{u'partnercode': 0, u'profilenick': u'sctest01', u'email': u'sctest@gamespy.com', u'namespaceids': [1], u'mode': u'profile_search'}
-        #query = Profile.select().join(User)
-
-        hidden_str = "[hidden]"
+        
+        #{u'chc': 0, u'ooc': 0, u'i1': 0, u'pic': 0, u'lon': 0.0, u'mar': 0, u'namespaceids': [1], u'lat': 0.0, 
+        #u'birthday': 0, u'mode': u'profile_search', u'partnercode': 0, u'ind': 0, u'sex': 0, u'email': u'sctest@gamespy.com'}
 
         where_expression = ((Profile.deleted == False) & (User.deleted == False))
 
@@ -411,6 +410,8 @@ class UserProfileMgrService(BaseService):
 
         success = False
 
+        print("profilemgr got: {}\n".format(jwt_decoded))
+
         if "mode" not in jwt_decoded:
             response['error'] = "INVALID_MODE"
             return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')    
@@ -480,4 +481,6 @@ class UserProfileMgrService(BaseService):
 
         response['success'] = success
         start_response('200 OK', [('Content-Type','text/html')])
-        return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        resp = jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        print("resp: {}\n".format(resp))
+        return resp

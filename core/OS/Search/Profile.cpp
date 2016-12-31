@@ -5,10 +5,12 @@
 #include <jansson.h>
 #include <jwt/jwt.h>
 
+#include <ctype.h>
+
 namespace OS {
 	ProfileSearchTask *ProfileSearchTask::m_task_singleton = NULL;
 	struct curl_data {
-	    json_t *json_data;
+	    std::string buffer;
 	};
 	/* callback for curl fetch */
 	size_t ProfileSearchTask::curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
@@ -17,26 +19,19 @@ namespace OS {
 		}
 	    size_t realsize = size * nmemb;                             /* calculate buffer size */
 	    curl_data *data = (curl_data *)userp;
-
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-
-		jwt_decode(&jwt, (const char *)contents, NULL, 0);
-
-		char *json = jwt_get_grants_json(jwt, NULL);
-		if(json) {
-			data->json_data = json_loads(json, 0, NULL);
-			free(json);
-		} else {
-			data->json_data = NULL;
+		const char *p = (const char *)contents;
+		while(*p) {
+			if(isalnum(*p) || *p == '.')
+				data->buffer += *(p);
+			else break;
+			p++;
 		}
-		jwt_free(jwt);
+
 	    return realsize;
 	}
 	void ProfileSearchTask::PerformSearch(ProfileSearchRequest request) {
 		curl_data recv_data;
+		recv_data.buffer = "";
 		std::vector<OS::Profile> results;
 		std::map<int, OS::User> users_map;
 		//build json object
@@ -180,13 +175,30 @@ namespace OS {
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
 
 			res = curl_easy_perform(curl);
-
 			if(res == CURLE_OK) {
-				if(recv_data.json_data) {
+				jwt_t *jwt;
+				jwt_new(&jwt);
+				json_t *json_data = NULL;
+
+				jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
+
+				int r = jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
+				printf("The R val is: %d\n%s\n", r,recv_data.buffer.c_str());
+
+				char *json = jwt_get_grants_json(jwt, NULL);
+
+				if(json) {
+					json_data = json_loads(json, 0, NULL);
+					free((void *)json);
+				}
+				
+				if(json_data) {
 					error = EProfileResponseType_Success;
-					json_t *profiles_obj = json_object_get(recv_data.json_data, "profiles");
+					json_t *profiles_obj = json_object_get(json_data, "profiles");
+					printf("Profiles obj: %p\n", profiles_obj);
 					if(profiles_obj) {
 						int num_profiles = json_array_size(profiles_obj);
+						printf("Arr got %d profiles\n", num_profiles);
 						for(int i=0;i<num_profiles;i++) {
 
 							json_t *profile_obj = json_array_get(profiles_obj, i);
@@ -199,23 +211,24 @@ namespace OS {
 						}
 					} else {
 						//check for single profile
-						profiles_obj = json_object_get(recv_data.json_data, "profile");
+						profiles_obj = json_object_get(json_data, "profile");
 						if(profiles_obj) {
 							OS::Profile profile = OS::LoadProfileFromJson(profiles_obj);
 							results.push_back(profile);
 						}
 					}
+					json_decref(json_data);
 				} else {
 					error = EProfileResponseType_GenericError;
 				}
 			}
 		}
 
-		if(recv_data.json_data) {
-			json_decref(recv_data.json_data);
+		if(jwt) {
+			jwt_free(jwt);
 		}
-		if(json_data)
-			free((void *)json_data);
+
+	
 
 		if(send_obj)
 			json_decref(send_obj);

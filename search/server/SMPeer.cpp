@@ -21,7 +21,7 @@ enum { //TODO: move into shared header
 };
 
 namespace SM {
-
+	const char *Peer::mp_hidden_str = "[hidden]";
 	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) {
 		m_sd = sd;
 		mp_driver = driver;
@@ -66,7 +66,7 @@ namespace SM {
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_recv.tv_sec > SP_PING_TIME*2) {
+		if(current_time.tv_sec - m_last_recv.tv_sec > SM_PING_TIME*2) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
 		} else if(len == 0 && packet_waiting) {
@@ -232,6 +232,8 @@ namespace SM {
 	}
 	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		Peer *peer = (Peer *)extra;
+
+		printf("Search got %d results\n",results.size());
 		if(!g_gbl_sm_driver->HasPeer(peer))
 			return;
 		std::ostringstream s;
@@ -243,7 +245,11 @@ namespace SM {
 			s << "\\nick\\" << p.nick;
 			s << "\\firstname\\" << p.firstname;
 			s << "\\lastname\\" << p.lastname;
-			s << "\\email\\" << u.email;
+			s << "\\email\\";
+			if(u.publicmask & GP_MASK_EMAIL)
+				s << u.email;
+			else 
+				s << Peer::mp_hidden_str;
 			s << "\\uniquenick\\" << p.uniquenick;
 			s << "\\namespaceid\\" << p.namespaceid;
 			it++;
@@ -268,7 +274,11 @@ namespace SM {
 			s << "\\nick\\" << p.nick;
 			s << "\\first\\" << p.firstname;
 			s << "\\last\\" << p.lastname;
-			s << "\\email\\" << u.email;
+			s << "\\email\\";
+			if(u.publicmask & GP_MASK_EMAIL)
+				s << u.email;
+			else 
+				s << Peer::mp_hidden_str;
 			s << "\\uniquenick\\" << p.uniquenick;
 			s << "\\namespaceid\\" << p.namespaceid;
 			it++;
@@ -303,13 +313,19 @@ namespace SM {
 		while(it != results.end()) {
 			OS::Profile p = *it;
 			OS::User u = result_users[p.userid];
-			s << "\\o\\" << p.id;
-			s << "\\nick\\" << p.nick;
-			s << "\\first\\" << p.firstname;
-			s << "\\last\\" << p.lastname;
-			s << "\\email\\" << u.email;
-			s << "\\uniquenick\\" << p.uniquenick;
-			s << "\\namespaceid\\" << p.namespaceid;
+			if(~u.publicmask & GP_MASK_BUDDYLIST) {
+				s << "\\o\\" << p.id;
+				s << "\\nick\\" << p.nick;
+				s << "\\first\\" << p.firstname;
+				s << "\\last\\" << p.lastname;
+				s << "\\email\\";
+				if(u.publicmask & GP_MASK_EMAIL)
+					s << u.email;
+				else 
+					s << Peer::mp_hidden_str;
+				s << "\\uniquenick\\" << p.uniquenick;
+				s << "\\namespaceid\\" << p.namespaceid;
+			}
 			it++;
 		}
 		s << "\\odone\\";

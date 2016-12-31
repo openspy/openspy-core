@@ -8,6 +8,10 @@ namespace OS {
 		if(j && json_is_integer(j))
 			ret.id = json_integer_value(j);
 
+		j = json_object_get(obj, "userid");
+		if(j && json_is_integer(j))
+			ret.userid = json_integer_value(j);
+
 		j = json_object_get(obj, "namespaceid");
 		if(j && json_is_integer(j))
 			ret.namespaceid = json_integer_value(j);

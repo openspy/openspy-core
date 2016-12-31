@@ -7,21 +7,28 @@ class GPBirthDay(Field):
     db_field = 'date'
 
     def db_value(self, value):
-    	day = (value >> 24) & 0xFF
-    	month = (value >> 16) & 0xFF
-    	year = (value & 0xFFFF)
+    	if value != None:
+    		day = (value >> 24) & 0xFF
+    		month = (value >> 16) & 0xFF
+	    	year = (value & 0xFFFF)
+    	else:
+    		return None
         return datetime.date(year,month,day)
 
     def python_value(self, value):
-    	day = value.day
-    	month = value.month
-    	year = value.year
+		day = 0
+		month = 0
+		year = 0
+		if value != None:
+			day = value.day
+			month = value.month
+			year = value.year
 
-    	val = 0
-    	val |= (day << 24)
-    	val |= (month << 16)
-    	val |= (year)
-        return val # convert str to UUID
+		val = 0
+		val |= (day << 24)
+		val |= (month << 16)
+		val |= (year)
+		return val # convert str to UUID
 
 class Profile(BaseModel):
 	class Meta:

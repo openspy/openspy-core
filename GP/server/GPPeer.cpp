@@ -689,6 +689,7 @@ namespace GP {
 			OS::User user = result_users[p.userid];
 			std::ostringstream s;
 
+
 			s << "\\pi\\";
 			s << "\\profileid\\" << p.id;
 			s << "\\userid\\" << p.userid;
@@ -701,8 +702,10 @@ namespace GP {
 				s << "\\uniquenick\\" << p.uniquenick;
 			}
 
-			if(user.email.length()) {
-				s << "\\email\\" << user.email;
+			if(user.publicmask & GP_MASK_EMAIL || peer->m_profile.userid == user.id) {
+				if(user.email.length()) {
+					s << "\\email\\" << user.email;
+				}
 			}
 
 			if(p.firstname.length()) {
@@ -713,16 +716,24 @@ namespace GP {
 				s << "\\lastname\\" << p.lastname;
 			}
 
-			if(p.homepage.length()) {
-				s << "\\homepage\\" << p.homepage;
+			if(user.publicmask & GP_MASK_HOMEPAGE || peer->m_profile.userid == user.id) {
+				if(p.homepage.length()) {
+					s << "\\homepage\\" << p.homepage;
+				}
+			}
+
+			if(user.publicmask & GP_MASK_SEX || peer->m_profile.userid == user.id) {
+				s << "\\sex\\" << p.sex;
 			}
 
 			if(p.icquin) {
 				s << "\\icquin\\" << p.icquin;
 			}
 
-			if(p.zipcode) {
-				s << "\\zipcode\\" << p.zipcode;
+			if(user.publicmask & GP_MASK_ZIPCODE || peer->m_profile.userid == user.id) {
+				if(p.zipcode) {
+					s << "\\zipcode\\" << p.zipcode;
+				}
 			}
 
 			if(p.pic) {
@@ -741,16 +752,19 @@ namespace GP {
 				s << "\\pic\\" << p.mar;
 			}
 
-			s << "\\birthday\\" << p.birthday;
-			s << "\\countrycode\\" << p.countrycode;
+			if(user.publicmask & GP_MASK_BIRTHDAY || peer->m_profile.userid == user.id) {
+				s << "\\birthday\\" << p.birthday;
+			}
+
+			if(user.publicmask & GP_MASK_COUNTRYCODE || peer->m_profile.userid == user.id) {
+				s << "\\countrycode\\" << p.countrycode;
+			}
 			s << "\\aim\\" << p.aim;
 
 			s << "\\videocard1string\\" << p.videocardstring[0];
 			s << "\\videocard2string\\" << p.videocardstring[1];
 			s << "\\osstring\\" << p.osstring;
 
-
-			s << "\\sex\\" << p.sex;
 
 			s << "\\id\\" << peer->m_search_operation_id;
 

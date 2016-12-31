@@ -34,7 +34,19 @@
 #define GP_RICH_STATUS_LEN          256
 #define GP_STATUS_BASIC_STR_LEN     33
 
-#define SP_PING_TIME 120
+enum {
+	GP_MASK_NONE        =  0, // 0x00, Indicates that none of the profile's fields are visible.
+	GP_MASK_HOMEPAGE    =  1, // 0x01, Indicates that the profile's homepage field is visible.
+	GP_MASK_ZIPCODE     =  2, // 0x02, Indicates that the profile's zipcode field is visible.
+	GP_MASK_COUNTRYCODE =  4, // 0x04, Indicates that the profile's country code field is visible.
+	GP_MASK_BIRTHDAY    =  8, // 0x08, Indicates that the profile's birthday field is visible.
+	GP_MASK_SEX         = 16, // 0x10, Indicates that the profile's sex field is visible.
+	GP_MASK_EMAIL       = 32, // 0x20, Indicates that the profile's email field is visible.
+	GP_MASK_BUDDYLIST	= 64, // 0x40, Indicates that the profile's buddy list is visible.
+	GP_MASK_ALL         = -1, // 0xFFFFFFFF, Indicates that all of a profile's fields are visible.
+};
+
+#define SM_PING_TIME 120
 
 namespace SM {
 	class Driver;
@@ -83,6 +95,8 @@ namespace SM {
 
 		bool m_delete_flag;
 		bool m_timeout_flag;
+
+		static const char *mp_hidden_str;
 
 
 	};
