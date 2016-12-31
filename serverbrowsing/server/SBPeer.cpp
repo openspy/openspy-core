@@ -13,10 +13,12 @@ namespace SB {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		gettimeofday(&m_last_ping, NULL);
+
+		mp_mutex = OS::CreateMutex();
 	}
 	Peer::~Peer() {
 		close(m_sd);
-		printf("Peer delete\n");
+		delete mp_mutex;
 	}
 
 	bool Peer::serverMatchesLastReq(MM::Server *server, bool require_push_flag) {
@@ -33,18 +35,22 @@ namespace SB {
 		sServerCache ret;
 		ret.full_keys = false;
 		ret.key[0] = 0;
+		mp_mutex->lock();
 		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
 		while(it != m_visible_servers.end()) {
 			sServerCache cache = *it;
 			if(cache.wan_address.ip == address.ip && cache.wan_address.port == address.port) {
+				mp_mutex->unlock();
 				return cache;
 			}
 			it++;
 		}
+		mp_mutex->unlock();
 		return ret;		
 	}
 	void Peer::DeleteServerFromCacheByIP(OS::Address address) {
 		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
+		mp_mutex->lock();
 		while(it != m_visible_servers.end()) {
 			sServerCache cache = *it;
 			if(cache.wan_address.ip == address.ip && cache.wan_address.port == address.port) {
@@ -53,8 +59,10 @@ namespace SB {
 			}
 			it++;
 		}
+		mp_mutex->unlock();
 	}
 	void Peer::DeleteServerFromCacheByKey(std::string key) {
+		mp_mutex->lock();
 		std::vector<sServerCache>::iterator it = m_visible_servers.begin();
 		while(it != m_visible_servers.end()) {
 			sServerCache cache = *it;
@@ -64,9 +72,11 @@ namespace SB {
 			}
 			it++;
 		}
+		mp_mutex->unlock();
 	}
 	void Peer::cacheServer(MM::Server *server, bool full_keys) {
 		sServerCache item;
+		mp_mutex->lock();
 		if(FindServerByIP(server->wan_address).key[0] == 0) {
 			item.wan_address = server->wan_address;
 			//strcpy(item.key,server->key.c_str());
@@ -74,8 +84,10 @@ namespace SB {
 			item.full_keys = full_keys;
 			m_visible_servers.push_back(item);
 		}
+		mp_mutex->unlock();
 	}
 	sServerCache Peer::FindServerByKey(std::string key) {
+		mp_mutex->lock();
 		sServerCache ret;
 		ret.full_keys = false;
 		ret.key[0] = 0;
@@ -83,10 +95,12 @@ namespace SB {
 		while(it != m_visible_servers.end()) {
 			sServerCache cache = *it;
 			if(cache.key.compare(key) == 0) {
+				mp_mutex->unlock();
 				return cache;
 			}
 			it++;
 		}
+		mp_mutex->unlock();
 		return ret;		
 	}
 }

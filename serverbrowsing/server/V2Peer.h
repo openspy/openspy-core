@@ -5,6 +5,9 @@
 #include "sb_crypt.h"
 #include <map>
 #include <string>
+
+#include <OS/Mutex.h>
+
 //message types for outgoing requests
 #define SERVER_LIST_REQUEST		0
 #define SERVER_INFO_REQUEST		1

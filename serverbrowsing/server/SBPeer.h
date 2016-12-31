@@ -89,6 +89,9 @@ namespace SB {
 		std::vector<sServerCache> m_visible_servers;
 
 		sServerListReq m_last_list_req;
+
+
+		OS::CMutex *mp_mutex;
 	private:
 
 
