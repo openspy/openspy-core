@@ -112,6 +112,14 @@ namespace OS {
 		if(j && json_is_string(j))
 			ret.aim = json_string_value(j);
 
+		j = json_object_get(obj, "lat");
+		if(j && json_is_real(j))
+			ret.lat = json_real_value(j);
+
+		j = json_object_get(obj, "lon");
+		if(j && json_is_real(j))
+			ret.lon = json_real_value(j);
+
 		j = json_object_get(obj, "deleted");
 		if(j && json_is_boolean(j))
 			ret.deleted = j == json_true();

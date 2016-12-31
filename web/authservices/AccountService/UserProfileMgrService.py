@@ -268,7 +268,7 @@ class UserProfileMgrService(BaseService):
         ret = {}
         for key in status_keys:
             ret[key] = self.redis_presence_ctx.hget(redis_key, key)
-            if key in int_fields:
+            if key in int_fields and key != None:
                 if key in ret:
                     ret[key] = int(ret[key])
 

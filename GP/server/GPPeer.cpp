@@ -7,6 +7,8 @@
 #include <OS/legacy/buffwriter.h>
 #include <OS/socketlib/socketlib.h>
 
+#include <OS/Search/User.h>
+
 #include <sstream>
 #include <algorithm>
 
@@ -258,14 +260,14 @@ namespace GP {
 			}
 		}
 	}
-	void Peer::m_update_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 	}
 	/*
 		Updates profile specific information
 	*/
 	void Peer::handle_updatepro(const char *data, int len) {
+		bool send_userupdate = false;
 		char buff[GP_STATUS_STRING_LEN + 1];
-		OS::ProfileSearchRequest request;
 		if(find_param("zipcode", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
 			m_profile.zipcode = atoi(buff);
 		}
@@ -294,7 +296,9 @@ namespace GP {
 			m_profile.birthday = atoi(buff);
 		}
 		if(find_param("publicmask", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			send_userupdate = true;
 			m_user.publicmask = atoi(buff);
+			printf("GOt punlicmask: %d\n", m_user.publicmask);
 		}
 
 		if(find_param("nick", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
@@ -325,14 +329,77 @@ namespace GP {
 		if(find_param("aim", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
 			m_profile.aim = buff;
 		}
+
+		OS::ProfileSearchRequest request;
 		request.profile_search_details = m_profile;
 		request.extra = this;
 		request.type = OS::EProfileSearch_UpdateProfile;
 		request.callback = Peer::m_update_profile_callback;
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+
+		if(send_userupdate) {
+			OS::UserSearchRequest user_request;
+			user_request.search_params = m_user;
+			user_request.type = OS::EUserRequestType_Update;
+			user_request.extra = this;
+			user_request.callback = NULL;
+			user_request.search_params = m_user;
+			OS::UserSearchTask::getUserTask()->AddRequest(user_request);
+		}
 	}
 	void Peer::handle_updateui(const char *data, int len) {
+		char buff[GP_STATUS_STRING_LEN + 1];
+		OS::UserSearchRequest request;
+		if(find_param("cpubrandid", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_user.cpu_brandid = atoi(buff);
+		}
 
+		if(find_param("cpuspeed", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_user.cpu_speed = atoi(buff);
+		}
+
+		if(find_param("vidocard1ram", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_user.videocard_ram[0] = atoi(buff);
+		}
+
+		if(find_param("vidocard2ram", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_user.videocard_ram[1] = atoi(buff);
+		}
+
+		if(find_param("connectionid", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_user.connectionid = atoi(buff);
+		}
+
+		if(find_param("connectionspeed", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_user.connectionspeed = atoi(buff);
+		}
+
+		if(find_param("hasnetwork", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_user.hasnetwork = atoi(buff);
+		}
+
+		if(find_param("email", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			m_user.email = buff;
+		}
+
+		if(find_param("passwordenc", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
+			int passlen = strlen(buff);
+			char *dpass = (char *)base64_decode((uint8_t *)buff, &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+
+			if(dpass)
+				m_user.password = dpass;
+
+			if(dpass)
+				free((void *)dpass);
+		}
+		
+		request.search_params = m_user;
+		request.type = OS::EUserRequestType_Update;
+		request.extra = this;
+		request.callback = NULL;
+		request.search_params = m_user;
+		OS::UserSearchTask::getUserTask()->AddRequest(request);
 	}
 	void Peer::handle_registernick(const char *data, int len) {
 		
@@ -340,8 +407,8 @@ namespace GP {
 	void Peer::handle_registercdkey(const char *data, int len) {
 
 	}
-	void Peer::m_create_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
-		if(success && results.size() > 0) {
+	void Peer::m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+		if(response_reason == OS::EProfileResponseType_Success && results.size() > 0) {
 			OS::Profile profile = results.front();
 		}
 	}
@@ -359,13 +426,13 @@ namespace GP {
 		request.callback = Peer::m_create_profile_callback;
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
-	void Peer::m_delete_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		std::ostringstream s;
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_gp_driver->HasPeer(peer))
 			return;
 
-		s << "\\dpr\\" << success;
+		s << "\\dpr\\" << (int)(response_reason == OS::EProfileResponseType_Success);
 		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::handle_delprofile(const char *data, int len) {
@@ -459,7 +526,7 @@ namespace GP {
 
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
-	void Peer::m_buddy_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_buddy_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
@@ -485,7 +552,7 @@ namespace GP {
 		}
 		peer->mp_mutex->unlock();
 	}
-	void Peer::m_block_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_block_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
@@ -611,7 +678,7 @@ namespace GP {
 
 		GPBackend::GPBackendRedisTask::SendMessage(this, to_profileid, msg_type, msg);
 	}
-	void Peer::m_getprofile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_gp_driver->HasPeer(peer)) {
 			return;
@@ -624,6 +691,7 @@ namespace GP {
 
 			s << "\\pi\\";
 			s << "\\profileid\\" << p.id;
+			s << "\\userid\\" << p.userid;
 
 			if(p.nick.length()) {
 				s << "\\nick\\" << p.nick;
@@ -645,6 +713,10 @@ namespace GP {
 				s << "\\lastname\\" << p.lastname;
 			}
 
+			if(p.homepage.length()) {
+				s << "\\homepage\\" << p.homepage;
+			}
+
 			if(p.icquin) {
 				s << "\\icquin\\" << p.icquin;
 			}
@@ -653,11 +725,37 @@ namespace GP {
 				s << "\\zipcode\\" << p.zipcode;
 			}
 
+			if(p.pic) {
+				s << "\\pic\\" << p.pic;
+			}
+
+			if(p.ooc) {
+				s << "\\ooc\\" << p.ooc;
+			}
+
+			if(p.ind) {
+				s << "\\ind\\" << p.ind;
+			}
+
+			if(p.mar) {
+				s << "\\pic\\" << p.mar;
+			}
+
+			s << "\\birthday\\" << p.birthday;
+			s << "\\countrycode\\" << p.countrycode;
+			s << "\\aim\\" << p.aim;
+
+			s << "\\videocard1string\\" << p.videocardstring[0];
+			s << "\\videocard2string\\" << p.videocardstring[1];
+			s << "\\osstring\\" << p.osstring;
+
+
 			s << "\\sex\\" << p.sex;
 
 			s << "\\id\\" << peer->m_search_operation_id;
 
 			s << "\\sig\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+
 			peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 			it++;
 		}

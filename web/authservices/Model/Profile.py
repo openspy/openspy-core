@@ -1,6 +1,27 @@
 from peewee import *
 from BaseModel import BaseModel
 from User import User
+import datetime
+
+class GPBirthDay(Field):
+    db_field = 'date'
+
+    def db_value(self, value):
+    	day = (value >> 24) & 0xFF
+    	month = (value >> 16) & 0xFF
+    	year = (value & 0xFFFF)
+        return datetime.date(year,month,day)
+
+    def python_value(self, value):
+    	day = value.day
+    	month = value.month
+    	year = value.year
+
+    	val = 0
+    	val |= (day << 24)
+    	val |= (month << 16)
+    	val |= (year)
+        return val # convert str to UUID
 
 class Profile(BaseModel):
 	class Meta:
@@ -16,7 +37,7 @@ class Profile(BaseModel):
 	icquin = IntegerField()
 	zipcode = IntegerField()
 	sex = IntegerField()
-	birthday = IntegerField()
+	birthday = GPBirthDay()
 	ooc = IntegerField()
 	ind = IntegerField()
 	inc = IntegerField()

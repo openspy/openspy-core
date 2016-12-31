@@ -76,6 +76,7 @@ class AuthService(BaseService):
             return proof
         return None
     def test_nick_email_by_profile(self, profile, password):
+        print("Date: {}\n".format(profile.birthday))
         return profile.user.password == password
     def create_auth_session(self, profile, user):
         session_key = hashlib.sha1(str(uuid.uuid1()))

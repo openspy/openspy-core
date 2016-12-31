@@ -159,7 +159,7 @@ namespace OS {
 
 		CURL *curl = curl_easy_init();
 		CURLcode res;
-		bool success = false;
+		EProfileResponseType error = EProfileResponseType_GenericError;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
@@ -183,7 +183,7 @@ namespace OS {
 
 			if(res == CURLE_OK) {
 				if(recv_data.json_data) {
-					success = true;
+					error = EProfileResponseType_Success;
 					json_t *profiles_obj = json_object_get(recv_data.json_data, "profiles");
 					if(profiles_obj) {
 						int num_profiles = json_array_size(profiles_obj);
@@ -206,7 +206,7 @@ namespace OS {
 						}
 					}
 				} else {
-					success = false;
+					error = EProfileResponseType_GenericError;
 				}
 			}
 		}
@@ -222,7 +222,7 @@ namespace OS {
 
 		if(jwt_encoded)
 			free((void *)jwt_encoded);
-		request.callback(success, results, users_map, request.extra);
+		request.callback(error, results, users_map, request.extra);
 	}
 
 	void *ProfileSearchTask::TaskThread(CThread *thread) {

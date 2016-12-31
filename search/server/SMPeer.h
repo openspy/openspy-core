@@ -4,6 +4,7 @@
 #include <OS/Auth.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
+#include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
 
 #define GPI_READ_SIZE                  (16 * 1024)
@@ -56,15 +57,15 @@ namespace SM {
 	private:
 
 		void handle_search(const char *buf, int len);
-		static void m_search_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
-		static void m_search_buddies_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_search_buddies_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 		void handle_others(const char *buf, int len);
 
-		static void m_search_buddies_reverse_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_search_buddies_reverse_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 		void handle_otherslist(const char *buf, int len);
 
-		static void m_search_valid_callback(bool success, std::vector<OS::User> results, void *extra);
+		static void m_search_valid_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra);
 		void handle_valid(const char *buf, int len);
 
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);

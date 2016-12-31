@@ -13,13 +13,21 @@ namespace OS {
 	/*
 		Called within the search task thread
 	*/
-	typedef void (*UserSearchCallback)(bool success, std::vector<OS::User> results, void *extra);
+	enum EUserResponseType {
+		EUserResponseType_Success,
+		EUserResponseType_GenericError,
+		EUserResponseType_EmailInUse,
+	};
+	typedef void (*UserSearchCallback)(EUserResponseType response_type, std::vector<OS::User> results, void *extra);
 
+	enum EUserRequestType {
+		EUserRequestType_Search,
+		EUserRequestType_Update,
+	};
 
 	typedef struct {
-		int userid;
-		std::string email;
-		int partnercode;
+		OS::User search_params;
+		EUserRequestType type;
 		int skip;
 		void *extra;
 		UserSearchCallback callback;
@@ -33,7 +41,7 @@ namespace OS {
 			~UserSearchTask();
 			static UserSearchTask *getUserTask();
 		private:
-			static void PerformSearch(UserSearchRequest request);
+			static void PerformRequest(UserSearchRequest request);
 			static UserSearchTask *m_task_singleton;
 			static void *TaskThread(CThread *thread);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);

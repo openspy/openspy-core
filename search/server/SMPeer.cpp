@@ -230,7 +230,7 @@ namespace SM {
 		request.callback = Peer::m_search_callback;
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
-	void Peer::m_search_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_sm_driver->HasPeer(peer))
 			return;
@@ -254,7 +254,7 @@ namespace SM {
 
 		peer->m_delete_flag = true;
 	}
-	void Peer::m_search_buddies_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_search_buddies_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		std::ostringstream s;
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_sm_driver->HasPeer(peer))
@@ -293,7 +293,7 @@ namespace SM {
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
 
-	void Peer::m_search_buddies_reverse_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_search_buddies_reverse_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_sm_driver->HasPeer(peer))
 			return;
@@ -342,7 +342,7 @@ namespace SM {
 		request.callback = Peer::m_search_buddies_reverse_callback;
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
-	void Peer::m_search_valid_callback(bool success, std::vector<OS::User> results, void *extra) {
+	void Peer::m_search_valid_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra) {
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_sm_driver->HasPeer(peer))
 			return;
@@ -357,10 +357,11 @@ namespace SM {
 	void Peer::handle_valid(const char *buf, int len) {
 		OS::UserSearchRequest request;
 		char email_buffer[GP_EMAIL_LEN + 1];
-		request.userid = find_paramint("userid", (char *)buf);
-		request.partnercode = find_paramint("partnercode", (char *)buf);
+		request.type = OS::EUserRequestType_Search;
+		request.search_params.id = find_paramint("userid", (char *)buf);
+		request.search_params.partnercode = find_paramint("partnercode", (char *)buf);
 		if(find_param("email", (char*)buf, (char*)&email_buffer, sizeof(email_buffer)-1)) {
-			request.email = email_buffer;
+			request.search_params.email = email_buffer;
 		}
 		request.extra = this;
 		request.callback = Peer::m_search_valid_callback;

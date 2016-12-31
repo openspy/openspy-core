@@ -17,7 +17,15 @@ namespace OS {
 	/*
 		Called within the search task thread
 	*/
-	typedef void (*ProfileSearchCallback)(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+	enum EProfileResponseType {
+		EProfileResponseType_Success,
+		EProfileResponseType_GenericError,
+		EProfileResponseType_BadNick,
+		EProfileResponseType_Bad_OldNick,
+		EProfileResponseType_UniqueNick_Invalid,
+		EProfileResponseType_UniqueNick_InUse,
+	};
+	typedef void (*ProfileSearchCallback)(EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
 	enum EProfileSearchType {
 		EProfileSearch_Profiles,

@@ -16,7 +16,17 @@ import uuid
 class UserAccountMgrService(BaseService):
 
     def handle_update_user(self, data):
+        if "user" not in data:
+            data = {'user': data}
         user_model = User.get((User.id == data['user']['id']))
+
+        if "email" in data["user"]:
+            if data["user"]["email"] != user_model.email:
+                user_model.email_verified = False
+
+        if "email_verified" in data["user"]:
+            del data["user"]["email_verified"]
+
         for key in data['user']:
             if key != "id":
                 setattr(user_model, key, data['user'][key])

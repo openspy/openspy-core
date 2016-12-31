@@ -6,6 +6,9 @@
 #include <OS/Profile.h>
 #include <OS/Mutex.h>
 
+#include <OS/Search/Profile.h>
+#include <OS/Search/User.h>
+
 #define GPI_READ_SIZE                  (16 * 1024)
 #define CHALLENGE_LEN 10
 
@@ -542,7 +545,7 @@ namespace GP {
 		void handle_registercdkey(const char *data, int len);
 
 		int m_search_operation_id;
-		static void m_getprofile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
 		void handle_bm(const char *data, int len);
 
@@ -559,11 +562,11 @@ namespace GP {
 		void perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response);
 		int m_auth_operation_id;
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);
-		static void m_buddy_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
-		static void m_block_list_lookup_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
-		static void m_create_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
-		static void m_delete_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
-		static void m_update_profile_callback(bool success, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_buddy_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_block_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
 
 
 		void send_buddies();

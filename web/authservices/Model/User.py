@@ -11,7 +11,16 @@ class User(BaseModel):
 
 	password = TextField()
 
+	videocard1ram = IntegerField()
+	videocard2ram = IntegerField()
+	cpuspeed = IntegerField()
+	cpubrandid = IntegerField()
+	connectionspeed = IntegerField()
+	hasnetwork = BooleanField()	
+
+
+	publicmask = IntegerField()
 	partnercode = IntegerField()
 
-	#created = TimestampField()
+
 	deleted = BooleanField()

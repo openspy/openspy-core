@@ -7,8 +7,18 @@ namespace OS {
 		int id;
 		std::string email;
 		int partnercode;
+
+		//below not searchable
+		std::string password;
+		int videocard_ram[2];
+		int cpu_speed;
+		int cpu_brandid;
+		int connectionspeed;
+		int connectionid;
+		bool hasnetwork;
+
 		bool email_verified;
-		int publicmask;
+		int publicmask; //appears as user var in GP
 		bool deleted;
 	} User;
 

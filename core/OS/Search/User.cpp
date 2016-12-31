@@ -36,24 +36,46 @@ namespace OS {
 		jwt_free(jwt);
 	    return realsize;
 	}
-	void UserSearchTask::PerformSearch(UserSearchRequest request) {
+	void UserSearchTask::PerformRequest(UserSearchRequest request) {
 		curl_data recv_data;
 		std::vector<OS::User> results;
 		//build json object
 		json_t *send_obj = json_object();
 
-		json_object_set_new(send_obj, "mode", json_string("get_user"));	
+		switch(request.type) {
+			case EUserRequestType_Update:
+				json_object_set_new(send_obj, "mode", json_string("update_user"));	
+			break;
+			case EUserRequestType_Search:
+				json_object_set_new(send_obj, "mode", json_string("get_user"));	
+			break;
+		}
 
-		if(request.userid != 0) {
-			json_object_set_new(send_obj, "userid", json_integer(request.userid));
+
+
+		if(request.search_params.id != 0) {
+			json_object_set_new(send_obj, "id", json_integer(request.search_params.id));
 		}
 
 		//user parameters
-		if(request.email.length())
-			json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
+		if(request.search_params.email.length())
+			json_object_set_new(send_obj, "email", json_string(request.search_params.email.c_str()));
 
-		
-		json_object_set_new(send_obj, "partnercode", json_integer(request.partnercode));
+
+		if(request.type == EUserRequestType_Update) {
+			if(request.search_params.password.length())
+				json_object_set_new(send_obj, "password", json_string(request.search_params.password.c_str()));
+
+			json_object_set_new(send_obj, "videocard1ram", json_integer(request.search_params.videocard_ram[0]));
+			json_object_set_new(send_obj, "videocard2ram", json_integer(request.search_params.videocard_ram[1]));
+
+			json_object_set_new(send_obj, "cpuspeed", json_integer(request.search_params.cpu_speed));
+			json_object_set_new(send_obj, "cpubrandid", json_integer(request.search_params.cpu_brandid));
+			json_object_set_new(send_obj, "connectionspeed", json_integer(request.search_params.connectionspeed));
+			json_object_set_new(send_obj, "hasnetwork", request.search_params.hasnetwork ? json_true() : json_false());
+			json_object_set_new(send_obj, "publicmask", json_integer(request.search_params.publicmask));
+		}		
+		json_object_set_new(send_obj, "partnercode", json_integer(request.search_params.partnercode));
 
 
 		char *json_data = json_dumps(send_obj, 0);
@@ -116,7 +138,9 @@ namespace OS {
 
 		if(jwt_encoded)
 			free((void *)jwt_encoded);
-		request.callback(success, results, request.extra);
+
+		if(request.callback != NULL)
+			request.callback(EUserResponseType_Success, results, request.extra);
 	}
 
 	void *UserSearchTask::TaskThread(CThread *thread) {
@@ -127,7 +151,13 @@ namespace OS {
 				task->mp_mutex->lock();
 				while(it != task->m_request_list.end()) {
 					UserSearchRequest task_params = *it;
-					PerformSearch(task_params);
+					switch(task_params.type) {
+						case EUserRequestType_Update:
+						case EUserRequestType_Search:
+							PerformRequest(task_params);
+						break;	
+					}
+					
 					it = task->m_request_list.erase(it);
 					continue;
 				}
