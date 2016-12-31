@@ -32,7 +32,7 @@ namespace MM {
 		int id;		
 	} Server;
 
-	struct ServerListQuery{
+	struct ServerListQuery {
 		std::vector<std::string> requested_fields;
 
 		std::vector<std::string> captured_basic_fields;
@@ -42,7 +42,7 @@ namespace MM {
 	};
 	
 
-	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx);
+	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx, const SB::sServerListReq *req);
 	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key, redisContext *redis_ctx);
 	bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx);
 	bool FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx);

@@ -20,6 +20,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include <serverbrowsing/filter/filter.h>
+
 namespace MM {
 	std::vector<SB::Driver *> m_drivers;
 	redisContext *mp_redis_connection;
@@ -94,12 +96,13 @@ namespace MM {
 
 
 	}
-	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx) {
+	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx, const SB::sServerListReq *req) {
 		redisReply *reply;
 
 		/*
 		XXX: add redis error checks, cleanup on error, etc
 		*/
+
 
 		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR));
 
@@ -240,7 +243,9 @@ namespace MM {
 			}
 		}
 
-		ret->list.push_back(server);
+		if(!req || filterMatches(req->filter.c_str(), server->kvFields)) {
+			ret->list.push_back(server);
+		}
 		return;
 
 		error_cleanup:
@@ -370,7 +375,7 @@ namespace MM {
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, cmd.c_str());
 		if (reply->type == REDIS_REPLY_ARRAY) {
 			for (int j = 0; j < reply->elements; j++) {
-				AppendServerEntry(std::string(reply->element[j]->str), &ret, req->all_keys, false, mp_redis_connection);
+				AppendServerEntry(std::string(reply->element[j]->str), &ret, req->all_keys, false, mp_redis_connection, req);
 			}
 		}
 		freeReplyObject(reply);
@@ -398,7 +403,7 @@ namespace MM {
 			redis_ctx = mp_redis_connection;
 		}
 		ServerListQuery ret;
-		AppendServerEntry(key, &ret, true, include_deleted, redis_ctx);
+		AppendServerEntry(key, &ret, true, include_deleted, redis_ctx, NULL);
 		if(ret.list.size() < 1)
 			return NULL;
 

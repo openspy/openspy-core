@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <sstream>
 #include <algorithm>
+
 #define CRYPTCHAL_LEN 10
 #define SERVCHAL_LEN 25
 namespace SB {
