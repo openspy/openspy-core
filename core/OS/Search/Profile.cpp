@@ -197,7 +197,6 @@ namespace OS {
 					if(profiles_obj) {
 						int num_profiles = json_array_size(profiles_obj);
 						for(int i=0;i<num_profiles;i++) {
-
 							json_t *profile_obj = json_array_get(profiles_obj, i);
 							OS::Profile profile = OS::LoadProfileFromJson(profile_obj);
 							if(users_map.find(profile.userid) == users_map.end()) {

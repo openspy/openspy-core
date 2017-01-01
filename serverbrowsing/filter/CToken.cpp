@@ -89,47 +89,38 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken **token) 
 		idx ++;
 	}else  if(strncmp(&filter[idx],"=", 1) == 0) {
 		*token = new CToken(EToken_Equals, NULL);
-		idx--;
 	} else if(strncmp(&filter[idx],"!=", 2) == 0 || strncmp(&filter[idx],"<>", 2) == 0) {
 		*token = new CToken(EToken_NotEquals, NULL);
-		//idx ++;
+		idx ++;
 	} else if(strncmp(&filter[idx],">=", 2) == 0) {
 		*token = new CToken(EToken_GreaterEquals, NULL);
-		//idx ++;
+		idx ++;
 	} else if(strncmp(&filter[idx],"<=", 2) == 0) {
 		*token = new CToken(EToken_LessEquals, NULL);
-		//idx ++;
+		idx ++;
 	} else if(strncmp(&filter[idx],"<", 1) == 0) {
 		*token = new CToken(EToken_Less, NULL);
-		idx--;
 	} else if(strncmp(&filter[idx],">", 1) == 0) {
 		*token = new CToken(EToken_Greater, NULL);
-		idx--;
 	} else if(strncmp(&filter[idx],">", 1) == 0) {
 		*token = new CToken(EToken_Greater, NULL);
-		idx--;
 	} else if(strncmp(&filter[idx],"||", 2) == 0 || strncmp(&filter[idx],"OR", 2) == 0) {
 		*token = new CToken(EToken_Or, NULL);
-		//idx ++;
+		idx ++;
 	} else if(strncmp(&filter[idx],"&&", 2) == 0) {
 		*token = new CToken(EToken_And, NULL);
-		//idx ++;
+		idx ++;
 	} //same as above, but theres a different length :(
 	else if(strncasecmp(&filter[idx],"AND", 3) == 0) {
 		*token = new CToken(EToken_And, NULL);
-		//idx += 2;
-		idx++;
+		idx += 2;
 	} else if(strncmp(&filter[idx],"(", 1) == 0) {
 		*token = new CToken(EToken_LeftBracket, NULL);
-		idx--;
 	} else if(strncmp(&filter[idx],")", 1) == 0) {
 		*token = new CToken(EToken_RightBracket, NULL);
-		idx--;
 	}else {
 		return false;
 	}
-
-	idx++;
 	return true;
 }
 

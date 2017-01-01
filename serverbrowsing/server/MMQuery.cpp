@@ -98,6 +98,7 @@ namespace MM {
 	}
 	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx, const SB::sServerListReq *req) {
 		redisReply *reply;
+		std::map<std::string, std::string> all_cust_keys; //used for filtering
 
 		/*
 		XXX: add redis error checks, cleanup on error, etc
@@ -160,7 +161,6 @@ namespace MM {
 			server->wan_address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reply->str).c_str()));
 
 		freeReplyObject(reply);
-
 
 		if(all_keys) {
 			reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name.c_str());
@@ -230,7 +230,28 @@ namespace MM {
 				idx++;
 			} while(last_type != REDIS_REPLY_NIL);
 		} else {
-			while (it != ret->requested_fields.end()) {
+
+			reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name.c_str());
+			if (!reply)
+				goto error_cleanup;
+			if (reply->type == REDIS_REPLY_ARRAY) {
+				for (int j = 0; j < reply->elements; j++) {
+					std::string search_key = entry_name;
+					search_key += "custkeys";
+					FindAppend_ServKVFields(server, search_key, reply->element[j]->str, redis_ctx);
+				}
+				all_cust_keys = server->kvFields;
+				server->kvFields.clear();
+				std::map<std::string, std::string>::iterator it = all_cust_keys.begin();
+				while(it != all_cust_keys.end()) {
+					std::pair<std::string, std::string> p = *it;
+					if(std::find(ret->requested_fields.begin(), ret->requested_fields.end(), p.first) != ret->requested_fields.end()) {
+						server->kvFields[p.first] = p.second;
+					}
+					it++;
+				}
+			}
+			/*while (it != ret->requested_fields.end()) {
 				std::string field = *it;
 				reply = (redisReply *)redisCommand(redis_ctx, "HGET %scustkeys %s", entry_name.c_str(), field.c_str());
 				if (reply) {
@@ -240,16 +261,16 @@ namespace MM {
 					freeReplyObject(reply);
 				}
 				it++;
-			}
+			}*/
+
 		}
 
-		if(!req || filterMatches(req->filter.c_str(), server->kvFields)) {
+		if(!req || filterMatches(req->filter.c_str(), all_cust_keys)) {
 			ret->list.push_back(server);
 		}
 		return;
 
 		error_cleanup:
-			printf("appendserver Error cleanup\n");
 			delete server;
 
 	}

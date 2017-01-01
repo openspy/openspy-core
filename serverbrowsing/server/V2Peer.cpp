@@ -203,6 +203,8 @@ namespace SB {
 					var = KEYTYPE_BYTE;
 				} else if(highest_value <= SHRT_MAX) {
 					var = KEYTYPE_SHORT;
+				} else {
+					var = KEYTYPE_STRING;
 				}
 			}
 		}
@@ -261,7 +263,7 @@ namespace SB {
 			BufferWriteByte((uint8_t **)&p, &len, 0x00);
 			BufferWriteInt((uint8_t **)&p, &len, -1);
 		}
-
+		printf("Sending packet len %d\n", len);
 		SendPacket((uint8_t *)&buff, len, false);
 	}
 	void V2Peer::setupCryptHeader(uint8_t **dst, int *len) {
@@ -347,7 +349,9 @@ namespace SB {
 				printf("Got %d servers\n",servers.list.size());
 			}
 		}
+		printf("Send server list...\n");
 		SendListQueryResp(servers, &list_req);
+		printf("Exit server list...\n");
 		FreeServerListQuery(&servers);
 		if(!list_req.send_groups && list_req.no_server_list)
 			SendPushKeys();
@@ -491,13 +495,16 @@ namespace SB {
 
 							switch(type) {
 								case KEYTYPE_BYTE:
+									printf("Writing byte: %s - %s\n",(*tok_it).c_str(), value.c_str());
 									BufferWriteByte(&p, &len, (atoi(value.c_str())));
 									break;
 								case KEYTYPE_SHORT:
+									printf("Writing short: %s - %s\n",(*tok_it).c_str(), value.c_str());
 									BufferWriteShort(&p, &len, Socket::htons(atoi(value.c_str())));
 									break;
 								case KEYTYPE_STRING:
 									BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
+									printf("Writing: %s - %s\n",(*tok_it).c_str(), value.c_str());
 									break;
 								break;	
 							}
@@ -509,7 +516,7 @@ namespace SB {
 					}
 					else {
 						BufferWriteByte(&p, &len, std::distance(server->game.popular_values.begin(), push_it));
-						//printf("Writing idx %d for (%s)%s\n", std::distance(server->game.popular_values.begin(), push_it), (*tok_it).c_str(), value.c_str());
+						printf("Writing idx %d for (%s)%s\n", std::distance(server->game.popular_values.begin(), push_it), (*tok_it).c_str(), value.c_str());
 					}
 				}
 				tok_it++;
