@@ -171,16 +171,23 @@ namespace SB {
 		uint8_t var = KEYTYPE_STRING;
 		std::vector<MM::Server *>::iterator it = servers.list.begin();
 		int highest_value = 0;
+		bool is_digit = false;
+		char * pEnd = NULL;
 		while (it != servers.list.end()) {
 			MM::Server *server = *it;
 			std::string value = server->kvFields[field_name];
-			int val = abs(atoi(value.c_str()));;
+			
+			int val = abs(strtol (value.c_str(),&pEnd,10));
+			if(pEnd == NULL) {
+				is_digit = true;
+			}
+
 			if(val > highest_value)
 				highest_value = val;
 			it++;
 		}
 
-		if(highest_value != 0) {
+		if(is_digit) {
 			std::vector<std::string>::iterator push_it;
 			std::ostringstream s;
 			s << highest_value;
