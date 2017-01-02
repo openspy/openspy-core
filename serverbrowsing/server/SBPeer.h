@@ -12,29 +12,6 @@
 
 
 namespace SB {
-	struct sServerListReq {
-		uint8_t protocol_version;
-		uint8_t encoding_version;
-		uint32_t game_version;
-		
-		std::string filter;
-		//const char *field_list;
-		std::vector<std::string> field_list;
-		
-		uint32_t source_ip; //not entire sure what this is for atm
-		uint32_t max_results;
-		
-		bool send_groups;
-		bool send_wan_ip;
-		bool push_updates;
-		bool no_server_list;
-		
-		OS::GameData m_for_game;
-		OS::GameData m_from_game;
-
-		bool all_keys;
-
-	};
 	class Driver;
 	class Server;
 
@@ -88,7 +65,7 @@ namespace SB {
 
 		std::vector<sServerCache> m_visible_servers;
 
-		sServerListReq m_last_list_req;
+		MM::sServerListReq m_last_list_req;
 
 
 		OS::CMutex *mp_mutex;

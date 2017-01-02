@@ -9,27 +9,18 @@
 
 #include <OS/Thread.h>
 
-//#include <signal.h>
-#include <hiredis/hiredis.h>
-#include <hiredis/async.h>
-#define _WINSOCK2API_
-#include <stdint.h>
-#include <hiredis/adapters/libevent.h>
-#undef _WINSOCK2API_
-
 #include <sstream>
 #include <algorithm>
 
 #include <serverbrowsing/filter/filter.h>
 
 namespace MM {
-	std::vector<SB::Driver *> m_drivers;
-	redisContext *mp_redis_connection;
-	redisContext *mp_redis_async_retrival_connection;
-	redisAsyncContext *mp_redis_async_connection;
+
 
 	const char *sb_mm_channel = "serverbrowsing.servers";
-	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
+	MMQueryTask *MMQueryTask::m_task_singleton = NULL;
+	void MMQueryTask::onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
+		MMQueryTask *task = (MMQueryTask *)privdata;
 	    redisReply *r = (redisReply*)reply;
 
 	    Server *server = NULL;
@@ -42,11 +33,11 @@ namespace MM {
 	    			find_param(0, r->element[2]->str,(char *)&msg_type, sizeof(msg_type));
 	    			find_param(1, r->element[2]->str, (char *)&server_key, sizeof(server_key));
 
-	    			server = GetServerByKey(server_key, mp_redis_async_retrival_connection, strcmp(msg_type,"del") == 0);
+	    			server = task->GetServerByKey(server_key, task->mp_redis_async_retrival_connection, strcmp(msg_type,"del") == 0);
 	    			if(!server) return;
 
-	    			std::vector<SB::Driver *>::iterator it = m_drivers.begin();
-	    			while(it != m_drivers.end()) {
+	    			std::vector<SB::Driver *>::iterator it = task->m_drivers.begin();
+	    			while(it != task->m_drivers.end()) {
 	    				SB::Driver *driver = *it;
 			   			if(strcmp(msg_type,"del") == 0) {
 		    				driver->SendDeleteServer(server);
@@ -62,29 +53,31 @@ namespace MM {
 	    }
 	}
 
-	void SubmitData(const char *base64, struct sockaddr_in *from, struct sockaddr_in *to, OS::GameData *game) {
-		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\send_msg\\%s\\%s\\%d\\%s\\%d\\%s\n",sb_mm_channel,game->gamename,Socket::inet_ntoa(from->sin_addr),from->sin_port,Socket::inet_ntoa(to->sin_addr),to->sin_port,base64));
-	}
-
-
-	void *setup_redis_async(OS::CThread *) {
+	void *MMQueryTask::setup_redis_async(OS::CThread *thread) {
+		MMQueryTask *task = (MMQueryTask *)thread->getParams();
 
 		struct event_base *base = event_base_new();
 
-	    mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
+	    task->mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
 
-	    redisLibeventAttach(mp_redis_async_connection, base);
-	    redisAsyncCommand(mp_redis_async_connection, onRedisMessage, NULL, "SUBSCRIBE %s",sb_mm_channel);
+	    redisLibeventAttach(task->mp_redis_async_connection, base);
+	    redisAsyncCommand(task->mp_redis_async_connection, MMQueryTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s",sb_mm_channel);
 	    event_base_dispatch(base);
 		return NULL;
 	}
-	void AddDriver(SB::Driver *driver) {
+	void MMQueryTask::AddDriver(SB::Driver *driver) {
 		m_drivers.push_back(driver);
 	}
-	void RemoveDriver(SB::Driver *driver) {
+	void MMQueryTask::RemoveDriver(SB::Driver *driver) {
 
 	}
-	void Init() {
+	MMQueryTask *MMQueryTask::getQueryTask() {
+		if(!MMQueryTask::m_task_singleton) {
+			MMQueryTask::m_task_singleton = new MMQueryTask();
+		}
+		return MMQueryTask::m_task_singleton;
+	}
+	MMQueryTask::MMQueryTask() {
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 3;
@@ -92,11 +85,21 @@ namespace MM {
 		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 		mp_redis_async_retrival_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 
-		OS::CreateThread(setup_redis_async, NULL, true);
+		OS::CreateThread(setup_redis_async, this, true);
 
+		mp_mutex = OS::CreateMutex();
+		mp_thread = OS::CreateThread(MMQueryTask::TaskThread, this, true);
 
 	}
-	void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx, const SB::sServerListReq *req) {
+
+	MMQueryTask::~MMQueryTask() {
+		delete mp_mutex;
+		delete mp_thread;
+	}
+
+	//////////////////////////////////////////////////
+	/// Async MM Query code
+	void MMQueryTask::AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx, const sServerListReq *req) {
 		redisReply *reply;
 		std::map<std::string, std::string> all_cust_keys; //used for filtering
 
@@ -274,7 +277,7 @@ namespace MM {
 			delete server;
 
 	}
-	bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx)
+	bool MMQueryTask::FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx)
 	 {
 		redisReply *reply = (redisReply *)redisCommand(redis_ctx, "HGET %s %s", entry_name.c_str(), key.c_str());
 		if (!reply)
@@ -290,7 +293,7 @@ namespace MM {
 		return true;
 
 	}
-	bool FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx) {
+	bool MMQueryTask::FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx) {
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s %s", entry_name.c_str(), key.c_str());
 		if (!reply)
 			return false;
@@ -305,7 +308,7 @@ namespace MM {
 		return true;
 
 	}
-	bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key, redisContext *redis_ctx) {
+	bool MMQueryTask::FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key, redisContext *redis_ctx) {
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s %s", entry_name.c_str(), key.c_str());
 		if (!reply)
 			return false;
@@ -320,7 +323,7 @@ namespace MM {
 		return true;
 
 	}
-	void AppendGroupEntry(const char *entry_name, ServerListQuery *ret, redisContext *redis_ctx, bool all_keys) {
+	void MMQueryTask::AppendGroupEntry(const char *entry_name, ServerListQuery *ret, redisContext *redis_ctx, bool all_keys) {
 		redisReply *reply;
 
 		/*
@@ -385,7 +388,7 @@ namespace MM {
 		delete server;
 
 	}
-	ServerListQuery GetServers(const SB::sServerListReq *req) {
+	ServerListQuery MMQueryTask::GetServers(const sServerListReq *req) {
 		ServerListQuery ret;
 		
 		ret.requested_fields = req->field_list;
@@ -402,7 +405,7 @@ namespace MM {
 		freeReplyObject(reply);
 		return ret;
 	}
-	ServerListQuery GetGroups(const SB::sServerListReq *req) {
+	ServerListQuery MMQueryTask::GetGroups(const sServerListReq *req) {
 		ServerListQuery ret;
 
 		ret.requested_fields = req->field_list;
@@ -419,7 +422,7 @@ namespace MM {
 		freeReplyObject(reply);
 		return ret;
 	}
-	Server *GetServerByKey(std::string key, redisContext *redis_ctx, bool include_deleted) {
+	Server *MMQueryTask::GetServerByKey(std::string key, redisContext *redis_ctx, bool include_deleted) {
 		if(redis_ctx == NULL) {
 			redis_ctx = mp_redis_connection;
 		}
@@ -430,7 +433,7 @@ namespace MM {
 
 		return ret.list[0];
 	}
-	Server *GetServerByIP(OS::Address address, OS::GameData game, redisContext *redis_ctx) {
+	Server *MMQueryTask::GetServerByIP(OS::Address address, OS::GameData game, redisContext *redis_ctx) {
 		Server *server = NULL;
 		if(redis_ctx == NULL) {
 			redis_ctx = mp_redis_connection;
@@ -454,12 +457,57 @@ namespace MM {
 		freeReplyObject(reply);
 		return server;
 	}
-	void FreeServerListQuery(struct MM::ServerListQuery *query) {
+	void MMQueryTask::FreeServerListQuery(struct MM::ServerListQuery *query) {
 		std::vector<Server *>::iterator it = query->list.begin();
 		while(it != query->list.end()) {
 			Server *server = *it;
 			delete server;
 			it++;
 		}
+	}
+
+	void MMQueryTask::PerformServersQuery(MMQueryRequest request) {
+		request.callback(request, GetServers(&request.req), request.extra);
+	}
+	void MMQueryTask::PerformGroupsQuery(MMQueryRequest request) {
+		request.callback(request, GetGroups(&request.req), request.extra);
+	}
+	void MMQueryTask::PerformSubmitData(MMQueryRequest request) {
+		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\send_msg\\%s\\%s\\%d\\%s\\%d\\%s\n",
+			sb_mm_channel,request.SubmitData.game.gamename,Socket::inet_ntoa(request.SubmitData.from.sin_addr),
+			request.SubmitData.from.sin_port,Socket::inet_ntoa(request.SubmitData.to.sin_addr),
+			request.SubmitData.to.sin_port,request.SubmitData.base64.c_str()));
+	}
+	void *MMQueryTask::TaskThread(OS::CThread *thread) {
+		MMQueryTask *task = (MMQueryTask *)thread->getParams();
+		for(;;) {
+			if(task->m_request_list.size() > 0) {
+				std::vector<MMQueryRequest>::iterator it = task->m_request_list.begin();
+				task->mp_mutex->lock();
+				while(it != task->m_request_list.end()) {
+					MMQueryRequest task_params = *it;
+					switch(task_params.type) {
+						case EMMQueryRequestType_GetServers:
+							task->PerformServersQuery(task_params);
+							break;
+						case EMMQueryRequestType_GetGroups:
+							task->PerformGroupsQuery(task_params);
+							break;
+						case EMMQueryRequestType_GetServerByKey:
+							break;
+						case EMMQueryRequestType_GetServerByIP:
+							break;
+						case EMMQueryRequestType_SubmitData:
+							task->PerformSubmitData(task_params);
+							break;
+					}
+					it = task->m_request_list.erase(it);
+					continue;
+				}
+				task->mp_mutex->unlock();
+			}
+			OS::Sleep(TASK_SLEEP_TIME);
+		}
+		return NULL;
 	}
 }

@@ -152,6 +152,21 @@ namespace SB {
 				handle_list(data, len);
 			}
 		}
+		void V1Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+			V1Peer *peer = (V1Peer *)extra;
+			peer->SendServerInfo(results);
+			MM::MMQueryTask::FreeServerListQuery(&results);
+		}
+		void V1Peer::OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+			V1Peer *peer = (V1Peer *)extra;
+			peer->SendServers(results);
+			MM::MMQueryTask::FreeServerListQuery(&results);
+		}
+		void V1Peer::OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+			V1Peer *peer = (V1Peer *)extra;
+			peer->SendGroups(results);
+			MM::MMQueryTask::FreeServerListQuery(&results);
+		}
 		void V1Peer::handle_list(char *data, int len) {
 			char mode[32], gamename[32];
 			
@@ -160,36 +175,34 @@ namespace SB {
 				return;
 			}
 
-			sServerListReq req;
+			MM::MMQueryRequest req;
 			MM::ServerListQuery servers;
-			req.m_for_game = OS::GetGameByName(gamename);
-			req.m_from_game = m_game;
+			req.req.m_for_game = OS::GetGameByName(gamename);
+			req.req.m_from_game = m_game;
+			req.req.all_keys = false;
 
-			if(req.m_from_game.gameid == 0) {
+
+
+			if(req.req.m_from_game.gameid == 0) {
 				send_error(false, "Gamename not found");
 				return;
 			}
 
+			MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
 
 			if(strcmp(mode,"cmp") == 0) {				
-				servers = MM::GetServers(&req);
-				SendServers(servers);
-				FreeServerListQuery(&servers);
+				req.callback = OnRetrievedServers;
 			} else if(strcmp(mode,"info2") == 0) {
-				req.all_keys = true;
-				servers = MM::GetServers(&req);
-				SendServerInfo(servers);
-				FreeServerListQuery(&servers);
+				req.req.all_keys = true;
+				req.callback = OnRetrievedServerInfo;
 			} else if(strcmp(mode,"groups") == 0) {
-				req.all_keys = true;
-				servers = MM::GetGroups(&req);
-				SendGroups(servers);
-				FreeServerListQuery(&servers);
+				req.req.all_keys = true;
+				req.callback = OnRetrievedGroups;
 			} else {
 				send_error(true, "Unknown list mode");
 				return;
 			}
-
+			query_task->AddRequest(req);
 			m_delete_flag = true; //server disconnects after this
 		}
 		void V1Peer::SendServerInfo(MM::ServerListQuery results) {

@@ -13,6 +13,7 @@ namespace OS {
 		static void *cpthread_thread(void *thread);
 		pthread_t m_thread;
 		int	thread_num;
+		bool m_thread_dead;
 	};
 }
 #endif //_CPTHREAD_H

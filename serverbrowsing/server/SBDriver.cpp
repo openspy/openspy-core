@@ -44,11 +44,11 @@ namespace SB {
 
 		m_version = version;
 
-		MM::AddDriver(this);
+		MM::MMQueryTask::getQueryTask()->AddDriver(this);
 
 	}
 	Driver::~Driver() {
-		MM::RemoveDriver(this);
+		MM::MMQueryTask::getQueryTask()->RemoveDriver(this);
 	}
 	void Driver::think(fd_set *fdset) {
 

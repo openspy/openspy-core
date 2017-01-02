@@ -8,7 +8,8 @@ namespace OS {
 	void *CPThread::cpthread_thread(void *thread) {
 		CPThread *t = (CPThread *)thread;
 		t->m_entry(t);
-		delete t;
+		t->m_thread_dead = true;
+		//delete t;
 		OS::Sleep(TASK_SLEEP_TIME);
 		return NULL;
 	}
@@ -19,11 +20,10 @@ namespace OS {
 		if(auto_start) {
 			start();
 		}
-		
-
 	}
 	CPThread::~CPThread() {
-		pthread_kill(m_thread, SIGKILL);
+		if(!m_thread_dead)
+			pthread_cancel(m_thread);
 	}
 	void CPThread::start() {
 		if(!m_running) {

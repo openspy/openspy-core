@@ -22,6 +22,12 @@ namespace SB {
 		void informNewServers(MM::Server *server);
 		void informUpdateServers(MM::Server *server);
 	protected:
+
+		static void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+		static void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+		static void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+
+
 		void SendPacket(const uint8_t *buff, int len, bool attach_final);
 		void SendServers(MM::ServerListQuery results);
 		void SendServerInfo(MM::ServerListQuery results);

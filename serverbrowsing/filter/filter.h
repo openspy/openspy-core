@@ -4,4 +4,4 @@
 
 bool filterMatches(const char *filter, std::map<std::string, std::string>& kvList);
 
-#endif _FILTER_H
+#endif //_FILTER_H

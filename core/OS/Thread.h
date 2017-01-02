@@ -6,7 +6,7 @@ namespace OS {
     class CThread {
 
     public:
-        CThread(ThreadEntry *entry, void *params, bool auto_start = true) { m_entry = entry; m_start_on_create = auto_start; m_params = params;};
+        CThread(ThreadEntry *entry, void *params, bool auto_start = true) { m_entry = entry; m_start_on_create = auto_start; m_params = params; m_thread_dead = false;};
         ~CThread() { };
         virtual void start() = 0;
         virtual void stop() = 0;
@@ -16,6 +16,8 @@ namespace OS {
         bool m_start_on_create;
         bool m_running;
         void *m_params;
+
+        bool m_thread_dead;
     };
 }
 #endif //_CORE_CTHREAD_H
