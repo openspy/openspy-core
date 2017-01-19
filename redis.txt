@@ -78,3 +78,9 @@ select 4
 #presence
 select 5
 set fromprofile_toprofile "this is my reason string"
+
+#natneg
+select 6
+#where 1111 is natneg cookie and hset key is client index
+HSET nn_cookie_1111 0 127.0.0.1:45242
+HSET nn_cookie_1111 1 127.0.0.1:45242

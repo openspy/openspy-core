@@ -18,9 +18,9 @@ source_group("Legacy" FILES ${LEGACY_SOURCES})
 source_group("Server" FILES ${SERVER_SOURCES})
 source_group("socketlib" FILES ${EXTERNAL_SOURCES})
 
-
 add_subdirectory(core)
 add_subdirectory(serverbrowsing)
 add_subdirectory(qr)
+add_subdirectory(natneg)
 add_subdirectory(GP)
 add_subdirectory(search)

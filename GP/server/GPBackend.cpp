@@ -214,7 +214,7 @@ namespace GPBackend {
 	void GPBackendRedisTask::SetPresenceStatus(int from_profileid, GPStatus status, GP::Peer *peer) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_UpdateStatus;
-		req.uReqData.StatusInfo = status;
+		req.StatusInfo = status;
 		req.extra = (void *)peer;
 		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
 	}
@@ -234,7 +234,7 @@ namespace GPBackend {
 							task->Perform_AuthorizeAdd(task_params.uReqData.AuthorizeAdd);
 						break;
 						case EGPRedisRequestType_UpdateStatus:
-							task->Perform_SetPresenceStatus(task_params.uReqData.StatusInfo, task_params.extra);
+							task->Perform_SetPresenceStatus(task_params.StatusInfo, task_params.extra);
 						break;
 						case EGPRedisRequestType_DelBuddy:
 							task->Perform_DelBuddy(task_params.uReqData.DelBuddy, false);

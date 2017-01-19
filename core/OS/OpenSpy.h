@@ -77,12 +77,23 @@ namespace OS {
 		ERedisDB_QR,
 		ERedisDB_SBGroups,
 		ERedisDB_Game,
+		ERedisDB_NatNeg,
 	};
 
-	typedef struct {
+
+	class Address {
+	public:
+		Address(struct sockaddr_in);
+		Address(const char *str);
+		Address();
+		Address(uint32_t ip, uint16_t port);
+		uint32_t GetIP() { return ip; };
+		uint16_t GetPort() { return port; };
+		const struct sockaddr_in GetInAddr();
+	//private:
 		uint32_t ip;
 		uint16_t port;
-	} Address;
+	};
 	
 	void Init();
 	std::vector<std::string> KeyStringToMap(std::string input);

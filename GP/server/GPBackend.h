@@ -61,8 +61,9 @@ namespace GPBackend {
 			struct sDelBuddy DelBuddy;
 			struct sBuddyMessage BuddyMessage;
 			struct sBlockBuddy BlockMessage;
-			GPStatus StatusInfo;
+			
 		} uReqData;
+		GPStatus StatusInfo; //cannot be in union due to OS::Address
 		void *extra;
 		GPBackendRedisCallback callback;
 		

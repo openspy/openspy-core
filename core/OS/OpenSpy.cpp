@@ -3,6 +3,9 @@
 #include <sstream>
 #include <curl/curl.h>
 
+
+#include <OS/socketlib/socketlib.h>
+
 namespace OS {
 	redisContext *redis_internal_connection = NULL;
 	void Init() {
@@ -172,5 +175,40 @@ namespace OS {
 		#else
 		usleep(time_ms * 1000);
 		#endif
+	}
+	Address::Address(uint32_t ip, uint16_t port) {
+		this->ip = ip;
+		this->port = port;
+	}
+	Address::Address(struct sockaddr_in addr) {
+		ip = Socket::htonl(addr.sin_addr.s_addr);
+		port = Socket::htons(addr.sin_port);
+	}
+	Address::Address(const char *str) {
+		char address[16];
+		const char *seperator = strrchr(str, ':');
+		int len = strlen(str);
+		if(seperator) {
+			port = atoi(seperator+1);
+			len = seperator - str;
+		}
+		if(len < sizeof(address)) {
+			strncpy(address, str, len);
+			address[len] = 0;
+		}
+		ip = Socket::inet_addr((const char *)&address);
+	}
+	Address::Address() {
+		ip = 0;
+		port = 0;
+	}
+	const struct sockaddr_in Address::GetInAddr() {
+		struct sockaddr_in ret;
+		ret.sin_family = AF_INET;
+		memset(&ret.sin_zero,0,sizeof(ret.sin_zero));
+		ret.sin_addr.s_addr = Socket::htonl(ip);
+		ret.sin_port = Socket::htons(port);
+		return ret;
+
 	}
 }
