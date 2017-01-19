@@ -3,6 +3,9 @@
 #include <GP/server/GPPeer.h>
 #include <hiredis/hiredis.h>
 #include <hiredis/async.h>
+
+#include <OS/GPShared.h>
+
 namespace GPBackend {
 
 	enum EGPRedisRequestType {
@@ -63,7 +66,7 @@ namespace GPBackend {
 			struct sBlockBuddy BlockMessage;
 			
 		} uReqData;
-		GPStatus StatusInfo; //cannot be in union due to OS::Address
+		GPShared::GPStatus StatusInfo; //cannot be in union due to OS::Address
 		void *extra;
 		GPBackendRedisCallback callback;
 		
@@ -79,7 +82,7 @@ namespace GPBackend {
 			~GPBackendRedisTask();
 			static GPBackendRedisTask *getGPBackendRedisTask();
 			static void MakeBuddyRequest(int from_profileid, int to_profileid, const char *reason);
-			static void SetPresenceStatus(int from_profileid, GPStatus status, GP::Peer *peer);
+			static void SetPresenceStatus(int from_profileid, GPShared::GPStatus status, GP::Peer *peer);
 			static void MakeAuthorizeBuddyRequest(int adding_target, int adding_source);
 			static void MakeDelBuddyRequest(int adding_target, int adding_source);
 			static void MakeRevokeAuthRequest(int adding_target, int adding_source);
@@ -93,7 +96,7 @@ namespace GPBackend {
 			void Perform_BuddyRequest(struct sBuddyRequest request);
 			void Perform_AuthorizeAdd(struct sAuthorizeAdd request);
 			void Perform_DelBuddy(struct sDelBuddy request, bool send_revoke);
-			void Perform_SetPresenceStatus(GPStatus status, void *extra);
+			void Perform_SetPresenceStatus(GPShared::GPStatus status, void *extra);
 			void Perform_SendLoginEvent(GP::Peer *peer);
 			void Perform_SendBuddyMessage(GP::Peer *peer, struct sBuddyMessage msg);
 			void Perform_BlockBuddy(struct sBlockBuddy msg);

@@ -14,6 +14,8 @@
 #include <sys/time.h>
 #endif
 
+#include <OS/GPShared.h>
+
 #define GP_PING_TIME (60 * 20000)
 
 namespace GP {
@@ -39,7 +41,7 @@ namespace GP {
 
 		int setup_fdset(fd_set *fdset);
 		
-		void InformStatusUpdate(int from_profileid, GPStatus status);
+		void InformStatusUpdate(int from_profileid, GPShared::GPStatus status);
 
 		int GetNumConnections();
 

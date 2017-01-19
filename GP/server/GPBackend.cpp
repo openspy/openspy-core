@@ -27,6 +27,8 @@
 #define GP_BACKEND_REDIS_DB 5
 #define BUDDY_ADDREQ_EXPIRETIME 604800
 #define GP_STATUS_EXPIRE_TIME 3600
+
+
 namespace GPBackend {
 	struct curl_data {
 	    json_t *json_data;
@@ -94,12 +96,12 @@ namespace GPBackend {
 	    					peer->send_authorize_add(to_profileid);
 	    				}
 	    			} else if(!strcmp(msg_type, "status_update")) {
-	    				GPStatus status;
+	    				GPShared::GPStatus status;
 	    				from_profileid = find_paramint("profileid", r->element[2]->str);
-	    				status.status = (GPEnum)find_paramint("status", r->element[2]->str);
+	    				status.status = (GPShared::GPEnum)find_paramint("status", r->element[2]->str);
 	    				find_param("status_string", r->element[2]->str,(char *)&status.status_str, sizeof(status.status_str));
 	    				find_param("location_string", r->element[2]->str,(char *)&status.location_str, sizeof(status.location_str));
-	    				status.quiet_flags = (GPEnum)find_paramint("quiet_flags", r->element[2]->str);
+	    				status.quiet_flags = (GPShared::GPEnum)find_paramint("quiet_flags", r->element[2]->str);
 	    				find_param("ip", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
 	    				status.address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reason).c_str()));
 	    				status.address.port = Socket::htons(find_paramint("port", r->element[2]->str));
@@ -211,7 +213,7 @@ namespace GPBackend {
 		req.uReqData.AuthorizeAdd.to_profileid = adding_target;
 		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
 	}
-	void GPBackendRedisTask::SetPresenceStatus(int from_profileid, GPStatus status, GP::Peer *peer) {
+	void GPBackendRedisTask::SetPresenceStatus(int from_profileid, GPShared::GPStatus status, GP::Peer *peer) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_UpdateStatus;
 		req.StatusInfo = status;
@@ -267,7 +269,7 @@ namespace GPBackend {
 		}
 		return NULL;
 	}
-	void GPBackendRedisTask::Perform_SetPresenceStatus(GPStatus status, void *extra) {
+	void GPBackendRedisTask::Perform_SetPresenceStatus(GPShared::GPStatus status, void *extra) {
 		GP::Peer *peer = (GP::Peer *)extra;
 		int profileid = peer->GetProfileID();
 		redisAppendCommand(this->mp_redis_connection, "SELECT %d", GP_BACKEND_REDIS_DB);
@@ -688,7 +690,7 @@ namespace GPBackend {
 			free((void *)jwt_encoded);
 	}
 	void GPBackendRedisTask::load_and_send_gpstatus(GP::Peer *peer, json_t *json) {
-		GPStatus status;
+		GPShared::GPStatus status;
 		json_t* json_obj = json_object_get(json, "profileid");
 		const char *str;
 		int len;

@@ -6,6 +6,8 @@
 #include "GPPeer.h"
 #include <OS/socketlib/socketlib.h>
 
+#include <OS/GPShared.h>
+
 namespace GP {
 	Driver *g_gbl_gp_driver;
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
@@ -167,7 +169,7 @@ namespace GP {
 		}
 		return NULL;
 	}
-	void Driver::InformStatusUpdate(int from_profileid, GPStatus status) {
+	void Driver::InformStatusUpdate(int from_profileid, GPShared::GPStatus status) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
