@@ -22,7 +22,6 @@ namespace NN {
 		m_client_version = 0;
 	}
 	Peer::~Peer() {
-		close(m_sd);
 	}
 	void Peer::think() {
 		struct timeval time_now;
@@ -42,6 +41,10 @@ namespace NN {
 		}
 	}
 	void Peer::handle_packet(char *recvbuf, int len) {
+		if(len < 0) {
+			m_delete_flag = true;
+			return;
+		}
 		NatNegPacket *packet = (NatNegPacket *)recvbuf;
 		unsigned char NNMagicData[] = {NN_MAGIC_0, NN_MAGIC_1, NN_MAGIC_2, NN_MAGIC_3, NN_MAGIC_4, NN_MAGIC_5};
 		if(memcmp(&NNMagicData,&packet->magic, NATNEG_MAGIC_LEN) != 0) {
@@ -144,7 +147,7 @@ namespace NN {
 		
 		p.Packet.Connect.finished = FINISHED_NOERROR;
 
-		p.Packet.Connect.remoteIP = remote_addr.sin_addr.s_addr;
+		p.Packet.Connect.remoteIP = Socket::htonl(remote_addr.sin_addr.s_addr);
 		p.Packet.Connect.remotePort = remote_addr.sin_port;
 		sendPacket(&p);
 	}

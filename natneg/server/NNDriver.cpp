@@ -17,13 +17,10 @@ namespace NN {
 		uint32_t bind_ip = INADDR_ANY;
 		
 		if ((m_sd = Socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0){
+			printf("Socket error\n");
 			//signal error
 		}
-
-
-		struct timeval tv;
-		tv.tv_sec = 0;
-		tv.tv_usec = 100000;
+		printf("Made NN socket: %d\n", m_sd);
 
 		m_local_addr.sin_port = Socket::htons(port);
 		m_local_addr.sin_addr.s_addr = Socket::htonl(bind_ip);
@@ -110,6 +107,7 @@ namespace NN {
 		socklen_t slen = sizeof(struct sockaddr_in);
 
 		int len = recvfrom(m_sd,(char *)&recvbuf,sizeof(recvbuf),0,(struct sockaddr *)&si_other,&slen);
+
 		recvbuf[len] = 0;
 		Peer *peer = find_or_create(&si_other, recvbuf[0] == '\\' ? 1 : 2);
 		peer->handle_packet((char *)&recvbuf, len);
