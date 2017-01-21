@@ -69,7 +69,7 @@ namespace NN {
 		}
 		return NULL;
 	}
-	Peer *Driver::find_or_create(struct sockaddr_in *address, int version) {
+	Peer *Driver::find_or_create(struct sockaddr_in *address) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
@@ -109,7 +109,7 @@ namespace NN {
 		int len = recvfrom(m_sd,(char *)&recvbuf,sizeof(recvbuf),0,(struct sockaddr *)&si_other,&slen);
 
 		recvbuf[len] = 0;
-		Peer *peer = find_or_create(&si_other, recvbuf[0] == '\\' ? 1 : 2);
+		Peer *peer = find_or_create(&si_other);
 		peer->handle_packet((char *)&recvbuf, len);
 
 

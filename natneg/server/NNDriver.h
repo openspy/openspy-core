@@ -32,7 +32,7 @@ namespace NN {
 		uint32_t getDeltaTime();
 
 		Peer *find_client(struct sockaddr_in *address);
-		Peer *find_or_create(struct sockaddr_in *address, int version = 2);
+		Peer *find_or_create(struct sockaddr_in *address);
 
 		int setup_fdset(fd_set *fdset);
 
