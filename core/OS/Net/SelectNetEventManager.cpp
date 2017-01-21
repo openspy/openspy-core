@@ -12,11 +12,11 @@ void SelectNetEventManager::run() {
 	struct timeval timeout;
 
     memset(&timeout,0,sizeof(struct timeval));
-    timeout.tv_usec = 16000;
+    timeout.tv_sec = 1;
 
     int hsock = setup_fdset();
     if(Socket::select(hsock + 1, &m_fdset, NULL, NULL, &timeout) < 0) {
-    	return;
+    	//return;
     }
 
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

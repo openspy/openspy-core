@@ -33,7 +33,8 @@ namespace GP {
 		m_status.quiet_flags = GP_SILENCE_NONE;
 		m_status.address.ip = address_info->sin_addr.s_addr;
 		m_status.address.port = address_info->sin_port;
-		strcpy(m_challenge,"1234567890");
+
+		gen_random(m_challenge, CHALLENGE_LEN);
 
 		send_login_challenge(1);
 	}

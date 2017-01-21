@@ -104,6 +104,8 @@ namespace OS {
 	void Base64StrToBin(const char *str, uint8_t **out, int &len);
 	const char *BinToBase64Str(uint8_t *in, int in_len);
 
+	const char *MD5String(const char *string);
+
 	//thread
 	CThread *CreateThread(ThreadEntry *entry, void *param, bool auto_start);
 	CMutex *CreateMutex();

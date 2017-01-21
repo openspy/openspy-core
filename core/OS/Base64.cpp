@@ -2,8 +2,10 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 #include <openssl/bio.h>
-
+#include <openssl/md5.h>
 namespace OS {
+	//////////////////////////
+	/////// Base 64
 	size_t calcDecodeLength(const char* b64input) { //Calculates the length of a decoded string
 		size_t len = strlen(b64input),
 			padding = 0;
@@ -52,5 +54,25 @@ namespace OS {
 		ret[(*bufferPtr).length] = 0;
 		memcpy(ret, (*bufferPtr).data, (*bufferPtr).length);
 		return  ret;
+	}
+	//////////////////////////////
+	/////// MD5
+	const char *MD5String(const char *string) {
+		MD5_CTX ctx;
+		uint8_t md5_output[16]; //raw md5 data
+		char output[33];
+		MD5_Init(&ctx);
+ 		MD5_Update(&ctx, string,strlen(string));
+ 		MD5_Final((uint8_t *)&md5_output, &ctx);
+
+ 		char *out = (char *)&output;
+		const static char   hex[] = "0123456789abcdef";
+	    for(int i = 0; i < 16; i++) {
+	        *out++ = hex[md5_output[i] >> 4];
+	        *out++ = hex[md5_output[i] & 15];
+	    }
+	    *out = 0;
+	    return strdup(output);
+
 	}
 }
