@@ -325,7 +325,7 @@ namespace GP {
 		int namespaceid = find_paramint("namespaceid",(char *)data);
 		int quiet = find_paramint("quiet",(char *)data);
 
-		m_auth_operation_id = find_paramint("id",(char *)data);		
+		int operation_id = find_paramint("id",(char *)data);		
 		int type = 0;
 
 		if(!find_param("challenge",(char *)data, (char *)&challenge,sizeof(challenge)-1)) {
@@ -344,7 +344,7 @@ namespace GP {
 		}
 
 		if(type == 1) {
-			perform_nick_email_auth(user, partnercode, m_challenge, challenge, response);
+			perform_nick_email_auth(user, partnercode, m_challenge, challenge, response, operation_id);
 		}
 	}
 	void Peer::handle_pinvite(const char *data, int len) {
@@ -681,7 +681,7 @@ namespace GP {
 			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
 		}
 	}
-	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response) {
+	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response, int operation_id) {
 		const char *email = NULL;
 		char nick[31 + 1];
 		const char *first_at = strchr(nick_email, '@');
@@ -693,9 +693,9 @@ namespace GP {
 			}
 			email = first_at+1;
 		}
- 		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this);
+ 		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this, operation_id);
 	}
-	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
+	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_gp_driver->HasPeer(peer)) {
 			return;
@@ -725,7 +725,7 @@ namespace GP {
 			if(auth_data.hash_proof) {
 				ss << "\\proof\\" << auth_data.hash_proof;
 			}
-			ss << "\\id\\" << peer->m_auth_operation_id;
+			ss << "\\id\\" << operation_id;
 
 			peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 

@@ -151,9 +151,8 @@ namespace GP {
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}
 
-	void Peer::perform_nick_email_auth(int profileid, const char *response) {
-		printf("Try perofmr nick email auth\n");
- 		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, this);
+	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {
+ 		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, this, operation_id);
 	}
 	void Peer::handle_authp(const char *data, int len) {
 		// TODO: CD KEY AUTH
@@ -163,7 +162,7 @@ namespace GP {
 		memset(&response,0,sizeof(response));
 		int pid = find_paramint("pid", (char *)data);
 
-		m_auth_operation_id = find_paramint("lid", (char *)data);
+		int operation_id = find_paramint("lid", (char *)data);
 
 		if(!find_param("resp", (char *)data, response, sizeof(response)-1)) {
 			send_error(GPShared::GP_PARSE);
@@ -171,13 +170,13 @@ namespace GP {
 		}
 
 		if(pid != 0) {
-			perform_nick_email_auth(pid, response);
+			perform_pid_auth(pid, response, operation_id);
 		} else {
 			send_error(GPShared::GP_PARSE);
 		}
 
 	}
-	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
+	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_gp_driver->HasPeer(peer)) {
 			return;
@@ -198,7 +197,7 @@ namespace GP {
 			if(auth_data.session_key) {
 				ss << "\\lt\\" << auth_data.session_key;
 			}
-			ss << "\\lid\\" << peer->m_auth_operation_id;
+			ss << "\\lid\\" << operation_id;
 
 			peer->m_profile = profile;
 			peer->m_user = user;
@@ -236,7 +235,7 @@ namespace GP {
 
 			ss << error_data.msg;
 
-			ss << "\\lid\\" << peer->m_auth_operation_id;
+			ss << "\\lid\\" << operation_id;
 			peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 		}
 	}

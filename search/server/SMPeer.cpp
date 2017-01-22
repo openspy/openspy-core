@@ -103,7 +103,7 @@ namespace SM {
 
 		gettimeofday(&m_last_recv, NULL);
 	}
-	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
+	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
 		int err_code = 0;
 		if(auth_data.response_code != -1) {
 			switch(auth_data.response_code) {
@@ -155,12 +155,12 @@ namespace SM {
 		char *dpass = (char *)base64_decode((uint8_t *)passenc, &passlen);
 		passlen = gspassenc((uint8_t *)dpass);
 
-		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, dpass, false, m_newuser_cb, this);
+		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, dpass, false, m_newuser_cb, this, 0);
 		if(dpass)
 			free((void *)dpass);
 
 	}
-	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
+	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
 		Peer *peer = (Peer *)extra;
 		if(!g_gbl_sm_driver->HasPeer(peer))
 			return;
@@ -191,7 +191,7 @@ namespace SM {
 		char *dpass = (char *)base64_decode((uint8_t *)passenc, &passlen);
 		passlen = gspassenc((uint8_t *)dpass);
 	
-		OS::AuthTask::TryAuthNickEmail(nick, email, partnercode, dpass, false, m_nick_email_auth_cb, this);
+		OS::AuthTask::TryAuthNickEmail(nick, email, partnercode, dpass, false, m_nick_email_auth_cb, this, 0);
 
 		if(dpass)
 			free((void *)dpass);

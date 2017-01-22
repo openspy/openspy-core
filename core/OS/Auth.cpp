@@ -140,8 +140,7 @@ namespace OS {
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
 
-				//typedef void (*AuthCallback)(bool success, User user, Profile profile, void *extra);
-				request.callback(success, user, profile, auth_data, request.extra);
+				request.callback(success, user, profile, auth_data, request.extra, request.operation_id);
 			}
 			curl_easy_cleanup(curl);
 		}
@@ -244,7 +243,7 @@ namespace OS {
 					success = false;
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
-				request.callback(success, user, profile, auth_data, request.extra);
+				request.callback(success, user, profile, auth_data, request.extra, request.operation_id);
 			}
 			curl_easy_cleanup(curl);
 		}
@@ -336,7 +335,7 @@ namespace OS {
 					success = false;
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
-				request.callback(success, user, profile, auth_data, request.extra);
+				request.callback(success, user, profile, auth_data, request.extra, request.operation_id);
 			}
 			curl_easy_cleanup(curl);
 		}
@@ -436,7 +435,7 @@ namespace OS {
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
 
-				request.callback(success, user, profile, auth_data, request.extra);
+				request.callback(success, user, profile, auth_data, request.extra, request.operation_id);
 			}
 			curl_easy_cleanup(curl);
 		}
@@ -444,7 +443,7 @@ namespace OS {
 		free(json_data);
 		json_decref(send_obj);
 	}
-	void AuthTask::TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra) {
+	void AuthTask::TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id) {
 		AuthRequest request;
 		request.type = EAuthType_NickEmail_GPHash;
 		request.email = email;
@@ -456,9 +455,10 @@ namespace OS {
 		request.extra = extra;
 		request.callback = cb;
 		request.create_session = true;
+		request.operation_id = operation_id;
 		AuthTask::getAuthTask()->AddRequest(request);
 	}
-	void AuthTask::TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra) {
+	void AuthTask::TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id) {
 		AuthRequest request;
 		request.type = EAuthType_NickEmail;
 		request.email = email;
@@ -468,9 +468,10 @@ namespace OS {
 		request.callback = cb;
 		request.password = pass;
 		request.create_session = make_session;
+		request.operation_id = operation_id;
 		AuthTask::getAuthTask()->AddRequest(request);
 	}
-	void AuthTask::TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra) {
+	void AuthTask::TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id) {
 		AuthRequest request;
 		request.type = EAuthType_CreateUser_OrProfile;
 		request.email = email;
@@ -482,9 +483,10 @@ namespace OS {
 		request.callback = cb;
 		request.password = password;
 		request.create_session = create_session;
+		request.operation_id = operation_id;
 		AuthTask::getAuthTask()->AddRequest(request);
 	}
-	void AuthTask::TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra) {
+	void AuthTask::TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra, int operation_id) {
 		AuthRequest request;
 		request.type = EAuthType_PID_GStats_Sesskey;
 
@@ -493,6 +495,7 @@ namespace OS {
 		request.client_response = response;
 
 		request.extra = extra;
+		request.operation_id = operation_id;
 		request.callback = cb;
 		AuthTask::getAuthTask()->AddRequest(request);
 	}

@@ -57,9 +57,8 @@ namespace GP {
 		void handle_setpd(const char *data, int len);
 
 		//login
-		void perform_nick_email_auth(int profileid, const char *response);
-		int m_auth_operation_id;
-		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);
+		void perform_pid_auth(int profileid, const char *response, int operation_id);
+		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id);
 
 
 		void send_error(GPShared::GPErrorCode code);

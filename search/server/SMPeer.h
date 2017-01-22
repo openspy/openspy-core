@@ -80,10 +80,10 @@ namespace SM {
 		static void m_search_valid_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra);
 		void handle_valid(const char *buf, int len);
 
-		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);
+		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id);
 		void handle_check(const char *buf, int len);
 
-		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);
+		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id);
 		void handle_newuser(const char *buf, int len);
 
 		int m_sd;
