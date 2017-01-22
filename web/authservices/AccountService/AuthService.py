@@ -52,6 +52,12 @@ class AuthService(BaseService):
             return Profile.select().join(User).where((Profile.nick == nick) & (User.partnercode == partnercode) & (User.email == email) & (User.deleted == False) & (Profile.deleted == False)).get()
         except Profile.DoesNotExist:
             return None
+
+    def get_profile_by_id(self, profileid):
+        try:
+            return Profile.select().join(User).where((Profile.id == profileid) & (User.deleted == False) & (Profile.deleted == False)).get()
+        except Profile.DoesNotExist:
+            return None
     def test_pass_plain_by_userid(self, userid, password):
         auth_success = False
         try:
@@ -75,6 +81,24 @@ class AuthService(BaseService):
         if true_resp == client_response:
             return proof
         return None
+
+    def gs_sesskey(self, sesskey):
+        str = "%.8x" % (sesskey ^ 0x38f371e6)
+        ret = ""
+        i = 17
+        for n in str:
+            ret += chr(ord(n) + i)
+            i = i+1 
+        return ret
+    def test_gstats_sessionkey_response_by_profileid(self, profile, session_key, client_response):
+        if profile == None:
+            return False
+        sess_key = self.gs_sesskey(session_key)
+        pw_hashed = "{}{}".format(profile.user.password,sess_key)
+        pw_hashed = hashlib.md5(pw_hashed).hexdigest()
+        
+        return pw_hashed == client_response
+
     def test_nick_email_by_profile(self, profile, password):
         print("Date: {}\n".format(profile.birthday))
         return profile.user.password == password
@@ -307,6 +331,8 @@ class AuthService(BaseService):
             user = self.get_user_by_userid(jwt_decoded["userid"])
             if user == None:
                 response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
+        elif "profileid" in jwt_decoded:
+            profile = self.get_profile_by_id(jwt_decoded["profileid"])
 
         auth_success = False
         if hash_type == 'plain' and profile != None:
@@ -332,6 +358,8 @@ class AuthService(BaseService):
                 profile = Profile.get((Profile.id == response['profile']['id']))
                 user = profile.user
                 success = True
+        elif hash_type == "gstats_pid_sesskey":
+            auth_success = self.test_gstats_sessionkey_response_by_profileid(profile, jwt_decoded["session_key"], jwt_decoded["client_response"])
 
         if not auth_success and "reason" not in response:
             if user == None or profile == None:

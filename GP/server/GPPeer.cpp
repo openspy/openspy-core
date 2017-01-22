@@ -809,8 +809,10 @@ namespace GP {
 		ss << "\\error\\";
 		ss << "\\err\\" << error_data.error;
 		ss << "\\errmsg\\" << error_data.msg;
-		if(error_data.die)
+		if(error_data.die) {
 			ss << "\\fatal\\" << error_data.die;
+			m_delete_flag = true;
+		}
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}
 	void Peer::send_user_blocked(int from_profileid) {

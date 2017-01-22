@@ -57,13 +57,15 @@ namespace GP {
 		void handle_setpd(const char *data, int len);
 
 		//login
-		void perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response);
+		void perform_nick_email_auth(int profileid, const char *response);
 		int m_auth_operation_id;
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra);
+
 
 		void send_error(GPShared::GPErrorCode code);
 		void gamespy3dxor(char *data, int len);
 		int gs_chresp_num(const char *challenge);
+		void gs_sesskey(int sesskey, char *out);
 		bool IsResponseValid(const char *response);
 
 
@@ -83,11 +85,13 @@ namespace GP {
 
 
 		//these are modified by other threads
-		//std::vector<int> m_buddies;
+		std::string m_backend_session_key;
 		OS::User m_user;
 		OS::Profile m_profile;
 
 		OS::CMutex *mp_mutex;
+
+		uint16_t m_game_port;
 	};
 }
 #endif //_GPPEER_H

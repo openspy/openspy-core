@@ -29,13 +29,12 @@ namespace GP {
 		mp_mutex = OS::CreateMutex();
 		gettimeofday(&m_last_ping, NULL);
 
-		m_session_key = 0;
+		m_session_key = 1234567;
 
 		gen_random(m_challenge, CHALLENGE_LEN);
 
 		send_login_challenge(1);
 
-		//formatSend(sd,true,2,"\\lc\\1\\challenge\\%s\\id\\1",challenge);
 	}
 	Peer::~Peer() {
 		delete mp_mutex;
@@ -93,12 +92,10 @@ namespace GP {
 		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
-		} else if(len == 0 && packet_waiting) {
-			m_delete_flag = true;
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
-		printf("GStats Handle(%d): %s\n", len,data);
+		//printf("GStats Handle(%d): %s\n", len,data);
 		char command[32];
 		memset(&command,0,sizeof(command));
 		if(!find_param(0, data,(char *)&command, sizeof(command))) {
@@ -111,16 +108,20 @@ namespace GP {
 
 		if(strcmp(command, "auth") == 0) {
 			handle_auth(data, len);
+		} else if(strcmp(command, "authp") == 0) {
+			handle_authp(data, len);
 		} else if(strcmp(command, "ka") == 0) { //keep alive
 
 		}
+
+
 	}
 
 	void Peer::handle_auth(const char *data, int len) {
 		char gamename[32 + 1];
 		char response[32 + 1];
 		int local_id = find_paramint("id", (char *)data);
-		int port = find_paramint("port", (char *)data);
+		m_game_port = find_paramint("port", (char *)data);
 
 		std::ostringstream ss;
 
@@ -148,6 +149,96 @@ namespace GP {
 
 		ss << "\\lc\\2\\sesskey\\" << m_session_key << "\\proof\\0\\id\\" << local_id;
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+	}
+
+	void Peer::perform_nick_email_auth(int profileid, const char *response) {
+		printf("Try perofmr nick email auth\n");
+ 		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, this);
+	}
+	void Peer::handle_authp(const char *data, int len) {
+		// TODO: CD KEY AUTH
+
+		printf("Auth got: %s\n", data);
+		char response[64];
+		memset(&response,0,sizeof(response));
+		int pid = find_paramint("pid", (char *)data);
+
+		m_auth_operation_id = find_paramint("lid", (char *)data);
+
+		if(!find_param("resp", (char *)data, response, sizeof(response)-1)) {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
+
+		if(pid != 0) {
+			perform_nick_email_auth(pid, response);
+		} else {
+			send_error(GPShared::GP_PARSE);
+		}
+
+	}
+	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra) {
+		Peer *peer = (Peer *)extra;
+		if(!g_gbl_gp_driver->HasPeer(peer)) {
+			return;
+		}
+
+		if(!peer->m_backend_session_key.length() && auth_data.session_key)
+			peer->m_backend_session_key = auth_data.session_key;
+
+		peer->m_user = user;
+		peer->m_profile = profile;
+
+		std::ostringstream ss;
+
+
+		if(success) {
+			ss << "\\pauthr\\" << profile.id;
+
+			if(auth_data.session_key) {
+				ss << "\\lt\\" << auth_data.session_key;
+			}
+			ss << "\\lid\\" << peer->m_auth_operation_id;
+
+			peer->m_profile = profile;
+			peer->m_user = user;
+
+			peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+
+		} else {
+			ss << "\\pauthr\\-1\\errmsg\\";
+			GPShared::GPErrorData error_data;
+			GPShared::GPErrorCode code;
+
+			switch(auth_data.response_code) {
+				case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
+					//code = GP_LOGIN_BAD_EMAIL;
+					code = GP_LOGIN_BAD_PROFILE;
+					break;
+				case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
+					code = GP_LOGIN_BAD_PASSWORD;
+				break;
+				case OS::LOGIN_RESPONSE_INVALID_PROFILE:
+					code = GP_LOGIN_BAD_PROFILE;
+				break;
+				case OS::LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED:
+					code = GP_LOGIN_BAD_UNIQUENICK;
+				break;
+				case OS::LOGIN_RESPONSE_DB_ERROR:
+					code = GP_DATABASE;
+				break;
+				case OS::LOGIN_RESPONSE_SERVERINITFAILED:
+				case OS::LOGIN_RESPONSE_SERVER_ERROR:
+					code = GP_NETWORK;
+			}
+
+			error_data = GPShared::getErrorDataByCode(code);
+
+			ss << error_data.msg;
+
+			ss << "\\lid\\" << peer->m_auth_operation_id;
+			peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+		}
 	}
 
 
@@ -186,8 +277,10 @@ namespace GP {
 		ss << "\\error\\";
 		ss << "\\err\\" << error_data.error;
 		ss << "\\errmsg\\" << error_data.msg;
-		if(error_data.die)
+		if(error_data.die) {
 			ss << "\\fatal\\" << error_data.die;
+			m_delete_flag = true;
+		}
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}
 
@@ -197,12 +290,12 @@ namespace GP {
 
 	    gs = (char *)gamespy;
 	    while(len-- && len >= 0) {
-		if(strncmp(data,"\\final\\",7) == 0)  {
-			data+=7;
-			len-=7;
-			gs = (char *)gamespy;
-			continue;
-		}
+			if(strncmp(data,"\\final\\",7) == 0)  {
+				data+=7;
+				len-=7;
+				gs = (char *)gamespy;
+				continue;
+			}
 	        *data++ ^= *gs++;
 	        if(!*gs) gs = (char *)gamespy;
 	    }
@@ -232,7 +325,15 @@ namespace GP {
 	    }
 	    return(num);
 	}
+	void Peer::gs_sesskey(int sesskey, char *out) {
+	    int         i = 17;
+		char 		*p;
 
+	    sprintf(out, "%.8x", sesskey ^ 0x38f371e6);
+	    for(p = out; *p; p++, i++) {
+	        *p += i;
+	    }
+	}
 
 	int Peer::GetProfileID() {
 		return m_profile.id;

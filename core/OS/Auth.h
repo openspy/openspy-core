@@ -34,10 +34,15 @@ namespace OS {
 	enum EAuthType {
 		EAuthType_NickEmail_GPHash,
 		EAuthType_NickEmail,
-		EAuthType_CreateUser_OrProfile
+		EAuthType_CreateUser_OrProfile,
+		EAuthType_PID_GStats_Sesskey,
 	};
 
 	typedef struct {
+
+		int profileid;
+		int session_key;
+
 		EAuthType type;
 		std::string nick;
 		std::string email;
@@ -65,6 +70,7 @@ namespace OS {
 			static void TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra);
 			static void TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra);
 			static void TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra);
+			static void TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra);
 		private:
 			static void PerformSearch(AuthRequest request);
 			static AuthTask *m_task_singleton;
@@ -72,6 +78,7 @@ namespace OS {
 			void PerformAuth_NickEMail_GPHash(AuthRequest request);
 			void PerformAuth_NickEMail(AuthRequest request);
 			void PerformAuth_CreateUser_OrProfile(AuthRequest request);
+			void PerformAuth_PID_GSStats_SessKey(AuthRequest request);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 	};
 }
