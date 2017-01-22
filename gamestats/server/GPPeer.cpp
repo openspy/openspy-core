@@ -104,17 +104,61 @@ namespace GP {
 		}
 		gettimeofday(&m_last_recv, NULL);
 
-		printf("GStats Got cmd: %s\n", command);
-
 		if(strcmp(command, "auth") == 0) {
 			handle_auth(data, len);
 		} else if(strcmp(command, "authp") == 0) {
 			handle_authp(data, len);
 		} else if(strcmp(command, "ka") == 0) { //keep alive
 
+		} else if(strcmp(command, "newgame") == 0) {
+
+		} else if(strcmp(command, "updgame") == 0) {
+
+		} else if(strcmp(command, "getpid") == 0) {
+			handle_getpid(data, len);
 		}
 
+		if(m_user.id != 0) {
+			if(strcmp(command, "setpd") == 0) {
+				handle_setpd(data, len);
+			} else if(strcmp(command, "getpd") == 0) {
+			 		//getpd might be OK for public data	to b
+				handle_getpd(data, len);
+			}
+		}
+	}
 
+	void Peer::handle_getpid(const char *data, int len) {
+		/*
+				Send error response until implemented
+		*/
+		int operation_id = find_paramint("lid", (char *)data);
+		int pid = find_paramint("pid", (char *)data);
+		std::ostringstream ss;
+		ss << "\\getpidr\\-1\\lid\\" << operation_id;
+		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+	}
+	void Peer::handle_getpd(const char *data, int len) {
+		/*
+				Send error response until implemented
+		*/
+		int operation_id = find_paramint("lid", (char *)data);
+		int pid = find_paramint("pid", (char *)data);
+		std::ostringstream ss;
+		ss << "\\getpdr\\0\\lid\\" << operation_id << "\\pid\\" << pid;
+		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+	}
+
+
+	void Peer::handle_setpd(const char *data, int len) {
+		/*
+				Send error response until implemented
+		*/
+		int operation_id = find_paramint("lid", (char *)data);
+		int pid = find_paramint("pid", (char *)data);
+		std::ostringstream ss;
+		ss << "\\setpdr\\0\\lid\\" << operation_id << "\\pid\\" << pid;
+		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}
 
 	void Peer::handle_auth(const char *data, int len) {
@@ -156,8 +200,6 @@ namespace GP {
 	}
 	void Peer::handle_authp(const char *data, int len) {
 		// TODO: CD KEY AUTH
-
-		printf("Auth got: %s\n", data);
 		char response[64];
 		memset(&response,0,sizeof(response));
 		int pid = find_paramint("pid", (char *)data);
