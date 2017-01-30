@@ -54,6 +54,8 @@ namespace GP {
 		void handle_authp(const char *data, int len);
 		void handle_auth(const char *data, int len);
 		void handle_getpid(const char *data, int len);
+
+		static void getPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra);
 		void handle_getpd(const char *data, int len);
 
 		static void setPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra);

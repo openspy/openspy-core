@@ -464,6 +464,7 @@ namespace OS {
 		request.callback = cb;
 		request.create_session = true;
 		request.operation_id = operation_id;
+		request.namespaceid = 0;
 		AuthTask::getAuthTask()->AddRequest(request);
 	}
 	void AuthTask::TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id) {
@@ -477,6 +478,7 @@ namespace OS {
 		request.password = pass;
 		request.create_session = make_session;
 		request.operation_id = operation_id;
+		request.namespaceid = 0;
 		AuthTask::getAuthTask()->AddRequest(request);
 	}
 	void AuthTask::TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id) {
@@ -492,6 +494,7 @@ namespace OS {
 		request.password = password;
 		request.create_session = create_session;
 		request.operation_id = operation_id;
+		request.namespaceid = 0;
 		AuthTask::getAuthTask()->AddRequest(request);
 	}
 	void AuthTask::TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra, int operation_id) {
@@ -505,6 +508,9 @@ namespace OS {
 		request.extra = extra;
 		request.operation_id = operation_id;
 		request.callback = cb;
+		request.create_session = true;
+		request.namespaceid = 0;
+		request.partnercode = 0;
 		AuthTask::getAuthTask()->AddRequest(request);
 	}
 	AuthTask::AuthTask() {

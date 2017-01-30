@@ -252,7 +252,7 @@ namespace GPBackend {
 		req.profileid = profileid;
 		getPersistBackendTask()->AddRequest(req);
 	}
-	void PersistBackendTask::SubmitGetPersistData(int profileid, GP::Peer *peer, void* extra, PersistBackendCallback cb, persisttype_t type, int index) {
+	void PersistBackendTask::SubmitGetPersistData(int profileid, GP::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList) {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
@@ -261,12 +261,13 @@ namespace GPBackend {
 		req.profileid = profileid;
 		req.data_type = type;
 		req.data_index = index;
+		req.keyList = keyList;
 		getPersistBackendTask()->AddRequest(req);
 	}
 	void PersistBackendTask::PerformSetPersistData(PersistBackendRequest req) {
 		json_t *send_json = json_object();
 
-		json_object_set_new(send_json, "profileid", json_integer(req.mp_peer->GetProfileID()));
+		json_object_set_new(send_json, "profileid", json_integer(req.profileid));
 		json_object_set_new(send_json, "type", json_string("set_persist_data"));
 
 
@@ -309,13 +310,79 @@ namespace GPBackend {
 		bool success = success_obj == json_true();
 
 		PersistBackendResponse resp_data;
-		resp_data.type = EPersistBackendRespType_UpdateGame;
+		resp_data.type = EPersistBackendRespType_SetUserData;
 		req.callback(success, resp_data, req.mp_peer, req.mp_extra);
 
 		json_decref(send_json);		
 	}
 	void PersistBackendTask::PerformGetPersistData(PersistBackendRequest req) {
+		json_t *send_json = json_object();
 
+		json_object_set_new(send_json, "profileid", json_integer(req.profileid));
+		json_object_set_new(send_json, "type", json_string("get_persist_data"));
+
+
+		json_object_set_new(send_json, "data_index", json_integer(req.data_index));
+		json_object_set_new(send_json, "data_type", json_integer(req.data_type));
+
+		std::vector<std::string>::iterator it = req.keyList.begin();
+
+		json_t *keylist_array = json_array();
+		while(it != req.keyList.end()) {
+			json_array_append(keylist_array, json_string((*it).c_str()));
+			it++;
+		}
+		json_object_set(send_json, "keyList", keylist_array);
+
+		OS::HTTPClient client(GP_PERSIST_BACKEND_URL);
+
+		char *json_data = json_dumps(send_json, 0);
+
+		//build jwt
+		jwt_t *jwt;
+		jwt_new(&jwt);
+		const char *server_response = NULL;
+		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
+		jwt_add_grants_json(jwt, json_data);
+		char *jwt_encoded = jwt_encode_str(jwt);
+
+		OS::HTTPResponse resp =	client.Post(jwt_encoded);
+
+		jwt_free(jwt);
+		free((void *)jwt_encoded);
+		free(json_data);
+		json_decref(send_json);
+
+		//build jwt
+		jwt_new(&jwt);
+		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)GP_PERSIST_BACKEND_CRYPTKEY, strlen(GP_PERSIST_BACKEND_CRYPTKEY));
+
+		//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
+		jwt_decode(&jwt, resp.buffer.c_str(), NULL, 0);
+
+		char *json = jwt_get_grants_json(jwt, NULL);
+
+		send_json = json_loads(json, 0, NULL);
+
+
+		json_t *success_obj = json_object_get(send_json, "success");
+		bool success = success_obj == json_true();
+
+		json_t *data_obj = json_object_get(send_json, "data");
+
+
+		PersistBackendResponse resp_data;
+		resp_data.type = EPersistBackendRespType_GetUserData;
+
+		if(data_obj) {
+			json_t *persist_obj = json_object_get(data_obj, "data");
+			if(persist_obj) {
+				resp_data.game_instance_identifier = json_string_value(persist_obj);
+			}
+		}
+		req.callback(success, resp_data, req.mp_peer, req.mp_extra);
+
+		json_decref(send_json);	
 	}
 	void *PersistBackendTask::TaskThread(OS::CThread *thread) {
 		PersistBackendTask *task = (PersistBackendTask *)thread->getParams();
@@ -325,19 +392,22 @@ namespace GPBackend {
 				task->mp_mutex->lock();
 				while(it != task->m_request_list.end()) {
 					PersistBackendRequest task_params = *it;
-					switch(task_params.type) {
-						case EPersistRequestType_NewGame:
-							task->PerformNewGameSession(task_params);
-						break;
-						case EPersistRequestType_UpdateGame:
-							task->PerformUpdateGameSession(task_params);
-						break;
-						case EPersistRequestType_SetUserData:
-							task->PerformSetPersistData(task_params);
-						break;
-						case EPersistRequestType_GetUserData:
-							task->PerformGetPersistData(task_params);
-						break;
+					if(GP::g_gbl_gp_driver->HasPeer(task_params.mp_peer)) {
+					
+						switch(task_params.type) {
+							case EPersistRequestType_NewGame:
+								task->PerformNewGameSession(task_params);
+							break;
+							case EPersistRequestType_UpdateGame:
+								task->PerformUpdateGameSession(task_params);
+							break;
+							case EPersistRequestType_SetUserData:
+								task->PerformSetPersistData(task_params);
+							break;
+							case EPersistRequestType_GetUserData:
+								task->PerformGetPersistData(task_params);
+							break;
+						}
 					}
 					it = task->m_request_list.erase(it);
 					continue;

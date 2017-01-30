@@ -45,7 +45,7 @@ namespace GP {
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];
 		socklen_t slen = sizeof(struct sockaddr_in);
-		int len, piece_len;
+		int len = 0, piece_len = 0;
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
 			buf[len] = 0;
