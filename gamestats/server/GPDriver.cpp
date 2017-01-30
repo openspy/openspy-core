@@ -45,7 +45,6 @@ namespace GP {
 	Driver::~Driver() {
 	}
 	void Driver::think(fd_set *fdset) {
-
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;

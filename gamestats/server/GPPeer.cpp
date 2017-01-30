@@ -16,6 +16,9 @@
 
 #include <OS/GPShared.h>
 
+#include <map>
+#include <utility>
+
 using namespace GPShared;
 
 namespace GP {
@@ -111,9 +114,9 @@ namespace GP {
 		} else if(strcmp(command, "ka") == 0) { //keep alive
 
 		} else if(strcmp(command, "newgame") == 0) {
-
+			handle_newgame(data, len);
 		} else if(strcmp(command, "updgame") == 0) {
-
+			handle_updgame(data, len);
 		} else if(strcmp(command, "getpid") == 0) {
 			handle_getpid(data, len);
 		}
@@ -122,8 +125,7 @@ namespace GP {
 			if(strcmp(command, "setpd") == 0) {
 				handle_setpd(data, len);
 			} else if(strcmp(command, "getpd") == 0) {
-			 		//getpd might be OK for public data	to b
-				handle_getpd(data, len);
+				handle_getpd(data, len); //getpd might be OK for public data	to work when not logged in
 			}
 		}
 	}
@@ -140,7 +142,7 @@ namespace GP {
 	}
 	void Peer::handle_getpd(const char *data, int len) {
 		/*
-				Send error response until implemented
+			Send error response until implemented
 		*/
 		int operation_id = find_paramint("lid", (char *)data);
 		int pid = find_paramint("pid", (char *)data);
@@ -149,16 +151,53 @@ namespace GP {
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}
 
+	void Peer::setPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
+		if(!g_gbl_gp_driver->HasPeer(peer)) {
+			free((void *)extra);
+			return;
+		}
+		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
+
+		std::ostringstream ss;
+		ss << "\\setpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid;
+		peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+
+		free((void *)persist_request_data);
+	}
 
 	void Peer::handle_setpd(const char *data, int len) {
-		/*
-				Send error response until implemented
-		*/
 		int operation_id = find_paramint("lid", (char *)data);
 		int pid = find_paramint("pid", (char *)data);
-		std::ostringstream ss;
-		ss << "\\setpdr\\0\\lid\\" << operation_id << "\\pid\\" << pid;
-		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+		int data_index = find_paramint("dindex", (char *)data);
+
+		persisttype_t persist_type = (persisttype_t)find_paramint("ptype", (char *)data);
+
+
+		if(pid != m_profile.id) {
+			send_error(GPShared::GP_NOT_LOGGED_IN);
+			return;
+		}
+
+		bool kv_set = find_paramint("kv", (char *)data) != 0;
+
+		char *data_pos = strstr((char *)data, "\\data\\");
+		int client_data_len = find_paramint("length", (char *)data);
+		if(client_data_len > len || !data_pos) {
+			send_error(GPShared::GP_PARSE);
+			return;
+		} else {
+			data_pos += 6; //strlen of data key
+		}
+
+		const char *b64_str = OS::BinToBase64Str((uint8_t *)data_pos, client_data_len);
+
+		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
+		persist_request_data->profileid = pid;
+		persist_request_data->operation_id = operation_id;
+
+		GPBackend::PersistBackendTask::SubmitSetPersistData(m_profile.id, this, (void *)persist_request_data, setPersistDataCallback, b64_str, persist_type, data_index, kv_set);
+
+		free((void *)b64_str);
 	}
 
 	void Peer::handle_auth(const char *data, int len) {
@@ -193,6 +232,46 @@ namespace GP {
 
 		ss << "\\lc\\2\\sesskey\\" << m_session_key << "\\proof\\0\\id\\" << local_id;
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+	}
+	void Peer::newGameCreateCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
+		if(!g_gbl_gp_driver->HasPeer(peer))
+			return;
+
+		peer->m_current_game_identifier = response_data.game_instance_identifier;
+
+	}
+	void Peer::handle_newgame(const char *data, int len) {
+		GPBackend::PersistBackendTask::SubmitNewGameSession(this, NULL, newGameCreateCallback);
+	}
+	void Peer::updateGameCreateCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
+		printf("Update game CB\n");
+		if(!g_gbl_gp_driver->HasPeer(peer))
+			return;
+	}
+	void Peer::handle_updgame(const char *data, int len) {
+		//\updgame\\sesskey\%d\done\%d\gamedata\%s
+		std::map<std::string,std::string> game_data;
+		char gamedata[1000];
+		if(!find_param("gamedata", (char *)data, gamedata, sizeof(gamedata)-1)) {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
+		for(int i=0;i<sizeof(gamedata);i++) {
+			if(gamedata[i] == '\x1') {
+				gamedata[i] = '\\';
+			}
+		}
+		game_data = OS::KeyStringToMap(gamedata);
+		GPBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_current_game_identifier, updateGameCreateCallback);
+		/*
+		std::map<std::string,std::string>::iterator it = game_data.begin();
+		while(it != game_data.end()) {
+			std::pair<std::string,std::string> p = *it;
+			printf("Game Data: %s - %s\n",p.first.c_str(),p.second.c_str());
+			it++;
+		}
+		*/
+
 	}
 
 	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {

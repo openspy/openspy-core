@@ -124,7 +124,34 @@ namespace OS {
 		freeReplyObject(reply);
 		return ret;
 	}
-	std::vector<std::string> KeyStringToMap(std::string input) {
+	std::map<std::string, std::string> KeyStringToMap(std::string input) {
+		std::map<std::string, std::string> ret;
+
+		std::stringstream ss(input);
+
+		std::string key, token;
+
+		int i = 0;
+
+		while (std::getline(ss, token, '\\')) {
+			if (!token.length()) {
+				i++;
+				continue;
+			}
+
+			if(i % 2) {
+				key = token;
+			} else {
+				
+				ret[key] = token;
+			}
+
+			i++;
+		}
+		return ret;
+
+	}
+	std::vector<std::string> KeyStringToVector(std::string input) {
 		std::vector<std::string> ret;
 
 		std::stringstream ss(input);

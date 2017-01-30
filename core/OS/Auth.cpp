@@ -145,6 +145,7 @@ namespace OS {
 			curl_easy_cleanup(curl);
 		}
 		jwt_free(jwt);
+		free((void *)jwt_encoded);
 		free(json_data);
 		json_decref(send_obj);
 	}
@@ -249,6 +250,7 @@ namespace OS {
 		}
 		jwt_free(jwt);
 		free(json_data);
+		free((void *)jwt_encoded);
 		json_decref(send_obj);
 	}
 	void AuthTask::PerformAuth_CreateUser_OrProfile(AuthRequest request) {
@@ -340,7 +342,10 @@ namespace OS {
 			curl_easy_cleanup(curl);
 		}
 		jwt_free(jwt);
-		free(json_data);
+		if(json_data)
+			free(json_data);
+		if(jwt_encoded)
+			free((void *)jwt_encoded);
 		json_decref(send_obj);
 	}
 	void AuthTask::PerformAuth_PID_GSStats_SessKey(AuthRequest request) {
@@ -440,7 +445,10 @@ namespace OS {
 			curl_easy_cleanup(curl);
 		}
 		jwt_free(jwt);
-		free(json_data);
+		if(json_data)
+			free(json_data);
+		if(jwt_encoded)
+			free((void *)jwt_encoded);
 		json_decref(send_obj);
 	}
 	void AuthTask::TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id) {

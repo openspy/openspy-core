@@ -1,10 +1,11 @@
 from cgi import parse_qs, escape
 from BaseService import BaseService
-import AccountService.AuthService as AuthService
+
 from AccountService.AuthService import AuthService
 from AccountService.UserAccountMgrService import UserAccountMgrService
 from AccountService.RegistrationService import RegistrationService
 from AccountService.UserProfileMgrService import UserProfileMgrService
+from AccountService.PersistService import PersistService
 #from public.GS_AuthService import GS_AuthService
 from public.OS_WebAuth import OS_WebAuth
 from public.OS_WebUserMgr import OS_WebUserMgr
@@ -17,6 +18,7 @@ from wsgiref.util import request_uri
 #import RegistrationService from RegistrationService
 
 def application(env, start_response):
+
 	path_split = re.split('/', env.get('REQUEST_URI'))
 	
 	service = None
@@ -30,6 +32,8 @@ def application(env, start_response):
 			service = UserAccountMgrService()
 		elif path_split[2] == "userprofile":
 			service = UserProfileMgrService()
+		elif path_split[2] == "persist":
+			service = PersistService()
 
 
 	#the paths containing "web" are the publically accessable interfaces which theoretically can be accessed by any user anonymously, however typically is as an interface via another web backend

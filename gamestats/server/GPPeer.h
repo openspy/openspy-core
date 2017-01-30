@@ -11,17 +11,14 @@
 
 #include <OS/GPShared.h>
 
-/********
-persisttype_t
-There are 4 types of persistent data stored for each player:
-pd_private_ro: Readable only by the authenticated client it belongs to, can only by set on the server
-pd_private_rw: Readable only by the authenticated client it belongs to, set by the authenticated client it belongs to
-pd_public_ro: Readable by any client, can only be set on the server
-pd_public_rw: Readable by any client, set by the authenicated client is belongs to
-*********/
-typedef enum {pd_private_ro, pd_private_rw, pd_public_ro, pd_public_rw} persisttype_t;
+#include "GPBackend.h"
+
 
 namespace GP {
+	typedef struct {
+		int profileid;
+		int operation_id;
+	} GPPersistRequestData;
 	class Driver;
 
 	class Peer {
@@ -48,12 +45,18 @@ namespace GP {
 
 	private:
 		//packet handlers
+		static void newGameCreateCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra);
 		void handle_newgame(const char *data, int len);
+
+		static void updateGameCreateCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra);
 		void handle_updgame(const char *data, int len);
+
 		void handle_authp(const char *data, int len);
 		void handle_auth(const char *data, int len);
 		void handle_getpid(const char *data, int len);
 		void handle_getpd(const char *data, int len);
+
+		static void setPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra);
 		void handle_setpd(const char *data, int len);
 
 		//login
@@ -70,6 +73,8 @@ namespace GP {
 
 		int m_sd;
 		OS::GameData m_game;
+
+
 		Driver *mp_driver;
 
 		struct sockaddr_in m_address_info;
@@ -91,6 +96,8 @@ namespace GP {
 		OS::CMutex *mp_mutex;
 
 		uint16_t m_game_port;
+
+		std::string m_current_game_identifier;
 	};
 }
 #endif //_GPPEER_H

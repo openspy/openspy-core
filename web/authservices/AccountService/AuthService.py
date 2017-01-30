@@ -272,7 +272,7 @@ class AuthService(BaseService):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
             request_body_size = int(env.get('CONTENT_LENGTH', 0))
-        except (ValueError):
+        except ValueError:
             request_body_size = 0
 
         response = {}

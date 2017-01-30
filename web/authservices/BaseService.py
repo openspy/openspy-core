@@ -16,6 +16,8 @@ class BaseService():
 		self.PROFILE_MGR_SCRIPT = '/backend/userprofile'
 		self.SECRET_PROFILEMGR_KEY = "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
 
+		self.SECRET_PERSIST_KEY = "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
+
 	def sendEmail(self, email_data):
 		print("Send email: {}\n".format(email_data))
 		return False

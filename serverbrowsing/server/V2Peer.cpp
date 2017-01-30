@@ -120,7 +120,7 @@ namespace SB {
 		field_list = (const char *)BufferReadNTS(buffer, &buf_remain);
 
 		if (field_list) {
-			req.field_list = OS::KeyStringToMap(field_list);
+			req.field_list = OS::KeyStringToVector(field_list);
 			free((void *)field_list);
 		}
 
