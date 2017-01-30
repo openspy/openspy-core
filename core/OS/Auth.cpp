@@ -505,6 +505,7 @@ namespace OS {
 		request.extra = extra;
 		request.operation_id = operation_id;
 		request.callback = cb;
+		request.create_session = true;
 		AuthTask::getAuthTask()->AddRequest(request);
 	}
 	AuthTask::AuthTask() {

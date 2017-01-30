@@ -698,9 +698,16 @@ namespace GPBackend {
 			return;
 		int profileid = json_integer_value(json_obj);
 
+		json_obj = json_object_get(json, "status");
+		if(!json_obj)
+			return;
+
+		status.status = (GPShared::GPEnum)json_integer_value(json_obj);
+
 		json_obj = json_object_get(json, "status_string");
 		if(!json_obj)
 			return;
+
 		str = json_string_value(json_obj);
 		len = strlen(str);
 		if(len > GP_STATUS_STRING_LEN)

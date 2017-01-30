@@ -32,6 +32,9 @@ namespace GP {
 		mp_mutex = OS::CreateMutex();
 		gettimeofday(&m_last_ping, NULL);
 
+		m_user.id = 0;
+		m_profile.id = 0;
+
 		m_session_key = 1234567;
 
 		gen_random(m_challenge, CHALLENGE_LEN);
@@ -140,15 +143,67 @@ namespace GP {
 		ss << "\\getpidr\\-1\\lid\\" << operation_id;
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}
+	void Peer::getPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
+		if(!g_gbl_gp_driver->HasPeer(peer)) {
+			free((void *)extra);
+			return;
+		}
+		//// \\getpdr\\1\\lid\\1\\length\\5\\data\\mydata\\final
+		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
+		printf("Got persist data: %s\n", response_data.game_instance_identifier.c_str());
+
+		std::ostringstream ss;
+		//void Base64StrToBin(const char *str, uint8_t **out, int &len);
+		uint8_t *data;
+		int data_len = 0;
+		OS::Base64StrToBin(response_data.game_instance_identifier.c_str(), &data, data_len);
+		ss << "\\getpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\length\\" << data_len << "\\data\\";
+
+		//SendPacket
+		uint8_t out_buff[GPI_READ_SIZE + 1];
+		int out_len = 0;
+		uint8_t *p = (uint8_t *)(&out_buff);
+		BufferWriteData(&p, &out_len, (uint8_t *)ss.str().c_str(), ss.str().length());
+
+		BufferWriteData(&p, &out_len, (uint8_t *)data, data_len);
+
+		peer->SendPacket((const uint8_t *)&out_buff,out_len);
+
+		free((void *)data);
+		free((void *)persist_request_data);
+	}
 	void Peer::handle_getpd(const char *data, int len) {
-		/*
-			Send error response until implemented
-		*/
 		int operation_id = find_paramint("lid", (char *)data);
 		int pid = find_paramint("pid", (char *)data);
-		std::ostringstream ss;
-		ss << "\\getpdr\\0\\lid\\" << operation_id << "\\pid\\" << pid;
-		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+		int data_index = find_paramint("dindex", (char *)data);
+
+		persisttype_t persist_type = (persisttype_t)find_paramint("ptype", (char *)data);
+
+		////typedef enum {pd_private_ro, pd_private_rw, pd_public_ro, pd_public_rw} persisttype_t;
+
+		if(persist_type == pd_private_ro || persist_type == pd_private_rw) {
+			if(pid != m_profile.id)	{
+				send_error(GPShared::GP_NOT_LOGGED_IN);
+				return;
+			}
+		}
+
+		char keys[1000];
+		std::vector<std::string> keyList;
+		if(find_param("keys", (char *)data, keys, sizeof(keys))) {
+			for(int i=0;i<sizeof(keys);i++) {
+				if(keys[i] == '\x01') {
+					keys[i] = '\\';
+				}
+			}
+			keyList = OS::KeyStringToVector(keys);
+		}
+
+		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
+		persist_request_data->profileid = pid;
+		persist_request_data->operation_id = operation_id;
+
+		GPBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList);
 	}
 
 	void Peer::setPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
@@ -252,6 +307,7 @@ namespace GP {
 		//\updgame\\sesskey\%d\done\%d\gamedata\%s
 		std::map<std::string,std::string> game_data;
 		char gamedata[1000];
+		memset(&gamedata, 0, sizeof(gamedata));
 		if(!find_param("gamedata", (char *)data, gamedata, sizeof(gamedata)-1)) {
 			send_error(GPShared::GP_PARSE);
 			return;
@@ -372,6 +428,7 @@ namespace GP {
 		}
 		gamespy3dxor((char *)&out_buff, out_len);
 		int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
+
 		if(c < 0) {
 			m_delete_flag = true;
 		}
@@ -401,6 +458,7 @@ namespace GP {
 			ss << "\\fatal\\" << error_data.die;
 			m_delete_flag = true;
 		}
+		printf("Send error: %s\n", error_data.msg);
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}
 

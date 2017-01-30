@@ -35,6 +35,8 @@ namespace GPBackend {
 	enum EPersistBackendRespType {
 		EPersistBackendRespType_NewGame,
 		EPersistBackendRespType_UpdateGame,
+		EPersistBackendRespType_SetUserData,
+		EPersistBackendRespType_GetUserData,
 	};
 
 	typedef struct {
@@ -54,6 +56,7 @@ namespace GPBackend {
 		PersistBackendCallback callback;
 
 		std::map<std::string, std::string> kvMap;
+		std::vector<std::string> keyList;
 		std::string game_instance_identifier;
 		int profileid;
 
@@ -71,7 +74,7 @@ namespace GPBackend {
 			static void SubmitNewGameSession(GP::Peer *peer, void* extra, PersistBackendCallback cb);
 			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GP::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb);
 			static void SubmitSetPersistData(int profileid, GP::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set);
-			static void SubmitGetPersistData(int profileid, GP::Peer *peer, void* extra, PersistBackendCallback cb, persisttype_t type, int index);
+			static void SubmitGetPersistData(int profileid, GP::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList);
 
 		private:
 			static PersistBackendTask *m_task_singleton;
