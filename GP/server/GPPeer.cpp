@@ -49,7 +49,7 @@ namespace GP {
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
 			buf[len] = 0;
-			if(len == 0) goto end;
+			if(len <= 0) goto end;
 
 			/* split by \\final\\  */
 			char *p = (char *)&buf;

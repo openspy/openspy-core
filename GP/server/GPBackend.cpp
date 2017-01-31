@@ -80,8 +80,9 @@ namespace GPBackend {
 	    			if(!find_param("type", r->element[2]->str,(char *)&msg_type, sizeof(msg_type))) {
 	    					return;
 	    			}
-	    			find_param("reason", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
+	    			
 	    			if(!strcmp(msg_type, "add_request")) {
+	    				find_param("reason", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
 	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
 	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);;
 	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
