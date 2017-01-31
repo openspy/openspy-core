@@ -9,8 +9,15 @@ namespace OS {
 			ret.id = json_integer_value(j);
 
 		j = json_object_get(obj, "userid");
-		if(j && json_is_integer(j))
+		if(j && json_is_integer(j)) {
 			ret.userid = json_integer_value(j);
+		}
+		else if(!j) {
+			json_t *user_obj = json_object_get(obj, "user");
+			j = json_object_get(user_obj, "id");
+			if(j)
+				ret.userid = json_integer_value(j);
+		}
 
 		j = json_object_get(obj, "namespaceid");
 		if(j && json_is_integer(j))

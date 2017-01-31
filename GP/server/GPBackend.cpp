@@ -710,22 +710,36 @@ namespace GPBackend {
 			return;
 
 		str = json_string_value(json_obj);
-		len = strlen(str);
-		if(len > GP_STATUS_STRING_LEN)
-			len = GP_STATUS_STRING_LEN;
-		strncpy(status.status_str, str, len);
-		status.status_str[len] = 0;
+		if(str) {
+			len = strlen(str);
+			if(len > GP_STATUS_STRING_LEN)
+				len = GP_STATUS_STRING_LEN;
+			strncpy(status.status_str, str, len);
+			status.status_str[len] = 0;
+		} else {
+			status.status_str[0] = 0;
+		}
 
 
 		json_obj = json_object_get(json, "location_string");
 		if(!json_obj)
 			return;
-		len = strlen(str);
-		if(len > GP_LOCATION_STRING_LEN)
-			len = GP_LOCATION_STRING_LEN;
-		strncpy(status.location_str, str, len);
-		status.location_str[len] = 0;
 
+		str = json_string_value(json_obj);
+		if(str) {
+			len = strlen(str);
+			if(len > GP_LOCATION_STRING_LEN)
+				len = GP_LOCATION_STRING_LEN;
+			strncpy(status.location_str, str, len);
+			status.location_str[len] = 0;
+		} else {
+			status.location_str[0] = 0;
+		}
+
+
+		json_obj = json_object_get(json, "quiet_flags");
+		if(!json_obj)
+			return;
 		status.quiet_flags = json_integer_value(json_obj);
 
 		json_obj = json_object_get(json, "ip");
@@ -733,7 +747,8 @@ namespace GPBackend {
 			return;
 
 		str = json_string_value(json_obj);
-		status.address.ip = Socket::htonl(Socket::inet_addr(str));
+		if(str)
+			status.address.ip = Socket::htonl(Socket::inet_addr(str));
 
 		json_obj = json_object_get(json, "port");
 		if(!json_obj)

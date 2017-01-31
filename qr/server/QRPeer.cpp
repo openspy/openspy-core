@@ -16,7 +16,6 @@ namespace QR {
 		m_address_info = *address_info;
 	}
 	Peer::~Peer() {
-		close(m_sd);
 	}
 	bool Peer::isTeamString(const char *string) {
 		int len = strlen(string);

@@ -169,7 +169,6 @@ namespace GP {
 		if(find_param("publicmask", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
 			send_userupdate = true;
 			m_user.publicmask = atoi(buff);
-			printf("GOt punlicmask: %d\n", m_user.publicmask);
 		}
 
 		if(find_param("nick", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
@@ -514,6 +513,7 @@ namespace GP {
 		request.profile_search_details.id = profileid;
 		request.extra = this;
 		request.callback = Peer::m_getprofile_callback;
+		request.type = OS::EProfileSearch_Profiles;
 		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
 	}
 	void Peer::handle_addblock(const char *data, int len) {
@@ -572,7 +572,6 @@ namespace GP {
 			if(p.uniquenick.length()) {
 				s << "\\uniquenick\\" << p.uniquenick;
 			}
-
 			if(user.publicmask & GP_MASK_EMAIL || peer->m_profile.userid == user.id) {
 				if(user.email.length()) {
 					s << "\\email\\" << user.email;

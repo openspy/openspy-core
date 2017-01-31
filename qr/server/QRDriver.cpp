@@ -41,12 +41,13 @@ namespace QR {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
-			if (!peer->ShouldDelete())
+			if (!peer->ShouldDelete()) {
 				peer->think();
+			}
 			else {
 				//delete if marked for deletiontel
-				delete peer;
 				it = m_connections.erase(it);
+				delete peer;				
 				continue;
 			}
 			it++;
@@ -100,9 +101,22 @@ namespace QR {
 		socklen_t slen = sizeof(struct sockaddr_in);
 
 		int len = recvfrom(m_sd,(char *)&recvbuf,sizeof(recvbuf),0,(struct sockaddr *)&si_other,&slen);
-		recvbuf[len] = 0;
-		Peer *peer = find_or_create(&si_other, recvbuf[0] == '\\' ? 1 : 2);
-		peer->handle_packet((char *)&recvbuf, len);
+		
+		Peer *peer = NULL;
+		if(len > 0) {
+			peer = find_or_create(&si_other, recvbuf[0] == '\\' ? 1 : 2);
+		} else {
+			peer = find_client(&si_other);
+		}
+		printf("len: %d peer: %p\n",len,peer);
+		if(peer) {
+			if(len > 0) {
+				recvbuf[len] = 0;
+				peer->handle_packet((char *)&recvbuf, len);
+			} else if(len < 0) {
+				peer->SetDelete(true);
+			}
+		}
 
 
 	}

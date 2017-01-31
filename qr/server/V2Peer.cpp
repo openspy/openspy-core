@@ -45,6 +45,8 @@ namespace QR {
 		m_server_info.m_address.port = Socket::htons(m_address_info.sin_port);
 		m_server_info.m_address.ip = Socket::htonl(m_address_info.sin_addr.s_addr);
 
+		gettimeofday(&m_last_ping, NULL);
+
 	}
 	V2Peer::~V2Peer() {
 		printf("V2 client deleted pushed: %d\n", m_server_pushed);

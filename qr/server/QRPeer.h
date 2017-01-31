@@ -25,6 +25,7 @@ namespace QR {
 		int GetSocket() { return m_sd; };
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
 		bool ShouldDelete() { return m_delete_flag; };
+		void SetDelete(bool del) { m_delete_flag = del; };
 		bool IsTimeout() { return m_timeout_flag; }
 
 		virtual void send_error(bool die, const char *fmt, ...) = 0;

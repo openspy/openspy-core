@@ -11,7 +11,7 @@
 
 #define REQUEST_KEY_LEN 4
 #define CHALLENGE_LEN 64
-#define QR2_PING_TIME 30
+#define QR2_PING_TIME 1
 namespace QR {
 	class Driver;
 
