@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include <OS/socketlib/socketlib.h>
 SelectNetEventManager::SelectNetEventManager() {
-
+	m_exit_flag = false;
 }
 SelectNetEventManager::~SelectNetEventManager() {
-
+	m_exit_flag = true;
 }
 void SelectNetEventManager::run() {
 	
@@ -17,6 +17,9 @@ void SelectNetEventManager::run() {
     int hsock = setup_fdset();
     if(Socket::select(hsock + 1, &m_fdset, NULL, NULL, &timeout) < 0) {
     	//return;
+    }
+    if(m_exit_flag) {
+    	return;
     }
 
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

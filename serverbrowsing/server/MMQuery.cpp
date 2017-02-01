@@ -472,6 +472,20 @@ namespace MM {
 	void MMQueryTask::PerformGroupsQuery(MMQueryRequest request) {
 		request.callback(request, GetGroups(&request.req), request.extra);
 	}
+	void MMQueryTask::PerformGetServerByKey(MMQueryRequest request) {
+		ServerListQuery ret;
+		AppendServerEntry(request.key, &ret, true, false, NULL, NULL);
+		request.callback(request, ret, request.extra);
+		FreeServerListQuery(&ret);
+	}
+	void MMQueryTask::PerformGetServerByIP(MMQueryRequest request) {
+		ServerListQuery ret;
+		Server *serv = GetServerByIP(request.address, request.SubmitData.game, NULL);
+		if(serv)
+			ret.list.push_back(serv);
+		request.callback(request, ret, request.extra);
+		FreeServerListQuery(&ret);
+	}
 	void MMQueryTask::PerformSubmitData(MMQueryRequest request) {
 		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\send_msg\\%s\\%s\\%d\\%s\\%d\\%s\n",
 			sb_mm_channel,request.SubmitData.game.gamename,Socket::inet_ntoa(request.SubmitData.from.sin_addr),
@@ -494,8 +508,10 @@ namespace MM {
 							task->PerformGroupsQuery(task_params);
 							break;
 						case EMMQueryRequestType_GetServerByKey:
+							task->PerformGetServerByKey(task_params);
 							break;
 						case EMMQueryRequestType_GetServerByIP:
+						task->PerformGetServerByIP(task_params);
 							break;
 						case EMMQueryRequestType_SubmitData:
 							task->PerformSubmitData(task_params);

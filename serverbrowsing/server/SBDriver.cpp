@@ -12,6 +12,7 @@
 
 #include "MMQuery.h"
 namespace SB {
+	Driver *g_gbl_driver = NULL;
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version) : INetDriver(server) {
 		uint32_t bind_ip = INADDR_ANY;
 		
@@ -44,6 +45,8 @@ namespace SB {
 
 		m_version = version;
 
+		g_gbl_driver = this;
+
 		MM::MMQueryTask::getQueryTask()->AddDriver(this);
 
 	}
@@ -59,8 +62,9 @@ namespace SB {
 				peer->think(FD_ISSET(peer->GetSocket(), fdset));
 			else {
 				//delete if marked for deletiontel
-				delete peer;
 				it = m_connections.erase(it);
+				delete peer;
+				
 				continue;
 			}
 			it++;
@@ -125,6 +129,17 @@ namespace SB {
 
 	}
 
+	bool Driver::HasPeer(SB::Peer * peer) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			if (*it == peer) {
+				return true;
+			}
+			it++;
+		}
+		return false;
+	}
+
 
 	int Driver::getListenerSocket() {
 		return m_sd;
@@ -180,11 +195,9 @@ namespace SB {
 		}
 	}
 	void Driver::SendNewServer(MM::Server *server) {
-		printf("Driver::SendNewServer\n");
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			printf("Send to client %p\n", p);
 			p->informNewServers(server);
 			it++;
 		}
@@ -193,7 +206,6 @@ namespace SB {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			printf("Send update to client %p\n", p);
 			p->informUpdateServers(server);
 			it++;
 		}

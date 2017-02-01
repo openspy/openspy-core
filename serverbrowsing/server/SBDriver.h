@@ -45,6 +45,8 @@ namespace SB {
 
 		int GetNumConnections();
 
+		bool HasPeer(SB::Peer * peer);
+
 	private:
 
 		void TickConnections(fd_set *fdset);
@@ -61,5 +63,7 @@ namespace SB {
 		int m_sb_version;
 
 	};
+
+	extern Driver *g_gbl_driver;
 }
 #endif //_SBDRIVER_H

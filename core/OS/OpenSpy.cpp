@@ -18,6 +18,10 @@ namespace OS {
 
 		redis_internal_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 	}
+	void Shutdown() {
+		redisFree(redis_internal_connection);
+		curl_global_cleanup();
+	}
 	OS::GameData GetGameByRedisKey(const char *key, redisContext *redis_ctx = NULL) {
 		GameData game;
 		redisReply *reply;	

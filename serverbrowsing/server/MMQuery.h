@@ -140,6 +140,8 @@ namespace MM {
 			void PerformServersQuery(MMQueryRequest request);
 			void PerformGroupsQuery(MMQueryRequest request);
 			void PerformSubmitData(MMQueryRequest request);
+			void PerformGetServerByKey(MMQueryRequest request);
+			void PerformGetServerByIP(MMQueryRequest request);			
 
 			std::vector<SB::Driver *> m_drivers;
 			redisContext *mp_redis_connection;

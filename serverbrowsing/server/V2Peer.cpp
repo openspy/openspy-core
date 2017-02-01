@@ -15,8 +15,11 @@ namespace SB {
 	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd) {
 		m_next_packet_send_msg = false;
 		m_sent_crypt_header = false;
+		m_game.secretkey[0] = 0;
+		memset(&m_crypt_state,0,sizeof(m_crypt_state));
 	}
 	V2Peer::~V2Peer() {
+		printf("V2 delete\n");
 	}
 	void V2Peer::handle_packet(char *data, int len) {
 		if(len == 0)
@@ -411,13 +414,21 @@ namespace SB {
 	void V2Peer::think(bool waiting_packet) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 		socklen_t slen = sizeof(struct sockaddr_in);
-		int len;
+		int len = 0;
 		if (waiting_packet) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
 			if(m_next_packet_send_msg) {
 				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);
-				//MM::SubmitData(base64, &m_address_info, &m_send_msg_to, &m_last_list_req.m_for_game);
 
+				MM::MMQueryRequest req;
+				MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
+				req.extra = this;
+
+				req.type = MM::EMMQueryRequestType_SubmitData;
+				req.SubmitData.from = m_address_info;
+				req.SubmitData.to = m_send_msg_to;
+				req.SubmitData.base64 = base64;
+				query_task->AddRequest(req);
 				free((void *)base64);
 				m_next_packet_send_msg = false;
 			} else {
@@ -646,12 +657,18 @@ namespace SB {
 	}
 	void V2Peer::OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
 		V2Peer *peer = (V2Peer *)extra;
+		if(!SB::g_gbl_driver->HasPeer(peer)) {
+			return;
+		}
 		peer->SendListQueryResp(results, request.req);
 		MM::MMQueryTask::FreeServerListQuery(&results);
 		peer->SendPushKeys();
 	}
 	void V2Peer::OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
 		V2Peer *peer = (V2Peer *)extra;
+		if(!SB::g_gbl_driver->HasPeer(peer)) {
+			return;
+		}
 		peer->SendListQueryResp(results, request.req);
 		MM::MMQueryTask::FreeServerListQuery(&results);
 	}

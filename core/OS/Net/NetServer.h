@@ -15,6 +15,7 @@ public:
 		Currently the driver is aware of what type of NetServer its connected to.
 	*/
 	void addNetworkDriver(INetDriver *driver);
+	void flagExit();
 protected:
 	void NetworkTick(); //fires the INetEventMgr
 //private:

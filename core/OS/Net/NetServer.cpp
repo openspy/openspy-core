@@ -4,7 +4,7 @@ INetServer::INetServer() {
 	mp_net_event_mgr = new SelectNetEventManager();
 }
 INetServer::~INetServer() {
-	
+	delete mp_net_event_mgr;
 }
 void INetServer::addNetworkDriver(INetDriver *driver) {
 	m_net_drivers.push_back(driver);
@@ -15,4 +15,7 @@ void INetServer::tick(fd_set *fdset) {
 }
 void INetServer::NetworkTick() {
 	mp_net_event_mgr->run();
+}
+void INetServer::flagExit() {
+	mp_net_event_mgr->flagExit();	
 }

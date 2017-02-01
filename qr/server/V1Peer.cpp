@@ -174,6 +174,8 @@ namespace QR {
 				return;
 				break;
 		}
+		
+		gen_random((char *)&m_challenge,6); //make new challenge
 		s << "\\echo\\ " << m_challenge;
 		SendPacket((const uint8_t*)s.str().c_str(),s.str().length(), false);
 	}

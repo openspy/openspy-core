@@ -8,7 +8,9 @@ class INetEventManager {
 		~INetEventManager();
 		virtual void run() = 0;
 		void addNetworkDriver(INetDriver *driver);
+		void flagExit();
 	protected:
+		bool m_exit_flag;
 		std::vector<INetDriver *> m_net_drivers;
 };
 #endif //_NETEVENTMGR_H

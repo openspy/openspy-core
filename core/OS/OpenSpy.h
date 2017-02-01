@@ -96,6 +96,7 @@ namespace OS {
 	};
 	
 	void Init();
+	void Shutdown();
 	std::map<std::string, std::string> KeyStringToMap(std::string input);
 	std::vector<std::string> KeyStringToVector(std::string input);
 	std::string strip_quotes(std::string s);
