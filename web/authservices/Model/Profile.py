@@ -1,21 +1,21 @@
 from peewee import *
 from BaseModel import BaseModel
-from User import User
+from Model.User import User
 import datetime
 
 class GPBirthDay(Field):
-    db_field = 'date'
+	db_field = 'date'
 
-    def db_value(self, value):
-    	if value != None:
-    		day = (value >> 24) & 0xFF
-    		month = (value >> 16) & 0xFF
-	    	year = (value & 0xFFFF)
-    	else:
-    		return None
-        return datetime.date(year,month,day)
+	def db_value(self, value):
+		if value != None:
+			day = (value >> 24) & 0xFF
+			month = (value >> 16) & 0xFF
+			year = (value & 0xFFFF)
+		else:
+			return None
+		return datetime.date(year,month,day)
 
-    def python_value(self, value):
+	def python_value(self, value):
 		day = 0
 		month = 0
 		year = 0
