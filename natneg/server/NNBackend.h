@@ -47,6 +47,7 @@ namespace NN {
 			NNQueryTask();
 			~NNQueryTask();
 			static NNQueryTask *getQueryTask();
+			static void Shutdown();
 
 
 			void AddDriver(NN::Driver *driver);
@@ -69,6 +70,8 @@ namespace NN {
 			redisAsyncContext *mp_redis_async_connection;
 
 			static NNQueryTask *m_task_singleton;
+			struct event_base *mp_event_base;
+			OS::CThread *mp_redis_async_thread;
 	};
 }
 #endif //_NN_BACKEND_H

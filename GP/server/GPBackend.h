@@ -6,6 +6,12 @@
 
 #include <OS/GPShared.h>
 
+#define _WINSOCK2API_
+#include <stdint.h>
+#include <hiredis/adapters/libevent.h>
+#include <event.h>
+#undef _WINSOCK2API_
+
 namespace GPBackend {
 
 	enum EGPRedisRequestType {
@@ -80,6 +86,7 @@ namespace GPBackend {
 		public:
 			GPBackendRedisTask();
 			~GPBackendRedisTask();
+			static void Shutdown();
 			static GPBackendRedisTask *getGPBackendRedisTask();
 			static void MakeBuddyRequest(int from_profileid, int to_profileid, const char *reason);
 			static void SetPresenceStatus(int from_profileid, GPShared::GPStatus status, GP::Peer *peer);
@@ -91,6 +98,7 @@ namespace GPBackend {
 			static void MakeBlockRequest(int from_profileid, int block_id);
 			static void MakeRemoveBlockRequest(int from_profileid, int block_id);
 		private:
+			static void *setup_redis_async_sub(OS::CThread *thread);
 			static GPBackendRedisTask *m_task_singleton;
 			static void *TaskThread(OS::CThread *thread);
 			void Perform_BuddyRequest(struct sBuddyRequest request);
@@ -107,6 +115,9 @@ namespace GPBackend {
 
 			redisContext *mp_redis_connection;
 			redisAsyncContext *mp_redis_subscribe_connection;
+			OS::CThread *mp_redis_async_thread;
+
+			struct event_base *mp_base_event;
 	};
 }
 #endif //_GP_BACKEND_H

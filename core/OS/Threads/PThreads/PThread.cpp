@@ -17,18 +17,22 @@ namespace OS {
 		m_running = false;
 		m_params = param;
 		m_entry = entry;
+		m_thread_dead = false;
 		if(auto_start) {
 			start();
 		}
 	}
 	CPThread::~CPThread() {
-		if(!m_thread_dead)
+		if(!m_thread_dead) {
 			pthread_cancel(m_thread);
+			pthread_join(m_thread, NULL);
+		}
 	}
 	void CPThread::start() {
 		if(!m_running) {
 			pthread_attr_t attr;
 			pthread_create(&m_thread, NULL, cpthread_thread, (void *)this);
+
 			m_running = true;
 		}
 	}

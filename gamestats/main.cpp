@@ -6,19 +6,57 @@
 #include <OS/socketlib/socketlib.h>
 #include "server/GPServer.h"
 #include "server/GPDriver.h"
+#include "server/GPBackend.h"
 INetServer *g_gameserver = NULL;
+INetDriver *g_driver = NULL;
+bool g_running = true;
 
+void shutdown();
+
+void on_exit(void) {
+    shutdown();
+}
+
+void sig_handler(int signo)
+{
+    shutdown();
+}
 int main() {
+
+    int i = atexit(on_exit);
+    if (i != 0) {
+       fprintf(stderr, "cannot set exit function\n");
+       exit(EXIT_FAILURE);
+    }
+    
     OS::Init();
     Socket::Init();
 
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
+
 	g_gameserver = new GP::Server();
-	g_gameserver->addNetworkDriver(new GP::Driver(g_gameserver, "0.0.0.0", STATS_SERVER_PORT));
+    g_driver = new GP::Driver(g_gameserver, "0.0.0.0", STATS_SERVER_PORT);
+	g_gameserver->addNetworkDriver(g_driver);
 	g_gameserver->init();
-	while(true) {
+	while(g_running) {
 		g_gameserver->tick();
 	}
+    delete g_gameserver;
+    delete g_driver;
+
+    OS::Shutdown();
+    GPBackend::PersistBackendTask::Shutdown();
+    return 0;
 }
+
+void shutdown() {
+    if(g_running) {
+        g_gameserver->flagExit();
+        g_running = false;
+    }
+}
+
 
 
 #ifdef _WIN32

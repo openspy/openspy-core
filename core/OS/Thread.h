@@ -7,7 +7,7 @@ namespace OS {
 
     public:
         CThread(ThreadEntry *entry, void *params, bool auto_start = true) { m_entry = entry; m_start_on_create = auto_start; m_params = params; m_thread_dead = false;};
-        ~CThread() { };
+        virtual ~CThread() { };
         virtual void start() = 0;
         virtual void stop() = 0;
         void *getParams() {return m_params; };

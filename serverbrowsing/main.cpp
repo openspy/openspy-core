@@ -6,6 +6,7 @@
 #include <OS/Net/NetServer.h>
 #include "server/SBServer.h"
 #include "server/SBDriver.h"
+#include "server/MMQuery.h"
 INetServer *g_gameserver = NULL;
 SB::Driver *g_legacyms_driver, *g_ms_driver;
 bool g_running = true;
@@ -18,7 +19,6 @@ void on_exit(void) {
 
 void sig_handler(int signo)
 {
-    printf("Sig handler: %d\n", signo);
     shutdown();
 }
 
@@ -37,6 +37,7 @@ int main() {
     Socket::Init();
 
 	g_gameserver = new SBServer();
+    printf("Gamserver is: %p\n", g_gameserver);
     g_legacyms_driver = new SB::Driver(g_gameserver, "0.0.0.0", 28900, 1);
     g_ms_driver = new SB::Driver(g_gameserver, "0.0.0.0", 28910, 2);
 
@@ -54,16 +55,17 @@ int main() {
     delete g_legacyms_driver;
     delete g_ms_driver;
 
-
+    MM::MMQueryTask::Shutdown();
     OS::Shutdown();
-
 
     return 0;
 }
 
 void shutdown() {
-    g_gameserver->flagExit();
-    g_running = false;
+    if(g_running) {
+        g_gameserver->flagExit();
+        g_running = false;
+    }
 }
 
 #ifdef _WIN32

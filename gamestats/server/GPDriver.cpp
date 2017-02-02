@@ -43,6 +43,12 @@ namespace GP {
 
 	}
 	Driver::~Driver() {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *peer = *it;
+			delete peer;
+			it++;
+		}
 	}
 	void Driver::think(fd_set *fdset) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
@@ -52,8 +58,8 @@ namespace GP {
 				peer->think(FD_ISSET(peer->GetSocket(), fdset));
 			else {
 				//delete if marked for deletiontel
-				delete peer;
 				it = m_connections.erase(it);
+				delete peer;				
 				continue;
 			}
 			it++;

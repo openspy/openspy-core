@@ -22,6 +22,7 @@ namespace MM {
 	extern redisContext *mp_redis_connection;
 
 	void Init(QR::Driver *driver);
+	void Shutdown();
 	void PushServer(ServerInfo *server, bool publish = true, int pk_id = -1);
 	void UpdateServer(ServerInfo *server);
 	void DeleteServer(ServerInfo *server, bool publish = true);

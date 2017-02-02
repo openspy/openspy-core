@@ -1,8 +1,10 @@
 #include "SBPeer.h"
 #include "SBServer.h"
 #include "SBDriver.h"
-SBServer::SBServer() {
+SBServer::SBServer() : INetServer() {
 	
+}
+SBServer::~SBServer() {
 }
 void SBServer::init() {
 }

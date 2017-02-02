@@ -5,12 +5,6 @@
 #include <string.h>
 #include <OS/socketlib/socketlib.h>
 
-#define _WINSOCK2API_
-#include <stdint.h>
-#include <hiredis/hiredis.h>
-#include <hiredis/adapters/libevent.h>
-#include <event.h>
-#undef _WINSOCK2API_
 
 #include <OS/OpenSpy.h>
 #include <OS/Thread.h>
@@ -33,9 +27,6 @@ namespace GPBackend {
 	struct curl_data {
 	    json_t *json_data;
 	};
-
-	redisContext *mp_redis_connection = NULL;
-	redisAsyncContext *mp_redis_subscribe_connection = NULL;
 
 	GPBackendRedisTask *GPBackendRedisTask::m_task_singleton = NULL;
 
@@ -144,20 +135,22 @@ namespace GPBackend {
 	    	}
 	    }
 	}
-	void *setup_redis_async_sub(OS::CThread *) {
-		struct event_base *base_sub = event_base_new();
+	void *GPBackendRedisTask::setup_redis_async_sub(OS::CThread *thread) {
+		GPBackendRedisTask *task = (GPBackendRedisTask *)thread->getParams();
+		task->mp_base_event = event_base_new();
 
-	    mp_redis_subscribe_connection = redisAsyncConnect("127.0.0.1", 6379);
+	    task->mp_redis_subscribe_connection = redisAsyncConnect("127.0.0.1", 6379);
 	    
-	    redisLibeventAttach(mp_redis_subscribe_connection, base_sub);
+	    redisLibeventAttach(task->mp_redis_subscribe_connection, task->mp_base_event);
 
-	    redisAsyncCommand(mp_redis_subscribe_connection, onRedisMessage, NULL, "SUBSCRIBE %s",gp_buddies_channel);
+	    redisAsyncCommand(task->mp_redis_subscribe_connection, onRedisMessage, NULL, "SUBSCRIBE %s",gp_buddies_channel);
 
-	    event_base_dispatch(base_sub);
+	    event_base_dispatch(task->mp_base_event);
 	}
 
 	GPBackendRedisTask::GPBackendRedisTask() {
-		OS::CreateThread(setup_redis_async_sub, NULL, true);
+		mp_redis_subscribe_connection = NULL;
+		mp_redis_async_thread = OS::CreateThread(setup_redis_async_sub, this, true);
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -169,14 +162,24 @@ namespace GPBackend {
 		mp_thread = OS::CreateThread(GPBackendRedisTask::TaskThread, this, true);
 	}
 	GPBackendRedisTask::~GPBackendRedisTask() {
-		delete mp_mutex;
 		delete mp_thread;
+		delete mp_redis_async_thread;
+		delete mp_mutex;		
+
+		redisFree(mp_redis_connection);
+		if(mp_redis_subscribe_connection)
+			redisAsyncFree(mp_redis_subscribe_connection);
+
+		event_base_free(mp_base_event);
 	}
 	GPBackendRedisTask *GPBackendRedisTask::getGPBackendRedisTask() {
 		if(!GPBackendRedisTask::m_task_singleton) {
 			GPBackendRedisTask::m_task_singleton = new GPBackendRedisTask();
 		}
 		return GPBackendRedisTask::m_task_singleton;
+	}
+	void GPBackendRedisTask::Shutdown() {
+		delete getGPBackendRedisTask();
 	}
 	void GPBackendRedisTask::MakeBuddyRequest(int from_profileid, int to_profileid, const char *reason) {
 		GPBackendRedisRequest req;

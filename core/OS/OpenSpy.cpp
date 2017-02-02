@@ -6,6 +6,8 @@
 
 #include <OS/socketlib/socketlib.h>
 
+#include "Auth.h"
+
 namespace OS {
 	redisContext *redis_internal_connection = NULL;
 	void Init() {
@@ -19,6 +21,10 @@ namespace OS {
 		redis_internal_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 	}
 	void Shutdown() {
+		if(AuthTask::HasAuthTask()) {
+			delete AuthTask::getAuthTask();
+		}
+
 		redisFree(redis_internal_connection);
 		curl_global_cleanup();
 	}

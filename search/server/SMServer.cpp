@@ -2,7 +2,7 @@
 #include "SMServer.h"
 #include "SMDriver.h"
 namespace SM {
-	Server::Server() {
+	Server::Server() : INetServer(){
 		
 	}
 	void Server::init() {

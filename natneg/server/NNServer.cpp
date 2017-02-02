@@ -4,7 +4,7 @@
 
 namespace NN {
 
-	Server::Server() {
+	Server::Server() : INetServer() {
 		
 	}
 	void Server::init() {

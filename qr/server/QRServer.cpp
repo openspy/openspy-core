@@ -5,7 +5,7 @@
 
 namespace QR {
 
-	Server::Server() {
+	Server::Server() : INetServer() {
 		
 	}
 	void Server::init() {

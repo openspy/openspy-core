@@ -31,13 +31,13 @@ namespace NN {
 	void *NNQueryTask::setup_redis_async(OS::CThread *thread) {
 		NNQueryTask *task = (NNQueryTask *)thread->getParams();
 
-		struct event_base *base = event_base_new();
+		task->mp_event_base = event_base_new();
 
 	    task->mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
 
-	    redisLibeventAttach(task->mp_redis_async_connection, base);
+	    redisLibeventAttach(task->mp_redis_async_connection, task->mp_event_base);
 	    redisAsyncCommand(task->mp_redis_async_connection, NNQueryTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s",nn_channel);
-	    event_base_dispatch(base);
+	    event_base_dispatch(task->mp_event_base);
 		return NULL;
 	}
 
@@ -79,7 +79,7 @@ namespace NN {
 		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 		mp_redis_async_retrival_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 
-		OS::CreateThread(setup_redis_async, this, true);
+		mp_redis_async_thread = OS::CreateThread(setup_redis_async, this, true);
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(NNQueryTask::TaskThread, this, true);
@@ -87,6 +87,17 @@ namespace NN {
 	NNQueryTask::~NNQueryTask() {
 		delete mp_mutex;
 		delete mp_thread;
+		delete mp_redis_async_thread;
+
+		redisFree(mp_redis_connection);
+		redisFree(mp_redis_async_retrival_connection);
+		redisAsyncFree(mp_redis_async_connection);
+
+		event_base_free(mp_event_base);
+	}
+	void NNQueryTask::Shutdown() {
+		NNQueryTask *task = getQueryTask();
+		delete task;
 	}
 	NNQueryTask *NNQueryTask::getQueryTask() {
 		if(!NNQueryTask::m_task_singleton) {

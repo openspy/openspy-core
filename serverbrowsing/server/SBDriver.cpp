@@ -52,6 +52,13 @@ namespace SB {
 	}
 	Driver::~Driver() {
 		MM::MMQueryTask::getQueryTask()->RemoveDriver(this);
+
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *peer = *it;
+			delete peer;
+			it++;
+		}
 	}
 	void Driver::think(fd_set *fdset) {
 

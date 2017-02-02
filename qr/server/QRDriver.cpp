@@ -33,7 +33,12 @@ namespace QR {
 
 	}
 	Driver::~Driver() {
-
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *peer = *it;
+			delete peer;
+			it++;
+		}
 	}
 	void Driver::think(fd_set *fdset) {
 		TickConnections(fdset);
@@ -108,7 +113,6 @@ namespace QR {
 		} else {
 			peer = find_client(&si_other);
 		}
-		printf("len: %d peer: %p\n",len,peer);
 		if(peer) {
 			if(len > 0) {
 				recvbuf[len] = 0;

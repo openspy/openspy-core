@@ -22,6 +22,8 @@ namespace MM {
 	const char *mp_pk_name = "QRID";
 	QR::Driver *mp_driver;
 	redisAsyncContext *mp_redis_async_connection;
+	OS::CThread *mp_thread;
+	struct event_base *mp_event_base;
 	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
 	    redisReply *r = (redisReply*)reply;
 	    if (reply == NULL) return;
@@ -55,11 +57,11 @@ namespace MM {
 	    }
 	}
 	void *setup_redis_async(OS::CThread *) {
-		struct event_base *base = event_base_new();
+		mp_event_base = event_base_new();
 		mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
-	    redisLibeventAttach(mp_redis_async_connection, base);
+	    redisLibeventAttach(mp_redis_async_connection, mp_event_base);
 	    redisAsyncCommand(mp_redis_async_connection, onRedisMessage, NULL, "SUBSCRIBE %s",sb_mm_channel);
-	    event_base_dispatch(base);
+	    event_base_dispatch(mp_event_base);
 	    return NULL;
 	}
 	void Init(QR::Driver *driver) {
@@ -70,8 +72,14 @@ namespace MM {
 
 		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
 
-	    OS::CreateThread(setup_redis_async, NULL, true);
+	    mp_thread = OS::CreateThread(setup_redis_async, NULL, true);
 
+	}
+	void Shutdown() {
+		delete mp_thread;
+		redisFree(mp_redis_connection);
+		redisAsyncFree(mp_redis_async_connection);
+		event_base_free(mp_event_base);
 	}
 	void PushServer(ServerInfo *server, bool publish, int pk_id) {
 		int id = pk_id;

@@ -2,20 +2,63 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <OS/socketlib/socketlib.h>
 #include <OS/Net/NetServer.h>
 #include "server/NNServer.h"
 #include "server/NNDriver.h"
+#include "server/NNBackend.h"
 INetServer *g_gameserver = NULL;
+INetDriver *g_driver = NULL;
+bool g_running = true;
 
+void shutdown();
+
+void on_exit(void) {
+    shutdown();
+}
+
+
+void sig_handler(int signo)
+{
+    shutdown();
+}
 int main() {
+
+    int i = atexit(on_exit);
+    if (i != 0) {
+       fprintf(stderr, "cannot set exit function\n");
+       exit(EXIT_FAILURE);
+    }
+
 	OS::Init();
+    Socket::Init();
+
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
+
+
 	g_gameserver = new NN::Server();
-	g_gameserver->addNetworkDriver(new NN::Driver(g_gameserver, "0.0.0.0", NATNEG_PORT));
+    g_driver = new NN::Driver(g_gameserver, "0.0.0.0", NATNEG_PORT);
+	g_gameserver->addNetworkDriver(g_driver);
 	g_gameserver->init();
-	while(true) {
+	while(g_running) {
 		g_gameserver->tick();
 	}
+    
+    delete g_gameserver;
+    delete g_driver;
+    OS::Shutdown();
+    NN::NNQueryTask::Shutdown();
+    return 0;
 }
+
+void shutdown() {
+    if(g_running) {
+        g_gameserver->flagExit();
+        g_running = false;
+    }
+}
+
 
 
 #ifdef _WIN32

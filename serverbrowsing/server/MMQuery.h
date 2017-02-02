@@ -111,6 +111,7 @@ namespace MM {
 			MMQueryTask();
 			~MMQueryTask();
 			static MMQueryTask *getQueryTask();
+			static void Shutdown();
 
 			static void FreeServerListQuery(struct MM::ServerListQuery *query);
 
@@ -147,6 +148,9 @@ namespace MM {
 			redisContext *mp_redis_connection;
 			redisContext *mp_redis_async_retrival_connection;
 			redisAsyncContext *mp_redis_async_connection;
+			struct event_base *mp_event_base;
+
+			OS::CThread *mp_async_thread;
 
 			static MMQueryTask *m_task_singleton;
 	};

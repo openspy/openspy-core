@@ -6,6 +6,13 @@
 
 #include <OS/GPShared.h>
 
+#define _WINSOCK2API_
+#include <stdint.h>
+#include <hiredis/hiredis.h>
+#include <hiredis/adapters/libevent.h>
+#include <event.h>
+#undef _WINSOCK2API_
+
 /********
 persisttype_t
 There are 4 types of persistent data stored for each player:
@@ -70,6 +77,7 @@ namespace GPBackend {
 		public:
 			PersistBackendTask();
 			~PersistBackendTask();
+			static void Shutdown();
 			static PersistBackendTask *getPersistBackendTask();
 			static void SubmitNewGameSession(GP::Peer *peer, void* extra, PersistBackendCallback cb);
 			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GP::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb);
@@ -78,6 +86,7 @@ namespace GPBackend {
 
 		private:
 			static PersistBackendTask *m_task_singleton;
+			static void *setup_redis_async_sub(OS::CThread *thread);
 			static void *TaskThread(OS::CThread *thread);
 
 			void PerformNewGameSession(PersistBackendRequest req);
@@ -88,6 +97,10 @@ namespace GPBackend {
 
 			redisContext *mp_redis_connection;
 			redisAsyncContext *mp_redis_subscribe_connection;
+
+			OS::CThread *mp_redis_async_thread;
+			struct event_base *mp_event_base;
+
 	};
 }
 #endif //_GP_BACKEND_H

@@ -43,6 +43,7 @@ namespace GP {
 
 	}
 	Peer::~Peer() {
+		printf("Peer delete!!\n");
 		delete mp_mutex;
 		close(m_sd);
 	}
@@ -108,7 +109,8 @@ namespace GP {
 			m_delete_flag = true;
 			return;
 		}
-		gettimeofday(&m_last_recv, NULL);
+		if(len > 0)
+			gettimeofday(&m_last_recv, NULL);
 
 		if(strcmp(command, "auth") == 0) {
 			handle_auth(data, len);
@@ -179,13 +181,27 @@ namespace GP {
 
 		persisttype_t persist_type = (persisttype_t)find_paramint("ptype", (char *)data);
 
-		////typedef enum {pd_private_ro, pd_private_rw, pd_public_ro, pd_public_rw} persisttype_t;
-
 		if(persist_type == pd_private_ro || persist_type == pd_private_rw) {
 			if(pid != m_profile.id)	{
 				send_error(GPShared::GP_NOT_LOGGED_IN);
 				return;
 			}
+		}
+		switch(persist_type) {
+			case pd_private_ro:
+			case pd_private_rw:
+				if(pid != m_profile.id)	{
+					send_error(GPShared::GP_NOT_LOGGED_IN);
+					return;
+				}
+			break;
+
+			case pd_public_rw:
+			case pd_public_ro:
+			break;
+
+			default:
+			return;
 		}
 
 		char keys[1000];
@@ -299,7 +315,6 @@ namespace GP {
 		GPBackend::PersistBackendTask::SubmitNewGameSession(this, NULL, newGameCreateCallback);
 	}
 	void Peer::updateGameCreateCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
-		printf("Update game CB\n");
 		if(!g_gbl_gp_driver->HasPeer(peer))
 			return;
 	}

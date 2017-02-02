@@ -9,30 +9,23 @@
 namespace OS {
 	AuthTask *AuthTask::m_task_singleton = NULL;
 	struct curl_data {
-	    json_t *json_data;
+	    std::string buffer;
 	};
 	/* callback for curl fetch */
 	size_t AuthTask::curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
+		if(!contents) {
+			return 0;
+		}
 	    size_t realsize = size * nmemb;                             /* calculate buffer size */
 	    curl_data *data = (curl_data *)userp;
-
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-
-		//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
-		jwt_decode(&jwt, (const char *)contents, NULL, 0);
-
-		char *json = jwt_get_grants_json(jwt, NULL);
-
-		if(json) {
-			data->json_data = json_loads(json, 0, NULL);
-			free(json);
-		} else {
-			data->json_data = NULL;
+		const char *p = (const char *)contents;
+		while(*p) {
+			if(isalnum(*p) || *p == '.')
+				data->buffer += *(p);
+			else break;
+			p++;
 		}
-		jwt_free(jwt);
+
 	    return realsize;
 	}
 	void AuthTask::PerformAuth_NickEMail_GPHash(AuthRequest request) {
@@ -64,15 +57,19 @@ namespace OS {
 		json_object_set_new(send_obj, "client_response", json_string(request.client_response.c_str()));
 
 
-		char *json_data = json_dumps(send_obj, 0);
+		char *json_data_str = json_dumps(send_obj, 0);
 
 		//build jwt
 		jwt_t *jwt;
 		jwt_new(&jwt);
 		const char *server_response = NULL;
 		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_data);
+		jwt_add_grants_json(jwt, json_data_str);
+
+		
 		char *jwt_encoded = jwt_encode_str(jwt);
+
+		free((void *)json_data_str);
 
 		CURL *curl = curl_easy_init();
 		CURLcode res;
@@ -106,13 +103,33 @@ namespace OS {
 
 			res = curl_easy_perform(curl);
 
+			jwt_free(jwt);
+
 			bool success = false;
 
+			
+
 			if(res == CURLE_OK) {
-				if(recv_data.json_data) {
-					json_t *success_obj = json_object_get(recv_data.json_data, "success");
+				
+
+				//build jwt
+				jwt_new(&jwt);
+				jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
+
+				//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
+				jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
+
+				char *json = jwt_get_grants_json(jwt, NULL);
+
+				json_t *json_data = json_loads(json, 0, NULL);
+				free((void *)json);
+				jwt_free(jwt);
+
+
+				if(json_data) {
+					json_t *success_obj = json_object_get(json_data, "success");
 					if(success_obj == json_true()) {
-						json_t *profile_json = json_object_get(recv_data.json_data, "profile");
+						json_t *profile_json = json_object_get(json_data, "profile");
 						if(profile_json) {
 							profile = LoadProfileFromJson(profile_json);
 							json_t *user_json = json_object_get(profile_json, "user");
@@ -121,21 +138,22 @@ namespace OS {
 								success = true;
 							}
 						}
-						json_t *server_response_json = json_object_get(recv_data.json_data, "server_response");
+						json_t *server_response_json = json_object_get(json_data, "server_response");
 						if(server_response_json) {
 							auth_data.hash_proof = json_string_value(server_response_json);
 						}
-						server_response_json = json_object_get(recv_data.json_data, "session_key");
+						server_response_json = json_object_get(json_data, "session_key");
 						if(server_response_json) {
 							auth_data.session_key = json_string_value(server_response_json);
 						}
 
 					} else {
 					}
-					json_t *reason_json = json_object_get(recv_data.json_data, "reason");
+					json_t *reason_json = json_object_get(json_data, "reason");
 					if(reason_json) {
 						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					}
+					json_decref(json_data);
 				} else {
 					success = false;
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
@@ -144,10 +162,12 @@ namespace OS {
 				request.callback(success, user, profile, auth_data, request.extra, request.operation_id);
 			}
 			curl_easy_cleanup(curl);
+		} else {
+			jwt_free(jwt);
 		}
-		jwt_free(jwt);
-		free((void *)jwt_encoded);
-		free(json_data);
+
+		if(jwt_encoded)
+			free((void *)jwt_encoded);
 		json_decref(send_obj);
 	}
 	void AuthTask::PerformAuth_NickEMail(AuthRequest request) {
@@ -219,10 +239,24 @@ namespace OS {
 			bool success = false;
 
 			if(res == CURLE_OK) {
-				if(recv_data.json_data) {
-					json_t *success_obj = json_object_get(recv_data.json_data, "success");
+
+				//build jwt
+				jwt_t *jwt;
+				jwt_new(&jwt);
+				jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
+
+				//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
+				jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
+
+				char *json = jwt_get_grants_json(jwt, NULL);
+
+				json_t *json_data = json_loads(json, 0, NULL);
+				jwt_free(jwt);
+
+				if(json_data) {
+					json_t *success_obj = json_object_get(json_data, "success");
 					if(success_obj == json_true()) {
-						json_t *profile_json = json_object_get(recv_data.json_data, "profile");
+						json_t *profile_json = json_object_get(json_data, "profile");
 						if(profile_json) {
 							profile = LoadProfileFromJson(profile_json);
 							json_t *user_json = json_object_get(profile_json, "user");
@@ -231,16 +265,17 @@ namespace OS {
 								success = true;
 							}
 						}
-						json_t *server_response_json = json_object_get(recv_data.json_data, "session_key");
+						json_t *server_response_json = json_object_get(json_data, "session_key");
 						if(server_response_json) {
 							auth_data.session_key = json_string_value(server_response_json);
 						}
 					} else {
 					}
-					json_t *reason_json = json_object_get(recv_data.json_data, "reason");
+					json_t *reason_json = json_object_get(json_data, "reason");
 					if(reason_json) {
 						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					}
+					json_decref(json_data);
 				} else {
 					success = false;
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
@@ -250,7 +285,6 @@ namespace OS {
 			curl_easy_cleanup(curl);
 		}
 		jwt_free(jwt);
-		free(json_data);
 		free((void *)jwt_encoded);
 		json_decref(send_obj);
 	}
@@ -298,6 +332,9 @@ namespace OS {
 
 		auth_data.session_key = NULL;
 		auth_data.hash_proof = false;
+
+		jwt_free(jwt);
+
 		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
@@ -323,17 +360,29 @@ namespace OS {
 			bool success = false;
 
 			if(res == CURLE_OK) {
-				if(recv_data.json_data) {
-					json_t *reason_json = json_object_get(recv_data.json_data, "reason");
+				//build jwt
+				jwt_new(&jwt);
+				jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
+
+				//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
+				jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
+
+				char *json = jwt_get_grants_json(jwt, NULL);
+
+				json_t *json_data = json_loads(json, 0, NULL);
+				jwt_free(jwt);
+				if(json_data) {
+					json_t *reason_json = json_object_get(json_data, "reason");
 					if(reason_json) {
 						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					} else {
-						json_t *profile_json = json_object_get(recv_data.json_data, "profile");
+						json_t *profile_json = json_object_get(json_data, "profile");
 						json_t *user_json = json_object_get(profile_json, "user");
 						user = LoadUserFromJson(user_json);
 						profile = LoadProfileFromJson(profile_json);
 						success = true;
 					}
+					json_decref(json_data);
 				} else {
 					success = false;
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
@@ -342,7 +391,7 @@ namespace OS {
 			}
 			curl_easy_cleanup(curl);
 		}
-		jwt_free(jwt);
+		
 		if(json_data)
 			free(json_data);
 		if(jwt_encoded)
@@ -368,14 +417,18 @@ namespace OS {
 		json_object_set_new(send_obj, "session_key", json_integer(request.session_key));
 
 
-		char *json_data = json_dumps(send_obj, 0);
+		char *json_dump = json_dumps(send_obj, 0);
 
 		//build jwt
 		jwt_t *jwt;
 		jwt_new(&jwt);
 		const char *server_response = NULL;
 		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_data);
+		jwt_add_grants_json(jwt, json_dump);
+
+		if(json_dump)
+			free(json_dump);
+
 		char *jwt_encoded = jwt_encode_str(jwt);
 
 		CURL *curl = curl_easy_init();
@@ -389,7 +442,13 @@ namespace OS {
 		auth_data.session_key = NULL;
 		auth_data.hash_proof = false;
 		auth_data.response_code = (AuthResponseCode)-1;
+
+		char *json = jwt_get_grants_json(jwt, NULL);
+
+		json_t *json_data = json_loads(json, 0, NULL);
+
 		if(curl) {
+
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
 
@@ -413,10 +472,10 @@ namespace OS {
 			bool success = false;
 
 			if(res == CURLE_OK) {
-				if(recv_data.json_data) {
-					json_t *success_obj = json_object_get(recv_data.json_data, "success");
+				if(json_data) {
+					json_t *success_obj = json_object_get(json_data, "success");
 					if(success_obj == json_true()) {
-						json_t *profile_json = json_object_get(recv_data.json_data, "profile");
+						json_t *profile_json = json_object_get(json_data, "profile");
 						if(profile_json) {
 							profile = LoadProfileFromJson(profile_json);
 							json_t *user_json = json_object_get(profile_json, "user");
@@ -425,14 +484,14 @@ namespace OS {
 								success = true;
 							}
 						}
-						json_t *session_key_json = json_object_get(recv_data.json_data, "session_key");
+						json_t *session_key_json = json_object_get(json_data, "session_key");
 						if(session_key_json) {
 							auth_data.session_key = json_string_value(session_key_json);
 						}
 
 					} else {
 					}
-					json_t *reason_json = json_object_get(recv_data.json_data, "reason");
+					json_t *reason_json = json_object_get(json_data, "reason");
 					if(reason_json) {
 						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					}
@@ -446,8 +505,9 @@ namespace OS {
 			curl_easy_cleanup(curl);
 		}
 		jwt_free(jwt);
-		if(json_data)
-			free(json_data);
+
+		json_decref(json_data);
+
 		if(jwt_encoded)
 			free((void *)jwt_encoded);
 		json_decref(send_obj);
@@ -527,6 +587,9 @@ namespace OS {
 			AuthTask::m_task_singleton = new AuthTask();
 		}
 		return AuthTask::m_task_singleton;
+	}
+	bool AuthTask::HasAuthTask() {
+		return AuthTask::m_task_singleton != NULL;
 	}
 	void *AuthTask::TaskThread(CThread *thread) {
 		AuthTask *task = (AuthTask *)thread->getParams();

@@ -7,16 +7,48 @@
 #include "server/SMServer.h"
 #include "server/SMDriver.h"
 INetServer *g_gameserver = NULL;
+INetDriver *g_driver = NULL;
+bool g_running = true;
+
+void shutdown();
+
+void on_exit(void) {
+    shutdown();
+}
+
+void sig_handler(int signo)
+{
+    shutdown();
+}
 
 int main() {
     OS::Init();
     Socket::Init();
+
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
+
+
 	g_gameserver = new SM::Server();
-	g_gameserver->addNetworkDriver(new SM::Driver(g_gameserver, "0.0.0.0", SM_SERVER_PORT));
+    g_driver = new SM::Driver(g_gameserver, "0.0.0.0", SM_SERVER_PORT);
+	g_gameserver->addNetworkDriver(g_driver);
 	g_gameserver->init();
-	while(true) {
+	while(g_running) {
 		g_gameserver->tick();
 	}
+
+    delete g_gameserver;
+    delete g_driver;
+
+    OS::Shutdown();
+    return 0;
+}
+
+void shutdown() {
+    if(g_running) {
+        g_gameserver->flagExit();
+        g_running = false;
+    }
 }
 
 

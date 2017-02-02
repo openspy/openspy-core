@@ -20,7 +20,6 @@ namespace NN {
 			printf("Socket error\n");
 			//signal error
 		}
-		printf("Made NN socket: %d\n", m_sd);
 
 		m_local_addr.sin_port = Socket::htons(port);
 		m_local_addr.sin_addr.s_addr = Socket::htonl(bind_ip);
@@ -38,6 +37,13 @@ namespace NN {
 	}
 	Driver::~Driver() {
 		NN::NNQueryTask::getQueryTask()->RemoveDriver(this);
+
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *peer = *it;
+			delete peer;
+			it++;
+		}
 	}
 	void Driver::think(fd_set *fdset) {
 		TickConnections(fdset);

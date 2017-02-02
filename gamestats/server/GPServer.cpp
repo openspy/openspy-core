@@ -3,7 +3,7 @@
 #include "GPDriver.h"
 
 namespace GP {
-	Server::Server() {
+	Server::Server() : INetServer(){
 	}
 	void Server::init() {
 	}
