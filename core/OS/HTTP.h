@@ -2,8 +2,6 @@
 #define _OS_HTTP_H
 #include <OS/OpenSpy.h>
 #include <curl/curl.h>
-#include <jansson.h>
-#include <jwt/jwt.h>
 namespace OS {
 	typedef struct HTTPResponse {
 		int status_code;

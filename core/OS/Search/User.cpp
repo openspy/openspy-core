@@ -3,7 +3,7 @@
 
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt/jwt.h>
+#include <jwt.h>
 
 namespace OS {
 	UserSearchTask *UserSearchTask::m_task_singleton = NULL;
