@@ -25,10 +25,6 @@ namespace SB {
 			//signal error
 		}
 
-		struct timeval tv;
-		tv.tv_sec = 0;
-		tv.tv_usec = 100000;
-
 		m_local_addr.sin_port = Socket::htons(port);
 		m_local_addr.sin_addr.s_addr = Socket::htonl(bind_ip);
 		m_local_addr.sin_family = AF_INET;
