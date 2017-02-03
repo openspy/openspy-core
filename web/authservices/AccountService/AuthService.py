@@ -15,8 +15,8 @@ from BaseService import BaseService
 import redis
 import hashlib
 
-from RegistrationService import RegistrationService
-from UserProfileMgrService import UserProfileMgrService
+from AccountService.RegistrationService import RegistrationService
+from AccountService.UserProfileMgrService import UserProfileMgrService
 class AuthService(BaseService):
     def __init__(self):
         BaseService.__init__(self)

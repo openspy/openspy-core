@@ -1,6 +1,6 @@
 from peewee import *
 from BaseModel import BaseModel
-from Profile import Profile
+from Model.Profile import Profile
 
 class Block(BaseModel):
 	class Meta:

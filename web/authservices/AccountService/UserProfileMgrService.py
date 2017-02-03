@@ -2,7 +2,6 @@ from cgi import parse_qs, escape
 
 import jwt
 
-import MySQLdb
 import uuid
 
 from playhouse.shortcuts import model_to_dict, dict_to_model
