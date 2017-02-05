@@ -1,16 +1,15 @@
 from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
-import binascii
-import md5, struct, os
-
 from collections import OrderedDict
 import jwt
 
 from BaseService import BaseService
-import httplib, urllib, json
 
 import redis
+
+import simplejson as json
+import http.client
 
 class OS_RegisterSvc(BaseService):
     # expects following vars:
@@ -31,7 +30,7 @@ class OS_RegisterSvc(BaseService):
         #params = urllib.urlencode(params)
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-        conn = httplib.HTTPConnection(self.REGISTER_SERVER)
+        conn = http.client.HTTPConnection(self.REGISTER_SERVER)
 
         conn.request("POST", self.REGISTER_SCRIPT, params, headers)
         response = conn.getresponse().read()
@@ -53,7 +52,7 @@ class OS_RegisterSvc(BaseService):
 	        
 	        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
-	        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+	        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
 	        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
 	        response = conn.getresponse().read()
@@ -73,7 +72,7 @@ class OS_RegisterSvc(BaseService):
 	        #params = urllib.urlencode(params)
 	        
 	        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-	        conn = httplib.HTTPConnection(self.LOGIN_SERVER)
+	        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
 	        conn.request("POST", self.LOGIN_SCRIPT, params, headers)
 	        response = conn.getresponse().read()
@@ -83,7 +82,7 @@ class OS_RegisterSvc(BaseService):
     def check_user_conflicts(self, request):
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
-        conn = httplib.HTTPConnection(self.USER_MGR_SERVER)
+        conn = http.client.HTTPConnection(self.USER_MGR_SERVER)
 
         params = {}
         params['email'] = request['email']
@@ -100,7 +99,7 @@ class OS_RegisterSvc(BaseService):
     def check_profile_conflicts(self, request):
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
-        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         params = {}
         params['uniquenick'] = request['uniquenick']
@@ -154,6 +153,5 @@ class OS_RegisterSvc(BaseService):
 
 
         response = self.try_register(request_body)
-
 
         return json.dumps(response)

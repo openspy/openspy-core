@@ -1,29 +1,27 @@
 from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
-import binascii
-import md5, struct, os
-
 from collections import OrderedDict
 import jwt
 
 from BaseService import BaseService
-import httplib, urllib, json
 
 import redis
 
+import simplejson as json
+
 class OS_PWReset(BaseService):
     def process_initiate_pw_reset(self, request_data):
-    	response = {}
+        response = {}
 
-    	reset_data = {}
-    	passthrough_params = ["email", "partnercode"]
-    	for key in request_data:
-    		reset_data[key] = request_data[key]
+        reset_data = {}
+        passthrough_params = ["email", "partnercode"]
+        for key in request_data:
+            reset_data[key] = request_data[key]
 
-    	reset_data["mode"] = "pwreset"
+        reset_data["mode"] = "pwreset"
         params = jwt.encode(reset_data, self.SECRET_AUTH_KEY, algorithm='HS256')
-        
+
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
         conn = httplib.HTTPConnection(self.LOGIN_SERVER)
 
@@ -62,7 +60,7 @@ class OS_PWReset(BaseService):
             params = jwt.encode(login_data, self.SECRET_AUTH_KEY, algorithm='HS256')
             
             headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-            conn = httplib.HTTPConnection(self.LOGIN_SERVER)
+            conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
             conn.request("POST", self.LOGIN_SCRIPT, params, headers)
             response = conn.getresponse().read()

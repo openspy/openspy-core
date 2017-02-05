@@ -1,16 +1,14 @@
 from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
-import binascii
-import md5, struct, os
-
 from collections import OrderedDict
 import jwt
 
 from BaseService import BaseService
-import httplib, urllib, json
 
 import redis
+
+import simplejson as json
 
 class OS_WebProfileMgr(BaseService):
     def test_required_params(self, input, params):
@@ -25,7 +23,7 @@ class OS_WebProfileMgr(BaseService):
         params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-        conn = httplib.HTTPConnection(self.LOGIN_SERVER)
+        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = conn.getresponse().read()
@@ -37,7 +35,7 @@ class OS_WebProfileMgr(BaseService):
         params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-        conn = httplib.HTTPConnection(self.LOGIN_SERVER)
+        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = conn.getresponse().read()
@@ -60,7 +58,7 @@ class OS_WebProfileMgr(BaseService):
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
-        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
         response = conn.getresponse().read()
@@ -79,7 +77,7 @@ class OS_WebProfileMgr(BaseService):
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
-        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
         response = conn.getresponse().read()
@@ -104,7 +102,7 @@ class OS_WebProfileMgr(BaseService):
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
-        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
         response = conn.getresponse().read()
@@ -120,7 +118,7 @@ class OS_WebProfileMgr(BaseService):
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
-        conn = httplib.HTTPConnection(self.PROFILE_MGR_SERVER)
+        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
         response = conn.getresponse().read()

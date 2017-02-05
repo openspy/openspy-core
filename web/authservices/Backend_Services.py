@@ -13,13 +13,17 @@ from public.OS_WebProfileMgr import OS_WebProfileMgr
 from public.OS_RegisterSvc import OS_RegisterSvc
 from public.OS_PWReset import OS_PWReset
 import re
-import json
+import simplejson as json
 from wsgiref.util import request_uri
 #import RegistrationService from RegistrationService
+
+#start with: uwsgi --socket 127.0.0.1:9000 --plugin python3 --wsgi-file Backend_Services.py  -p 1
 
 def application(env, start_response):
 
 	path_split = re.split('/', env.get('REQUEST_URI'))
+
+	print("Got: {}\n".format(path_split))
 	
 	service = None
 	if path_split[1] == "backend":
