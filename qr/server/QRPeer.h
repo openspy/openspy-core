@@ -9,7 +9,7 @@
 #include "MMPush.h"
 
 #define REQUEST_KEY_LEN 4
-#define CHALLENGE_LEN 64
+#define CHALLENGE_LEN 20
 #define KV_MAX_LEN 64
 namespace QR {
 	class Driver;

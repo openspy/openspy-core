@@ -10,8 +10,7 @@
 #include "MMPush.h"
 
 #define REQUEST_KEY_LEN 4
-#define CHALLENGE_LEN 64
-#define QR2_PING_TIME 1
+#define QR2_PING_TIME 300
 namespace QR {
 	class Driver;
 

@@ -46,10 +46,11 @@ namespace QR {
 		m_server_info.m_address.ip = Socket::htonl(m_address_info.sin_addr.s_addr);
 
 		gettimeofday(&m_last_ping, NULL);
+		gettimeofday(&m_last_recv, NULL);
 
 	}
 	V2Peer::~V2Peer() {
-		printf("V2 client deleted pushed: %d\n", m_server_pushed);
+		printf("V2 client deleted pushed: %d - %d %d\n", m_server_pushed,m_timeout_flag, m_delete_flag);
 		if(m_server_pushed) {
 			MM::DeleteServer(&m_server_info);
 		}
