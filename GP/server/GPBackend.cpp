@@ -16,7 +16,7 @@
 #include <OS/Search/Profile.h>
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt.h>
+#include <jwt/jwt.h>
 
 #define GP_BACKEND_REDIS_DB 5
 #define BUDDY_ADDREQ_EXPIRETIME 604800

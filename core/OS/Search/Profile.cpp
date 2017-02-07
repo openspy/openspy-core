@@ -3,7 +3,7 @@
 
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt.h>
+#include <jwt/jwt.h>
 
 #include <ctype.h>
 

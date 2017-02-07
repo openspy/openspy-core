@@ -293,7 +293,7 @@ else { \
 		t2 = stack.top(); \
 		stack.pop(); \
 		t1 = stack.top(); \
-		if(!t1 || !t2) return false; \
+		if(!t1 || !t2) return NULL; \
 		stack.pop(); \
 		long i1, i2; \
 		if (t1->getType() == EToken_Integer && t2->getType() == EToken_Integer) { \

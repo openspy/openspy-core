@@ -10,6 +10,8 @@ import redis
 
 import simplejson as json
 
+import http.client
+
 class OS_WebProfileMgr(BaseService):
     def test_required_params(self, input, params):
         for param in params:

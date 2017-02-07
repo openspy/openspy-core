@@ -2,7 +2,7 @@
 #include <OS/Auth.h>
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt.h>
+#include <jwt/jwt.h>
 #include <string>
 
 
@@ -80,7 +80,7 @@ namespace OS {
 		OS::AuthData auth_data;
 
 		auth_data.session_key = NULL;
-		auth_data.hash_proof = false;
+		auth_data.hash_proof = NULL;
 		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
@@ -213,7 +213,7 @@ namespace OS {
 		OS::AuthData auth_data;
 
 		auth_data.session_key = NULL;
-		auth_data.hash_proof = false;
+		auth_data.hash_proof = NULL;
 		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
@@ -331,7 +331,7 @@ namespace OS {
 		OS::AuthData auth_data;
 
 		auth_data.session_key = NULL;
-		auth_data.hash_proof = false;
+		auth_data.hash_proof = NULL;
 
 		jwt_free(jwt);
 
@@ -440,7 +440,7 @@ namespace OS {
 		OS::AuthData auth_data;
 
 		auth_data.session_key = NULL;
-		auth_data.hash_proof = false;
+		auth_data.hash_proof = NULL;
 		auth_data.response_code = (AuthResponseCode)-1;
 
 		char *json = jwt_get_grants_json(jwt, NULL);
