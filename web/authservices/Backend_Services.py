@@ -65,5 +65,8 @@ def application(env, start_response):
 		start_response('400 BAD REQUEST', [('Content-Type','text/html')])
 		return [b'Bad Request']
 
-	print("Running service: {}".format(service))
-	return service.run(env, start_response)
+	resp = service.run(env, start_response)
+	if(type(resp)) != bytes:
+		return str.encode(resp)
+	else:
+		return resp

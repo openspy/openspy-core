@@ -57,6 +57,56 @@ class OS_WebAuth(BaseService):
                 elif response["reason"] == 4:
                     response["reason"] = "INVALID_PROFILE"
         return response
+    def test_session(self, login_options):
+        if "userid" not in login_options:
+            return False
+        if "session_key" not in login_options:
+            return False;
+
+        send_data = {}
+        send_data["userid"] = login_options["userid"]
+        send_data["session_key"] = login_options["session_key"]
+
+
+        params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
+        #params = urllib.urlencode(params)
+        
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
+
+        conn.request("POST", self.LOGIN_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+
+        if "valid" in response:
+            return response["valid"]
+
+        return False
+    def del_session(self, login_options):
+        if "userid" not in login_options:
+            return False
+        if "session_key" not in login_options:
+            return False;
+
+        send_data = {}
+        send_data["userid"] = login_options["userid"]
+        send_data["session_key"] = login_options["session_key"]
+        send_data["mode"] = "del_session"
+
+
+        params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
+        #params = urllib.urlencode(params)
+        
+        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
+
+        conn.request("POST", self.LOGIN_SCRIPT, params, headers)
+        response = conn.getresponse().read()
+        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+
+        if "valid" in response:
+            return response["valid"]
+        return False
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -70,7 +120,16 @@ class OS_WebAuth(BaseService):
         request_body = json.loads(env['wsgi.input'].read(request_body_size))
        # d = parse_qs(request_body)
 
-        start_response('200 OK', [('Content-Type','text/html')])
+        start_response('200 OK', [('Content-Type','application/json')])
 
-
-        return json.dumps(self.try_login(request_body))
+        print("Req: {}\n".format(request_body))
+        if "mode" in request_body:
+            if request_body["mode"] == "test_session":
+                resp = self.test_session(request_body)
+            elif request_body["mode"] == "auth":
+                resp = self.try_login(request_body)
+            elif request_body["mode"] == "del_session":
+                resp = self.del_session(request_body)
+        else:
+            resp = self.try_login(request_body);
+        return json.dumps(resp)

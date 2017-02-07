@@ -29,8 +29,8 @@ class RegistrationService(BaseService):
     def send_verification_email(self, user):
         if user['email_verified'] == True:
             return None
-        verification_key = hashlib.sha1(str(uuid.uuid1()))
-        verification_key.update(str(uuid.uuid4()))
+        verification_key = hashlib.sha1(str(uuid.uuid1()).encode('utf-8'))
+        verification_key.update(str(uuid.uuid4()).encode('utf-8'))
         verification_key = verification_key.hexdigest()
 
 
@@ -60,9 +60,7 @@ class RegistrationService(BaseService):
         try:
             existing_user = User.select().where((User.email == register_data['email']) & (User.partnercode == int(register_data['partnercode']))).get()        
         except User.DoesNotExist:
-            print("Not registered... registering\n")
             user = User.create(email=register_data['email'], partnercode=register_data['partnercode'], password=register_data['password'])
-            print("Created\n")
             user = model_to_dict(user)
             self.send_verification_email(user)            
             del user['password']
@@ -130,8 +128,6 @@ class RegistrationService(BaseService):
         request_body = env['wsgi.input'].read(request_body_size)
         jwt_decoded = jwt.decode(request_body, self.SECRET_REGISTER_KEY, algorithm='HS256')
 
-        print("Register got: {}\n".format(jwt_decoded))
-
         if "mode" in jwt_decoded:
             if jwt_decoded["mode"] == "perform_verify_email":
                 response = self.handle_perform_verify_email(jwt_decoded)
@@ -152,8 +148,6 @@ class RegistrationService(BaseService):
                 response['user'] = user
             else:
                 response['reason'] = self.REGISTRATION_EMAIL_PARTNERCODE_EXISTS
-     
-        print("Register returning: {}\n".format(response))
 
         start_response('200 OK', [('Content-Type','text/html')])
 

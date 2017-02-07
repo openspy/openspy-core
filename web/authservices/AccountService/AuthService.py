@@ -94,7 +94,7 @@ class AuthService(BaseService):
         if profile == None:
             return False
         sess_key = self.gs_sesskey(session_key)
-        pw_hashed = "{}{}".format(profile.user.password,sess_key)
+        pw_hashed = "{}{}".format(profile.user.password,sess_key).encode('utf-8')
         pw_hashed = hashlib.md5(pw_hashed).hexdigest()
         
         return pw_hashed == client_response
@@ -102,8 +102,8 @@ class AuthService(BaseService):
     def test_nick_email_by_profile(self, profile, password):
         return profile.user.password == password
     def create_auth_session(self, profile, user):
-        session_key = hashlib.sha1(str(uuid.uuid1()))
-        session_key.update(str(uuid.uuid4()))
+        session_key = hashlib.sha1(str(uuid.uuid1()).encode('utf-8'))
+        session_key.update(str(uuid.uuid4()).encode('utf-8'))
 
         session_key = session_key.hexdigest()
         redis_key = '{}:{}'.format(user.id,session_key)
@@ -149,6 +149,23 @@ class AuthService(BaseService):
             return self.test_session(test_params)
         except Profile.DoesNotExist:
             return {'valid': False}
+    def handle_delete_session(self, params):
+        userid = None
+        session_key = None
+        if "profileid" in params:
+            profile = Profile.get((Profile.id == params["profileid"]))
+            userid = profile.userid
+        elif "userid" in params:
+            userid = params["userid"]
+
+        if "session_key" in params:
+            session_key = params["session_key"]
+        if userid != None:
+            redis_key = "{}:{}".format(int(userid), session_key)
+            if self.redis_ctx.exists(redis_key):
+                self.redis_ctx.delete(redis_key)
+                return {'deleted': True}
+        return {'deleted': False}
     def do_password_reset(self, user):
         reset_key = sha(str(uuid.uuid1()))
         reset_key.update(str(uuid.uuid4()))
@@ -297,6 +314,9 @@ class AuthService(BaseService):
                 return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
             elif jwt_decoded['mode'] == "perform_pwreset":
                 response = self.handle_perform_pw_reset(jwt_decoded)
+                return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+            elif jwt_decoded['mode'] == "del_session":
+                response = self.handle_delete_session(jwt_decoded)
                 return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
 
         #mode == "auth"

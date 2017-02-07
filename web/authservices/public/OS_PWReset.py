@@ -120,7 +120,7 @@ class OS_PWReset(BaseService):
         request_body = json.loads(env['wsgi.input'].read(request_body_size))
        # d = parse_qs(request_body)
 
-        start_response('200 OK', [('Content-Type','text/html')])
+        start_response('200 OK', [('Content-Type','application/json')])
 
         response = {}
 

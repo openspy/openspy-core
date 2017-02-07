@@ -177,7 +177,7 @@ class OS_WebProfileMgr(BaseService):
         if 'error' in response:
             start_response('400 BAD REQUEST', [('Content-Type','text/html')])
         else:
-            start_response('200 OK', [('Content-Type','text/html')])
+            start_response('200 OK', [('Content-Type','application/json')])
 
 
         return response

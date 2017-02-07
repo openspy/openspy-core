@@ -126,7 +126,7 @@ class OS_RegisterSvc(BaseService):
         request_body = json.loads(env['wsgi.input'].read(request_body_size))
        # d = parse_qs(request_body)
 
-        start_response('200 OK', [('Content-Type','text/html')])
+        start_response('200 OK', [('Content-Type','application/json')])
 
         print("Register: {}\n".format(request_body))
         #Register: {u'uniquenick': u'sctest01', u'namespaceid': u'0', u'nick': u'sctest01', u'mode': u'create_account', u'partnercode': u'0', u'password': u'gspy', u'email': u'sctest@gamespy.com'}
