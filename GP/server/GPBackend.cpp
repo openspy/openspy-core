@@ -146,6 +146,7 @@ namespace GPBackend {
 	    redisAsyncCommand(task->mp_redis_subscribe_connection, onRedisMessage, NULL, "SUBSCRIBE %s",gp_buddies_channel);
 
 	    event_base_dispatch(task->mp_base_event);
+	    return NULL;
 	}
 
 	GPBackendRedisTask::GPBackendRedisTask() {

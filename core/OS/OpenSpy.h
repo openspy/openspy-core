@@ -78,6 +78,7 @@ namespace OS {
 		ERedisDB_SBGroups,
 		ERedisDB_Game,
 		ERedisDB_NatNeg,
+		ERedisDB_Chat
 	};
 
 
@@ -90,10 +91,15 @@ namespace OS {
 		uint32_t GetIP() { return ip; };
 		uint16_t GetPort() { return port; };
 		const struct sockaddr_in GetInAddr();
+		std::string ToString(bool ip_only = false);
 	//private:
 		uint32_t ip;
 		uint16_t port;
 	};
+
+	template<typename Out>
+	void split(const std::string &s, char delim, Out result);
+	std::vector<std::string> split(const std::string &s, char delim);
 	
 	void Init();
 	void Shutdown();
@@ -104,7 +110,7 @@ namespace OS {
 
 	#define MAX_BASE64_STR 768
 	void Base64StrToBin(const char *str, uint8_t **out, int &len);
-	const char *BinToBase64Str(uint8_t *in, int in_len);
+	const char *BinToBase64Str(const uint8_t *in, int in_len);
 
 	const char *MD5String(const char *string);
 

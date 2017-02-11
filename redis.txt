@@ -84,3 +84,20 @@ select 6
 #where 1111 is natneg cookie and hset key is client index
 HSET nn_cookie_1111 0 127.0.0.1:45242
 HSET nn_cookie_1111 1 127.0.0.1:45242
+
+#peerchat
+select 7
+INCR chat_client_incr
+HSET chat_client_1 nick Bob
+HSET chat_client_1 user berbz
+HSET chat_client_1 realname bob
+HSET chat_client_1 host *
+HSET chat_client_1 ip 127.0.0.1:12312
+
+hset nick_id_map Bob 1
+
+
+hset chat_channel_1 name #some_channel
+hset chat_channel_1 topic "My Topic"
+
+RPUSH chat_channel_1_clients 1

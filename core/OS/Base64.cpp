@@ -34,7 +34,7 @@ namespace OS {
 		BIO_free_all(bio);
 
 	}
-	const char *BinToBase64Str(uint8_t *in, int in_len) {
+	const char *BinToBase64Str(const uint8_t *in, int in_len) {
 		BIO *bio, *b64;
 		BUF_MEM *bufferPtr;
 

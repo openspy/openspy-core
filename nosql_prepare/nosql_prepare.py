@@ -23,6 +23,7 @@ for (id, gamename, secretkey, description) in cursor:
 	redis_ctx.hset(game_key,"description", description)
 	redis_ctx.hset(game_key,"queryport", "6500")
 	redis_ctx.hset(game_key,"disabled_services", "0")
+	print("Reading game: {}\n".format(gamename))
 
 cursor.close()
 

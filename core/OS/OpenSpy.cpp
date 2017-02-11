@@ -248,4 +248,33 @@ namespace OS {
 		return ret;
 
 	}
+	std::string Address::ToString(bool ip_only) {
+		struct sockaddr_in addr;
+		addr.sin_port = Socket::htons(port);
+		addr.sin_addr.s_addr = Socket::htonl(ip);
+		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
+		std::ostringstream s;
+		s << ipinput;
+		if(!ip_only) {
+ 			s << ":" << port;
+		}
+		return s.str();
+	}
+
+	template<typename Out>
+	void split(const std::string &s, char delim, Out result) {
+	    std::stringstream ss;
+	    ss.str(s);
+	    std::string item;
+	    while (std::getline(ss, item, delim)) {
+	        *(result++) = item;
+	    }
+	}
+
+
+	std::vector<std::string> split(const std::string &s, char delim) {
+	    std::vector<std::string> elems;
+	    split(s, delim, std::back_inserter(elems));
+	    return elems;
+	}
 }
