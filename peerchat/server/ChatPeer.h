@@ -11,12 +11,6 @@ namespace Chat {
 	class Driver;
 	class Server;
 
-	typedef struct {
-		int client_id;
-		std::string message;
-	} MessageSendQueueData;
-
-
 	class Peer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
@@ -36,13 +30,15 @@ namespace Chat {
 
 		ChatClientInfo getClientInfo() { return m_client_info; };
 
-		void handle_queues();
-
 		//p->OnRecvClientMessage(from_user, msg);
 		virtual void OnRecvClientMessage(ChatClientInfo from_user, const char *msg) = 0;
+		virtual void OnRecvClientJoinChannel(ChatClientInfo user, ChatChannelInfo channel) = 0;
+		virtual void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel) = 0;
+		bool IsOnChannel(ChatChannelInfo channel);
 
 	protected:
 
+		std::vector<int> m_channel_list;
 
 		int m_sd;
 		Driver *mp_driver;
@@ -55,10 +51,6 @@ namespace Chat {
 		bool m_timeout_flag;
 
 		ChatClientInfo m_client_info;
-
-		//queue variables
-		std::vector<MessageSendQueueData> m_client_msg_send_queue;
-		//
 
 		OS::CMutex *mp_mutex;
 	private:

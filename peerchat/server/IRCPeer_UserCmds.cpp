@@ -43,8 +43,8 @@ namespace Chat {
 				irc_peer->send_numeric(433, "Nickname is already in use");
 			} else {
 				irc_peer->m_client_info.name = request.query_name;
-				irc_peer->m_fresh_client_info = true; //must be sent in main thread of crashes due to modifying task list
-				printf("setting fresh client info\n");
+				ChatBackendTask::getQueryTask()->flagPushTask();
+				ChatBackendTask::SubmitClientInfo(OnNickCmd_SubmitClientInfo, peer, driver);
 			}
 			irc_peer->mp_mutex->unlock();
 		}
@@ -113,21 +113,14 @@ namespace Chat {
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
 
-			MessageSendQueueData send_data;
-
 			if(!driver->HasPeer(peer)) {
 				delete cb_data;
 				return;
 			}
 			std::ostringstream s;
 			if(response.client_info.name.size() > 0) {
-				int client_id = response.client_info.client_id;
-				printf("Send to client %d - %s\n", client_id, cb_data->message.c_str());
-				irc_peer->mp_mutex->lock();
-				send_data.client_id = client_id;
-				send_data.message = cb_data->message;
-				irc_peer->m_client_msg_send_queue.push_back(send_data);
-				irc_peer->mp_mutex->unlock();
+				ChatBackendTask::getQueryTask()->flagPushTask();
+				ChatBackendTask::SubmitClientMessage(response.client_info.client_id, cb_data->message, NULL, peer, driver);
 			} else {
 				//
 				irc_peer->send_nonick_channel_error(request.query_name);

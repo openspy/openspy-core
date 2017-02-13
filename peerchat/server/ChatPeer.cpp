@@ -5,6 +5,8 @@
 #include <OS/legacy/buffwriter.h>
 #include <OS/socketlib/socketlib.h>
 
+#include <algorithm>
+
 #include "ChatBackend.h"
 namespace Chat {
 	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) {
@@ -27,17 +29,7 @@ namespace Chat {
 		close(m_sd);
 		delete mp_mutex;
 	}
-
-	void Peer::handle_queues() {
-		mp_mutex->lock();
-		std::vector<MessageSendQueueData>::iterator it = m_client_msg_send_queue.begin();
-		while(it != m_client_msg_send_queue.end()) {
-			MessageSendQueueData data = *it;
-			ChatBackendTask::SubmitClientMessage(data.client_id, data.message, NULL, this, NULL);
-			it++;
-		}
-
-		m_client_msg_send_queue.clear();
-		mp_mutex->unlock();
+	bool Peer::IsOnChannel(ChatChannelInfo channel) {
+		return std::find(m_channel_list.begin(),m_channel_list.end(), channel.channel_id) != m_channel_list.end();
 	}
 }

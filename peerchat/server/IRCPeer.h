@@ -39,6 +39,8 @@ namespace Chat {
 		void think(bool packet_waiting); //called when no data is recieved
 
 		void OnRecvClientMessage(ChatClientInfo from_user, const char *msg);
+		void OnRecvClientJoinChannel(ChatClientInfo user, ChatChannelInfo channel);
+		void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel);
 	protected:
 		//user cmds
 		EIRCCommandHandlerRet handle_nick(std::vector<std::string> params, std::string full_params);
@@ -48,6 +50,7 @@ namespace Chat {
 		EIRCCommandHandlerRet handle_whois(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_userhost(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_privmsg(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_names(std::vector<std::string> params, std::string full_params);
 
 		//user cmd callbacks
 		static void OnNickCmd_InUseLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
@@ -63,6 +66,12 @@ namespace Chat {
 
 		//channel cmd callbacks
 		static void OnJoinCmd_FindCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnPartCmd_FindCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+
+		//channel misc
+		void send_channel_topic(ChatChannelInfo channel);
+		void send_channel_modes(ChatChannelInfo channel);
+		void send_channel_names(ChatChannelInfo channel);
 
 		void send_nonick_channel_error(std::string name);
 		void send_command_error(EIRCCommandHandlerRet value, std::string cmd_name);
@@ -73,7 +82,6 @@ namespace Chat {
 		void SendPacket(const uint8_t *buff, int len);
 
 		bool m_sent_client_init;
-		bool m_fresh_client_info;
 
 		static IRCCommandHandler mp_command_handler[];
 

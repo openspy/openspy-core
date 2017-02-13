@@ -40,18 +40,17 @@ namespace Chat {
 
 			//channel cmds
 			{"JOIN", &IRCPeer::handle_join},
-			//{"PART", &IRCPeer::handle_part},
+			{"PART", &IRCPeer::handle_part},
+
+			{"NAMES", &IRCPeer::handle_names},
 		};
 		IRCPeer::IRCPeer(Driver *driver, struct sockaddr_in *address_info, int sd) : Chat::Peer(driver, address_info, sd) {
 			m_sent_client_init = false;
-			m_fresh_client_info = false;
 
 			gettimeofday(&m_last_ping, NULL);
 
 			m_client_info.ip = OS::Address(*address_info);
 			m_client_info.hostname = m_client_info.ip.ToString(true);
-
-			m_fresh_client_info = false;
 		}
 		IRCPeer::~IRCPeer() {
 			printf("Peerchat delete\n");
@@ -69,11 +68,6 @@ namespace Chat {
 				std::ostringstream s;
 				s << "PING :" << ((ChatServer*)mp_driver->getServer())->getName() << std::endl;
 				SendPacket((const uint8_t*)s.str().c_str(),s.str().length());
-			}
-
-			if(m_fresh_client_info) {
-				ChatBackendTask::SubmitClientInfo(OnNickCmd_SubmitClientInfo, this, mp_driver); //submit in main thread
-				m_fresh_client_info = false;
 			}
 
 
@@ -115,15 +109,6 @@ namespace Chat {
 
 			end:
 			send_ping();
-
-			//queue stuff
-			if(m_fresh_client_info) {
-				ChatBackendTask::SubmitClientInfo(OnNickCmd_SubmitClientInfo, this, mp_driver); //submit in main thread
-				m_fresh_client_info = false;
-			}
-
-			handle_queues();
-			//
 
 			//check for timeout
 			struct timeval current_time;

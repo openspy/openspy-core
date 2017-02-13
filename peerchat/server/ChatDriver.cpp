@@ -177,4 +177,26 @@ namespace Chat {
 			it++;
 		}
 	}
+	void Driver::SendJoinChannelMessage(ChatClientInfo client, ChatChannelInfo channel) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			ChatClientInfo info = p->getClientInfo();
+			if(info.client_id == client.client_id || p->IsOnChannel(channel)) {
+				p->OnRecvClientJoinChannel(client, channel);
+			}
+			it++;
+		}
+	}
+	void Driver::SendPartChannelMessage(ChatClientInfo client, ChatChannelInfo channel) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			ChatClientInfo info = p->getClientInfo();
+			if(info.client_id == client.client_id || p->IsOnChannel(channel)) {
+				p->OnRecvClientPartChannel(client, channel);
+			}
+			it++;
+		}
+	}
 }
