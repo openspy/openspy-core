@@ -7,10 +7,15 @@
 #include <OS/socketlib/socketlib.h>
 
 #include "Auth.h"
+#include "Logger.h"
 
+#ifndef _WIN32
+	#include "OS/Logger/Unix/UnixLogger.h"
+#endif
 namespace OS {
+	Logger *g_logger = NULL;
 	redisContext *redis_internal_connection = NULL;
-	void Init() {
+	void Init(const char *appName) {
 
 		curl_global_init(CURL_GLOBAL_SSL);
 		
@@ -19,6 +24,9 @@ namespace OS {
 		t.tv_sec = 3;
 
 		redis_internal_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+		#ifndef _WIN32
+			g_logger = new UnixLogger(appName);
+		#endif
 	}
 	void Shutdown() {
 		if(AuthTask::HasAuthTask()) {
@@ -276,5 +284,11 @@ namespace OS {
 	    std::vector<std::string> elems;
 	    split(s, delim, std::back_inserter(elems));
 	    return elems;
+	}
+	void LogText(ELogLevel level, const char *fmt, ...) {
+		va_list args;
+		va_start (args, fmt);
+		g_logger->LogText(level, fmt, args);
+		va_end(args);
 	}
 }

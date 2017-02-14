@@ -129,7 +129,51 @@ namespace Chat {
 		}
 
 
+		void IRCPeer::OnNamesCmd_FindUsersCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			Chat::Driver *driver = (Chat::Driver *)extra;
+			IRCPeer *irc_peer = (IRCPeer *)peer;
 
+
+			if(!driver->HasPeer(peer)) {
+				return;
+			}
+
+			std::ostringstream s;
+			s << "= " << request.query_data.channel_info.name << " :";
+
+			std::vector<ChatChanClientInfo>::const_iterator it = response.m_channel_clients.begin();
+			while(it != response.m_channel_clients.end()) {
+				const ChatChanClientInfo chan_client_info = *it;
+				s << chan_client_info.client_info.name;
+				it++;
+				if(it != response.m_channel_clients.end()) {
+					s << " ";
+				}
+			}
+
+			irc_peer->send_numeric(353, s.str(), true);
+			irc_peer->send_numeric(366, "End of /NAMES list.");
+
+
+		}
+		void IRCPeer::OnNamesCmd_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			Chat::Driver *driver = (Chat::Driver *)extra;
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+
+
+			if(!driver->HasPeer(peer)) {
+				return;
+			}
+
+			ChatBackendTask::getQueryTask()->flagPushTask();
+
+			if(response.channel_info.channel_id == 0) {
+
+			} else {
+				ChatBackendTask::getQueryTask()->flagPushTask();
+				ChatBackendTask::SubmitGetChannelUsers(OnNamesCmd_FindUsersCallback, irc_peer, driver, response.channel_info);
+			}
+		}
 
 		EIRCCommandHandlerRet IRCPeer::handle_names(std::vector<std::string> params, std::string full_params) {
 			std::string channel;
@@ -138,7 +182,8 @@ namespace Chat {
 			} else {
 				return EIRCCommandHandlerRet_NotEnoughParams;
 			}
-			//ChatBackendTask::SubmitFindChannel(OnPartCmd_FindCallback, this, mp_driver, channel);
+			printf("Names find: %s\n", channel.c_str());
+			ChatBackendTask::SubmitFindChannel(OnNamesCmd_FindChannelCallback, this, mp_driver, channel);
 			return EIRCCommandHandlerRet_NoError;
 		}
 }

@@ -29,7 +29,7 @@ int main() {
        exit(EXIT_FAILURE);
     }
 
-    OS::Init();
+    OS::Init("GP");
     Socket::Init();
 
     signal(SIGINT, sig_handler);

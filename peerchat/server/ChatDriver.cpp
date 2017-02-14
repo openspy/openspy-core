@@ -166,7 +166,6 @@ namespace Chat {
 		}
 	}
 	void Driver::OnSendClientMessage(int target_id, ChatClientInfo from_user, const char *msg) {
-		printf("OnSendClientMessage: %d - %s\n",target_id, msg);
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;

@@ -34,11 +34,14 @@ namespace GP {
 		m_status.address.ip = address_info->sin_addr.s_addr;
 		m_status.address.port = address_info->sin_port;
 
+		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());
+
 		gen_random(m_challenge, CHALLENGE_LEN);
 
 		send_login_challenge(1);
 	}
 	Peer::~Peer() {
+		OS::LogText(OS::ELogLevel_Info, "Connection from %s closed",OS::Address(m_address_info).ToString().c_str());
 		delete mp_mutex;
 		close(m_sd);
 	}

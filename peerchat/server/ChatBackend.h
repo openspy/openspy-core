@@ -50,7 +50,10 @@ namespace Chat {
 		EChanClientFlags_Invisible = 64,
 	};
 	typedef struct _ChatChanClientInfo {
-		uint32_t m_client_flags;
+		uint32_t client_flags;
+		int client_id;
+		ChatClientInfo client_info;
+		std::map<std::string, std::string> custom_keys; //setckey/getckey
 	} ChatChanClientInfo;
 
 	enum EChannelModeFlags {
@@ -61,10 +64,9 @@ namespace Chat {
 		EChannelModeFlags_Moderated = 16,
 		EChannelModeFlags_Auditormium = 32,
 		EChannelModeFlags_VOPAuditormium = 64,
-		EChanClientFlags_Invisible = 128,
-		EChanClientFlags_InviteOnly = 256,
-		EChanClientFlags_StayOpened = 512,
-		EChanClientFlags_OnlyOwner = 1024, //only owner can change modes
+		EChannelModeFlags_InviteOnly = 128,
+		EChannelModeFlags_StayOpened = 256,
+		EChannelModeFlags_OnlyOwner = 512, //only owner can change modes
 	};
 
 	typedef struct _ChatChannelInfo {
@@ -86,6 +88,7 @@ namespace Chat {
 	typedef struct _ChatQueryResponse {
 		ChatChannelInfo channel_info;
 		ChatClientInfo client_info;
+		std::vector<ChatChanClientInfo> m_channel_clients;
 		EChatBackendResponseError error;
 	} ChatQueryResponse;
 	typedef void (*ChatQueryCB)(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
@@ -98,6 +101,8 @@ namespace Chat {
 		EChatQueryRequestType_Find_Channel,
 		EChatQueryRequestType_AddUserToChannel,
 		EChatQueryRequestType_RemoveUserFromChannel,
+		EChatQueryRequestType_GetChannelUsers,
+		EChatQueryRequestType_SetUserChannelInfo,
 	};
 	typedef struct _ChatQueryRequest {
 		EChatQueryRequestType type;
@@ -128,6 +133,7 @@ namespace Chat {
 
 			static void SubmitAddUserToChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			static void SubmitRemoveUserFromChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
+			static void SubmitGetChannelUsers(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -142,11 +148,13 @@ namespace Chat {
 			void PerformFind_OrCreateChannel(ChatQueryRequest task_params, bool no_create = false);
 			void PerformSendAddUserToChannel(ChatQueryRequest task_params);
 			void PerformSendRemoveUserFromChannel(ChatQueryRequest task_params);
+			void PerformGetChannelUsers(ChatQueryRequest task_params);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);
 			ChatChannelInfo GetChannelByID(int id);
 			ChatChannelInfo CreateChannel(std::string name);
+			ChatChanClientInfo GetChanClientInfo(int chan_id, int client_id);
 
 
 			void LoadClientInfoByID(ChatClientInfo &info, int client_id);

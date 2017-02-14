@@ -14,8 +14,10 @@ namespace QR {
 		m_timeout_flag = false;
 		m_sd = sd;
 		m_address_info = *address_info;
+		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());
 	}
 	Peer::~Peer() {
+		OS::LogText(OS::ELogLevel_Info, "Connection from %s closed",OS::Address(m_address_info).ToString().c_str());
 	}
 	bool Peer::isTeamString(const char *string) {
 		int len = strlen(string);

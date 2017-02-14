@@ -24,8 +24,11 @@ namespace Chat {
 		m_client_info.hostname = "*";
 
 		mp_mutex = OS::CreateMutex();
+
+		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());
 	}
 	Peer::~Peer() {
+		OS::LogText(OS::ELogLevel_Info, "Connection from %s closed",OS::Address(m_address_info).ToString().c_str());
 		close(m_sd);
 		delete mp_mutex;
 	}

@@ -123,30 +123,29 @@ namespace Chat {
 	void ChatBackendTask::LoadClientInfoByID(ChatClientInfo &info, int client_id) {
 		info.client_id = client_id;
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
-
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_client_%d nick", client_id);
 		if(reply->type == REDIS_REPLY_STRING) {
-			info.name = reply->str;
+			info.name = OS::strip_quotes(reply->str);
 		}
 		freeReplyObject(reply);
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_client_%d user", client_id);
 		if(reply->type == REDIS_REPLY_STRING) {
-			info.user = reply->str;
+			info.user = OS::strip_quotes(reply->str);
 		}
 		freeReplyObject(reply);
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_client_%d realname", client_id);
 		if(reply->type == REDIS_REPLY_STRING) {
-			info.realname = reply->str;
+			info.realname = OS::strip_quotes(reply->str);
 		}
 		freeReplyObject(reply);
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_client_%d host", client_id);
 		if(reply->type == REDIS_REPLY_STRING) {
-			info.hostname = reply->str;
+			info.hostname = OS::strip_quotes(reply->str);
 		}
 		freeReplyObject(reply);
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_client_%d ip", client_id);
 		if(reply->type == REDIS_REPLY_STRING) {
-			info.ip = OS::Address(reply->str);
+			info.ip = OS::Address(OS::strip_quotes(std::string(reply->str)).c_str());
 		}
 		freeReplyObject(reply);
 
@@ -188,11 +187,25 @@ namespace Chat {
 		req.query_data.channel_info = channel;
 		getQueryTask()->AddRequest(req);
 	}
+	void ChatBackendTask::SubmitGetChannelUsers(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_GetChannelUsers;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_data.client_info = peer->getClientInfo();
+		req.query_data.channel_info = channel;
+		getQueryTask()->AddRequest(req);
+	}
+	
 	void ChatBackendTask::PerformSendAddUserToChannel(ChatQueryRequest task_params) {
 		std::string chan_str = ChannelInfoToKVString(task_params.query_data.channel_info);
 		std::string user_str = ClientInfoToKVString(task_params.peer->getClientInfo());
 
 		freeReplyObject(redisCommand(mp_redis_connection, "LPUSH chan_%d_clients %d", task_params.query_data.channel_info.channel_id, task_params.query_data.client_info.client_id));
+
+		freeReplyObject(redisCommand(mp_redis_connection, "HPUSH chan_%d_client_%d client_flags 0", task_params.query_data.channel_info.channel_id, task_params.query_data.client_info.client_id));
+		freeReplyObject(redisCommand(mp_redis_connection, "HPUSH chan_%d_client_%d_keys testkey \"dbg_test_key\"", task_params.query_data.channel_info.channel_id, task_params.query_data.client_info.client_id));
 
 		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\user_join_channel%s%s\n",
 			chat_messaging_channel, chan_str.c_str(),user_str.c_str()));
@@ -220,19 +233,19 @@ namespace Chat {
 			freeReplyObject(reply);
 		}
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d nick %s", task_params.query_data.client_info.client_id,task_params.query_data.client_info.name.c_str());
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d nick \"%s\"", task_params.query_data.client_info.client_id,task_params.query_data.client_info.name.c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d user %s", task_params.query_data.client_info.client_id,task_params.query_data.client_info.user.c_str());
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d user \"%s\"", task_params.query_data.client_info.client_id,task_params.query_data.client_info.user.c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d realname %s", task_params.query_data.client_info.client_id,task_params.query_data.client_info.realname.c_str());
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d realname \"%s\"", task_params.query_data.client_info.client_id,task_params.query_data.client_info.realname.c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d host %s", task_params.query_data.client_info.client_id,task_params.query_data.client_info.hostname.c_str());
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d host \"%s\"", task_params.query_data.client_info.client_id,task_params.query_data.client_info.hostname.c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d ip %s", task_params.query_data.client_info.client_id,task_params.query_data.client_info.ip.ToString().c_str());
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d ip \"%s\"", task_params.query_data.client_info.client_id,task_params.query_data.client_info.ip.ToString().c_str());
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET nick_id_map %s %d", task_params.query_data.client_info.name.c_str(), task_params.query_data.client_info.client_id);
@@ -241,6 +254,57 @@ namespace Chat {
 		struct Chat::_ChatQueryResponse response;
 		response.client_info = task_params.query_data.client_info;
 		task_params.callback(task_params, response, task_params.peer, task_params.extra);
+	}
+	ChatChanClientInfo ChatBackendTask::GetChanClientInfo(int chan_id, int client_id) {
+		ChatChanClientInfo ret;
+		redisReply *reply;
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_%d_client_%d client_flags", chan_id, client_id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			ret.client_flags = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			ret.client_flags = atoi(reply->str);
+		}
+		ret.client_id = client_id;
+		freeReplyObject(reply);
+
+		LoadClientInfoByID(ret.client_info, client_id);
+
+		/*
+		freeReplyObject(redisCommand(mp_redis_connection, "HPUSH chan_%d_client_%d_keys testkey \"dbg_test_key\"", task_params.query_data.channel_info.channel_id, task_params.query_data.client_info.client_id));
+		*/
+
+		return ret;
+	}
+	void ChatBackendTask::PerformGetChannelUsers(ChatQueryRequest task_params) {
+		redisReply *reply;
+		int num_clients = 0;
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "LLEN chan_%d_clients", task_params.query_data.channel_info.channel_id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			num_clients = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			num_clients = atoi(reply->str);
+		}
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "LRANGE chan_%d_clients 0 %d", task_params.query_data.channel_info.channel_id, num_clients);
+
+		struct Chat::_ChatQueryResponse response;
+		for(int i=0;i<reply->elements;i++) {
+			redisReply *element = reply->element[i];
+			int client_id;
+			if(element && element->type == REDIS_REPLY_INTEGER) {
+				client_id = element->integer;
+			} else if(element && element->type == REDIS_REPLY_STRING) {
+				client_id = atoi(element->str);
+			}
+			response.m_channel_clients.push_back(GetChanClientInfo(task_params.query_data.channel_info.channel_id,client_id));
+		}
+		freeReplyObject(reply);
+		task_params.callback(task_params, response, task_params.peer, task_params.extra);
+
 	}
 
 	ChatChannelInfo ChatBackendTask::GetChannelByName(std::string name) {
@@ -256,12 +320,14 @@ namespace Chat {
 		}
 		freeReplyObject(reply);
 
+		printf("got channel: %d\n", id);
+
 		return GetChannelByID(id);
 
 	}
 	ChatChannelInfo ChatBackendTask::GetChannelByID(int id) {
 		ChatChannelInfo ret;
-		ret.channel_id = 0;
+		ret.channel_id = id;
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
 
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_channel_%d topic", id);
@@ -337,6 +403,9 @@ namespace Chat {
 						break;
 						case EChatQueryRequestType_RemoveUserFromChannel:
 							task->PerformSendRemoveUserFromChannel(task_params);
+						break;
+						case EChatQueryRequestType_GetChannelUsers:
+							task->PerformGetChannelUsers(task_params);
 						break;
 					}
 					if(task->m_flag_push_task) {

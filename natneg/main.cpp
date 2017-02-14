@@ -30,7 +30,7 @@ int main() {
        exit(EXIT_FAILURE);
     }
 
-	OS::Init();
+	OS::Init("natneg");
     Socket::Init();
 
     signal(SIGINT, sig_handler);

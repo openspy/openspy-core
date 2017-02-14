@@ -33,7 +33,7 @@ int main() {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-	OS::Init();
+	OS::Init("serverbrowsing");
     Socket::Init();
 
 	g_gameserver = new SBServer();

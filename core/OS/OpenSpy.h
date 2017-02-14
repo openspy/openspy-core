@@ -31,15 +31,21 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 
 #endif
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string>
 #include <vector>
 #include <stdint.h>
 #include <memory.h>
 #include <map>
 #include <hiredis/hiredis.h>
+
+#include <OS/Logger.h>
+
 #define OPENSPY_WEBSERVICES_URL "http://10.10.10.10"
 namespace OS {
-
+	class Logger;
+	extern Logger *g_logger;
+	void LogText(ELogLevel level, const char *fmt, ...);
 	///////////////////////
 	/// XXX: put in os/geo/region.h
 	typedef struct {
@@ -101,7 +107,7 @@ namespace OS {
 	void split(const std::string &s, char delim, Out result);
 	std::vector<std::string> split(const std::string &s, char delim);
 	
-	void Init();
+	void Init(const char *appName);
 	void Shutdown();
 	std::map<std::string, std::string> KeyStringToMap(std::string input);
 	std::vector<std::string> KeyStringToVector(std::string input);

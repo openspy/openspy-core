@@ -22,7 +22,7 @@ void sig_handler(int signo)
 }
 
 int main() {
-    OS::Init();
+    OS::Init("search");
     Socket::Init();
 
     signal(SIGINT, sig_handler);

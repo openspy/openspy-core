@@ -20,8 +20,11 @@ namespace NN {
 		m_cookie = 0;
 		m_client_index = 0;
 		m_client_version = 0;
+		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());
+
 	}
 	Peer::~Peer() {
+		OS::LogText(OS::ELogLevel_Info, "Connection from %s closed",OS::Address(m_address_info).ToString().c_str());
 	}
 	void Peer::think() {
 		struct timeval time_now;

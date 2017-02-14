@@ -32,7 +32,7 @@ int main() {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-	OS::Init();
+	OS::Init("peerchat");
     Socket::Init();
 
 	g_gameserver = new ChatServer();

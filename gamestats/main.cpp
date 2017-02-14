@@ -29,7 +29,7 @@ int main() {
        exit(EXIT_FAILURE);
     }
     
-    OS::Init();
+    OS::Init("gamestats");
     Socket::Init();
 
     signal(SIGINT, sig_handler);
