@@ -34,6 +34,8 @@ namespace Chat {
 		virtual void OnRecvClientMessage(ChatClientInfo from_user, const char *msg) = 0;
 		virtual void OnRecvClientJoinChannel(ChatClientInfo user, ChatChannelInfo channel) = 0;
 		virtual void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel) = 0;
+		virtual void OnRecvChannelModeUpdate(ChatClientInfo user, ChatChannelInfo channel, ChanModeChangeData change_data) = 0;
+		virtual void OnChannelTopicUpdate(ChatClientInfo user, ChatChannelInfo channel) = 0;
 		bool IsOnChannel(ChatChannelInfo channel);
 
 	protected:

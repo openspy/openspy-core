@@ -29,6 +29,12 @@ namespace Chat {
 	enum EChatBackendResponseError {
 		EChatBackendResponseError_NoError,
 		EChatBackendResponseError_NoUser_OrChan,
+		EChatBackendResponseError_NoVoicePerms,
+		EChatBackendResponseError_NoHOPPerms,
+		EChatBackendResponseError_NoOPPerms,
+		EChatBackendResponseError_NoOwnerPerms,
+		EChatBackendResponseError_NickInUse,
+		EChatBackendResponseError_NoChange,
 	};
 	typedef struct _ChatClientInfo {
 		int client_id; //redis id
@@ -102,7 +108,10 @@ namespace Chat {
 		EChatQueryRequestType_AddUserToChannel,
 		EChatQueryRequestType_RemoveUserFromChannel,
 		EChatQueryRequestType_GetChannelUsers,
+		EChatQueryRequestType_GetChannelUser,
 		EChatQueryRequestType_SetUserChannelInfo,
+		EChatQueryRequestType_UpdateChannelModes,
+		EChatQueryRequestType_UpdateChannelTopic,
 	};
 	typedef struct _ChatQueryRequest {
 		EChatQueryRequestType type;
@@ -113,7 +122,14 @@ namespace Chat {
 		std::string message; //for client messages
 
 		ChatQueryResponse query_data;
+
+		int add_flags;
+		int remove_flags;
 	} ChatQueryRequest;
+
+	typedef struct {
+		int old_modeflags;
+	} ChanModeChangeData;
 
 	class ChatBackendTask : public OS::Task<ChatQueryRequest> {
 		public:
@@ -134,6 +150,9 @@ namespace Chat {
 			static void SubmitAddUserToChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			static void SubmitRemoveUserFromChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			static void SubmitGetChannelUsers(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
+			static void SubmitGetChannelUser(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
+			static void SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel);
+			static void SubmitUpdateChannelTopic(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string topic);
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -149,6 +168,8 @@ namespace Chat {
 			void PerformSendAddUserToChannel(ChatQueryRequest task_params);
 			void PerformSendRemoveUserFromChannel(ChatQueryRequest task_params);
 			void PerformGetChannelUsers(ChatQueryRequest task_params);
+			void PerformUpdateChannelModes(ChatQueryRequest task_params);
+			void PerformUpdateChannelTopic(ChatQueryRequest task_params);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);
@@ -163,6 +184,8 @@ namespace Chat {
 			void SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg);
 			void SendClientJoinChannelToDrivers(ChatClientInfo client, ChatChannelInfo channel);
 			void SendClientPartChannelToDrivers(ChatClientInfo client, ChatChannelInfo channel);
+			void SendChannelModeUpdateToDrivers(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data);
+			void SendUpdateChannelTopicToDrivers(ChatClientInfo client, ChatChannelInfo channel);			
 
 			static std::string ChannelInfoToKVString(ChatChannelInfo info);
 			static ChatChannelInfo ChannelInfoFromKVString(const char *str);

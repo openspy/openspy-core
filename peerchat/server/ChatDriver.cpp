@@ -198,4 +198,26 @@ namespace Chat {
 			it++;
 		}
 	}
+	void Driver::SendChannelModeUpdate(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			ChatClientInfo info = p->getClientInfo();
+			if(p->IsOnChannel(channel_info)) {
+				p->OnRecvChannelModeUpdate(client_info, channel_info,change_data);
+			}
+			it++;
+		}
+	}
+	void Driver::SendUpdateChannelTopic(ChatClientInfo client, ChatChannelInfo channel) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			ChatClientInfo info = p->getClientInfo();
+			if(p->IsOnChannel(channel)) {
+				p->OnChannelTopicUpdate(client, channel);
+			}
+			it++;
+		}
+	}
 }

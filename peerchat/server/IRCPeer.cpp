@@ -41,8 +41,10 @@ namespace Chat {
 			//channel cmds
 			{"JOIN", &IRCPeer::handle_join},
 			{"PART", &IRCPeer::handle_part},
-
 			{"NAMES", &IRCPeer::handle_names},
+
+			{"MODE", &IRCPeer::handle_mode},
+			{"TOPIC", &IRCPeer::handle_topic},
 		};
 		IRCPeer::IRCPeer(Driver *driver, struct sockaddr_in *address_info, int sd) : Chat::Peer(driver, address_info, sd) {
 			m_sent_client_init = false;

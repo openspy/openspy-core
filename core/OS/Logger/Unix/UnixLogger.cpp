@@ -15,10 +15,10 @@ namespace OS {
 		switch(level) {
 			case ELogLevel_Debug:
 				log_level = LOG_DEBUG;
-				break;
+			break;
 			case ELogLevel_Warning:
 				log_level = LOG_WARNING;
-				break;
+			break;
 			case ELogLevel_Critical:
 				log_level = LOG_CRIT;
 			break;

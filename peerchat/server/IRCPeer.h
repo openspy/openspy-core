@@ -41,6 +41,8 @@ namespace Chat {
 		void OnRecvClientMessage(ChatClientInfo from_user, const char *msg);
 		void OnRecvClientJoinChannel(ChatClientInfo user, ChatChannelInfo channel);
 		void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel);
+		void OnRecvChannelModeUpdate(ChatClientInfo user, ChatChannelInfo channel, ChanModeChangeData change_data);
+		void OnChannelTopicUpdate(ChatClientInfo user, ChatChannelInfo channel);
 	protected:
 		//user cmds
 		EIRCCommandHandlerRet handle_nick(std::vector<std::string> params, std::string full_params);
@@ -51,6 +53,8 @@ namespace Chat {
 		EIRCCommandHandlerRet handle_userhost(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_privmsg(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_names(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_mode(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_topic(std::vector<std::string> params, std::string full_params);
 
 		//user cmd callbacks
 		static void OnNickCmd_InUseLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
@@ -69,11 +73,13 @@ namespace Chat {
 		static void OnPartCmd_FindCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnNamesCmd_FindUsersCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnNamesCmd_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnModeCmd_ChannelUpdateCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//channel misc
 		void send_channel_topic(ChatChannelInfo channel);
 		void send_channel_modes(ChatChannelInfo channel);
 		void send_channel_names(ChatChannelInfo channel);
+		void parse_channel_modes(std::string mode_str, uint32_t &add_mask, uint32_t &remove_mask, std::back_insert_iterator<std::vector<char> > it);
 
 		void send_nonick_channel_error(std::string name);
 		void send_command_error(EIRCCommandHandlerRet value, std::string cmd_name);

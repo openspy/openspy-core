@@ -312,6 +312,7 @@ namespace SB {
 			BufferWriteShort(&p, &out_len, Socket::htons(len + sizeof(uint16_t)));
 		}
 		BufferWriteData(&p, &out_len, buff, len);
+
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)&out_buff) + header_len, out_len - header_len);
 		if(send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL) < 0)
 			m_delete_flag = true;

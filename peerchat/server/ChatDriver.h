@@ -45,7 +45,8 @@ namespace Chat {
 		void OnSendClientMessage(int target_id, ChatClientInfo from_user, const char *msg);
 		void SendJoinChannelMessage(ChatClientInfo client, ChatChannelInfo channel);
 		void SendPartChannelMessage(ChatClientInfo client, ChatChannelInfo channel);
-
+		void SendChannelModeUpdate(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data);
+		void SendUpdateChannelTopic(ChatClientInfo client, ChatChannelInfo channel);
 	private:
 
 		void TickConnections(fd_set *fdset);
