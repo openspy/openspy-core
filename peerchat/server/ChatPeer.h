@@ -29,9 +29,8 @@ namespace Chat {
 		int GetPing();
 
 		ChatClientInfo getClientInfo() { return m_client_info; };
-
-		//p->OnRecvClientMessage(from_user, msg);
-		virtual void OnRecvClientMessage(ChatClientInfo from_user, const char *msg) = 0;
+		virtual void OnRecvChannelMessage(ChatClientInfo from_user, ChatChannelInfo to_channel, const char *msg, EChatMessageType message_type) = 0;
+		virtual void OnRecvClientMessage(ChatClientInfo from_user, const char *msg, EChatMessageType message_type) = 0;
 		virtual void OnRecvClientJoinChannel(ChatClientInfo user, ChatChannelInfo channel) = 0;
 		virtual void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel) = 0;
 		virtual void OnRecvChannelModeUpdate(ChatClientInfo user, ChatChannelInfo channel, ChanModeChangeData change_data) = 0;

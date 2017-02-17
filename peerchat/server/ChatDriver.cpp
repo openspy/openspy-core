@@ -165,13 +165,24 @@ namespace Chat {
 			it++;
 		}
 	}
-	void Driver::OnSendClientMessage(int target_id, ChatClientInfo from_user, const char *msg) {
+	void Driver::OnSendClientMessage(int target_id, ChatClientInfo from_user, const char *msg, EChatMessageType message_type) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
 			ChatClientInfo info = p->getClientInfo();
 			if(info.client_id == target_id) {
-				p->OnRecvClientMessage(from_user, msg);
+				p->OnRecvClientMessage(from_user, msg, message_type);
+			}
+			it++;
+		}
+	}
+	void Driver::OnSendChannelMessage(ChatChannelInfo channel, ChatClientInfo from_user, const char *msg, EChatMessageType message_type) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			ChatClientInfo info = p->getClientInfo();
+			if(p->IsOnChannel(channel)) {
+				p->OnRecvChannelMessage(from_user, channel, msg, message_type);
 			}
 			it++;
 		}

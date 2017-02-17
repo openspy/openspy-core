@@ -27,6 +27,7 @@ namespace Chat {
 	typedef struct {
 		Chat::Driver *driver;
 		std::string message;
+		EChatMessageType message_type;
 	} IRCMessageCallbackData;
 
 
@@ -38,7 +39,8 @@ namespace Chat {
 		void send_ping();
 		void think(bool packet_waiting); //called when no data is recieved
 
-		void OnRecvClientMessage(ChatClientInfo from_user, const char *msg);
+		void OnRecvClientMessage(ChatClientInfo from_user, const char *msg, EChatMessageType message_type);
+		void OnRecvChannelMessage(ChatClientInfo from_user, ChatChannelInfo to_channel, const char *msg, EChatMessageType message_type);
 		void OnRecvClientJoinChannel(ChatClientInfo user, ChatChannelInfo channel);
 		void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel);
 		void OnRecvChannelModeUpdate(ChatClientInfo user, ChatChannelInfo channel, ChanModeChangeData change_data);
@@ -55,14 +57,19 @@ namespace Chat {
 		EIRCCommandHandlerRet handle_names(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_mode(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_topic(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_setkey(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_getkey(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_setckey(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_getckey(std::vector<std::string> params, std::string full_params);
 
 		//user cmd callbacks
 		static void OnNickCmd_InUseLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnWhoisCmd_UserLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);		
 		static void OnNickCmd_SubmitClientInfo(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnUserhostCmd_UserLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);		
-		static void OnPrivMsg_UserLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnPrivMsg_Lookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnNotice_Sent(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnModeCmd_ShowChannelModes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//channel cmds
 		EIRCCommandHandlerRet handle_join(std::vector<std::string> params, std::string full_params);
@@ -74,11 +81,13 @@ namespace Chat {
 		static void OnNamesCmd_FindUsersCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnNamesCmd_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnModeCmd_ChannelUpdateCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnTopicCmd_ChannelUpdateCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//channel misc
 		void send_channel_topic(ChatChannelInfo channel);
 		void send_channel_modes(ChatChannelInfo channel);
 		void send_channel_names(ChatChannelInfo channel);
+		void send_callback_error(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response);
 		void parse_channel_modes(std::string mode_str, uint32_t &add_mask, uint32_t &remove_mask, std::back_insert_iterator<std::vector<char> > it);
 
 		void send_nonick_channel_error(std::string name);

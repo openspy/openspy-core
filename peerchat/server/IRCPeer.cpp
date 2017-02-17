@@ -36,6 +36,9 @@ namespace Chat {
 			{"WHOIS", &IRCPeer::handle_whois},
 			{"USERHOST", &IRCPeer::handle_userhost},
 			{"PRIVMSG", &IRCPeer::handle_privmsg},
+			{"NOTICE", &IRCPeer::handle_privmsg},
+			{"UTM", &IRCPeer::handle_privmsg},
+			{"ATM", &IRCPeer::handle_privmsg},
 
 
 			//channel cmds
@@ -45,6 +48,9 @@ namespace Chat {
 
 			{"MODE", &IRCPeer::handle_mode},
 			{"TOPIC", &IRCPeer::handle_topic},
+
+			{"SETCKEY", &IRCPeer::handle_setckey},
+			{"GETCKEY", &IRCPeer::handle_getckey},
 		};
 		IRCPeer::IRCPeer(Driver *driver, struct sockaddr_in *address_info, int sd) : Chat::Peer(driver, address_info, sd) {
 			m_sent_client_init = false;
@@ -138,9 +144,57 @@ namespace Chat {
 			s << name << " :No such nick/channel";
 			send_numeric(401, s.str(), true);
 		}
-		void IRCPeer::OnRecvClientMessage(ChatClientInfo from_user, const char *msg) {
+		void IRCPeer::OnRecvClientMessage(ChatClientInfo from_user, const char *msg, EChatMessageType message_type) {
 			std::ostringstream s;
-			s << ":" << from_user.name << "!" << from_user.user << "@" << from_user.hostname << " PRIVMSG " << m_client_info.name << " :" << msg << std::endl;
+			const char *type_privmsg = "PRIVMSG";
+			const char *type_notice = "NOTICE";
+			const char *type_utm = "UTM";
+			const char *type_atm = "ATM";
+			const char *type;
+			switch(message_type) {
+				case EChatMessageType_Notice:
+					type = type_notice;
+				break;
+				case EChatMessageType_UTM:
+					type = type_utm;
+				break;
+				case EChatMessageType_ATM:
+					type = type_atm;
+				break;
+				default:
+				case EChatMessageType_Msg:
+					type = type_privmsg;
+				break;
+			}
+			s << ":" << from_user.name << "!" << from_user.user << "@" << from_user.hostname << " " << type << " " << m_client_info.name << " :" << msg << std::endl;
+			SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		}
+		void IRCPeer::OnRecvChannelMessage(ChatClientInfo from_user, ChatChannelInfo to_channel, const char *msg, EChatMessageType message_type) {
+			if(from_user.client_id == m_client_info.client_id) {
+				return;
+			}
+			std::ostringstream s;
+			const char *type_privmsg = "PRIVMSG";
+			const char *type_notice = "NOTICE";
+			const char *type_utm = "UTM";
+			const char *type_atm = "ATM";
+			const char *type;
+			switch(message_type) {
+				case EChatMessageType_Notice:
+					type = type_notice;
+				break;
+				case EChatMessageType_UTM:
+					type = type_utm;
+				break;
+				case EChatMessageType_ATM:
+					type = type_atm;
+				break;
+				default:
+				case EChatMessageType_Msg:
+					type = type_privmsg;
+				break;
+			}
+			s << ":" << from_user.name << "!" << from_user.user << "@" << from_user.hostname << " " << type << " " << to_channel.name << " :" << msg << std::endl;
 			SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 		}
 		void IRCPeer::send_numeric(int num, std::string str, bool no_colon) {
@@ -206,5 +260,36 @@ namespace Chat {
 		}
 		bool IRCPeer::is_channel_name(std::string name) {
 			return name[0] == '#';
+		}
+		void IRCPeer::send_callback_error(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response) {
+			std::ostringstream s;
+			switch(response.error) {
+				case EChatBackendResponseError_NoUser_OrChan:
+				s << request.query_name << " :No such nick/channel";
+				send_numeric(401, s.str(), true);
+				break;
+				case EChatBackendResponseError_NoVoicePerms:
+				s << response.channel_info.name << " :You're not voiced";
+				send_numeric(482, s.str(), true);
+				break;
+				case EChatBackendResponseError_NoHOPPerms:
+				s << response.channel_info.name << ":You're not channel half operator";
+				send_numeric(482, s.str(), true);
+				break;
+				case EChatBackendResponseError_NoOPPerms:
+				s << response.channel_info.name << ":You're not channel operator";
+				send_numeric(482, s.str(), true);
+				break;
+				case EChatBackendResponseError_NoOwnerPerms:
+				s << response.channel_info.name << ":You're not channel owner";
+				send_numeric(482, s.str(), true);
+				break;
+				case EChatBackendResponseError_NickInUse:
+				s << response.channel_info.name << ":Nickname is already in use";
+				send_numeric(433, s.str(), true);
+				break;
+				case EChatBackendResponseError_NoChange:
+				break;
+			}
 		}
 }

@@ -63,7 +63,7 @@ namespace Chat {
 		req.extra = extra;
 		getQueryTask()->AddRequest(req);
 	}
-	void ChatBackendTask::SubmitClientMessage(int target_id, std::string message, ChatQueryCB cb, Peer *peer, void *extra) {
+	void ChatBackendTask::SubmitClientMessage(int target_id, std::string message, EChatMessageType message_type, ChatQueryCB cb, Peer *peer, void *extra) {
 		ChatQueryRequest req;
 		req.type = EChatQueryRequestType_SendClientMessage;
 		req.query_data.client_info.client_id = target_id;
@@ -71,8 +71,21 @@ namespace Chat {
 		req.peer = peer;
 		req.extra = extra;
 		req.message = message;
+		req.message_type = message_type;
 		getQueryTask()->AddRequest(req);
 	}
+	void ChatBackendTask::SubmitChannelMessage(int target_id, std::string message, EChatMessageType message_type, ChatQueryCB cb, Peer *peer, void *extra) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_SendChannelMessage;
+		req.query_data.channel_info.channel_id = target_id;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.message = message;
+		req.message_type = message_type;
+		getQueryTask()->AddRequest(req);
+	}
+	
 	void ChatBackendTask::SubmitFind_OrCreateChannel(ChatQueryCB cb, Peer *peer, void *extra, std::string channel) {
 		ChatQueryRequest req;
 		req.type = EChatQueryRequestType_Find_OrCreate_Channel;
@@ -94,10 +107,16 @@ namespace Chat {
 	void ChatBackendTask::PerformFind_OrCreateChannel(ChatQueryRequest task_params, bool no_create) {
 		struct Chat::_ChatQueryResponse resp;
 		resp.channel_info =  GetChannelByName(task_params.query_name);
+		resp.error = EChatBackendResponseError_NoError;
+
 		if(resp.channel_info.channel_id == 0 && !no_create) {
 			resp.channel_info = CreateChannel(task_params.query_name);
 		}
 
+		if(resp.channel_info.channel_id == 0) {
+			resp.error = EChatBackendResponseError_NoUser_OrChan;
+		}
+		resp.client_info.client_id = 0;
 		task_params.callback(task_params, resp, task_params.peer, task_params.extra);
 	}
 	void ChatBackendTask::PerformGetClientInfoByName(ChatQueryRequest task_params) {
@@ -117,6 +136,12 @@ namespace Chat {
 		}
 		struct Chat::_ChatQueryResponse response;
 		response.client_info = info;
+
+		if(client_id == 0) {
+			response.error = EChatBackendResponseError_NoUser_OrChan;
+		} else {
+			response.error = EChatBackendResponseError_NoError;
+		}
 		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 		freeReplyObject(reply);
 	}
@@ -153,8 +178,18 @@ namespace Chat {
 	void ChatBackendTask::PerformSendClientMessage(ChatQueryRequest task_params) {
 		std::string kv_user = ClientInfoToKVString(task_params.peer->getClientInfo());
 		const char *b64_msg = OS::BinToBase64Str((const uint8_t*)task_params.message.c_str(),task_params.message.length());
-		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\send_client_msg\\%s\\to_id\\%d\\msg\\%s\n",
-			chat_messaging_channel, kv_user.c_str(), task_params.query_data.client_info.client_id, b64_msg));
+		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\send_client_msg\\msg_type\\%d%s\\to_id\\%d\\msg\\%s\n",
+			chat_messaging_channel, task_params.message_type, kv_user.c_str(), task_params.query_data.client_info.client_id, b64_msg));
+
+		free((void *)b64_msg);
+	}
+	void ChatBackendTask::PerformSendChannelMessage(ChatQueryRequest task_params) {
+		std::string kv_user = ClientInfoToKVString(task_params.peer->getClientInfo());
+		ChatChannelInfo channel = GetChannelByID(task_params.query_data.channel_info.channel_id);
+		std::string kv_chan = ChannelInfoToKVString(channel);
+		const char *b64_msg = OS::BinToBase64Str((const uint8_t*)task_params.message.c_str(),task_params.message.length());
+		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\send_channel_msg\\msg_type\\%d%s%s\\msg\\%s\n",
+			chat_messaging_channel, task_params.message_type, kv_user.c_str(), kv_chan.c_str(), b64_msg));
 
 		free((void *)b64_msg);
 	}
@@ -289,6 +324,7 @@ namespace Chat {
 	void ChatBackendTask::PerformUpdateChannelTopic(ChatQueryRequest task_params) {
 		redisReply *reply;
 		ChatChannelInfo channel_info;
+		ChatClientInfo client_info;
 		std::string chan_str;
 		std::string user_str;
 		struct Chat::_ChatQueryResponse response;
@@ -301,11 +337,15 @@ namespace Chat {
 			channel_info = GetChannelByName(task_params.query_data.channel_info.name);
 		}
 
+		client_info = task_params.peer->getClientInfo();
+
 		if(channel_info.channel_id == 0) {
 			response.error = EChatBackendResponseError_NoUser_OrChan;
 			goto end_error;
 		}
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic \"%s\"", channel_info.channel_id, task_params.message));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic \"%s\"", channel_info.channel_id, task_params.message.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic_seton %d", channel_info.channel_id, time(NULL)));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic_setby %s", channel_info.channel_id, client_info.name.c_str()));
 
 		response.error = EChatBackendResponseError_NoError;
 
@@ -449,8 +489,6 @@ namespace Chat {
 		}
 		freeReplyObject(reply);
 
-		printf("got channel: %d\n", id);
-
 		return GetChannelByID(id);
 
 	}
@@ -461,14 +499,13 @@ namespace Chat {
 
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_channel_%d topic", id);
 		if(reply->type == REDIS_REPLY_STRING) {
-			ret.topic = reply->str;
+			ret.topic = OS::strip_quotes(reply->str);
 		}
 		freeReplyObject(reply);
 
 		ret.modeflags = 0;
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_channel_%d modeflags", ret.channel_id);
 		if(reply->type == REDIS_REPLY_STRING) {
-			printf("MODEFLAGS: %s\n", reply->str);
 			ret.modeflags = atoi(OS::strip_quotes(reply->str).c_str());
 		} else if(reply->type == REDIS_REPLY_INTEGER) {
 			ret.modeflags = reply->integer;
@@ -487,13 +524,13 @@ namespace Chat {
 		ret.topic_setby = "SERVER!SERVER@*";
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_channel_%d topic_setby", ret.channel_id);
 		if(reply->type == REDIS_REPLY_STRING) {
-			ret.topic_setby = reply->str;
+			ret.topic_setby = OS::strip_quotes(reply->str);
 		}
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_channel_%d name", id);
 		if(reply->type == REDIS_REPLY_STRING) {
-			ret.name = reply->str;
+			ret.name = OS::strip_quotes(reply->str);
 		}
 		freeReplyObject(reply);
 
@@ -551,6 +588,9 @@ namespace Chat {
 						case EChatQueryRequestType_SendClientMessage:
 							task->PerformSendClientMessage(task_params);
 						break;
+						case EChatQueryRequestType_SendChannelMessage:
+							task->PerformSendChannelMessage(task_params);
+						break;
 						case EChatQueryRequestType_Find_OrCreate_Channel:
 							task->PerformFind_OrCreateChannel(task_params);
 						break;
@@ -607,12 +647,16 @@ namespace Chat {
 	    if (reply == NULL) return;
 		ChatChannelInfo channel_info;
 		ChatClientInfo client_info;
-	    
+
+		uint8_t *out;
+		int len;
+	    int type;
 	    char msg_type[32];
 	    char msg[CHAT_MAX_MESSAGE + 1];
 	    if (r->type == REDIS_REPLY_ARRAY) {
 	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
 	    		if(strcmp(r->element[1]->str,chat_messaging_channel) == 0) {
+	    			type = find_paramint("msg_type", r->element[2]->str);
 	    			if(!find_param("type", r->element[2]->str,(char *)&msg_type, sizeof(msg_type))) {
 	    					return;
 	    			}
@@ -620,12 +664,21 @@ namespace Chat {
 		    			if(!find_param("msg", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE)) {
 		    					return;
 		    			}
+		    			type = find_paramint("msg_type", r->element[2]->str);
 		    			int target_id = find_paramint("to_id", r->element[2]->str);
 						ChatClientInfo user = ClientInfoFromKVString(r->element[2]->str);
-						uint8_t *out;
-						int len;
 						OS::Base64StrToBin(msg, &out, len);
-						task->SendClientMessageToDrivers(target_id,user, (const char *)out);
+						task->SendClientMessageToDrivers(target_id,user, (const char *)out, (EChatMessageType)type);
+						free((void *)out);
+					} else if(strcmp(msg_type, "send_channel_msg") == 0) {
+		    			if(!find_param("msg", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE)) {
+		    					return;
+		    			}
+		    			type = find_paramint("msg_type", r->element[2]->str);
+						ChatClientInfo user = ClientInfoFromKVString(r->element[2]->str);
+						ChatChannelInfo channel = ChannelInfoFromKVString(r->element[2]->str);
+						OS::Base64StrToBin(msg, &out, len);
+						task->SendChannelMessageToDrivers(channel,user, (const char *)out, (EChatMessageType)type);
 						free((void *)out);
 					} else if(strcmp(msg_type, "user_join_channel") == 0) {
 						client_info = ClientInfoFromKVString(r->element[2]->str);
@@ -694,7 +747,7 @@ namespace Chat {
 		free((void *)b64_msg);
 		s << "\\channel_topic_seton\\" << info.topic_seton;
 		s << "\\channel_topic_setby\\" << info.topic_setby;
-		s << "\\channel_id\\" << info.topic_setby;
+		s << "\\channel_id\\" << info.channel_id;
 		s << "\\channel_modeflags\\" << info.modeflags;
 		return s.str();
 	}
@@ -725,11 +778,19 @@ namespace Chat {
 		}
 		return ret;
 	}
-	void ChatBackendTask::SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg) {
+	void ChatBackendTask::SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg, EChatMessageType message_type) {
 		std::vector<Chat::Driver *>::iterator it = m_drivers.begin();
 		while(it != m_drivers.end()) {
 			Chat::Driver *driver = *it;
-			driver->OnSendClientMessage(target_id, user, msg);
+			driver->OnSendClientMessage(target_id, user, msg, message_type);
+			it++;
+		}
+	}
+	void ChatBackendTask::SendChannelMessageToDrivers(ChatChannelInfo channel, ChatClientInfo user, const char *msg, EChatMessageType message_type) {
+		std::vector<Chat::Driver *>::iterator it = m_drivers.begin();
+		while(it != m_drivers.end()) {
+			Chat::Driver *driver = *it;
+			driver->OnSendChannelMessage(channel, user, msg, message_type);
 			it++;
 		}
 	}

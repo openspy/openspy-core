@@ -57,8 +57,6 @@ namespace Chat {
 				return;
 			}
 
-			printf("submitclientinfo callback\n");
-
 			irc_peer->mp_mutex->lock();
 			irc_peer->m_client_info = response.client_info;
 
@@ -108,7 +106,7 @@ namespace Chat {
 		EIRCCommandHandlerRet IRCPeer::handle_pong(std::vector<std::string> params, std::string full_params) {
 			return EIRCCommandHandlerRet_NoError;
 		}
-		void IRCPeer::OnPrivMsg_UserLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+		void IRCPeer::OnPrivMsg_Lookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
 			IRCMessageCallbackData *cb_data = (IRCMessageCallbackData *)extra;
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
@@ -117,39 +115,56 @@ namespace Chat {
 				delete cb_data;
 				return;
 			}
+			if(response.error != EChatBackendResponseError_NoError) {
+				irc_peer->send_callback_error(request, response);
+				delete cb_data;
+				return;
+			}
 			std::ostringstream s;
-			if(response.client_info.name.size() > 0) {
+			if(response.client_info.client_id != 0) {
 				ChatBackendTask::getQueryTask()->flagPushTask();
-				ChatBackendTask::SubmitClientMessage(response.client_info.client_id, cb_data->message, NULL, peer, driver);
-			} else {
-				//
-				irc_peer->send_nonick_channel_error(request.query_name);
+				ChatBackendTask::SubmitClientMessage(response.client_info.client_id, cb_data->message, cb_data->message_type, NULL, peer, driver);
+			} else if(response.channel_info.channel_id != 0) {
+				ChatBackendTask::getQueryTask()->flagPushTask();
+				ChatBackendTask::SubmitChannelMessage(response.channel_info.channel_id, cb_data->message, cb_data->message_type, NULL, peer, driver);
 			}
 			delete cb_data;
 		}
 		EIRCCommandHandlerRet IRCPeer::handle_privmsg(std::vector<std::string> params, std::string full_params) {
 			std::string target;
-			if(params.size() > 1) {
+			EChatMessageType type;
+			if(params.size() > 2) {
 				target = params[1];
 			} else {
 				return EIRCCommandHandlerRet_NotEnoughParams;
 			}
-			if(is_channel_name(target)) {
-				//ChatBackendTask::SubmitChannelMessage(target, OnWhoisCmd_UserLookup, (Peer *)this, mp_driver);	
+			const char *str = full_params.c_str();
+			const char *beg = strchr(str, ':');
+			if(beg) {
+				beg++;
 			} else {
-				const char *str = full_params.c_str();
-				const char *beg = strchr(str, ':');
-				if(beg) {
-					beg++;
-				} else {
-					return EIRCCommandHandlerRet_NotEnoughParams;		
-				}
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
 
-				IRCMessageCallbackData *cb_data = new IRCMessageCallbackData;
-				cb_data->message = beg;
-				cb_data->driver = mp_driver;
-				ChatBackendTask::SubmitGetClientInfoByName(params[1], OnPrivMsg_UserLookup, (Peer *)this, cb_data);
-				printf("Sending: %s\n", beg);
+			IRCMessageCallbackData *cb_data = new IRCMessageCallbackData;
+
+			if(strcasecmp(params[0].c_str(),"PRIVMSG") == 0) {
+				type = EChatMessageType_Msg;
+			} else if(strcasecmp(params[0].c_str(),"NOTICE") == 0) {
+				type = EChatMessageType_Notice;
+			} else if(strcasecmp(params[0].c_str(),"UTM") == 0) {
+				type = EChatMessageType_UTM;
+			} else if(strcasecmp(params[0].c_str(),"ATM") == 0) {
+				type = EChatMessageType_ATM;
+			}
+			cb_data->message = beg;
+			cb_data->driver = mp_driver;
+			cb_data->message_type = type;
+
+			if(is_channel_name(target)) {
+				ChatBackendTask::SubmitFindChannel(OnPrivMsg_Lookup, (Peer *)this, cb_data, target);
+			} else {
+				ChatBackendTask::SubmitGetClientInfoByName(target, OnPrivMsg_Lookup, (Peer *)this, cb_data);
 				
 			}			
 			return EIRCCommandHandlerRet_NoError;
@@ -162,6 +177,10 @@ namespace Chat {
 				return;
 			}
 			std::ostringstream s;
+			if(response.error != EChatBackendResponseError_NoError) {
+				irc_peer->send_callback_error(request, response);
+				return;
+			}
 			if(response.client_info.name.size() > 0) {
 				s.str("");
 				s << response.client_info.name << " " << response.client_info.user  << " " << response.client_info.hostname << " * :" << response.client_info.realname << std::endl;
@@ -189,6 +208,10 @@ namespace Chat {
 			if(!driver->HasPeer(peer)) {
 				return;
 			}
+			if(response.error != EChatBackendResponseError_NoError) {
+				irc_peer->send_callback_error(request, response);
+				return;
+			}
 			if(response.client_info.name.size() > 0) {
 				std::ostringstream s;
 				s << response.client_info.name << "=+" << response.client_info.user << "@" << response.client_info.hostname << std::endl;
@@ -209,6 +232,12 @@ namespace Chat {
 			}
 
 			ChatBackendTask::SubmitGetClientInfoByName(search, OnUserhostCmd_UserLookup, (Peer *)this, mp_driver);
-			return EIRCCommandHandlerRet_NoError;		
+			return EIRCCommandHandlerRet_NoError;
+		}
+		EIRCCommandHandlerRet IRCPeer::handle_setkey(std::vector<std::string> params, std::string full_params) {
+			return EIRCCommandHandlerRet_NoError;
+		}
+		EIRCCommandHandlerRet IRCPeer::handle_getkey(std::vector<std::string> params, std::string full_params) {
+			return EIRCCommandHandlerRet_NoError;
 		}
 }

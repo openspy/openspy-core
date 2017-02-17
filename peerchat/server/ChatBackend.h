@@ -35,6 +35,7 @@ namespace Chat {
 		EChatBackendResponseError_NoOwnerPerms,
 		EChatBackendResponseError_NickInUse,
 		EChatBackendResponseError_NoChange,
+		EChatBackendResponseError_Unknown,
 	};
 	typedef struct _ChatClientInfo {
 		int client_id; //redis id
@@ -113,15 +114,27 @@ namespace Chat {
 		EChatQueryRequestType_UpdateChannelModes,
 		EChatQueryRequestType_UpdateChannelTopic,
 	};
+
+	enum EChatMessageType {
+		EChatMessageType_Msg,
+		EChatMessageType_Notice,
+		EChatMessageType_ATM,
+		EChatMessageType_UTM,
+	};
+
 	typedef struct _ChatQueryRequest {
 		EChatQueryRequestType type;
 		ChatQueryCB callback;
 		Peer *peer;
 		void *extra;
 		std::string query_name; //client/chan name
-		std::string message; //for client messages
+
+		EChatMessageType message_type;
+		std::string message; //for client messages/topic
 
 		ChatQueryResponse query_data;
+
+		std::map<std::string, std::string> set_keys;
 
 		int add_flags;
 		int remove_flags;
@@ -143,7 +156,8 @@ namespace Chat {
 
 			static void SubmitGetClientInfoByName(std::string name, ChatQueryCB cb, Peer *peer, void *extra);
 			static void SubmitClientInfo(ChatQueryCB cb, Peer *peer, void *extra);
-			static void SubmitClientMessage(int target_id, std::string message, ChatQueryCB cb, Peer *peer, void *extra);
+			static void SubmitClientMessage(int target_id, std::string message, EChatMessageType message_type, ChatQueryCB cb, Peer *peer, void *extra);
+			static void SubmitChannelMessage(int target_id, std::string message, EChatMessageType message_type, ChatQueryCB cb, Peer *peer, void *extra);
 			static void SubmitFind_OrCreateChannel(ChatQueryCB cb, Peer *peer, void *extra, std::string channel);
 			static void SubmitFindChannel(ChatQueryCB cb, Peer *peer, void *extra, std::string channel);
 
@@ -153,6 +167,7 @@ namespace Chat {
 			static void SubmitGetChannelUser(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			static void SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel);
 			static void SubmitUpdateChannelTopic(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string topic);
+			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, std::string channel, std::string user, const std::map<std::string, std::string> set_data_map);
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -170,6 +185,7 @@ namespace Chat {
 			void PerformGetChannelUsers(ChatQueryRequest task_params);
 			void PerformUpdateChannelModes(ChatQueryRequest task_params);
 			void PerformUpdateChannelTopic(ChatQueryRequest task_params);
+			void PerformSendChannelMessage(ChatQueryRequest task_params);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);
@@ -181,7 +197,8 @@ namespace Chat {
 			void LoadClientInfoByID(ChatClientInfo &info, int client_id);
 			static std::string ClientInfoToKVString(ChatClientInfo info);
 			static ChatClientInfo ClientInfoFromKVString(const char *str);
-			void SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg);
+			void SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg, EChatMessageType message_type);
+			void SendChannelMessageToDrivers(ChatChannelInfo channel, ChatClientInfo user, const char *msg, EChatMessageType message_type);			
 			void SendClientJoinChannelToDrivers(ChatClientInfo client, ChatChannelInfo channel);
 			void SendClientPartChannelToDrivers(ChatClientInfo client, ChatChannelInfo channel);
 			void SendChannelModeUpdateToDrivers(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data);

@@ -42,7 +42,8 @@ namespace Chat {
 		bool HasPeer(Chat::Peer * peer);
 
 
-		void OnSendClientMessage(int target_id, ChatClientInfo from_user, const char *msg);
+		void OnSendClientMessage(int target_id, ChatClientInfo from_user, const char *msg, EChatMessageType message_type);
+		void OnSendChannelMessage(ChatChannelInfo channel, ChatClientInfo from_user, const char *msg, EChatMessageType message_type);
 		void SendJoinChannelMessage(ChatClientInfo client, ChatChannelInfo channel);
 		void SendPartChannelMessage(ChatClientInfo client, ChatChannelInfo channel);
 		void SendChannelModeUpdate(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data);
