@@ -231,4 +231,15 @@ namespace Chat {
 			it++;
 		}
 	}
+	void Driver::SendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			ChatClientInfo info = p->getClientInfo();
+			if(p->IsOnChannel(channel)) {
+				p->OnSendSetChannelClientKeys(client, channel, kv_data);
+			}
+			it++;
+		}
+	}
 }

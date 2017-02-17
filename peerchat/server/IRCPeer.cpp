@@ -197,11 +197,15 @@ namespace Chat {
 			s << ":" << from_user.name << "!" << from_user.user << "@" << from_user.hostname << " " << type << " " << to_channel.name << " :" << msg << std::endl;
 			SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 		}
-		void IRCPeer::send_numeric(int num, std::string str, bool no_colon) {
+		void IRCPeer::send_numeric(int num, std::string str, bool no_colon, std::string target_name) {
 			std::ostringstream s;
 			std::string name = "*";
 			if(m_client_info.name.size() > 0) {
 				name = m_client_info.name;
+			}
+
+			if(target_name.size()) {
+				name = target_name;
 			}
 			
 			s << ":" << ((ChatServer*)mp_driver->getServer())->getName() << " " << std::setfill('0') << std::setw(3) << num << " " << name << " ";

@@ -45,6 +45,7 @@ namespace Chat {
 		void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel);
 		void OnRecvChannelModeUpdate(ChatClientInfo user, ChatChannelInfo channel, ChanModeChangeData change_data);
 		void OnChannelTopicUpdate(ChatClientInfo user, ChatChannelInfo channel);
+		void OnSendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
 	protected:
 		//user cmds
 		EIRCCommandHandlerRet handle_nick(std::vector<std::string> params, std::string full_params);
@@ -95,7 +96,7 @@ namespace Chat {
 
 		void send_client_init();
 
-		void send_numeric(int num, std::string str, bool no_colon = false);
+		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "");
 		void SendPacket(const uint8_t *buff, int len);
 
 		bool m_sent_client_init;

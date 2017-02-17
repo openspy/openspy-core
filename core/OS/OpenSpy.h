@@ -111,6 +111,7 @@ namespace OS {
 	void Shutdown();
 	std::map<std::string, std::string> KeyStringToMap(std::string input);
 	std::vector<std::string> KeyStringToVector(std::string input);
+	std::string MapToKVString(std::map<std::string, std::string> kv_data);
 	std::string strip_quotes(std::string s);
 	std::string strip_whitespace(std::string s);
 

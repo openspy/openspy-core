@@ -48,6 +48,7 @@ namespace Chat {
 		void SendPartChannelMessage(ChatClientInfo client, ChatChannelInfo channel);
 		void SendChannelModeUpdate(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data);
 		void SendUpdateChannelTopic(ChatClientInfo client, ChatChannelInfo channel);
+		void SendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
 	private:
 
 		void TickConnections(fd_set *fdset);

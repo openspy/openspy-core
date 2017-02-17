@@ -35,6 +35,7 @@ namespace Chat {
 		virtual void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel) = 0;
 		virtual void OnRecvChannelModeUpdate(ChatClientInfo user, ChatChannelInfo channel, ChanModeChangeData change_data) = 0;
 		virtual void OnChannelTopicUpdate(ChatClientInfo user, ChatChannelInfo channel) = 0;
+		virtual void OnSendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data) = 0;
 		bool IsOnChannel(ChatChannelInfo channel);
 
 	protected:

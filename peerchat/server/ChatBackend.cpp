@@ -145,6 +145,17 @@ namespace Chat {
 		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 		freeReplyObject(reply);
 	}
+	void ChatBackendTask::SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, std::string channel, std::string user, const std::map<std::string, std::string> set_data_map) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_SetChannelClientKeys;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;		
+		req.query_data.channel_info.name = channel;
+		req.query_data.client_info.name = user;
+		req.set_keys = set_data_map;
+		getQueryTask()->AddRequest(req);
+	}
 	void ChatBackendTask::LoadClientInfoByID(ChatClientInfo &info, int client_id) {
 		info.client_id = client_id;
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
@@ -174,6 +185,19 @@ namespace Chat {
 		}
 		freeReplyObject(reply);
 
+	}
+	void ChatBackendTask::LoadClientInfoByName(ChatClientInfo &info, std::string name) {
+		int client_id = 0;
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET nick_id_map %s", name.c_str());
+		if(reply->type == REDIS_REPLY_STRING) {
+			client_id = atoi(reply->str);
+		} else if(reply->type == REDIS_REPLY_INTEGER) {
+			client_id = reply->integer;
+		}
+		LoadClientInfoByID(info, client_id);
+		freeReplyObject(reply);
 	}
 	void ChatBackendTask::PerformSendClientMessage(ChatQueryRequest task_params) {
 		std::string kv_user = ClientInfoToKVString(task_params.peer->getClientInfo());
@@ -475,7 +499,40 @@ namespace Chat {
 		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 
 	}
+	void ChatBackendTask::PerformSetChannelClientKeys(ChatQueryRequest task_params) {
+		redisReply *reply;
+		std::map<std::string, std::string>::iterator it = task_params.set_keys.begin();
+		ChatChannelInfo channel = GetChannelByName(task_params.query_data.channel_info.name);
+		ChatClientInfo client;
+		std::string set_kv_str;
+		const char *b64_msg;
+		LoadClientInfoByName(client, task_params.query_data.client_info.name);
 
+		std::string chan_str = ChannelInfoToKVString(channel);
+		std::string user_str = ClientInfoToKVString(client);
+
+		printf("Set channel keys for: %s - %s\n",channel.name.c_str(),client.name.c_str());
+
+		while(it != task_params.set_keys.end()) {
+			std::pair<std::string, std::string> p = *it;
+			if(p.second.length()) {
+				reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chan_%d_client_%d_custkeys \"%s\" \"%s\"", channel.channel_id, client.client_id, p.first.c_str(),p.second.c_str());
+			} else {
+				reply = (redisReply *)redisCommand(mp_redis_connection, "HDEL chan_%d_client_%d_custkeys \"%s\"", channel.channel_id, client.client_id, p.first.c_str());
+			}
+			freeReplyObject(reply);
+			it++;
+		}
+		set_kv_str = OS::MapToKVString(task_params.set_keys);
+		printf("Set KV Str: %s\n",set_kv_str.c_str());
+
+		b64_msg = OS::BinToBase64Str((const uint8_t*)set_kv_str.c_str(),set_kv_str.length());
+
+		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\set_channel_client_keys%s%s\\key_data\\%s\n",
+			chat_messaging_channel, chan_str.c_str(),user_str.c_str(), b64_msg));
+
+		free((void *)b64_msg);
+	}
 	ChatChannelInfo ChatBackendTask::GetChannelByName(std::string name) {
 		int id = 0;
 		redisReply *reply;
@@ -612,6 +669,9 @@ namespace Chat {
 						case EChatQueryRequestType_UpdateChannelTopic:
 							task->PerformUpdateChannelTopic(task_params);
 						break;
+						case EChatQueryRequestType_SetChannelClientKeys:
+							task->PerformSetChannelClientKeys(task_params);
+						break;
 					}
 					if(task->m_flag_push_task) {
 						task->m_flag_push_task = false;
@@ -653,6 +713,7 @@ namespace Chat {
 	    int type;
 	    char msg_type[32];
 	    char msg[CHAT_MAX_MESSAGE + 1];
+	    std::map<std::string,std::string> key_data;
 	    if (r->type == REDIS_REPLY_ARRAY) {
 	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
 	    		if(strcmp(r->element[1]->str,chat_messaging_channel) == 0) {
@@ -699,6 +760,23 @@ namespace Chat {
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
 						task->SendUpdateChannelTopicToDrivers(client_info, channel_info);
+					} else if(strcmp(msg_type, "set_channel_client_keys") == 0) {
+		    			if(!find_param("key_data", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE)) {
+		    					return;
+		    			}
+						
+						client_info = ClientInfoFromKVString(r->element[2]->str);
+						channel_info = ChannelInfoFromKVString(r->element[2]->str);
+
+						OS::Base64StrToBin(msg, &out, len);
+
+						key_data = OS::KeyStringToMap(std::string((const char *)out));
+
+						printf("GOt client keys: %d || %s\n", key_data.size(),out);
+
+						task->SendSetChannelClientKeysToDrivers(client_info, channel_info, key_data);
+
+						free((void *)out);
 					}
 	    		}
 	    	}
@@ -823,6 +901,14 @@ namespace Chat {
 		while(it != m_drivers.end()) {
 			Chat::Driver *driver = *it;
 			driver->SendUpdateChannelTopic(client, channel);
+			it++;
+		}
+	}
+	void ChatBackendTask::SendSetChannelClientKeysToDrivers(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data) {
+		std::vector<Chat::Driver *>::iterator it = m_drivers.begin();
+		while(it != m_drivers.end()) {
+			Chat::Driver *driver = *it;
+			driver->SendSetChannelClientKeys(client, channel, kv_data);
 			it++;
 		}
 	}

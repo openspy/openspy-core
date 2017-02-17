@@ -113,6 +113,7 @@ namespace Chat {
 		EChatQueryRequestType_SetUserChannelInfo,
 		EChatQueryRequestType_UpdateChannelModes,
 		EChatQueryRequestType_UpdateChannelTopic,
+		EChatQueryRequestType_SetChannelClientKeys,
 	};
 
 	enum EChatMessageType {
@@ -186,6 +187,7 @@ namespace Chat {
 			void PerformUpdateChannelModes(ChatQueryRequest task_params);
 			void PerformUpdateChannelTopic(ChatQueryRequest task_params);
 			void PerformSendChannelMessage(ChatQueryRequest task_params);
+			void PerformSetChannelClientKeys(ChatQueryRequest task_params);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);
@@ -195,6 +197,8 @@ namespace Chat {
 
 
 			void LoadClientInfoByID(ChatClientInfo &info, int client_id);
+			void LoadClientInfoByName(ChatClientInfo &info, std::string name);
+
 			static std::string ClientInfoToKVString(ChatClientInfo info);
 			static ChatClientInfo ClientInfoFromKVString(const char *str);
 			void SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg, EChatMessageType message_type);
@@ -203,6 +207,7 @@ namespace Chat {
 			void SendClientPartChannelToDrivers(ChatClientInfo client, ChatChannelInfo channel);
 			void SendChannelModeUpdateToDrivers(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data);
 			void SendUpdateChannelTopicToDrivers(ChatClientInfo client, ChatChannelInfo channel);			
+			void SendSetChannelClientKeysToDrivers(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
 
 			static std::string ChannelInfoToKVString(ChatChannelInfo info);
 			static ChatChannelInfo ChannelInfoFromKVString(const char *str);

@@ -439,8 +439,26 @@ namespace Chat {
 				ChatBackendTask::SubmitUpdateChannelTopic(OnTopicCmd_ChannelUpdateCallback, this, mp_driver, channel, topic);
 			} else {
 				//send error isn't channel
+				//void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "");
 			}
 			return EIRCCommandHandlerRet_NoError;	
+		}
+		void IRCPeer::OnSendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data) {
+			std::ostringstream s;
+			std::map<std::string, std::string>::iterator it = kv_data.begin();
+			//:s 702 #test #test CHC BCAST :\b_test\666
+			s << channel.name << " " << client.name << " BCAST :";
+			int num_broadcasts = 0;
+			while(it != kv_data.end()) {
+				std::pair<std::string, std::string> p = *it;
+				if(strncmp(p.first.c_str(), "b_", 2) == 0) {
+					num_broadcasts++;
+					s << "\\" << p.first << "\\" << p.second;
+				}				
+				it++;
+			}
+			if(num_broadcasts > 0)
+				send_numeric(702, s.str(), true, channel.name);
 		}
 		EIRCCommandHandlerRet IRCPeer::handle_setckey(std::vector<std::string> params, std::string full_params) {
 			//setckey #test CHC 0 061 :\b_rating\666

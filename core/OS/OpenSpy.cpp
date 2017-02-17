@@ -184,6 +184,16 @@ namespace OS {
 		return ret;
 
 	}
+	std::string MapToKVString(std::map<std::string, std::string> kv_data) {
+		std::ostringstream s;
+		std::map<std::string, std::string>::iterator it = kv_data.begin();
+		while(it != kv_data.end()) {
+			std::pair<std::string, std::string> p = *it;
+			s << "\\" << p.first << "\\" << p.second;
+			it++;
+		}
+		return s.str();
+	}
 	CThread *CreateThread(OS::ThreadEntry *entry, void *param,  bool auto_start) {
 		#if _WIN32
 			return new OS::CWin32Thread(entry, param, auto_start);
