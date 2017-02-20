@@ -80,7 +80,7 @@ namespace Chat {
 		EIRCCommandHandlerRet IRCPeer::handle_join(std::vector<std::string> params, std::string full_params) {
 			std::string channel;
 			if(params.size() >= 1) {
-				channel = params[1];
+				channel = OS::strip_whitespace(params[1]);
 			} else {
 				return EIRCCommandHandlerRet_NotEnoughParams;
 			}
@@ -496,7 +496,99 @@ namespace Chat {
 			free((void *)set_data_cpy);
 			return EIRCCommandHandlerRet_NoError;
 		}
+		void IRCPeer::OnGetCKeyCmd_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			GetCKeyData *cb_data = (GetCKeyData *)extra;
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
+
+			if(!driver->HasPeer(peer)) {
+				delete cb_data->search_data;
+				delete cb_data->target_user;
+				free((void *)cb_data);
+				return;
+			}
+
+			if(response.error != EChatBackendResponseError_NoError) {
+				irc_peer->send_callback_error(request, response);
+				delete cb_data->search_data;
+				delete cb_data->target_user;
+				free((void *)cb_data);
+				return;
+			}
+			ChatBackendTask::getQueryTask()->flagPushTask();
+			ChatBackendTask::SubmitGetChannelUser(OnGetCKeyCmd_FindChanUserCallback, irc_peer, cb_data, response.channel_info, *cb_data->target_user);
+		}
+		void IRCPeer::OnGetCKeyCmd_FindChanUserCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			GetCKeyData *cb_data = (GetCKeyData *)extra;
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
+			std::string *search_params = (std::string *)extra;
+
+			if(!driver->HasPeer(peer)) {
+				delete cb_data->search_data;
+				delete cb_data->target_user;
+				free((void *)cb_data);
+				return;
+			}
+
+			if(response.error != EChatBackendResponseError_NoError) {
+				irc_peer->send_callback_error(request, response);
+				delete cb_data->search_data;
+				delete cb_data->target_user;
+				free((void *)cb_data);
+				return;
+			}
+			
+			int i = 0;
+			char *search_data_cpy = strdup(cb_data->search_data->c_str());
+			char key_name[256];
+			std::string key, value;
+
+			std::ostringstream result_oss, end_oss;
+			//s << channel.name << " :" << channel.topic;
+			std::ostringstream s;
+
+			std::map<std::string, std::string>::const_iterator it;
+			while(find_param(i++, search_data_cpy, key_name, sizeof(key_name))) {
+					it = response.chan_client_info.custom_keys.find(key_name);
+					result_oss << "\\";
+					if(it != response.chan_client_info.custom_keys.end()) {
+						result_oss << (*it).second;
+					}
+			}
+			s << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << response.client_info.name << " " << cb_data->response_identifier << " :" << result_oss.str();
+
+			irc_peer->send_numeric(702, s.str(), true);
+			s.str("");
+			result_oss.str("");
+
+			end_oss << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << cb_data->response_identifier << " :End of GETCKEY";
+			irc_peer->send_numeric(703, end_oss.str(), true);
+
+			free((void *)search_data_cpy);
+
+			delete cb_data->search_data;
+			delete cb_data->target_user;
+			free((void *)cb_data);
+		}
 		EIRCCommandHandlerRet IRCPeer::handle_getckey(std::vector<std::string> params, std::string full_params) {
+			const char *str = full_params.c_str();
+			const char *beg = strchr(str, ':');
+			GetCKeyData *cb_data;
+			std::string channel_name, target_name;
+			if(params.size() > 2 && beg) {
+				channel_name = params[1];
+				target_name = params[2];
+			} else {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			cb_data = (GetCKeyData *)malloc(sizeof(GetCKeyData));
+			cb_data->driver = mp_driver;
+			cb_data->search_data = new std::string(OS::strip_whitespace(beg+2));
+			cb_data->target_user = new std::string(target_name);
+			cb_data->response_identifier = atoi(params[3].c_str());
+
+			ChatBackendTask::SubmitFindChannel(OnGetCKeyCmd_FindChannelCallback, this, cb_data, channel_name);
 			return EIRCCommandHandlerRet_NoError;	
 		}
 }

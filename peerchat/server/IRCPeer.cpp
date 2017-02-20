@@ -104,7 +104,7 @@ namespace Chat {
 					//printf("IRC got cmd(%s): %s\n",cmd.c_str(), cmd_line.c_str());
 
 					for(int i=0;i<sizeof(mp_command_handler)/sizeof(IRCCommandHandler);i++) {
-						if(strcmp(mp_command_handler[i].command.c_str(), cmd.c_str()) == 0) {
+						if(strcasecmp(mp_command_handler[i].command.c_str(), cmd.c_str()) == 0) {
 							ret = (*this.*(mp_command_handler[i].mpFunc))(x, cmd_line);
 						}
 					}
@@ -267,13 +267,19 @@ namespace Chat {
 		}
 		void IRCPeer::send_callback_error(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response) {
 			std::ostringstream s;
+			std::string name;
 			switch(response.error) {
 				case EChatBackendResponseError_NoUser_OrChan:
-				s << request.query_name << " :No such nick/channel";
+				if(!request.query_name.length()) {
+					name = request.query_data.client_info.name;
+				} else {
+					name = request.query_name;
+				}
+				s << name << " :No such nick/channel";
 				send_numeric(401, s.str(), true);
 				break;
 				case EChatBackendResponseError_NoVoicePerms:
-				s << response.channel_info.name << " :You're not voiced";
+				s << response.channel_info.name << " :You're not voifced";
 				send_numeric(482, s.str(), true);
 				break;
 				case EChatBackendResponseError_NoHOPPerms:

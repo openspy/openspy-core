@@ -95,6 +95,7 @@ namespace Chat {
 	typedef struct _ChatQueryResponse {
 		ChatChannelInfo channel_info;
 		ChatClientInfo client_info;
+		ChatChanClientInfo chan_client_info;
 		std::vector<ChatChanClientInfo> m_channel_clients;
 		EChatBackendResponseError error;
 	} ChatQueryResponse;
@@ -114,6 +115,19 @@ namespace Chat {
 		EChatQueryRequestType_UpdateChannelModes,
 		EChatQueryRequestType_UpdateChannelTopic,
 		EChatQueryRequestType_SetChannelClientKeys,
+
+
+		EChatQueryRequestType_SetChanUserMode, //set +o, etc
+		EChatQueryRequestType_KickUser, //send kick msg to all & remove user from channel, test perms 
+		EChatQueryRequestType_UserDisconnect, //send quit msg to all
+
+		EChatQueryRequestType_SaveUserMode,
+		EChatQueryRequestType_SaveChanProps,
+		EChatQueryRequestType_GetChanProps, //get all chan props
+		EChatQueryRequestType_GetUserModes, //get all saved user modes
+		EChatQueryRequestType_KillUser,
+		EChatQueryRequestType_UserAuth,
+		EChatQueryRequestType_UserOperAuth,
 	};
 
 	enum EChatMessageType {
@@ -165,7 +179,7 @@ namespace Chat {
 			static void SubmitAddUserToChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			static void SubmitRemoveUserFromChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			static void SubmitGetChannelUsers(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
-			static void SubmitGetChannelUser(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
+			static void SubmitGetChannelUser(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string name);
 			static void SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel);
 			static void SubmitUpdateChannelTopic(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string topic);
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, std::string channel, std::string user, const std::map<std::string, std::string> set_data_map);
@@ -188,6 +202,7 @@ namespace Chat {
 			void PerformUpdateChannelTopic(ChatQueryRequest task_params);
 			void PerformSendChannelMessage(ChatQueryRequest task_params);
 			void PerformSetChannelClientKeys(ChatQueryRequest task_params);
+			void PerformGetChannelUser(ChatQueryRequest task_params);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);
