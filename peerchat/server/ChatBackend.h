@@ -44,6 +44,8 @@ namespace Chat {
 		std::string realname;
 		std::string hostname;
 		OS::Address ip;
+
+		std::map<std::string, std::string> custom_keys;
 	} ChatClientInfo;
 
 	enum EChanClientFlags {
@@ -115,6 +117,8 @@ namespace Chat {
 		EChatQueryRequestType_UpdateChannelModes,
 		EChatQueryRequestType_UpdateChannelTopic,
 		EChatQueryRequestType_SetChannelClientKeys,
+		EChatQueryRequestType_SetClientKeys,
+		EChatQueryRequestType_SetChannelKeys,
 
 
 		EChatQueryRequestType_SetChanUserMode, //set +o, etc
@@ -183,6 +187,8 @@ namespace Chat {
 			static void SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel);
 			static void SubmitUpdateChannelTopic(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string topic);
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, std::string channel, std::string user, const std::map<std::string, std::string> set_data_map);
+			static void SubmitSetClientKeys(ChatQueryCB cb, Peer *peer, void *extra, int client_id, const std::map<std::string, std::string> set_data_map);
+			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, const std::map<std::string, std::string> set_data_map);
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -203,6 +209,8 @@ namespace Chat {
 			void PerformSendChannelMessage(ChatQueryRequest task_params);
 			void PerformSetChannelClientKeys(ChatQueryRequest task_params);
 			void PerformGetChannelUser(ChatQueryRequest task_params);
+			void PerformSetClientKeys(ChatQueryRequest task_params);
+			void PerformSetChannelKeys(ChatQueryRequest task_params);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);
@@ -223,6 +231,7 @@ namespace Chat {
 			void SendChannelModeUpdateToDrivers(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data);
 			void SendUpdateChannelTopicToDrivers(ChatClientInfo client, ChatChannelInfo channel);			
 			void SendSetChannelClientKeysToDrivers(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
+			void SendSetChannelKeysToDrivers(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data);
 
 			static std::string ChannelInfoToKVString(ChatChannelInfo info);
 			static ChatChannelInfo ChannelInfoFromKVString(const char *str);

@@ -234,10 +234,93 @@ namespace Chat {
 			ChatBackendTask::SubmitGetClientInfoByName(search, OnUserhostCmd_UserLookup, (Peer *)this, mp_driver);
 			return EIRCCommandHandlerRet_NoError;
 		}
+
 		EIRCCommandHandlerRet IRCPeer::handle_setkey(std::vector<std::string> params, std::string full_params) {
+			std::string target, identifier, set_data_str;
+			if(params.size() < 5) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+
+			const char *str = full_params.c_str();
+			const char *beg = strchr(str, ':');
+			if(beg) {
+				beg++;
+			} else {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+
+			ChatBackendTask::SubmitSetClientKeys(NULL, this, mp_driver, m_client_info.client_id, OS::KeyStringToMap(beg));
+			//SubmitSetChannelKeys
+
 			return EIRCCommandHandlerRet_NoError;
 		}
+		/*
+			-> s GETKEY Krad 0 000 :\gameid
+			<- :s 700 CHC Krad 0 :\0
+		*/
+		void IRCPeer::OnGetKey_UserLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			GetCKeyData *cb_data = (GetCKeyData *)extra;
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
+
+			if(!driver->HasPeer(peer)) {
+				delete cb_data->search_data;
+				delete cb_data->target_user;
+				free((void *)cb_data);
+				return;
+			}
+			std::ostringstream s;
+			std::ostringstream result_oss;
+			if(response.error != EChatBackendResponseError_NoError) {
+				irc_peer->send_callback_error(request, response);
+				delete cb_data->search_data;
+				delete cb_data->target_user;
+				free((void *)cb_data);
+				return;
+			}
+
+			std::map<std::string, std::string>::const_iterator it;
+			char *search_data_cpy = strdup(cb_data->search_data->c_str());
+			char key_name[256];
+			int i = 0;
+			while(find_param(i++, search_data_cpy, key_name, sizeof(key_name))) {
+					it = response.client_info.custom_keys.find(key_name);
+					result_oss << "\\";
+					//TODO - special attributes: gameid, user, nick, realname, profileid, userid
+					if(it != response.client_info.custom_keys.end()) {
+						result_oss << (*it).second;
+					}
+			}
+			s << irc_peer->m_client_info.name  << " " << response.client_info.name << " " << cb_data->response_identifier << " :" << result_oss.str();
+			irc_peer->send_numeric(700, s.str(), true);
+
+			free((void *)search_data_cpy);
+			delete cb_data->search_data;
+			delete cb_data->target_user;
+			free((void *)cb_data);
+		}
 		EIRCCommandHandlerRet IRCPeer::handle_getkey(std::vector<std::string> params, std::string full_params) {
+			std::string target, identifier, set_data_str;
+			GetCKeyData *cb_data;
+			if(params.size() < 5) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+
+			const char *str = full_params.c_str();
+			const char *beg = strchr(str, ':');
+			if(beg) {
+				beg++;
+			} else {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			cb_data = (GetCKeyData *)malloc(sizeof(GetCKeyData));
+			cb_data->driver = mp_driver;
+			cb_data->search_data = new std::string(OS::strip_whitespace(beg));
+			cb_data->target_user = new std::string(params[1]);
+			cb_data->response_identifier = atoi(params[3].c_str());
+
+			ChatBackendTask::SubmitGetClientInfoByName(params[1], OnGetKey_UserLookup, (Peer *)this, cb_data);
+
 			return EIRCCommandHandlerRet_NoError;
 		}
 }

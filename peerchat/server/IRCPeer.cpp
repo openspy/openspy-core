@@ -39,6 +39,9 @@ namespace Chat {
 			{"NOTICE", &IRCPeer::handle_privmsg},
 			{"UTM", &IRCPeer::handle_privmsg},
 			{"ATM", &IRCPeer::handle_privmsg},
+			
+			{"SETKEY", &IRCPeer::handle_setkey},
+			{"GETKEY", &IRCPeer::handle_getkey},
 
 
 			//channel cmds
@@ -51,6 +54,9 @@ namespace Chat {
 
 			{"SETCKEY", &IRCPeer::handle_setckey},
 			{"GETCKEY", &IRCPeer::handle_getckey},
+
+			{"SETCHANKEY", &IRCPeer::handle_setchankey},
+			{"GETCHANKEY", &IRCPeer::handle_getchankey},
 		};
 		IRCPeer::IRCPeer(Driver *driver, struct sockaddr_in *address_info, int sd) : Chat::Peer(driver, address_info, sd) {
 			m_sent_client_init = false;

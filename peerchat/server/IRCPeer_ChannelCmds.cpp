@@ -27,13 +27,13 @@
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
 /*
-	1. implement /names
-	2. implement channel modes
+	1. implement /names - XXX no invisible
+	2. implement channel modes - XXX no +k/+l
 	3. implement user chan modes
-	3. implement /part
+	3. implement /part - XXX part reasons
 	4. implement user modes
-	5. implement channel/user keys
-	6. implement /notice /atm /utm, block ctcp
+	5. implement channel/user keys XXX set/get chankey
+	6. implement /notice /atm /utm, block ctcp - XXX BLOCK CTCP
 	6. clean up on disconnect
 	7. implement /setchanprops /setusetmode /get*
 	8. implement auth
@@ -447,7 +447,7 @@ namespace Chat {
 			std::ostringstream s;
 			std::map<std::string, std::string>::iterator it = kv_data.begin();
 			//:s 702 #test #test CHC BCAST :\b_test\666
-			s << channel.name << " " << client.name << " BCAST :";
+			s << channel.name  << " BCAST :";
 			int num_broadcasts = 0;
 			while(it != kv_data.end()) {
 				std::pair<std::string, std::string> p = *it;
@@ -458,7 +458,7 @@ namespace Chat {
 				it++;
 			}
 			if(num_broadcasts > 0)
-				send_numeric(702, s.str(), true, channel.name);
+				send_numeric(704, s.str(), true, channel.name);
 		}
 		EIRCCommandHandlerRet IRCPeer::handle_setckey(std::vector<std::string> params, std::string full_params) {
 			//setckey #test CHC 0 061 :\b_rating\666
@@ -518,7 +518,78 @@ namespace Chat {
 			ChatBackendTask::getQueryTask()->flagPushTask();
 			ChatBackendTask::SubmitGetChannelUser(OnGetCKeyCmd_FindChanUserCallback, irc_peer, cb_data, response.channel_info, *cb_data->target_user);
 		}
+		//TODO: send multiple users getckeys
 		void IRCPeer::OnGetCKeyCmd_FindChanUserCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			GetCKeyData *cb_data = (GetCKeyData *)extra;
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
+			std::string *search_params = (std::string *)extra;
+
+			char *search_data_cpy;
+			char key_name[256];
+			int i = 0;
+
+			std::ostringstream result_oss, end_oss;
+			
+			std::ostringstream s;
+
+			std::map<std::string, std::string>::const_iterator it;
+
+			if(!driver->HasPeer(peer)) {
+				goto end_cleanup;
+			}
+
+			if(response.error != EChatBackendResponseError_NoError) {
+				irc_peer->send_callback_error(request, response);
+				goto end_cleanup;
+			}
+			search_data_cpy = strdup(cb_data->search_data->c_str());
+			
+			while(find_param(i++, search_data_cpy, key_name, sizeof(key_name))) {
+					it = response.chan_client_info.custom_keys.find(key_name);
+					result_oss << "\\";
+					if(it != response.chan_client_info.custom_keys.end()) {
+						result_oss << (*it).second;
+					}
+			}
+			s << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << response.client_info.name << " " << cb_data->response_identifier << " :" << result_oss.str();
+
+			irc_peer->send_numeric(702, s.str(), true);
+			s.str("");
+			result_oss.str("");
+
+			end_oss << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << cb_data->response_identifier << " :End of GETCKEY";
+			irc_peer->send_numeric(703, end_oss.str(), true);
+
+			free((void *)search_data_cpy);
+
+			end_cleanup:
+			delete cb_data->search_data;
+			delete cb_data->target_user;
+			free((void *)cb_data);
+		}
+		EIRCCommandHandlerRet IRCPeer::handle_getckey(std::vector<std::string> params, std::string full_params) {
+			const char *str = full_params.c_str();
+			const char *beg = strchr(str, ':');
+			GetCKeyData *cb_data;
+			std::string channel_name, target_name;
+			if(params.size() > 2 && beg) {
+				channel_name = params[1];
+				target_name = params[2];
+				beg++;
+			} else {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			cb_data = (GetCKeyData *)malloc(sizeof(GetCKeyData));
+			cb_data->driver = mp_driver;
+			cb_data->search_data = new std::string(OS::strip_whitespace(beg));
+			cb_data->target_user = new std::string(target_name);
+			cb_data->response_identifier = atoi(params[3].c_str());
+
+			ChatBackendTask::SubmitFindChannel(OnGetCKeyCmd_FindChannelCallback, this, cb_data, channel_name);
+			return EIRCCommandHandlerRet_NoError;	
+		}
+		void IRCPeer::OnSetChanKey_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
 			GetCKeyData *cb_data = (GetCKeyData *)extra;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
@@ -538,57 +609,135 @@ namespace Chat {
 				free((void *)cb_data);
 				return;
 			}
-			
-			int i = 0;
-			char *search_data_cpy = strdup(cb_data->search_data->c_str());
-			char key_name[256];
-			std::string key, value;
 
-			std::ostringstream result_oss, end_oss;
-			//s << channel.name << " :" << channel.topic;
-			std::ostringstream s;
-
-			std::map<std::string, std::string>::const_iterator it;
-			while(find_param(i++, search_data_cpy, key_name, sizeof(key_name))) {
-					it = response.chan_client_info.custom_keys.find(key_name);
-					result_oss << "\\";
-					if(it != response.chan_client_info.custom_keys.end()) {
-						result_oss << (*it).second;
-					}
-			}
-			s << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << response.client_info.name << " " << cb_data->response_identifier << " :" << result_oss.str();
-
-			irc_peer->send_numeric(702, s.str(), true);
-			s.str("");
-			result_oss.str("");
-
-			end_oss << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << cb_data->response_identifier << " :End of GETCKEY";
-			irc_peer->send_numeric(703, end_oss.str(), true);
-
-			free((void *)search_data_cpy);
+			ChatBackendTask::SubmitSetChannelKeys(NULL, peer, driver, response.channel_info, OS::KeyStringToMap(*(cb_data->search_data)));
 
 			delete cb_data->search_data;
 			delete cb_data->target_user;
 			free((void *)cb_data);
+
 		}
-		EIRCCommandHandlerRet IRCPeer::handle_getckey(std::vector<std::string> params, std::string full_params) {
+
+		void IRCPeer::OnSendSetChannelKeys(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data) {
+			std::ostringstream s;
+			std::map<std::string, std::string>::const_iterator it = kv_data.begin();
+			//:s 702 #test #test CHC BCAST :\b_test\666
+			s << channel.name << " " << client.name << " BCAST :";
+			int num_broadcasts = 0;
+			while(it != kv_data.end()) {
+				const std::pair<std::string, std::string> p = *it;
+				if(strncmp(p.first.c_str(), "b_", 2) == 0) {
+					num_broadcasts++;
+					s << "\\" << p.first << "\\" << p.second;
+				}				
+				it++;
+			}
+			if(num_broadcasts > 0)
+				send_numeric(702, s.str(), true, channel.name);
+		}
+		/*
+			-> s SETCHANKEY #test 0 000 :\b_test\666
+			<- :s 704 #test #test BCAST :\b_test\666
+		*/
+		EIRCCommandHandlerRet IRCPeer::handle_setchankey(std::vector<std::string> params, std::string full_params) {
+			std::string target, set_data_str;
+			GetCKeyData *cb_data;
+			if(params.size() < 5) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+
 			const char *str = full_params.c_str();
 			const char *beg = strchr(str, ':');
-			GetCKeyData *cb_data;
-			std::string channel_name, target_name;
-			if(params.size() > 2 && beg) {
-				channel_name = params[1];
-				target_name = params[2];
+			if(beg) {
+				beg++;
 			} else {
 				return EIRCCommandHandlerRet_NotEnoughParams;
 			}
+
+			target = params[1];
+
 			cb_data = (GetCKeyData *)malloc(sizeof(GetCKeyData));
 			cb_data->driver = mp_driver;
-			cb_data->search_data = new std::string(OS::strip_whitespace(beg+2));
-			cb_data->target_user = new std::string(target_name);
-			cb_data->response_identifier = atoi(params[3].c_str());
+			cb_data->search_data = new std::string(OS::strip_whitespace(beg));
+			cb_data->target_user = new std::string(target);
+			cb_data->response_identifier = atoi(params[2].c_str());
 
-			ChatBackendTask::SubmitFindChannel(OnGetCKeyCmd_FindChannelCallback, this, cb_data, channel_name);
-			return EIRCCommandHandlerRet_NoError;	
+
+			ChatBackendTask::SubmitFindChannel(OnSetChanKey_FindChannelCallback, this, cb_data, target);
+			return EIRCCommandHandlerRet_NoError;
+		}
+		void IRCPeer::OnGetChanKey_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			GetCKeyData *cb_data = (GetCKeyData *)extra;
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
+			std::string *search_params = (std::string *)extra;
+
+			char *search_data_cpy;
+			char key_name[256];
+			int i = 0;
+
+			std::ostringstream result_oss, end_oss;
+			
+			std::ostringstream s;
+
+			std::map<std::string, std::string>::const_iterator it;
+
+			if(!driver->HasPeer(peer)) {
+				goto end_cleanup;
+			}
+
+			if(response.error != EChatBackendResponseError_NoError) {
+				irc_peer->send_callback_error(request, response);
+				goto end_cleanup;
+			}
+
+			search_data_cpy = strdup(cb_data->search_data->c_str());
+
+			while(find_param(i++, search_data_cpy, key_name, sizeof(key_name))) {
+					it = response.channel_info.custom_keys.find(key_name);
+					result_oss << "\\";
+					if(it != response.channel_info.custom_keys.end()) {
+						result_oss << (*it).second;
+					}
+			}
+
+			s << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << cb_data->response_identifier << " :" << result_oss.str();
+
+			irc_peer->send_numeric(704, s.str(), true);
+
+			end_cleanup:
+			delete cb_data->search_data;
+			delete cb_data->target_user;
+			free((void *)cb_data);
+		}
+		/*
+			-> s GETCHANKEY #test 0 000 :\b_test
+			<- :s 704 CHC #test 0 :\666
+		*/
+		EIRCCommandHandlerRet IRCPeer::handle_getchankey(std::vector<std::string> params, std::string full_params) {
+			std::string target, set_data_str;
+			GetCKeyData *cb_data;
+			if(params.size() < 5) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+
+			const char *str = full_params.c_str();
+			const char *beg = strchr(str, ':');
+			if(beg) {
+				beg++;
+			} else {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			target = params[1];
+
+			cb_data = (GetCKeyData *)malloc(sizeof(GetCKeyData));
+			cb_data->driver = mp_driver;
+			cb_data->search_data = new std::string(OS::strip_whitespace(beg));
+			cb_data->target_user = new std::string(target);
+			cb_data->response_identifier = atoi(params[2].c_str());
+
+
+			ChatBackendTask::SubmitFindChannel(OnGetChanKey_FindChannelCallback, this, cb_data, target);
+			return EIRCCommandHandlerRet_NoError;
 		}
 }

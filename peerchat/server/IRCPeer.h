@@ -53,6 +53,7 @@ namespace Chat {
 		void OnRecvChannelModeUpdate(ChatClientInfo user, ChatChannelInfo channel, ChanModeChangeData change_data);
 		void OnChannelTopicUpdate(ChatClientInfo user, ChatChannelInfo channel);
 		void OnSendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
+		void OnSendSetChannelKeys(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data);
 	protected:
 		//user cmds
 		EIRCCommandHandlerRet handle_nick(std::vector<std::string> params, std::string full_params);
@@ -67,6 +68,8 @@ namespace Chat {
 		EIRCCommandHandlerRet handle_topic(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_setkey(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_getkey(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_setchankey(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_getchankey(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_setckey(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_getckey(std::vector<std::string> params, std::string full_params);
 
@@ -77,6 +80,7 @@ namespace Chat {
 		static void OnUserhostCmd_UserLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);		
 		static void OnPrivMsg_Lookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnModeCmd_ShowChannelModes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnGetKey_UserLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//channel cmds
 		EIRCCommandHandlerRet handle_join(std::vector<std::string> params, std::string full_params);
@@ -91,6 +95,8 @@ namespace Chat {
 		static void OnTopicCmd_ChannelUpdateCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnGetCKeyCmd_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnGetCKeyCmd_FindChanUserCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnSetChanKey_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnGetChanKey_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//channel misc
 		void send_channel_topic(ChatChannelInfo channel);

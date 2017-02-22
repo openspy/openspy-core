@@ -150,7 +150,6 @@ namespace OS {
 		std::string key, token;
 
 		int i = 0;
-
 		while (std::getline(ss, token, '\\')) {
 			if (!token.length()) {
 				i++;
@@ -160,7 +159,6 @@ namespace OS {
 			if(i % 2) {
 				key = token;
 			} else {
-				
 				ret[key] = token;
 			}
 
