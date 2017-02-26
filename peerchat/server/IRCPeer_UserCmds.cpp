@@ -324,4 +324,14 @@ namespace Chat {
 
 			return EIRCCommandHandlerRet_NoError;
 		}
+		EIRCCommandHandlerRet IRCPeer::handle_quit(std::vector<std::string> params, std::string full_params) {
+			const char *reason = strchr(full_params.c_str(), ':');
+
+			if(reason) {
+				m_quit_reason = (reason+1);
+				m_delete_flag = true;
+				m_timeout_flag = false;
+			}
+			return EIRCCommandHandlerRet_NoError;	
+		}
 }

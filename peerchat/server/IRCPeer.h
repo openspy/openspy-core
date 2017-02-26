@@ -83,6 +83,7 @@ namespace Chat {
 		EIRCCommandHandlerRet handle_getchankey(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_setckey(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_getckey(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_quit(std::vector<std::string> params, std::string full_params);
 
 		//user cmd callbacks
 		static void OnNickCmd_InUseLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
@@ -129,6 +130,8 @@ namespace Chat {
 		static IRCCommandHandler mp_command_handler[];
 
 		bool is_channel_name(std::string name);
+
+		std::string m_quit_reason;
 
 
 	};

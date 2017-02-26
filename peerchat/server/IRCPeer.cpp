@@ -46,6 +46,7 @@ namespace Chat {
 
 			//channel cmds
 			{"JOIN", &IRCPeer::handle_join},
+			{"QUIT", &IRCPeer::handle_quit},
 			{"PART", &IRCPeer::handle_part},
 			{"NAMES", &IRCPeer::handle_names},
 
@@ -67,8 +68,10 @@ namespace Chat {
 			m_client_info.hostname = m_client_info.ip.ToString(true);
 		}
 		IRCPeer::~IRCPeer() {
-			printf("Peerchat delete\n");
-			ChatBackendTask::SubmitClientDelete(NULL, this, mp_driver, "");
+			std::ostringstream s;
+			s << "ERROR : Closing Link: " << ((ChatServer*)mp_driver->getServer())->getName() << " (" << m_quit_reason << ")" << std::endl;
+			SendPacket((const uint8_t*)s.str().c_str(),s.str().length());
+			ChatBackendTask::SubmitClientDelete(NULL, this, mp_driver, m_quit_reason);
 		}
 		
 		void IRCPeer::send_ping() {
@@ -304,6 +307,10 @@ namespace Chat {
 				case EChatBackendResponseError_NickInUse:
 				s << response.channel_info.name << ":Nickname is already in use";
 				send_numeric(433, s.str(), true);
+				break;
+				case EChatBackendResponseError_BadPermissions:
+					s << response.channel_info.name << " :" << response.error_details;
+					send_numeric(482, s.str(), true);
 				break;
 				case EChatBackendResponseError_NoChange:
 				break;

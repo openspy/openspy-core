@@ -43,7 +43,6 @@ namespace Chat {
 	void ChatBackendTask::Shutdown() {
 		ChatBackendTask *task = getQueryTask();
 		
-
 		delete task;
 	}
 
@@ -199,9 +198,6 @@ namespace Chat {
 		}
 		freeReplyObject(reply);
 
-
-		//std::map<std::string, std::string> custom_keys;
-
 	}
 	void ChatBackendTask::LoadClientInfoByName(ChatClientInfo &info, std::string name) {
 		int client_id = 0;
@@ -340,6 +336,8 @@ namespace Chat {
 		std::vector<std::pair<std::string, ChanClientModeChange> >::iterator user_modechanges_it = task_params.user_modechanges.begin();
 		ChatClientInfo client_info;
 		std::string from_user_str;
+		ChatChanClientInfo chan_client_info;
+
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
 		if(task_params.query_data.channel_info.channel_id != 0) {
 			channel_info = GetChannelByID(task_params.query_data.channel_info.channel_id);
@@ -351,15 +349,15 @@ namespace Chat {
 			response.error = EChatBackendResponseError_NoUser_OrChan;
 			goto end_error;
 		}
-		//test source permissions
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chan_%d_client_%d client_flags", channel_info.channel_id, task_params.query_data.client_info.client_id);
+
+		response.channel_info = channel_info;
 		
-		if(reply && reply->type == REDIS_REPLY_INTEGER) {
-			client_chan_flags = reply->integer;
-		} else if(reply && reply->type == REDIS_REPLY_STRING) {
-			client_chan_flags = atoi(reply->str);
+		
+		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
+		//test permissions
+		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, response.error_details, response.error, task_params)) {
+			goto end_error;
 		}
-		freeReplyObject(reply);
 		//
 
 		old_modeflags = channel_info.modeflags;
@@ -453,6 +451,7 @@ namespace Chat {
 		std::string chan_str;
 		std::string user_str;
 		struct Chat::_ChatQueryResponse response;
+		ChatChanClientInfo chan_client_info;
 
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
 
@@ -466,6 +465,12 @@ namespace Chat {
 
 		if(channel_info.channel_id == 0) {
 			response.error = EChatBackendResponseError_NoUser_OrChan;
+			goto end_error;
+		}
+
+		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
+		//test permissions
+		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, response.error_details, response.error, task_params)) {
 			goto end_error;
 		}
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic \"%s\"", channel_info.channel_id, task_params.message.c_str()));
@@ -644,6 +649,10 @@ namespace Chat {
 		std::string user_str = ClientInfoToKVString(task_params.peer->getClientInfo());
 
 		ChatChannelInfo channel_info;
+		const char *b64_msg = NULL;
+		struct Chat::_ChatQueryResponse response;
+		std::pair<std::string, std::string> p;
+		ChatChanClientInfo chan_client_info;
 
 		if(task_params.query_data.channel_info.channel_id != 0) {
 			channel_info = GetChannelByID(task_params.query_data.channel_info.channel_id);
@@ -651,8 +660,16 @@ namespace Chat {
 			channel_info = GetChannelByName(task_params.query_data.channel_info.name);
 		}
 
+
+		
+		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
+		//test permissions
+		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, response.error_details, response.error, task_params)) {
+			goto end_error;
+		}
+
 		while(it != task_params.set_keys.end()) {
-			std::pair<std::string, std::string> p = *it;
+			p = *it;
 			if(p.second.length()) {
 				reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_channel_%d_custkeys %s \"%s\"", channel_info.channel_id, p.first.c_str(),OS::strip_whitespace(p.second.c_str()).c_str());
 			} else {
@@ -663,12 +680,18 @@ namespace Chat {
 		}
 		set_kv_str = OS::MapToKVString(task_params.set_keys);
 
-		const char *b64_msg = OS::BinToBase64Str((const uint8_t*)set_kv_str.c_str(),set_kv_str.length());
+		b64_msg = OS::BinToBase64Str((const uint8_t*)set_kv_str.c_str(),set_kv_str.length());
 
 		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\set_channel_keys%s%s\\key_data\\%s\n",
 			chat_messaging_channel, chan_str.c_str(),user_str.c_str(), b64_msg));
 
-		free((void *)b64_msg);
+		end_error:
+			if(b64_msg != NULL)
+				free((void *)b64_msg);
+
+		if(task_params.callback) {
+			task_params.callback(task_params, response, task_params.peer, task_params.extra);
+		}
 	}
 	ChatChanClientInfo ChatBackendTask::GetChanClientInfo(int chan_id, int client_id) {
 		ChatChanClientInfo ret;
@@ -1097,7 +1120,7 @@ namespace Chat {
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 
 						OS::Base64StrToBin(msg, &out, len);
-						task->SendUserQuitMessage(client_info, msg);
+						task->SendUserQuitMessage(client_info, (const char *)out);
 						free((void *)out);
 					}
 	    		}
@@ -1275,5 +1298,14 @@ namespace Chat {
 			driver->SendUserQuitMessage(client, quit_reason);
 			it++;
 		}
+	}
+	bool ChatBackendTask::TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, EChannelPermissionType type, std::string &details, EChatBackendResponseError &error, ChatQueryRequest task_params) {
+		if(type == EPermissionType_MustBeOnChannel) {
+			error = EChatBackendResponseError_NotOnChannel;
+		} else {
+			details = "Required Mode - Some error msg";
+			error = EChatBackendResponseError_BadPermissions;
+		}
+		return false;
 	}
 }

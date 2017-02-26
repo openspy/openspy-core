@@ -35,6 +35,8 @@ namespace Chat {
 		EChatBackendResponseError_NoOwnerPerms,
 		EChatBackendResponseError_NickInUse,
 		EChatBackendResponseError_NoChange,
+		EChatBackendResponseError_BadPermissions,
+		EChatBackendResponseError_NotOnChannel,
 		EChatBackendResponseError_Unknown,
 	};
 	typedef struct _ChatClientInfo {
@@ -106,6 +108,7 @@ namespace Chat {
 		ChatChanClientInfo chan_client_info;
 		std::vector<ChatChanClientInfo> m_channel_clients;
 		EChatBackendResponseError error;
+		std::string error_details;
 	} ChatQueryResponse;
 
 	typedef void (*ChatQueryCB)(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
@@ -187,6 +190,14 @@ namespace Chat {
 		std::vector<ChanClientModeChange> client_modechanges;
 	} ChanModeChangeData;
 
+	enum EChannelPermissionType {
+		EPermissionType_MustBeOnChannel,
+		EPermissionType_VOPHigher,
+		EPermissionType_HOPHigher,
+		EPermissionType_OPHigher,
+		EPermissionType_OwnerHigher,
+	};
+
 	class ChatBackendTask : public OS::Task<ChatQueryRequest> {
 		public:
 			ChatBackendTask();
@@ -213,7 +224,6 @@ namespace Chat {
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, std::string channel, std::string user, const std::map<std::string, std::string> set_data_map);
 			static void SubmitSetClientKeys(ChatQueryCB cb, Peer *peer, void *extra, int client_id, const std::map<std::string, std::string> set_data_map);
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, const std::map<std::string, std::string> set_data_map);
-
 			static void SubmitClientDelete(ChatQueryCB cb, Peer *peer, void *extra, std::string reason);
 			void flagPushTask();
 		private:
@@ -238,6 +248,8 @@ namespace Chat {
 			void PerformSetClientKeys(ChatQueryRequest task_params);
 			void PerformSetChannelKeys(ChatQueryRequest task_params);
 			void PerformUserDelete(ChatQueryRequest task_params);
+
+			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, EChannelPermissionType type, std::string &details, EChatBackendResponseError &error, ChatQueryRequest task_params);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);

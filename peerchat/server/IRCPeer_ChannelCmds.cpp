@@ -26,18 +26,17 @@
 
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
+
+
 /*
-	1. implement /names - XXX no invisible
-	2. implement channel modes - XXX no +k/+l - /list /whowas
-	3. implement user chan modes
-	3. implement /part - XXX part reasons
+	1. implement invisible join
+	2. implement permissions/channel modes - /list /whowas
 	4. implement user modes
-	5. implement channel/user keys XXX set/get chankey
-	6. implement /notice /atm /utm, block ctcp - XXX BLOCK CTCP
-	6. clean up on disconnect
+	5. block ctcp
+	6. serial client_info into user KV data
 	7. implement /setchanprops /setusetmode /get*
 	8. implement auth
-	9. implement crypt
+	9. implement game crypt
 	10. implement ssl
 */
 
@@ -51,6 +50,10 @@ namespace Chat {
 
 			std::string part_reason = "";
 
+			if(combo->message) {
+				part_reason = combo->message->c_str();
+			}
+
 
 			if(!driver->HasPeer(peer)) {
 				goto end_cleanup;
@@ -62,7 +65,7 @@ namespace Chat {
 			}
 
 			ChatBackendTask::getQueryTask()->flagPushTask();
-			ChatBackendTask::SubmitRemoveUserFromChannel(NULL, irc_peer, driver, response.channel_info, EChannelPartTypes_Part, combo->message->c_str());
+			ChatBackendTask::SubmitRemoveUserFromChannel(NULL, irc_peer, driver, response.channel_info, EChannelPartTypes_Part, part_reason);
 
 			end_cleanup:
 			delete combo->message;
@@ -83,7 +86,7 @@ namespace Chat {
 			if(beg)
 				combo->message = new std::string(beg+1);
 			else 
-				combo->message = new std::string("");
+				combo->message = NULL;
 			ChatBackendTask::SubmitFindChannel(OnPartCmd_FindCallback, this, combo, channel);
 			return EIRCCommandHandlerRet_NoError;
 		}
@@ -344,9 +347,6 @@ namespace Chat {
 			int unset_flags = (old_modeflags & ~channel.modeflags) & old_modeflags;
 
 			std::vector<ChanClientModeChange>::iterator clientmodes_it;
-
-
-			printf("%d user modes\n", change_data.client_modechanges.size());
 
 			std::ostringstream mode_add_str;
 			std::ostringstream mode_str;
