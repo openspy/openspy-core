@@ -45,11 +45,12 @@ namespace Chat {
 		void OnSendClientMessage(int target_id, ChatClientInfo from_user, const char *msg, EChatMessageType message_type);
 		void OnSendChannelMessage(ChatChannelInfo channel, ChatClientInfo from_user, const char *msg, EChatMessageType message_type);
 		void SendJoinChannelMessage(ChatClientInfo client, ChatChannelInfo channel);
-		void SendPartChannelMessage(ChatClientInfo client, ChatChannelInfo channel);
+		void SendPartChannelMessage(ChatClientInfo client, ChatChannelInfo channel, EChannelPartTypes part_reason, std::string reason_str);
 		void SendChannelModeUpdate(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data);
 		void SendUpdateChannelTopic(ChatClientInfo client, ChatChannelInfo channel);
 		void SendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
 		void SendSetChannelKeys(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data);
+		void SendUserQuitMessage(ChatClientInfo client, std::string quit_reason);
 	private:
 
 		void TickConnections(fd_set *fdset);

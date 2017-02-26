@@ -37,6 +37,16 @@ namespace Chat {
 		uint32_t response_identifier;
 	} GetCKeyData;
 
+	typedef struct {
+		Chat::Driver *driver;
+		bool initial_join;
+	} NamesCmdCBInfo;
+
+	typedef struct {
+		Chat::Driver *driver;
+		std::string *message;
+	} IRCCBDriverMessageCombo;
+
 
 	class IRCPeer : public Peer {
 	public:
@@ -49,11 +59,12 @@ namespace Chat {
 		void OnRecvClientMessage(ChatClientInfo from_user, const char *msg, EChatMessageType message_type);
 		void OnRecvChannelMessage(ChatClientInfo from_user, ChatChannelInfo to_channel, const char *msg, EChatMessageType message_type);
 		void OnRecvClientJoinChannel(ChatClientInfo user, ChatChannelInfo channel);
-		void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel);
+		void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel, EChannelPartTypes part_reason, std::string reason_str);
 		void OnRecvChannelModeUpdate(ChatClientInfo user, ChatChannelInfo channel, ChanModeChangeData change_data);
 		void OnChannelTopicUpdate(ChatClientInfo user, ChatChannelInfo channel);
 		void OnSendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
 		void OnSendSetChannelKeys(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data);
+		void OnUserQuit(ChatClientInfo client, std::string quit_reason);
 	protected:
 		//user cmds
 		EIRCCommandHandlerRet handle_nick(std::vector<std::string> params, std::string full_params);
@@ -103,7 +114,7 @@ namespace Chat {
 		void send_channel_modes(ChatChannelInfo channel);
 		void send_channel_names(ChatChannelInfo channel);
 		void send_callback_error(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response);
-		void parse_channel_modes(std::string mode_str, uint32_t &add_mask, uint32_t &remove_mask, std::back_insert_iterator<std::vector<char> > it);
+		void parse_channel_modes(std::string mode_str, uint32_t &add_mask, uint32_t &remove_mask, std::back_insert_iterator<std::vector<char> > invalid_modes, std::vector<std::string> params, std::string &password, int &limit, std::back_insert_iterator<std::vector<std::pair<std::string, ChanClientModeChange> > > user_modechanges);
 
 		void send_nonick_channel_error(std::string name);
 		void send_command_error(EIRCCommandHandlerRet value, std::string cmd_name);

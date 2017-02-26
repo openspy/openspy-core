@@ -198,13 +198,13 @@ namespace Chat {
 			it++;
 		}
 	}
-	void Driver::SendPartChannelMessage(ChatClientInfo client, ChatChannelInfo channel) {
+	void Driver::SendPartChannelMessage(ChatClientInfo client, ChatChannelInfo channel, EChannelPartTypes part_reason, std::string reason_str) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
 			ChatClientInfo info = p->getClientInfo();
 			if(info.client_id == client.client_id || p->IsOnChannel(channel)) {
-				p->OnRecvClientPartChannel(client, channel);
+				p->OnRecvClientPartChannel(client, channel, part_reason, reason_str);
 			}
 			it++;
 		}
@@ -250,6 +250,15 @@ namespace Chat {
 			if(p->IsOnChannel(channel)) {
 				p->OnSendSetChannelKeys(client, channel, kv_data);
 			}
+			it++;
+		}
+	}
+	void Driver::SendUserQuitMessage(ChatClientInfo client, std::string quit_reason) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			ChatClientInfo info = p->getClientInfo();
+			p->OnUserQuit(client, quit_reason);
 			it++;
 		}
 	}

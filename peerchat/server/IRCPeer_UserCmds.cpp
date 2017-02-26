@@ -263,26 +263,24 @@ namespace Chat {
 			IRCPeer *irc_peer = (IRCPeer *)peer;
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
 
-			if(!driver->HasPeer(peer)) {
-				delete cb_data->search_data;
-				delete cb_data->target_user;
-				free((void *)cb_data);
-				return;
-			}
-			std::ostringstream s;
-			std::ostringstream result_oss;
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
-				delete cb_data->search_data;
-				delete cb_data->target_user;
-				free((void *)cb_data);
-				return;
-			}
-
 			std::map<std::string, std::string>::const_iterator it;
-			char *search_data_cpy = strdup(cb_data->search_data->c_str());
+
+			char *search_data_cpy = NULL;
 			char key_name[256];
 			int i = 0;
+
+			std::ostringstream s;
+			std::ostringstream result_oss;
+
+			if(!driver->HasPeer(peer)) {
+				goto end_error;
+			}
+			if(response.error != EChatBackendResponseError_NoError) {
+				irc_peer->send_callback_error(request, response);
+				goto end_error;
+			}
+
+			search_data_cpy = strdup(cb_data->search_data->c_str());
 			while(find_param(i++, search_data_cpy, key_name, sizeof(key_name))) {
 					it = response.client_info.custom_keys.find(key_name);
 					result_oss << "\\";
@@ -294,7 +292,10 @@ namespace Chat {
 			s << irc_peer->m_client_info.name  << " " << response.client_info.name << " " << cb_data->response_identifier << " :" << result_oss.str();
 			irc_peer->send_numeric(700, s.str(), true);
 
-			free((void *)search_data_cpy);
+			end_error:
+
+			if(search_data_cpy)
+				free((void *)search_data_cpy);
 			delete cb_data->search_data;
 			delete cb_data->target_user;
 			free((void *)cb_data);

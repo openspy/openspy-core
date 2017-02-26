@@ -167,7 +167,7 @@ uint32_t resolv(char *host) {
     }
     return(host_ip);
 }
-int find_paramint(char *name, char *buff) {
+int find_paramint(const char *name, char *buff) {
 	char intdst[24];
 	if(!find_param(name,buff,(char *)&intdst,sizeof(intdst))) return 0;
 	return atoi(intdst);
@@ -177,7 +177,7 @@ int find_paramint(int num, char *buff) {
 	if(!find_param(num,buff,(char *)&intdst,sizeof(intdst))) return 0;
 	return atoi(intdst);
 }
-bool find_param(char *name, char *buff, char *dst, int dstlen) {
+bool find_param(const char *name, char *buff, char *dst, int dstlen) {
 
 	char *loc;
 	int distance;

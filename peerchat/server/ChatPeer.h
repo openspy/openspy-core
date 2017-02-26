@@ -11,6 +11,11 @@ namespace Chat {
 	class Driver;
 	class Server;
 
+	typedef struct {
+		int m_op_hits;
+		int m_hits;
+	} ChannelHitCounts;
+
 	class Peer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
@@ -32,13 +37,14 @@ namespace Chat {
 		virtual void OnRecvChannelMessage(ChatClientInfo from_user, ChatChannelInfo to_channel, const char *msg, EChatMessageType message_type) = 0;
 		virtual void OnRecvClientMessage(ChatClientInfo from_user, const char *msg, EChatMessageType message_type) = 0;
 		virtual void OnRecvClientJoinChannel(ChatClientInfo user, ChatChannelInfo channel) = 0;
-		virtual void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel) = 0;
+		virtual void OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel, EChannelPartTypes part_reason, std::string reason_str) = 0;
 		virtual void OnRecvChannelModeUpdate(ChatClientInfo user, ChatChannelInfo channel, ChanModeChangeData change_data) = 0;
 		virtual void OnChannelTopicUpdate(ChatClientInfo user, ChatChannelInfo channel) = 0;
 		virtual void OnSendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data) = 0;
 		virtual void OnSendSetChannelKeys(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data) = 0;
+		virtual void OnUserQuit(ChatClientInfo client, std::string quit_reason) = 0;
 		bool IsOnChannel(ChatChannelInfo channel);
-
+		void GetChannelList(std::vector<int> &list) { list = m_channel_list; };
 	protected:
 
 		std::vector<int> m_channel_list;
@@ -56,6 +62,8 @@ namespace Chat {
 		ChatClientInfo m_client_info;
 
 		OS::CMutex *mp_mutex;
+
+		std::map<int, ChannelHitCounts> m_client_channel_hits; //number of instances a user sees a client(how many channels they share) - [client_id].m_hits++, m_op_hits = num hits on channels you are op of
 	private:
 
 

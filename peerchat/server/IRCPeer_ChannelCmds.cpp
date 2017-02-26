@@ -28,7 +28,7 @@
 #include <OS/legacy/buffwriter.h>
 /*
 	1. implement /names - XXX no invisible
-	2. implement channel modes - XXX no +k/+l
+	2. implement channel modes - XXX no +k/+l - /list /whowas
 	3. implement user chan modes
 	3. implement /part - XXX part reasons
 	4. implement user modes
@@ -45,16 +45,28 @@
 namespace Chat {
 		void IRCPeer::OnPartCmd_FindCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
 
-			Chat::Driver *driver = (Chat::Driver *)extra;
+			IRCCBDriverMessageCombo *combo = (IRCCBDriverMessageCombo *)extra;
+			Chat::Driver *driver = (Chat::Driver *)combo->driver;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
+
+			std::string part_reason = "";
 
 
 			if(!driver->HasPeer(peer)) {
-				return;
+				goto end_cleanup;
+			}
+
+			if(!irc_peer->IsOnChannel(response.channel_info)) {
+				//print not on channel error
+				goto end_cleanup;
 			}
 
 			ChatBackendTask::getQueryTask()->flagPushTask();
-			ChatBackendTask::SubmitRemoveUserFromChannel(NULL, irc_peer, driver, response.channel_info);
+			ChatBackendTask::SubmitRemoveUserFromChannel(NULL, irc_peer, driver, response.channel_info, EChannelPartTypes_Part, combo->message->c_str());
+
+			end_cleanup:
+			delete combo->message;
+			free((void *)combo);
 		}
 		EIRCCommandHandlerRet IRCPeer::handle_part(std::vector<std::string> params, std::string full_params) {
 			std::string channel;
@@ -63,7 +75,16 @@ namespace Chat {
 			} else {
 				return EIRCCommandHandlerRet_NotEnoughParams;
 			}
-			ChatBackendTask::SubmitFindChannel(OnPartCmd_FindCallback, this, mp_driver, channel);
+
+			const char *beg = strchr(full_params.c_str(), ':');
+
+			IRCCBDriverMessageCombo *combo = (IRCCBDriverMessageCombo *)malloc(sizeof(IRCCBDriverMessageCombo));
+			combo->driver = mp_driver;
+			if(beg)
+				combo->message = new std::string(beg+1);
+			else 
+				combo->message = new std::string("");
+			ChatBackendTask::SubmitFindChannel(OnPartCmd_FindCallback, this, combo, channel);
 			return EIRCCommandHandlerRet_NoError;
 		}
 		void IRCPeer::OnJoinCmd_FindCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
@@ -105,42 +126,63 @@ namespace Chat {
 				m_channel_list.push_back(channel.channel_id);
 				send_channel_topic(channel);
 				send_channel_names(channel);
+			} else {
+				m_client_channel_hits[user.client_id].m_hits++;
 			}
 		}
-		void IRCPeer::OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel) {
+
+		//TODO: change from client info to chan client info for m_hits decr
+		void IRCPeer::OnRecvClientPartChannel(ChatClientInfo user, ChatChannelInfo channel, EChannelPartTypes part_reason, std::string reason_str) {
 			std::ostringstream s;
-			s << ":" << user.name << "!" << user.user << "@" << user.hostname << " PART " <<  channel.name << std::endl;
+			std::string type = "PART";
+			if(part_reason == EChannelPartTypes_Kick) {
+				type = "KICK";
+			}
+			s << ":" << user.name << "!" << user.user << "@" << user.hostname << " " << type <<" " <<  channel.name << " :" << reason_str << std::endl;
 			SendPacket((const uint8_t*)s.str().c_str(),s.str().length());
 
 			if(user.client_id == m_client_info.client_id) {
 				std::vector<int>::iterator it = std::find(m_channel_list.begin(), m_channel_list.end(), 5);
 				if(it != m_channel_list.end())
 				    m_channel_list.erase(it);
+				m_client_channel_hits[user.client_id].m_hits--;
 			}
 		}
 		void IRCPeer::send_channel_modes(ChatChannelInfo channel) {
 			ChatBackendTask::SubmitFindChannel(OnModeCmd_ShowChannelModes, this, mp_driver, channel.name);
 		}
 		void IRCPeer::send_channel_names(ChatChannelInfo channel) {
-			ChatBackendTask::SubmitFindChannel(OnNamesCmd_FindChannelCallback, this, mp_driver, channel.name);
+			NamesCmdCBInfo *info = new NamesCmdCBInfo;
+			info->initial_join = true;
+			info->driver = mp_driver;
+			ChatBackendTask::SubmitFindChannel(OnNamesCmd_FindChannelCallback, this, info, channel.name);
 		}
 
 		void IRCPeer::OnNamesCmd_FindUsersCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
-			Chat::Driver *driver = (Chat::Driver *)extra;
+			NamesCmdCBInfo *info = (NamesCmdCBInfo *)extra;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
-
-
-			if(!driver->HasPeer(peer)) {
-				return;
-			}
-
-			std::ostringstream s;
-			s << "= " << request.query_data.channel_info.name << " :";
-
 			//TODO: split into multiple lines
 			std::vector<ChatChanClientInfo>::const_iterator it = response.m_channel_clients.begin();
+			std::ostringstream s;
+
+
+			if(!info->driver->HasPeer(peer)) {
+				goto end_cleanup;
+			}
+
+			s << "= " << request.query_data.channel_info.name << " :";
+
+
 			while(it != response.m_channel_clients.end()) {
 				const ChatChanClientInfo chan_client_info = *it;
+				if(chan_client_info.client_flags & EChanClientFlags_Owner || chan_client_info.client_flags & EChanClientFlags_Op) {
+					irc_peer->m_client_channel_hits[chan_client_info.client_id].m_op_hits++;
+					s << "@";
+				} else if(chan_client_info.client_flags & EChanClientFlags_Voice) {
+					s << "+";
+				} else {
+					irc_peer->m_client_channel_hits[chan_client_info.client_id].m_hits++;
+				}
 				s << chan_client_info.client_info.name;
 				it++;
 				if(it != response.m_channel_clients.end()) {
@@ -150,15 +192,18 @@ namespace Chat {
 
 			irc_peer->send_numeric(353, s.str(), true);
 			irc_peer->send_numeric(366, "End of /NAMES list.");
+			end_cleanup:
+			free((void *)info);
 
 
 		}
 		void IRCPeer::OnNamesCmd_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
-			Chat::Driver *driver = (Chat::Driver *)extra;
+			//Chat::Driver *driver = (Chat::Driver *)extra;
+			NamesCmdCBInfo *info = (NamesCmdCBInfo *)extra;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
 
-			if(!driver->HasPeer(peer)) {
-				return;
+			if(!info->driver->HasPeer(peer)) {
+				goto end_cleanup;
 			}
 
 			ChatBackendTask::getQueryTask()->flagPushTask();
@@ -167,8 +212,11 @@ namespace Chat {
 
 			} else {
 				ChatBackendTask::getQueryTask()->flagPushTask();
-				ChatBackendTask::SubmitGetChannelUsers(OnNamesCmd_FindUsersCallback, irc_peer, driver, response.channel_info);
+				ChatBackendTask::SubmitGetChannelUsers(OnNamesCmd_FindUsersCallback, irc_peer, info, response.channel_info);
+				return;
 			}
+			end_cleanup:
+			free((void *)info);
 		}
 
 		EIRCCommandHandlerRet IRCPeer::handle_names(std::vector<std::string> params, std::string full_params) {
@@ -178,13 +226,18 @@ namespace Chat {
 			} else {
 				return EIRCCommandHandlerRet_NotEnoughParams;
 			}
-			ChatBackendTask::SubmitFindChannel(OnNamesCmd_FindChannelCallback, this, mp_driver, channel);
+			NamesCmdCBInfo *info = (NamesCmdCBInfo* )malloc(sizeof(NamesCmdCBInfo));
+			info->initial_join = false;
+			info->driver = mp_driver;
+			ChatBackendTask::SubmitFindChannel(OnNamesCmd_FindChannelCallback, this, info, channel);
 			return EIRCCommandHandlerRet_NoError;
 		}
 
-		void IRCPeer::parse_channel_modes(std::string mode_str, uint32_t &add_mask, uint32_t &remove_mask, std::back_insert_iterator<std::vector<char> > it) {
+		void IRCPeer::parse_channel_modes(std::string mode_str, uint32_t &add_mask, uint32_t &remove_mask, std::back_insert_iterator<std::vector<char> > invalid_modes, std::vector<std::string> params, std::string &password, int &limit, std::back_insert_iterator<std::vector<std::pair<std::string, ChanClientModeChange> > > user_modechanges) {
 			bool add = true;
 			uint32_t flag;
+			int param_idx = 3;
+			std::pair<std::string, ChanClientModeChange> p;
 			for(int i=0;i<mode_str.length();i++) {
 				flag = 0;
 				switch(mode_str[i]) {
@@ -221,8 +274,60 @@ namespace Chat {
 					case 'm':
 						flag = EChannelModeFlags_Moderated;
 					break;
+					case 'k':
+						if(params.size() <= param_idx) {
+							printf("Can't get param mode\n");
+						}
+						password = params[param_idx++].c_str();
+					break;
+					case 'l':
+
+						if(params.size() <= param_idx && add) {
+							printf("Can't get param mode\n");
+						} else if(!add) {
+							limit = -1;
+						} else {
+							limit = atoi(params[param_idx++].c_str()); //TODO: negative error checking
+						}
+						break;
+					case 'O':
+						if(param_idx < params.size()) {
+							p.second.mode_flag = EChanClientFlags_Owner;
+							p.second.set = add;
+							p.first = params[param_idx++];
+							*(user_modechanges++) = p;
+						}
+						break;
+					break;
+					case 'o':
+						if(param_idx < params.size()) {
+							p.second.mode_flag = EChanClientFlags_Op;
+							p.second.set = add;
+							p.first = params[param_idx++];
+							*(user_modechanges++) = p;
+						}
+						break;
+					case 'h':
+						if(param_idx < params.size()) {
+							p.second.mode_flag = EChanClientFlags_HalfOp;
+							p.second.set = add;
+							p.first = params[param_idx++];
+							*(user_modechanges++) = p;
+						}
+						break;
+					case 'v':
+						if(param_idx < params.size()) {
+							p.second.mode_flag = EChanClientFlags_Voice;
+							p.second.set = add;
+							p.first = params[param_idx++];
+							*(user_modechanges++) = p;
+						}
+						break;
+					break;
 					default:
-						*(it++) = mode_str[i];
+						if(param_idx < params.size()) {
+							*(invalid_modes++) = mode_str[i];
+						}
 					break;
 				}
 				if(add) {
@@ -237,6 +342,11 @@ namespace Chat {
 
 			int set_flags = (old_modeflags ^ channel.modeflags) & ~old_modeflags;
 			int unset_flags = (old_modeflags & ~channel.modeflags) & old_modeflags;
+
+			std::vector<ChanClientModeChange>::iterator clientmodes_it;
+
+
+			printf("%d user modes\n", change_data.client_modechanges.size());
 
 			std::ostringstream mode_add_str;
 			std::ostringstream mode_str;
@@ -272,6 +382,31 @@ namespace Chat {
 				mode_add_str << "Z";
 			}
 
+			if(change_data.new_password.length()) {
+				mode_add_str << "k";
+			}
+
+			if(change_data.new_limit > 0) {
+				mode_add_str << "l";
+			}
+
+			clientmodes_it = change_data.client_modechanges.begin();
+			while(clientmodes_it != change_data.client_modechanges.end()) {
+				ChanClientModeChange user_changedata = *clientmodes_it;
+				if(user_changedata.set) {
+					switch(user_changedata.mode_flag) {
+						case EChanClientFlags_Owner:
+						case EChanClientFlags_Op:
+							mode_add_str << "o";
+						break;
+						case EChanClientFlags_Voice:
+							mode_add_str << "v";
+						break;
+					}
+				}
+				clientmodes_it++;
+			}
+
 			std::ostringstream mode_del_str;
 			mode_del_str << "-";
 			if(unset_flags & EChannelModeFlags_Private) {
@@ -305,16 +440,72 @@ namespace Chat {
 				mode_del_str << "Z";
 			}
 
+			if(channel.password.length() != 0 && change_data.new_password.length()) {
+				mode_del_str << "k";
+			}
+
+			if(change_data.new_limit == -1) {
+				mode_del_str << "l";
+			}
+
+			clientmodes_it = change_data.client_modechanges.begin();
+			while(clientmodes_it != change_data.client_modechanges.end()) {
+				ChanClientModeChange user_changedata = *clientmodes_it;
+				if(!user_changedata.set) {
+					switch(user_changedata.mode_flag) {
+						case EChanClientFlags_Owner:
+						case EChanClientFlags_Op:
+							mode_del_str << "o";
+						break;
+						case EChanClientFlags_Voice:
+							mode_del_str << "v";
+						break;
+					}
+				}
+				clientmodes_it++;
+			}
+
 			if(mode_add_str.str().length() > 1) {
 				mode_str << mode_add_str.str();
 			}
 			if(mode_del_str.str().length() > 1) {
 				mode_str << mode_del_str.str();
 			}
+
+			if(change_data.new_limit > 0) {
+				mode_str << " " << change_data.new_limit;
+			}
+
+			if(strcmp(change_data.new_password.c_str(), channel.password.c_str()) != 0 && change_data.new_password.length())  {
+				mode_str << " " << change_data.new_password;
+			}
+
+
+			//loop twice to preserve set order
+			clientmodes_it = change_data.client_modechanges.begin();
+			while(clientmodes_it != change_data.client_modechanges.end()) {
+				ChanClientModeChange user_changedata = *clientmodes_it;
+				if(user_changedata.set) {
+					mode_str << " " << user_changedata.client_info.name;
+				}
+				clientmodes_it++;
+			}
+
+			clientmodes_it = change_data.client_modechanges.begin();
+			while(clientmodes_it != change_data.client_modechanges.end()) {
+				ChanClientModeChange user_changedata = *clientmodes_it;
+				if(!user_changedata.set) {
+					mode_str << " " << user_changedata.client_info.name;
+				}
+				clientmodes_it++;
+			}
 			std::ostringstream s;
 
+
 			s << ":" << user.name << "!" << user.user << "@" << user.hostname << " MODE " << channel.name << " " << mode_str.str() << std::endl;
-			SendPacket((const uint8_t*)s.str().c_str(),s.str().length());
+
+			if(mode_str.str().length() > 0)
+				SendPacket((const uint8_t*)s.str().c_str(),s.str().length());
 		}
 		void IRCPeer::OnChannelTopicUpdate(ChatClientInfo user, ChatChannelInfo channel) {
 			std::ostringstream s;
@@ -377,6 +568,21 @@ namespace Chat {
 			if(set_flags & EChannelModeFlags_OnlyOwner) {
 				mode_add_str << "Z";
 			}
+			if(response.channel_info.limit > 0) {
+				mode_add_str << "l";
+			}
+
+			if(response.channel_info.password.length() > 0) {
+				mode_add_str << "k";
+			}
+
+			if(response.channel_info.limit > 0) {
+				mode_add_str << " " << response.channel_info.limit;
+			}
+
+			if(irc_peer->IsOnChannel(response.channel_info) && response.channel_info.password.length() > 0) {
+				mode_add_str << " " << response.channel_info.password;
+			}
 			mode_str << response.channel_info.name << " " << mode_add_str.str();
 			irc_peer->send_numeric(324, mode_str.str(), true);
 		}
@@ -399,10 +605,15 @@ namespace Chat {
 			ChatChannelInfo channel;
 			if(is_channel_name(target)) {
 				std::vector<char> bad_modes;
-				parse_channel_modes(params[2], addmask, removemask, std::back_inserter(bad_modes));
+				std::string password;
+				std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges;
+				int limit = 0;
+				parse_channel_modes(params[2], addmask, removemask, std::back_inserter(bad_modes), params, password, limit, std::back_inserter(user_modechanges));
 				channel.name = target;
 				channel.channel_id = 0;
-				ChatBackendTask::SubmitUpdateChannelModes(OnModeCmd_ChannelUpdateCallback, this, mp_driver, addmask, removemask, channel);
+
+				printf("%d user mode changes\n", user_modechanges.size());
+				ChatBackendTask::SubmitUpdateChannelModes(OnModeCmd_ChannelUpdateCallback, this, mp_driver, addmask, removemask, channel, password, limit, user_modechanges);
 			} else {
 			}
 			return EIRCCommandHandlerRet_NoError;	
@@ -502,21 +713,20 @@ namespace Chat {
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
 
 			if(!driver->HasPeer(peer)) {
-				delete cb_data->search_data;
-				delete cb_data->target_user;
-				free((void *)cb_data);
-				return;
+				goto end_cleanup;
 			}
 
 			if(response.error != EChatBackendResponseError_NoError) {
 				irc_peer->send_callback_error(request, response);
-				delete cb_data->search_data;
-				delete cb_data->target_user;
-				free((void *)cb_data);
-				return;
+				goto end_cleanup;
 			}
 			ChatBackendTask::getQueryTask()->flagPushTask();
 			ChatBackendTask::SubmitGetChannelUser(OnGetCKeyCmd_FindChanUserCallback, irc_peer, cb_data, response.channel_info, *cb_data->target_user);
+
+			end_cleanup:
+			delete cb_data->search_data;
+			delete cb_data->target_user;
+			free((void *)cb_data);
 		}
 		//TODO: send multiple users getckeys
 		void IRCPeer::OnGetCKeyCmd_FindChanUserCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
@@ -596,22 +806,16 @@ namespace Chat {
 			std::string *search_params = (std::string *)extra;
 
 			if(!driver->HasPeer(peer)) {
-				delete cb_data->search_data;
-				delete cb_data->target_user;
-				free((void *)cb_data);
-				return;
+				goto end_cleanup;
 			}
 
 			if(response.error != EChatBackendResponseError_NoError) {
 				irc_peer->send_callback_error(request, response);
-				delete cb_data->search_data;
-				delete cb_data->target_user;
-				free((void *)cb_data);
-				return;
+				goto end_cleanup;
 			}
 
 			ChatBackendTask::SubmitSetChannelKeys(NULL, peer, driver, response.channel_info, OS::KeyStringToMap(*(cb_data->search_data)));
-
+			end_cleanup:
 			delete cb_data->search_data;
 			delete cb_data->target_user;
 			free((void *)cb_data);

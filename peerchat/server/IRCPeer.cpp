@@ -68,6 +68,7 @@ namespace Chat {
 		}
 		IRCPeer::~IRCPeer() {
 			printf("Peerchat delete\n");
+			ChatBackendTask::SubmitClientDelete(NULL, this, mp_driver, "");
 		}
 		
 		void IRCPeer::send_ping() {
@@ -80,7 +81,7 @@ namespace Chat {
 
 
 				std::ostringstream s;
-				s << "PING :" << ((ChatServer*)mp_driver->getServer())->getName() << std::endl;
+				s << "PING " << ((ChatServer*)mp_driver->getServer())->getName() << " :" << time(NULL) << std::endl;
 				SendPacket((const uint8_t*)s.str().c_str(),s.str().length());
 			}
 
@@ -306,6 +307,16 @@ namespace Chat {
 				break;
 				case EChatBackendResponseError_NoChange:
 				break;
+			}
+		}
+		void IRCPeer::OnUserQuit(ChatClientInfo client, std::string quit_reason) {
+			std::ostringstream s;
+			if(m_client_channel_hits.find(client.client_id) != m_client_channel_hits.end()) {
+				if(m_client_channel_hits[client.client_id].m_hits > 0 || m_client_channel_hits[client.client_id].m_op_hits > 0) {
+					s << ":" << client.name << "!" << client.user << "@" << client.hostname << " QUIT :" << quit_reason  << std::endl;
+					SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+					m_client_channel_hits.erase(client.client_id);
+				}
 			}
 		}
 }

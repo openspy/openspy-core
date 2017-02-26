@@ -94,6 +94,12 @@ namespace Chat {
 		std::map<std::string, std::string> custom_keys; //setkey/getkey, also holds groupname(/setgroup)
 	} ChatChannelInfo;
 
+	typedef struct {
+		EChanClientFlags mode_flag;
+		ChatClientInfo client_info;
+		bool set;
+	} ChanClientModeChange;
+
 	typedef struct _ChatQueryResponse {
 		ChatChannelInfo channel_info;
 		ChatClientInfo client_info;
@@ -101,6 +107,7 @@ namespace Chat {
 		std::vector<ChatChanClientInfo> m_channel_clients;
 		EChatBackendResponseError error;
 	} ChatQueryResponse;
+
 	typedef void (*ChatQueryCB)(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 	enum EChatQueryRequestType {
 		EChatQueryRequestType_GetClientByName,
@@ -119,11 +126,8 @@ namespace Chat {
 		EChatQueryRequestType_SetChannelClientKeys,
 		EChatQueryRequestType_SetClientKeys,
 		EChatQueryRequestType_SetChannelKeys,
-
-
-		EChatQueryRequestType_SetChanUserMode, //set +o, etc
 		EChatQueryRequestType_KickUser, //send kick msg to all & remove user from channel, test perms 
-		EChatQueryRequestType_UserDisconnect, //send quit msg to all
+		EChatQueryRequestType_UserDelete, //send quit msg to all
 
 		EChatQueryRequestType_SaveUserMode,
 		EChatQueryRequestType_SaveChanProps,
@@ -141,6 +145,11 @@ namespace Chat {
 		EChatMessageType_UTM,
 	};
 
+	enum EChannelPartTypes {
+		EChannelPartTypes_Part,
+		EChannelPartTypes_Kick,
+	};
+
 	typedef struct _ChatQueryRequest {
 		EChatQueryRequestType type;
 		ChatQueryCB callback;
@@ -155,12 +164,27 @@ namespace Chat {
 
 		std::map<std::string, std::string> set_keys;
 
+		//channel mode set stuff
 		int add_flags;
 		int remove_flags;
+		std::string chan_password;
+		int chan_limit;
+		std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges;
+
+		//disconnect data;
+		ChatClientInfo client_info;
+		std::vector<int> id_list;
+		EChannelPartTypes part_reason;
+
 	} ChatQueryRequest;
+
 
 	typedef struct {
 		int old_modeflags;
+		int new_limit;
+		std::string new_password;
+
+		std::vector<ChanClientModeChange> client_modechanges;
 	} ChanModeChangeData;
 
 	class ChatBackendTask : public OS::Task<ChatQueryRequest> {
@@ -181,14 +205,16 @@ namespace Chat {
 			static void SubmitFindChannel(ChatQueryCB cb, Peer *peer, void *extra, std::string channel);
 
 			static void SubmitAddUserToChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
-			static void SubmitRemoveUserFromChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
+			static void SubmitRemoveUserFromChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, EChannelPartTypes reason, std::string reason_str);
 			static void SubmitGetChannelUsers(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			static void SubmitGetChannelUser(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string name);
-			static void SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel);
+			static void SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel, std::string password, int limit, std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges);
 			static void SubmitUpdateChannelTopic(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string topic);
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, std::string channel, std::string user, const std::map<std::string, std::string> set_data_map);
 			static void SubmitSetClientKeys(ChatQueryCB cb, Peer *peer, void *extra, int client_id, const std::map<std::string, std::string> set_data_map);
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, const std::map<std::string, std::string> set_data_map);
+
+			static void SubmitClientDelete(ChatQueryCB cb, Peer *peer, void *extra, std::string reason);
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -211,6 +237,7 @@ namespace Chat {
 			void PerformGetChannelUser(ChatQueryRequest task_params);
 			void PerformSetClientKeys(ChatQueryRequest task_params);
 			void PerformSetChannelKeys(ChatQueryRequest task_params);
+			void PerformUserDelete(ChatQueryRequest task_params);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);
@@ -222,16 +249,17 @@ namespace Chat {
 			void LoadClientInfoByID(ChatClientInfo &info, int client_id);
 			void LoadClientInfoByName(ChatClientInfo &info, std::string name);
 
-			static std::string ClientInfoToKVString(ChatClientInfo info);
-			static ChatClientInfo ClientInfoFromKVString(const char *str);
+			static std::string ClientInfoToKVString(ChatClientInfo info, std::string prefix = "");
+			static ChatClientInfo ClientInfoFromKVString(const char *str, std::string prefix = "");
 			void SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg, EChatMessageType message_type);
 			void SendChannelMessageToDrivers(ChatChannelInfo channel, ChatClientInfo user, const char *msg, EChatMessageType message_type);			
 			void SendClientJoinChannelToDrivers(ChatClientInfo client, ChatChannelInfo channel);
-			void SendClientPartChannelToDrivers(ChatClientInfo client, ChatChannelInfo channel);
+			void SendClientPartChannelToDrivers(ChatClientInfo client, ChatChannelInfo channel, EChannelPartTypes part_reason, std::string reason_str);
 			void SendChannelModeUpdateToDrivers(ChatClientInfo client_info, ChatChannelInfo channel_info, ChanModeChangeData change_data);
 			void SendUpdateChannelTopicToDrivers(ChatClientInfo client, ChatChannelInfo channel);			
 			void SendSetChannelClientKeysToDrivers(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
 			void SendSetChannelKeysToDrivers(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data);
+			void SendUserQuitMessage(ChatClientInfo client, std::string quit_reason);
 
 			static std::string ChannelInfoToKVString(ChatChannelInfo info);
 			static ChatChannelInfo ChannelInfoFromKVString(const char *str);
