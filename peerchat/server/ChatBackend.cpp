@@ -1,7 +1,7 @@
 #include "ChatBackend.h"
 #include "ChatPeer.h"
-#include <OS/legacy/helpers.h>
 #include <sstream>
+#include <OS/KVReader.h>
 namespace Chat {
 	const char *mp_pk_name = "CLIENTID";
 	const char *mp_chan_pk_name = "CHANID";
@@ -1008,64 +1008,71 @@ namespace Chat {
 		uint8_t *out;
 		int len;
 	    int type;
-	    char msg_type[32];
-	    char msg[CHAT_MAX_MESSAGE + 1];
+	    std::string msg_type;
+	    std::string msg;
 	    std::map<std::string,std::string> key_data;
 	    ChanModeChangeData change_data;
+
+	    
+
+	    EChatMessageType chat_msg_type;
 	    if (r->type == REDIS_REPLY_ARRAY) {
 	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
+	    		OS::KVReader kv_parser(r->element[2]->str);
 	    		if(strcmp(r->element[1]->str,chat_messaging_channel) == 0) {
-	    			type = find_paramint("msg_type", r->element[2]->str);
-	    			if(!find_param("type", r->element[2]->str,(char *)&msg_type, sizeof(msg_type))) {
-	    					return;
+	    			type = kv_parser.GetValueInt("msg_type");
+	    			if(!kv_parser.HasKey("type")) {
+	    				return;
 	    			}
-					if(strcmp(msg_type, "send_client_msg") == 0) {
-		    			if(!find_param("msg", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE)) {
-		    					return;
+	    			msg_type = kv_parser.GetValue("type");
+					if(strcmp(msg_type.c_str(), "send_client_msg") == 0) {
+		    			if(!kv_parser.HasKey("msg")) {
+		    				return;
 		    			}
-		    			type = find_paramint("msg_type", r->element[2]->str);
-		    			int target_id = find_paramint("to_id", r->element[2]->str);
+		    			msg = kv_parser.GetValue("msg");
+		    			chat_msg_type = (EChatMessageType)kv_parser.GetValueInt("msg_type");
+		    			int target_id = kv_parser.GetValueInt("to_id");
 						ChatClientInfo user = ClientInfoFromKVString(r->element[2]->str);
-						OS::Base64StrToBin(msg, &out, len);
-						task->SendClientMessageToDrivers(target_id,user, (const char *)out, (EChatMessageType)type);
+						OS::Base64StrToBin(msg.c_str(), &out, len);
+						task->SendClientMessageToDrivers(target_id,user, (const char *)out, chat_msg_type);
 						free((void *)out);
-					} else if(strcmp(msg_type, "send_channel_msg") == 0) {
-		    			if(!find_param("msg", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE)) {
-		    					return;
+					} else if(strcmp(msg_type.c_str(), "send_channel_msg") == 0) {
+		    			if(!kv_parser.HasKey("msg")) {
+		    				return;
 		    			}
-		    			type = find_paramint("msg_type", r->element[2]->str);
+		    			msg = kv_parser.GetValue("msg");
+		    			chat_msg_type = (EChatMessageType)kv_parser.GetValueInt("msg_type");
 						ChatClientInfo user = ClientInfoFromKVString(r->element[2]->str);
 						ChatChannelInfo channel = ChannelInfoFromKVString(r->element[2]->str);
-						OS::Base64StrToBin(msg, &out, len);
-						task->SendChannelMessageToDrivers(channel,user, (const char *)out, (EChatMessageType)type);
+						OS::Base64StrToBin(msg.c_str(), &out, len);
+						task->SendChannelMessageToDrivers(channel,user, (const char *)out, (EChatMessageType)chat_msg_type);
 						free((void *)out);
-					} else if(strcmp(msg_type, "user_join_channel") == 0) {
+					} else if(strcmp(msg_type.c_str(), "user_join_channel") == 0) {
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
 						task->SendClientJoinChannelToDrivers(client_info, channel_info);
-					} else if(strcmp(msg_type, "user_leave_channel") == 0) {
-						EChannelPartTypes part_reason = (EChannelPartTypes)find_paramint("part_type", r->element[2]->str);
-						find_param("reason", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE);
+					} else if(strcmp(msg_type.c_str(), "user_leave_channel") == 0) {
+						EChannelPartTypes part_reason = (EChannelPartTypes)kv_parser.GetValueInt("part_type");
+						msg = kv_parser.GetValue("reason");
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
-						OS::Base64StrToBin(msg, &out, len);
+						OS::Base64StrToBin(msg.c_str(), &out, len);
 						task->SendClientPartChannelToDrivers(client_info, channel_info, part_reason, (const char *)out);
 						free((void *)out);
-					} else if(strcmp(msg_type, "channel_update_modeflags") == 0) {
-						
-						if(find_param("new_password", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE)) {
-							change_data.new_password = msg;
+					} else if(strcmp(msg_type.c_str(), "channel_update_modeflags") == 0) {
+						if(kv_parser.HasKey("new_password")) {
+							change_data.new_password = kv_parser.GetValue("new_password");
 						}
-						change_data.old_modeflags = find_paramint("old_modeflags", r->element[2]->str);
+						change_data.old_modeflags = kv_parser.GetValueInt("old_modeflags");
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
 
-						change_data.new_limit = find_paramint("new_limit", r->element[2]->str);
+						change_data.new_limit = kv_parser.GetValueInt("new_limit");
 						
 
 						task->SendChannelModeUpdateToDrivers(client_info, channel_info, change_data);
-					} else if (strcmp(msg_type, "channel_update_usermode_flags") == 0) {
-						type = find_paramint("modeflags", r->element[2]->str);
+					} else if (strcmp(msg_type.c_str(), "channel_update_usermode_flags") == 0) {
+						type = kv_parser.GetValueInt("modeflags");
 						target_client_info = ClientInfoFromKVString(r->element[2]->str, "target");
 						client_info = ClientInfoFromKVString(r->element[2]->str, "from");
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
@@ -1073,53 +1080,56 @@ namespace Chat {
 						ChanClientModeChange client_mode_info;
 						client_mode_info.mode_flag = (EChanClientFlags)type;
 						client_mode_info.client_info = target_client_info;
-						client_mode_info.set = find_paramint("set_mode", r->element[2]->str);
+						client_mode_info.set = kv_parser.GetValueInt("set_mode");
 
 						change_data.client_modechanges.push_back(client_mode_info);
 
 						task->SendChannelModeUpdateToDrivers(client_info, channel_info, change_data);
 
-					} else if(strcmp(msg_type, "channel_update_topic") == 0) {
+					} else if(strcmp(msg_type.c_str(), "channel_update_topic") == 0) {
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
 						task->SendUpdateChannelTopicToDrivers(client_info, channel_info);
-					} else if(strcmp(msg_type, "set_channel_client_keys") == 0) {
-		    			if(!find_param("key_data", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE)) {
-		    					return;
+					} else if(strcmp(msg_type.c_str(), "set_channel_client_keys") == 0) {
+		    			if(!kv_parser.HasKey("key_data")) {
+		    				return;
 		    			}
+		    			msg = kv_parser.GetValue("key_data");
 						
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
 
-						OS::Base64StrToBin(msg, &out, len);
+						OS::Base64StrToBin(msg.c_str(), &out, len);
 
 						key_data = OS::KeyStringToMap(std::string((const char *)out));
 
 						task->SendSetChannelClientKeysToDrivers(client_info, channel_info, key_data);
 
 						free((void *)out);
-					} else if(strcmp(msg_type, "set_channel_keys") == 0) {
-		    			if(!find_param("key_data", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE)) {
-		    					return;
+					} else if(strcmp(msg_type.c_str(), "set_channel_keys") == 0) {
+		    			if(!kv_parser.HasKey("key_data")) {
+		    				return;
 		    			}
+		    			msg = kv_parser.GetValue("key_data");
 						
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
 
-						OS::Base64StrToBin(msg, &out, len);
+						OS::Base64StrToBin(msg.c_str(), &out, len);
 
 						key_data = OS::KeyStringToMap(std::string((const char *)out));
 
 						task->SendSetChannelKeysToDrivers(client_info, channel_info, key_data);
 
 						free((void *)out);
-					} else if(strcmp(msg_type, "user_quit") == 0) {
-		    			if(!find_param("reason", r->element[2]->str,(char *)&msg, CHAT_MAX_MESSAGE)) {
-		    					return;
+					} else if(strcmp(msg_type.c_str(), "user_quit") == 0) {
+		    			if(!kv_parser.HasKey("reason")) {
+		    				return;
 		    			}
+		    			msg = kv_parser.GetValue("reason");
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 
-						OS::Base64StrToBin(msg, &out, len);
+						OS::Base64StrToBin(msg.c_str(), &out, len);
 						task->SendUserQuitMessage(client_info, (const char *)out);
 						free((void *)out);
 					}
@@ -1142,38 +1152,41 @@ namespace Chat {
 		char data[CHAT_MAX_MESSAGE + 1];
 		std::ostringstream s;
 		s << prefix << "client_nick";
-		if(find_param(s.str().c_str(), (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.name = data;
+		OS::KVReader kv_parser(str);
+
+
+		if(kv_parser.HasKey(s.str())) {
+			ret.name = kv_parser.GetValue(s.str());
 		}
 		s.str("");
 
 		s << prefix << "client_user";
-		if(find_param(s.str().c_str(), (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.user = data;
+		if(kv_parser.HasKey(s.str())) {
+			ret.user = kv_parser.GetValue(s.str());
 		}
 		s.str("");
 
 		s << prefix << "client_realname";
-		if(find_param(s.str().c_str(), (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.realname = data;
+		if(kv_parser.HasKey(s.str())) {
+			ret.realname = kv_parser.GetValue(s.str());
 		}
 		s.str("");
 
 		s << prefix << "client_host";
-		if(find_param(s.str().c_str(), (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.hostname = data;
+		if(kv_parser.HasKey(s.str())) {
+			ret.hostname = kv_parser.GetValue(s.str());
 		}
 		s.str("");
 
 		s << prefix << "client_ip";
-		if(find_param(s.str().c_str(), (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.ip = OS::Address(data);
+		if(kv_parser.HasKey(s.str())) {
+			ret.ip = OS::Address(s.str().c_str());
 		}
 		s.str("");
 
 		s << prefix << "client_id";
-		if(find_param(s.str().c_str(), (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.client_id = atoi(data);
+		if(kv_parser.HasKey(s.str())) {
+			ret.client_id = kv_parser.GetValueInt(s.str());
 		}
 
 		return ret;
@@ -1195,35 +1208,43 @@ namespace Chat {
 	ChatChannelInfo ChatBackendTask::ChannelInfoFromKVString(const char *str) {
 		ChatChannelInfo ret;
 		char data[CHAT_MAX_MESSAGE + 1];
-		if(find_param("channel_name", (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.name = data;
+
+		OS::KVReader kv_parser(str);
+
+		if(kv_parser.HasKey("channel_name")) {
+			ret.name = kv_parser.GetValue("channel_name");
 		}
-		if(find_param("channel_topic_message", (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
+
+		if(kv_parser.HasKey("channel_topic_message")) {
 			uint8_t *out;
 			int len;
-			OS::Base64StrToBin(data, &out, len);
+			OS::Base64StrToBin(kv_parser.GetValue("channel_topic_message").c_str(), &out, len);
 			ret.topic = (const char *)out;
 			free((void *)out);
 		}
-		if(find_param("channel_topic_setby", (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.topic_setby = data;
+		if(kv_parser.HasKey("channel_topic_setby")) {
+			ret.topic_setby = kv_parser.GetValue("channel_topic_setby");
 		}
-		if(find_param("channel_topic_seton", (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.topic_seton = atoi(data);
+
+		if(kv_parser.HasKey("channel_topic_seton")) {
+			ret.topic_seton = kv_parser.GetValueInt("channel_topic_seton");
 		}
-		if(find_param("channel_id", (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.channel_id = atoi(data);
+
+		if(kv_parser.HasKey("channel_id")) {
+			ret.channel_id = kv_parser.GetValueInt("channel_id");
 		}
-		if(find_param("channel_modeflags", (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.modeflags = atoi(data);
+
+		if(kv_parser.HasKey("channel_modeflags")) {
+			ret.channel_id = kv_parser.GetValueInt("channel_modeflags");
 		}
-		if(find_param("channel_limit", (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.limit = atoi(data);
+
+		if(kv_parser.HasKey("channel_limit")) {
+			ret.limit = kv_parser.GetValueInt("channel_limit");
 		} else {
 			ret.limit = -1;
 		}
-		if(find_param("channel_password", (char *)str, (char *)&data, CHAT_MAX_MESSAGE)) {
-			ret.password = data;
+		if(kv_parser.HasKey("channel_password")) {
+			ret.password = kv_parser.GetValue("channel_password");
 		}
 		return ret;
 	}

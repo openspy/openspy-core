@@ -611,8 +611,6 @@ namespace Chat {
 				parse_channel_modes(params[2], addmask, removemask, std::back_inserter(bad_modes), params, password, limit, std::back_inserter(user_modechanges));
 				channel.name = target;
 				channel.channel_id = 0;
-
-				printf("%d user mode changes\n", user_modechanges.size());
 				ChatBackendTask::SubmitUpdateChannelModes(OnModeCmd_ChannelUpdateCallback, this, mp_driver, addmask, removemask, channel, password, limit, user_modechanges);
 			} else {
 			}
