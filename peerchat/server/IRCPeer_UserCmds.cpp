@@ -110,17 +110,14 @@ namespace Chat {
 			IRCMessageCallbackData *cb_data = (IRCMessageCallbackData *)extra;
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
+			std::ostringstream s;
 
 			if(!driver->HasPeer(peer)) {
-				delete cb_data;
-				return;
+				goto end_cleanup;
 			}
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
-				delete cb_data;
-				return;
+			if(irc_peer->send_callback_error(request, response)) {
+				goto end_cleanup;
 			}
-			std::ostringstream s;
 			if(response.client_info.client_id != 0) {
 				ChatBackendTask::getQueryTask()->flagPushTask();
 				ChatBackendTask::SubmitClientMessage(response.client_info.client_id, cb_data->message, cb_data->message_type, NULL, peer, driver);
@@ -128,6 +125,7 @@ namespace Chat {
 				ChatBackendTask::getQueryTask()->flagPushTask();
 				ChatBackendTask::SubmitChannelMessage(response.channel_info.channel_id, cb_data->message, cb_data->message_type, NULL, peer, driver);
 			}
+			end_cleanup:
 			delete cb_data;
 		}
 		EIRCCommandHandlerRet IRCPeer::handle_privmsg(std::vector<std::string> params, std::string full_params) {
@@ -177,8 +175,7 @@ namespace Chat {
 				return;
 			}
 			std::ostringstream s;
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
 				return;
 			}
 			if(response.client_info.name.size() > 0) {
@@ -208,8 +205,7 @@ namespace Chat {
 			if(!driver->HasPeer(peer)) {
 				return;
 			}
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
 				return;
 			}
 			if(response.client_info.name.size() > 0) {
@@ -275,8 +271,7 @@ namespace Chat {
 			if(!driver->HasPeer(peer)) {
 				goto end_error;
 			}
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
 				goto end_error;
 			}
 

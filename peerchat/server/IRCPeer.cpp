@@ -43,6 +43,8 @@ namespace Chat {
 			{"SETKEY", &IRCPeer::handle_setkey},
 			{"GETKEY", &IRCPeer::handle_getkey},
 
+			{"KICK", &IRCPeer::handle_kick},
+
 
 			//channel cmds
 			{"JOIN", &IRCPeer::handle_join},
@@ -144,6 +146,10 @@ namespace Chat {
 				case EIRCCommandHandlerRet_Unknown:
 					s << cmd_name << " :Unknown Command";
 					send_numeric(421, s.str(), true);
+				break;
+				case EIRCCommandHandlerRet_NotEnoughParams:
+					s << cmd_name << " :Not enough parameters";
+					send_numeric(461, s.str(), true);
 				break;
 				default:
 				break;
@@ -275,46 +281,56 @@ namespace Chat {
 		bool IRCPeer::is_channel_name(std::string name) {
 			return name[0] == '#';
 		}
-		void IRCPeer::send_callback_error(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response) {
+		bool IRCPeer::send_callback_error(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response) {
 			std::ostringstream s;
 			std::string name;
-			switch(response.error) {
-				case EChatBackendResponseError_NoUser_OrChan:
-				if(!request.query_name.length()) {
-					name = request.query_data.client_info.name;
-				} else {
-					name = request.query_name;
-				}
-				s << name << " :No such nick/channel";
-				send_numeric(401, s.str(), true);
-				break;
-				case EChatBackendResponseError_NoVoicePerms:
-				s << response.channel_info.name << " :You're not voifced";
-				send_numeric(482, s.str(), true);
-				break;
-				case EChatBackendResponseError_NoHOPPerms:
-				s << response.channel_info.name << ":You're not channel half operator";
-				send_numeric(482, s.str(), true);
-				break;
-				case EChatBackendResponseError_NoOPPerms:
-				s << response.channel_info.name << ":You're not channel operator";
-				send_numeric(482, s.str(), true);
-				break;
-				case EChatBackendResponseError_NoOwnerPerms:
-				s << response.channel_info.name << ":You're not channel owner";
-				send_numeric(482, s.str(), true);
-				break;
-				case EChatBackendResponseError_NickInUse:
-				s << response.channel_info.name << ":Nickname is already in use";
-				send_numeric(433, s.str(), true);
-				break;
-				case EChatBackendResponseError_BadPermissions:
-					s << response.channel_info.name << " :" << response.error_details;
+			std::pair<EChatBackendResponseError, std::string> p;
+			std::vector< std::pair<EChatBackendResponseError, std::string> >::const_iterator it = response.errors.begin();
+			bool ret = true;
+			while(it != response.errors.end()) {
+				p = *it;
+				switch(p.first) {
+
+					case EChatBackendResponseError_NoUser_OrChan:
+					if(!request.query_name.length()) {
+						name = request.query_data.client_info.name;
+					} else {
+						name = request.query_name;
+					}
+					s << name << " :No such nick/channel";
+					send_numeric(401, s.str(), true);
+					break;
+					case EChatBackendResponseError_NoVoicePerms:
+					s << response.channel_info.name << " :You're not voiced";
 					send_numeric(482, s.str(), true);
-				break;
-				case EChatBackendResponseError_NoChange:
-				break;
+					break;
+					case EChatBackendResponseError_NoHOPPerms:
+					s << response.channel_info.name << ":You're not channel half operator";
+					send_numeric(482, s.str(), true);
+					break;
+					case EChatBackendResponseError_NoOPPerms:
+					s << response.channel_info.name << ":You're not channel operator";
+					send_numeric(482, s.str(), true);
+					break;
+					case EChatBackendResponseError_NoOwnerPerms:
+					s << response.channel_info.name << ":You're not channel owner";
+					send_numeric(482, s.str(), true);
+					break;
+					case EChatBackendResponseError_NickInUse:
+					s << response.channel_info.name << ":Nickname is already in use";
+					send_numeric(433, s.str(), true);
+					break;
+					case EChatBackendResponseError_BadPermissions:
+						s << response.channel_info.name << " :" << p.second;
+						send_numeric(482, s.str(), true);
+					break;
+					case EChatBackendResponseError_NoChange:
+					default:
+					ret = false;
+					break;
+				}
 			}
+			return ret;
 		}
 		void IRCPeer::OnUserQuit(ChatClientInfo client, std::string quit_reason) {
 			std::ostringstream s;

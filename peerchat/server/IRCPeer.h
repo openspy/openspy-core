@@ -84,6 +84,7 @@ namespace Chat {
 		EIRCCommandHandlerRet handle_setckey(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_getckey(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_quit(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_kick(std::vector<std::string> params, std::string full_params);
 
 		//user cmd callbacks
 		static void OnNickCmd_InUseLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
@@ -114,7 +115,7 @@ namespace Chat {
 		void send_channel_topic(ChatChannelInfo channel);
 		void send_channel_modes(ChatChannelInfo channel);
 		void send_channel_names(ChatChannelInfo channel);
-		void send_callback_error(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response);
+		bool send_callback_error(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response);
 		void parse_channel_modes(std::string mode_str, uint32_t &add_mask, uint32_t &remove_mask, std::back_insert_iterator<std::vector<char> > invalid_modes, std::vector<std::string> params, std::string &password, int &limit, std::back_insert_iterator<std::vector<std::pair<std::string, ChanClientModeChange> > > user_modechanges);
 
 		void send_nonick_channel_error(std::string name);

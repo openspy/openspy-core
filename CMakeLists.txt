@@ -18,6 +18,10 @@ source_group("Legacy" FILES ${LEGACY_SOURCES})
 source_group("Server" FILES ${SERVER_SOURCES})
 source_group("socketlib" FILES ${EXTERNAL_SOURCES})
 
+if(UNIX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++0x")
+endif()
+
 add_subdirectory(core)
 add_subdirectory(serverbrowsing)
 add_subdirectory(qr)

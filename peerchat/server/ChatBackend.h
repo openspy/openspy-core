@@ -107,8 +107,8 @@ namespace Chat {
 		ChatClientInfo client_info;
 		ChatChanClientInfo chan_client_info;
 		std::vector<ChatChanClientInfo> m_channel_clients;
-		EChatBackendResponseError error;
-		std::string error_details;
+
+		std::vector< std::pair<EChatBackendResponseError, std::string> > errors;
 	} ChatQueryResponse;
 
 	typedef void (*ChatQueryCB)(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
@@ -249,7 +249,7 @@ namespace Chat {
 			void PerformSetChannelKeys(ChatQueryRequest task_params);
 			void PerformUserDelete(ChatQueryRequest task_params);
 
-			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, EChannelPermissionType type, std::string &details, EChatBackendResponseError &error, ChatQueryRequest task_params);
+			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, EChannelPermissionType type, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);

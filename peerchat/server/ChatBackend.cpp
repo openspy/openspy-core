@@ -3,6 +3,31 @@
 #include <sstream>
 #include <OS/KVReader.h>
 namespace Chat {
+
+	/*
+		Table for basic channel permissions
+			Missing: 
+				Chan User Modes(Cannot set someone to equal or above you)
+				Chan param modes(limit/key) - OP only
+				Kick/Invisible
+	*/
+	struct {
+		int flag;
+		const char *friendly_error;
+		EChanClientFlags required_flag;
+	} ModeFlagPermissions[] = {
+		{EChannelModeFlags_Private, "Private Mode", EChanClientFlags_HalfOp},
+		{EChannelModeFlags_Secret, "Secret Mode", EChanClientFlags_HalfOp},
+		{EChannelModeFlags_TopicOpOnly, "Topic Lock Mode", EChanClientFlags_HalfOp},
+		{EChannelModeFlags_NoOutsideMsgs, "No Outside Messages Mode", EChanClientFlags_HalfOp},
+		{EChannelModeFlags_Moderated, "Moderated Mode", EChanClientFlags_HalfOp},
+		{EChannelModeFlags_Auditormium, "Auditorium Mode", EChanClientFlags_Op},
+		{EChannelModeFlags_VOPAuditormium, "VOPAuditorium Mode", EChanClientFlags_Op},
+		{EChannelModeFlags_InviteOnly, "Invite Only Mode", EChanClientFlags_Op},
+		{EChannelModeFlags_StayOpened, "Stay Open Mode", EChanClientFlags_Owner},
+		{EChannelModeFlags_OnlyOwner, "Only Owner Mode", EChanClientFlags_Owner},
+	};
+	
 	const char *mp_pk_name = "CLIENTID";
 	const char *mp_chan_pk_name = "CHANID";
 	const char *chat_messaging_channel = "chat.messaging";
@@ -106,14 +131,13 @@ namespace Chat {
 	void ChatBackendTask::PerformFind_OrCreateChannel(ChatQueryRequest task_params, bool no_create) {
 		struct Chat::_ChatQueryResponse resp;
 		resp.channel_info =  GetChannelByName(task_params.query_name);
-		resp.error = EChatBackendResponseError_NoError;
 
 		if(resp.channel_info.channel_id == 0 && !no_create) {
 			resp.channel_info = CreateChannel(task_params.query_name);
 		}
 
 		if(resp.channel_info.channel_id == 0) {
-			resp.error = EChatBackendResponseError_NoUser_OrChan;
+			resp.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUser_OrChan, ""));
 		}
 		resp.client_info.client_id = 0;
 		task_params.callback(task_params, resp, task_params.peer, task_params.extra);
@@ -137,9 +161,7 @@ namespace Chat {
 		response.client_info = info;
 
 		if(client_id == 0) {
-			response.error = EChatBackendResponseError_NoUser_OrChan;
-		} else {
-			response.error = EChatBackendResponseError_NoError;
+			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUser_OrChan, ""));
 		}
 		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 		freeReplyObject(reply);
@@ -315,11 +337,9 @@ namespace Chat {
 		response.client_info = client_info;
 		response.channel_info = channel;
 		if(client_info.client_id == 0 || channel.channel_id == 0) {
-			response.error = EChatBackendResponseError_NoUser_OrChan;
+			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUser_OrChan, ""));
 			goto end_error;
 		}
-		
-		response.error = EChatBackendResponseError_NoError;
 		end_error:
 		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 	}
@@ -346,7 +366,7 @@ namespace Chat {
 		}
 
 		if(channel_info.channel_id == 0) {
-			response.error = EChatBackendResponseError_NoUser_OrChan;
+			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUser_OrChan, ""));
 			goto end_error;
 		}
 
@@ -355,7 +375,8 @@ namespace Chat {
 		
 		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
 		//test permissions
-		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, response.error_details, response.error, task_params)) {
+
+		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, task_params, response)) {
 			goto end_error;
 		}
 		//
@@ -427,8 +448,6 @@ namespace Chat {
 			user_modechanges_it++;
 		}
 
-		response.error = EChatBackendResponseError_NoError;
-
 		end_error:
 
 		task_params.callback(task_params, response, task_params.peer, task_params.extra);
@@ -464,20 +483,18 @@ namespace Chat {
 		client_info = task_params.peer->getClientInfo();
 
 		if(channel_info.channel_id == 0) {
-			response.error = EChatBackendResponseError_NoUser_OrChan;
+			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUser_OrChan, ""));
 			goto end_error;
 		}
 
 		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
 		//test permissions
-		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, response.error_details, response.error, task_params)) {
+		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, task_params, response)) {
 			goto end_error;
 		}
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic \"%s\"", channel_info.channel_id, task_params.message.c_str()));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic_seton %d", channel_info.channel_id, time(NULL)));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic_setby %s", channel_info.channel_id, client_info.name.c_str()));
-
-		response.error = EChatBackendResponseError_NoError;
 
 		channel_info.topic = task_params.message;
 		
@@ -664,7 +681,7 @@ namespace Chat {
 		
 		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
 		//test permissions
-		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, response.error_details, response.error, task_params)) {
+		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, task_params, response)) {
 			goto end_error;
 		}
 
@@ -1320,12 +1337,16 @@ namespace Chat {
 			it++;
 		}
 	}
-	bool ChatBackendTask::TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, EChannelPermissionType type, std::string &details, EChatBackendResponseError &error, ChatQueryRequest task_params) {
+	bool ChatBackendTask::TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, EChannelPermissionType type, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response) {
+		EChatBackendResponseError error;
+		std::string details;
 		if(type == EPermissionType_MustBeOnChannel) {
 			error = EChatBackendResponseError_NotOnChannel;
 		} else {
 			details = "Required Mode - Some error msg";
 			error = EChatBackendResponseError_BadPermissions;
+
+			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(error, details));
 		}
 		return false;
 	}

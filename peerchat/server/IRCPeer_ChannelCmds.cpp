@@ -280,8 +280,9 @@ namespace Chat {
 					case 'k':
 						if(params.size() <= param_idx) {
 							printf("Can't get param mode\n");
+						} else {
+							password = params[param_idx++].c_str();
 						}
-						password = params[param_idx++].c_str();
 					break;
 					case 'l':
 
@@ -520,8 +521,8 @@ namespace Chat {
 				return;
 			}
 
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
+				return;
 			}
 		}
 		void IRCPeer::OnModeCmd_ShowChannelModes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
@@ -531,8 +532,7 @@ namespace Chat {
 			if(!driver->HasPeer(peer)) {
 				return;
 			}
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
 				return;
 			}
 			int set_flags = response.channel_info.modeflags;
@@ -624,8 +624,7 @@ namespace Chat {
 				return;
 			}
 
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
 				return;
 			}
 		}
@@ -714,8 +713,7 @@ namespace Chat {
 				goto end_cleanup;
 			}
 
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
 				goto end_cleanup;
 			}
 			ChatBackendTask::getQueryTask()->flagPushTask();
@@ -747,8 +745,7 @@ namespace Chat {
 				goto end_cleanup;
 			}
 
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
 				goto end_cleanup;
 			}
 			search_data_cpy = strdup(cb_data->search_data->c_str());
@@ -807,8 +804,7 @@ namespace Chat {
 				goto end_cleanup;
 			}
 
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
 				goto end_cleanup;
 			}
 
@@ -874,7 +870,7 @@ namespace Chat {
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
 			std::string *search_params = (std::string *)extra;
 
-			char *search_data_cpy;
+			char *search_data_cpy = NULL;
 			char key_name[256];
 			int i = 0;
 
@@ -888,8 +884,7 @@ namespace Chat {
 				goto end_cleanup;
 			}
 
-			if(response.error != EChatBackendResponseError_NoError) {
-				irc_peer->send_callback_error(request, response);
+			if(irc_peer->send_callback_error(request, response)) {
 				goto end_cleanup;
 			}
 
@@ -908,6 +903,8 @@ namespace Chat {
 			irc_peer->send_numeric(704, s.str(), true);
 
 			end_cleanup:
+			if(search_data_cpy)
+				free((void *)search_data_cpy);
 			delete cb_data->search_data;
 			delete cb_data->target_user;
 			free((void *)cb_data);
@@ -940,6 +937,9 @@ namespace Chat {
 
 
 			ChatBackendTask::SubmitFindChannel(OnGetChanKey_FindChannelCallback, this, cb_data, target);
+			return EIRCCommandHandlerRet_NoError;
+		}
+		EIRCCommandHandlerRet IRCPeer::handle_kick(std::vector<std::string> params, std::string full_params) {
 			return EIRCCommandHandlerRet_NoError;
 		}
 }
