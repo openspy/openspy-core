@@ -26,7 +26,7 @@
 
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
-
+#include <OS/KVReader.h>
 
 /*
 	1. implement invisible join
@@ -684,24 +684,15 @@ namespace Chat {
 			} else {
 				return EIRCCommandHandlerRet_NotEnoughParams;	
 			}
-			int i = 0;
-			char *set_data_cpy = strdup(set_data.c_str());
-			char data[256];
-			std::string key, value;
-			while(find_param(i++, set_data_cpy, data, sizeof(data))) {
-				if((i % 2)) {
-					key = data;
-				} else {
-					value = data;
-				}
-				if(value.length()) {
-					set_data_map[key] = value;
-					value = "";
-					key = "";
-				}
+			OS::KVReader kv_parser(set_data);
+			std::pair<std::unordered_map<std::string, std::string>::const_iterator, std::unordered_map<std::string, std::string>::const_iterator> it_pair = kv_parser.GetHead();
+			std::unordered_map<std::string, std::string>::const_iterator it = it_pair.first;
+			while(it != it_pair.second) {
+				std::pair<std::string, std::string> p = *it;
+				set_data_map[p.first] = p.second;
+				it++;
 			}
 			ChatBackendTask::SubmitSetChannelKeys(NULL, this, mp_driver, channel, target_user, set_data_map);
-			free((void *)set_data_cpy);
 			return EIRCCommandHandlerRet_NoError;
 		}
 		void IRCPeer::OnGetCKeyCmd_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
