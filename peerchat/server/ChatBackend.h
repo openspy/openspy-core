@@ -139,8 +139,7 @@ namespace Chat {
 		EChatQueryRequestType_GetChanProps, //get all chan props
 		EChatQueryRequestType_GetUserModes, //get all saved user modes
 		EChatQueryRequestType_KillUser,
-		EChatQueryRequestType_UserAuth,
-		EChatQueryRequestType_UserOperAuth,
+		EChatQueryRequestType_GetChatOperFlags,
 	};
 
 	enum EChatMessageType {
@@ -227,8 +226,7 @@ namespace Chat {
 			static void SubmitSetClientKeys(ChatQueryCB cb, Peer *peer, void *extra, int client_id, const std::map<std::string, std::string> set_data_map);
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, const std::map<std::string, std::string> set_data_map);
 			static void SubmitClientDelete(ChatQueryCB cb, Peer *peer, void *extra, std::string reason);
-
-			static void SubmitGetChatOperFlags(ChatQueryCB cb, Peer *peer, void *extra, std::string reason);
+			static void SubmitGetChatOperFlags(int profileid, ChatQueryCB cb, Peer *peer, void *extra);
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -252,6 +250,7 @@ namespace Chat {
 			void PerformSetClientKeys(ChatQueryRequest task_params);
 			void PerformSetChannelKeys(ChatQueryRequest task_params);
 			void PerformUserDelete(ChatQueryRequest task_params);
+			void PerformGetChatOperFlags(ChatQueryRequest task_params);
 
 			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response);
 			int GetUserChanPermissionScore(int client_flags);

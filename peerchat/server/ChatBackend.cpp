@@ -715,6 +715,18 @@ namespace Chat {
 			task_params.callback(task_params, response, task_params.peer, task_params.extra);
 		}
 	}
+	void ChatBackendTask::SubmitGetChatOperFlags(int profileid, ChatQueryCB cb, Peer *peer, void *extra) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_GetChatOperFlags;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_data.client_info.profileid = profileid;
+		getQueryTask()->AddRequest(req);
+	}
+	void ChatBackendTask::PerformGetChatOperFlags(ChatQueryRequest task_params) {
+		
+	}
 	ChatChanClientInfo ChatBackendTask::GetChanClientInfo(int chan_id, int client_id) {
 		ChatChanClientInfo ret;
 		redisReply *reply;
@@ -989,6 +1001,9 @@ namespace Chat {
 						break;
 						case EChatQueryRequestType_UserDelete:
 							task->PerformUserDelete(task_params);
+						break;
+						case EChatQueryRequestType_GetChatOperFlags:
+						task->PerformGetChatOperFlags(task_params);
 						break;
 					}
 					if(task->m_flag_push_task) {

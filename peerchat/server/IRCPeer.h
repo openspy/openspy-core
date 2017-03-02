@@ -115,6 +115,7 @@ namespace Chat {
 
 		//auth callbacks
 		static void m_nick_email_auth_oper_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id);
+		static void OnOperCmd_GetOperFlags(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//channel misc
 		void send_channel_topic(ChatChannelInfo channel);

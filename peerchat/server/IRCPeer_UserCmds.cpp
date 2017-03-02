@@ -324,14 +324,18 @@ namespace Chat {
 			return EIRCCommandHandlerRet_NoError;
 		}
 
-		//static void TryAuthNickEmail(std::string nick, std::string email, 
-		//int partnercode, std::string pass, bool make_session, AuthCallback cb, 
-		//void *extra, int operation_id);
+		void IRCPeer::OnOperCmd_GetOperFlags(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+
+		}
 
 		void IRCPeer::m_nick_email_auth_oper_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
+			ChatCallbackContext *cb_ctx = (ChatCallbackContext *)extra;
 			printf("Got profileid: %d\n", profile.id);
 
-			ChatBackendTask::SubmitGetChatOperFlags(profile.id, OnOperCmd_GetOperFlags, (Peer *)this, mp_driver);
+
+			ChatBackendTask::SubmitGetChatOperFlags(profile.id, OnOperCmd_GetOperFlags, (Peer *)cb_ctx->peer, cb_ctx->driver);
+
+			delete cb_ctx;
 		}
 
 		EIRCCommandHandlerRet IRCPeer::handle_oper(std::vector<std::string> params, std::string full_params) {
