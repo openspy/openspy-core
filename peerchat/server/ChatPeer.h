@@ -5,16 +5,27 @@
 #include "ChatBackend.h"
 #include <vector>
 
+#include <OS/Auth.h>
+#include <OS/Search/Profile.h>
+#include <OS/Search/User.h>
+
 #define CHAT_MAX_MESSAGE 600
 
 namespace Chat {
 	class Driver;
 	class Server;
+	class Peer;
 
 	typedef struct {
 		int m_op_hits;
 		int m_hits;
 	} ChannelHitCounts;
+
+	typedef struct {
+		Chat::Driver *driver;
+		Chat::Peer *peer;
+		int extra;
+	} ChatCallbackContext;
 
 	class Peer {
 	public:
@@ -64,6 +75,10 @@ namespace Chat {
 		OS::CMutex *mp_mutex;
 
 		std::map<int, ChannelHitCounts> m_client_channel_hits; //number of instances a user sees a client(how many channels they share) - [client_id].m_hits++, m_op_hits = num hits on channels you are op of
+
+		OS::Profile m_profile;
+		OS::User m_user;
+		int m_operflags;
 	private:
 
 

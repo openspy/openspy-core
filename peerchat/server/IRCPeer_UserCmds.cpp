@@ -23,9 +23,7 @@
 #include <algorithm>
 #include <iomanip>
 
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/buffwriter.h>
-
+#include <OS/Auth.h>
 
 namespace Chat {
 		void IRCPeer::OnNickCmd_InUseLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
@@ -180,13 +178,9 @@ namespace Chat {
 			}
 			if(response.client_info.name.size() > 0) {
 				s.str("");
-				s << response.client_info.name << " " << response.client_info.user  << " " << response.client_info.hostname << " * :" << response.client_info.realname << std::endl;
+				s << response.client_info.name << " " << response.client_info.user  << " " << response.client_info.hostname << " * :" << response.client_info.realname;
 				irc_peer->send_numeric(311, s.str(), true);
-			} else {
-				//
-				irc_peer->send_nonick_channel_error(request.query_name);
 			}
-
 			s.str("");
 			s << request.query_name << " :End of WHOIS list";
 			irc_peer->send_numeric(318, s.str(), true);
@@ -327,6 +321,42 @@ namespace Chat {
 				m_delete_flag = true;
 				m_timeout_flag = false;
 			}
-			return EIRCCommandHandlerRet_NoError;	
+			return EIRCCommandHandlerRet_NoError;
+		}
+
+		//static void TryAuthNickEmail(std::string nick, std::string email, 
+		//int partnercode, std::string pass, bool make_session, AuthCallback cb, 
+		//void *extra, int operation_id);
+
+		void IRCPeer::m_nick_email_auth_oper_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
+			printf("Got profileid: %d\n", profile.id);
+
+			ChatBackendTask::SubmitGetChatOperFlags(profile.id, OnOperCmd_GetOperFlags, (Peer *)this, mp_driver);
+		}
+
+		EIRCCommandHandlerRet IRCPeer::handle_oper(std::vector<std::string> params, std::string full_params) {
+			std::string email, pass, nick;
+
+			if(params.size() < 3) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			email = params[1];
+			nick = params[2];
+			pass = params[3];
+
+			printf("Oper: %s - %s - %s\n",email.c_str(), nick.c_str(), pass.c_str());
+
+			//static void TryAuthNickEmail(std::string nick, 
+			//std::string email, int partnercode, std::string pass, 
+			//bool make_session, AuthCallback cb, void *extra,
+			// int operation_id);
+
+			ChatCallbackContext *cb_ctx = new ChatCallbackContext;
+			cb_ctx->peer = this;
+			cb_ctx->driver = mp_driver;
+
+			OS::AuthTask::TryAuthNickEmail(nick, email, m_partnercode, pass, false, m_nick_email_auth_oper_cb, cb_ctx, 0);
+
+			return EIRCCommandHandlerRet_NoError;
 		}
 }

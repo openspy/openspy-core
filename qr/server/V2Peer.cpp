@@ -133,7 +133,7 @@ namespace QR {
 			SendPacket((uint8_t*)buff, len);
 	}
 	void V2Peer::handle_heartbeat(char *buff, int len) {
-		int i = 0;
+		unsigned int i = 0;
 		uint8_t *x;
 
 		std::map<std::string, std::string> server_keys;
@@ -178,12 +178,12 @@ namespace QR {
 				num_keys++;
 				if(buff[0] == 0) break;
 			}
-			int player=0,num_keys_t = num_keys,num_values_t = num_values*num_keys;
+			unsigned int player=0,num_keys_t = num_keys,num_values_t = num_values*num_keys;
 			i = 0;
 			BufferReadByte((uint8_t**)&buff,&len);
 			while(num_values_t--) {
 				std::string name = nameValueList.at(i);
-				bool is_team = false;
+
 				x = BufferReadNTS((uint8_t **)&buff,&len);	
 
 				if(isTeamString(name.c_str())) {

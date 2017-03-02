@@ -28,26 +28,26 @@ namespace OS {
 	KVReader::~KVReader() {
 
 	}
-	std::string KVReader::GetKey(int n) {
-		return GetPair(n).first;
+	std::string KVReader::GetKeyByIdx(int n) {
+		return GetPairByIdx(n).first;
 
 	}
-	std::string KVReader::GetValue(int n) {
-		return GetPair(n).second;
+	std::string KVReader::GetValueByIdx(int n) {
+		return GetPairByIdx(n).second;
 	}
-	int 		KVReader::GetValueInt(int n) {
-
+	int 		KVReader::GetValueIntByIdx(int n) {
+		return atoi(GetValueByIdx(n).c_str());
 	}
-	std::pair<std::string, std::string> KVReader::GetPair(int n) {
+	std::pair<std::string, std::string> KVReader::GetPairByIdx(int n) {
 		n = GetIndex(n);
-		if(m_kv_map.size() < n)
+		if(m_kv_map.size() < (unsigned int)n)
 			return std::pair<std::string, std::string>("", "");
 		std::unordered_map<std::string, std::string>::const_iterator it = m_kv_map.begin();
 		std::advance(it, n);
 
 		return *it;
 	}
-	std::string 						KVReader::GetValue(std::string key) {
+	std::string KVReader::GetValue(std::string key) {
 		std::unordered_map<std::string, std::string>::const_iterator it = m_kv_map.find(key);
 		if(it == m_kv_map.end()) {
 			return "";
@@ -55,7 +55,7 @@ namespace OS {
 
 		return (*it).second;
 	}
-	int 								KVReader::GetValueInt(std::string key) {
+	int	KVReader::GetValueInt(std::string key) {
 		std::unordered_map<std::string, std::string>::const_iterator it = m_kv_map.find(key);
 		if(it == m_kv_map.end()) {
 			return 0;

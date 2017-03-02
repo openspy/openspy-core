@@ -6,16 +6,19 @@
 #include <iterator>
 /*
 	This is not thread safe!!
+
+	Because of:
+		GetHead
 */
 namespace OS {
 	class KVReader {
 	public:
 		KVReader(std::string kv_pair, char delim = '\\');
 		~KVReader();
-		std::string GetKey(int n);
-		std::string GetValue(int n);
-		int 		GetValueInt(int n);
-		std::pair<std::string, std::string> GetPair(int n);
+		std::string GetKeyByIdx(int n);
+		std::string GetValueByIdx(int n);
+		int 		GetValueIntByIdx(int n);
+		std::pair<std::string, std::string> GetPairByIdx(int n);
 		std::string 						GetValue(std::string key);
 		int 								GetValueInt(std::string key);
 		std::pair<std::unordered_map<std::string, std::string>::const_iterator, std::unordered_map<std::string, std::string>::const_iterator> GetHead() const;

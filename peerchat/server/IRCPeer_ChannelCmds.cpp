@@ -93,9 +93,6 @@ namespace Chat {
 		void IRCPeer::OnJoinCmd_FindCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
 
 			Chat::Driver *driver = (Chat::Driver *)extra;
-			IRCPeer *irc_peer = (IRCPeer *)peer;
-
-
 			if(!driver->HasPeer(peer)) {
 				return;
 			}
@@ -239,9 +236,9 @@ namespace Chat {
 		void IRCPeer::parse_channel_modes(std::string mode_str, uint32_t &add_mask, uint32_t &remove_mask, std::back_insert_iterator<std::vector<char> > invalid_modes, std::vector<std::string> params, std::string &password, int &limit, std::back_insert_iterator<std::vector<std::pair<std::string, ChanClientModeChange> > > user_modechanges) {
 			bool add = true;
 			uint32_t flag;
-			int param_idx = 3;
+			unsigned int param_idx = 3;
 			std::pair<std::string, ChanClientModeChange> p;
-			for(int i=0;i<mode_str.length();i++) {
+			for(unsigned int i=0;i<mode_str.length();i++) {
 				flag = 0;
 				switch(mode_str[i]) {
 					case '-':
@@ -395,13 +392,16 @@ namespace Chat {
 			while(clientmodes_it != change_data.client_modechanges.end()) {
 				ChanClientModeChange user_changedata = *clientmodes_it;
 				if(user_changedata.set) {
-					switch(user_changedata.mode_flag) {
+					switch((EChanClientFlags)user_changedata.mode_flag) {
 						case EChanClientFlags_Owner:
 						case EChanClientFlags_Op:
 							mode_add_str << "o";
 						break;
 						case EChanClientFlags_Voice:
 							mode_add_str << "v";
+						break;
+						case EChanClientFlags_None:
+						default:
 						break;
 					}
 				}
@@ -460,6 +460,9 @@ namespace Chat {
 						break;
 						case EChanClientFlags_Voice:
 							mode_del_str << "v";
+						break;
+						case EChanClientFlags_None:
+						default:
 						break;
 					}
 				}
@@ -720,17 +723,15 @@ namespace Chat {
 			GetCKeyData *cb_data = (GetCKeyData *)extra;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
-			std::string *search_params = (std::string *)extra;
-
-			char *search_data_cpy;
-			char key_name[256];
-			int i = 0;
 
 			std::ostringstream result_oss, end_oss;
 			
 			std::ostringstream s;
 
 			std::map<std::string, std::string>::const_iterator it;
+
+			std::vector<std::string> kv_search_vec = OS::KeyStringToVector(cb_data->search_data->c_str());
+			std::vector<std::string>::iterator kv_search_it = kv_search_vec.begin();
 
 			if(!driver->HasPeer(peer)) {
 				goto end_cleanup;
@@ -739,15 +740,18 @@ namespace Chat {
 			if(irc_peer->send_callback_error(request, response)) {
 				goto end_cleanup;
 			}
-			search_data_cpy = strdup(cb_data->search_data->c_str());
-			
-			while(find_param(i++, search_data_cpy, key_name, sizeof(key_name))) {
-					it = response.chan_client_info.custom_keys.find(key_name);
+
+
+			while(kv_search_it != kv_search_vec.end()) {
+				std::string val = *kv_search_it;
+				it = response.chan_client_info.custom_keys.find(val);
 					result_oss << "\\";
 					if(it != response.chan_client_info.custom_keys.end()) {
 						result_oss << (*it).second;
 					}
+				kv_search_it++;
 			}
+
 			s << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << response.client_info.name << " " << cb_data->response_identifier << " :" << result_oss.str();
 
 			irc_peer->send_numeric(702, s.str(), true);
@@ -756,8 +760,6 @@ namespace Chat {
 
 			end_oss << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << cb_data->response_identifier << " :End of GETCKEY";
 			irc_peer->send_numeric(703, end_oss.str(), true);
-
-			free((void *)search_data_cpy);
 
 			end_cleanup:
 			delete cb_data->search_data;
@@ -789,7 +791,6 @@ namespace Chat {
 			GetCKeyData *cb_data = (GetCKeyData *)extra;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
-			std::string *search_params = (std::string *)extra;
 
 			if(!driver->HasPeer(peer)) {
 				goto end_cleanup;
@@ -859,17 +860,15 @@ namespace Chat {
 			GetCKeyData *cb_data = (GetCKeyData *)extra;
 			IRCPeer *irc_peer = (IRCPeer *)peer;
 			Chat::Driver *driver = (Chat::Driver *)cb_data->driver;
-			std::string *search_params = (std::string *)extra;
-
-			char *search_data_cpy = NULL;
-			char key_name[256];
-			int i = 0;
 
 			std::ostringstream result_oss, end_oss;
 			
 			std::ostringstream s;
 
 			std::map<std::string, std::string>::const_iterator it;
+
+			std::vector<std::string> kv_search_vec = OS::KeyStringToVector(cb_data->search_data->c_str());
+			std::vector<std::string>::iterator kv_search_it = kv_search_vec.begin();
 
 			if(!driver->HasPeer(peer)) {
 				goto end_cleanup;
@@ -879,14 +878,14 @@ namespace Chat {
 				goto end_cleanup;
 			}
 
-			search_data_cpy = strdup(cb_data->search_data->c_str());
-
-			while(find_param(i++, search_data_cpy, key_name, sizeof(key_name))) {
-					it = response.channel_info.custom_keys.find(key_name);
+			while(kv_search_it != kv_search_vec.end()) {
+				std::string val = *kv_search_it;
+				it = response.chan_client_info.custom_keys.find(val);
 					result_oss << "\\";
-					if(it != response.channel_info.custom_keys.end()) {
+					if(it != response.chan_client_info.custom_keys.end()) {
 						result_oss << (*it).second;
 					}
+				kv_search_it++;
 			}
 
 			s << irc_peer->m_client_info.name << " " << response.channel_info.name << " " << cb_data->response_identifier << " :" << result_oss.str();
@@ -894,8 +893,6 @@ namespace Chat {
 			irc_peer->send_numeric(704, s.str(), true);
 
 			end_cleanup:
-			if(search_data_cpy)
-				free((void *)search_data_cpy);
 			delete cb_data->search_data;
 			delete cb_data->target_user;
 			free((void *)cb_data);

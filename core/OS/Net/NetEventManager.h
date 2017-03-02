@@ -5,7 +5,7 @@
 class INetEventManager {
 	public:
 		INetEventManager();
-		~INetEventManager();
+		virtual ~INetEventManager();
 		virtual void run() = 0;
 		void addNetworkDriver(INetDriver *driver);
 		void flagExit();

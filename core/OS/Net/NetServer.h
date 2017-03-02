@@ -7,7 +7,7 @@
 class INetServer {
 public:
 	INetServer();
-	~INetServer();
+	virtual ~INetServer();
 	virtual void init() = 0;
 	virtual void tick(fd_set *fdset = NULL);
 	virtual void shutdown() = 0;

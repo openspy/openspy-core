@@ -23,6 +23,10 @@ namespace Chat {
 		m_client_info.realname = "";
 		m_client_info.hostname = "*";
 
+		m_operflags = 0;
+		m_user.id = 0;
+		m_profile.id = 0;
+
 		mp_mutex = OS::CreateMutex();
 
 		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());

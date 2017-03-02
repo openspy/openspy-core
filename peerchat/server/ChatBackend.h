@@ -48,6 +48,8 @@ namespace Chat {
 		OS::Address ip;
 
 		std::map<std::string, std::string> custom_keys;
+
+		int profileid;
 	} ChatClientInfo;
 
 	enum EChanClientFlags {
@@ -225,6 +227,8 @@ namespace Chat {
 			static void SubmitSetClientKeys(ChatQueryCB cb, Peer *peer, void *extra, int client_id, const std::map<std::string, std::string> set_data_map);
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, const std::map<std::string, std::string> set_data_map);
 			static void SubmitClientDelete(ChatQueryCB cb, Peer *peer, void *extra, std::string reason);
+
+			static void SubmitGetChatOperFlags(ChatQueryCB cb, Peer *peer, void *extra, std::string reason);
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -249,7 +253,8 @@ namespace Chat {
 			void PerformSetChannelKeys(ChatQueryRequest task_params);
 			void PerformUserDelete(ChatQueryRequest task_params);
 
-			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, EChannelPermissionType type, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response);
+			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response);
+			int GetUserChanPermissionScore(int client_flags);
 
 
 			ChatChannelInfo GetChannelByName(std::string name);
@@ -287,6 +292,8 @@ namespace Chat {
 			OS::CThread *mp_async_thread;
 
 			static ChatBackendTask *m_task_singleton;
+
+			std::map<EChanClientFlags, std::string> m_permission_name_map;
 	};
 };
 

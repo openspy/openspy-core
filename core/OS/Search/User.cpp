@@ -83,14 +83,14 @@ namespace OS {
 		//build jwt
 		jwt_t *jwt;
 		jwt_new(&jwt); 
-		const char *server_response = NULL;
 		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_USERMGR_KEY, strlen(OPENSPY_USERMGR_KEY));
 		jwt_add_grants_json(jwt, json_data);
 		char *jwt_encoded = jwt_encode_str(jwt);
 
 		CURL *curl = curl_easy_init();
 		CURLcode res;
-		bool success = false;
+		EUserResponseType resp_type = EUserResponseType_Success;
+
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_USERMGR_URL);
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
@@ -119,9 +119,9 @@ namespace OS {
 						OS::User user = OS::LoadUserFromJson(user_obj);
 						results.push_back(user);
 					}
-					success = true;
+					resp_type = EUserResponseType_Success;
 				} else {
-					success = false;
+					resp_type = EUserResponseType_GenericError;
 				}
 			}
 		}
@@ -140,7 +140,7 @@ namespace OS {
 			free((void *)jwt_encoded);
 
 		if(request.callback != NULL)
-			request.callback(EUserResponseType_Success, results, request.extra);
+			request.callback(resp_type, results, request.extra);
 	}
 
 	void *UserSearchTask::TaskThread(CThread *thread) {

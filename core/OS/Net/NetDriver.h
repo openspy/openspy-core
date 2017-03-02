@@ -5,7 +5,7 @@ class INetServer;
 class INetDriver {
 public:
 	INetDriver(INetServer *server);
-	~INetDriver();
+	virtual ~INetDriver();
 	/*
 		Check for incoming data, etc
 	*/

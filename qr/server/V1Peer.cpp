@@ -16,6 +16,7 @@
 #include <OS/legacy/helpers.h>
 
 #include <sstream>
+#include <OS/KVReader.h>
 
 namespace QR {
 	V1Peer::V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver,address_info, sd) {
@@ -27,8 +28,7 @@ namespace QR {
 		m_query_state = EV1_CQS_Complete;
 		m_pushed_server = false;
 
-		m_server_info.m_address.port = Socket::htons(m_address_info.sin_port);
-		m_server_info.m_address.ip = Socket::htonl(m_address_info.sin_addr.s_addr);
+		m_server_info.m_address = OS::Address(m_address_info);
 
 		gettimeofday(&m_last_recv, NULL);
 		gettimeofday(&m_last_ping, NULL);
@@ -59,13 +59,16 @@ namespace QR {
 			return;
 		}
 
-		char command[32];
+		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
+
+		std::string command = data_parser.GetValueByIdx(0);
+
+
 		//gettimeofday(&m_last_recv, NULL); //not here due to spoofing
-		if(find_param(0, recvbuf,(char *)&command, sizeof(command))) {
-		}
-		if(strcmp(command,"heartbeat") == 0) {
+
+		if(command.compare("heartbeat") == 0) {
 			handle_heartbeat(recvbuf, len);
-		} else if(strcmp(command, "echo") == 0) {
+		} else if(command.compare("echo") == 0) {
 			handle_echo(recvbuf, len);
 		} else {
 			if(m_query_state != EV1_CQS_Complete) {
@@ -87,55 +90,43 @@ namespace QR {
 
 	}
 	void V1Peer::parse_rules(char *recvbuf, int len) {
-		int i = 0;
-		char data[KV_MAX_LEN + 1];
-
-		std::string key, value;
-
-		while(find_param(i++,recvbuf, (char *)&data, sizeof(data))) {
-			if((i % 2) != 0) {
-				key = std::string(data);
-			} else {
-				value = std::string(data);
-				m_server_info.m_keys[key] = value;
-			}
-
-			if(key.compare("final") == 0)
-				break;
-		}
+		m_server_info.m_keys = OS::KeyStringToMap(recvbuf);
 	}
 	void V1Peer::parse_players(char *recvbuf, int len) {
-		int i = 0;
-		char data[KV_MAX_LEN + 1];
 
-		std::string key, value;
+		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
 
-		m_server_info.m_player_keys.clear();
+		std::pair<std::unordered_map<std::string, std::string>::const_iterator, std::unordered_map<std::string, std::string>::const_iterator> it_pair = data_parser.GetHead();
+		std::unordered_map<std::string, std::string>::const_iterator it = it_pair.first;
+		while(it != it_pair.second) {
 
-		while(find_param(i++,recvbuf, (char *)&data, sizeof(data))) {
-			if((i % 2) != 0) {
-				key = std::string(data);
-			} else {
-				value = std::string(data);
-				std::string::size_type index_seperator = key.rfind('_');
-				int index = 0;
-				if (index_seperator != std::string::npos) {
-					index = atoi(key.substr(index_seperator+1).c_str());
-					m_server_info.m_player_keys[key.substr(0,index_seperator+1)].push_back(std::string(value));
-				}
+			std::pair<std::string, std::string> p = *it;
+			std::string key, value;
+			key = p.first;
+			value = p.second;
+
+			std::string::size_type index_seperator = p.first.rfind('_');
+			
+			if (index_seperator != std::string::npos) {
+				m_server_info.m_player_keys[p.first.substr(0,index_seperator+1)].push_back(p.second);
 			}
 
-			if(key.compare("final") == 0)
+			if(p.first.compare("final") == 0)
 				break;
+			it++;
 		}
 	}
 	void V1Peer::handle_ready_query_state(char *recvbuf, int len) {
 		std::ostringstream s;
-		char challenge[32];
-		if(!find_param("echo",(char *)recvbuf, (char *)&challenge,sizeof(challenge))) {
+		std::string challenge;
+
+		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
+
+		if(!data_parser.HasKey("echo")) {
 			send_error(true, "Missing echo param in query response");
 			return;
 		} else {
+			challenge = data_parser.GetValue("echo");
 			if(strcmp(OS::strip_whitespace(challenge).c_str(), (char *)&m_challenge)) {
 				send_error(true, "incorrect challenge response in query response");
 				return;
@@ -164,10 +155,8 @@ namespace QR {
 				parse_players(recvbuf, len);
 				if(!m_pushed_server) {
 					m_pushed_server = true;
-					printf("Push server\n");
 					MM::PushServer(&m_server_info, true);	
 				} else {
-					printf("update server\n");
 					MM::UpdateServer(&m_server_info);
 				}
 				m_query_state = EV1_CQS_Complete;
@@ -181,18 +170,18 @@ namespace QR {
 	}
 	void V1Peer::handle_heartbeat(char *recvbuf, int len) {
 		std::ostringstream s;
-		char gamename[32];
-		int query_port = find_paramint("heartbeat",(char *)recvbuf);
-		int state_changed = find_paramint("statechanged",(char *)recvbuf);
+		std::string gamename;
+		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
+		int query_port = data_parser.GetValueInt("heartbeat");
+		int state_changed = data_parser.GetValueInt("statechanged");
 
-		find_param("gamename",(char *)recvbuf, (char *)&gamename,sizeof(gamename));
-		m_server_info.m_game = OS::GetGameByName(gamename);
+		gamename = data_parser.GetValue("gamename");
+		m_server_info.m_game = OS::GetGameByName(gamename.c_str());
 		if(!m_server_info.m_game.gameid) {
 			send_error(true, "unknown game");
 			return;
 		}
 
-		int slen = sizeof(m_address_info);
 		if(state_changed == 1) {
 			m_query_state = EV1_CQS_Basic;
 			if(m_validated) {
@@ -217,11 +206,13 @@ namespace QR {
 		
 	}
 	void V1Peer::handle_echo(char *recvbuf, int len) {
-		char validation[sizeof(m_challenge)];
+		std::string validation;
 		std::ostringstream s;
-		find_param("echo",(char *)recvbuf, (char *)&validation,sizeof(validation));
 
-		if(memcmp(validation, m_challenge, sizeof(m_challenge)) == 0) {
+		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
+		validation = data_parser.GetValue("echo");
+
+		if(memcmp(validation.c_str(), m_challenge, sizeof(m_challenge)) == 0) {
 			gettimeofday(&m_last_recv, NULL);
 			if(m_validated) {
 				//already validated, ping request
@@ -255,7 +246,6 @@ namespace QR {
 		uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = (uint8_t*)&out_buff;
 		int out_len = 0;
-		int header_len = 0;
 		BufferWriteData(&p, &out_len, buff, len);
 		if(attach_final) {
 			BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);

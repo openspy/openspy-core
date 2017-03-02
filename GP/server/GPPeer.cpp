@@ -47,7 +47,6 @@ namespace GP {
 	}
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];
-		socklen_t slen = sizeof(struct sockaddr_in);
 		int len = 0, piece_len = 0;
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
@@ -688,7 +687,7 @@ namespace GP {
 		char nick[31 + 1];
 		const char *first_at = strchr(nick_email, '@');
 		if(first_at) {
-			int nick_len = first_at - nick_email;
+			unsigned int nick_len = first_at - nick_email;
 			if(nick_len < sizeof(nick)) {
 				strncpy(nick, nick_email, nick_len);
 				nick[nick_len] = 0;

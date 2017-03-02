@@ -101,7 +101,7 @@ namespace Chat {
 		struct sockaddr_in peer;
 		int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
 		if (sda <= 0) return;
-		Peer *mp_peer = mp_peer = new IRCPeer(this, &peer, sda);
+		IRCPeer *mp_peer = new IRCPeer(this, &peer, sda);
 
 		m_connections.push_back(mp_peer);
 		mp_peer->think(true);

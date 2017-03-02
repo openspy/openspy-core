@@ -115,7 +115,7 @@ namespace OS {
 		freeReplyObject(reply);
 		reply = (redisReply *)redisCommand(redis_ctx, "KEYS %s:*",from_gamename);
 		if (reply->type == REDIS_REPLY_ARRAY) {
-			for (int j = 0; j < reply->elements; j++) {
+			for (unsigned int j = 0; j < reply->elements; j++) {
 				ret = GetGameByRedisKey(reply->element[j]->str, redis_ctx);
 				break;
 			}
@@ -134,7 +134,7 @@ namespace OS {
 		memset(&ret, 0, sizeof(ret));
 		reply = (redisReply *)redisCommand(redis_ctx, "KEYS *:%d", gameid);
 		if (reply->type == REDIS_REPLY_ARRAY) {
-			for (int j = 0; j < reply->elements; j++) {
+			for (unsigned int j = 0; j < reply->elements; j++) {
 				ret = GetGameByRedisKey(reply->element[j]->str, redis_ctx);
 				break;
 			}
@@ -240,7 +240,7 @@ namespace OS {
 	Address::Address(const char *str) {
 		char address[16];
 		const char *seperator = strrchr(str, ':');
-		int len = strlen(str);
+		unsigned int len = strlen(str);
 		if(seperator) {
 			port = atoi(seperator+1);
 			len = seperator - str;

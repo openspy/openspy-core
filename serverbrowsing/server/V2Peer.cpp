@@ -74,10 +74,6 @@ namespace SB {
 
 	}
 	MM::sServerListReq V2Peer::ParseListRequest(uint8_t **buffer, int remain) {
-		uint8_t listversion, encodingversion;
-		uint32_t fromgamever; //game version
-		uint32_t srcip = 0;
-		uint32_t maxServers = 0;
 		uint32_t options;
 		int buf_remain = remain;
 
@@ -85,13 +81,11 @@ namespace SB {
 
 		MM::sServerListReq req;
 
-		listversion = BufferReadByte(buffer, &buf_remain);
-		encodingversion = BufferReadByte(buffer, &buf_remain);
+		req.protocol_version = BufferReadByte(buffer, &buf_remain);
+		req.encoding_version = BufferReadByte(buffer, &buf_remain);
 
-		fromgamever = BufferReadInt(buffer, &buf_remain);
+		req.game_version = BufferReadInt(buffer, &buf_remain);
 
-		req.protocol_version = listversion;
-		req.encoding_version = encodingversion;
 
 		for_gamename = (const char *)BufferReadNTS(buffer, &buf_remain);
 		from_gamename = (const char *)BufferReadNTS(buffer, &buf_remain);
@@ -101,6 +95,7 @@ namespace SB {
 			free((void *)from_gamename);
 		} else {
 			send_error(true, "No from gamename");
+			free((void *)from_gamename);
 			return req;
 		}
 
@@ -109,6 +104,7 @@ namespace SB {
 			free((void *)for_gamename);
 		} else {
 			send_error(true, "No for gamename");
+			free((void *)for_gamename);
 			return req;
 		}
 		
@@ -155,15 +151,12 @@ namespace SB {
 
 	}
 	uint8_t *V2Peer::ProcessSendMessage(uint8_t *buffer, int remain) {
-		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = buffer;
 		int len = remain;
 
 		
 		m_send_msg_to.sin_addr.s_addr = (BufferReadInt(&p, &len));
 		m_send_msg_to.sin_port = Socket::htons(BufferReadShort(&p, &len));
-		const char *ipinput = Socket::inet_ntoa(m_send_msg_to.sin_addr);
-
 		m_next_packet_send_msg = true;
 
 		return p;
@@ -273,7 +266,6 @@ namespace SB {
 		uint8_t cryptchal[CRYPTCHAL_LEN];
 		uint32_t servchallen = SERVCHAL_LEN;
 		uint8_t servchal[SERVCHAL_LEN];
-		int headerLen = (servchallen + cryptlen) + (sizeof(uint8_t) * 2);
 		uint16_t *backendflags = (uint16_t *)(&cryptchal);
 		for (uint32_t i = 0; i<cryptlen; i++) {
 			cryptchal[i] = (uint8_t)rand();
@@ -291,7 +283,7 @@ namespace SB {
 		//combine our secret key, our challenge, and the server's challenge into a crypt key
 		int seckeylen = (int)strlen(m_game.secretkey);
 		char *seckey = (char *)&m_game.secretkey;
-		for (int i = 0 ; i < servchallen ; i++)
+		for (uint32_t i = 0 ; i < servchallen ; i++)
 		{
 			m_challenge[(i *  seckey[i % seckeylen]) % LIST_CHALLENGE_LEN] ^= (char)((m_challenge[i % LIST_CHALLENGE_LEN] ^ servchal[i]) & 0xFF);
 		}
@@ -318,10 +310,6 @@ namespace SB {
 			m_delete_flag = true;
 	}
 	uint8_t *V2Peer::ProcessListRequset(uint8_t *buffer, int remain) {
-
-		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
-		uint8_t *p;
-		uint32_t len = 0;
 
 		MM::MMQueryRequest req;
 		req.extra = this;
@@ -372,7 +360,6 @@ namespace SB {
 		address.ip = Socket::htonl(BufferReadInt(&p, &len));
 		address.port = Socket::htons(BufferReadShort(&p, &len));
 		sServerCache cache = FindServerByIP(address);
-		MM::Server *server = NULL;
 
 		MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
 		MM::MMQueryRequest req;
@@ -381,13 +368,11 @@ namespace SB {
 		if(cache.key[0] != 0) {
 			req.type = MM::EMMQueryRequestType_GetServerByKey;
 			req.key = cache.key;
-			//server = MM::GetServerByKey(cache.key);
 			cache.full_keys = true;
 		} else {
 			req.type = MM::EMMQueryRequestType_GetServerByIP;
 			req.address = address;
 			req.req.m_for_game = m_last_list_req.m_for_game;
-			//server = MM::GetServerByIP(address, m_last_list_req.m_for_game);
 		}
 		req.callback = OnRetrievedServerInfo;
 		query_task->AddRequest(req);
@@ -414,7 +399,6 @@ namespace SB {
 	}
 	void V2Peer::think(bool waiting_packet) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
-		socklen_t slen = sizeof(struct sockaddr_in);
 		int len = 0;
 		if (waiting_packet) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);

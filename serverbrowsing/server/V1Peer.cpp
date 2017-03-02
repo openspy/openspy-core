@@ -5,7 +5,6 @@
 #include <OS/legacy/enctypex_decoder.h>
 #include <OS/legacy/gsmsalg.h>
 #include <OS/legacy/enctype_shared.h>
-#include <OS/legacy/helpers.h>
 #include <sstream>
 #include "SBDriver.h"
 #include "SBPeer.h"
@@ -17,6 +16,10 @@
 
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
+
+
+#include <OS/legacy/helpers.h> //gen_random
+#include <OS/KVReader.h>
 
 namespace SB {
 		V1Peer::V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : SB::Peer(driver, address_info, sd) {
@@ -39,11 +42,6 @@ namespace SB {
 		void V1Peer::send_ping() {
 			//check for timeout
 			struct timeval current_time;
-			
-			uint8_t buff[10];
-			uint8_t *p = (uint8_t *)&buff;
-			int len = 0;
-
 			gettimeofday(&current_time, NULL);
 			if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
 				gettimeofday(&m_last_ping, NULL);
@@ -52,7 +50,6 @@ namespace SB {
 		}
 		void V1Peer::think(bool packet_waiting) {
 			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
-			socklen_t slen = sizeof(struct sockaddr_in);
 			int len;
 			if (packet_waiting) {
 				len = recv(m_sd, (char *)&buf, MAX_OUTGOING_REQUEST_SIZE, 0);
@@ -105,14 +102,16 @@ namespace SB {
 			}
 		}
 		void V1Peer::handle_gamename(char *data, int len) {
-			char validation[16],realvalidate[16];
-			char gamename[64];
+			OS::KVReader data_parser = OS::KVReader(std::string(data));
 
-			int enctype = find_paramint("enctype",(char *)data);
-			find_param("gamename",(char *)data, (char *)&gamename,sizeof(gamename));
-			m_game = OS::GetGameByName(gamename);
+			char realvalidate[16];
+			
+			std::string validation;
 
-			printf("GOt game: %s\n",m_game.gamename);
+			int enctype = data_parser.GetValueInt("enctype");
+			std::string gamename = data_parser.GetValue("gamename");
+
+			m_game = OS::GetGameByName(gamename.c_str());
 
 			if(!m_game.gameid) {
 				send_error(true, "Gamename not found");
@@ -120,9 +119,9 @@ namespace SB {
 			}
 
 			if(enctype != 0) {
-				find_param("validate",(char *)data,(char *)&validation,sizeof(validation));
-				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (unsigned char *)m_game.secretkey, enctype);	
-				if(strcmp(realvalidate,validation) == 0) {
+				validation = data_parser.GetValue("validate");
+				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (unsigned char *)m_game.secretkey, enctype);
+				if(strcmp(realvalidate,validation.c_str()) == 0) {
 					send_crypt_header(enctype);
 					m_validated = true;
 				} else {
@@ -140,15 +139,15 @@ namespace SB {
 			} else if(len == 0) {
 				return;
 			}
+			OS::KVReader kv_parser = OS::KVReader(std::string(data));
 
-			printf("SB V1: %s\n",data);
-			char command[32];
+			std::string command;
 			gettimeofday(&m_last_recv, NULL);
-			if(find_param(0, data,(char *)&command, sizeof(command))) {
-			}
-			if(strcmp(command,"gamename") == 0) {
+
+			command = kv_parser.GetValueByIdx(0);
+			if(strcmp(command.c_str(),"gamename") == 0) {
 				handle_gamename(data, len);
-			} else if(strcmp(command, "list") == 0) {
+			} else if(strcmp(command.c_str(), "list") == 0) {
 				handle_list(data, len);
 			}
 		}
@@ -168,16 +167,21 @@ namespace SB {
 			MM::MMQueryTask::FreeServerListQuery(&results);
 		}
 		void V1Peer::handle_list(char *data, int len) {
-			char mode[32], gamename[32];
-			
-			if(!find_param("list",(char *)data, (char *)&mode,sizeof(mode)) || !find_param("gamename",(char *)data, (char *)&gamename,sizeof(gamename))) {
+			std::string mode, gamename;
+
+			OS::KVReader kv_parser(data);
+
+			if(!kv_parser.HasKey("list") || !kv_parser.HasKey("gamename")) {
 				send_error(true, "Data parsing error");
 				return;
+			} else {
+				mode = kv_parser.GetValue("list");
+				gamename = kv_parser.GetValue("gamename");
 			}
 
 			MM::MMQueryRequest req;
 			MM::ServerListQuery servers;
-			req.req.m_for_game = OS::GetGameByName(gamename);
+			req.req.m_for_game = OS::GetGameByName(gamename.c_str());
 			req.req.m_from_game = m_game;
 			req.req.all_keys = false;
 
@@ -190,12 +194,13 @@ namespace SB {
 
 			MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
 
-			if(strcmp(mode,"cmp") == 0) {				
+			if(mode.compare("cmp") == 0) {				
+				req.req.all_keys = false;
 				req.callback = OnRetrievedServers;
-			} else if(strcmp(mode,"info2") == 0) {
+			} else if(mode.compare("info2") == 0) {
 				req.req.all_keys = true;
 				req.callback = OnRetrievedServerInfo;
-			} else if(strcmp(mode,"groups") == 0) {
+			} else if(mode.compare("groups") == 0) {
 				req.req.all_keys = true;
 				req.callback = OnRetrievedGroups;
 			} else {
@@ -319,7 +324,6 @@ namespace SB {
 			uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 			uint8_t *p = (uint8_t*)&out_buff;
 			int out_len = 0;
-			int header_len = 0;
 			BufferWriteData(&p, &out_len, buff, len);
 			if(attach_final) {
 				BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
@@ -341,7 +345,7 @@ namespace SB {
 			char cryptkey[13];
 			int secretkeylen = strlen(m_game.secretkey);
 			if(enctype == 2) {
-				for(int x=0;x<sizeof(cryptkey);x++) {
+				for(unsigned int x=0;x<sizeof(cryptkey);x++) {
 					cryptkey[x] = (uint8_t)rand();
 				}
 				encshare4((unsigned char *)&cryptkey, sizeof(cryptkey),(unsigned int *)&m_cryptkey_enctype2);
@@ -357,7 +361,7 @@ namespace SB {
 		std::string V1Peer::field_cleanup(std::string s) {
 			std::string r;
 			char ch;
-			for(int i=0;i<s.length();i++) {
+			for(unsigned int i=0;i<s.length();i++) {
 				ch = s[i];
 				if(ch == '\\') ch = '.';
 				r += ch;

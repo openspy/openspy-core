@@ -23,8 +23,6 @@
 #include <algorithm>
 #include <iomanip>
 
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/buffwriter.h>
 
 namespace Chat {
 		IRCCommandHandler IRCPeer::mp_command_handler[] = {
@@ -44,6 +42,7 @@ namespace Chat {
 			{"GETKEY", &IRCPeer::handle_getkey},
 
 			{"KICK", &IRCPeer::handle_kick},
+			{"OPER", &IRCPeer::handle_oper},
 
 
 			//channel cmds
@@ -68,6 +67,8 @@ namespace Chat {
 
 			m_client_info.ip = OS::Address(*address_info);
 			m_client_info.hostname = m_client_info.ip.ToString(true);
+
+			m_partnercode = 0;
 		}
 		IRCPeer::~IRCPeer() {
 			std::ostringstream s;
@@ -94,7 +95,6 @@ namespace Chat {
 		}
 		void IRCPeer::think(bool packet_waiting) {
 			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
-			socklen_t slen = sizeof(struct sockaddr_in);
 			int len;
 			if (packet_waiting) {
 				len = recv(m_sd, (char *)&buf, MAX_OUTGOING_REQUEST_SIZE, 0);
@@ -115,7 +115,7 @@ namespace Chat {
 
 					//printf("IRC got cmd(%s): %s\n",cmd.c_str(), cmd_line.c_str());
 
-					for(int i=0;i<sizeof(mp_command_handler)/sizeof(IRCCommandHandler);i++) {
+					for(unsigned int i=0;i<sizeof(mp_command_handler)/sizeof(IRCCommandHandler);i++) {
 						if(strcasecmp(mp_command_handler[i].command.c_str(), cmd.c_str()) == 0) {
 							ret = (*this.*(mp_command_handler[i].mpFunc))(x, cmd_line);
 						}
@@ -329,8 +329,9 @@ namespace Chat {
 					ret = false;
 					break;
 				}
+				it++;
 			}
-			return ret;
+			return ret && response.errors.size() > 0;
 		}
 		void IRCPeer::OnUserQuit(ChatClientInfo client, std::string quit_reason) {
 			std::ostringstream s;

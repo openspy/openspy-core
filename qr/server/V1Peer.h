@@ -47,7 +47,7 @@ namespace QR {
 		bool m_sent_challenge;
 
 		bool m_uses_validation;
-		bool m_validated; //passed echo validation or \secure\
+		bool m_validated; //passed "echo" validation or use "secure" response
 
 		bool m_pushed_server;
 

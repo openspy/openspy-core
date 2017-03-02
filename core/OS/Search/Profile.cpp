@@ -147,7 +147,6 @@ namespace OS {
 		//build jwt
 		jwt_t *jwt;
 		jwt_new(&jwt); 
-		const char *server_response = NULL;
 		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
 		jwt_add_grants_json(jwt, json_data);
 		char *jwt_encoded = jwt_encode_str(jwt);

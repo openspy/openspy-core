@@ -15,10 +15,42 @@
 #include <sys/time.h>
 #endif
 
+#include <OS/User.h>
+#include <OS/Profile.h>
+
 #define CHAT_PING_TIME 30
 
 namespace Chat {
 	class Peer;
+
+	enum EOperPrivileges {
+		OPERPRIVS_NONE = 0,
+		OPERPRIVS_INVISIBLE = 1<<0,
+		OPERPRIVS_BANEXCEMPT = 1<<1,
+		OPERPRIVS_GETOPS = 1<<2,
+		OPERPRIVS_GLOBALOWNER = 1<<3,
+		OPERPRIVS_GETVOICE = 1<<4,
+		OPERPRIVS_OPEROVERRIDE = 1<<5,
+		OPERPRIVS_WALLOPS = 1<<6,
+		OPERPRIVS_KILL = 1<<7,
+		OPERPRIVS_FLOODEXCEMPT = 1<<8,
+		OPERPRIVS_LISTOPERS = 1<<9,
+		OPERPRIVS_CTCP = 1<<10, //and ATM, etc
+		OPERPRIVS_HIDDEN = 1 << 11,
+		OPERPRIVS_SEEHIDDEN = 1 << 12,
+		OPERPRIVS_MANIPULATE = 1 << 13, //can manipulate other peoples keys, etc
+		OPERPRIVS_SERVMANAGE = 1 << 14,
+		OPERPRIVS_WEBPANEL = 1 << 15, //permitted to log in to the web panel(doesn't serve any use on the actual server)
+	};
+	enum EUserMode {
+		EUserMode_None = 0,
+		EUserMode_Quiet = 1 << 0,
+		EUserMode_ShowConns = 1 << 1, //oper mode(OPERPRIVS_LISTOPERS)
+		EUserMode_ShowJoins = 1 << 2, //oper mode(OPERPRIVS_LISTOPERS)
+		EUserMode_SpyMessages = 1 << 3, //oper mode(OPERPRIVS_LISTOPERS)
+		EUserMode_HideSpyMessages = 1 << 4, //oper mode(OPERPRIVS_MANIPULATE)
+		EUserMode_AllowInvisiblePrivmsg = 1 << 5, //oper mode, allows invisible users to send channel privmsgs to non-opers(OPERPRIVS_INVISIBLE)
+	};
 
 	class Driver : public INetDriver {
 	public:
@@ -39,7 +71,7 @@ namespace Chat {
 
 		int GetNumConnections();
 
-		bool HasPeer(Chat::Peer * peer);
+		bool HasPeer(Chat::Peer *peer);
 
 
 		void OnSendClientMessage(int target_id, ChatClientInfo from_user, const char *msg, EChatMessageType message_type);
@@ -62,6 +94,10 @@ namespace Chat {
 		struct sockaddr_in m_local_addr;
 
 		struct timeval m_server_start;
+
+		OS::User m_user;
+		OS::Profile m_profile;
+		int m_operflags;
 
 	};
 }

@@ -141,7 +141,7 @@ namespace GPShared {
 		ret.msg = NULL;
 		ret.die = false;
 
-		for(int i=0;i<sizeof(gp_error_data) / sizeof(GPErrorData);i++) {
+		for(unsigned int i=0;i<sizeof(gp_error_data) / sizeof(GPErrorData);i++) {
 			if(gp_error_data[i].error == code) {
 				return gp_error_data[i];
 			}

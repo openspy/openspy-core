@@ -32,8 +32,6 @@ namespace OS {
 				log_level = LOG_AUTH;
 			break;
 		}
-		char buffer[4096];
-		vsprintf(buffer, format, args);
-		syslog(log_level, buffer);
+		vsyslog(log_level, format, args);
 	}
 }

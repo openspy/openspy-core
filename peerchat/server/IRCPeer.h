@@ -85,6 +85,8 @@ namespace Chat {
 		EIRCCommandHandlerRet handle_getckey(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_quit(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_kick(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_oper(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_login(std::vector<std::string> params, std::string full_params);
 
 		//user cmd callbacks
 		static void OnNickCmd_InUseLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
@@ -111,6 +113,9 @@ namespace Chat {
 		static void OnSetChanKey_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnGetChanKey_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
+		//auth callbacks
+		static void m_nick_email_auth_oper_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id);
+
 		//channel misc
 		void send_channel_topic(ChatChannelInfo channel);
 		void send_channel_modes(ChatChannelInfo channel);
@@ -133,6 +138,8 @@ namespace Chat {
 		bool is_channel_name(std::string name);
 
 		std::string m_quit_reason;
+
+		int m_partnercode;
 
 
 	};

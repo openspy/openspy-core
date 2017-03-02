@@ -11,9 +11,9 @@ namespace Chat {
 				Chan param modes(limit/key) - OP only
 				Kick/Invisible
 	*/
-	struct {
+	struct _ModeFlagPermissions {
 		int flag;
-		const char *friendly_error;
+		const char *friendly_name;
 		EChanClientFlags required_flag;
 	} ModeFlagPermissions[] = {
 		{EChannelModeFlags_Private, "Private Mode", EChanClientFlags_HalfOp},
@@ -45,6 +45,11 @@ namespace Chat {
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(ChatBackendTask::TaskThread, this, true);
+
+		m_permission_name_map[EChanClientFlags_Owner] = "Channel Owner";
+		m_permission_name_map[EChanClientFlags_Op] = "Channel Operator";
+		m_permission_name_map[EChanClientFlags_HalfOp] = "Channel Half-Operator";
+		m_permission_name_map[EChanClientFlags_Voice] = "Channel Voice";
 	}
 	ChatBackendTask::~ChatBackendTask() {
 		delete mp_thread;
@@ -81,7 +86,7 @@ namespace Chat {
 	void ChatBackendTask::SubmitGetClientInfoByName(std::string name, ChatQueryCB cb, Peer *peer, void *extra) {
 		ChatQueryRequest req;
 		req.type = EChatQueryRequestType_GetClientByName;
-		req.query_name = name;
+		req.query_name = OS::strip_whitespace(name);
 		req.callback = cb;
 		req.peer = peer;
 		req.extra = extra;
@@ -148,8 +153,9 @@ namespace Chat {
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
 
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET nick_id_map %s", task_params.query_name.c_str());
+
 		if(reply->type == REDIS_REPLY_STRING) {
-			client_id = atoi(reply->str);
+			client_id = atoi(OS::strip_quotes(reply->str).c_str());
 		} else if(reply->type == REDIS_REPLY_INTEGER) {
 			client_id = reply->integer;
 		}
@@ -207,7 +213,7 @@ namespace Chat {
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS chat_client_%d_custkeys", client_id);
-		for(int i=0;i<reply->elements;i++) {
+		for(unsigned int i=0;i<reply->elements;i++) {
 			redisReply *key_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_client_%d_custkeys %s", client_id,OS::strip_quotes(reply->element[i]->str).c_str());
 			if(key_reply && key_reply->type == REDIS_REPLY_INTEGER) {
 				std::ostringstream s;
@@ -376,7 +382,7 @@ namespace Chat {
 		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
 		//test permissions
 
-		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, task_params, response)) {
+		if(!TestChannelPermissions(chan_client_info, channel_info, task_params, response)) {
 			goto end_error;
 		}
 		//
@@ -464,7 +470,6 @@ namespace Chat {
 		getQueryTask()->AddRequest(req);
 	}
 	void ChatBackendTask::PerformUpdateChannelTopic(ChatQueryRequest task_params) {
-		redisReply *reply;
 		ChatChannelInfo channel_info;
 		ChatClientInfo client_info;
 		std::string chan_str;
@@ -489,7 +494,7 @@ namespace Chat {
 
 		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
 		//test permissions
-		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, task_params, response)) {
+		if(!TestChannelPermissions(chan_client_info, channel_info, task_params, response)) {
 			goto end_error;
 		}
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic \"%s\"", channel_info.channel_id, task_params.message.c_str()));
@@ -556,13 +561,13 @@ namespace Chat {
 			freeReplyObject(reply);
 		}
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d nick \"%s\"", task_params.query_data.client_info.client_id,task_params.query_data.client_info.name.c_str());
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d nick \"%s\"", task_params.query_data.client_info.client_id,OS::strip_whitespace(task_params.query_data.client_info.name.c_str()).c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d user \"%s\"", task_params.query_data.client_info.client_id,task_params.query_data.client_info.user.c_str());
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d user \"%s\"", task_params.query_data.client_info.client_id,OS::strip_whitespace(task_params.query_data.client_info.user.c_str()).c_str());
 		freeReplyObject(reply);
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d realname \"%s\"", task_params.query_data.client_info.client_id,task_params.query_data.client_info.realname.c_str());
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d realname \"%s\"", task_params.query_data.client_info.client_id,OS::strip_whitespace(task_params.query_data.client_info.realname.c_str()).c_str());
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_client_%d host \"%s\"", task_params.query_data.client_info.client_id,task_params.query_data.client_info.hostname.c_str());
@@ -681,7 +686,7 @@ namespace Chat {
 		
 		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
 		//test permissions
-		if(!TestChannelPermissions(chan_client_info, channel_info, EPermissionType_HOPHigher, task_params, response)) {
+		if(!TestChannelPermissions(chan_client_info, channel_info, task_params, response)) {
 			goto end_error;
 		}
 
@@ -729,7 +734,7 @@ namespace Chat {
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS chan_%d_client_%d_custkeys", chan_id, client_id);
-		for(int i=0;i<reply->elements;i++) {
+		for(unsigned int i=0;i<reply->elements;i++) {
 			redisReply *key_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chan_%d_client_%d_custkeys %s", chan_id, client_id,OS::strip_quotes(reply->element[i]->str).c_str());
 			if(key_reply && key_reply->type == REDIS_REPLY_INTEGER) {
 				std::ostringstream s;
@@ -761,7 +766,7 @@ namespace Chat {
 		reply = (redisReply *)redisCommand(mp_redis_connection, "LRANGE chan_%d_clients 0 %d", task_params.query_data.channel_info.channel_id, num_clients);
 
 		struct Chat::_ChatQueryResponse response;
-		for(int i=0;i<reply->elements;i++) {
+		for(unsigned int i=0;i<reply->elements;i++) {
 			redisReply *element = reply->element[i];
 			int client_id;
 			if(element && element->type == REDIS_REPLY_INTEGER) {
@@ -880,7 +885,7 @@ namespace Chat {
 		freeReplyObject(reply);
 
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HKEYS chat_channel_%d_custkeys", id);
-		for(int i=0;i<reply->elements;i++) {
+		for(unsigned int i=0;i<reply->elements;i++) {
 			redisReply *key_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_channel_%d_custkeys %s", id,OS::strip_quotes(reply->element[i]->str).c_str());
 			if(key_reply && key_reply->type == REDIS_REPLY_INTEGER) {
 				std::ostringstream s;
@@ -1166,11 +1171,9 @@ namespace Chat {
 	}
 	ChatClientInfo ChatBackendTask::ClientInfoFromKVString(const char *str, std::string prefix) {
 		ChatClientInfo ret;
-		char data[CHAT_MAX_MESSAGE + 1];
 		std::ostringstream s;
 		s << prefix << "client_nick";
 		OS::KVReader kv_parser(str);
-
 
 		if(kv_parser.HasKey(s.str())) {
 			ret.name = kv_parser.GetValue(s.str());
@@ -1224,8 +1227,6 @@ namespace Chat {
 	}
 	ChatChannelInfo ChatBackendTask::ChannelInfoFromKVString(const char *str) {
 		ChatChannelInfo ret;
-		char data[CHAT_MAX_MESSAGE + 1];
-
 		OS::KVReader kv_parser(str);
 
 		if(kv_parser.HasKey("channel_name")) {
@@ -1337,17 +1338,76 @@ namespace Chat {
 			it++;
 		}
 	}
-	bool ChatBackendTask::TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, EChannelPermissionType type, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response) {
-		EChatBackendResponseError error;
-		std::string details;
-		if(type == EPermissionType_MustBeOnChannel) {
-			error = EChatBackendResponseError_NotOnChannel;
-		} else {
-			details = "Required Mode - Some error msg";
-			error = EChatBackendResponseError_BadPermissions;
+	bool ChatBackendTask::TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response) {
+		std::ostringstream s;
+		ChatClientInfo client_info;
+		if(task_params.type == EChatQueryRequestType_UpdateChannelModes) {
+			//scan add modes
+			for(int i=0;i<sizeof(ModeFlagPermissions)/sizeof(struct _ModeFlagPermissions);i++) {
+				s.str("");
+				if(task_params.add_flags & ModeFlagPermissions[i].flag) {
+					if(~chan_client_info.client_flags & ModeFlagPermissions[i].required_flag) {
+						s << "Set " << ModeFlagPermissions[i].friendly_name << " - " << m_permission_name_map[ModeFlagPermissions[i].required_flag];
+						response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_BadPermissions, s.str()));
+					}
+				}
+			}
 
-			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(error, details));
+			//scan remove modes
+			for(int i=0;i<sizeof(ModeFlagPermissions)/sizeof(struct _ModeFlagPermissions);i++) {
+				s.str("");
+				if(task_params.remove_flags & ModeFlagPermissions[i].flag) {
+					if(~chan_client_info.client_flags & ModeFlagPermissions[i].required_flag) {
+						s << "Remove " << ModeFlagPermissions[i].friendly_name << " - " << m_permission_name_map[ModeFlagPermissions[i].required_flag];
+						response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_BadPermissions, s.str()));
+					}
+				}
+			}
+
+			//scan set user modes
+			std::vector<std::pair<std::string, ChanClientModeChange> >::iterator it = task_params.user_modechanges.begin();
+			while(it != task_params.user_modechanges.end()) {
+				s.str("");
+				std::pair<std::string, ChanClientModeChange> p = *it;
+				LoadClientInfoByName(client_info, p.first);
+
+				if(!client_info.client_id) {
+					s << p.first << " - User not found";
+					response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUser_OrChan, s.str()));
+				} else {
+					ChatChanClientInfo target_chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
+
+					if(GetUserChanPermissionScore(target_chan_client_info.client_flags) >= GetUserChanPermissionScore(chan_client_info.client_flags)) {
+						if(~chan_client_info.client_flags & EChanClientFlags_Owner) {
+							s << p.first << " - Cannot modify user modes equal or higher to yours";
+							response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_BadPermissions, s.str()));
+						}
+					}
+					if(GetUserChanPermissionScore(p.second.mode_flag) >= GetUserChanPermissionScore(chan_client_info.client_flags)) {
+						s << p.first << " - Insufficent Permissions";
+						response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_BadPermissions, s.str()));
+					}
+				}
+				it++;
+			}
+		} else if (task_params.type == EChatQueryRequestType_UpdateChannelTopic) {
+			if(GetUserChanPermissionScore(chan_client_info.client_flags) < 2) {
+				s << "Change Channel Topic - Half Operator or higher required";
+				response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_BadPermissions, s.str()));
+			}
 		}
-		return false;
+		return response.errors.size() > 0;
+	}
+	int ChatBackendTask::GetUserChanPermissionScore(int client_flags) {
+		if(client_flags & EChanClientFlags_Owner)
+			return 4;
+		if(client_flags & EChanClientFlags_Op)
+			return 3;
+		if(client_flags & EChanClientFlags_HalfOp)
+			return 2;
+		if(client_flags & EChanClientFlags_Voice)
+			return 1;
+
+		return 0;
 	}
 }

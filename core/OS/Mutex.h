@@ -4,7 +4,7 @@ namespace OS {
 	class CMutex {
 		public:
 			CMutex() { };
-			~CMutex() {};
+			virtual ~CMutex() {};
 			virtual void lock() = 0;
 			virtual void unlock() = 0;
 	};

@@ -3,10 +3,10 @@
 #include <OS/OpenSpy.h>
 #include <curl/curl.h>
 namespace OS {
-	typedef struct HTTPResponse {
+	typedef struct {
 		int status_code;
 		std::string buffer;
-	};
+	} HTTPResponse;
 	class HTTPClient {
 	public:
 		HTTPClient(std::string url);

@@ -8,6 +8,10 @@ namespace QR {
 	Server::Server() : INetServer() {
 		
 	}
+
+	Server::~Server() {
+		
+	}
 	void Server::init() {
 	}
 	void Server::tick() {

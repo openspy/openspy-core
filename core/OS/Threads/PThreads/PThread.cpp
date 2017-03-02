@@ -30,7 +30,6 @@ namespace OS {
 	}
 	void CPThread::start() {
 		if(!m_running) {
-			pthread_attr_t attr;
 			pthread_create(&m_thread, NULL, cpthread_thread, (void *)this);
 
 			m_running = true;

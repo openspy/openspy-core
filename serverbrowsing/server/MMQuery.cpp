@@ -183,7 +183,7 @@ namespace MM {
 			if (!reply)
 				goto error_cleanup;
 			if (reply->type == REDIS_REPLY_ARRAY) {
-				for (int j = 0; j < reply->elements; j++) {
+				for (unsigned int j = 0; j < reply->elements; j++) {
 					std::string search_key = entry_name;
 					search_key += "custkeys";
 					FindAppend_ServKVFields(server, search_key, reply->element[j]->str, redis_ctx);
@@ -209,7 +209,7 @@ namespace MM {
 						freeReplyObject(reply);
 						break;
 					}
-					for (int j = 0; j < reply->elements; j++) {
+					for (unsigned int j = 0; j < reply->elements; j++) {
 						FindAppend_PlayerKVFields(server, key, reply->element[j]->str, idx, redis_ctx);
 						if(std::find(ret->captured_player_fields.begin(), ret->captured_player_fields.end(), reply->element[j]->str) == ret->captured_player_fields.end()) {
 							ret->captured_player_fields.push_back(reply->element[j]->str);
@@ -234,7 +234,7 @@ namespace MM {
 						freeReplyObject(reply);
 						break;
 					}
-					for (int j = 0; j < reply->elements; j++) {
+					for (unsigned int j = 0; j < reply->elements; j++) {
 						FindAppend_TeamKVFields(server, key, reply->element[j]->str, idx, redis_ctx);
 						if(std::find(ret->captured_team_fields.begin(), ret->captured_team_fields.end(), reply->element[j]->str) == ret->captured_team_fields.end()) {
 							ret->captured_team_fields.push_back(reply->element[j]->str);
@@ -251,7 +251,7 @@ namespace MM {
 			if (!reply)
 				goto error_cleanup;
 			if (reply->type == REDIS_REPLY_ARRAY) {
-				for (int j = 0; j < reply->elements; j++) {
+				for (unsigned int j = 0; j < reply->elements; j++) {
 					std::string search_key = entry_name;
 					search_key += "custkeys";
 					FindAppend_ServKVFields(server, search_key, reply->element[j]->str, redis_ctx);
@@ -374,7 +374,7 @@ namespace MM {
 			if (!reply)
 				goto error_cleanup;
 			if (reply->type == REDIS_REPLY_ARRAY) {
-				for (int j = 0; j < reply->elements; j++) {
+				for (unsigned int j = 0; j < reply->elements; j++) {
 					std::string search_key = entry_name;
 					search_key += "custkeys";
 					FindAppend_ServKVFields(server, search_key, reply->element[j]->str, redis_ctx);
@@ -411,7 +411,7 @@ namespace MM {
 		
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, cmd.c_str());
 		if (reply->type == REDIS_REPLY_ARRAY) {
-			for (int j = 0; j < reply->elements; j++) {
+			for (unsigned int j = 0; j < reply->elements; j++) {
 				AppendServerEntry(std::string(reply->element[j]->str), &ret, req->all_keys, false, mp_redis_connection, req);
 			}
 		}
@@ -428,7 +428,7 @@ namespace MM {
 
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, cmd.c_str());
 		if (reply->type == REDIS_REPLY_ARRAY) {
-			for (int j = 0; j < reply->elements; j++) {
+			for (unsigned int j = 0; j < reply->elements; j++) {
 				AppendGroupEntry(reply->element[j]->str, &ret, mp_redis_connection, req->all_keys);
 			}
 		}
