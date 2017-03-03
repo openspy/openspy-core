@@ -325,17 +325,61 @@ namespace Chat {
 		}
 
 		void IRCPeer::OnOperCmd_GetOperFlags(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			printf("Oper flags: %d\n", response.operflags);
+
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)extra;
+			std::ostringstream s;
+			if(!driver->HasPeer(peer)) {
+				return;
+			}
+			if(irc_peer->send_callback_error(request, response)) {
+				return;
+			}
+
+			
+			s << ":SERVER!SERVER@* NOTICE " << irc_peer->m_client_info.name << " :Authenticated" << std::endl;
+			irc_peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+
+			if(response.operflags != 0) {
+				s.str("");
+				s << ":SERVER!SERVER@* NOTICE " << irc_peer->m_client_info.name << " :Rights Granted" << std::endl;
+				irc_peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+				irc_peer->m_client_info.operflags = response.operflags;
+				ChatBackendTask::getQueryTask()->flagPushTask();
+				ChatBackendTask::SubmitClientInfo(NULL, (Peer *)irc_peer, driver);
+			}
 
 		}
 
 		void IRCPeer::m_nick_email_auth_oper_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
 			ChatCallbackContext *cb_ctx = (ChatCallbackContext *)extra;
-			printf("Got profileid: %d\n", profile.id);
 
+			IRCPeer *irc_peer = (IRCPeer *)cb_ctx->peer;
+			Chat::Driver *driver = (Chat::Driver *)cb_ctx->driver;
+			if(!driver->HasPeer(irc_peer)) {
+				goto end_error;
+			}
 
-			ChatBackendTask::SubmitGetChatOperFlags(profile.id, OnOperCmd_GetOperFlags, (Peer *)cb_ctx->peer, cb_ctx->driver);
+			/*
+			if(irc_peer->send_callback_error(request, response)) {
+				goto end_error;
+			}
+			*/
+			
 
-			delete cb_ctx;
+			if(success) {
+				printf("Got profileid: %d\n", profile.id);	
+
+				irc_peer->m_client_info.profileid = profile.id;				
+				ChatBackendTask::SubmitGetChatOperFlags(profile.id, OnOperCmd_GetOperFlags, (Peer *)irc_peer, driver);
+			} else {
+				//inc counter, ban if over x attempts
+			}
+
+			
+			end_error:
+				delete cb_ctx;
 		}
 
 		EIRCCommandHandlerRet IRCPeer::handle_oper(std::vector<std::string> params, std::string full_params) {
@@ -350,16 +394,11 @@ namespace Chat {
 
 			printf("Oper: %s - %s - %s\n",email.c_str(), nick.c_str(), pass.c_str());
 
-			//static void TryAuthNickEmail(std::string nick, 
-			//std::string email, int partnercode, std::string pass, 
-			//bool make_session, AuthCallback cb, void *extra,
-			// int operation_id);
-
 			ChatCallbackContext *cb_ctx = new ChatCallbackContext;
 			cb_ctx->peer = this;
 			cb_ctx->driver = mp_driver;
 
-			OS::AuthTask::TryAuthNickEmail(nick, email, m_partnercode, pass, false, m_nick_email_auth_oper_cb, cb_ctx, 0);
+			OS::AuthTask::TryAuthNickEmail(nick, email, m_default_partnercode, pass, false, m_nick_email_auth_oper_cb, cb_ctx, 0);
 
 			return EIRCCommandHandlerRet_NoError;
 		}

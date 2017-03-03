@@ -140,7 +140,7 @@ namespace Chat {
 
 		std::string m_quit_reason;
 
-		int m_partnercode;
+		int m_default_partnercode;
 
 
 	};

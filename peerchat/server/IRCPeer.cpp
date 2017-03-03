@@ -68,7 +68,7 @@ namespace Chat {
 			m_client_info.ip = OS::Address(*address_info);
 			m_client_info.hostname = m_client_info.ip.ToString(true);
 
-			m_partnercode = 0;
+			m_default_partnercode = 0;
 		}
 		IRCPeer::~IRCPeer() {
 			std::ostringstream s;

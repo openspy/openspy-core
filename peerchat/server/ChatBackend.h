@@ -50,6 +50,7 @@ namespace Chat {
 		std::map<std::string, std::string> custom_keys;
 
 		int profileid;
+		int operflags;
 	} ChatClientInfo;
 
 	enum EChanClientFlags {
@@ -111,6 +112,8 @@ namespace Chat {
 		std::vector<ChatChanClientInfo> m_channel_clients;
 
 		std::vector< std::pair<EChatBackendResponseError, std::string> > errors;
+
+		int operflags; //for get oper flags response
 	} ChatQueryResponse;
 
 	typedef void (*ChatQueryCB)(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);

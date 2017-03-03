@@ -214,8 +214,12 @@ namespace Chat {
 		while (it != m_connections.end()) {
 			Peer *p = *it;
 			ChatClientInfo info = p->getClientInfo();
+			printf("Scan peer\n");
 			if(p->IsOnChannel(channel_info)) {
+				printf("Is on channel %d\n", channel_info.channel_id);
 				p->OnRecvChannelModeUpdate(client_info, channel_info,change_data);
+			} else {
+				printf("Is not on channel %d\n", channel_info.channel_id);
 			}
 			it++;
 		}
