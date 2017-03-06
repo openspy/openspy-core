@@ -1444,6 +1444,54 @@ namespace Chat {
 
 		return ret;
 	}
+	std::string ChatBackendTask::ChanPropsToKVString(ChatStoredChanProps info) {
+		std::ostringstream s;
+		s << "\\chanprops_mask\\" << info.channel_mask;
+		s << "\\chanprops_modeflags\\" << info.modeflags;
+		s << "\\chanprops_comment\\" << info.comment;
+		s << "\\chanprops_topic\\" << info.topic;
+		s << "\\chanprops_entrymsg\\" << info.entrymsg;
+		s << "\\chanprops_setby\\" << info.setby;
+		s << "\\chanprops_seton\\" << info.seton;
+		s << "\\chanprops_setpid\\" << info.setbypid;
+		return s.str();
+	}
+	ChatStoredChanProps ChatBackendTask::ChanPropsFromKVString(const char *str) {
+		ChatStoredChanProps ret;
+		OS::KVReader kv_parser(str);
+		
+		if(kv_parser.HasKey("chanprops_modeflags")) {
+			ret.modeflags = kv_parser.GetValueInt("chanprops_modeflags");
+		} else {
+			ret.modeflags = 0;
+		}
+
+		if(kv_parser.HasKey("chanprops_seton")) {
+			ret.seton = kv_parser.GetValueInt("chanprops_seton");
+		} else {
+			ret.seton = 0;
+		}
+
+		if(kv_parser.HasKey("chanprops_comment")) {
+			ret.comment = kv_parser.GetValue("chanprops_comment");
+		}
+		if(kv_parser.HasKey("chanprops_entrymsg")) {
+			ret.entrymsg = kv_parser.GetValue("chanprops_entrymsg");
+		}
+		if(kv_parser.HasKey("chanprops_topic")) {
+			ret.topic = kv_parser.GetValue("chanprops_topic");
+		}
+		if(kv_parser.HasKey("chanprops_entrymsg")) {
+			ret.setby = kv_parser.GetValue("chanprops_setby");
+		}
+		if(kv_parser.HasKey("chanprops_setbypid")) {
+			ret.setbypid = kv_parser.GetValueInt("chanprops_setbypid");
+		} else {
+			ret.setbypid = 0;
+		}
+
+		return ret;
+	}
 	void ChatBackendTask::SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg, EChatMessageType message_type) {
 		std::vector<Chat::Driver *>::iterator it = m_drivers.begin();
 		while(it != m_drivers.end()) {

@@ -121,7 +121,6 @@ namespace Chat {
 	} ChatStoredUserMode; 
 
 	typedef struct {
-		int id;
 		std::string channel_mask; //if * all channels, if X global(kline, etc)
 		int modeflags;
 		std::string comment;
@@ -129,7 +128,7 @@ namespace Chat {
 		std::string setby;
 		std::string topic;
 		int seton;
-		int profileid;
+		int setbypid;
 		int expires; //can't be redis EXPIRE due to required events(unset modes, etc)
 	} ChatStoredChanProps; 
 
@@ -265,6 +264,11 @@ namespace Chat {
 			static void SubmitGetChatOperFlags(int profileid, ChatQueryCB cb, Peer *peer, void *extra);
 			static void SubmitSetSavedUserMode(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode);
 			static void SubmitGetSavedUserModes(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode); //usermode used as search params
+			static void SubmitDeleteSavedUserModes(ChatQueryCB cb, Peer *peer, void *extra, int id); //usermode used as search params
+
+			static void SubmitSetChanProps(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredChanProps chanprops);
+			static void SubmitGetChanProps(ChatQueryCB cb, Peer *peer, void *extra, std::string mask); //usermode used as search params
+			static void SubmitDeleteChanProps(ChatQueryCB cb, Peer *peer, void *extra, std::string mask); //usermode used as search params
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -292,6 +296,12 @@ namespace Chat {
 			void PerformSaveUserMode(ChatQueryRequest task_params);
 			void PerformGetSavedUserMode(ChatQueryRequest task_params);
 			void PerformGetUserModes(ChatQueryRequest task_params);
+			void PerformDeleteUserMode(ChatQueryRequest task_params);
+
+			
+			void PerformSetChanProps(ChatQueryRequest task_params);
+			void PerformGetChanProps(ChatQueryRequest task_params);
+			void PerformDeleteChanProps(ChatQueryRequest task_params);
 
 			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response);
 			int GetUserChanPermissionScore(int client_flags);
@@ -322,6 +332,8 @@ namespace Chat {
 			static ChatClientInfo ClientInfoFromKVString(const char *str, std::string prefix = "");
 			static std::string UsermodeToKVString(ChatStoredUserMode info);
 			static ChatStoredUserMode UsermodeFromKVString(const char *str);
+			static std::string ChanPropsToKVString(ChatStoredChanProps info);
+			static ChatStoredChanProps ChanPropsFromKVString(const char *str);
 
 			std::vector<Chat::Driver *> m_drivers;
 			redisContext *mp_redis_connection;
