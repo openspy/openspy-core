@@ -87,6 +87,8 @@ namespace Chat {
 		EIRCCommandHandlerRet handle_kick(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_oper(std::vector<std::string> params, std::string full_params);
 		EIRCCommandHandlerRet handle_login(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_listusermodes(std::vector<std::string> params, std::string full_params);
+		EIRCCommandHandlerRet handle_setusermode(std::vector<std::string> params, std::string full_params);
 
 		//user cmd callbacks
 		static void OnNickCmd_InUseLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
@@ -96,6 +98,7 @@ namespace Chat {
 		static void OnPrivMsg_Lookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnModeCmd_ShowChannelModes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnGetKey_UserLookup(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnSetUserMode_SetUserMode(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//channel cmds
 		EIRCCommandHandlerRet handle_join(std::vector<std::string> params, std::string full_params);
@@ -112,6 +115,7 @@ namespace Chat {
 		static void OnGetCKeyCmd_FindChanUserCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnSetChanKey_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 		static void OnGetChanKey_FindChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnListUserModesCmd_GetUserModes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//auth callbacks
 		static void m_nick_email_auth_oper_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id);

@@ -30,6 +30,7 @@ namespace Chat {
 	
 	const char *mp_pk_name = "CLIENTID";
 	const char *mp_chan_pk_name = "CHANID";
+	const char *mp_usermode_pk_name = "USERMODEID";
 	const char *chat_messaging_channel = "chat.messaging";
 	ChatBackendTask *ChatBackendTask::m_task_singleton = NULL;
 	ChatBackendTask::ChatBackendTask() {
@@ -404,7 +405,6 @@ namespace Chat {
 			goto end_error;
 		}
 
-		printf("Modes OK!\n");
 		//
 
 		old_modeflags = channel_info.modeflags;
@@ -862,6 +862,55 @@ namespace Chat {
 
 		free((void *)b64_msg);
 	}
+	void ChatBackendTask::SubmitSetSavedUserMode(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_SaveUserMode;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_data.usermode_data = usermode;
+		getQueryTask()->AddRequest(req);
+	}
+	void ChatBackendTask::SubmitGetSavedUserModes(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_GetUserMode;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_data.usermode_data = usermode;
+		getQueryTask()->AddRequest(req);
+	}
+	void ChatBackendTask::PerformSaveUserMode(ChatQueryRequest task_params) {
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		int id = task_params.query_data.usermode_data.id;
+		std::string kv_usermode = UsermodeToKVString(task_params.query_data.usermode_data);
+
+		if(id == 0) {
+			redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "INCR %s", mp_usermode_pk_name);
+			if(reply && reply->type == REDIS_REPLY_INTEGER) {
+				id = reply->integer;
+			} else if(reply && reply->type == REDIS_REPLY_STRING) {
+				id = atoi(reply->str);
+			}
+		}
+
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d mask %s", id, OS::strip_whitespace(task_params.query_data.usermode_data.mask).c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d comment %s", id, task_params.query_data.usermode_data.comment.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d setby %s", id, task_params.query_data.usermode_data.setby.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d machineid %s", id, task_params.query_data.usermode_data.machineid.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d profileid %s", id, task_params.query_data.usermode_data.profileid));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d setbypid %s", id, task_params.query_data.usermode_data.setbypid));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d modeflags %d", id, task_params.query_data.usermode_data.modeflags));
+
+		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\save_usermode%s%s\n",
+			chat_messaging_channel, kv_usermode.c_str()));
+	}
+	void ChatBackendTask::PerformGetUserModes(ChatQueryRequest task_params) {
+
+		//redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_* topic", id);
+		//freeReplyObject(reply);
+	}
 	ChatChannelInfo ChatBackendTask::GetChannelByName(std::string name) {
 		int id = 0;
 		redisReply *reply;
@@ -1042,7 +1091,13 @@ namespace Chat {
 							task->PerformUserDelete(task_params);
 						break;
 						case EChatQueryRequestType_GetChatOperFlags:
-						task->PerformGetChatOperFlags(task_params);
+							task->PerformGetChatOperFlags(task_params);
+						break;
+						case EChatQueryRequestType_GetUserMode:
+							task->PerformGetUserModes(task_params);
+						break;
+						case EChatQueryRequestType_SaveUserMode:
+							task->PerformSaveUserMode(task_params);
 						break;
 					}
 					if(task->m_flag_push_task) {
@@ -1095,7 +1150,6 @@ namespace Chat {
 	    if (r->type == REDIS_REPLY_ARRAY) {
 	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
 	    		OS::KVReader kv_parser(r->element[2]->str);
-	    		printf("KV Str: %s\n", r->element[2]->str);
 	    		if(strcmp(r->element[1]->str,chat_messaging_channel) == 0) {
 	    			type = kv_parser.GetValueInt("msg_type");
 	    			if(!kv_parser.HasKey("type")) {
@@ -1145,8 +1199,6 @@ namespace Chat {
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
 
 						change_data.new_limit = kv_parser.GetValueInt("new_limit");
-						
-						printf("Send update to drivers\n");
 
 						task->SendChannelModeUpdateToDrivers(client_info, channel_info, change_data);
 					} else if (strcmp(msg_type.c_str(), "channel_update_usermode_flags") == 0) {
@@ -1297,8 +1349,6 @@ namespace Chat {
 		ChatChannelInfo ret;
 		OS::KVReader kv_parser(str);
 
-		printf("Channel info: %s\n", str);
-
 		if(kv_parser.HasKey("channel_name")) {
 			ret.name = kv_parser.GetValue("channel_name");
 		}
@@ -1321,9 +1371,6 @@ namespace Chat {
 		if(kv_parser.HasKey("channel_id")) {
 
 			ret.channel_id = kv_parser.GetValueInt("channel_id");
-			printf("Has channel ID: %d\n", ret.channel_id);
-		} else {
-			printf("Doesn't have channel ID\n");
 		}
 
 		if(kv_parser.HasKey("channel_modeflags")) {
@@ -1338,6 +1385,63 @@ namespace Chat {
 		if(kv_parser.HasKey("channel_password")) {
 			ret.password = kv_parser.GetValue("channel_password");
 		}
+		return ret;
+	}
+	std::string ChatBackendTask::UsermodeToKVString(ChatStoredUserMode info) {
+		std::ostringstream s;
+		s << "\\usermode_id\\" << info.id;
+		s << "\\usermode_mask\\" << info.mask;
+		s << "\\usermode_comment\\" << info.comment;
+		if(info.machineid.length())
+			s << "\\usermode_machineid\\" << info.machineid;
+		if(info.setby.length())
+			s << "\\usermode_setby\\" << info.setby;
+		if(info.profileid != 0)
+			s << "\\usermode_profileid\\" << info.profileid;
+
+		s << "\\usermode_modeflags\\" << info.modeflags;
+
+		return s.str();
+	}
+	ChatStoredUserMode ChatBackendTask::UsermodeFromKVString(const char *str) {
+		ChatStoredUserMode ret;
+		OS::KVReader kv_parser(str);
+
+		if(kv_parser.HasKey("usermode_id")) {
+			ret.id = kv_parser.GetValueInt("usermode_id");
+		} else {
+			ret.id = 0;
+		}
+
+		if(kv_parser.HasKey("usermode_comment")) {
+			ret.comment = kv_parser.GetValue("usermode_comment");
+		}
+
+		if(kv_parser.HasKey("usermode_modeflags")) {
+			ret.modeflags = kv_parser.GetValueInt("usermode_modeflags");
+		} else {
+			ret.modeflags = 0;
+		}
+
+		if(kv_parser.HasKey("usermode_profileid")) {
+			ret.profileid = kv_parser.GetValueInt("usermode_profileid");
+		} else {
+			ret.profileid = 0;
+		}
+
+		if(kv_parser.HasKey("usermode_setbypid")) {
+			ret.setbypid = kv_parser.GetValueInt("usermode_setbypid");
+		} else {
+			ret.setbypid = 0;
+		}
+
+		if(kv_parser.HasKey("usermode_machineid")) {
+			ret.machineid = kv_parser.GetValue("usermode_machineid");
+		}
+		if(kv_parser.HasKey("usermode_setby")) {
+			ret.setby = kv_parser.GetValue("usermode_setby");
+		}
+
 		return ret;
 	}
 	void ChatBackendTask::SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg, EChatMessageType message_type) {
@@ -1417,13 +1521,12 @@ namespace Chat {
 		ChatClientInfo client_info;
 		//
 
-		printf("Chan Client: %d - %d - %d\n", chan_client_info.client_info.client_id, chan_client_info.client_info.profileid, chan_client_info.client_info.operflags);
 		if(chan_client_info.client_info.operflags & OPERPRIVS_OPEROVERRIDE) {
 			return true;
 		}
 		if(task_params.type == EChatQueryRequestType_UpdateChannelModes) {
 			//scan add modes
-			for(int i=0;i<sizeof(ModeFlagPermissions)/sizeof(struct _ModeFlagPermissions);i++) {
+			for(unsigned int i=0;i<sizeof(ModeFlagPermissions)/sizeof(struct _ModeFlagPermissions);i++) {
 				s.str("");
 				if(task_params.add_flags & ModeFlagPermissions[i].flag) {
 					if(~chan_client_info.client_flags & ModeFlagPermissions[i].required_flag) {
@@ -1434,7 +1537,7 @@ namespace Chat {
 			}
 
 			//scan remove modes
-			for(int i=0;i<sizeof(ModeFlagPermissions)/sizeof(struct _ModeFlagPermissions);i++) {
+			for(unsigned int i=0;i<sizeof(ModeFlagPermissions)/sizeof(struct _ModeFlagPermissions);i++) {
 				s.str("");
 				if(task_params.remove_flags & ModeFlagPermissions[i].flag) {
 					if(~chan_client_info.client_flags & ModeFlagPermissions[i].required_flag) {

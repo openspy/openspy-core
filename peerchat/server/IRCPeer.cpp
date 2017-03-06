@@ -59,6 +59,18 @@ namespace Chat {
 
 			{"SETCHANKEY", &IRCPeer::handle_setchankey},
 			{"GETCHANKEY", &IRCPeer::handle_getchankey},
+
+			{"LISTUSERMODES", &IRCPeer::handle_listusermodes},	
+			{"SETUSERMODE", &IRCPeer::handle_setusermode},
+			/*{"LISTCHANPROPS", &IRCPeer::handle_listchanprops},
+			
+			{"DELCHANPROPS", &IRCPeer::handle_listchanprops},
+			{"SETCHANPROPS", &IRCPeer::handle_listchanprops},
+
+			{"LISTUSERMODES", &IRCPeer::handle_listchanprops},
+			{"DELUSERMODE", &IRCPeer::handle_listchanprops},
+			
+			*/
 		};
 		IRCPeer::IRCPeer(Driver *driver, struct sockaddr_in *address_info, int sd) : Chat::Peer(driver, address_info, sd) {
 			m_sent_client_init = false;

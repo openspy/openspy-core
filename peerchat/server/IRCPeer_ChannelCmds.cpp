@@ -932,4 +932,93 @@ namespace Chat {
 		EIRCCommandHandlerRet IRCPeer::handle_kick(std::vector<std::string> params, std::string full_params) {
 			return EIRCCommandHandlerRet_NoError;
 		}
+
+		void IRCPeer::OnListUserModesCmd_GetUserModes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			/*
+			LISTUSERMODE \usermodeid\468\chanmask\X\modeflags\b\machineid\eee00d0fcef09a1437156943f4afc5f1\isGlobal\\setbynick\sk8erace\setbyhost\109.201.154.194\comment\Snipe Injecting False Heartbeat Packets\setondate\12/21/2016 12:53
+			LISTUSERMODE \final\1
+			*/
+		}
+		EIRCCommandHandlerRet IRCPeer::handle_listusermodes(std::vector<std::string> params, std::string full_params) {
+			std::string mask;
+			if(params.size() < 1) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			mask = params[1];
+			ChatStoredUserMode usermode_search;
+			usermode_search.mask = mask;
+			usermode_search.id = 0;
+			ChatBackendTask::SubmitGetSavedUserModes(OnListUserModesCmd_GetUserModes, this, mp_driver, usermode_search);
+			return EIRCCommandHandlerRet_NoError;	
+		}
+
+		
+		void IRCPeer::OnSetUserMode_SetUserMode(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+		}
+
+		////void ChatBackendTask::SubmitSetSavedUserMode(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode)
+		EIRCCommandHandlerRet IRCPeer::handle_setusermode(std::vector<std::string> params, std::string full_params) {
+			std::string kv_params;
+			ChatStoredUserMode usermode;
+			if(params.size() < 1) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			kv_params = params[1];
+			usermode.id = 0;
+
+			OS::KVReader kv_parser(kv_params);
+
+			if(kv_parser.HasKey("hostmask")) {
+				usermode.mask = kv_parser.GetValue("hostmask");
+			}
+			if(kv_parser.HasKey("comment")) {
+				usermode.comment = kv_parser.GetValue("comment");
+			}
+			if(kv_parser.HasKey("machineid")) {
+				usermode.machineid = kv_parser.GetValue("machineid");
+			}
+			if(kv_parser.HasKey("profileid")) {
+				usermode.profileid = kv_parser.GetValueInt("profileid");
+			} else {
+				usermode.profileid = 0;
+			}
+
+			if(kv_parser.HasKey("isGlobal")) {
+				usermode.machineid = kv_parser.GetValue("isGlobal");
+			}
+
+			std::string modeflags = kv_parser.GetValue("modeflags");
+			usermode.modeflags = 0;
+			for(int i=0;i<modeflags.length();i++) {
+				switch(modeflags[i]) {
+					case 'b':
+						usermode.modeflags |= EChanClientFlags_Banned;
+					break;
+					case 'g':
+						usermode.modeflags |= EChanClientFlags_Gagged;
+					break;
+					case 'I':
+						usermode.modeflags |= EChanClientFlags_Invited;
+					break;
+					case 'o':
+						usermode.modeflags |= EChanClientFlags_Op;
+					break;
+					case 'O':
+						usermode.modeflags |= EChanClientFlags_Owner;
+					break;
+					case 'v':
+						usermode.modeflags |= EChanClientFlags_Voice;
+					break;
+					case 'h':
+						usermode.modeflags |= EChanClientFlags_HalfOp;
+					break;
+				}
+			}
+
+			usermode.setbypid = m_profile.id;
+
+			ChatBackendTask::SubmitSetSavedUserMode(OnSetUserMode_SetUserMode, this, mp_driver, usermode);
+
+			return EIRCCommandHandlerRet_NoError;
+		}
 }

@@ -62,6 +62,7 @@ namespace Chat {
 		EChanClientFlags_Gagged = 16,
 		EChanClientFlags_Banned = 32,
 		EChanClientFlags_Invisible = 64,
+		EChanClientFlags_Invited = 128, //or flood exempt for X chanmask
 	};
 	typedef struct _ChatChanClientInfo {
 		uint32_t client_flags;
@@ -105,6 +106,33 @@ namespace Chat {
 		bool set;
 	} ChanClientModeChange;
 
+	typedef struct {
+		int id;
+		std::string mask; //if * all channels, if X global(kline, etc)
+		int modeflags;
+		std::string comment;
+		std::string setby;
+		std::string machineid;
+		int seton;
+		int profileid;
+		int setbypid;
+		bool temporary; //delete when exit channel
+		int expires; //can't be redis EXPIRE due to required events(unset modes, etc)
+	} ChatStoredUserMode; 
+
+	typedef struct {
+		int id;
+		std::string channel_mask; //if * all channels, if X global(kline, etc)
+		int modeflags;
+		std::string comment;
+		std::string entrymsg;
+		std::string setby;
+		std::string topic;
+		int seton;
+		int profileid;
+		int expires; //can't be redis EXPIRE due to required events(unset modes, etc)
+	} ChatStoredChanProps; 
+
 	typedef struct _ChatQueryResponse {
 		ChatChannelInfo channel_info;
 		ChatClientInfo client_info;
@@ -114,7 +142,11 @@ namespace Chat {
 		std::vector< std::pair<EChatBackendResponseError, std::string> > errors;
 
 		int operflags; //for get oper flags response
+
+		ChatStoredChanProps channel_props_data;
+		ChatStoredUserMode usermode_data;
 	} ChatQueryResponse;
+
 
 	typedef void (*ChatQueryCB)(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 	enum EChatQueryRequestType {
@@ -139,6 +171,7 @@ namespace Chat {
 
 		EChatQueryRequestType_SaveUserMode,
 		EChatQueryRequestType_SaveChanProps,
+		EChatQueryRequestType_GetUserMode,
 		EChatQueryRequestType_GetChanProps, //get all chan props
 		EChatQueryRequestType_GetUserModes, //get all saved user modes
 		EChatQueryRequestType_KillUser,
@@ -230,6 +263,8 @@ namespace Chat {
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, const std::map<std::string, std::string> set_data_map);
 			static void SubmitClientDelete(ChatQueryCB cb, Peer *peer, void *extra, std::string reason);
 			static void SubmitGetChatOperFlags(int profileid, ChatQueryCB cb, Peer *peer, void *extra);
+			static void SubmitSetSavedUserMode(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode);
+			static void SubmitGetSavedUserModes(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode); //usermode used as search params
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -254,6 +289,9 @@ namespace Chat {
 			void PerformSetChannelKeys(ChatQueryRequest task_params);
 			void PerformUserDelete(ChatQueryRequest task_params);
 			void PerformGetChatOperFlags(ChatQueryRequest task_params);
+			void PerformSaveUserMode(ChatQueryRequest task_params);
+			void PerformGetSavedUserMode(ChatQueryRequest task_params);
+			void PerformGetUserModes(ChatQueryRequest task_params);
 
 			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response);
 			int GetUserChanPermissionScore(int client_flags);
@@ -268,8 +306,6 @@ namespace Chat {
 			void LoadClientInfoByID(ChatClientInfo &info, int client_id);
 			void LoadClientInfoByName(ChatClientInfo &info, std::string name);
 
-			static std::string ClientInfoToKVString(ChatClientInfo info, std::string prefix = "");
-			static ChatClientInfo ClientInfoFromKVString(const char *str, std::string prefix = "");
 			void SendClientMessageToDrivers(int target_id, ChatClientInfo user, const char *msg, EChatMessageType message_type);
 			void SendChannelMessageToDrivers(ChatChannelInfo channel, ChatClientInfo user, const char *msg, EChatMessageType message_type);			
 			void SendClientJoinChannelToDrivers(ChatClientInfo client, ChatChannelInfo channel);
@@ -282,6 +318,10 @@ namespace Chat {
 
 			static std::string ChannelInfoToKVString(ChatChannelInfo info);
 			static ChatChannelInfo ChannelInfoFromKVString(const char *str);
+			static std::string ClientInfoToKVString(ChatClientInfo info, std::string prefix = "");
+			static ChatClientInfo ClientInfoFromKVString(const char *str, std::string prefix = "");
+			static std::string UsermodeToKVString(ChatStoredUserMode info);
+			static ChatStoredUserMode UsermodeFromKVString(const char *str);
 
 			std::vector<Chat::Driver *> m_drivers;
 			redisContext *mp_redis_connection;
