@@ -1020,7 +1020,8 @@ namespace Chat {
 		}
 
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d id %d", id, id));
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d mask %s", id, OS::strip_whitespace(task_params.query_data.usermode_data.mask).c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d hostmask %s", id, OS::strip_whitespace(task_params.query_data.usermode_data.hostmask).c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d chanmask %s", id, OS::strip_whitespace(task_params.query_data.usermode_data.chanmask).c_str()));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d comment %s", id, task_params.query_data.usermode_data.comment.c_str()));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d setby %s", id, task_params.query_data.usermode_data.setby.c_str()));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d machineid %s", id, task_params.query_data.usermode_data.machineid.c_str()));
@@ -1057,7 +1058,7 @@ namespace Chat {
 		 			usermode_id = atoi(id_reply->str);
 		 		}
 		 		usermode = GetUserModeByID(usermode_id);
-		 		if(match(task_params.query_data.usermode_data.mask.c_str(), usermode.mask.c_str()) == 0) {
+		 		if(match(task_params.query_data.usermode_data.chanmask.c_str(), usermode.chanmask.c_str()) == 0) {
 		 			response.usermodes.push_back(usermode);
 		 		}
 		 		freeReplyObject(id_reply);
@@ -1105,9 +1106,15 @@ namespace Chat {
 		freeReplyObject(reply);
 
 
-		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d mask", id);
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d hostmask", id);
 		if(reply && reply->type == REDIS_REPLY_STRING) {
-			usermode.mask = reply->str;
+			usermode.hostmask = reply->str;
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d chanmask", id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			usermode.chanmask = reply->str;
 		}
 		freeReplyObject(reply);
 
@@ -1732,7 +1739,8 @@ namespace Chat {
 	std::string ChatBackendTask::UsermodeToKVString(ChatStoredUserMode info) {
 		std::ostringstream s;
 		s << "\\usermode_id\\" << info.id;
-		s << "\\usermode_mask\\" << info.mask;
+		s << "\\usermode_hostmask\\" << info.hostmask;
+		s << "\\usermode_chanmask\\" << info.chanmask;
 		s << "\\usermode_comment\\" << info.comment;
 		if(info.machineid.length())
 			s << "\\usermode_machineid\\" << info.machineid;
@@ -1757,6 +1765,14 @@ namespace Chat {
 
 		if(kv_parser.HasKey("usermode_comment")) {
 			ret.comment = kv_parser.GetValue("usermode_comment");
+		}
+
+		if(kv_parser.HasKey("usermode_hostmask")) {
+			ret.hostmask = kv_parser.GetValue("usermode_hostmask");
+		}
+
+		if(kv_parser.HasKey("usermode_chanmask")) {
+			ret.chanmask = kv_parser.GetValue("usermode_chanmask");
 		}
 
 		if(kv_parser.HasKey("usermode_modeflags")) {

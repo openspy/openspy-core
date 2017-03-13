@@ -110,7 +110,8 @@ namespace Chat {
 
 	typedef struct {
 		int id;
-		std::string mask; //if * all channels, if X global(kline, etc)
+		std::string hostmask;
+		std::string chanmask; //if * all channels, if X global(kline, etc)
 		int modeflags;
 		std::string comment;
 		std::string setby;

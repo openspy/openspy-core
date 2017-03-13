@@ -953,7 +953,8 @@ namespace Chat {
 				s.str("");
 				s << ":SERVER!SERVER@* PRIVMSG " << irc_peer->m_client_info.name << " :LISTUSERMODE ";
 				s << "\\usermodeid\\" << usermode.id;
-				s << "\\chanmask\\" << usermode.mask;
+				s << "\\chanmask\\" << usermode.chanmask;
+				s << "\\hostmask\\" << usermode.hostmask;
 				s << "\\modeflags\\" << usermode.modeflags;
 				s << "\\machineid\\" << usermode.machineid;
 				//s << "\\isGlobal\\" << 1;
@@ -975,7 +976,7 @@ namespace Chat {
 			}
 			mask = params[1];
 			ChatStoredUserMode usermode_search;
-			usermode_search.mask = mask;
+			usermode_search.chanmask = mask;
 			usermode_search.id = 0;
 			ChatBackendTask::SubmitGetSavedUserModes(OnListUserModesCmd_GetUserModes, this, mp_driver, usermode_search);
 			return EIRCCommandHandlerRet_NoError;	
@@ -995,10 +996,15 @@ namespace Chat {
 			kv_params = params[1];
 			usermode.id = 0;
 
+			//todo: set user mode(+O when chanmask/hostmask match)
+
 			OS::KVReader kv_parser(kv_params);
 
 			if(kv_parser.HasKey("hostmask")) {
-				usermode.mask = kv_parser.GetValue("hostmask");
+				usermode.hostmask = kv_parser.GetValue("hostmask");
+			}
+			if(kv_parser.HasKey("chanmask")) {
+				usermode.chanmask = kv_parser.GetValue("chanmask");
 			}
 			if(kv_parser.HasKey("comment")) {
 				usermode.comment = kv_parser.GetValue("comment");
@@ -1174,6 +1180,8 @@ namespace Chat {
 			chanprops.modeflags = 0;
 			chanprops.seton = time(NULL);
 			chanprops.setbypid = m_profile.id;
+
+			//XXX todo: overwrite existing chanmask with new data, apply chan mask
 			
 			if(kv_parser.HasKey("chanmask")) {
 				chanprops.channel_mask = kv_parser.GetValue("chanmask");
