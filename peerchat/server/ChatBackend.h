@@ -37,6 +37,8 @@ namespace Chat {
 		EChatBackendResponseError_NoChange,
 		EChatBackendResponseError_BadPermissions,
 		EChatBackendResponseError_NotOnChannel,
+		EChatBackendResponseError_NoUserModeID,
+		EChatBackendResponseError_NoChanProps,
 		EChatBackendResponseError_Unknown,
 	};
 	typedef struct _ChatClientInfo {
@@ -121,12 +123,15 @@ namespace Chat {
 	} ChatStoredUserMode; 
 
 	typedef struct {
+		int id;
 		std::string channel_mask; //if * all channels, if X global(kline, etc)
 		int modeflags;
 		std::string comment;
 		std::string entrymsg;
 		std::string setby;
 		std::string topic;
+		std::string password;
+		int limit;
 		int seton;
 		int setbypid;
 		int expires; //can't be redis EXPIRE due to required events(unset modes, etc)
@@ -144,6 +149,8 @@ namespace Chat {
 
 		ChatStoredChanProps channel_props_data;
 		ChatStoredUserMode usermode_data;
+		std::vector<ChatStoredUserMode> usermodes;
+		std::vector<ChatStoredChanProps> chanprops;
 	} ChatQueryResponse;
 
 
@@ -159,7 +166,6 @@ namespace Chat {
 		EChatQueryRequestType_RemoveUserFromChannel,
 		EChatQueryRequestType_GetChannelUsers,
 		EChatQueryRequestType_GetChannelUser,
-		EChatQueryRequestType_SetUserChannelInfo,
 		EChatQueryRequestType_UpdateChannelModes,
 		EChatQueryRequestType_UpdateChannelTopic,
 		EChatQueryRequestType_SetChannelClientKeys,
@@ -170,11 +176,12 @@ namespace Chat {
 
 		EChatQueryRequestType_SaveUserMode,
 		EChatQueryRequestType_SaveChanProps,
-		EChatQueryRequestType_GetUserMode,
 		EChatQueryRequestType_GetChanProps, //get all chan props
 		EChatQueryRequestType_GetUserModes, //get all saved user modes
 		EChatQueryRequestType_KillUser,
 		EChatQueryRequestType_GetChatOperFlags,
+		EChatQueryRequestType_DeleteUserMode,
+		EChatQueryRequestType_DeleteChanProps,
 	};
 
 	enum EChatMessageType {
@@ -264,11 +271,11 @@ namespace Chat {
 			static void SubmitGetChatOperFlags(int profileid, ChatQueryCB cb, Peer *peer, void *extra);
 			static void SubmitSetSavedUserMode(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode);
 			static void SubmitGetSavedUserModes(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode); //usermode used as search params
-			static void SubmitDeleteSavedUserModes(ChatQueryCB cb, Peer *peer, void *extra, int id); //usermode used as search params
+			static void SubmitDeleteSavedUserMode(ChatQueryCB cb, Peer *peer, void *extra, int id); //usermode used as search params
 
 			static void SubmitSetChanProps(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredChanProps chanprops);
 			static void SubmitGetChanProps(ChatQueryCB cb, Peer *peer, void *extra, std::string mask); //usermode used as search params
-			static void SubmitDeleteChanProps(ChatQueryCB cb, Peer *peer, void *extra, std::string mask); //usermode used as search params
+			static void SubmitDeleteChanProps(ChatQueryCB cb, Peer *peer, void *extra, int id); //usermode used as search params
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -311,6 +318,8 @@ namespace Chat {
 			ChatChannelInfo GetChannelByID(int id);
 			ChatChannelInfo CreateChannel(std::string name);
 			ChatChanClientInfo GetChanClientInfo(int chan_id, int client_id);
+			ChatStoredUserMode GetUserModeByID(int usermode_id);
+			ChatStoredChanProps GetChanPropsByID(int chanprops_id);
 
 
 			void LoadClientInfoByID(ChatClientInfo &info, int client_id);

@@ -62,15 +62,10 @@ namespace Chat {
 
 			{"LISTUSERMODES", &IRCPeer::handle_listusermodes},	
 			{"SETUSERMODE", &IRCPeer::handle_setusermode},
-			/*{"LISTCHANPROPS", &IRCPeer::handle_listchanprops},
-			
-			{"DELCHANPROPS", &IRCPeer::handle_listchanprops},
-			{"SETCHANPROPS", &IRCPeer::handle_listchanprops},
-
-			{"LISTUSERMODES", &IRCPeer::handle_listchanprops},
-			{"DELUSERMODE", &IRCPeer::handle_listchanprops},
-			
-			*/
+			{"DELUSERMODE", &IRCPeer::handle_delusermode},
+			{"LISTCHANPROPS", &IRCPeer::handle_listchanprops},			
+			{"DELCHANPROPS", &IRCPeer::handle_delchanprops},
+			{"SETCHANPROPS", &IRCPeer::handle_setchanprops},
 		};
 		IRCPeer::IRCPeer(Driver *driver, struct sockaddr_in *address_info, int sd) : Chat::Peer(driver, address_info, sd) {
 			m_sent_client_init = false;
@@ -304,37 +299,39 @@ namespace Chat {
 				switch(p.first) {
 
 					case EChatBackendResponseError_NoUser_OrChan:
-					if(!request.query_name.length()) {
-						name = request.query_data.client_info.name;
-					} else {
-						name = request.query_name;
-					}
-					s << name << " :No such nick/channel";
-					send_numeric(401, s.str(), true);
+	 
 					break;
 					case EChatBackendResponseError_NoVoicePerms:
-					s << response.channel_info.name << " :You're not voiced";
-					send_numeric(482, s.str(), true);
+						s << response.channel_info.name << " :You're not voiced";
+						send_numeric(482, s.str(), true);
 					break;
 					case EChatBackendResponseError_NoHOPPerms:
-					s << response.channel_info.name << ":You're not channel half operator";
-					send_numeric(482, s.str(), true);
+						s << response.channel_info.name << ":You're not channel half operator";
+						send_numeric(482, s.str(), true);
 					break;
 					case EChatBackendResponseError_NoOPPerms:
-					s << response.channel_info.name << ":You're not channel operator";
-					send_numeric(482, s.str(), true);
+						s << response.channel_info.name << ":You're not channel operator";
+						send_numeric(482, s.str(), true);
 					break;
 					case EChatBackendResponseError_NoOwnerPerms:
-					s << response.channel_info.name << ":You're not channel owner";
-					send_numeric(482, s.str(), true);
+						s << response.channel_info.name << ":You're not channel owner";
+						send_numeric(482, s.str(), true);
 					break;
 					case EChatBackendResponseError_NickInUse:
-					s << response.channel_info.name << ":Nickname is already in use";
-					send_numeric(433, s.str(), true);
+						s << response.channel_info.name << ":Nickname is already in use";
+						send_numeric(433, s.str(), true);
 					break;
 					case EChatBackendResponseError_BadPermissions:
 						s << response.channel_info.name << " :" << p.second;
 						send_numeric(482, s.str(), true);
+					break;
+					case EChatBackendResponseError_NoUserModeID:
+						s << response.channel_info.name << ":No such usermode id";
+						send_numeric(401, s.str(), true);
+					break;
+					case EChatBackendResponseError_NoChanProps:
+						s << request.query_data.channel_props_data.channel_mask << " :No matching chan props";
+						send_numeric(401, s.str(), true);
 					break;
 					case EChatBackendResponseError_NoChange:
 					default:

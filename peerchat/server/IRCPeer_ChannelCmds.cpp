@@ -934,10 +934,39 @@ namespace Chat {
 		}
 
 		void IRCPeer::OnListUserModesCmd_GetUserModes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
-			/*
-			LISTUSERMODE \usermodeid\468\chanmask\X\modeflags\b\machineid\eee00d0fcef09a1437156943f4afc5f1\isGlobal\\setbynick\sk8erace\setbyhost\109.201.154.194\comment\Snipe Injecting False Heartbeat Packets\setondate\12/21/2016 12:53
-			LISTUSERMODE \final\1
-			*/
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)extra;
+			std::vector<ChatStoredUserMode>::const_iterator it;
+			ChatStoredUserMode usermode;
+			std::ostringstream s;
+			if(!driver->HasPeer(peer)) {
+				return;
+			}
+
+			if(irc_peer->send_callback_error(request, response)) {
+				return;
+			}
+			it = response.usermodes.begin();
+			
+			while(it != response.usermodes.end()) {
+				usermode = *it;
+				s.str("");
+				s << ":SERVER!SERVER@* PRIVMSG " << irc_peer->m_client_info.name << " :LISTUSERMODE ";
+				s << "\\usermodeid\\" << usermode.id;
+				s << "\\chanmask\\" << usermode.mask;
+				s << "\\modeflags\\" << usermode.modeflags;
+				s << "\\machineid\\" << usermode.machineid;
+				//s << "\\isGlobal\\" << 1;
+				s << "\\setbynick\\" << usermode.setby;
+				s << "\\comment\\" << usermode.comment;
+				s << "\\seton\\" << usermode.seton;
+				s << std::endl;
+				irc_peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+				it++;
+			}
+			s.str("");
+			s << ":SERVER!SERVER@* PRIVMSG " << irc_peer->m_client_info.name << " :LISTUSERMODE \\final\\1" << std::endl;
+			irc_peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());			
 		}
 		EIRCCommandHandlerRet IRCPeer::handle_listusermodes(std::vector<std::string> params, std::string full_params) {
 			std::string mask;
@@ -989,7 +1018,7 @@ namespace Chat {
 
 			std::string modeflags = kv_parser.GetValue("modeflags");
 			usermode.modeflags = 0;
-			for(int i=0;i<modeflags.length();i++) {
+			for(unsigned int i=0;i<modeflags.length();i++) {
 				switch(modeflags[i]) {
 					case 'b':
 						usermode.modeflags |= EChanClientFlags_Banned;
@@ -1019,6 +1048,161 @@ namespace Chat {
 
 			ChatBackendTask::SubmitSetSavedUserMode(OnSetUserMode_SetUserMode, this, mp_driver, usermode);
 
+			return EIRCCommandHandlerRet_NoError;
+		}
+		void IRCPeer::OnDelUserMode(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)extra;
+
+			if(!driver->HasPeer(peer)) {
+				return;
+			}
+
+			if(irc_peer->send_callback_error(request, response)) {
+				return;
+			}
+		}
+		EIRCCommandHandlerRet IRCPeer::handle_delusermode(std::vector<std::string> params, std::string full_params) {
+			int id;
+			if(params.size() < 1) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			id = atoi(params[1].c_str());
+			ChatBackendTask::SubmitDeleteSavedUserMode(OnDelUserMode, this, mp_driver, id);
+			return EIRCCommandHandlerRet_NoError;
+		}
+		void IRCPeer::OnListChanPropsCmd_GetChannelProps(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)extra;
+			std::ostringstream s;
+			ChatStoredChanProps chanprops;
+			std::vector<ChatStoredChanProps>::const_iterator it;
+
+			if(!driver->HasPeer(peer)) {
+				return;
+			}
+
+			if(irc_peer->send_callback_error(request, response)) {
+				return;
+			}
+
+			it = response.chanprops.begin();
+			
+			while(it != response.chanprops.end()) {
+				chanprops = *it;
+				s.str("");
+				s << ":SERVER!SERVER@* PRIVMSG " << irc_peer->m_client_info.name << " :LISTCHANPROPS ";
+				s << chanprops.channel_mask;
+				s << " ";
+				s << "\\id\\" << chanprops.id;
+				s << "\\entrymsg\\" << chanprops.entrymsg;
+				s << "\\comment\\" << chanprops.comment;
+				s << "\\topic\\" << chanprops.topic;
+				s << "\\password\\" << chanprops.password;
+				s << "\\limit\\" << chanprops.limit;
+				s << "\\setby\\" << chanprops.setby;
+				s << "\\setbypid\\" << chanprops.setbypid;
+				s << "\\seton\\" << chanprops.seton;
+				s << "\\modeflags\\" << chanprops.modeflags;
+				s << std::endl;
+				irc_peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+				it++;
+			}
+			s.str("");
+			s << ":SERVER!SERVER@* PRIVMSG " << irc_peer->m_client_info.name << " :LISTCHANPROPS \\final\\1" << std::endl;
+			irc_peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());			
+		}
+		EIRCCommandHandlerRet IRCPeer::handle_listchanprops(std::vector<std::string> params, std::string full_params) {
+			std::string channel_mask;
+			if(params.size() < 1) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			channel_mask = params[1];
+			ChatBackendTask::SubmitGetChanProps(OnListChanPropsCmd_GetChannelProps, this, mp_driver, channel_mask);
+			return EIRCCommandHandlerRet_NoError;		
+		}
+		void IRCPeer::OnListChanPropsCmd_DelChannelProps(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)extra;
+			std::ostringstream s;
+
+			if(!driver->HasPeer(peer)) {
+				return;
+			}
+
+			if(irc_peer->send_callback_error(request, response)) {
+				return;
+			}
+			s << ":SERVER!SERVER@* PRIVMSG " << irc_peer->m_client_info.name << " :Deleted chanprops ID " << request.query_data.channel_props_data.id << std::endl;
+			irc_peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());			
+		}
+		EIRCCommandHandlerRet IRCPeer::handle_delchanprops(std::vector<std::string> params, std::string full_params) {
+			int id;
+			if(params.size() < 1) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+			id = atoi(params[1].c_str());
+			ChatBackendTask::SubmitDeleteChanProps(OnListChanPropsCmd_DelChannelProps, this, mp_driver, id);
+			return EIRCCommandHandlerRet_NoError;
+		}
+
+
+		void IRCPeer::OnListChanPropsCmd_SetChannelProps(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			IRCPeer *irc_peer = (IRCPeer *)peer;
+			Chat::Driver *driver = (Chat::Driver *)extra;
+
+			if(!driver->HasPeer(peer)) {
+				return;
+			}
+
+			if(irc_peer->send_callback_error(request, response)) {
+				return;
+			}
+		}
+		EIRCCommandHandlerRet IRCPeer::handle_setchanprops(std::vector<std::string> params, std::string full_params) {
+			ChatStoredChanProps chanprops;
+			
+			if(params.size() < 1) {
+				return EIRCCommandHandlerRet_NotEnoughParams;
+			}
+
+			std::string kv_params = full_params.substr(params[0].length()+1);
+			OS::KVReader kv_parser(kv_params);
+
+			chanprops.id = 0;
+			chanprops.limit = 0;
+			chanprops.modeflags = 0;
+			chanprops.seton = time(NULL);
+			chanprops.setbypid = m_profile.id;
+			
+			if(kv_parser.HasKey("chanmask")) {
+				chanprops.channel_mask = kv_parser.GetValue("chanmask");
+			}
+
+			if(kv_parser.HasKey("topic")) {
+				chanprops.topic = kv_parser.GetValue("topic");
+			}
+			if(kv_parser.HasKey("entrymsg")) {
+				chanprops.entrymsg = kv_parser.GetValue("entrymsg");
+			}
+			if(kv_parser.HasKey("comment")) {
+				chanprops.comment = kv_parser.GetValue("comment");
+			}
+			if(kv_parser.HasKey("limit")) {
+				chanprops.limit = kv_parser.GetValueInt("limit");
+			}
+			if(kv_parser.HasKey("chankey")) {
+				chanprops.password = kv_parser.GetValue("chankey");
+			}
+
+			/* TODO: save chan keys
+			if(kv_parser.HasKey("groupname")) {
+				chanprops.password = kv_parser.GetValue("groupname");
+			}*/
+
+			//onlyowner, expiressec, mode, kickexisting
+
+			ChatBackendTask::SubmitSetChanProps(OnListChanPropsCmd_SetChannelProps, this, mp_driver, chanprops);
 			return EIRCCommandHandlerRet_NoError;
 		}
 }

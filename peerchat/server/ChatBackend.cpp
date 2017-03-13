@@ -2,6 +2,7 @@
 #include "ChatPeer.h"
 #include <sstream>
 #include <OS/KVReader.h>
+#include <OS/legacy/helpers.h>
 namespace Chat {
 
 	/*
@@ -31,6 +32,7 @@ namespace Chat {
 	const char *mp_pk_name = "CLIENTID";
 	const char *mp_chan_pk_name = "CHANID";
 	const char *mp_usermode_pk_name = "USERMODEID";
+	const char *mp_chanprops_pk_name = "CHANPROPSID";
 	const char *chat_messaging_channel = "chat.messaging";
 	ChatBackendTask *ChatBackendTask::m_task_singleton = NULL;
 	ChatBackendTask::ChatBackendTask() {
@@ -343,6 +345,128 @@ namespace Chat {
 		req.chan_password = password;
 		req.user_modechanges = user_modechanges;
 		getQueryTask()->AddRequest(req);
+	}
+	void ChatBackendTask::SubmitSetChanProps(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredChanProps chanprops) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_SaveChanProps;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_data.channel_props_data = chanprops;
+		getQueryTask()->AddRequest(req);
+	}
+	void ChatBackendTask::SubmitGetChanProps(ChatQueryCB cb, Peer *peer, void *extra, std::string mask) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_GetChanProps;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_data.channel_props_data.channel_mask = mask;
+		getQueryTask()->AddRequest(req);
+	}
+	void ChatBackendTask::SubmitDeleteChanProps(ChatQueryCB cb, Peer *peer, void *extra, int id) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_DeleteChanProps;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_data.channel_props_data.id = id;
+		getQueryTask()->AddRequest(req);
+	}
+	void ChatBackendTask::PerformSetChanProps(ChatQueryRequest task_params) {
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		int id = task_params.query_data.channel_props_data.id;
+
+		if(id == 0) {
+			redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "INCR %s", mp_chanprops_pk_name);
+			if(reply && reply->type == REDIS_REPLY_INTEGER) {
+				id = reply->integer;
+			} else if(reply && reply->type == REDIS_REPLY_STRING) {
+				id = atoi(reply->str);
+			}
+		}
+		std::string kv_string = ChanPropsToKVString(task_params.query_data.channel_props_data);
+
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d id %d", id, id));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d channelmask %s", id, task_params.query_data.channel_props_data.channel_mask.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d comment %s", id, task_params.query_data.channel_props_data.comment.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d entrymsg %s", id, task_params.query_data.channel_props_data.entrymsg.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d setby %s", id, task_params.query_data.channel_props_data.setby.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d topic %s", id, task_params.query_data.channel_props_data.topic.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d password %s", id, task_params.query_data.channel_props_data.password.c_str()));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d limit %d", id, task_params.query_data.channel_props_data.limit));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d seton %d", id, task_params.query_data.channel_props_data.seton));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d setbypid %d", id, task_params.query_data.channel_props_data.setbypid));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d expires %d", id, task_params.query_data.channel_props_data.expires));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d modeflags %d", id, task_params.query_data.channel_props_data.modeflags));
+
+		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\save_chanprops%s%s\n",
+			chat_messaging_channel, kv_string.c_str()));
+
+	}
+	void ChatBackendTask::PerformGetChanProps(ChatQueryRequest task_params) {
+		ChatStoredUserMode usermode;
+		int cursor = 0;
+
+		int chanprops_id;
+		struct Chat::_ChatQueryResponse response;
+		redisReply *reply;
+		ChatStoredChanProps chanprops;
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		int add_count = 0;
+
+		 std::vector<ChatStoredUserMode> matches;
+		 do {
+		 	reply = (redisReply *)redisCommand(mp_redis_connection, "SCAN %d MATCH chat_chanprops_*", cursor);
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
+	 	
+		 	for(int i=0;i<reply->element[1]->elements;i++) {
+		 		redisReply *id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", reply->element[1]->element[i]->str);
+		 		if(id_reply->type == REDIS_REPLY_INTEGER) {
+		 			chanprops_id = id_reply->integer;
+		 		} else if(id_reply->type == REDIS_REPLY_STRING) {
+		 			chanprops_id = atoi(id_reply->str);
+		 		}
+		 		freeReplyObject(id_reply);
+		 		std::string channel_mask;
+		 		id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s channelmask", reply->element[1]->element[i]->str);
+		 		if(id_reply->type == REDIS_REPLY_STRING) {
+		 			channel_mask = id_reply->str;
+			 	} else {
+			 	}
+			 	if(match(task_params.query_data.channel_props_data.channel_mask.c_str(), channel_mask.c_str()) == 0) {
+			 		response.chanprops.push_back(GetChanPropsByID(chanprops_id));
+			 		add_count++;
+			 	}
+		 		freeReplyObject(id_reply);
+		 	}
+
+		 	freeReplyObject(reply);
+		 } while(cursor != 0);
+
+		 if(add_count == 0) {
+		 	response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoChanProps, "No such channel mode"));
+		 }
+
+		task_params.callback(task_params, response, task_params.peer, task_params.extra);		
+	}
+	void ChatBackendTask::PerformDeleteChanProps(ChatQueryRequest task_params) {
+		struct Chat::_ChatQueryResponse response;
+		ChatStoredChanProps chanprops = GetChanPropsByID(task_params.query_data.channel_props_data.id);
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+		if(chanprops.id != 0) {
+			freeReplyObject(redisCommand(mp_redis_connection, "DEL chat_chanprops_%d", chanprops.id));
+		} else {
+			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoChanProps, "No matching chanprops"));
+		}
+		
+		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 	}
 	void ChatBackendTask::PerformGetChannelUser(ChatQueryRequest task_params) {
 		struct Chat::_ChatQueryResponse response;
@@ -873,7 +997,7 @@ namespace Chat {
 	}
 	void ChatBackendTask::SubmitGetSavedUserModes(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredUserMode usermode) {
 		ChatQueryRequest req;
-		req.type = EChatQueryRequestType_GetUserMode;
+		req.type = EChatQueryRequestType_GetUserModes;
 		req.callback = cb;
 		req.peer = peer;
 		req.extra = extra;
@@ -895,21 +1019,227 @@ namespace Chat {
 			}
 		}
 
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d id %d", id, id));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d mask %s", id, OS::strip_whitespace(task_params.query_data.usermode_data.mask).c_str()));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d comment %s", id, task_params.query_data.usermode_data.comment.c_str()));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d setby %s", id, task_params.query_data.usermode_data.setby.c_str()));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d machineid %s", id, task_params.query_data.usermode_data.machineid.c_str()));
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d profileid %s", id, task_params.query_data.usermode_data.profileid));
-		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d setbypid %s", id, task_params.query_data.usermode_data.setbypid));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d profileid %d", id, task_params.query_data.usermode_data.profileid));
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d setbypid %d", id, task_params.query_data.usermode_data.setbypid));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_usermode_%d modeflags %d", id, task_params.query_data.usermode_data.modeflags));
 
 		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\save_usermode%s%s\n",
 			chat_messaging_channel, kv_usermode.c_str()));
 	}
 	void ChatBackendTask::PerformGetUserModes(ChatQueryRequest task_params) {
+		ChatStoredUserMode usermode;
+		int cursor = 0;
 
-		//redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_* topic", id);
-		//freeReplyObject(reply);
+		int usermode_id;
+		struct Chat::_ChatQueryResponse response;
+		redisReply *reply;
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		 std::vector<ChatStoredUserMode> matches;
+		 do {
+		 	reply = (redisReply *)redisCommand(mp_redis_connection, "SCAN %d MATCH chat_usermode_*", cursor);
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
+	 	
+		 	for(int i=0;i<reply->element[1]->elements;i++) {
+		 		redisReply *id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", reply->element[1]->element[i]->str);
+		 		if(id_reply->type == REDIS_REPLY_INTEGER) {
+		 			usermode_id = id_reply->integer;
+		 		} else if(id_reply->type == REDIS_REPLY_STRING) {
+		 			usermode_id = atoi(id_reply->str);
+		 		}
+		 		usermode = GetUserModeByID(usermode_id);
+		 		if(match(task_params.query_data.usermode_data.mask.c_str(), usermode.mask.c_str()) == 0) {
+		 			response.usermodes.push_back(usermode);
+		 		}
+		 		freeReplyObject(id_reply);
+		 	}
+
+		 	freeReplyObject(reply);
+		 } while(cursor != 0);
+
+		task_params.callback(task_params, response, task_params.peer, task_params.extra);		
+	}
+	void ChatBackendTask::SubmitDeleteSavedUserMode(ChatQueryCB cb, Peer *peer, void *extra, int id) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_DeleteUserMode;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_data.usermode_data.id = id;
+		getQueryTask()->AddRequest(req);
+	}
+	void ChatBackendTask::PerformDeleteUserMode(ChatQueryRequest task_params) {
+		struct Chat::_ChatQueryResponse response;
+		ChatStoredUserMode usermode = GetUserModeByID(task_params.query_data.usermode_data.id);
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+		if(usermode.id != 0) {
+			freeReplyObject(redisCommand(mp_redis_connection, "DEL chat_usermode_%d", task_params.query_data.usermode_data.id));
+		} else {
+			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUserModeID, "No such usermode"));
+		}
+		
+		task_params.callback(task_params, response, task_params.peer, task_params.extra);
+	}
+	ChatStoredUserMode ChatBackendTask::GetUserModeByID(int id) {
+		ChatStoredUserMode usermode;
+
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d id", id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			usermode.id = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			usermode.id = atoi(reply->str);
+		} else {
+			usermode.id = 0;
+		}
+		freeReplyObject(reply);
+
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d mask", id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			usermode.mask = reply->str;
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d comment", id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			usermode.comment = reply->str;
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d setby", id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			usermode.setby = reply->str;
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d machineid", id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			usermode.machineid = reply->str;
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d profileid", id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			usermode.profileid = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			usermode.profileid = atoi(reply->str);
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d setbypid", id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			usermode.setbypid = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			usermode.setbypid = atoi(reply->str);
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_usermode_%d modeflags", id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			usermode.modeflags = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			usermode.modeflags = atoi(reply->str);
+		}
+		freeReplyObject(reply);
+
+		return usermode;
+	}
+	ChatStoredChanProps ChatBackendTask::GetChanPropsByID(int chanprops_id) {
+		ChatStoredChanProps props;
+		props.id = 0;
+
+		redisReply *reply;
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d id", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			props.id = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.id = atoi(OS::strip_quotes(reply->str).c_str());
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d modeflags", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			props.modeflags = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.modeflags = atoi(OS::strip_quotes(reply->str).c_str());
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d limit", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			props.limit = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.limit = atoi(OS::strip_quotes(reply->str).c_str());
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d seton", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			props.seton = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.seton = atoi(OS::strip_quotes(reply->str).c_str());
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d setbypid", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			props.setbypid = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.setbypid = atoi(OS::strip_quotes(reply->str).c_str());
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d expires", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			props.expires = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.expires = atoi(OS::strip_quotes(reply->str).c_str());
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d topic", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.topic = OS::strip_quotes(reply->str);
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d entrymsg", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.entrymsg = OS::strip_quotes(reply->str);
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d setby", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.setby = OS::strip_quotes(reply->str);
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d password", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.password = OS::strip_quotes(reply->str);
+		}
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_chanprops_%d mask", chanprops_id);
+		if(reply && reply->type == REDIS_REPLY_STRING) {
+			props.channel_mask = OS::strip_quotes(reply->str);
+		}
+		freeReplyObject(reply);
+
+		return props;
 	}
 	ChatChannelInfo ChatBackendTask::GetChannelByName(std::string name) {
 		int id = 0;
@@ -1093,11 +1423,23 @@ namespace Chat {
 						case EChatQueryRequestType_GetChatOperFlags:
 							task->PerformGetChatOperFlags(task_params);
 						break;
-						case EChatQueryRequestType_GetUserMode:
+						case EChatQueryRequestType_GetUserModes:
 							task->PerformGetUserModes(task_params);
 						break;
 						case EChatQueryRequestType_SaveUserMode:
 							task->PerformSaveUserMode(task_params);
+						break;
+						case EChatQueryRequestType_DeleteUserMode:
+							task->PerformDeleteUserMode(task_params);
+						break;
+						case EChatQueryRequestType_SaveChanProps:
+							task->PerformSetChanProps(task_params);
+						break;
+						case EChatQueryRequestType_GetChanProps:
+							task->PerformGetChanProps(task_params);
+						break;
+						case EChatQueryRequestType_DeleteChanProps:
+							task->PerformDeleteChanProps(task_params);
 						break;
 					}
 					if(task->m_flag_push_task) {
@@ -1446,6 +1788,7 @@ namespace Chat {
 	}
 	std::string ChatBackendTask::ChanPropsToKVString(ChatStoredChanProps info) {
 		std::ostringstream s;
+		s << "\\chanprops_id\\" << info.id;
 		s << "\\chanprops_mask\\" << info.channel_mask;
 		s << "\\chanprops_modeflags\\" << info.modeflags;
 		s << "\\chanprops_comment\\" << info.comment;
@@ -1453,12 +1796,25 @@ namespace Chat {
 		s << "\\chanprops_entrymsg\\" << info.entrymsg;
 		s << "\\chanprops_setby\\" << info.setby;
 		s << "\\chanprops_seton\\" << info.seton;
-		s << "\\chanprops_setpid\\" << info.setbypid;
+		s << "\\chanprops_setbypid\\" << info.setbypid;
+		s << "\\chanprops_limit\\" << info.limit;
+		s << "\\chanprops_password\\" << info.password;
+		s << "\\chanprops_expires\\" << info.expires;
 		return s.str();
 	}
 	ChatStoredChanProps ChatBackendTask::ChanPropsFromKVString(const char *str) {
 		ChatStoredChanProps ret;
 		OS::KVReader kv_parser(str);
+
+		if(kv_parser.HasKey("chanprops_id")) {
+			ret.id = kv_parser.GetValueInt("chanprops_id");
+		} else {
+			ret.id = 0;
+		}
+
+		if(kv_parser.HasKey("chanprops_mask")) {
+			ret.password = kv_parser.GetValue("chanprops_mask");
+		}
 		
 		if(kv_parser.HasKey("chanprops_modeflags")) {
 			ret.modeflags = kv_parser.GetValueInt("chanprops_modeflags");
@@ -1488,6 +1844,16 @@ namespace Chat {
 			ret.setbypid = kv_parser.GetValueInt("chanprops_setbypid");
 		} else {
 			ret.setbypid = 0;
+		}
+
+		if(kv_parser.HasKey("chanprops_limit")) {
+			ret.limit = kv_parser.GetValueInt("chanprops_limit");
+		} else {
+			ret.limit = 0;
+		}
+
+		if(kv_parser.HasKey("chanprops_password")) {
+			ret.password = kv_parser.GetValue("chanprops_password");
 		}
 
 		return ret;
