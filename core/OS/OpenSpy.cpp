@@ -12,6 +12,9 @@
 #ifndef _WIN32
 	#include "OS/Logger/Unix/UnixLogger.h"
 #endif
+
+#include <OS/legacy/helpers.h>
+
 namespace OS {
 	Logger *g_logger = NULL;
 	redisContext *redis_internal_connection = NULL;
@@ -298,5 +301,22 @@ namespace OS {
 		va_start (args, fmt);
 		g_logger->LogText(level, fmt, args);
 		va_end(args);
+	}
+
+	std::string FindBestMatch(std::vector<std::string> matches, std::string name) {
+		std::vector<std::string>::iterator it = matches.begin();
+		int best_score = 0, match_result;
+		std::string best_result;
+		while(it != matches.end()) {
+			std::string s = *it;
+			if(match2(s.c_str(),name.c_str(), match_result) == 0) {
+				if(match_result > best_score) {
+					best_result = s;
+					best_score = match_result;
+				}
+			}
+			it++;
+		}
+		return best_result;
 	}
 }

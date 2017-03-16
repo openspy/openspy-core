@@ -8,9 +8,16 @@ namespace Chat {
 	/*
 		Table for basic channel permissions
 			Missing: 
-				Chan User Modes(Cannot set someone to equal or above you)
-				Chan param modes(limit/key) - OP only
 				Kick/Invisible
+				Usermode apply - handle inside IRCPeer??
+				Chanprops apply - cache applied masks and mass-apply to matching
+				Channel create chanprops defaulting
+				client info applied usermode retrieving
+				KILL/KLINE
+
+			std::vector<ChatStoredUserMode> GetClientUsermodes(ChatClientInfo info);
+			ChatStoredChanProps GetChannelChanProps(std::string channel_name);
+			void ApplyChannelProps(ChatChannelInfo &channel, bool send_mq = false);
 	*/
 	struct _ModeFlagPermissions {
 		int flag;

@@ -30,15 +30,13 @@
 
 /*
 	1. implement invisible join
-	2. implement permissions/channel modes - /list /whowas
+	2. implement permissions/usermode/chanprops loading - /list /whowas
 	3. implement /login 
 	4. implement user modes, /kick
 	5. block ctcp
-	6. serial client_info into user KV data
-	7. implement /setchanprops /setusetmode /get*
-	8. implement regiister cdkey(GP too)
-	9. implement game crypt
-	10. implement ssl
+	6. implement regiister cdkey(GP too)
+	7. implement game crypt
+	8. implement ssl
 */
 
 

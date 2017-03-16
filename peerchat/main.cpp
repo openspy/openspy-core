@@ -22,7 +22,6 @@ void sig_handler(int signo)
 }
 
 int main() {
-
     int i = atexit(on_exit);
     if (i != 0) {
        fprintf(stderr, "cannot set exit function\n");

@@ -126,6 +126,8 @@ namespace OS {
 	CMutex *CreateMutex();
 
 	void Sleep(int time_ms);
+
+	std::string FindBestMatch(std::vector<std::string> matches, std::string name);
 }
 
 

@@ -236,12 +236,14 @@ bool find_param(int num, char *buff, char *dst, int dstlen) {
 	}
 	return false;
 }
-int match2(const char *mask, const char *name)
+int match2(const char *mask, const char *name, int &match_count)
 {
 	const u_char *m = (u_char *)mask;
 	const u_char *n = (u_char *)name;
 	const u_char *ma = NULL;
 	const u_char *na = (u_char *)name;
+
+	match_count = 0;
 
 	while(1)
 	{
@@ -282,11 +284,13 @@ int match2(const char *mask, const char *name)
 		{
 			m++;
 			n++;
+			match_count++;
 		}
 	}
 	return 1;
 }
 int match(const char *mask, const char *name) {
+	int match_count;
 	if (mask[0] == '*' && mask[1] == '!') {
 		mask += 2;
 		while (*name != '!' && *name)
@@ -304,7 +308,7 @@ int match(const char *mask, const char *name) {
 			return 1;
 		name++;
 	}
-	return match2(mask,name);
+	return match2(mask,name, match_count);
 }
 void find_nth(char *p, int n, char *buff, int bufflen) {
 	int x=n;

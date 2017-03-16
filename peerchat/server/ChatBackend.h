@@ -322,6 +322,10 @@ namespace Chat {
 			ChatStoredUserMode GetUserModeByID(int usermode_id);
 			ChatStoredChanProps GetChanPropsByID(int chanprops_id);
 
+			std::vector<ChatStoredUserMode> GetClientUsermodes(ChatClientInfo info); //get matching usermodes, excluding chanmask matches
+			ChatStoredChanProps GetChannelChanProps(std::string channel_name);
+			void ApplyChannelProps(ChatChannelInfo &channel, bool send_mq = false);
+
 
 			void LoadClientInfoByID(ChatClientInfo &info, int client_id);
 			void LoadClientInfoByName(ChatClientInfo &info, std::string name);
