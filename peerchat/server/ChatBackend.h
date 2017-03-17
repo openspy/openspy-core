@@ -100,6 +100,8 @@ namespace Chat {
 
 		std::string entry_msg;
 		std::map<std::string, std::string> custom_keys; //setkey/getkey, also holds groupname(/setgroup)
+
+		int chanprops_id;
 	} ChatChannelInfo;
 
 	typedef struct {
@@ -136,6 +138,7 @@ namespace Chat {
 		int seton;
 		int setbypid;
 		int expires; //can't be redis EXPIRE due to required events(unset modes, etc)
+		int kick_existing;
 	} ChatStoredChanProps; 
 
 	typedef struct _ChatQueryResponse {
@@ -321,10 +324,15 @@ namespace Chat {
 			ChatChanClientInfo GetChanClientInfo(int chan_id, int client_id);
 			ChatStoredUserMode GetUserModeByID(int usermode_id);
 			ChatStoredChanProps GetChanPropsByID(int chanprops_id);
+			ChatStoredChanProps GetChannelChanPropsByName(std::string channel_name);
+
+			void GetChanPropsChannels(int chanprops_id, std::vector<ChatChannelInfo> &existing, std::vector<ChatChannelInfo> &newly_found);
+			void ApplyChannelPropsToChannels(ChatStoredChanProps props, std::vector<ChatChannelInfo> channels);
 
 			std::vector<ChatStoredUserMode> GetClientUsermodes(ChatClientInfo info); //get matching usermodes, excluding chanmask matches
 			ChatStoredChanProps GetChannelChanProps(std::string channel_name);
-			void ApplyChannelProps(ChatChannelInfo &channel, bool send_mq = false);
+			ChatChannelInfo ApplyChannelPropsToChannel(ChatChannelInfo channel, ChatStoredChanProps props, bool send_mq = true);
+			ChatClientInfo GetServerClient();
 
 
 			void LoadClientInfoByID(ChatClientInfo &info, int client_id);
