@@ -324,7 +324,7 @@ namespace Chat {
 			ChatChanClientInfo GetChanClientInfo(int chan_id, int client_id);
 			ChatStoredUserMode GetUserModeByID(int usermode_id);
 			ChatStoredChanProps GetChanPropsByID(int chanprops_id);
-			ChatStoredChanProps GetChannelChanPropsByName(std::string channel_name);
+			ChatStoredChanProps GetBestChanProps(std::string channel_mask);
 
 			void GetChanPropsChannels(int chanprops_id, std::vector<ChatChannelInfo> &existing, std::vector<ChatChannelInfo> &newly_found);
 			void ApplyChannelPropsToChannels(ChatStoredChanProps props, std::vector<ChatChannelInfo> channels);

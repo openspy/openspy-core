@@ -109,12 +109,18 @@ namespace Chat {
 		}
 		void IRCPeer::send_channel_topic(ChatChannelInfo channel) {
 			std::ostringstream s;
-			s << channel.name << " :" << channel.topic;
-			send_numeric(332, s.str(), true);
+			if(channel.topic.length() > 0) {
+				
+				s << channel.name << " :" << channel.topic;
+				send_numeric(332, s.str(), true);
 
-			s.str("");
-			s << channel.name << " " << channel.topic_setby << " " << channel.topic_seton;
-			send_numeric(333, s.str(), true);
+				s.str("");
+				s << channel.name << " " << channel.topic_setby << " " << channel.topic_seton;
+				send_numeric(333, s.str(), true);
+			} else {
+				s << channel.name << " :No topic is set.";
+				send_numeric(331, s.str(), true);
+			}
 		}
 		void IRCPeer::OnRecvClientJoinChannel(ChatClientInfo user, ChatChannelInfo channel) {
 			std::ostringstream s;
@@ -443,7 +449,7 @@ namespace Chat {
 
 			if(channel.password.length() != 0 && change_data.new_password.length()) {
 				mode_del_str << "k";
-			}
+			}			
 
 			if(change_data.new_limit == -1) {
 				mode_del_str << "l";
@@ -535,9 +541,11 @@ namespace Chat {
 			if(!driver->HasPeer(peer)) {
 				return;
 			}
+
 			if(irc_peer->send_callback_error(request, response)) {
 				return;
 			}
+
 			int set_flags = response.channel_info.modeflags;
 			std::ostringstream mode_add_str, mode_str;
 			mode_add_str << "+";
@@ -596,13 +604,15 @@ namespace Chat {
 				mode_str = params[2];
 			} else {
 				target = params[1];
-				if(params.size()> 1) { //return chan or user modes
+				if(params.size() > 1) { //return chan or user modes
 					if(is_channel_name(target)) {
 						ChatBackendTask::SubmitFindChannel(OnModeCmd_ShowChannelModes, this, mp_driver, target);
 					} else {
 					}
+				} else {
+					return EIRCCommandHandlerRet_NotEnoughParams;
 				}
-				return EIRCCommandHandlerRet_NotEnoughParams;
+				return EIRCCommandHandlerRet_NoError;
 			}
 			uint32_t addmask = 0, removemask = 0;
 			ChatChannelInfo channel;
@@ -617,7 +627,7 @@ namespace Chat {
 				ChatBackendTask::SubmitUpdateChannelModes(OnModeCmd_ChannelUpdateCallback, this, mp_driver, addmask, removemask, channel, password, limit, user_modechanges);
 			} else {
 			}
-			return EIRCCommandHandlerRet_NoError;	
+			return EIRCCommandHandlerRet_NoError;
 		}
 		void IRCPeer::OnTopicCmd_ChannelUpdateCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
 			Chat::Driver *driver = (Chat::Driver *)extra;
@@ -1099,6 +1109,7 @@ namespace Chat {
 				s << chanprops.channel_mask;
 				s << " ";
 				s << "\\id\\" << chanprops.id;
+				s << "\\chanmask\\" << chanprops.channel_mask;
 				s << "\\entrymsg\\" << chanprops.entrymsg;
 				s << "\\comment\\" << chanprops.comment;
 				s << "\\topic\\" << chanprops.topic;
@@ -1199,6 +1210,10 @@ namespace Chat {
 			}
 			if(kv_parser.HasKey("chankey")) {
 				chanprops.password = kv_parser.GetValue("chankey");
+			}
+
+			if(kv_parser.HasKey("mode")) {
+				chanprops.modeflags = kv_parser.GetValueInt("mode");
 			}
 
 			/* TODO: save chan keys

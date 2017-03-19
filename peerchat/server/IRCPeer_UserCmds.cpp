@@ -38,7 +38,9 @@ namespace Chat {
 			irc_peer->mp_mutex->lock();
 
 			if(response.client_info.name.size() > 0) {
-				irc_peer->send_numeric(433, "Nickname is already in use");
+				std::ostringstream s;
+				s << response.client_info.name << " :Nickname is already in use";
+				irc_peer->send_numeric(433, s.str(), true);
 			} else {
 				irc_peer->m_client_info.name = request.query_name;
 				ChatBackendTask::getQueryTask()->flagPushTask();
@@ -97,7 +99,12 @@ namespace Chat {
 		}
 		EIRCCommandHandlerRet IRCPeer::handle_ping(std::vector<std::string> params, std::string full_params) {
 			std::ostringstream s;
-			s << "PONG :" << ((ChatServer*)mp_driver->getServer())->getName() << std::endl;
+			s << ":" << ((ChatServer*)mp_driver->getServer())->getName() << " ";
+			if(params.size() > 1) {
+				s << "PONG " << ((ChatServer*)mp_driver->getServer())->getName() << " :" << params[1] << std::endl;
+			} else {
+				s << "PONG " << ((ChatServer*)mp_driver->getServer())->getName() << std::endl;
+			}
 			SendPacket((const uint8_t*)s.str().c_str(),s.str().length());
 			return EIRCCommandHandlerRet_NoError;	
 		}
@@ -325,8 +332,6 @@ namespace Chat {
 		}
 
 		void IRCPeer::OnOperCmd_GetOperFlags(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
-			printf("Oper flags: %d\n", response.operflags);
-
 			IRCPeer *irc_peer = (IRCPeer *)peer;
 			Chat::Driver *driver = (Chat::Driver *)extra;
 			std::ostringstream s;

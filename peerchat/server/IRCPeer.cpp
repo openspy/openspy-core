@@ -114,6 +114,9 @@ namespace Chat {
 				while(it != cmds.end()) {
 					std::string cmd_line = *it;
 					it++;
+					if(cmd_line[cmd_line.length()-1] == '\r') {
+						cmd_line = cmd_line.substr(0, cmd_line.length()-1); //remove 
+					}
 					std::vector<std::string> x = OS::split(cmd_line, ' ');
 
 					std::string cmd = x.front();
@@ -302,23 +305,23 @@ namespace Chat {
 	 
 					break;
 					case EChatBackendResponseError_NoVoicePerms:
-						s << response.channel_info.name << " :You're not voiced";
+						s << response.channel_info.name << " You're not voiced";
 						send_numeric(482, s.str(), true);
 					break;
 					case EChatBackendResponseError_NoHOPPerms:
-						s << response.channel_info.name << ":You're not channel half operator";
+						s << response.channel_info.name << " :You're not channel half operator";
 						send_numeric(482, s.str(), true);
 					break;
 					case EChatBackendResponseError_NoOPPerms:
-						s << response.channel_info.name << ":You're not channel operator";
+						s << response.channel_info.name << " :You're not channel operator";
 						send_numeric(482, s.str(), true);
 					break;
 					case EChatBackendResponseError_NoOwnerPerms:
-						s << response.channel_info.name << ":You're not channel owner";
+						s << response.channel_info.name << " :You're not channel owner";
 						send_numeric(482, s.str(), true);
 					break;
 					case EChatBackendResponseError_NickInUse:
-						s << response.channel_info.name << ":Nickname is already in use";
+						s << request.query_name << " :Nickname is already in use";
 						send_numeric(433, s.str(), true);
 					break;
 					case EChatBackendResponseError_BadPermissions:
@@ -326,7 +329,7 @@ namespace Chat {
 						send_numeric(482, s.str(), true);
 					break;
 					case EChatBackendResponseError_NoUserModeID:
-						s << response.channel_info.name << ":No such usermode id";
+						s << response.channel_info.name << " :No such usermode id";
 						send_numeric(401, s.str(), true);
 					break;
 					case EChatBackendResponseError_NoChanProps:
