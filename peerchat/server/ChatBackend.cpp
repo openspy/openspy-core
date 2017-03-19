@@ -1437,7 +1437,7 @@ namespace Chat {
 		 		if(id_reply->type == REDIS_REPLY_INTEGER) {
 		 			chanprops_id = id_reply->integer;
 		 		} else if(id_reply->type == REDIS_REPLY_STRING) {
-		 			chanprops_id = atoi(id_reply->str);
+		 			chanprops_id = atoi(OS::strip_quotes(id_reply->str).c_str());
 		 		}
 		 		freeReplyObject(id_reply);
 		 		id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s channelmask", reply->element[1]->element[i]->str);
@@ -1470,13 +1470,13 @@ namespace Chat {
 		 redisReply *reply;
 		 int chan_chanprops_id = 0;
 		 int channel_id;
-		 int match_score;
+		 int match_score, chan_stored_score;
 		 ChatStoredChanProps props = GetChanPropsByID(chanprops_id);
 		 std::vector<ChatStoredUserMode> matches;
 		 do {
 		 	reply = (redisReply *)redisCommand(mp_redis_connection, "SCAN %d MATCH chat_channel_*", cursor);
 		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
-		 		cursor = atoi(reply->element[0]->str);
+		 		cursor = atoi(OS::strip_quotes(reply->element[0]->str).c_str());		 		
 		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
 		 		cursor = reply->element[0]->integer;
 		 	}
@@ -1498,13 +1498,26 @@ namespace Chat {
 			 	}
 			 	freeReplyObject(id_reply);
 
-		 		if(chan_chanprops_id == 0) {
+		 		if(chan_chanprops_id != chanprops_id) {
+		 			if(chan_chanprops_id != 0) {
+		 				id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s chanprops_score", reply->element[1]->element[i]->str);
+		 				if(id_reply->type == REDIS_REPLY_STRING) {
+		 					chan_stored_score = atoi(OS::strip_quotes(id_reply->str).c_str());
+		 				} else if(id_reply->type == REDIS_REPLY_INTEGER) {
+		 					chan_stored_score = id_reply->integer;
+		 				} else {
+		 					chan_stored_score = 0;
+		 				}
+		 				freeReplyObject(id_reply);
+		 			}
 				 	if(match2(props.channel_mask.c_str(), name.c_str(), match_score) == 0) {
-				 		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s chanprops_id %d", reply->element[1]->element[i]->str, chanprops_id));
-				 		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s chanprops_score %d", reply->element[1]->element[i]->str, match_score));
-				 		newly_found.push_back(GetChannelByName(name));
+				 		if(match_score > chan_stored_score) {
+					 		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s chanprops_id %d", reply->element[1]->element[i]->str, chanprops_id));
+					 		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s chanprops_score %d", reply->element[1]->element[i]->str, match_score));
+					 		newly_found.push_back(GetChannelByName(name));
+				 		}
 				 	}
-		 		} else if(chan_chanprops_id == chanprops_id) {
+		 		} else {
 		 			existing.push_back(GetChannelByName(name));
 		 		}
 		 	}

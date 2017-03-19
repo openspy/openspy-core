@@ -341,7 +341,6 @@ namespace Chat {
 			if(irc_peer->send_callback_error(request, response)) {
 				return;
 			}
-
 			
 			s << ":SERVER!SERVER@* NOTICE " << irc_peer->m_client_info.name << " :Authenticated" << std::endl;
 			irc_peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
@@ -354,7 +353,6 @@ namespace Chat {
 				ChatBackendTask::getQueryTask()->flagPushTask();
 				ChatBackendTask::SubmitClientInfo(NULL, (Peer *)irc_peer, driver);
 			}
-
 		}
 
 		void IRCPeer::m_nick_email_auth_oper_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
