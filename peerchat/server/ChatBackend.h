@@ -317,7 +317,6 @@ namespace Chat {
 			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response);
 			int GetUserChanPermissionScore(int client_flags);
 
-
 			ChatChannelInfo GetChannelByName(std::string name);
 			ChatChannelInfo GetChannelByID(int id);
 			ChatChannelInfo CreateChannel(std::string name);
@@ -356,6 +355,8 @@ namespace Chat {
 			static ChatStoredUserMode UsermodeFromKVString(const char *str);
 			static std::string ChanPropsToKVString(ChatStoredChanProps info);
 			static ChatStoredChanProps ChanPropsFromKVString(const char *str);
+
+			void DeleteChannel(int channel_id, std::string reason = "Channel Deleted");
 
 			std::vector<Chat::Driver *> m_drivers;
 			redisContext *mp_redis_connection;

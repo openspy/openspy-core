@@ -1216,6 +1216,8 @@ namespace Chat {
 				chanprops.modeflags = kv_parser.GetValueInt("mode");
 			}
 
+			chanprops.kick_existing = kv_parser.HasKey("kickexisting");
+
 			/* TODO: save chan keys
 			if(kv_parser.HasKey("groupname")) {
 				chanprops.password = kv_parser.GetValue("groupname");

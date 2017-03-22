@@ -6,18 +6,14 @@
 namespace Chat {
 
 	/*
-		Table for basic channel permissions
+		SQL for basic channel permissions
 			Missing: 
+				Part channel delete when empty except when has no delete flag
 				Kick/Invisible
 				Usermode apply - handle inside IRCPeer??
-				Chanprops apply - cache applied masks and mass-apply to matching
-				Channel create chanprops defaulting
+				Chanprops - custom keys/groupname
 				client info applied usermode retrieving
 				KILL/KLINE
-
-			std::vector<ChatStoredUserMode> GetClientUsermodes(ChatClientInfo info);
-			ChatStoredChanProps GetChannelChanProps(std::string channel_name);
-			void ApplyChannelProps(ChatChannelInfo &channel, bool send_mq = false);
 	*/
 	struct _ModeFlagPermissions {
 		int flag;
@@ -424,6 +420,48 @@ namespace Chat {
 		ApplyChannelPropsToChannels(props, existing_chans);
 		ApplyChannelPropsToChannels(props, new_chans);
 
+	}
+	void ChatBackendTask::DeleteChannel(int channel_id, std::string reason) {
+		redisReply *reply;
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d password \"DELETED_CHANNEL\"", channel_id)); //prevent anyone new from joining
+
+		int num_clients = 0;
+		ChatClientInfo client_info;
+		ChatChannelInfo channel_info = GetChannelByID(channel_id);
+		
+		reply = (redisReply *)redisCommand(mp_redis_connection, "LLEN chan_%d_clients", channel_id);
+		if(reply && reply->type == REDIS_REPLY_INTEGER) {
+			num_clients = reply->integer;
+		} else if(reply && reply->type == REDIS_REPLY_STRING) {
+			num_clients = atoi(reply->str);
+		}
+
+		reply = (redisReply *)redisCommand(mp_redis_connection, "LRANGE chan_%d_clients 0 %d", channel_id, num_clients);
+
+		for(unsigned int i=0;i<reply->elements;i++) {
+			redisReply *element = reply->element[i];
+			int client_id;
+			if(element && element->type == REDIS_REPLY_INTEGER) {
+				client_id = element->integer;
+			} else if(element && element->type == REDIS_REPLY_STRING) {
+				client_id = atoi(OS::strip_quotes(element->str).c_str());
+			}
+			LoadClientInfoByID(client_info, client_id);
+			std::string chan_str = ChannelInfoToKVString(channel_info);
+			std::string user_str = ClientInfoToKVString(client_info);
+			const char *b64_msg = OS::BinToBase64Str((const uint8_t*)reason.c_str(),reason.length());
+			freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\user_leave_channel%s%s\\part_type\\%d\\reason\\%s\n",
+				chat_messaging_channel, chan_str.c_str(),user_str.c_str(), (int)EChannelPartTypes_Kick, b64_msg));
+
+			free((void *)b64_msg);
+		}
+		freeReplyObject(reply);
+
+		freeReplyObject(redisCommand(mp_redis_connection, "DEL chat_channel_%d", channel_id));
+		freeReplyObject(redisCommand(mp_redis_connection, "DEL chat_channel_%d_custkeys", channel_id));
+		freeReplyObject(redisCommand(mp_redis_connection, "DEL chan_%d_clients", channel_id));
 	}
 	ChatStoredChanProps ChatBackendTask::GetBestChanProps(std::string channel_mask) {
 		int cursor = 0;
@@ -857,8 +895,6 @@ namespace Chat {
 		} else {
 			channel_info = GetChannelByName(task_params.query_data.channel_info.name);
 		}
-
-
 		
 		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
 		//test permissions
@@ -1551,6 +1587,10 @@ namespace Chat {
 
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
 
+		if(props.kick_existing) {
+			DeleteChannel(channel.channel_id, "Channel Props Deleted");
+		}
+
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HSET chat_channel_%d modeflags %d", channel.channel_id, props.modeflags);
 		freeReplyObject(reply);
 
@@ -1585,9 +1625,7 @@ namespace Chat {
 		freeReplyObject(reply);
 
 		if(send_mq) {
-			if(props.kick_existing) {
-
-			} else {
+			if(!props.kick_existing) {
 				freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\channel_update_modeflags%s%s\\old_modeflags\\%d\\new_limit\\%d%s\n",
 					chat_messaging_channel, chan_str.c_str(), user_str.c_str(), old_modeflags, channel.limit, channel.password.c_str()));
 
@@ -2071,6 +2109,9 @@ namespace Chat {
 		s << "\\chanprops_limit\\" << info.limit;
 		s << "\\chanprops_password\\" << info.password;
 		s << "\\chanprops_expires\\" << info.expires;
+
+		if(info.kick_existing)
+			s << "\\chanprops_kickexisting\\" << 1;
 		return s.str();
 	}
 	ChatStoredChanProps ChatBackendTask::ChanPropsFromKVString(const char *str) {
@@ -2126,6 +2167,8 @@ namespace Chat {
 		if(kv_parser.HasKey("chanprops_password")) {
 			ret.password = kv_parser.GetValue("chanprops_password");
 		}
+
+		ret.kick_existing = kv_parser.HasKey("chanprops_kickexisting");
 
 		return ret;
 	}
