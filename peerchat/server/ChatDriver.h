@@ -83,6 +83,9 @@ namespace Chat {
 		void SendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
 		void SendSetChannelKeys(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data);
 		void SendUserQuitMessage(ChatClientInfo client, std::string quit_reason);
+
+		void SendSetUserMode(ChatClientInfo client, ChatStoredUserMode usermode);
+		void SendDeleteUserMode(ChatClientInfo client, ChatStoredUserMode usermode);
 	private:
 
 		void TickConnections(fd_set *fdset);

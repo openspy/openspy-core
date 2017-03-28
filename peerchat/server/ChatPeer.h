@@ -54,6 +54,8 @@ namespace Chat {
 		virtual void OnSendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data) = 0;
 		virtual void OnSendSetChannelKeys(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data) = 0;
 		virtual void OnUserQuit(ChatClientInfo client, std::string quit_reason) = 0;
+		virtual void OnSetUserMode(ChatClientInfo client, ChatStoredUserMode usermode) = 0;
+		virtual void OnDeleteUserMode(ChatClientInfo client, ChatStoredUserMode usermode) = 0;
 		bool IsOnChannel(ChatChannelInfo channel);
 		void GetChannelList(std::vector<int> &list) { list = m_channel_list; };
 	protected:

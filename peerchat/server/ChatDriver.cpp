@@ -262,4 +262,22 @@ namespace Chat {
 			it++;
 		}
 	}
+	void Driver::SendSetUserMode(ChatClientInfo client, ChatStoredUserMode usermode) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			ChatClientInfo info = p->getClientInfo();
+			p->OnSetUserMode(client, usermode);
+			it++;
+		}
+	}
+	void Driver::SendDeleteUserMode(ChatClientInfo client, ChatStoredUserMode usermode) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			ChatClientInfo info = p->getClientInfo();
+			p->OnDeleteUserMode(client, usermode);
+			it++;
+		}
+	}
 }

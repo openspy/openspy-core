@@ -139,6 +139,15 @@ namespace Chat {
 		req.query_name = OS::strip_whitespace(channel);
 		getQueryTask()->AddRequest(req);	
 	}
+	void ChatBackendTask::SubmitFindChannelByID(ChatQueryCB cb, Peer *peer, void *extra, int id) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_Find_ChannelByID;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_data.channel_info.channel_id = id;
+		getQueryTask()->AddRequest(req);	
+	}
 	void ChatBackendTask::PerformFind_OrCreateChannel(ChatQueryRequest task_params, bool no_create) {
 		struct Chat::_ChatQueryResponse resp;
 		resp.channel_info = GetChannelByName(task_params.query_name);
@@ -146,6 +155,17 @@ namespace Chat {
 		if(resp.channel_info.channel_id == 0 && !no_create) {
 			resp.channel_info = CreateChannel(task_params.query_name);
 		}
+
+		if(resp.channel_info.channel_id == 0) {
+			resp.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUser_OrChan, ""));
+		}
+		resp.client_info.client_id = 0;
+
+		task_params.callback(task_params, resp, task_params.peer, task_params.extra);
+	}
+	void ChatBackendTask::PerformFindChannelByID(ChatQueryRequest task_params) {
+		struct Chat::_ChatQueryResponse resp;
+		resp.channel_info = GetChannelByID(task_params.query_data.channel_info.channel_id);
 
 		if(resp.channel_info.channel_id == 0) {
 			resp.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUser_OrChan, ""));
@@ -335,13 +355,13 @@ namespace Chat {
 		req.query_data.channel_info = channel;
 		getQueryTask()->AddRequest(req);
 	}
-	void ChatBackendTask::SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel, std::string password, int limit, std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges) {
+	void ChatBackendTask::SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel, std::string password, int limit, std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges, ChatClientInfo client_info) {
 		ChatQueryRequest req;
 		req.type = EChatQueryRequestType_UpdateChannelModes;
 		req.callback = cb;
 		req.peer = peer;
 		req.extra = extra;
-		req.query_data.client_info = peer->getClientInfo();
+		req.query_data.client_info = client_info;
 		req.query_data.channel_info = channel;
 		req.add_flags = addmask;
 		req.remove_flags = removemask;
@@ -375,6 +395,16 @@ namespace Chat {
 		req.peer = peer;
 		req.extra = extra;
 		req.query_data.channel_props_data.id = id;
+		getQueryTask()->AddRequest(req);
+	}
+	void ChatBackendTask::SubmitGetClientUsermodes(ChatQueryCB cb, Peer *peer, void *extra, std::string chanmask, ChatClientInfo client) {
+		ChatQueryRequest req;
+		req.type = EChatQueryRequestType_GetClientUsermodes;
+		req.callback = cb;
+		req.peer = peer;
+		req.extra = extra;
+		req.query_name = chanmask;
+		req.query_data.client_info = client;
 		getQueryTask()->AddRequest(req);
 	}
 	void ChatBackendTask::PerformSetChanProps(ChatQueryRequest task_params) {
@@ -586,7 +616,7 @@ namespace Chat {
 		response.channel_info = channel_info;
 		
 		
-		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
+		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.query_data.client_info.client_id);
 		//test permissions
 
 		if(!TestChannelPermissions(chan_client_info, channel_info, task_params, response)) {
@@ -626,7 +656,7 @@ namespace Chat {
 		response.channel_info = channel_info;
 
 		chan_str = ChannelInfoToKVString(channel_info);
-		user_str = ClientInfoToKVString(task_params.peer->getClientInfo());
+		user_str = ClientInfoToKVString(task_params.query_data.client_info);
 
 		if(task_params.chan_password.length()) {
 			pw_str << "\\new_password\\" << task_params.chan_password.c_str();
@@ -637,7 +667,7 @@ namespace Chat {
 		while(user_modechanges_it != task_params.user_modechanges.end()) {
 			std::pair<std::string, ChanClientModeChange> o = *user_modechanges_it;
 
-			from_user_str = ClientInfoToKVString(task_params.peer->getClientInfo(), "from");
+			from_user_str = ClientInfoToKVString(task_params.query_data.client_info, "from");
 		
 			LoadClientInfoByName(client_info, o.first);
 			user_str = ClientInfoToKVString(client_info, "target");
@@ -646,7 +676,7 @@ namespace Chat {
 			if(reply && reply->type == REDIS_REPLY_INTEGER) {
 				client_chan_flags = reply->integer;
 			} else if(reply && reply->type == REDIS_REPLY_STRING) {
-				client_chan_flags = atoi(reply->str);
+				client_chan_flags = atoi(OS::strip_quotes(reply->str).c_str());
 			}
 			freeReplyObject(reply);
 
@@ -818,6 +848,12 @@ namespace Chat {
 			freeReplyObject(reply);
 			it++;
 		}
+	}
+	void ChatBackendTask::PerformGetClientUsermodes(ChatQueryRequest task_params) {
+		struct Chat::_ChatQueryResponse response;
+		std::vector<ChatStoredUserMode> usermodes = GetClientUsermodes(task_params.query_data.client_info, task_params.query_name);
+		response.usermodes = usermodes;
+		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 	}
 	void ChatBackendTask::SubmitSetClientKeys(ChatQueryCB cb, Peer *peer, void *extra, int client_id, const std::map<std::string, std::string> set_data_map) {
 		ChatQueryRequest req;
@@ -1146,7 +1182,10 @@ namespace Chat {
 		ChatStoredUserMode usermode = GetUserModeByID(task_params.query_data.usermode_data.id);
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
 		if(usermode.id != 0) {
+			std::string kv_usermode = UsermodeToKVString(usermode);
 			freeReplyObject(redisCommand(mp_redis_connection, "DEL chat_usermode_%d", task_params.query_data.usermode_data.id));
+			freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\delete_usermode%s\n",
+				chat_messaging_channel, kv_usermode.c_str()));
 		} else {
 			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUserModeID, "No such usermode"));
 		}
@@ -1727,6 +1766,12 @@ namespace Chat {
 						case EChatQueryRequestType_DeleteChanProps:
 							task->PerformDeleteChanProps(task_params);
 						break;
+						case EChatQueryRequestType_GetClientUsermodes:
+							task->PerformGetClientUsermodes(task_params);
+						break;
+						case EChatQueryRequestType_Find_ChannelByID:
+							task->PerformFindChannelByID(task_params);
+						break;
 					}
 					if(task->m_flag_push_task) {
 						task->m_flag_push_task = false;
@@ -1740,7 +1785,6 @@ namespace Chat {
 		}
 		return NULL;
 	}
-
 	void *ChatBackendTask::setup_redis_async(OS::CThread *thread) {
 		ChatBackendTask *task = (ChatBackendTask *)thread->getParams();
 		task->mp_event_base = event_base_new();
@@ -1763,6 +1807,7 @@ namespace Chat {
 		ChatChannelInfo channel_info;
 		ChatClientInfo client_info;
 		ChatClientInfo target_client_info;
+		ChatStoredUserMode usermode;
 
 		uint8_t *out;
 		int len;
@@ -1892,6 +1937,14 @@ namespace Chat {
 						OS::Base64StrToBin(msg.c_str(), &out, len);
 						task->SendUserQuitMessage(client_info, (const char *)out);
 						free((void *)out);
+					} else if(strcmp(msg_type.c_str(), "save_usermode") == 0) {
+						client_info = ClientInfoFromKVString(r->element[2]->str); //setter	
+						usermode = UsermodeFromKVString(r->element[2]->str);
+						task->SendSetUsermodeToDrivers(client_info, usermode);
+					} else if(strcmp(msg_type.c_str(),"delete_usermode") == 0) {
+						client_info = ClientInfoFromKVString(r->element[2]->str); //setter	
+						usermode = UsermodeFromKVString(r->element[2]->str);
+						task->SendDelUsermodeToDrivers(client_info, usermode);
 					}
 	    		}
 	    	}
@@ -2318,7 +2371,100 @@ namespace Chat {
 			return 2;
 		if(client_flags & EChanClientFlags_Voice)
 			return 1;
-
 		return 0;
 	}
+	std::vector<ChatStoredUserMode> ChatBackendTask::GetClientUsermodes(ChatClientInfo client, std::string channel_mask) {
+		std::vector<ChatStoredUserMode> ret;
+		ChatStoredUserMode usermode;
+		int cursor = 0;
+
+		int usermode_id;
+		
+		redisReply *reply;
+		int score;
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
+
+		 std::vector<ChatStoredUserMode> matches;
+		 do {
+		 	reply = (redisReply *)redisCommand(mp_redis_connection, "SCAN %d MATCH chat_usermode_*", cursor);
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
+	 	
+		 	for(int i=0;i<reply->element[1]->elements;i++) {
+		 		redisReply *id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", reply->element[1]->element[i]->str);
+		 		if(id_reply->type == REDIS_REPLY_INTEGER) {
+		 			usermode_id = id_reply->integer;
+		 		} else if(id_reply->type == REDIS_REPLY_STRING) {
+		 			usermode_id = atoi(id_reply->str);
+		 		}
+		 		usermode = GetUserModeByID(usermode_id);
+		 		if(match2(usermode.chanmask.c_str(), channel_mask.c_str(), score) == 0 || (usermode.profileid == client.profileid && usermode.profileid != 0) || (usermode.hostmask.length() != 0 && match2(usermode.hostmask.c_str(), client.ip.ToString(true).c_str(), score) == 0)) {
+		 			ret.push_back(usermode);
+		 		}
+		 		freeReplyObject(id_reply);
+		 	}
+
+		 	freeReplyObject(reply);
+		 } while(cursor != 0);
+		 return ret;
+	}
+	ChatStoredUserMode ChatBackendTask::FlattenUsermodes(std::vector<ChatStoredUserMode> usermodes, ChatClientInfo client, std::string channel_mask)  {
+		ChatStoredUserMode ret;
+		ret.id = 0;
+		ret.modeflags = 0;
+		ret.profileid = 0;
+		ret.setbypid = 0;
+		ret.temporary = true;
+		ret.expires = 0; //earliest expire time
+		ret.chanmask = channel_mask;
+		int score;
+		int expires = 0;
+		std::vector<ChatStoredUserMode>::iterator it = usermodes.begin();
+		while(it != usermodes.end()) {
+			ChatStoredUserMode usermode = *it;
+			if(match2(usermode.chanmask.c_str(), channel_mask.c_str(), score) == 0 || (usermode.profileid == client.profileid && usermode.profileid != 0) || (usermode.hostmask.length() != 0 && match2(usermode.hostmask.c_str(), client.ip.ToString(true).c_str(), score) == 0)) {
+				ret.modeflags |= usermode.modeflags;
+				if(expires <= ret.expires || expires == 0) {
+					expires = ret.expires;
+				}
+			}
+
+			it++;
+		}
+		ret.expires = expires;
+		return ret;
+	}
+	ChatStoredUserMode ChatBackendTask::GetFlattenedUsermodes(ChatClientInfo info, std::string channel_mask) {
+		std::vector<ChatStoredUserMode> usermodes = GetClientUsermodes(info, channel_mask);
+		return FlattenUsermodes(usermodes, info, channel_mask);
+	}
+	bool ChatBackendTask::TestClientUsermode(ChatClientInfo client, ChatStoredUserMode usermode) {
+		int score;
+		return strcmp(usermode.chanmask.c_str(), "X") == 0 && ((usermode.profileid == client.profileid && usermode.profileid != 0) || (usermode.hostmask.length() != 0 && match2(usermode.hostmask.c_str(), client.ip.ToString(true).c_str(), score) == 0));
+	}
+	bool ChatBackendTask::TestClientUsermode(ChatClientInfo client, ChatChannelInfo channel, ChatStoredUserMode usermode) {
+		int score;
+		std::string channel_mask = channel.name;
+		return match2(usermode.chanmask.c_str(), channel_mask.c_str(), score) == 0 || (usermode.profileid == client.profileid && usermode.profileid != 0) || (usermode.hostmask.length() != 0 && match2(usermode.hostmask.c_str(), client.ip.ToString(true).c_str(), score) == 0);
+	}
+	void ChatBackendTask::SendSetUsermodeToDrivers(ChatClientInfo remover, ChatStoredUserMode usermode) {
+		std::vector<Chat::Driver *>::iterator it = m_drivers.begin();
+		while(it != m_drivers.end()) {
+			Chat::Driver *driver = *it;
+			driver->SendSetUserMode(remover, usermode);
+			it++;
+		}
+	}
+	void ChatBackendTask::SendDelUsermodeToDrivers(ChatClientInfo remover, ChatStoredUserMode usermode) {
+		std::vector<Chat::Driver *>::iterator it = m_drivers.begin();
+		while(it != m_drivers.end()) {
+			Chat::Driver *driver = *it;
+			driver->SendDeleteUserMode(remover, usermode);
+			it++;
+		}
+	}
+
 }

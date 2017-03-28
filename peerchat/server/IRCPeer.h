@@ -48,6 +48,13 @@ namespace Chat {
 	} IRCCBDriverMessageCombo;
 
 
+	typedef struct {
+		ChatStoredUserMode usermode;
+		Chat::Driver *driver;
+		ChatChannelInfo channel_info;
+		ChatChanClientInfo chat_client;
+	} UsermodesLookupData;
+
 	class IRCPeer : public Peer {
 	public:
 		IRCPeer(Driver *driver, struct sockaddr_in *address_info, int sd);
@@ -65,6 +72,8 @@ namespace Chat {
 		void OnSendSetChannelClientKeys(ChatClientInfo client, ChatChannelInfo channel, std::map<std::string, std::string> kv_data);
 		void OnSendSetChannelKeys(ChatClientInfo client, ChatChannelInfo channel, const std::map<std::string, std::string> kv_data);
 		void OnUserQuit(ChatClientInfo client, std::string quit_reason);
+		void OnSetUserMode(ChatClientInfo client, ChatStoredUserMode usermode);
+		void OnDeleteUserMode(ChatClientInfo client, ChatStoredUserMode usermode);
 	protected:
 		//user cmds
 		EIRCCommandHandlerRet handle_nick(std::vector<std::string> params, std::string full_params);
@@ -129,6 +138,12 @@ namespace Chat {
 		//auth callbacks
 		static void m_nick_email_auth_oper_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id);
 		static void OnOperCmd_GetOperFlags(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+
+		//usermode callbacks
+		static void OnChanUsermodeLookup_SyncCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnDelUserMode_GetChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnChanUsermodeLookup_GetChannelUsersCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnChanUsermodeLookup_UpdateUsermodes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//channel misc
 		void send_channel_topic(ChatChannelInfo channel);

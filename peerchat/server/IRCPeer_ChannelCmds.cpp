@@ -150,7 +150,8 @@ namespace Chat {
 				std::vector<int>::iterator it = std::find(m_channel_list.begin(), m_channel_list.end(), 5);
 				if(it != m_channel_list.end())
 				    m_channel_list.erase(it);
-				m_client_channel_hits[user.client_id].m_hits--;
+				if(m_client_channel_hits.find(user.client_id) != m_client_channel_hits.end())
+					m_client_channel_hits[user.client_id].m_hits--;
 			}
 		}
 		void IRCPeer::send_channel_modes(ChatChannelInfo channel) {
@@ -624,7 +625,7 @@ namespace Chat {
 				parse_channel_modes(params[2], addmask, removemask, std::back_inserter(bad_modes), params, password, limit, std::back_inserter(user_modechanges));
 				channel.name = target;
 				channel.channel_id = 0;
-				ChatBackendTask::SubmitUpdateChannelModes(OnModeCmd_ChannelUpdateCallback, this, mp_driver, addmask, removemask, channel, password, limit, user_modechanges);
+				ChatBackendTask::SubmitUpdateChannelModes(OnModeCmd_ChannelUpdateCallback, this, mp_driver, addmask, removemask, channel, password, limit, user_modechanges, m_client_info);
 			} else {
 			}
 			return EIRCCommandHandlerRet_NoError;

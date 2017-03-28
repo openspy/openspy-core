@@ -355,4 +355,161 @@ namespace Chat {
 				}
 			}
 		}
+		void IRCPeer::OnSetUserMode(ChatClientInfo client, ChatStoredUserMode usermode) {
+			bool match = false;
+			if(usermode.chanmask.compare("X") == 0) {
+				if(ChatBackendTask::TestClientUsermode(m_client_info, usermode)) {
+					match = true;
+				}
+			} else {
+				if(ChatBackendTask::TestClientUsermode(m_client_info, usermode)) {
+					match = true;
+				}
+			}
+
+			//ChatBackendTask::
+			//ChatBackendTask::SubmitFindChannel(OnPartCmd_FindCallback, this, combo, channel);
+			//SubmitGetClientUsermodes(ChatQueryCB cb, Peer *peer, void *extra
+			//, std::string chanmask, ChatClientInfo client)
+			if(match) {
+				//loop all channels and issue get client usermodes/reapply
+			}
+		}
+		void IRCPeer::OnChanUsermodeLookup_UpdateUsermodes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			UsermodesLookupData *data = (UsermodesLookupData *)extra;
+			Chat::Driver *driver = (Chat::Driver *)data->driver;
+			ChatStoredUserMode flattened;
+			ChanModeChangeData changed;
+
+			ChanClientModeChange client_modechange;
+			std::vector<ChatChanClientInfo>::const_iterator it = response.m_channel_clients.begin();
+			if(!driver->HasPeer(peer)) {
+				goto end_cleanup;
+			}
+
+			end_cleanup:
+				free((void *)data);
+		}
+		void IRCPeer::OnChanUsermodeLookup_GetChannelUsersCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			UsermodesLookupData *data = (UsermodesLookupData *)extra;
+			Chat::Driver *driver = (Chat::Driver *)data->driver;
+			ChatStoredUserMode flattened;
+			ChanModeChangeData changed;
+
+			ChanClientModeChange client_modechange;
+			std::vector<ChatChanClientInfo>::const_iterator it = response.m_channel_clients.begin();
+			if(!driver->HasPeer(peer)) {
+				goto end_cleanup;
+			}
+
+			//find current client in response, figure out new modes, send mode update task(possibly multiple)
+
+
+			//response.usermodes
+			//ChatStoredUserMode FlattenUsermodes(std::vector<ChatStoredUserMode> usermodes, ChatClientInfo client, std::string channel_mask = "X");
+
+			/*
+				typedef struct {
+					EChanClientFlags mode_flag;
+					ChatClientInfo client_info;
+					bool set;
+				} ChanClientModeChange;
+				typedef struct {
+					int old_modeflags;
+					int new_limit;
+					std::string new_password;
+
+					std::vector<ChanClientModeChange> client_modechanges;
+				} ChanModeChangeData;
+
+			EChanClientFlags_None = 0,
+			EChanClientFlags_Voice = 1,
+			EChanClientFlags_HalfOp = 2,
+			EChanClientFlags_Op = 4,
+			EChanClientFlags_Owner = 8,
+			EChanClientFlags_Gagged = 16,
+			EChanClientFlags_Banned = 32,
+			EChanClientFlags_Invisible = 64,
+			EChanClientFlags_Invited = 128, //or flood exempt for X chanmask
+				
+			flattened = ChatBackendTask::FlattenUsermodes(response.usermodes, ((IRCPeer *)peer)->m_client_info, request.query_name);
+			changed.old_modeflags = data->channel_info.modeflags;
+
+			//maybe not needed
+			changed.new_limit = data->channel_info.limit;
+			changed.new_password = data->channel_info.password;
+
+
+			changed.client_modechanges.push_back(client_modechange);
+
+			ChatBackendTask::SubmitUpdateChannelModes(OnModeCmd_ChannelUpdateCallback, this, mp_driver, addmask, removemask, channel, password, limit, user_modechanges, m_client_info);
+
+*/
+			while(it != response.m_channel_clients.end()) {
+				const ChatChanClientInfo chan_client_info = *it;
+				if(chan_client_info.client_id == ((IRCPeer *)peer)->m_client_info.client_id) {
+					data->chat_client = chan_client_info;
+					ChatBackendTask::SubmitGetClientUsermodes(OnChanUsermodeLookup_UpdateUsermodes, peer, data, data->channel_info.name, ((IRCPeer *)peer)->m_client_info);
+					return;
+				}
+				it++;
+			}
+
+			end_cleanup:
+				free((void *)data);
+		}
+
+		void IRCPeer::OnChanUsermodeLookup_SyncCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			UsermodesLookupData *data = (UsermodesLookupData *)extra;
+			Chat::Driver *driver = (Chat::Driver *)data->driver;
+
+			ChanClientModeChange client_modechange;
+			if(!driver->HasPeer(peer)) {
+				goto end_cleanup;
+			}
+			ChatBackendTask::getQueryTask()->flagPushTask();
+			ChatBackendTask::SubmitGetChannelUsers(OnNamesCmd_FindUsersCallback, peer, data, response.channel_info);
+			return;
+
+			end_cleanup:
+				free((void *)data);
+		}
+		void IRCPeer::OnDelUserMode_GetChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra) {
+			UsermodesLookupData *data = (UsermodesLookupData *)extra;
+			Chat::Driver *driver = (Chat::Driver *)data->driver;
+			if(!driver->HasPeer(peer)) {
+				goto end_cleanup;
+			}
+			data->channel_info = response.channel_info;
+			ChatBackendTask::getQueryTask()->flagPushTask();
+			ChatBackendTask::SubmitGetClientUsermodes(NULL, peer, data, response.channel_info.name, ((IRCPeer *)peer)->m_client_info);
+			return;
+
+			end_cleanup:
+				free((void *)data);
+		}
+		void IRCPeer::OnDeleteUserMode(ChatClientInfo client, ChatStoredUserMode usermode) {
+			bool match = false;
+			if(usermode.chanmask.compare("X") == 0) {
+				if(ChatBackendTask::TestClientUsermode(m_client_info, usermode)) {
+					match = true;
+				}
+			} else {
+				if(ChatBackendTask::TestClientUsermode(m_client_info, usermode)) {
+					match = true;
+				}
+
+				if(match) {
+					UsermodesLookupData *data = (UsermodesLookupData *)malloc(sizeof(UsermodesLookupData));
+					data->driver = mp_driver;
+					data->usermode = usermode;
+					std::vector<int>::iterator it = m_channel_list.begin();
+					while(it != m_channel_list.end()) {
+						int chan_id = *it;
+						ChatBackendTask::SubmitFindChannelByID(NULL, this, data, chan_id);
+						it++;
+					}
+				}
+			}
+		}
 }

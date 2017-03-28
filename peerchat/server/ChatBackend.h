@@ -166,6 +166,7 @@ namespace Chat {
 		EChatQueryRequestType_SendChannelMessage,
 		EChatQueryRequestType_Find_OrCreate_Channel,
 		EChatQueryRequestType_Find_Channel,
+		EChatQueryRequestType_Find_ChannelByID,
 		EChatQueryRequestType_AddUserToChannel,
 		EChatQueryRequestType_RemoveUserFromChannel,
 		EChatQueryRequestType_GetChannelUsers,
@@ -181,11 +182,12 @@ namespace Chat {
 		EChatQueryRequestType_SaveUserMode,
 		EChatQueryRequestType_SaveChanProps,
 		EChatQueryRequestType_GetChanProps, //get all chan props
-		EChatQueryRequestType_GetUserModes, //get all saved user modes
+		EChatQueryRequestType_GetUserModes, //get all saved user modes(match by chanmask)
 		EChatQueryRequestType_KillUser,
 		EChatQueryRequestType_GetChatOperFlags,
 		EChatQueryRequestType_DeleteUserMode,
 		EChatQueryRequestType_DeleteChanProps,
+		EChatQueryRequestType_GetClientUsermodes, //get all usermodes matching a client/chanmask combo
 	};
 
 	enum EChatMessageType {
@@ -261,12 +263,13 @@ namespace Chat {
 			static void SubmitChannelMessage(int target_id, std::string message, EChatMessageType message_type, ChatQueryCB cb, Peer *peer, void *extra);
 			static void SubmitFind_OrCreateChannel(ChatQueryCB cb, Peer *peer, void *extra, std::string channel);
 			static void SubmitFindChannel(ChatQueryCB cb, Peer *peer, void *extra, std::string channel);
+			static void SubmitFindChannelByID(ChatQueryCB cb, Peer *peer, void *extra, int id);
 
 			static void SubmitAddUserToChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			static void SubmitRemoveUserFromChannel(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, EChannelPartTypes reason, std::string reason_str);
 			static void SubmitGetChannelUsers(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel);
 			static void SubmitGetChannelUser(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string name);
-			static void SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel, std::string password, int limit, std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges);
+			static void SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel, std::string password, int limit, std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges, ChatClientInfo set_by);
 			static void SubmitUpdateChannelTopic(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string topic);
 			static void SubmitSetChannelKeys(ChatQueryCB cb, Peer *peer, void *extra, std::string channel, std::string user, const std::map<std::string, std::string> set_data_map);
 			static void SubmitSetClientKeys(ChatQueryCB cb, Peer *peer, void *extra, int client_id, const std::map<std::string, std::string> set_data_map);
@@ -278,8 +281,15 @@ namespace Chat {
 			static void SubmitDeleteSavedUserMode(ChatQueryCB cb, Peer *peer, void *extra, int id); //usermode used as search params
 
 			static void SubmitSetChanProps(ChatQueryCB cb, Peer *peer, void *extra, ChatStoredChanProps chanprops);
-			static void SubmitGetChanProps(ChatQueryCB cb, Peer *peer, void *extra, std::string mask); //usermode used as search params
-			static void SubmitDeleteChanProps(ChatQueryCB cb, Peer *peer, void *extra, int id); //usermode used as search params
+			static void SubmitGetChanProps(ChatQueryCB cb, Peer *peer, void *extra, std::string mask);
+			static void SubmitDeleteChanProps(ChatQueryCB cb, Peer *peer, void *extra, int id);
+
+			static void SubmitGetClientUsermodes(ChatQueryCB cb, Peer *peer, void *extra, std::string chanmask, ChatClientInfo client);
+
+			static bool TestClientUsermode(ChatClientInfo client, ChatChannelInfo channel, ChatStoredUserMode usermode);
+			static bool TestClientUsermode(ChatClientInfo client, ChatStoredUserMode usermode);
+
+			static ChatStoredUserMode FlattenUsermodes(std::vector<ChatStoredUserMode> usermodes, ChatClientInfo client, std::string channel_mask = "X");
 			void flagPushTask();
 		private:
 			static void *TaskThread(OS::CThread *thread);
@@ -292,6 +302,7 @@ namespace Chat {
 			void PerformUpdateOrInsertClient(ChatQueryRequest task_params);
 			void PerformSendClientMessage(ChatQueryRequest task_params);
 			void PerformFind_OrCreateChannel(ChatQueryRequest task_params, bool no_create = false);
+			void PerformFindChannelByID(ChatQueryRequest task_params);
 			void PerformSendAddUserToChannel(ChatQueryRequest task_params);
 			void PerformSendRemoveUserFromChannel(ChatQueryRequest task_params);
 			void PerformGetChannelUsers(ChatQueryRequest task_params);
@@ -314,6 +325,8 @@ namespace Chat {
 			void PerformGetChanProps(ChatQueryRequest task_params);
 			void PerformDeleteChanProps(ChatQueryRequest task_params);
 
+			void PerformGetClientUsermodes(ChatQueryRequest task_params);
+
 			bool TestChannelPermissions(ChatChanClientInfo chan_client_info, ChatChannelInfo channel_info, ChatQueryRequest task_params, struct Chat::_ChatQueryResponse &response);
 			int GetUserChanPermissionScore(int client_flags);
 
@@ -328,7 +341,11 @@ namespace Chat {
 			void GetChanPropsChannels(int chanprops_id, std::vector<ChatChannelInfo> &existing, std::vector<ChatChannelInfo> &newly_found);
 			void ApplyChannelPropsToChannels(ChatStoredChanProps props, std::vector<ChatChannelInfo> channels);
 
-			std::vector<ChatStoredUserMode> GetClientUsermodes(ChatClientInfo info); //get matching usermodes, excluding chanmask matches
+			std::vector<ChatStoredUserMode> GetClientUsermodes(ChatClientInfo info, std::string channel_mask = "X");
+			ChatStoredUserMode GetFlattenedUsermodes(ChatClientInfo info, std::string channel_mask = "X");
+			void SendSetUsermodeToDrivers(ChatClientInfo remover, ChatStoredUserMode usermode);
+			void SendDelUsermodeToDrivers(ChatClientInfo remover, ChatStoredUserMode usermode);
+
 			ChatStoredChanProps GetChannelChanProps(std::string channel_name);
 			ChatChannelInfo ApplyChannelPropsToChannel(ChatChannelInfo channel, ChatStoredChanProps props, bool send_mq = true);
 			ChatClientInfo GetServerClient();
