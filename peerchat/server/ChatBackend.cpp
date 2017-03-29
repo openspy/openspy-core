@@ -355,7 +355,8 @@ namespace Chat {
 		req.query_data.channel_info = channel;
 		getQueryTask()->AddRequest(req);
 	}
-	void ChatBackendTask::SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel, std::string password, int limit, std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges, ChatClientInfo client_info) {
+	void ChatBackendTask::SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel, 
+		std::string password, int limit, std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges, ChatClientInfo client_info) {
 		ChatQueryRequest req;
 		req.type = EChatQueryRequestType_UpdateChannelModes;
 		req.callback = cb;
@@ -693,8 +694,8 @@ namespace Chat {
 		}
 
 		end_error:
-
-		task_params.callback(task_params, response, task_params.peer, task_params.extra);
+		if(task_params.callback)
+			task_params.callback(task_params, response, task_params.peer, task_params.extra);
 	}
 	void ChatBackendTask::SubmitUpdateChannelTopic(ChatQueryCB cb, Peer *peer, void *extra, ChatChannelInfo channel, std::string topic) {
 		ChatQueryRequest req;

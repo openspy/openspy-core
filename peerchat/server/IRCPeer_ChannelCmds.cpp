@@ -181,7 +181,7 @@ namespace Chat {
 
 			while(it != response.m_channel_clients.end()) {
 				const ChatChanClientInfo chan_client_info = *it;
-				if(chan_client_info.client_flags & EChanClientFlags_Owner || chan_client_info.client_flags & EChanClientFlags_Op) {
+				if(chan_client_info.client_flags & EChanClientFlags_Owner || chan_client_info.client_flags & EChanClientFlags_HalfOp || chan_client_info.client_flags & EChanClientFlags_Op) {
 					irc_peer->m_client_channel_hits[chan_client_info.client_id].m_op_hits++;
 					s << "@";
 				} else if(chan_client_info.client_flags & EChanClientFlags_Voice) {

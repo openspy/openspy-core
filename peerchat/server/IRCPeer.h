@@ -53,6 +53,7 @@ namespace Chat {
 		Chat::Driver *driver;
 		ChatChannelInfo channel_info;
 		ChatChanClientInfo chat_client;
+		bool set;
 	} UsermodesLookupData;
 
 	class IRCPeer : public Peer {
@@ -141,9 +142,8 @@ namespace Chat {
 
 		//usermode callbacks
 		static void OnChanUsermodeLookup_SyncCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
-		static void OnDelUserMode_GetChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
-		static void OnChanUsermodeLookup_GetChannelUsersCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
-		static void OnChanUsermodeLookup_UpdateUsermodes(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnSyncUserMode_GetChannelCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
+		static void OnSyncUserMode_GetChannelUsersCallback(const struct Chat::_ChatQueryRequest request, const struct Chat::_ChatQueryResponse response, Peer *peer,void *extra);
 
 		//channel misc
 		void send_channel_topic(ChatChannelInfo channel);

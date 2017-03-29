@@ -286,11 +286,14 @@ namespace Chat {
 
 			static void SubmitGetClientUsermodes(ChatQueryCB cb, Peer *peer, void *extra, std::string chanmask, ChatClientInfo client);
 
+			static void SubmitGetClientChannelUsermode(ChatQueryCB cb, Peer *peer, void *extra, std::string chanmask, ChatClientInfo client);
+
 			static bool TestClientUsermode(ChatClientInfo client, ChatChannelInfo channel, ChatStoredUserMode usermode);
 			static bool TestClientUsermode(ChatClientInfo client, ChatStoredUserMode usermode);
 
 			static ChatStoredUserMode FlattenUsermodes(std::vector<ChatStoredUserMode> usermodes, ChatClientInfo client, std::string channel_mask = "X");
 			void flagPushTask();
+			static ChatClientInfo GetServerClient();
 		private:
 			static void *TaskThread(OS::CThread *thread);
 
@@ -348,8 +351,7 @@ namespace Chat {
 
 			ChatStoredChanProps GetChannelChanProps(std::string channel_name);
 			ChatChannelInfo ApplyChannelPropsToChannel(ChatChannelInfo channel, ChatStoredChanProps props, bool send_mq = true);
-			ChatClientInfo GetServerClient();
-
+			
 
 			void LoadClientInfoByID(ChatClientInfo &info, int client_id);
 			void LoadClientInfoByName(ChatClientInfo &info, std::string name);
