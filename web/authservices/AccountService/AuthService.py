@@ -15,12 +15,14 @@ from BaseService import BaseService
 import redis
 import hashlib
 
+import os
+
 from AccountService.RegistrationService import RegistrationService
 from AccountService.UserProfileMgrService import UserProfileMgrService
 class AuthService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
-        self.redis_ctx = redis.StrictRedis(host='localhost', port=6379, db = 3)
+        self.redis_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 3)
         self.LOGIN_RESPONSE_SUCCESS = 0
         self.LOGIN_RESPONSE_SERVERINITFAILED = 1
         self.LOGIN_RESPONSE_USER_NOT_FOUND = 2
@@ -88,7 +90,7 @@ class AuthService(BaseService):
         i = 17
         for n in str:
             ret += chr(ord(n) + i)
-            i = i+1 
+            i = i+1
         return ret
     def test_gstats_sessionkey_response_by_profileid(self, profile, session_key, client_response):
         if profile == None:
@@ -96,7 +98,7 @@ class AuthService(BaseService):
         sess_key = self.gs_sesskey(session_key)
         pw_hashed = "{}{}".format(profile.user.password,sess_key).encode('utf-8')
         pw_hashed = hashlib.md5(pw_hashed).hexdigest()
-        
+
         return pw_hashed == client_response
 
     def test_nick_email_by_profile(self, profile, password):
@@ -213,7 +215,7 @@ class AuthService(BaseService):
             return {'success': False}
 
     def auth_or_create_profile(self, request_body):
-        #{u'profilenick': u'sctest01', u'save_session': True, u'set_context': u'profile', u'hash_type': u'auth_or_create_profile', u'namespaceid': 1, 
+        #{u'profilenick': u'sctest01', u'save_session': True, u'set_context': u'profile', u'hash_type': u'auth_or_create_profile', u'namespaceid': 1,
         #u'uniquenick': u'', u'partnercode': 0, u'password': u'gspy', u'email': u'sctest@gamespy.com'}
         user_where = (User.deleted == False)
         user_data = {}
@@ -242,7 +244,7 @@ class AuthService(BaseService):
             register_svc = RegistrationService()
             user = register_svc.try_register_user(user_data)
 
-        
+
 
         profile_data = {} #create data
         profile_where = (Profile.deleted == False)
@@ -270,7 +272,7 @@ class AuthService(BaseService):
             del profile['user']['password']
         except Profile.DoesNotExist:
             user_profile_srv = UserProfileMgrService()
-            
+
             profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'userid': user['id']})
             print("Create profile: {}\n".format(profile))
             if "error" in profile:
@@ -280,7 +282,7 @@ class AuthService(BaseService):
                 elif profile["error"] == "INVALID_NICK":
                     reason = self.LOGIN_CREATE_RESPONSE_INVALID_NICK
                 elif profile["error"] == "UNIQUENICK_IN_USE":
-                    reason = self.CREATE_RESPONSE_UNIQUENICK_IN_USE                
+                    reason = self.CREATE_RESPONSE_UNIQUENICK_IN_USE
                 return {'reason' : reason}
 
         return profile
@@ -397,7 +399,7 @@ class AuthService(BaseService):
                 response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND
 
             response['expiretime'] = 10000 #TODO: figure out what this is used for, should make unix timestamp of expire time
-        
+
         if "save_session" in jwt_decoded and jwt_decoded["save_session"] == True and response['success'] == True:
             if profile != None:
                 session_data = self.create_auth_session(profile, profile.user)

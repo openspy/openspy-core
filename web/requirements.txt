@@ -1,0 +1,5 @@
+uwsgi
+simplejson
+peewee
+jwt
+redis

@@ -14,7 +14,7 @@ from BaseService import BaseService
 import json
 import uuid
 import redis
-
+import os
 
 class RegistrationService(BaseService):
 
@@ -24,7 +24,7 @@ class RegistrationService(BaseService):
     VERIFICATION_KEY_EXPIRE_SECS = 21600 #6 hours
     def __init__(self):
         BaseService.__init__(self)
-        self.redis_ctx = redis.StrictRedis(host='localhost', port=6379, db = 4)
+        self.redis_ctx = host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 4)
 
     def send_verification_email(self, user):
         if user['email_verified'] == True:
@@ -41,7 +41,7 @@ class RegistrationService(BaseService):
         email_body = """\
         <html>
             <body>
-                Hello, 
+                Hello,
 
                 You may validate your email by going to the following link:
                  http://accmgr.openspy.org/verify_email/{}/{}
@@ -58,13 +58,13 @@ class RegistrationService(BaseService):
     def try_register_user(self, register_data):
         print("Try register: {}\n".format(register_data))
         try:
-            existing_user = User.select().where((User.email == register_data['email']) & (User.partnercode == int(register_data['partnercode']))).get()        
+            existing_user = User.select().where((User.email == register_data['email']) & (User.partnercode == int(register_data['partnercode']))).get()
         except User.DoesNotExist:
             user = User.create(email=register_data['email'], partnercode=register_data['partnercode'], password=register_data['password'])
             user = model_to_dict(user)
-            self.send_verification_email(user)            
+            self.send_verification_email(user)
             del user['password']
-            
+
             return user
 
         return None
