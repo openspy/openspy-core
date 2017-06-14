@@ -28,7 +28,7 @@ class OS_RegisterSvc(BaseService):
 
         params = jwt.encode(user_data, self.SECRET_REGISTER_KEY, algorithm='HS256')
         #params = urllib.urlencode(params)
-        
+
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
         conn = http.client.HTTPConnection(self.REGISTER_SERVER)
 
@@ -48,8 +48,8 @@ class OS_RegisterSvc(BaseService):
 
 	        request_data = {'userid': user['id'], 'mode': 'create_profile', 'profile': profile}
 
-	        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')	        
-	        
+	        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+
 	        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
 	        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
@@ -70,7 +70,7 @@ class OS_RegisterSvc(BaseService):
 
 	        params = jwt.encode(login_data, self.SECRET_AUTH_KEY, algorithm='HS256')
 	        #params = urllib.urlencode(params)
-	        
+
 	        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 	        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
@@ -93,7 +93,7 @@ class OS_RegisterSvc(BaseService):
 
         conn.request("POST", self.USER_MGR_SCRIPT, params, headers)
         response = conn.getresponse().read()
-        print("Resp: {}\n".format(response))
+
         response = jwt.decode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
         return "user" in response
     def check_profile_conflicts(self, request):
@@ -145,7 +145,7 @@ class OS_RegisterSvc(BaseService):
         elif self.check_profile_conflicts(request_body):
             response['success'] = False
             response['error'] = "UNIQUENICK_EXISTS"
-            
+
 
         if 'success' in response:
             return json.dumps(response)

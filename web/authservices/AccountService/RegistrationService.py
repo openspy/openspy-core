@@ -24,7 +24,7 @@ class RegistrationService(BaseService):
     VERIFICATION_KEY_EXPIRE_SECS = 21600 #6 hours
     def __init__(self):
         BaseService.__init__(self)
-        self.redis_ctx = host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 4)
+        self.redis_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 4)
 
     def send_verification_email(self, user):
         if user['email_verified'] == True:

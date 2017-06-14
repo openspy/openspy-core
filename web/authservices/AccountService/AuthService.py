@@ -410,6 +410,5 @@ class AuthService(BaseService):
         if "set_context" in jwt_decoded and "session_key" in response:
             if jwt_decoded["set_context"] == "profile":
                 self.set_auth_context(response["session_key"], profile)
-        start_response('200 OK', [('Content-Type','text/html')])
 
         return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')

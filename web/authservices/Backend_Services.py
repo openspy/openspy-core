@@ -68,10 +68,11 @@ def application(env, start_response):
 		return [b'Bad Request']
 
 	resp = service.run(env, start_response)
+	print("Service resp: {}\n".format(resp))
 	if(type(resp)) != bytes:
-		return str.encode(resp)
+		return [str.encode(resp)]
 	else:
-		return resp
+		return [resp]
 
 class ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
     pass

@@ -24,9 +24,9 @@ class UserProfileMgrService(BaseService):
         self.valid_characters = "1234567890#_-`()$-=;/@+&abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
         self.redis_presence_channel = "presence.buddies"
         self.redis_presence_ctx = redis.StrictRedis(host='localhost', port=6379, db = 5)
-        
+
     def handle_update_profile(self, data):
-        
+
         if "profile" not in data:
             data = {'profile': data}
         if "profileid" in data["profile"]:
@@ -82,10 +82,10 @@ class UserProfileMgrService(BaseService):
                 else:
                     profile = Profile.get((Profile.uniquenick == data["uniquenick"]) & (Profile.namespaceid == 0))
 
-                return profile
+                return model_to_dict(profile)
         except Profile.DoesNotExist:
             return None
-        
+
 
     def check_uniquenick_available(self, uniquenick, namespaceid):
         try:
@@ -102,7 +102,7 @@ class UserProfileMgrService(BaseService):
                 namespaceid = profile_data["namespaceid"]
         else:
             namespaceid = 0
-        if "uniquenick" in profile_data:            
+        if "uniquenick" in profile_data:
             if not self.is_name_valid(profile_data["uniquenick"]):
                 return {'error': 'INVALID_UNIQUENICK'}
             nick_available = self.check_uniquenick_available(profile_data["uniquenick"], namespaceid)
@@ -131,8 +131,8 @@ class UserProfileMgrService(BaseService):
 
     def handle_profile_search(self, search_data):
         response = []
-        
-        #{u'chc': 0, u'ooc': 0, u'i1': 0, u'pic': 0, u'lon': 0.0, u'mar': 0, u'namespaceids': [1], u'lat': 0.0, 
+
+        #{u'chc': 0, u'ooc': 0, u'i1': 0, u'pic': 0, u'lon': 0.0, u'mar': 0, u'namespaceids': [1], u'lat': 0.0,
         #u'birthday': 0, u'mode': u'profile_search', u'partnercode': 0, u'ind': 0, u'sex': 0, u'email': u'sctest@gamespy.com'}
 
         where_expression = ((Profile.deleted == False) & (User.deleted == False))
@@ -140,10 +140,10 @@ class UserProfileMgrService(BaseService):
         #user search
         if "userid" in search_data:
             where_expression = ((where_expression) & (User.id == search_data["userid"]))
-            
+
         if "email" in search_data:
             where_expression = ((where_expression) & (User.email == search_data["email"]))
-            
+
         if "partnercode" in search_data:
             where_expression = ((where_expression) & (User.partnercode == search_data["partnercode"]))
 
@@ -327,7 +327,7 @@ class UserProfileMgrService(BaseService):
             return []
         except Buddy.DoesNotExist:
             return []
-        return ret    
+        return ret
 
     #Get a list of profiles that have the specified profiles as buddies.
     def handle_reverse_buddies_search(self, request_data):
@@ -411,7 +411,9 @@ class UserProfileMgrService(BaseService):
 
         if "mode" not in jwt_decoded:
             response['error'] = "INVALID_MODE"
-            return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')    
+            return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+
+        print("UserProfileMgrService Decoded: {}".format(jwt_decoded))
 
         if jwt_decoded["mode"] == "update_profile":
             resp = self.handle_update_profile(jwt_decoded)
@@ -422,7 +424,7 @@ class UserProfileMgrService(BaseService):
         elif jwt_decoded["mode"] == "get_profile":
             profile = self.handle_get_profile(jwt_decoded)
             success = profile != None
-            response['profile'] = profile            
+            response['profile'] = profile
         elif jwt_decoded["mode"] == "get_profiles":
             profiles = self.handle_get_profiles(jwt_decoded)
             success = True
@@ -474,8 +476,9 @@ class UserProfileMgrService(BaseService):
         elif jwt_decoded["mode"] == "get_buddies_status":
             statuses = self.handle_get_buddies_status(jwt_decoded)
             response['statuses'] = statuses
-            success = True  
+            success = True
 
         response['success'] = success
         start_response('200 OK', [('Content-Type','text/html')])
+        print("Resp: {}\n".format(response))
         return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')

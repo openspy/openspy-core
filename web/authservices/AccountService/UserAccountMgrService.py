@@ -47,7 +47,7 @@ class UserAccountMgrService(BaseService):
         user = model_to_dict(user)
         del user['password']
         return user
- 
+
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -79,8 +79,10 @@ class UserAccountMgrService(BaseService):
             if user != None:
                 success = True
                 response['user'] = user
-     
+
         response['success'] = success
 
         start_response('200 OK', [('Content-Type','text/html')])
-        return jwt.encode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
+        resp = jwt.encode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
+        print("Got Resp: {}\n{}\n".format(resp, response))
+        return resp

@@ -9,6 +9,7 @@ from BaseService import BaseService
 import redis
 
 import simplejson as json
+import http.client
 
 class OS_PWReset(BaseService):
     def process_initiate_pw_reset(self, request_data):
@@ -23,7 +24,7 @@ class OS_PWReset(BaseService):
         params = jwt.encode(reset_data, self.SECRET_AUTH_KEY, algorithm='HS256')
 
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-        conn = httplib.HTTPConnection(self.LOGIN_SERVER)
+        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = conn.getresponse().read()
@@ -40,9 +41,9 @@ class OS_PWReset(BaseService):
 
         reset_data["mode"] = "perform_pwreset"
         params = jwt.encode(reset_data, self.SECRET_AUTH_KEY, algorithm='HS256')
-        
+
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-        conn = httplib.HTTPConnection(self.LOGIN_SERVER)
+        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = conn.getresponse().read()
@@ -58,7 +59,7 @@ class OS_PWReset(BaseService):
 
 
             params = jwt.encode(login_data, self.SECRET_AUTH_KEY, algorithm='HS256')
-            
+
             headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
             conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
@@ -80,9 +81,9 @@ class OS_PWReset(BaseService):
 
         reset_data["mode"] = "perform_verify_email"
         params = jwt.encode(reset_data, self.SECRET_REGISTER_KEY, algorithm='HS256')
-        
+
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-        conn = httplib.HTTPConnection(self.REGISTER_SERVER)
+        conn = http.client.HTTPConnection(self.REGISTER_SERVER)
 
         conn.request("POST", self.REGISTER_SCRIPT, params, headers)
         response = conn.getresponse().read()
@@ -99,14 +100,14 @@ class OS_PWReset(BaseService):
 
         reset_data["mode"] = "resend_verify_email"
         params = jwt.encode(reset_data, self.SECRET_REGISTER_KEY, algorithm='HS256')
-        
+
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-        conn = httplib.HTTPConnection(self.REGISTER_SERVER)
+        conn = http.client.HTTPConnection(self.REGISTER_SERVER)
 
         conn.request("POST", self.REGISTER_SCRIPT, params, headers)
         response = conn.getresponse().read()
         response = jwt.decode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
-        return response        
+        return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:

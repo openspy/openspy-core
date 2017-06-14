@@ -1,5 +1,6 @@
 uwsgi
 simplejson
 peewee
-jwt
+PyJWT
 redis
+PyMySQL
