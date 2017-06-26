@@ -21,12 +21,12 @@ namespace OS {
 	void Init(const char *appName) {
 
 		curl_global_init(CURL_GLOBAL_SSL);
-		
+
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
-		redis_internal_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+		redis_internal_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
 		#ifndef _WIN32
 			g_logger = new UnixLogger(appName);
 		#endif
@@ -41,7 +41,7 @@ namespace OS {
 	}
 	OS::GameData GetGameByRedisKey(const char *key, redisContext *redis_ctx = NULL) {
 		GameData game;
-		redisReply *reply;	
+		redisReply *reply;
 
 		if(redis_ctx == NULL) {
 			redis_ctx = OS::redis_internal_connection;
@@ -101,7 +101,7 @@ namespace OS {
 		game.push_keys["password"] = KEYTYPE_BYTE;
 
 		return game;
-		
+
 	}
 	OS::GameData GetGameByName(const char *from_gamename, redisContext *redis_ctx) {
 		OS::GameData ret;
@@ -133,7 +133,7 @@ namespace OS {
 			redis_ctx = OS::redis_internal_connection;
 		}
 		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game));
-		
+
 		memset(&ret, 0, sizeof(ret));
 		reply = (redisReply *)redisCommand(redis_ctx, "KEYS *:%d", gameid);
 		if (reply->type == REDIS_REPLY_ARRAY) {

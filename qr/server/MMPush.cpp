@@ -52,13 +52,13 @@ namespace MM {
 		    			peer->SendClientMessage((uint8_t*)data_out, data_len);
 		    			free(data_out);
 	    			}
-	    		
+
 	    	}
 	    }
 	}
 	void *setup_redis_async(OS::CThread *) {
 		mp_event_base = event_base_new();
-		mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
+		mp_redis_async_connection = redisAsyncConnect(OS_REDIS_SERV, OS_REDIS_PORT);
 	    redisLibeventAttach(mp_redis_async_connection, mp_event_base);
 	    redisAsyncCommand(mp_redis_async_connection, onRedisMessage, NULL, "SUBSCRIBE %s",sb_mm_channel);
 	    event_base_dispatch(mp_event_base);
@@ -70,7 +70,7 @@ namespace MM {
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
-		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+		mp_redis_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
 
 	    mp_thread = OS::CreateThread(setup_redis_async, NULL, true);
 
@@ -106,7 +106,7 @@ namespace MM {
 		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
 
 
-		
+
 		freeReplyObject(redisCommand(mp_redis_connection, "SET IPMAP_%s_%s-%d %s", server->m_game.gamename,ipinput, server->m_address.port, server_key.c_str()));
 		freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE IPMAP_%s_%s-%d 300", server->m_game.gamename,ipinput, server->m_address.port));
 
@@ -154,7 +154,7 @@ namespace MM {
 			p = *it2;
 			it3 = p.second.begin();
 			while(it3 != p.second.end()) {
-				
+
 				std::string s = *it3;
 				freeReplyObject(redisCommand(mp_redis_connection, "HSET %scustkeys_team_%d %s \"%s\"",server_key.c_str(), i,p.first.c_str(),s.c_str()));
 				freeReplyObject(redisCommand(mp_redis_connection, "EXPIRE %scustkeys_team_%d 300",server_key.c_str(), i));
@@ -180,7 +180,7 @@ namespace MM {
 	void DeleteServer(ServerInfo *server, bool publish) {
 		int groupid = server->groupid;
 		int id = server->id;
-		
+
 		if(publish) {
 			freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: deleted 1",server->m_game.gamename,server->groupid,server->id));
 			freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\del\\%s:%d:%d:",sb_mm_channel,server->m_game.gamename,groupid,id));
@@ -188,7 +188,7 @@ namespace MM {
 		else {
 			freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:",server->m_game.gamename,server->groupid,server->id));
 			freeReplyObject(redisCommand(mp_redis_connection, "DEL %s:%d:%d:custkeys",server->m_game.gamename,server->groupid,server->id));
-			
+
 			int i =0;
 			int groupid = server->groupid;
 			int id = server->id;

@@ -58,7 +58,7 @@ namespace MM {
 
 		task->mp_event_base = event_base_new();
 
-	    task->mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
+	    task->mp_redis_async_connection = redisAsyncConnect(OS_REDIS_SERV, OS_REDIS_PORT);
 
 	    redisLibeventAttach(task->mp_redis_async_connection, task->mp_event_base);
 	    redisAsyncCommand(task->mp_redis_async_connection, MMQueryTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s",sb_mm_channel);
@@ -82,8 +82,8 @@ namespace MM {
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
-		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
-		mp_redis_async_retrival_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+		mp_redis_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
+		mp_redis_async_retrival_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
 
 		mp_async_thread = OS::CreateThread(setup_redis_async, this, true);
 
@@ -105,7 +105,7 @@ namespace MM {
 
 	void MMQueryTask::Shutdown() {
 		MMQueryTask *query_task = getQueryTask();
-		
+
 
 		delete query_task;
 	}
@@ -128,13 +128,13 @@ namespace MM {
 		if(reply) {
 			if(reply->type != REDIS_REPLY_NIL && !include_deleted) {
 				freeReplyObject(reply);
-				return;	
+				return;
 			}
 			freeReplyObject(reply);
 		} else {
 			return;
 		}
-		
+
 
 		Server *server = new MM::Server();
 
@@ -221,7 +221,7 @@ namespace MM {
 				idx++;
 			} while(last_type != REDIS_REPLY_NIL);
 			s.str("");
-			
+
 			do {
 				s << entry_name << "custkeys_team_" << idx;
 				key = s.str();
@@ -403,12 +403,12 @@ namespace MM {
 	}
 	ServerListQuery MMQueryTask::GetServers(const sServerListReq *req) {
 		ServerListQuery ret;
-		
+
 		ret.requested_fields = req->field_list;
 
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_QR));
 		std::string cmd = "KEYS " + std::string(req->m_for_game.gamename) + ":*:";
-		
+
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, cmd.c_str());
 		if (reply->type == REDIS_REPLY_ARRAY) {
 			for (unsigned int j = 0; j < reply->elements; j++) {
@@ -452,7 +452,7 @@ namespace MM {
 			redis_ctx = mp_redis_connection;
 		}
 		std::ostringstream s;
-		
+
 		struct sockaddr_in addr;
 		addr.sin_port = Socket::htons(address.port);
 		addr.sin_addr.s_addr = Socket::htonl(address.ip);

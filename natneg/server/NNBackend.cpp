@@ -33,7 +33,7 @@ namespace NN {
 
 		task->mp_event_base = event_base_new();
 
-	    task->mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
+	    task->mp_redis_async_connection = redisAsyncConnect(OS_REDIS_SERV, OS_REDIS_PORT);
 
 	    redisLibeventAttach(task->mp_redis_async_connection, task->mp_event_base);
 	    redisAsyncCommand(task->mp_redis_async_connection, NNQueryTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s",nn_channel);
@@ -66,7 +66,7 @@ namespace NN {
 	    					it++;
 	    				}
 	    			}
-	    		
+
 	    	}
 	    }
 	}
@@ -76,8 +76,8 @@ namespace NN {
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
-		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
-		mp_redis_async_retrival_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+		mp_redis_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
+		mp_redis_async_retrival_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
 
 		mp_redis_async_thread = OS::CreateThread(setup_redis_async, this, true);
 

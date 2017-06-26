@@ -70,8 +70,8 @@ namespace GPBackend {
 		PersistBackendTask *task = (PersistBackendTask *)thread->getParams();
 		task->mp_event_base = event_base_new();
 
-	    task->mp_redis_subscribe_connection = redisAsyncConnect("127.0.0.1", 6379);
-	    
+	    task->mp_redis_subscribe_connection = redisAsyncConnect(OS_REDIS_SERV, OS_REDIS_PORT);
+
 	    redisLibeventAttach(task->mp_redis_subscribe_connection, task->mp_event_base);
 
 	    redisAsyncCommand(task->mp_redis_subscribe_connection, onRedisMessage, NULL, "SUBSCRIBE %s",gp_buddies_channel);
@@ -86,7 +86,7 @@ namespace GPBackend {
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
-		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+		mp_redis_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT), t);
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(PersistBackendTask::TaskThread, this, true);
@@ -103,8 +103,8 @@ namespace GPBackend {
 	}
 	void PersistBackendTask::Shutdown() {
 		PersistBackendTask *task = getPersistBackendTask();
-		
-		delete task;	
+
+		delete task;
 	}
 	PersistBackendTask *PersistBackendTask::getPersistBackendTask() {
 		if(!PersistBackendTask::m_task_singleton) {
@@ -175,7 +175,7 @@ namespace GPBackend {
 
 			json_t *game_identifier_json = json_object_get(data_json, "game_identifier");
 
-			resp_data.game_instance_identifier = json_string_value(game_identifier_json);			
+			resp_data.game_instance_identifier = json_string_value(game_identifier_json);
 			resp_data.type = EPersistBackendRespType_NewGame;
 
 			req.callback(success, resp_data, req.mp_peer, req.mp_extra);
@@ -183,7 +183,7 @@ namespace GPBackend {
 
 		json_decref(send_json);
 
-		
+
 	}
 	void PersistBackendTask::PerformUpdateGameSession(PersistBackendRequest req) {
 		json_t *send_json = json_object();
@@ -317,7 +317,7 @@ namespace GPBackend {
 		resp_data.type = EPersistBackendRespType_SetUserData;
 		req.callback(success, resp_data, req.mp_peer, req.mp_extra);
 
-		json_decref(send_json);		
+		json_decref(send_json);
 	}
 	void PersistBackendTask::PerformGetPersistData(PersistBackendRequest req) {
 		json_t *send_json = json_object();
@@ -386,7 +386,7 @@ namespace GPBackend {
 		}
 		req.callback(success, resp_data, req.mp_peer, req.mp_extra);
 
-		json_decref(send_json);	
+		json_decref(send_json);
 	}
 	void *PersistBackendTask::TaskThread(OS::CThread *thread) {
 		PersistBackendTask *task = (PersistBackendTask *)thread->getParams();
@@ -397,7 +397,7 @@ namespace GPBackend {
 				while(it != task->m_request_list.end()) {
 					PersistBackendRequest task_params = *it;
 					if(GP::g_gbl_gp_driver->HasPeer(task_params.mp_peer)) {
-					
+
 						switch(task_params.type) {
 							case EPersistRequestType_NewGame:
 								task->PerformNewGameSession(task_params);

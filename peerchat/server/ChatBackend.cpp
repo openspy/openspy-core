@@ -7,7 +7,7 @@ namespace Chat {
 
 	/*
 		SQL for basic channel permissions
-			Missing: 
+			Missing:
 				Part channel delete when empty except when has no delete flag
 				Kick/Invisible
 				Usermode apply - handle inside IRCPeer??
@@ -31,7 +31,7 @@ namespace Chat {
 		{EChannelModeFlags_StayOpened, "Stay Open Mode", EChanClientFlags_Owner},
 		{EChannelModeFlags_OnlyOwner, "Only Owner Mode", EChanClientFlags_Owner},
 	};
-	
+
 	const char *mp_pk_name = "CLIENTID";
 	const char *mp_chan_pk_name = "CHANID";
 	const char *mp_usermode_pk_name = "USERMODEID";
@@ -44,8 +44,8 @@ namespace Chat {
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
-		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
-		mp_redis_async_retrival_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+		mp_redis_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
+		mp_redis_async_retrival_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
 
 		mp_async_thread = OS::CreateThread(setup_redis_async, this, true);
 
@@ -78,7 +78,7 @@ namespace Chat {
 	}
 	void ChatBackendTask::Shutdown() {
 		ChatBackendTask *task = getQueryTask();
-		
+
 		delete task;
 	}
 
@@ -120,7 +120,7 @@ namespace Chat {
 		req.message_type = message_type;
 		getQueryTask()->AddRequest(req);
 	}
-	
+
 	void ChatBackendTask::SubmitFind_OrCreateChannel(ChatQueryCB cb, Peer *peer, void *extra, std::string channel) {
 		ChatQueryRequest req;
 		req.type = EChatQueryRequestType_Find_OrCreate_Channel;
@@ -128,7 +128,7 @@ namespace Chat {
 		req.peer = peer;
 		req.extra = extra;
 		req.query_name = OS::strip_whitespace(channel);
-		getQueryTask()->AddRequest(req);	
+		getQueryTask()->AddRequest(req);
 	}
 	void ChatBackendTask::SubmitFindChannel(ChatQueryCB cb, Peer *peer, void *extra, std::string channel) {
 		ChatQueryRequest req;
@@ -137,7 +137,7 @@ namespace Chat {
 		req.peer = peer;
 		req.extra = extra;
 		req.query_name = OS::strip_whitespace(channel);
-		getQueryTask()->AddRequest(req);	
+		getQueryTask()->AddRequest(req);
 	}
 	void ChatBackendTask::SubmitFindChannelByID(ChatQueryCB cb, Peer *peer, void *extra, int id) {
 		ChatQueryRequest req;
@@ -146,7 +146,7 @@ namespace Chat {
 		req.peer = peer;
 		req.extra = extra;
 		req.query_data.channel_info.channel_id = id;
-		getQueryTask()->AddRequest(req);	
+		getQueryTask()->AddRequest(req);
 	}
 	void ChatBackendTask::PerformFind_OrCreateChannel(ChatQueryRequest task_params, bool no_create) {
 		struct Chat::_ChatQueryResponse resp;
@@ -204,7 +204,7 @@ namespace Chat {
 		req.type = EChatQueryRequestType_SetChannelClientKeys;
 		req.callback = cb;
 		req.peer = peer;
-		req.extra = extra;		
+		req.extra = extra;
 		req.query_data.channel_info.name = channel;
 		req.query_data.client_info.name = user;
 		req.set_keys = set_data_map;
@@ -355,7 +355,7 @@ namespace Chat {
 		req.query_data.channel_info = channel;
 		getQueryTask()->AddRequest(req);
 	}
-	void ChatBackendTask::SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel, 
+	void ChatBackendTask::SubmitUpdateChannelModes(ChatQueryCB cb, Peer *peer, void *extra, uint32_t addmask, uint32_t removemask, ChatChannelInfo channel,
 		std::string password, int limit, std::vector<std::pair<std::string, ChanClientModeChange> > user_modechanges, ChatClientInfo client_info) {
 		ChatQueryRequest req;
 		req.type = EChatQueryRequestType_UpdateChannelModes;
@@ -423,7 +423,7 @@ namespace Chat {
 			} else if(reply && reply->type == REDIS_REPLY_STRING) {
 				id = atoi(OS::strip_quotes(reply->str).c_str());
 			}
-		}		
+		}
 
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d id %d", id, id));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_chanprops_%d channelmask %s", id, task_params.query_data.channel_props_data.channel_mask.c_str()));
@@ -461,7 +461,7 @@ namespace Chat {
 		int num_clients = 0;
 		ChatClientInfo client_info;
 		ChatChannelInfo channel_info = GetChannelByID(channel_id);
-		
+
 		reply = (redisReply *)redisCommand(mp_redis_connection, "LLEN chan_%d_clients", channel_id);
 		if(reply && reply->type == REDIS_REPLY_INTEGER) {
 			num_clients = reply->integer;
@@ -510,7 +510,7 @@ namespace Chat {
 		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
 		 		cursor = reply->element[0]->integer;
 		 	}
-	 	
+
 		 	for(int i=0;i<reply->element[1]->elements;i++) {
 		 		redisReply *id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", reply->element[1]->element[i]->str);
 		 		if(id_reply->type == REDIS_REPLY_INTEGER) {
@@ -549,7 +549,7 @@ namespace Chat {
 			response.chanprops.push_back(props);
 		}
 
-		task_params.callback(task_params, response, task_params.peer, task_params.extra);		
+		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 	}
 	void ChatBackendTask::PerformDeleteChanProps(ChatQueryRequest task_params) {
 		struct Chat::_ChatQueryResponse response;
@@ -560,13 +560,13 @@ namespace Chat {
 		} else {
 			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoChanProps, "No matching chanprops"));
 		}
-		
+
 		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 	}
 	void ChatBackendTask::PerformGetChannelUser(ChatQueryRequest task_params) {
 		struct Chat::_ChatQueryResponse response;
 		ChatChannelInfo channel = GetChannelByID(task_params.query_data.channel_info.channel_id);
-		
+
 		ChatClientInfo client_info;
 
 		if(task_params.query_data.client_info.client_id != 0) {
@@ -615,8 +615,8 @@ namespace Chat {
 		}
 
 		response.channel_info = channel_info;
-		
-		
+
+
 		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.query_data.client_info.client_id);
 		//test permissions
 
@@ -646,9 +646,9 @@ namespace Chat {
 		} else {
 			freeReplyObject(redisCommand(mp_redis_connection, "HDEL chat_channel_%d password", channel_info.channel_id));
 		}
-		
+
 		if(task_params.chan_limit == -1) {
-			freeReplyObject(redisCommand(mp_redis_connection, "HDEL chat_channel_%d limit", channel_info.channel_id));			
+			freeReplyObject(redisCommand(mp_redis_connection, "HDEL chat_channel_%d limit", channel_info.channel_id));
 		} else {
 			freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d limit %d", channel_info.channel_id, task_params.chan_limit));
 		}
@@ -669,7 +669,7 @@ namespace Chat {
 			std::pair<std::string, ChanClientModeChange> o = *user_modechanges_it;
 
 			from_user_str = ClientInfoToKVString(task_params.query_data.client_info, "from");
-		
+
 			LoadClientInfoByName(client_info, o.first);
 			user_str = ClientInfoToKVString(client_info, "target");
 
@@ -741,7 +741,7 @@ namespace Chat {
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET chat_channel_%d topic_setby %s", channel_info.channel_id, client_info.name.c_str()));
 
 		channel_info.topic = task_params.message;
-		
+
 		response.channel_info = channel_info;
 
 		chan_str = ChannelInfoToKVString(channel_info);
@@ -779,7 +779,7 @@ namespace Chat {
 		freeReplyObject(redisCommand(mp_redis_connection, "DEL chan_%d_client_%d", task_params.query_data.channel_info.channel_id, task_params.query_data.client_info.client_id));
 		freeReplyObject(redisCommand(mp_redis_connection, "DEL chan_%d_client_%d_custkeys", task_params.query_data.channel_info.channel_id, task_params.query_data.client_info.client_id));
 
-		
+
 		const char *b64_msg = OS::BinToBase64Str((const uint8_t*)task_params.message.c_str(),task_params.message.length());
 		freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\type\\user_leave_channel%s%s\\part_type\\%d\\reason\\%s\n",
 			chat_messaging_channel, chan_str.c_str(),user_str.c_str(), task_params.part_reason, b64_msg));
@@ -932,7 +932,7 @@ namespace Chat {
 		} else {
 			channel_info = GetChannelByName(task_params.query_data.channel_info.name);
 		}
-		
+
 		chan_client_info = GetChanClientInfo(channel_info.channel_id, task_params.peer->getClientInfo().client_id);
 		//test permissions
 		if(!TestChannelPermissions(chan_client_info, channel_info, task_params, response)) {
@@ -1149,7 +1149,7 @@ namespace Chat {
 		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
 		 		cursor = reply->element[0]->integer;
 		 	}
-	 	
+
 		 	for(int i=0;i<reply->element[1]->elements;i++) {
 		 		redisReply *id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", reply->element[1]->element[i]->str);
 		 		if(id_reply->type == REDIS_REPLY_INTEGER) {
@@ -1167,7 +1167,7 @@ namespace Chat {
 		 	freeReplyObject(reply);
 		 } while(cursor != 0);
 
-		task_params.callback(task_params, response, task_params.peer, task_params.extra);		
+		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 	}
 	void ChatBackendTask::SubmitDeleteSavedUserMode(ChatQueryCB cb, Peer *peer, void *extra, int id) {
 		ChatQueryRequest req;
@@ -1190,7 +1190,7 @@ namespace Chat {
 		} else {
 			response.errors.push_back(std::pair<EChatBackendResponseError, std::string>(EChatBackendResponseError_NoUserModeID, "No such usermode"));
 		}
-		
+
 		task_params.callback(task_params, response, task_params.peer, task_params.extra);
 	}
 	ChatStoredUserMode ChatBackendTask::GetUserModeByID(int id) {
@@ -1433,7 +1433,7 @@ namespace Chat {
 		}
 		freeReplyObject(reply);
 
-		
+
 		reply = (redisReply *)redisCommand(mp_redis_connection, "HGET chat_channel_%d chanprops_id", ret.channel_id);
 		if(reply->type == REDIS_REPLY_STRING) {
 			ret.chanprops_id = atoi(OS::strip_quotes(reply->str).c_str());
@@ -1507,7 +1507,7 @@ namespace Chat {
 		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
 		 		cursor = reply->element[0]->integer;
 		 	}
-	 	
+
 		 	for(int i=0;i<reply->element[1]->elements;i++) {
 		 		redisReply *id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", reply->element[1]->element[i]->str);
 		 		if(id_reply->type == REDIS_REPLY_INTEGER) {
@@ -1552,11 +1552,11 @@ namespace Chat {
 		 do {
 		 	reply = (redisReply *)redisCommand(mp_redis_connection, "SCAN %d MATCH chat_channel_*", cursor);
 		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
-		 		cursor = atoi(OS::strip_quotes(reply->element[0]->str).c_str());		 		
+		 		cursor = atoi(OS::strip_quotes(reply->element[0]->str).c_str());
 		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
 		 		cursor = reply->element[0]->integer;
 		 	}
-	 	
+
 		 	for(int i=0;i<reply->element[1]->elements;i++) {
 		 		redisReply *id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s chanprops_id", reply->element[1]->element[i]->str);
 		 		if(id_reply->type == REDIS_REPLY_INTEGER) {
@@ -1791,7 +1791,7 @@ namespace Chat {
 		task->mp_event_base = event_base_new();
 
 	    task->mp_redis_async_connection = redisAsyncConnect("127.0.0.1", 6379);
-	    
+
 	    redisLibeventAttach(task->mp_redis_async_connection, task->mp_event_base);
 
 	    redisAsyncCommand(task->mp_redis_async_connection, onRedisMessage, task, "SUBSCRIBE %s",chat_messaging_channel);
@@ -1818,7 +1818,7 @@ namespace Chat {
 	    std::map<std::string,std::string> key_data;
 	    ChanModeChangeData change_data;
 
-	    
+
 
 	    EChatMessageType chat_msg_type;
 	    if (r->type == REDIS_REPLY_ARRAY) {
@@ -1901,7 +1901,7 @@ namespace Chat {
 		    				return;
 		    			}
 		    			msg = kv_parser.GetValue("key_data");
-						
+
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
 
@@ -1917,7 +1917,7 @@ namespace Chat {
 		    				return;
 		    			}
 		    			msg = kv_parser.GetValue("key_data");
-						
+
 						client_info = ClientInfoFromKVString(r->element[2]->str);
 						channel_info = ChannelInfoFromKVString(r->element[2]->str);
 
@@ -1939,11 +1939,11 @@ namespace Chat {
 						task->SendUserQuitMessage(client_info, (const char *)out);
 						free((void *)out);
 					} else if(strcmp(msg_type.c_str(), "save_usermode") == 0) {
-						client_info = ClientInfoFromKVString(r->element[2]->str); //setter	
+						client_info = ClientInfoFromKVString(r->element[2]->str); //setter
 						usermode = UsermodeFromKVString(r->element[2]->str);
 						task->SendSetUsermodeToDrivers(client_info, usermode);
 					} else if(strcmp(msg_type.c_str(),"delete_usermode") == 0) {
-						client_info = ClientInfoFromKVString(r->element[2]->str); //setter	
+						client_info = ClientInfoFromKVString(r->element[2]->str); //setter
 						usermode = UsermodeFromKVString(r->element[2]->str);
 						task->SendDelUsermodeToDrivers(client_info, usermode);
 					}
@@ -2011,7 +2011,7 @@ namespace Chat {
 		s << prefix << "client_operflags";
 		if(kv_parser.HasKey(s.str())) {
 			ret.operflags = kv_parser.GetValueInt(s.str());
-		}		
+		}
 
 		return ret;
 	}
@@ -2068,7 +2068,7 @@ namespace Chat {
 		if(kv_parser.HasKey("channel_chanprops")) {
 			ret.chanprops_id = kv_parser.GetValueInt("channel_chanprops");
 		}
-		
+
 		if(kv_parser.HasKey("channel_modeflags")) {
 			ret.modeflags = kv_parser.GetValueInt("channel_modeflags");
 		}
@@ -2181,7 +2181,7 @@ namespace Chat {
 		if(kv_parser.HasKey("chanprops_mask")) {
 			ret.password = kv_parser.GetValue("chanprops_mask");
 		}
-		
+
 		if(kv_parser.HasKey("chanprops_modeflags")) {
 			ret.modeflags = kv_parser.GetValueInt("chanprops_modeflags");
 		} else {
@@ -2380,7 +2380,7 @@ namespace Chat {
 		int cursor = 0;
 
 		int usermode_id;
-		
+
 		redisReply *reply;
 		int score;
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat));
@@ -2393,7 +2393,7 @@ namespace Chat {
 		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
 		 		cursor = reply->element[0]->integer;
 		 	}
-	 	
+
 		 	for(int i=0;i<reply->element[1]->elements;i++) {
 		 		redisReply *id_reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s id", reply->element[1]->element[i]->str);
 		 		if(id_reply->type == REDIS_REPLY_INTEGER) {

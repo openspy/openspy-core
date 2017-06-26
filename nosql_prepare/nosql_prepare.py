@@ -5,7 +5,7 @@ import redis
 import MySQLdb
 
 # Open database connection
-db = MySQLdb.connect(user='openspy', password='openspy', database='Gamemaster')
+db = MySQLdb.connect(user='openspy', passwd='openspy', db='Gamemaster')
 redis_ctx = redis.StrictRedis(host='localhost', port=6379, db = 2)
 
 # prepare a cursor object using cursor() method

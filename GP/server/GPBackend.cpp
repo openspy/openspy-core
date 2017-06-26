@@ -71,7 +71,7 @@ namespace GPBackend {
 	    			if(!find_param("type", r->element[2]->str,(char *)&msg_type, sizeof(msg_type))) {
 	    					return;
 	    			}
-	    			
+
 	    			if(!strcmp(msg_type, "add_request")) {
 	    				find_param("reason", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
 	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
@@ -122,7 +122,7 @@ namespace GPBackend {
 	    				if(peer) {
 	    					peer->send_user_blocked(from_profileid);
 	    				}
-	    				
+
 	    			} else if(!strcmp(msg_type, "del_block_buddy")) {
 	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
 	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
@@ -139,8 +139,8 @@ namespace GPBackend {
 		GPBackendRedisTask *task = (GPBackendRedisTask *)thread->getParams();
 		task->mp_base_event = event_base_new();
 
-	    task->mp_redis_subscribe_connection = redisAsyncConnect("127.0.0.1", 6379);
-	    
+	    task->mp_redis_subscribe_connection = redisAsyncConnect(OS_REDIS_SERV, OS_REDIS_PORT);
+
 	    redisLibeventAttach(task->mp_redis_subscribe_connection, task->mp_base_event);
 
 	    redisAsyncCommand(task->mp_redis_subscribe_connection, onRedisMessage, NULL, "SUBSCRIBE %s",gp_buddies_channel);
@@ -157,7 +157,7 @@ namespace GPBackend {
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
-		mp_redis_connection = redisConnectWithTimeout("127.0.0.1", 6379, t);
+		mp_redis_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(GPBackendRedisTask::TaskThread, this, true);
@@ -165,7 +165,7 @@ namespace GPBackend {
 	GPBackendRedisTask::~GPBackendRedisTask() {
 		delete mp_thread;
 		delete mp_redis_async_thread;
-		delete mp_mutex;		
+		delete mp_mutex;
 
 		redisFree(mp_redis_connection);
 		if(mp_redis_subscribe_connection)
@@ -299,7 +299,7 @@ namespace GPBackend {
 			redisReply *reply;
 			int r = redisGetReply(this->mp_redis_connection, (void **) &reply );
 			freeReplyObject(reply);
-		}		
+		}
 	}
 	void GPBackendRedisTask::Perform_BuddyRequest(struct sBuddyRequest request) {
 		redisAppendCommand(this->mp_redis_connection, "SELECT %d", GP_BACKEND_REDIS_DB);
@@ -426,7 +426,7 @@ namespace GPBackend {
 			json_decref(send_obj);
 
 		if(jwt_encoded)
-			free((void *)jwt_encoded);	
+			free((void *)jwt_encoded);
 	}
 	void GPBackendRedisTask::SendLoginEvent(GP::Peer *peer) {
 		GPBackendRedisRequest req;

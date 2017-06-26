@@ -1,0 +1,16 @@
+version: 0.0
+os: linux
+files:
+    - source: openspy-core
+      destination: /var/openspy/
+      mode: 777
+    - source: boot.sh
+      destination: /var/openspy/boot.sh
+      mode: 777
+hooks:
+  BeforeInstall:
+    - location: openspy-core/bootstrap.sh
+      runas: root
+  ApplicationStart:
+    - location: boot.sh
+      runas: root
