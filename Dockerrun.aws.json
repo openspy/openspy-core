@@ -1,0 +1,12 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "ubuntu:latest",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "6667"
+    }
+  ]
+}

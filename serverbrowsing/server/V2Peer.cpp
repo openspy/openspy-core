@@ -29,7 +29,7 @@ namespace SB {
 		uint8_t *buffer = (uint8_t *)data;
 		void *end = (void *)((void *)data + len);
 		int pos = len;
-		
+
 		uint8_t request_type = 0;
 
 
@@ -38,7 +38,7 @@ namespace SB {
 
 			buff_len -= sizeof(uint16_t);
 
-			
+
 			if(pos > len || ((void *)buffer + buff_len) > end) {
 				break;
 			}
@@ -107,7 +107,7 @@ namespace SB {
 			free((void *)for_gamename);
 			return req;
 		}
-		
+
 
 		BufferReadData(buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
 
@@ -127,7 +127,7 @@ namespace SB {
 		options = Socket::htonl(BufferReadInt(buffer, &buf_remain));
 
 		req.send_groups = options & SEND_GROUPS;
-		req.push_updates = options & PUSH_UPDATES; //requesting updates, 
+		req.push_updates = options & PUSH_UPDATES; //requesting updates,
 		req.no_server_list = options & NO_SERVER_LIST;
 
 		if (options & ALTERNATE_SOURCE_IP) {
@@ -145,7 +145,7 @@ namespace SB {
 				it++;
 			}
 		}
-		
+
 
 		return req;
 
@@ -154,7 +154,7 @@ namespace SB {
 		uint8_t *p = buffer;
 		int len = remain;
 
-		
+
 		m_send_msg_to.sin_addr.s_addr = (BufferReadInt(&p, &len));
 		m_send_msg_to.sin_port = Socket::htons(BufferReadShort(&p, &len));
 		m_next_packet_send_msg = true;
@@ -172,7 +172,7 @@ namespace SB {
 		while (it != servers.list.end()) {
 			MM::Server *server = *it;
 			std::string value = server->kvFields[field_name];
-			
+
 			int val = abs(strtol (value.c_str(),&pEnd,10));
 			if(pEnd == NULL) {
 				is_digit = true;
@@ -241,11 +241,11 @@ namespace SB {
 					it_v++;
 				}
 			} else {
-				BufferWriteByte(&p, &len, 0);	
+				BufferWriteByte(&p, &len, 0);
 			}
-			
 
-			
+
+
 			std::vector<MM::Server *>::iterator it = servers.list.begin();
 			while (it != servers.list.end()) {
 				MM::Server *server = *it;
@@ -381,7 +381,7 @@ namespace SB {
 	void V2Peer::send_ping() {
 		//check for timeout
 		struct timeval current_time;
-		
+
 		uint8_t buff[10];
 		uint8_t *p = (uint8_t *)&buff;
 		int len = 0;
@@ -395,7 +395,7 @@ namespace SB {
 			BufferWriteByte(&p, &len, KEEPALIVE_REPLY);
 			SendPacket((uint8_t *)&buff, len, true);
 		}
-		
+
 	}
 	void V2Peer::think(bool waiting_packet) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
@@ -420,7 +420,7 @@ namespace SB {
 				this->handle_packet(buf, len);
 			}
 		}
-		
+
 		send_ping();
 
 		//check for timeout
@@ -454,16 +454,16 @@ namespace SB {
 			flags |= NONSTANDARD_PORT_FLAG;
 		}
 		if(push) {
-			BufferWriteByte(&p, &len, PUSH_SERVER_MESSAGE);	
+			BufferWriteByte(&p, &len, PUSH_SERVER_MESSAGE);
 		}
-		
+
 		BufferWriteByte(&p, &len, flags); //flags
 		BufferWriteInt(&p, &len, Socket::htonl(server->wan_address.ip)); //ip
 
 		if (flags & NONSTANDARD_PORT_FLAG) {
 			BufferWriteShort(&p, &len, Socket::htons(server->wan_address.port));
 		}
-		
+
 		if (flags & PRIVATE_IP_FLAG) {
 			BufferWriteInt(&p, &len, Socket::htonl(server->lan_address.ip));
 		}
@@ -508,9 +508,9 @@ namespace SB {
 								case KEYTYPE_STRING:
 									BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
 									break;
-								break;	
+								break;
 							}
-							
+
 						}
 						else {
 							BufferWriteByte(&p, &len, 0);
@@ -525,7 +525,7 @@ namespace SB {
 		}
 
 		if(flags & HAS_FULL_RULES_FLAG) {
-		
+
 			//std::map<int, std::map<std::string, std::string> > kvPlayers;
 			std::map<int, std::map<std::string, std::string> >::iterator it = server->kvPlayers.begin();
 			std::ostringstream s;
@@ -538,10 +538,10 @@ namespace SB {
 			while(field_it != server->kvFields.end()) {
 				std::pair<std::string, std::string> pair = *field_it;
 				BufferWriteNTS(&p, &len, (const uint8_t *)pair.first.c_str());
-				BufferWriteNTS(&p, &len, (const uint8_t *)pair.second.c_str());				
+				BufferWriteNTS(&p, &len, (const uint8_t *)pair.second.c_str());
 				field_it++;
 			}
-			
+
 
 			it = server->kvPlayers.begin();
 			while(it != server->kvPlayers.end()) {
@@ -587,7 +587,7 @@ namespace SB {
 		int len = 0;
 
 		sServerCache cache = FindServerByKey(server->key);
-		if(cache.key[0] == 0) return;
+		if(cache.key[0] == 0 || m_last_list_req.no_server_list) return;
 
 		DeleteServerFromCacheByKey(server->key);
 
@@ -598,7 +598,7 @@ namespace SB {
 	}
 	void V2Peer::informNewServers(MM::Server *server) {
 		sServerCache cache = FindServerByKey(server->key);
-		if(cache.key[0] != 0) return;
+		if(cache.key[0] != 0 || m_last_list_req.no_server_list) return;
 		if(server) {
 			if(serverMatchesLastReq(server)) {
 				cacheServer(server);
@@ -607,6 +607,7 @@ namespace SB {
 		}
 	}
 	void V2Peer::informUpdateServers(MM::Server *server) {
+		if(m_last_list_req.no_server_list) return;
 		sServerCache cache = FindServerByKey(server->key);
 
 		//client never recieved server notification, add to cache and send anyways, as it will be registered as a new server by the SB SDK

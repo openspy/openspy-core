@@ -524,7 +524,7 @@ namespace MM {
 							task->PerformGetServerByKey(task_params);
 							break;
 						case EMMQueryRequestType_GetServerByIP:
-						task->PerformGetServerByIP(task_params);
+							task->PerformGetServerByIP(task_params);
 							break;
 						case EMMQueryRequestType_SubmitData:
 							task->PerformSubmitData(task_params);

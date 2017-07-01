@@ -22,13 +22,11 @@ peerchat"
 if [ -f /var/openspy/bootstrap.sh ]; then
     for name in $service_names
     do
-        sed 's/OS_PROJ_NAME/$name/g' /var/openspy/os_service/template > /etc/init.d/$name
-        sed 's/OS_PROJ_NAME/$name/g' /var/openspy/os_service/template.conf > /etc/init/$name.conf
-        sed 's/OS_PROJ_NAME/$name/g' /var/openspy/os_service/template.service > /lib/systemd/system/$name.service
+        sed "s/OS_PROJ_NAME/$name/g" /var/openspy/os_service/template > /etc/init.d/$name
+        sed "s/OS_PROJ_NAME/$name/g" /var/openspy/os_service/template.conf > /etc/init/$name.conf
+        sed "s/OS_PROJ_NAME/$name/g" /var/openspy/os_service/template.service > /lib/systemd/system/$name.service
         chmod +x /etc/init.d/$name
         chmod +x /etc/init/$name.conf
         chmod +x /lib/systemd/system/$name.service
     done
 fi
-
-

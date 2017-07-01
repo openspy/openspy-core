@@ -1,0 +1,54 @@
+#!/bin/sh
+# Start/stop the openspy daemon.
+#
+### BEGIN INIT INFO
+# Provides:          OS_PROJ_NAME
+# Required-Start:    $remote_fs $syslog $time
+# Required-Stop:     $remote_fs $syslog $time
+# Should-Start:      $network $named slapd autofs ypbind nscd nslcd winbind
+# Should-Stop:       $network $named slapd autofs ypbind nscd nslcd winbind
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: Openspy generic init script
+# Description:       openspy init script
+### END INIT INFO
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin:/var/openspy/bin
+DESC="OS_PROJ_NAME daemon"
+NAME=OS_PROJ_NAME
+DAEMON=/var/openspy/bin/OS_PROJ_NAME
+PIDFILE=/var/run/OS_PROJ_NAMEd.pid
+SCRIPTNAME=/etc/init.d/"$NAME"
+
+test -f $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+
+case "$1" in
+start)	log_daemon_msg "Starting $NAME" "$NAME"
+        start_daemon -p $PIDFILE $DAEMON $EXTRA_OPTS
+        log_end_msg $?
+	;;
+stop)	log_daemon_msg "Stopping $NAME" "$NAME"
+        killproc -p $PIDFILE $DAEMON
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
+        log_end_msg $RETVAL
+        ;;
+restart) log_daemon_msg "Restarting $NAME" "$NAME"
+        $0 stop
+        $0 start
+        ;;
+reload|force-reload) log_daemon_msg "Reloading $NAME" "$name"
+	# cron reloads automatically
+        log_end_msg 0
+        ;;
+status)
+        status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+        ;;
+*)	log_action_msg "Usage: /etc/init.d/$NAME {start|stop|status|restart|reload|force-reload}"
+        exit 2
+        ;;
+esac
+exit 0
