@@ -104,26 +104,29 @@ namespace OS {
 
 	}
 	OS::GameData GetGameByName(const char *from_gamename, redisContext *redis_ctx) {
+		redisReply *reply;
 		OS::GameData ret;
-		memset(&ret, 0, sizeof(ret));
-
 		if(redis_ctx == NULL) {
 			redis_ctx = OS::redis_internal_connection;
 		}
+		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game));
 
-		redisReply *reply;
-		reply = (redisReply *)redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game);
-		if(!reply)
-			return ret;
-		freeReplyObject(reply);
-		reply = (redisReply *)redisCommand(redis_ctx, "KEYS %s:*",from_gamename);
-		if (reply->type == REDIS_REPLY_ARRAY) {
-			for (unsigned int j = 0; j < reply->elements; j++) {
-				ret = GetGameByRedisKey(reply->element[j]->str, redis_ctx);
+		memset(&ret, 0, sizeof(ret));
+		int cursor = 0;
+		do {
+			reply = (redisReply *)redisCommand(redis_ctx, "SCAN %d MATCH %s:*", cursor, from_gamename);
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
+
+			for(int i=0;i<reply->element[1]->elements;i++) {
+				ret = GetGameByRedisKey(reply->element[1]->element[i]->str, redis_ctx);
 				break;
 			}
-		}
-		freeReplyObject(reply);
+			freeReplyObject(reply);
+		} while(cursor != 0);
 		return ret;
 	}
 	OS::GameData GetGameByID(int gameid, redisContext *redis_ctx) {
@@ -135,14 +138,21 @@ namespace OS {
 		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game));
 
 		memset(&ret, 0, sizeof(ret));
-		reply = (redisReply *)redisCommand(redis_ctx, "KEYS *:%d", gameid);
-		if (reply->type == REDIS_REPLY_ARRAY) {
-			for (unsigned int j = 0; j < reply->elements; j++) {
-				ret = GetGameByRedisKey(reply->element[j]->str, redis_ctx);
+		int cursor = 0;
+		do {
+			reply = (redisReply *)redisCommand(redis_ctx, "SCAN %d MATCH *:%d", cursor, gameid);
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
+
+			for(int i=0;i<reply->element[1]->elements;i++) {
+				ret = GetGameByRedisKey(reply->element[1]->element[i]->str, redis_ctx);
 				break;
 			}
-		}
-		freeReplyObject(reply);
+			freeReplyObject(reply);
+		} while(cursor != 0);
 		return ret;
 	}
 	std::map<std::string, std::string> KeyStringToMap(std::string input) {

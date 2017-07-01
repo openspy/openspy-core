@@ -114,6 +114,12 @@ namespace MM {
 	/// Async MM Query code
 	void MMQueryTask::AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx, const sServerListReq *req) {
 		redisReply *reply;
+		int cursor = 0;
+		int idx = 0;
+		uint8_t last_type = REDIS_REPLY_NIL;
+		std::string key;
+		std::ostringstream s;
+
 		std::map<std::string, std::string> all_cust_keys; //used for filtering
 
 		/*
@@ -131,6 +137,7 @@ namespace MM {
 				return;
 			}
 			freeReplyObject(reply);
+			reply = (redisReply *)NULL;
 		} else {
 			return;
 		}
@@ -179,106 +186,142 @@ namespace MM {
 		freeReplyObject(reply);
 
 		if(all_keys) {
-			reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name.c_str());
+			reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %scustkeys", cursor, entry_name.c_str());
 			if (!reply)
 				goto error_cleanup;
 			if (reply->type == REDIS_REPLY_ARRAY) {
-				for (unsigned int j = 0; j < reply->elements; j++) {
+				if(reply->element[0]->type == REDIS_REPLY_STRING) {
+					cursor = atoi(reply->element[0]->str);
+				} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+					cursor = reply->element[0]->integer;
+				}
+
+				for(int i=0;i<reply->element[1]->elements;i++) {
 					std::string search_key = entry_name;
 					search_key += "custkeys";
-					FindAppend_ServKVFields(server, search_key, reply->element[j]->str, redis_ctx);
-					if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), reply->element[j]->str) == ret->captured_basic_fields.end()) {
-						ret->captured_basic_fields.push_back(reply->element[j]->str);
+					FindAppend_ServKVFields(server, search_key, reply->element[1]->element[i]->str, redis_ctx);
+					if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), reply->element[1]->element[i]->str) == ret->captured_basic_fields.end()) {
+						ret->captured_basic_fields.push_back(reply->element[1]->element[i]->str);
 					}
 				}
 			}
 
-			int idx = 0;
-			uint8_t last_type = REDIS_REPLY_NIL;
-			std::string key;
-			std::ostringstream s;
 			do {
+				cursor = 0;
 				s << entry_name << "custkeys_player_" << idx;
 				key = s.str();
-				reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %s", key.c_str());
+				reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %s", key.c_str());
 				if(!reply)
 					break;
 				last_type = reply->type;
 				if (reply->type == REDIS_REPLY_ARRAY) {
 					if(reply->elements == 0)  {
 						freeReplyObject(reply);
+						reply = (redisReply *)NULL;
 						break;
 					}
-					for (unsigned int j = 0; j < reply->elements; j++) {
-						FindAppend_PlayerKVFields(server, key, reply->element[j]->str, idx, redis_ctx);
-						if(std::find(ret->captured_player_fields.begin(), ret->captured_player_fields.end(), reply->element[j]->str) == ret->captured_player_fields.end()) {
-							ret->captured_player_fields.push_back(reply->element[j]->str);
+					for(int i=0;i<reply->element[1]->elements;i++) {
+						FindAppend_PlayerKVFields(server, key, reply->element[1]->element[i]->str, idx, redis_ctx);
+						if(std::find(ret->captured_player_fields.begin(), ret->captured_player_fields.end(), reply->element[1]->element[i]->str) == ret->captured_player_fields.end()) {
+							ret->captured_player_fields.push_back(reply->element[1]->element[i]->str);
 						}
 					}
 				}
 				s.str("");
 				freeReplyObject(reply);
+				reply = (redisReply *)NULL;
 				idx++;
 			} while(last_type != REDIS_REPLY_NIL);
 			s.str("");
 
+			if(reply) {
+				freeReplyObject(reply);
+				reply = (redisReply *)NULL;
+			}
+			idx = 0;
+
 			do {
 				s << entry_name << "custkeys_team_" << idx;
 				key = s.str();
-				reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %s", key.c_str());
+
+				reply = (redisReply *)redisCommand(redis_ctx, "HEXISTS %s", key.c_str());
 				if(!reply)
 					break;
-				last_type = reply->type;
-				if (reply->type == REDIS_REPLY_ARRAY) {
-					if(reply->elements == 0)  {
-						freeReplyObject(reply);
-						break;
+
+					if(reply->type == REDIS_REPLY_INTEGER) {
+						if(!reply->integer)
+							break;
+					} else if(reply->type == REDIS_REPLY_STRING) {
+							if(!atoi(reply->str))
+							break;
 					}
-					for (unsigned int j = 0; j < reply->elements; j++) {
-						FindAppend_TeamKVFields(server, key, reply->element[j]->str, idx, redis_ctx);
-						if(std::find(ret->captured_team_fields.begin(), ret->captured_team_fields.end(), reply->element[j]->str) == ret->captured_team_fields.end()) {
-							ret->captured_team_fields.push_back(reply->element[j]->str);
+					do {
+						cursor = 0;
+
+						reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %s", key.c_str());
+						if(!reply)
+							break;
+						last_type = reply->type;
+						if (reply->type == REDIS_REPLY_ARRAY) {
+							if(reply->elements == 0)  {
+								freeReplyObject(reply);
+								reply = (redisReply *)NULL;
+								break;
+							}
+							for(int i=0;i<reply->element[1]->elements;i++) {
+								FindAppend_TeamKVFields(server, key, reply->element[1]->element[i]->str, idx, redis_ctx);
+								if(std::find(ret->captured_team_fields.begin(), ret->captured_team_fields.end(), reply->element[1]->element[i]->str) == ret->captured_team_fields.end()) {
+									ret->captured_team_fields.push_back(reply->element[1]->element[i]->str);
+								}
+							}
 						}
+						freeReplyObject(reply);
+						reply = (redisReply *)NULL;
+						s.str("");
+					} while(cursor != 0);
+					idx++;
+			} while(true);
+
+			if(reply) {
+				freeReplyObject(reply);
+				reply = (redisReply *)NULL;
+			}
+			idx = 0;
+
+			//while hexists custkeys team
+
+		} else {
+			do {
+				reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %scustkeys", cursor, entry_name.c_str());
+				if (reply->type == REDIS_REPLY_ARRAY) {
+					if(reply->element[0]->type == REDIS_REPLY_STRING) {
+				 		cursor = atoi(reply->element[0]->str);
+				 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+				 		cursor = reply->element[0]->integer;
+				 	}
+
+					for(int i=0;i<reply->element[1]->elements;i++) {
+						std::string search_key = entry_name;
+						search_key += "custkeys";
+						FindAppend_ServKVFields(server, search_key, reply->element[1]->element[i]->str, redis_ctx);
 					}
 				}
 				freeReplyObject(reply);
-				s.str("");
-				idx++;
-			} while(last_type != REDIS_REPLY_NIL);
-		} else {
+			} while(cursor != 0);
 
-			reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name.c_str());
-			if (!reply)
-				goto error_cleanup;
-			if (reply->type == REDIS_REPLY_ARRAY) {
-				for (unsigned int j = 0; j < reply->elements; j++) {
-					std::string search_key = entry_name;
-					search_key += "custkeys";
-					FindAppend_ServKVFields(server, search_key, reply->element[j]->str, redis_ctx);
-				}
-				all_cust_keys = server->kvFields;
-				server->kvFields.clear();
-				std::map<std::string, std::string>::iterator it = all_cust_keys.begin();
-				while(it != all_cust_keys.end()) {
-					std::pair<std::string, std::string> p = *it;
-					if(std::find(ret->requested_fields.begin(), ret->requested_fields.end(), p.first) != ret->requested_fields.end()) {
-						server->kvFields[p.first] = p.second;
-					}
-					it++;
-				}
-			}
-			/*while (it != ret->requested_fields.end()) {
-				std::string field = *it;
-				reply = (redisReply *)redisCommand(redis_ctx, "HGET %scustkeys %s", entry_name.c_str(), field.c_str());
-				if (reply) {
-					if (reply->str) {
-						server->kvFields[field] = OS::strip_quotes(reply->str);
-					}
-					freeReplyObject(reply);
+
+			all_cust_keys = server->kvFields;
+			server->kvFields.clear(); //remove all keys
+			std::map<std::string, std::string>::iterator it = all_cust_keys.begin();
+			while(it != all_cust_keys.end()) {
+				std::pair<std::string, std::string> p = *it;
+
+				//add only keys which were requested
+				if(std::find(ret->requested_fields.begin(), ret->requested_fields.end(), p.first) != ret->requested_fields.end()) {
+					server->kvFields[p.first] = p.second;
 				}
 				it++;
-			}*/
-
+			}
 		}
 
 		if(!req || filterMatches(req->filter.c_str(), all_cust_keys)) {
@@ -407,15 +450,19 @@ namespace MM {
 		ret.requested_fields = req->field_list;
 
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_QR));
-		std::string cmd = "KEYS " + std::string(req->m_for_game.gamename) + ":*:";
-
-		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, cmd.c_str());
-		if (reply->type == REDIS_REPLY_ARRAY) {
-			for (unsigned int j = 0; j < reply->elements; j++) {
-				AppendServerEntry(std::string(reply->element[j]->str), &ret, req->all_keys, false, mp_redis_connection, req);
+		int cursor = 0;
+		do {
+			redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "SCAN %d MATCH %s:*:", cursor, req->m_for_game.gamename);
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
+			for(int i=0;i<reply->element[1]->elements;i++) {
+				AppendServerEntry(std::string(reply->element[1]->element[i]->str), &ret, req->all_keys, false, mp_redis_connection, req);
 			}
-		}
-		freeReplyObject(reply);
+			freeReplyObject(reply);
+		} while(cursor != 0);
 		return ret;
 	}
 	ServerListQuery MMQueryTask::GetGroups(const sServerListReq *req) {
@@ -424,15 +471,20 @@ namespace MM {
 		ret.requested_fields = req->field_list;
 
 		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_SBGroups));
-		std::string cmd = "KEYS " + std::string(req->m_for_game.gamename) + ":*:";
 
-		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, cmd.c_str());
-		if (reply->type == REDIS_REPLY_ARRAY) {
-			for (unsigned int j = 0; j < reply->elements; j++) {
-				AppendGroupEntry(reply->element[j]->str, &ret, mp_redis_connection, req->all_keys);
+		int cursor = 0;
+		do {
+			redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "SCAN %d MATCH %s:*:", cursor, req->m_for_game.gamename);
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
+			for(int i=0;i<reply->element[1]->elements;i++) {
+				AppendGroupEntry(reply->element[1]->element[i]->str, &ret, mp_redis_connection, req->all_keys);
 			}
-		}
-		freeReplyObject(reply);
+			freeReplyObject(reply);
+		} while(cursor != 0);
 		return ret;
 	}
 	Server *MMQueryTask::GetServerByKey(std::string key, redisContext *redis_ctx, bool include_deleted) {
