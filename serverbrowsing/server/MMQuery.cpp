@@ -381,6 +381,7 @@ namespace MM {
 	}
 	void MMQueryTask::AppendGroupEntry(const char *entry_name, ServerListQuery *ret, redisContext *redis_ctx, bool all_keys) {
 		redisReply *reply;
+		int cursor = 0;
 
 		/*
 		XXX: add redis error checks, cleanup on error, etc
@@ -413,6 +414,7 @@ namespace MM {
 		FindAppend_ServKVFields(server, entry_name, "numservers", redis_ctx);
 
 		if(all_keys) {
+			/*
 			reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name);
 			if (!reply)
 				goto error_cleanup;
@@ -425,7 +427,32 @@ namespace MM {
 						ret->captured_basic_fields.push_back(reply->element[j]->str);
 					}
 				}
-			}
+			}*/
+
+
+
+			do {
+				reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name);
+				if (!reply)
+					goto error_cleanup;
+					if (reply->type == REDIS_REPLY_ARRAY) {
+						if(reply->element[0]->type == REDIS_REPLY_STRING) {
+					 		cursor = atoi(reply->element[0]->str);
+					 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+					 		cursor = reply->element[0]->integer;
+					 	}
+
+						for(int i=0;i<reply->element[1]->elements;i++) {
+							std::string search_key = entry_name;
+							search_key += "custkeys";
+							FindAppend_ServKVFields(server, search_key, reply->element[1]->element[i]->str, redis_ctx);
+							if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), reply->element[1]->element[i]->str) == ret->captured_basic_fields.end()) {
+								ret->captured_basic_fields.push_back(reply->element[1]->element[i]->str);
+							}
+						}
+					}
+			} while(cursor != 0);
+
 		} else {
 			while (it != ret->requested_fields.end()) {
 				std::string field = *it;
