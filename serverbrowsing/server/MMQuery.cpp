@@ -122,6 +122,10 @@ namespace MM {
 
 		std::map<std::string, std::string> all_cust_keys; //used for filtering
 
+		if(!redis_ctx) {
+			redis_ctx = mp_redis_connection;
+		}
+
 		/*
 		XXX: add redis error checks, cleanup on error, etc
 		*/
@@ -337,20 +341,37 @@ namespace MM {
 			all_cust_keys = server->kvFields;
 		} else {
 			do {
-				reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %scustkeys", cursor, entry_name.c_str());
-				if (reply->type == REDIS_REPLY_ARRAY) {
-					if(reply->element[0]->type == REDIS_REPLY_STRING) {
-				 		cursor = atoi(reply->element[0]->str);
-				 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
-				 		cursor = reply->element[0]->integer;
-				 	}
+				reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
+                	        if (!reply)
+                        	        goto error_cleanup;
+	                        if (reply->type == REDIS_REPLY_ARRAY) {
+	       	                        if(reply->element[0]->type == REDIS_REPLY_STRING) {
+                	                        cursor = atoi(reply->element[0]->str);
+                        	        } else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
+                                	        cursor = reply->element[0]->integer;
+	                                }
+	                                if(reply->elements <= 1) {
+        	                                freeReplyObject(reply);
+	                                        return;
+	                                }
+	                                for(int i=0;i<reply->element[1]->elements;i += 2) {
 
-					for(int i=0;i<reply->element[1]->elements;i++) {
-						std::string search_key = entry_name;
-						search_key += "custkeys";
-						FindAppend_ServKVFields(server, search_key, reply->element[1]->element[i]->str, redis_ctx);
+        	                                if(reply->element[1]->element[i]->type != REDIS_REPLY_STRING)
+                	                                continue;
+
+                        	                std::string key = reply->element[1]->element[i]->str;
+                                	        if (reply->element[1]->element[i+1]->type == REDIS_REPLY_STRING) {
+                                        	        server->kvFields[key] = OS::strip_quotes(reply->element[1]->element[i+1]->str);
+	                                        }
+        	                                else if(reply->element[1]->element[i+1]->type == REDIS_REPLY_INTEGER) {
+	                                                server->kvFields[key] = reply->element[1]->element[i+1]->integer;
+        	                                }
+
+	                                        if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), reply->element[1]->element[i]->str) == ret->captured_basic_fields.end()) {
+	                                                ret->captured_basic_fields.push_back(reply->element[1]->element[i]->str);
+	                                        }
 					}
-				}
+		                }
 				freeReplyObject(reply);
 			} while(cursor != 0);
 

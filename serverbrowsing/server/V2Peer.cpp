@@ -108,6 +108,13 @@ namespace SB {
 			return req;
 		}
 
+		printf("query gamemode %s\n",req.m_for_game.gamename);
+
+		if(req.m_for_game.gamename[0] == 0) {
+			send_error(true, "Invalid game");
+			return req;
+		}
+
 
 		BufferReadData(buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
 
@@ -345,6 +352,7 @@ namespace SB {
 	}
 	void V2Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
 		V2Peer *peer = (V2Peer *)extra;
+		if(results.list.size() == 0) return;
 		MM::Server *server = results.list.front();
 		if(server) {
 			peer->sendServerData(server, false, true, NULL, NULL, true);
