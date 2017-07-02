@@ -5,12 +5,12 @@
 
 
 /*
-“appnamever=’PS3POKER1.28V’ and (password=0 or password=1)
- and hostname<>'splitnum' and gameregion=’_SCEA’ and
- gamelanguage=’EN’ and
+ï¿½appnamever=ï¿½PS3POKER1.28Vï¿½ and (password=0 or password=1)
+ and hostname<>'splitnum' and gameregion=ï¿½_SCEAï¿½ and
+ gamelanguage=ï¿½ENï¿½ and
  gamevariant=2 and gametype=1
- and limits=0 and avchatmode=0”
- 
+ and limits=0 and avchatmode=0ï¿½
+
  splitnum' and avchatmode=2 RET: 0
 aa PS3POKER1.28 PS3POKER1.28
 filter: appnamever='PS3POKER1.28' and (password=0 or password=1) and hostname<>'splitnum' and avchatmode=3 RET: 0
@@ -33,11 +33,11 @@ std::string readString(const char *filter, int &idx, int len) {
 	char *ret_str;
 	int i;
 	for(i=idx;i<len;i++) {
-		if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='’') break;
+		if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='ï¿½') break;
 		str += filter[i];
 	}
-	idx = i; 
-	if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='’') idx++; //skip the " or '
+	idx = i;
+	if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='ï¿½') idx++; //skip the " or '
 	return str;
 }
 const char *readVariable(const char *filter, int &idx, int len) {
@@ -201,7 +201,7 @@ std::vector<CToken *> CToken::filterToTokenList(const char *filter) {
 			 continue;
 		}else if(checkMultiCharToken(filter, i, filterlen, &token)) {
 			tokens.push_back(token);
-		} else if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='’') {
+		} else if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='ï¿½') {
 			//gets freed in token deconstructor
 			std::string str = readString(filter, ++i, filterlen);
 			token = new CToken(str);
@@ -228,7 +228,7 @@ std::vector<CToken *> CToken::filterToTokenList(const char *filter) {
 				token = new CToken(EToken_Integer, (void *)intval);
 			}
 			tokens.push_back(token);
-		} 
+		}
 		else { //variable
 			const char *str = readVariable(filter, i, filterlen);
 			if(str == NULL) continue;
@@ -244,7 +244,7 @@ std::vector<CToken *> CToken::filterToTokenList(const char *filter) {
 }
 std::string tokenToString(CToken *token) {
 	std::ostringstream ss;
-	
+
 	switch(token->getType()) {
 		case EToken_Integer:
 			ss << ((long)token->getExtra());
@@ -262,28 +262,28 @@ std::string tokenToString(CToken *token) {
 #define DEFINE_BOOLEAN_OPERATION(funcname, _operator) CToken * funcname (std::stack<CToken *> &stack) { \
 	bool val = true; \
 	if (stack.size() >= 2) { \
-	CToken *t1, *t2; \
-	t2 = stack.top(); \
-	stack.pop(); \
-	t1 = stack.top(); \
-	stack.pop(); \
-	long i1, i2; \
-	if (t1->getType() == EToken_Integer && t2->getType() == EToken_Integer) { \
-	i1 = (long)t1->getExtra(); \
-	i2 = (long)t2->getExtra(); \
-	val = (i1 _operator i2); \
-	} else if(t1->getType() == EToken_String || t2->getType() == EToken_String) {\
-		std::string s1 = tokenToString(t1); \
-		std::string s2 = tokenToString(t2); \
-		val = s1 _operator s2;\
+		CToken *t1, *t2; \
+		t2 = stack.top(); \
+		stack.pop(); \
+		t1 = stack.top(); \
+		stack.pop(); \
+		if (t1->getType() == EToken_Integer && t2->getType() == EToken_Integer) { \
+			long i1, i2; \
+			i1 = (long)t1->getExtra(); \
+			i2 = (long)t2->getExtra(); \
+			val = i1 _operator i2; \
+		} else if(t1->getType() == EToken_String || t2->getType() == EToken_String) {\
+			std::string s1 = tokenToString(t1); \
+			std::string s2 = tokenToString(t2); \
+			val = s1 _operator s2;\
+		} \
+		delete t1; \
+		delete t2; \
+		return new CToken(EToken_Integer, (void *)val); \
 	} \
-	delete t1; \
-	delete t2; \
-	return new CToken(EToken_Integer, (void *)val); \
+	else { \
+		return NULL; \
 	} \
-else { \
-	return NULL; \
-} \
 }
 
 #define DEFINE_BOOLEAN_OPERATION_NOSTR(funcname, _operator) CToken * funcname (std::stack<CToken *> &stack) { \
@@ -440,6 +440,7 @@ TokenOperand resolve_variable(CToken *token, std::map<std::string, std::string>&
 }
 TokenOperand resolve_variable(const char *name, std::map<std::string, std::string>& kvList) {
 	TokenOperand ret;
+	ret.ptr = NULL;
 	const char *var = kvList[name].c_str();
 	if(var != NULL && atoi(var) != 0 || (var != NULL && var[0] =='0' && var[1] ==0 )) {
 		ret.token = EToken_Integer;
@@ -453,5 +454,3 @@ TokenOperand resolve_variable(const char *name, std::map<std::string, std::strin
 	}
 	return ret;
 }
-
- 

@@ -19,7 +19,7 @@ namespace SB {
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
 	}
 	V2Peer::~V2Peer() {
-		printf("V2 delete\n");
+		//printf("V2 delete\n");
 	}
 	void V2Peer::handle_packet(char *data, int len) {
 		if(len == 0)
@@ -310,7 +310,6 @@ namespace SB {
 			m_delete_flag = true;
 	}
 	uint8_t *V2Peer::ProcessListRequset(uint8_t *buffer, int remain) {
-
 		MM::MMQueryRequest req;
 		req.extra = this;
 
@@ -587,7 +586,7 @@ namespace SB {
 		int len = 0;
 
 		sServerCache cache = FindServerByKey(server->key);
-		if(cache.key[0] == 0 || m_last_list_req.no_server_list) return;
+		if(cache.key[0] == 0 || !m_last_list_req.push_updates) return;
 
 		DeleteServerFromCacheByKey(server->key);
 
@@ -598,7 +597,7 @@ namespace SB {
 	}
 	void V2Peer::informNewServers(MM::Server *server) {
 		sServerCache cache = FindServerByKey(server->key);
-		if(cache.key[0] != 0 || m_last_list_req.no_server_list) return;
+		if(cache.key[0] != 0 || !m_last_list_req.push_updates) return;
 		if(server) {
 			if(serverMatchesLastReq(server)) {
 				cacheServer(server);
@@ -607,7 +606,7 @@ namespace SB {
 		}
 	}
 	void V2Peer::informUpdateServers(MM::Server *server) {
-		if(m_last_list_req.no_server_list) return;
+		if(!m_last_list_req.push_updates) return;
 		sServerCache cache = FindServerByKey(server->key);
 
 		//client never recieved server notification, add to cache and send anyways, as it will be registered as a new server by the SB SDK
@@ -625,7 +624,7 @@ namespace SB {
 		uint8_t *p = (uint8_t *)&buff;
 		int len = 0;
 		std::map<std::string, uint8_t>::iterator it = m_last_list_req.m_from_game.push_keys.begin();
-		//m_last_list_req.m_from_game.push_keys
+
 		BufferWriteByte(&p, &len, m_last_list_req.m_from_game.push_keys.size());
 		while(it != m_last_list_req.m_from_game.push_keys.end()) {
 			std::pair<std::string, uint8_t> pair = *it;

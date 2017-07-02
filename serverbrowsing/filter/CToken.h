@@ -31,7 +31,7 @@ enum ETokenType {
 typedef struct {
 	union {
 		float fval;
-		int ival;
+		long ival;
 		void *ptr;
 	};
 	std::string sval;

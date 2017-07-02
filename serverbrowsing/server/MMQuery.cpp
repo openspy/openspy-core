@@ -334,6 +334,7 @@ namespace MM {
 				reply = (redisReply *)NULL;
 			}
 			idx = 0;
+			all_cust_keys = server->kvFields;
 		} else {
 			do {
 				reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %scustkeys", cursor, entry_name.c_str());
