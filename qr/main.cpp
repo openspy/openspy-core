@@ -31,14 +31,14 @@ int main() {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-	OS::Init("qr");
-	g_gameserver = new QR::Server();
-    g_driver = new QR::Driver(g_gameserver, "0.0.0.0", MASTER_PORT);
-	g_gameserver->addNetworkDriver(g_driver);
-	g_gameserver->init();
-	while(g_running) {
-		g_gameserver->tick();
-	}
+  	OS::Init("qr");
+  	g_gameserver = new QR::Server();
+      g_driver = new QR::Driver(g_gameserver, "0.0.0.0", MASTER_PORT);
+  	g_gameserver->addNetworkDriver(g_driver);
+  	g_gameserver->init();
+  	while(g_running) {
+  		g_gameserver->tick();
+  	}
 
     delete g_driver;
     delete g_gameserver;
@@ -78,4 +78,3 @@ int gettimeofday(struct timeval * tp, struct timezone * tzp)
 
 
 #endif
-

@@ -37,7 +37,7 @@
 namespace QR {
 	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver,address_info,sd) {
 		m_recv_instance_key = false;
-		
+
 		m_sent_challenge = false;
 		m_server_info.m_game.gameid = 0;
 		memset(&m_challenge, 0, sizeof(m_challenge));
@@ -67,7 +67,7 @@ namespace QR {
 	}
 	void V2Peer::handle_packet(char *recvbuf, int len) {
 		printf("QR2 handle packet %d\n", len);
-		
+
 
 		uint8_t *buff = (uint8_t *)recvbuf;
 		int buflen = len;
@@ -111,7 +111,7 @@ namespace QR {
 		char challenge_resp[90] = { 0 };
 		int outlen = 0;
 		uint8_t *p = (uint8_t *)challenge_resp;
-		if(!m_server_info.m_game.gameid) {
+		if(m_server_info.m_game.gamename[0] == 0) {
 			send_error(true, "Unknown game");
 			return;
 		}
@@ -139,7 +139,7 @@ namespace QR {
 		std::map<std::string, std::string> server_keys;
 		std::map<std::string, std::vector<std::string> > player_keys;
 		std::map<std::string, std::vector<std::string> > team_keys;
-		
+
 		std::string key, value;
 
 		if(!m_recv_instance_key) {
@@ -149,7 +149,7 @@ namespace QR {
 		while((buff[0] != 0 && len > 0) || (i%2 != 0)) {
 
 			x = BufferReadNTS((uint8_t **)&buff,&len);
-			
+
 			if(i%2 == 0) {
 				key = std::string((char *)x);
 			} else {
@@ -167,12 +167,12 @@ namespace QR {
 		BufferReadByte((uint8_t**)&buff,&len); //skip null byte(seperator)
 		while((num_values = BufferReadShortRE((uint8_t**)&buff,&len))) {
 			std::vector<std::string> nameValueList;
-			if(len <= 3) { 
+			if(len <= 3) {
 				break;
 			}
 			uint32_t num_keys = 0;
 			while(buff[0] != 0 && len > 0) {
-				x = BufferReadNTS((uint8_t **)&buff,&len);	
+				x = BufferReadNTS((uint8_t **)&buff,&len);
 				nameValueList.push_back(std::string((const char *)x));
 				free((void *)x);
 				num_keys++;
@@ -184,7 +184,7 @@ namespace QR {
 			while(num_values_t--) {
 				std::string name = nameValueList.at(i);
 
-				x = BufferReadNTS((uint8_t **)&buff,&len);	
+				x = BufferReadNTS((uint8_t **)&buff,&len);
 
 				if(isTeamString(name.c_str())) {
 					if(team_keys[name].size() <= player) {
@@ -193,7 +193,7 @@ namespace QR {
 					else {
 						team_keys[name][player] = std::string((const char *)x);
 					}
-					
+
 				} else {
 					if(player_keys[name].size() <= player) {
 						player_keys[name].push_back(std::string((const char *)x));
@@ -244,7 +244,7 @@ namespace QR {
 	void V2Peer::send_ping() {
 		//check for timeout
 		struct timeval current_time;
-		
+
 
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > QR2_PING_TIME) {
@@ -254,12 +254,12 @@ namespace QR {
 			int len = 0;
 
 			gettimeofday(&m_last_ping, NULL);
-			
+
 			BufferWriteByte(&p, &len, PACKET_KEEPALIVE);
 			BufferWriteData(&p, &len, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
 			SendPacket((uint8_t *)&data, len);
 		}
-		
+
 	}
 	void V2Peer::think() {
 		send_ping();
@@ -283,7 +283,7 @@ namespace QR {
 
 		uint16_t *backend_flags = (uint16_t *)&m_challenge[13];
 		*backend_flags &= ~QR2_OPTION_USE_QUERY_CHALLENGE;
-		
+
 
 		BufferWriteByte((uint8_t**)&p,&blen,PACKET_CHALLENGE);
 		BufferWriteData((uint8_t **)&p, &blen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
@@ -298,13 +298,13 @@ namespace QR {
 		char buff[MAX_DATA_SIZE];
 		uint8_t *p = (uint8_t *)buff;
 		int blen = 0;
-		uint32_t key = rand() % 100000 + 1;	
+		uint32_t key = rand() % 100000 + 1;
 
 		BufferWriteByte(&p, &blen, PACKET_CLIENT_MESSAGE);
 		BufferWriteInt(&p, &blen, key);
 
 		BufferWriteData(&p, &blen, data, data_len);
 		SendPacket((uint8_t *)&buff, blen);
-		
+
 	}
 }

@@ -130,6 +130,8 @@ namespace MM {
 		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR));
 
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
+
+		/*
 		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s deleted", entry_name.c_str());
 		if(reply) {
 			if(reply->type != REDIS_REPLY_NIL && !include_deleted) {
@@ -141,6 +143,7 @@ namespace MM {
 		} else {
 			return;
 		}
+		*/
 
 
 		Server *server = new MM::Server();
@@ -186,7 +189,7 @@ namespace MM {
 		freeReplyObject(reply);
 
 		if(all_keys) {
-			reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %scustkeys", cursor, entry_name.c_str());
+			reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
 			if (!reply)
 				goto error_cleanup;
 			if (reply->type == REDIS_REPLY_ARRAY) {
@@ -195,11 +198,23 @@ namespace MM {
 				} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
 					cursor = reply->element[0]->integer;
 				}
+				if(reply->elements <= 1) {
+					freeReplyObject(reply);
+					return;
+				}
+				for(int i=0;i<reply->element[1]->elements;i += 2) {
 
-				for(int i=0;i<reply->element[1]->elements;i++) {
-					std::string search_key = entry_name;
-					search_key += "custkeys";
-					FindAppend_ServKVFields(server, search_key, reply->element[1]->element[i]->str, redis_ctx);
+					if(reply->element[1]->element[i]->type != REDIS_REPLY_STRING)
+						continue;
+
+					std::string key = reply->element[1]->element[i]->str;
+					if (reply->element[1]->element[i+1]->type == REDIS_REPLY_STRING) {
+						server->kvFields[key] = OS::strip_quotes(reply->element[1]->element[i+1]->str);
+					}
+					else if(reply->element[1]->element[i+1]->type == REDIS_REPLY_INTEGER) {
+						server->kvFields[key] = reply->element[1]->element[i+1]->integer;
+					}
+
 					if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), reply->element[1]->element[i]->str) == ret->captured_basic_fields.end()) {
 						ret->captured_basic_fields.push_back(reply->element[1]->element[i]->str);
 					}
@@ -210,18 +225,42 @@ namespace MM {
 				cursor = 0;
 				s << entry_name << "custkeys_player_" << idx;
 				key = s.str();
-				reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %s", key.c_str());
+
+				reply = (redisReply *)redisCommand(redis_ctx, "EXISTS %s", key.c_str());
+				if(!reply)
+				        break;
+
+				if(reply->type == REDIS_REPLY_INTEGER) {
+				        if(!reply->integer)
+				                break;
+				} else if(reply->type == REDIS_REPLY_STRING) {
+					if(!atoi(reply->str))
+						break;
+				}
+
+
+				reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %s %d MATCH *", key.c_str(), cursor);
 				if(!reply)
 					break;
-				last_type = reply->type;
 				if (reply->type == REDIS_REPLY_ARRAY) {
-					if(reply->elements == 0)  {
+					if(reply->elements <= 0)  {
 						freeReplyObject(reply);
 						reply = (redisReply *)NULL;
 						break;
 					}
-					for(int i=0;i<reply->element[1]->elements;i++) {
-						FindAppend_PlayerKVFields(server, key, reply->element[1]->element[i]->str, idx, redis_ctx);
+					for(int i=0;i<reply->element[1]->elements;i += 2) {
+
+						if(reply->element[1]->element[i]->type != REDIS_REPLY_STRING)
+							continue;
+
+						std::string key = reply->element[1]->element[i]->str;
+						if (reply->element[1]->element[i+1]->type == REDIS_REPLY_STRING) {
+							server->kvPlayers[idx][key] = OS::strip_quotes(reply->element[1]->element[i+1]->str);
+						}
+						else if(reply->element[1]->element[i+1]->type == REDIS_REPLY_INTEGER) {
+							server->kvPlayers[idx][key] = reply->element[1]->element[i+1]->integer;
+						}
+
 						if(std::find(ret->captured_player_fields.begin(), ret->captured_player_fields.end(), reply->element[1]->element[i]->str) == ret->captured_player_fields.end()) {
 							ret->captured_player_fields.push_back(reply->element[1]->element[i]->str);
 						}
@@ -244,42 +283,50 @@ namespace MM {
 				s << entry_name << "custkeys_team_" << idx;
 				key = s.str();
 
-				reply = (redisReply *)redisCommand(redis_ctx, "HEXISTS %s", key.c_str());
+				reply = (redisReply *)redisCommand(redis_ctx, "EXISTS %s", key.c_str());
 				if(!reply)
 					break;
+				if(reply->type == REDIS_REPLY_INTEGER) {
+					if(!reply->integer)
+						break;
+				} else if(reply->type == REDIS_REPLY_STRING) {
+					if(!atoi(reply->str))
+						break;
+				}
+				cursor = 0;
+				do {
+					reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %s %d MATCH *", key.c_str(), cursor);
+					if(!reply)
+						break;
+					if (reply->type == REDIS_REPLY_ARRAY) {
+						if(reply->elements <= 0)  {
+							freeReplyObject(reply);
+							reply = (redisReply *)NULL;
+							break;
+						}
+						for(int i=0;i<reply->element[1]->elements;i += 2) {
 
-					if(reply->type == REDIS_REPLY_INTEGER) {
-						if(!reply->integer)
-							break;
-					} else if(reply->type == REDIS_REPLY_STRING) {
-							if(!atoi(reply->str))
-							break;
-					}
-					do {
-						cursor = 0;
+							if(reply->element[1]->element[i]->type != REDIS_REPLY_STRING)
+								continue;
 
-						reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %s", key.c_str());
-						if(!reply)
-							break;
-						last_type = reply->type;
-						if (reply->type == REDIS_REPLY_ARRAY) {
-							if(reply->elements == 0)  {
-								freeReplyObject(reply);
-								reply = (redisReply *)NULL;
-								break;
+							std::string key = reply->element[1]->element[i]->str;
+							if (reply->element[1]->element[i+1]->type == REDIS_REPLY_STRING) {
+								server->kvTeams[idx][key] = OS::strip_quotes(reply->element[1]->element[i+1]->str);
 							}
-							for(int i=0;i<reply->element[1]->elements;i++) {
-								FindAppend_TeamKVFields(server, key, reply->element[1]->element[i]->str, idx, redis_ctx);
-								if(std::find(ret->captured_team_fields.begin(), ret->captured_team_fields.end(), reply->element[1]->element[i]->str) == ret->captured_team_fields.end()) {
-									ret->captured_team_fields.push_back(reply->element[1]->element[i]->str);
-								}
+							else if(reply->element[1]->element[i+1]->type == REDIS_REPLY_INTEGER) {
+								server->kvTeams[idx][key] = reply->element[1]->element[i+1]->integer;
+							}
+
+							if(std::find(ret->captured_team_fields.begin(), ret->captured_team_fields.end(), reply->element[1]->element[i]->str) == ret->captured_team_fields.end()) {
+								ret->captured_team_fields.push_back(reply->element[1]->element[i]->str);
 							}
 						}
-						freeReplyObject(reply);
-						reply = (redisReply *)NULL;
-						s.str("");
-					} while(cursor != 0);
-					idx++;
+					}
+					freeReplyObject(reply);
+					reply = (redisReply *)NULL;
+					s.str("");
+				} while(cursor != 0);
+				idx++;
 			} while(true);
 
 			if(reply) {
@@ -287,9 +334,6 @@ namespace MM {
 				reply = (redisReply *)NULL;
 			}
 			idx = 0;
-
-			//while hexists custkeys team
-
 		} else {
 			do {
 				reply = (redisReply *)redisCommand(redis_ctx, "HSCAN %d MATCH %scustkeys", cursor, entry_name.c_str());
@@ -365,6 +409,7 @@ namespace MM {
 
 	}
 	bool MMQueryTask::FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key, redisContext *redis_ctx) {
+
 		redisReply *reply = (redisReply *)redisCommand(mp_redis_connection, "HGET %s %s", entry_name.c_str(), key.c_str());
 		if (!reply)
 			return false;
@@ -442,6 +487,11 @@ namespace MM {
 					 		cursor = reply->element[0]->integer;
 					 	}
 
+						if(reply->elements <= 1) {
+							freeReplyObject(reply);
+							break;
+						}
+
 						for(int i=0;i<reply->element[1]->elements;i++) {
 							std::string search_key = entry_name;
 							search_key += "custkeys";
@@ -454,11 +504,11 @@ namespace MM {
 			} while(cursor != 0);
 
 		} else {
+
 			while (it != ret->requested_fields.end()) {
 				std::string field = *it;
 				std::string entry = entry_name;
 				entry += "custkeys";
-				reply = (redisReply *)redisCommand(redis_ctx, "HGET %scustkeys %s", entry_name, field.c_str());
 				FindAppend_ServKVFields(server, entry, field, redis_ctx);
 				it++;
 			}
@@ -485,6 +535,12 @@ namespace MM {
 		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
 		 		cursor = reply->element[0]->integer;
 		 	}
+
+			if(reply->elements <= 1) {
+				freeReplyObject(reply);
+				break;
+			}
+
 			for(int i=0;i<reply->element[1]->elements;i++) {
 				AppendServerEntry(std::string(reply->element[1]->element[i]->str), &ret, req->all_keys, false, mp_redis_connection, req);
 			}
@@ -507,6 +563,11 @@ namespace MM {
 		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
 		 		cursor = reply->element[0]->integer;
 		 	}
+
+			if(reply->elements <= 1) {
+				freeReplyObject(reply);
+				break;
+			}
 			for(int i=0;i<reply->element[1]->elements;i++) {
 				AppendGroupEntry(reply->element[1]->element[i]->str, &ret, mp_redis_connection, req->all_keys);
 			}

@@ -96,6 +96,8 @@ namespace MM {
 		s << server->m_game.gamename << ":" << groupid << ":" << id << ":";
 		std::string server_key = s.str();
 
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_QR));
+
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s gameid %d",server_key.c_str(),server->m_game.gameid));
 		freeReplyObject(redisCommand(mp_redis_connection, "HSET %s id %d",server_key.c_str(),id));
 
@@ -180,7 +182,7 @@ namespace MM {
 	void DeleteServer(ServerInfo *server, bool publish) {
 		int groupid = server->groupid;
 		int id = server->id;
-
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_QR));
 		if(publish) {
 			freeReplyObject(redisCommand(mp_redis_connection, "HSET %s:%d:%d: deleted 1",server->m_game.gamename,server->groupid,server->id));
 			freeReplyObject(redisCommand(mp_redis_connection, "PUBLISH %s \\del\\%s:%d:%d:",sb_mm_channel,server->m_game.gamename,groupid,id));
@@ -230,7 +232,7 @@ namespace MM {
 	}
 	int GetServerID() {
 		redisReply *reply;
-
+		freeReplyObject(redisCommand(mp_redis_connection, "SELECT %d", OS::ERedisDB_QR));
 		reply = (redisReply *)redisCommand(mp_redis_connection, "INCR %s", mp_pk_name);
 		int ret = -1;
 		if(reply && reply->type == REDIS_REPLY_INTEGER) {
