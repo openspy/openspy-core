@@ -29,12 +29,14 @@ int main() {
        fprintf(stderr, "cannot set exit function\n");
        exit(EXIT_FAILURE);
     }
+	#ifndef _WIN32
+		signal(SIGINT, sig_handler);
+		signal(SIGTERM, sig_handler);
+	#endif
 
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
-
+	Socket::Init();
 	OS::Init("serverbrowsing");
-    Socket::Init();
+    
 
 	g_gameserver = new SBServer();
     g_legacyms_driver = new SB::Driver(g_gameserver, "0.0.0.0", 28900, 1);

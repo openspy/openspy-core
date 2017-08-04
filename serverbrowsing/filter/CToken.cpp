@@ -1,3 +1,4 @@
+#include <OS/OpenSpy.h>
 #include "CToken.h"
 #include <string>
 #include <stack>

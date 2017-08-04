@@ -17,16 +17,17 @@
 
 namespace OS {
 	Logger *g_logger = NULL;
-	redisContext *redis_internal_connection = NULL;
+	struct timeval redis_timeout;
+	Redis::Connection *redis_internal_connection = NULL;
 	void Init(const char *appName) {
 
 		curl_global_init(CURL_GLOBAL_SSL);
 
-		struct timeval t;
-		t.tv_usec = 0;
-		t.tv_sec = 3;
+		redis_timeout.tv_usec = 0;
+		redis_timeout.tv_sec = 3;
 
-		redis_internal_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
+		redis_internal_connection = Redis::Connect(OS_REDIS_ADDR, redis_timeout);
+
 		#ifndef _WIN32
 			g_logger = new UnixLogger(appName);
 		#endif
@@ -36,50 +37,74 @@ namespace OS {
 			delete AuthTask::getAuthTask();
 		}
 
-		redisFree(redis_internal_connection);
+		//redisFree(redis_internal_connection);
 		curl_global_cleanup();
 	}
-	OS::GameData GetGameByRedisKey(const char *key, redisContext *redis_ctx = NULL) {
+	OS::GameData GetGameByRedisKey(const char *key, Redis::Connection *redis_ctx = NULL) {
 		GameData game;
-		redisReply *reply;
+		Redis::Response reply;
+		Redis::Value v;
 
 		if(redis_ctx == NULL) {
 			redis_ctx = OS::redis_internal_connection;
 		}
 
-		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game));
+		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
 
-		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s gameid", key);
-		if (reply->type == REDIS_REPLY_STRING) {
-			game.gameid = atoi(OS::strip_quotes(reply->str).c_str());
+		reply = Redis::Command(redis_ctx, 0, "HGET %s gameid", key);
+		if (Redis::CheckError(reply)) {
+			goto end_error;
 		}
-		freeReplyObject(reply);
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			game.gameid = atoi(OS::strip_quotes(v.value._str).c_str());
+		}
 
 
-		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s secretkey", key);
-		if (reply->type == REDIS_REPLY_STRING)
-			strcpy(game.secretkey, OS::strip_quotes(reply->str).c_str());
-		freeReplyObject(reply);
+		reply = Redis::Command(redis_ctx, 0, "HGET %s secretkey", key);
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			strcpy(game.secretkey, OS::strip_quotes(v.value._str).c_str());
+		}
 
-		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s description", key);
-		if (reply->type == REDIS_REPLY_STRING)
-			strcpy(game.description, OS::strip_quotes(reply->str).c_str());
-		freeReplyObject(reply);
+		reply = Redis::Command(redis_ctx, 0, "HGET %s description", key);
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			strcpy(game.description, OS::strip_quotes(v.value._str).c_str());
+		}
 
-		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s gamename", key);
-		if (reply->type == REDIS_REPLY_STRING)
-			strcpy(game.gamename, OS::strip_quotes(reply->str).c_str());
-		freeReplyObject(reply);
+		reply = Redis::Command(redis_ctx, 0, "HGET %s gamename", key);
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			strcpy(game.gamename, OS::strip_quotes(v.value._str).c_str());
+		}
 
-		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s disabled_services", key);
-		if (reply->type == REDIS_REPLY_STRING)
-			game.disabled_services = atoi(OS::strip_quotes(reply->str).c_str());
-		freeReplyObject(reply);
+		reply = Redis::Command(redis_ctx, 0, "HGET %s disabled_services", key);
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			game.disabled_services = atoi(OS::strip_quotes(v.value._str).c_str());
+		}
 
-		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s queryport", key);
-		if (reply->type == REDIS_REPLY_STRING)
-			game.queryport = atoi(OS::strip_quotes(reply->str).c_str());
-		freeReplyObject(reply);
+		reply = Redis::Command(redis_ctx, 0, "HGET %s queryport", key);
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			game.queryport = atoi(OS::strip_quotes(v.value._str).c_str());
+		}
 
 
 		//for thugpro
@@ -100,60 +125,77 @@ namespace OS {
 		game.push_keys["numplayers"] = KEYTYPE_BYTE;
 		game.push_keys["password"] = KEYTYPE_BYTE;
 
-		return game;
+		end_error:
+			return game;
 
 	}
-	OS::GameData GetGameByName(const char *from_gamename, redisContext *redis_ctx) {
-		redisReply *reply;
+	OS::GameData GetGameByName(const char *from_gamename, Redis::Connection *redis_ctx) {
+		Redis::Response reply;
+		Redis::Value v, arr;
+
 		OS::GameData ret;
 		if(redis_ctx == NULL) {
 			redis_ctx = OS::redis_internal_connection;
 		}
-		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game));
+		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
 
-		memset(&ret, 0, sizeof(ret));
+		//memset(&ret, 0, sizeof(ret));
 		int cursor = 0;
 		do {
-			reply = (redisReply *)redisCommand(redis_ctx, "SCAN %d MATCH %s:*", cursor, from_gamename);
-		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
-		 		cursor = atoi(reply->element[0]->str);
-		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
-		 		cursor = reply->element[0]->integer;
+			reply = Redis::Command(redis_ctx, 0, "SCAN %d MATCH %s:*", cursor, from_gamename);
+			if (Redis::CheckError(reply)) {
+				goto end_error;
+			}
+			v = reply.values[0].arr_value.values[0].second;
+		 	if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+		 		cursor = atoi(v.value._str.c_str());
+		 	} else if(v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+		 		cursor = v.value._int;
 		 	}
-
-			for(int i=0;i<reply->element[1]->elements;i++) {
-				ret = GetGameByRedisKey(reply->element[1]->element[i]->str, redis_ctx);
+			if (cursor == 0) break;
+			arr = reply.values[0].arr_value.values[1].second;
+			for(int i=0;i<arr.arr_value.values.size();i++) {
+				ret = GetGameByRedisKey(arr.arr_value.values[i].second.value._str.c_str(), redis_ctx);
 				break;
 			}
-			freeReplyObject(reply);
 		} while(cursor != 0);
-		return ret;
+		end_error:
+			return ret;
 	}
-	OS::GameData GetGameByID(int gameid, redisContext *redis_ctx) {
-		redisReply *reply;
+	OS::GameData GetGameByID(int gameid, Redis::Connection *redis_ctx) {
+		Redis::Response reply;
+		Redis::Value v, arr;
+
 		OS::GameData ret;
 		if(redis_ctx == NULL) {
 			redis_ctx = OS::redis_internal_connection;
 		}
-		freeReplyObject(redisCommand(redis_ctx, "SELECT %d", ERedisDB_Game));
+		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
 
-		memset(&ret, 0, sizeof(ret));
 		int cursor = 0;
 		do {
-			reply = (redisReply *)redisCommand(redis_ctx, "SCAN %d MATCH *:%d", cursor, gameid);
-		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
-		 		cursor = atoi(reply->element[0]->str);
-		 	} else if(reply->element[0]->type == REDIS_REPLY_INTEGER) {
-		 		cursor = reply->element[0]->integer;
-		 	}
+			reply = Redis::Command(redis_ctx, 0, "SCAN %d MATCH *:%d", cursor, gameid);
+			if (Redis::CheckError(reply)) {
+				goto end_error;
+			}
+			v = reply.values[0].arr_value.values[0].second;
+			if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+				cursor = atoi(v.value._str.c_str());
+			}
+			else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+				cursor = v.value._int;
+			}
+			if (cursor == 0) break;
+			arr = reply.values[0].arr_value.values[1].second;
 
-			for(int i=0;i<reply->element[1]->elements;i++) {
-				ret = GetGameByRedisKey(reply->element[1]->element[i]->str, redis_ctx);
+			for (int i = 0; i<arr.arr_value.values.size(); i++) {
+				ret = GetGameByRedisKey(arr.arr_value.values[i].second.value._str.c_str(), redis_ctx);
 				break;
 			}
-			freeReplyObject(reply);
 		} while(cursor != 0);
-		return ret;
+
+		end_error:
+			return ret;
 	}
 	std::map<std::string, std::string> KeyStringToMap(std::string input) {
 		std::map<std::string, std::string> ret;
@@ -237,7 +279,7 @@ namespace OS {
 	}
 	void Sleep(int time_ms) {
 		#ifdef _WIN32
-		Sleep(time_ms);
+		::Sleep(time_ms);
 		#else
 		usleep(time_ms * 1000);
 		#endif
@@ -309,7 +351,10 @@ namespace OS {
 	void LogText(ELogLevel level, const char *fmt, ...) {
 		va_list args;
 		va_start (args, fmt);
-		g_logger->LogText(level, fmt, args);
+		if (g_logger) {
+			g_logger->LogText(level, fmt, args);
+		}
+		
 		va_end(args);
 	}
 

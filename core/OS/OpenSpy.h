@@ -1,14 +1,21 @@
 #ifndef _OPENSPY_H
 #define _OPENSPY_H
+
+#include <stdio.h>
+
 #ifdef _WIN32
 #include <Windows.h>
 #include <WinSock.h>
 #include "Threads/Win32/WinThread.h"
+#include "Threads/Win32/Win32Mutex.h"
 typedef int socklen_t;
-#define snprintf sprintf_s
+#ifndef snprintf
+	#define snprintf sprintf_s
+#endif
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 #define MSG_NOSIGNAL 0
+#define close closesocket
 int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #else
 #include <unistd.h>
@@ -37,13 +44,14 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <stdint.h>
 #include <memory.h>
 #include <map>
-#include <hiredis/hiredis.h>
+#include <OS/Redis.h>
 
 #include <OS/Logger.h>
 
 #define OPENSPY_WEBSERVICES_URL "http://192.168.0.46"
 #define OS_REDIS_SERV "openspy.u95v0m.0001.use1.cache.amazonaws.com"
 #define OS_REDIS_PORT 6379
+#define OS_REDIS_ADDR "127.0.0.1:6379"
 
 namespace OS {
 	class Logger;
@@ -77,11 +85,11 @@ namespace OS {
 		char secretkey[OS_MAX_SECRETKEY];
 		char disabled_services; //0= ok, 1 = temp, 2 = perm
 		std::vector<std::string> popular_values;
-
 		std::map<std::string, uint8_t> push_keys; //SB push keys + type(hostname/KEYTYPE_STRING)
 	} GameData;
-	GameData GetGameByName(const char *from_gamename, redisContext *redis_ctx = NULL);
-	GameData GetGameByID(int gameid, redisContext *redis_ctx = NULL);
+
+	GameData GetGameByName(const char *from_gamename, Redis::Connection *redis_ctx = NULL);
+	GameData GetGameByID(int gameid, Redis::Connection *redis_ctx = NULL);
 	enum ERedisDB {
 		ERedisDB_QR,
 		ERedisDB_SBGroups,

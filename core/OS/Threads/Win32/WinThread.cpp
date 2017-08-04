@@ -1,5 +1,9 @@
+#include <OS/OpenSpy.h>
+#include <OS/Task.h>
 #include <OS/Thread.h>
 #include "WinThread.h"
+
+#include <Windows.h>
 namespace OS {
 	DWORD CWin32Thread::cwin32thread_thread(void *thread) {
 		CWin32Thread *t = (CWin32Thread *)thread;
@@ -22,7 +26,7 @@ namespace OS {
 	}
 	void CWin32Thread::start() {
 		if(!m_running) {
-			m_handle = CreateThread(NULL, 0,(LPTHREAD_START_ROUTINE)cwin32thread_thread, this, 0, &m_threadid);
+			m_handle = ::CreateThread(NULL, 0,(LPTHREAD_START_ROUTINE)cwin32thread_thread, this, 0, &m_threadid);
 			m_running = true;
 		}
 	}

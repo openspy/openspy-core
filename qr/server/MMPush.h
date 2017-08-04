@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <OS/Redis.h>
 namespace QR {
 	class Driver;
 }
@@ -19,7 +20,7 @@ namespace MM {
 		int id;
 	} ServerInfo;
 
-	extern redisContext *mp_redis_connection;
+	extern Redis::Connection *mp_redis_connection;
 
 	void Init(QR::Driver *driver);
 	void Shutdown();

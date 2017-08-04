@@ -23,6 +23,8 @@ namespace Socket {
 	fdapi_socket         socket;
 
 	sktlib_inetaddr		inet_addr;
+	sktlib_inetntoa 		inet_ntoa;
+	
 	void Init() {
 		WSADATA wsdata;
 		WSAStartup(MAKEWORD(1, 0), &wsdata);

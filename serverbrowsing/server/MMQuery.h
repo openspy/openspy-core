@@ -6,17 +6,11 @@
 #include <OS/Task.h>
 #include <OS/Thread.h>
 #include <OS/Mutex.h>
-
+#include <OS/Redis.h>
 #include <vector>
 #include <map>
 #include <string>
 
-#include <hiredis/hiredis.h>
-#include <hiredis/async.h>
-#define _WINSOCK2API_
-#include <stdint.h>
-#include <hiredis/adapters/libevent.h>
-#undef _WINSOCK2API_
 
 namespace SB {
 	class Driver;
@@ -52,7 +46,7 @@ namespace MM {
 
 	
 	
-	extern redisContext *mp_redis_connection;
+	extern Redis::Connection *mp_redis_connection;
 
 	struct sServerListReq {
 		uint8_t protocol_version;
@@ -123,17 +117,17 @@ namespace MM {
 
 			static void *setup_redis_async(OS::CThread *thread);
 
-			static void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata);
+			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
 
-			void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, redisContext *redis_ctx, const sServerListReq *req);
-			void AppendGroupEntry(const char *entry_name, ServerListQuery *ret, redisContext *redis_ctx, bool all_keys);
+			void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, Redis::Connection *redis_ctx, const sServerListReq *req);
+			void AppendGroupEntry(const char *entry_name, ServerListQuery *ret, Redis::Connection *redis_ctx, bool all_keys);
 
-			bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key, redisContext *redis_ctx);
-			bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx);
-			bool FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index, redisContext *redis_ctx);
+			bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key, Redis::Connection *redis_ctx);
+			bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index, Redis::Connection *redis_ctx);
+			bool FindAppend_TeamKVFields(Server *server, std::string entry_name, std::string key, int index, Redis::Connection *redis_ctx);
 
-			Server *GetServerByKey(std::string key, redisContext *redis_ctx = NULL, bool include_deleted = false);
-			Server *GetServerByIP(OS::Address address, OS::GameData game, redisContext *redis_ctx = NULL);
+			Server *GetServerByKey(std::string key, Redis::Connection *redis_ctx = NULL, bool include_deleted = false);
+			Server *GetServerByIP(OS::Address address, OS::GameData game, Redis::Connection *redis_ctx = NULL);
 
 			ServerListQuery GetServers(const sServerListReq *req);
 			ServerListQuery GetGroups(const sServerListReq *req);
@@ -145,10 +139,12 @@ namespace MM {
 			void PerformGetServerByIP(MMQueryRequest request);			
 
 			std::vector<SB::Driver *> m_drivers;
-			redisContext *mp_redis_connection;
-			redisContext *mp_redis_async_retrival_connection;
-			redisAsyncContext *mp_redis_async_connection;
+			Redis::Connection *mp_redis_connection;
+			Redis::Connection *mp_redis_async_retrival_connection;
+			Redis::Connection *mp_redis_async_connection;
 			struct event_base *mp_event_base;
+
+			time_t m_redis_timeout;
 
 			OS::CThread *mp_async_thread;
 

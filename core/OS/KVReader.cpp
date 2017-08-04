@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <math.h>
 namespace OS {
 	KVReader::KVReader(std::string kv_pair, char delim) {
 		std::string token, key, value;
@@ -67,7 +68,7 @@ namespace OS {
 		return std::pair<std::unordered_map<std::string, std::string>::const_iterator, std::unordered_map<std::string, std::string>::const_iterator>(m_kv_map.begin(),m_kv_map.end());
 	}
 	int KVReader::GetIndex(int n) {
-		return abs(n - m_kv_map.size()) - 1;
+		return abs((int)(n - m_kv_map.size())) - 1;
 	}
 	bool KVReader::HasKey(std::string name) {
 		return m_kv_map.find(name) != m_kv_map.end();

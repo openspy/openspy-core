@@ -2,6 +2,7 @@
 #define _CPTHREAD_H
 #include <Windows.h>
 #include <OS/Thread.h>
+#undef CreateMutex
 namespace OS {
 	class CWin32Thread : public OS::CThread {
 	public:

@@ -28,8 +28,8 @@ int main() {
        exit(EXIT_FAILURE);
     }
 
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
+    //signal(SIGINT, sig_handler);
+    //signal(SIGTERM, sig_handler);
 
   	OS::Init("qr");
   	g_gameserver = new QR::Server();

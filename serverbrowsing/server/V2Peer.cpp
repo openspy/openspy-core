@@ -27,7 +27,7 @@ namespace SB {
 
 
 		uint8_t *buffer = (uint8_t *)data;
-		void *end = (void *)((void *)data + len);
+		void *end = (void *)((char *)data + len);
 		int pos = len;
 
 		uint8_t request_type = 0;
@@ -39,7 +39,7 @@ namespace SB {
 			buff_len -= sizeof(uint16_t);
 
 
-			if(pos > len || ((void *)buffer + buff_len) > end) {
+			if(pos > len || ((char *)buffer + buff_len) > end) {
 				break;
 			}
 
