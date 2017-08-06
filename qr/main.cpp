@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
+#include <OS/socketlib/socketlib.h>
 #include "server/QRServer.h"
 #include "server/QRDriver.h"
 INetServer *g_gameserver = NULL;
@@ -28,10 +29,14 @@ int main() {
        exit(EXIT_FAILURE);
     }
 
+
+
     //signal(SIGINT, sig_handler);
     //signal(SIGTERM, sig_handler);
 
+	Socket::Init();
   	OS::Init("qr");
+	
   	g_gameserver = new QR::Server();
       g_driver = new QR::Driver(g_gameserver, "0.0.0.0", MASTER_PORT);
   	g_gameserver->addNetworkDriver(g_driver);

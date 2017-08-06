@@ -9,6 +9,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include <stdarg.h>
+
 #define CRYPTCHAL_LEN 10
 #define SERVCHAL_LEN 25
 namespace SB {
@@ -19,7 +21,7 @@ namespace SB {
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
 	}
 	V2Peer::~V2Peer() {
-		//printf("V2 delete\n");
+		printf("V2 delete\n");
 	}
 	void V2Peer::handle_packet(char *data, int len) {
 		if(len == 0)
@@ -95,7 +97,8 @@ namespace SB {
 			free((void *)from_gamename);
 		} else {
 			send_error(true, "No from gamename");
-			free((void *)from_gamename);
+			if(for_gamename)
+				free((void *)for_gamename);
 			return req;
 		}
 
@@ -104,14 +107,21 @@ namespace SB {
 			free((void *)for_gamename);
 		} else {
 			send_error(true, "No for gamename");
-			free((void *)for_gamename);
+
+			if (from_gamename)
+				free((void *)from_gamename);
+
 			return req;
 		}
 
 		printf("query gamemode %s\n",req.m_for_game.gamename);
 
 		if(req.m_for_game.gamename[0] == 0) {
-			send_error(true, "Invalid game");
+			send_error(true, "Invalid query game");
+			return req;
+		}
+		if (req.m_from_game.gamename[0] == 0) {
+			send_error(true, "Invalid source game");
 			return req;
 		}
 
@@ -358,7 +368,6 @@ namespace SB {
 			peer->sendServerData(server, false, true, NULL, NULL, true);
 			peer->cacheServer(server, true);
 		}
-		MM::MMQueryTask::FreeServerListQuery(&results);
 	}
 	uint8_t *V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
 		uint8_t *p = (uint8_t *)buffer;
@@ -380,7 +389,9 @@ namespace SB {
 			req.type = MM::EMMQueryRequestType_GetServerByIP;
 			req.address = address;
 			req.req.m_for_game = m_last_list_req.m_for_game;
+			req.SubmitData.game = req.req.m_for_game;
 		}
+		
 		req.callback = OnRetrievedServerInfo;
 		query_task->AddRequest(req);
 		return p;
@@ -646,6 +657,16 @@ namespace SB {
 		if(die) {
 			m_delete_flag = true;
 		}
+		va_list args;
+		va_start(args, fmt);
+
+		char send_str[1092]; //mtu size
+		int len = vsprintf(send_str, fmt, args);
+		send_str[len] = 0;
+		if (send(m_sd, (const char *)&send_str, strlen(send_str)+1, MSG_NOSIGNAL) < 0)
+			m_delete_flag = true;
+
+		va_end(args);
 		printf("SBV2 die: %s\n", fmt);
 	}
 	void V2Peer::OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {

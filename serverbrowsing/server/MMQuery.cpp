@@ -240,34 +240,31 @@ namespace MM {
 			}
 
 			do {
-				cursor = 0;
 				s << entry_name << "custkeys_player_" << idx;
 				key = s.str();
 
 				reply = Redis::Command(redis_ctx, 0, "EXISTS %s", key.c_str());
 				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
-				        break;
-
-				v = reply.values.front();
-				if(v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-				        if(!v.value._int)
-							break;
-				} else if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					if(!atoi(v.value._str.c_str()))
-						break;
-				}
-
-
-				reply = Redis::Command(redis_ctx, 0, "HSCAN %s %d MATCH *", key.c_str(), cursor);
-				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
 					break;
 
 				v = reply.values.front();
-				if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-					if(v.arr_value.values.size() <= 0)  {
+				if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+					if (!v.value._int)
 						break;
-					}
-					arr = reply.values[1];
+				}
+				else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+					if (!atoi(v.value._str.c_str()))
+						break;
+				}
+
+				cursor = 0;
+				do {
+					reply = Redis::Command(redis_ctx, 0, "HSCAN %s %d MATCH *", key.c_str(), cursor);
+					v = reply.values[0].arr_value.values[0].second;
+					arr = reply.values[0].arr_value.values[1].second;
+					if (arr.arr_value.values.size() < 2)
+						break;
+
 					for (int i = 0; i<arr.arr_value.values.size(); i += 2) {
 
 						if (arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
@@ -281,14 +278,14 @@ namespace MM {
 							server->kvPlayers[idx][key] = arr.arr_value.values[i + 1].second.value._int;
 						}
 
-						if(std::find(ret->captured_player_fields.begin(), ret->captured_player_fields.end(), arr.arr_value.values[i].second.value._str) == ret->captured_player_fields.end()) {
+						if (std::find(ret->captured_team_fields.begin(), ret->captured_team_fields.end(), arr.arr_value.values[i].second.value._str) == ret->captured_team_fields.end()) {
 							ret->captured_player_fields.push_back(arr.arr_value.values[i].second.value._str);
 						}
 					}
-				}
-				s.str("");
+					s.str("");
+				} while (cursor != 0);
 				idx++;
-			} while(last_type != Redis::REDIS_RESPONSE_TYPE_NULL);
+			} while (true);
 			s.str("");
 
 			idx = 0;

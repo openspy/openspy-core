@@ -134,6 +134,10 @@ namespace OS {
 		Redis::Value v, arr;
 
 		OS::GameData ret;
+		ret.gameid = 0;
+		ret.gamename[0] = 0;
+		ret.secretkey[0] = 0;
+
 		if(redis_ctx == NULL) {
 			redis_ctx = OS::redis_internal_connection;
 		}
