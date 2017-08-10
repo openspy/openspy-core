@@ -14,6 +14,7 @@
 
 namespace SB {
 	class Driver;
+	class Peer;
 };
 
 
@@ -41,6 +42,8 @@ namespace MM {
 		std::vector<std::string> captured_player_fields;
 		std::vector<std::string> captured_team_fields;
 		std::vector<Server *> list;
+		bool first_set;
+		bool last_set;
 	};
 	
 
@@ -69,13 +72,10 @@ namespace MM {
 		OS::GameData m_from_game;
 
 		bool all_keys;
-
-
-
+		
 	};
 
 	struct _MMQueryRequest;
-	typedef void (*mpMMQueryCB)(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results,void *extra);
 	enum EMMQueryRequestType {
 		EMMQueryRequestType_GetServers,
 		EMMQueryRequestType_GetGroups,
@@ -96,10 +96,19 @@ namespace MM {
 			OS::Address address; //used for GetServerByIP
 			std::string key; //used for GetServerByKey
 		//} sQueryData;
-		mpMMQueryCB callback;
+		SB::Driver *driver;
+		SB::Peer *peer;
 		void *extra;
 	} MMQueryRequest;
 
+	//
+	typedef struct _MMQueryResponse {
+		SB::Peer *peer;
+		struct MM::_MMQueryRequest request;
+		struct MM::ServerListQuery results;
+		void *extra;
+	} MMQueryResponse;
+	
 	class MMQueryTask : public OS::Task<MMQueryRequest> {
 		public:
 			MMQueryTask();
@@ -120,7 +129,7 @@ namespace MM {
 			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
 
 			void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, Redis::Connection *redis_ctx, const sServerListReq *req);
-			void AppendGroupEntry(const char *entry_name, ServerListQuery *ret, Redis::Connection *redis_ctx, bool all_keys);
+			void AppendGroupEntry(const char *entry_name, ServerListQuery *ret, Redis::Connection *redis_ctx, bool all_keys, const MMQueryRequest *request);
 
 			bool FindAppend_ServKVFields(Server *server, std::string entry_name, std::string key, Redis::Connection *redis_ctx);
 			bool FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index, Redis::Connection *redis_ctx);
@@ -129,8 +138,8 @@ namespace MM {
 			Server *GetServerByKey(std::string key, Redis::Connection *redis_ctx = NULL, bool include_deleted = false);
 			Server *GetServerByIP(OS::Address address, OS::GameData game, Redis::Connection *redis_ctx = NULL);
 
-			ServerListQuery GetServers(const sServerListReq *req);
-			ServerListQuery GetGroups(const sServerListReq *req);
+			ServerListQuery GetServers(const sServerListReq *req, const MMQueryRequest *request = NULL);
+			ServerListQuery GetGroups(const sServerListReq *req, const MMQueryRequest *request = NULL);
 
 			void PerformServersQuery(MMQueryRequest request);
 			void PerformGroupsQuery(MMQueryRequest request);

@@ -17,11 +17,17 @@ namespace SB {
 	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd) {
 		m_next_packet_send_msg = false;
 		m_sent_crypt_header = false;
+		m_sent_push_keys = false;
 		m_game.secretkey[0] = 0;
+		m_game.gameid = 0;
+		m_game.gamename[0] = 0;
+		m_last_list_req.m_from_game.gameid = 0;
+		m_last_list_req.m_from_game.secretkey[0] = 0;
+		m_last_list_req.m_from_game.gamename[0] = 0;
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
 	}
 	V2Peer::~V2Peer() {
-		printf("V2 delete\n");
+		printf("V2 delete %p\n", this);
 	}
 	void V2Peer::handle_packet(char *data, int len) {
 		if(len == 0)
@@ -129,6 +135,7 @@ namespace SB {
 		BufferReadData(buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
 
 		filter = (const char *)BufferReadNTS(buffer, &buf_remain);
+		printf("Filter is: %s\n", filter);
 		if(filter) {
 			req.filter = filter;
 			free((void *)filter);
@@ -150,8 +157,14 @@ namespace SB {
 		if (options & ALTERNATE_SOURCE_IP) {
 			req.source_ip = BufferReadInt(buffer, &buf_remain);
 		}
+		else {
+			req.source_ip = 0;
+		}
 		if (options & LIMIT_RESULT_COUNT) {
 			req.max_results = BufferReadInt(buffer, &buf_remain);
+		}
+		else {
+			req.max_results = 0;
 		}
 
 		if (req.no_server_list && !req.field_list.size()) { //no requested field, send defaults
@@ -230,12 +243,15 @@ namespace SB {
 		/*
 		TODO: make support split packets
 		*/
+
 		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = (uint8_t *)&buff;
 		int len = 0;
 
 		BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
 		BufferWriteShort(&p, &len, Socket::htons(list_req.m_from_game.queryport));
+
+		bool send_push_keys = false;
 
 		if(!list_req.no_server_list) {
 			BufferWriteByte(&p, &len, list_req.field_list.size());
@@ -248,19 +264,25 @@ namespace SB {
 				p = WriteOptimizedField(servers, str, p, &len, field_types);
 				field_it++;
 			}
+
 			//send popular string values list
-			if(usepopularlist) {
+			if (usepopularlist) {
 				BufferWriteByte(&p, &len, list_req.m_for_game.popular_values.size());
 				std::vector<std::string>::const_iterator it_v = list_req.m_for_game.popular_values.begin();
-				while(it_v != list_req.m_for_game.popular_values.end()) {
+				while (it_v != list_req.m_for_game.popular_values.end()) {
 					const std::string v = *it_v;
 					BufferWriteNTS(&p, &len, (const uint8_t*)v.c_str());
 					it_v++;
 				}
-			} else {
+			}
+			else {
 				BufferWriteByte(&p, &len, 0);
 			}
 
+			if (!servers.first_set) {
+				p = (uint8_t *)&buff;
+				len = 0;
+			}
 
 
 			std::vector<MM::Server *>::iterator it = servers.list.begin();
@@ -270,11 +292,22 @@ namespace SB {
 				it++;
 			}
 
-			//terminator
-			BufferWriteByte((uint8_t **)&p, &len, 0x00);
-			BufferWriteInt((uint8_t **)&p, &len, -1);
+			if (servers.list.empty() || servers.last_set) {
+				//terminator
+				BufferWriteByte((uint8_t **)&p, &len, 0x00);
+				BufferWriteInt((uint8_t **)&p, &len, -1);
+				send_push_keys = true;
+			}
+
 		}
+
+		gettimeofday(&m_last_recv, NULL); //prevent timeout during long lists
 		SendPacket((uint8_t *)&buff, len, false);
+
+		if (!m_sent_push_keys && send_push_keys) {
+			m_sent_push_keys = true;
+			SendPushKeys();
+		}
 	}
 	void V2Peer::setupCryptHeader(uint8_t **dst, int *len) {
 		//	memset(&options->cryptkey,0,sizeof(options->cryptkey));
@@ -311,7 +344,7 @@ namespace SB {
 		uint8_t *p = (uint8_t*)&out_buff;
 		int out_len = 0;
 		int header_len = 0;
-		if (!m_sent_crypt_header) {
+		if (!m_sent_crypt_header && m_game.gameid != 0) {
 			//this is actually part of the main key list, not to be sent on each packet
 			setupCryptHeader(&p, &out_len);
  			header_len = out_len;
@@ -343,12 +376,15 @@ namespace SB {
 		 	MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
 			if (req.req.send_groups) {
 				req.type = MM::EMMQueryRequestType_GetGroups;
-				req.callback = OnRetrievedGroups;
 			}
 			else {
 				req.type = MM::EMMQueryRequestType_GetServers;
-				req.callback = OnRetrievedServers;
 			}
+			req.req.all_keys = false;
+			req.req.send_wan_ip = true;
+			req.driver = mp_driver;
+			req.peer = this;
+			req.peer->IncRef();
 			query_task->AddRequest(req);
 		} else {
 			//send empty server list
@@ -359,15 +395,6 @@ namespace SB {
 
 
 		return buffer;
-	}
-	void V2Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
-		V2Peer *peer = (V2Peer *)extra;
-		if(results.list.size() == 0) return;
-		MM::Server *server = results.list.front();
-		if(server) {
-			peer->sendServerData(server, false, true, NULL, NULL, true);
-			peer->cacheServer(server, true);
-		}
 	}
 	uint8_t *V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
 		uint8_t *p = (uint8_t *)buffer;
@@ -391,8 +418,10 @@ namespace SB {
 			req.req.m_for_game = m_last_list_req.m_for_game;
 			req.SubmitData.game = req.req.m_for_game;
 		}
-		
-		req.callback = OnRetrievedServerInfo;
+
+		req.peer = this;
+		req.driver = mp_driver;
+		req.peer->IncRef();
 		query_task->AddRequest(req);
 		return p;
 	}
@@ -431,6 +460,8 @@ namespace SB {
 				req.SubmitData.from = m_address_info;
 				req.SubmitData.to = m_send_msg_to;
 				req.SubmitData.base64 = base64;
+				req.peer = this;
+				req.peer->IncRef();
 				query_task->AddRequest(req);
 				free((void *)base64);
 				m_next_packet_send_msg = false;
@@ -638,7 +669,6 @@ namespace SB {
 	}
 
 	void V2Peer::SendPushKeys() {
-		//list_req->m_from_game
 		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = (uint8_t *)&buff;
 		int len = 0;
@@ -669,21 +699,20 @@ namespace SB {
 		va_end(args);
 		printf("SBV2 die: %s\n", fmt);
 	}
+
+
 	void V2Peer::OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
-		V2Peer *peer = (V2Peer *)extra;
-		if(!SB::g_gbl_driver->HasPeer(peer)) {
-			return;
-		}
-		peer->SendListQueryResp(results, request.req);
-		MM::MMQueryTask::FreeServerListQuery(&results);
-		peer->SendPushKeys();
+		SendListQueryResp(results, request.req);
 	}
 	void V2Peer::OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
-		V2Peer *peer = (V2Peer *)extra;
-		if(!SB::g_gbl_driver->HasPeer(peer)) {
-			return;
+		SendListQueryResp(results, request.req);
+	}
+	void V2Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+		if (results.list.size() == 0) return;
+		MM::Server *server = results.list.front();
+		if (server) {
+			sendServerData(server, false, true, NULL, NULL, true);
+			cacheServer(server, true);
 		}
-		peer->SendListQueryResp(results, request.req);
-		MM::MMQueryTask::FreeServerListQuery(&results);
 	}
 }

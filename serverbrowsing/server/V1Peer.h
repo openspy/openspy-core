@@ -23,16 +23,15 @@ namespace SB {
 		void informUpdateServers(MM::Server *server);
 	protected:
 
-		static void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
-		static void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
-		static void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+		void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+		void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+		void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
 
 
 		void SendPacket(const uint8_t *buff, int len, bool attach_final);
 		void SendServers(MM::ServerListQuery results);
 		void SendServerInfo(MM::ServerListQuery results);
 		void SendGroups(MM::ServerListQuery results);
-		void send_error(const char *msg, bool disconnect = true);
 		void handle_packet(char *data, int len);
 		void handle_gamename(char *data, int len);
 		void handle_list(char *data, int len);

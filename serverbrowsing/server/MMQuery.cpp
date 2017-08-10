@@ -28,7 +28,7 @@ namespace MM {
 	    char msg_type[16], server_key[64];
 	    if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
 	    	if(v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-	    		if(strcmp(v.arr_value.values[2].second.value._str.c_str(),sb_mm_channel) == 0) {
+	    		if(strcmp(v.arr_value.values[1].second.value._str.c_str(),sb_mm_channel) == 0) {
 					char *temp_str = strdup(v.arr_value.values[2].second.value._str.c_str());
 	    			find_param(0, temp_str,(char *)&msg_type, sizeof(msg_type));
 	    			find_param(1, temp_str, (char *)&server_key, sizeof(server_key));
@@ -49,6 +49,7 @@ namespace MM {
 		    			}
 	    				it++;
 	    			}
+					delete server;
 	    		}
 	    	}
 	    }
@@ -78,7 +79,7 @@ namespace MM {
 		return MMQueryTask::m_task_singleton;
 	}
 	MMQueryTask::MMQueryTask() {
-		m_redis_timeout = 5;
+		m_redis_timeout = 60;
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -153,6 +154,17 @@ namespace MM {
 		}
 		*/
 
+		if (!include_deleted) {
+			reply = Redis::Command(redis_ctx, 0, "HGET %s deleted", entry_name.c_str());
+			v = reply.values[0];
+			if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) {
+				return;
+			}
+			else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0) {
+				return;
+			}
+		}
+
 
 		Server *server = new MM::Server();
 
@@ -165,7 +177,13 @@ namespace MM {
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			std::string gameid_reply = OS::strip_quotes(v.value._str).c_str();
 			int gameid = atoi(gameid_reply.c_str());
-			server->game = OS::GetGameByID(gameid, redis_ctx);
+			if (req) {
+				server->game = req->m_from_game;
+			}
+			else {
+				server->game = OS::GetGameByID(gameid, redis_ctx);
+			}
+			
 			Redis::Command(redis_ctx, 0, "SELECT %d", OS::ERedisDB_QR);
 		}
 
@@ -201,7 +219,7 @@ namespace MM {
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
 			server->wan_address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(v.value._str).c_str()));
 
-
+		Redis::Command(redis_ctx, 0, "SELECT %d", OS::ERedisDB_QR_CustKeys);
 		if(all_keys) {
 			reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
 			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
@@ -216,10 +234,7 @@ namespace MM {
 				} else if(v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 					cursor = v.arr_value.values[0].second.value._int;
 				}
-				
-				if(arr.arr_value.values.size() <= 1) {
-					return;
-				}
+
 				for(int i=0;i<arr.arr_value.values.size();i+=2) {
 
 					if(arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
@@ -350,41 +365,35 @@ namespace MM {
 			do {
 				reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
 				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
-                        goto error_cleanup;
+					goto error_cleanup;
 
-				v = reply.values[0];
-				arr = reply.values[1];
+				v = reply.values[0].arr_value.values[0].second;
+				arr = reply.values[0].arr_value.values[1].second;
 
 				if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-					if (v.arr_value.values.size() <= 0) {
-						break;
+					if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+						cursor = atoi(v.value._str.c_str());
 					}
-					if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-						if (!v.value._int)
-							break;
+					else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+						cursor = v.arr_value.values[0].second.value._int;
 					}
-					else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-						if (!atoi(v.value._str.c_str()))
-							break;
-					}
-					if (arr.arr_value.values.size() <= 0) {
-						break;
-					}
+
 					for (int i = 0; i<arr.arr_value.values.size(); i += 2) {
+
 						if (arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
 							continue;
 
 						std::string key = arr.arr_value.values[i].second.value._str;
 						if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-                                server->kvFields[key] = OS::strip_quotes(arr.arr_value.values[i + 1].second.value._str);
-	                    }
+							server->kvFields[key] = OS::strip_quotes(arr.arr_value.values[i + 1].second.value._str);
+						}
 						else if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-	                            server->kvFields[key] = arr.arr_value.values[i + 1].second.value._int;
-        	            }
+							server->kvFields[key] = arr.arr_value.values[i + 1].second.value._int;
+						}
 
-	                    if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), arr.arr_value.values[i].second.value._str) == ret->captured_basic_fields.end()) {
-	                            ret->captured_basic_fields.push_back(arr.arr_value.values[i].second.value._str);
-	                    }
+						if (std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), arr.arr_value.values[i].second.value._str) == ret->captured_basic_fields.end()) {
+							ret->captured_basic_fields.push_back(arr.arr_value.values[i].second.value._str);
+						}
 					}
 				}
 			} while(cursor != 0);
@@ -407,10 +416,12 @@ namespace MM {
 		if(!req || filterMatches(req->filter.c_str(), all_cust_keys)) {
 			ret->list.push_back(server);
 		}
-		return;
+		goto true_exit;
 
-		error_cleanup:
+	error_cleanup:
 			delete server;
+	true_exit:
+		Redis::Command(redis_ctx, 0, "SELECT %d", OS::ERedisDB_QR);
 
 	}
 	bool MMQueryTask::FindAppend_PlayerKVFields(Server *server, std::string entry_name, std::string key, int index, Redis::Connection *redis_ctx)
@@ -468,7 +479,7 @@ namespace MM {
 		return true;
 
 	}
-	void MMQueryTask::AppendGroupEntry(const char *entry_name, ServerListQuery *ret, Redis::Connection *redis_ctx, bool all_keys) {
+	void MMQueryTask::AppendGroupEntry(const char *entry_name, ServerListQuery *ret, Redis::Connection *redis_ctx, bool all_keys, const MMQueryRequest *request) {
 		Redis::Response reply;
 		Redis::Value v, arr;
 		int cursor = 0;
@@ -488,13 +499,20 @@ namespace MM {
 
 		v = reply.values.front();
 
-		server->game = OS::GetGameByID(atoi(OS::strip_quotes(v.value._str).c_str()));
+		if (request) {
+			server->game = request->req.m_for_game;
+		}
+		else {
+			server->game = OS::GetGameByID(atoi(OS::strip_quotes(v.value._str).c_str()));
+		}
 		
 		Redis::Command(redis_ctx, 0, "SELECT %d", OS::ERedisDB_SBGroups); //change context back to SB db id
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s groupid", entry_name);
 		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
 			goto error_cleanup;
+
+		v = reply.values.front();
 
 		server->wan_address.ip = atoi(OS::strip_quotes(v.value._str).c_str()); //for V2
 		server->kvFields["groupid"] = OS::strip_quotes(v.value._str).c_str(); //for V1
@@ -570,7 +588,7 @@ namespace MM {
 		delete server;
 
 	}
-	ServerListQuery MMQueryTask::GetServers(const sServerListReq *req) {
+	ServerListQuery MMQueryTask::GetServers(const sServerListReq *req, const MMQueryRequest *request) {
 		ServerListQuery ret;
 
 		Redis::Response reply;
@@ -581,10 +599,21 @@ namespace MM {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		
 		int cursor = 0;
+		bool sent_servers = false;
+
 		do {
+			ServerListQuery streamed_ret;
+			streamed_ret.requested_fields = ret.requested_fields;
 			reply = Redis::Command(mp_redis_connection, 0, "SCAN %d MATCH %s:*:", cursor, req->m_for_game.gamename);
 			if (Redis::CheckError(reply))
 				goto error_cleanup;
+
+			streamed_ret.last_set = false;
+			if (cursor == 0) {
+				streamed_ret.first_set = true;
+			} else {
+				streamed_ret.first_set = false;
+			}
 
 			v = reply.values[0].arr_value.values[0].second;
 			arr = reply.values[0].arr_value.values[1].second;
@@ -595,19 +624,42 @@ namespace MM {
 		 		cursor = v.value._int;
 		 	}
 
-			if(arr.arr_value.values.size() <= 0) {
-				break;
+			if (cursor == 0) {
+				streamed_ret.last_set = true;
 			}
 
 			for(int i=0;i<arr.arr_value.values.size();i++) {
-				AppendServerEntry(arr.arr_value.values[i].second.value._str, &ret, req->all_keys, false, mp_redis_connection, req);
+				if (request) {
+					AppendServerEntry(arr.arr_value.values[i].second.value._str, &streamed_ret, req->all_keys, false, mp_redis_connection, req);
+				}
+				else {
+					AppendServerEntry(arr.arr_value.values[i].second.value._str, &ret, req->all_keys, false, mp_redis_connection, req);
+				}
+			}
+			if (request && (!streamed_ret.list.empty() || streamed_ret.last_set)) {
+				if (!sent_servers) {
+					streamed_ret.first_set = true;
+					sent_servers = true;
+				}
+				
+				/*
+				MMQueryResponse resp;
+				resp.results = streamed_ret;
+				resp.request = *request;
+				resp.extra = request->extra;
+				resp.peer = request->peer;
+				request->driver->AddResponse(resp);*/
+
+				//printf("Add server req first: %d last: %d numservs: %d, cursor: %d\n", streamed_ret.first_set, streamed_ret.last_set, streamed_ret.list.size(), cursor);
+				request->peer->OnRetrievedServers(*request, streamed_ret, request->extra);
+				MM::MMQueryTask::FreeServerListQuery(&streamed_ret);
 			}
 		} while(cursor != 0);
 
 		error_cleanup:
 			return ret;
 	}
-	ServerListQuery MMQueryTask::GetGroups(const sServerListReq *req) {
+	ServerListQuery MMQueryTask::GetGroups(const sServerListReq *req, const MMQueryRequest *request) {
 		ServerListQuery ret;
 		Redis::Response reply;
 		Redis::Value v;
@@ -618,10 +670,20 @@ namespace MM {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_SBGroups);
 
 		int cursor = 0;
+		bool sent_servers = false;
 		do {
+			ServerListQuery streamed_ret;
 			reply = Redis::Command(mp_redis_connection, 0, "SCAN %d MATCH %s:*:", cursor, req->m_for_game.gamename);
 			if (Redis::CheckError(reply))
 				goto error_cleanup;
+
+			streamed_ret.last_set = false;
+			if (cursor == 0) {
+				streamed_ret.first_set = true;
+			}
+			else {
+				streamed_ret.first_set = false;
+			}
 
 			v = reply.values[0].arr_value.values[0].second;
 			arr = reply.values[0].arr_value.values[1].second.arr_value;
@@ -633,8 +695,24 @@ namespace MM {
 				cursor = v.value._int;
 			}
 
+			if (cursor == 0) {
+				streamed_ret.last_set = true;
+			}
 			for (int i = 0; i<arr.values.size(); i++) {
-				AppendGroupEntry(arr.values[i].second.value._str.c_str(), &ret, mp_redis_connection, req->all_keys);
+				if (request) {
+					AppendGroupEntry(arr.values[i].second.value._str.c_str(), &streamed_ret, mp_redis_connection, req->all_keys, request);
+				}
+				else {
+					AppendGroupEntry(arr.values[i].second.value._str.c_str(), &ret, mp_redis_connection, req->all_keys, request);
+				}				
+			}
+			if (request && (streamed_ret.last_set || !streamed_ret.list.empty())) {
+				if (!sent_servers) {
+					streamed_ret.first_set = true;
+					sent_servers = true;
+				}
+				request->peer->OnRetrievedGroups(*request, streamed_ret, request->extra);
+				MM::MMQueryTask::FreeServerListQuery(&streamed_ret);
 			}
 		} while(cursor != 0);
 
@@ -699,24 +777,23 @@ namespace MM {
 	}
 
 	void MMQueryTask::PerformServersQuery(MMQueryRequest request) {
-		request.callback(request, GetServers(&request.req), request.extra);
+		GetServers(&request.req, &request);
 	}
 	void MMQueryTask::PerformGroupsQuery(MMQueryRequest request) {
-		request.callback(request, GetGroups(&request.req), request.extra);
+		GetGroups(&request.req, &request); //no need to free, because nothing appended to return value
 	}
 	void MMQueryTask::PerformGetServerByKey(MMQueryRequest request) {
 		ServerListQuery ret;
 		AppendServerEntry(request.key, &ret, true, false, NULL, NULL);
-		request.callback(request, ret, request.extra);
-		FreeServerListQuery(&ret);
+		request.peer->OnRetrievedServerInfo(request, ret, request.extra);
 	}
 	void MMQueryTask::PerformGetServerByIP(MMQueryRequest request) {
 		ServerListQuery ret;
 		Server *serv = GetServerByIP(request.address, request.SubmitData.game, NULL);
 		if(serv)
 			ret.list.push_back(serv);
-		request.callback(request, ret, request.extra);
-		FreeServerListQuery(&ret);
+
+		request.peer->OnRetrievedServerInfo(request, ret, request.extra);
 	}
 	void MMQueryTask::PerformSubmitData(MMQueryRequest request) {
 		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\send_msg\\%s\\%s\\%d\\%s\\%d\\%s\n",
@@ -727,33 +804,30 @@ namespace MM {
 	void *MMQueryTask::TaskThread(OS::CThread *thread) {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
 		for(;;) {
-			if(task->m_request_list.size() > 0) {
-				std::vector<MMQueryRequest>::iterator it = task->m_request_list.begin();
-				task->mp_mutex->lock();
-				while(it != task->m_request_list.end()) {
-					MMQueryRequest task_params = *it;
-					switch(task_params.type) {
-						case EMMQueryRequestType_GetServers:
-							task->PerformServersQuery(task_params);
-							break;
-						case EMMQueryRequestType_GetGroups:
-							task->PerformGroupsQuery(task_params);
-							break;
-						case EMMQueryRequestType_GetServerByKey:
-							task->PerformGetServerByKey(task_params);
-							break;
-						case EMMQueryRequestType_GetServerByIP:
-							task->PerformGetServerByIP(task_params);
-							break;
-						case EMMQueryRequestType_SubmitData:
-							task->PerformSubmitData(task_params);
-							break;
-					}
-					it = task->m_request_list.erase(it);
-					continue;
+			task->mp_mutex->lock();
+			while(task->m_request_list.size() > 0) {				
+				MMQueryRequest task_params = task->m_request_list.back();				
+				switch(task_params.type) {
+					case EMMQueryRequestType_GetServers:
+						task->PerformServersQuery(task_params);
+						break;
+					case EMMQueryRequestType_GetGroups:
+						task->PerformGroupsQuery(task_params);
+						break;
+					case EMMQueryRequestType_GetServerByKey:
+						task->PerformGetServerByKey(task_params);
+						break;
+					case EMMQueryRequestType_GetServerByIP:
+						task->PerformGetServerByIP(task_params);
+						break;
+					case EMMQueryRequestType_SubmitData:
+						task->PerformSubmitData(task_params);
+						break;
 				}
-				task->mp_mutex->unlock();
+				task_params.peer->DecRef();
+				task->m_request_list.pop_back();
 			}
+			task->mp_mutex->unlock();
 			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;

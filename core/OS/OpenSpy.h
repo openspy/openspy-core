@@ -95,7 +95,8 @@ namespace OS {
 		ERedisDB_SBGroups,
 		ERedisDB_Game,
 		ERedisDB_NatNeg,
-		ERedisDB_Chat
+		ERedisDB_Chat,
+		ERedisDB_QR_CustKeys,
 	};
 
 

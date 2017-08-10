@@ -10,7 +10,7 @@
 #include "MMQuery.h"
 
 #include <map>
-#include <vector>
+#include <queue>
 #ifdef _WIN32
 #include <time.h>
 #else
@@ -34,7 +34,6 @@ namespace SB {
 		uint32_t getDeltaTime();
 
 		Peer *find_client(struct sockaddr_in *address);
-		Peer *find_or_create(struct sockaddr_in *address);
 
 		int setup_fdset(fd_set *fdset);
 		
@@ -46,7 +45,6 @@ namespace SB {
 		int GetNumConnections();
 
 		bool HasPeer(SB::Peer * peer);
-
 	private:
 
 		void TickConnections(fd_set *fdset);
@@ -61,6 +59,10 @@ namespace SB {
 		struct timeval m_server_start;
 
 		int m_sb_version;
+
+		std::vector<SB::Peer *> m_peers_to_delete;
+		
+		OS::CMutex *mp_mutex;
 
 	};
 

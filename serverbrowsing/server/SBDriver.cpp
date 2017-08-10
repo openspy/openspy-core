@@ -12,7 +12,6 @@
 
 #include "MMQuery.h"
 namespace SB {
-	Driver *g_gbl_driver = NULL;
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version) : INetDriver(server) {
 		uint32_t bind_ip = INADDR_ANY;
 		
@@ -41,38 +40,53 @@ namespace SB {
 
 		m_version = version;
 
-		g_gbl_driver = this;
+		mp_mutex = OS::CreateMutex();
 
 		MM::MMQueryTask::getQueryTask()->AddDriver(this);
 
 	}
 	Driver::~Driver() {
 		MM::MMQueryTask::getQueryTask()->RemoveDriver(this);
-
+		//end all MMQuery tasks first, otherwise can crash here
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			delete peer;
 			it++;
 		}
+
+		delete mp_mutex;
 	}
 	void Driver::think(fd_set *fdset) {
-
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			if (!peer->ShouldDelete())
 				peer->think(FD_ISSET(peer->GetSocket(), fdset));
-			else {
-				//delete if marked for deletiontel
+			else if(std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
+				//marked for delection, dec reference and delete when zero
 				it = m_connections.erase(it);
-				delete peer;
-				
+				peer->DecRef();
+				m_peers_to_delete.push_back(peer);
 				continue;
 			}
 			it++;
 		}
+
+		it = m_peers_to_delete.begin();
+		while (it != m_peers_to_delete.end()) {
+			SB::Peer *p = *it;
+			if (p->GetRefCount() == 0) {
+				delete p;
+				it = m_peers_to_delete.erase(it);
+				continue;
+			}
+			it++;
+		}
+		mp_mutex->unlock();
 	}
+
 
 	Peer *Driver::find_client(struct sockaddr_in *address) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
@@ -85,28 +99,6 @@ namespace SB {
 			it++;
 		}
 		return NULL;
-	}
-	Peer *Driver::find_or_create(struct sockaddr_in *address) {
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			const struct sockaddr_in *peer_address = peer->getAddress();
-			if (address->sin_port == peer_address->sin_port && address->sin_addr.s_addr == peer_address->sin_addr.s_addr) {
-				return peer;
-			}
-			it++;
-		}
-		Peer *ret = NULL;
-		switch(m_version) {
-			case 1:
-				ret = new V1Peer(this, address, m_sd);
-				break;
-			case 2:
-				ret = new V2Peer(this, address, m_sd);
-			break;
-		}
-		m_connections.push_back(ret);
-		return ret;
 	}
 	void Driver::tick(fd_set *fdset) {
 

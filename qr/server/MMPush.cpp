@@ -1,3 +1,4 @@
+
 #include "MMPush.h"
 #include <OS/socketlib/socketlib.h>
 
@@ -59,7 +60,7 @@ namespace MM {
 	void *setup_redis_async(OS::CThread *thread) {
 		struct timeval t;
 		t.tv_usec = 0;
-		t.tv_sec = 3;
+		t.tv_sec = 1;
 		mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
 
 		Redis::LoopingCommand(mp_redis_async_connection, 0, onRedisMessage, thread->getParams(), "SUBSCRIBE %s", sb_mm_channel);
@@ -69,7 +70,7 @@ namespace MM {
 		mp_driver = driver;
 		struct timeval t;
 		t.tv_usec = 0;
-		t.tv_sec = 3;
+		t.tv_sec = 1;
 
 		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
 
@@ -122,6 +123,8 @@ namespace MM {
 
 		Redis::Command(mp_redis_connection, 0, "EXPIRE %s 300",server_key.c_str());
 
+
+		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR_CustKeys);
 		std::map<std::string, std::string>::iterator it = server->m_keys.begin();
 		while(it != server->m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;
@@ -168,6 +171,7 @@ namespace MM {
 			it2++;
 		}
 
+		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		if(publish)
 			Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\new\\%s",sb_mm_channel,server_key.c_str());
 

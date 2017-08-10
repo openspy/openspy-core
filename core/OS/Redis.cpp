@@ -131,7 +131,6 @@ namespace Redis {
 			v.type = Redis::REDIS_RESPONSE_TYPE_INTEGER;
 			info = info_line.substr(1);
 			v.value._int = atoi(info.c_str());
-			diff += info.length() + ENDLINE_STR_COUNT;
 			break;
 		case '-': //error
 			v.type = Redis::REDIS_RESPONSE_TYPE_ERROR;
@@ -216,8 +215,10 @@ namespace Redis {
 		send(conn->sd, cmd.c_str(), cmd.length(), 0);
 		va_end(args);
 
-		if(sleepMS != 0)
+		if (sleepMS != 0) {
 			OS::Sleep(sleepMS);
+			printf("Redis sleep: %d\n", sleepMS);
+		}
 
 		while (true) {
 			int len = recv(conn->sd, conn->read_buff, conn->read_buff_alloc_sz - 1, 0);

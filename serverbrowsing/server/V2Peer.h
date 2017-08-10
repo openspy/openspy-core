@@ -76,9 +76,9 @@ namespace SB {
 				//request processors
 				MM::sServerListReq ParseListRequest(uint8_t **buffer, int remain);
 
-				static void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
-				static void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
-				static void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+				void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+				void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+				void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
 
 				void SendListQueryResp(struct MM::ServerListQuery servers, const MM::sServerListReq list_req, bool usepopularlist = true, bool send_fullkeys = false);
 				void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false, const std::map<std::string, int> *optimized_fields = NULL);
@@ -93,6 +93,8 @@ namespace SB {
 				struct sockaddr_in m_send_msg_to;
 
 				GOACryptState m_crypt_state;
+
+				bool m_sent_push_keys;
 		};
 
 }

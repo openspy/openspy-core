@@ -24,7 +24,7 @@ namespace OS {
 		curl_global_init(CURL_GLOBAL_SSL);
 
 		redis_timeout.tv_usec = 0;
-		redis_timeout.tv_sec = 3;
+		redis_timeout.tv_sec = 30;
 
 		redis_internal_connection = Redis::Connect(OS_REDIS_ADDR, redis_timeout);
 
@@ -49,7 +49,7 @@ namespace OS {
 			redis_ctx = OS::redis_internal_connection;
 		}
 
-		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
+		Redis::Command(redis_ctx, 50, "SELECT %d", ERedisDB_Game);
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s gameid", key);
 		if (Redis::CheckError(reply)) {
@@ -174,7 +174,7 @@ namespace OS {
 		if(redis_ctx == NULL) {
 			redis_ctx = OS::redis_internal_connection;
 		}
-		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
+		Redis::Command(redis_ctx, 5, "SELECT %d", ERedisDB_Game);
 
 		int cursor = 0;
 		do {

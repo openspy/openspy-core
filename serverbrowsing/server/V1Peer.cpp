@@ -152,19 +152,13 @@ namespace SB {
 			}
 		}
 		void V1Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
-			V1Peer *peer = (V1Peer *)extra;
-			peer->SendServerInfo(results);
-			MM::MMQueryTask::FreeServerListQuery(&results);
+			SendServerInfo(results);
 		}
 		void V1Peer::OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
-			V1Peer *peer = (V1Peer *)extra;
-			peer->SendServers(results);
-			MM::MMQueryTask::FreeServerListQuery(&results);
+			SendServers(results);
 		}
 		void V1Peer::OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
-			V1Peer *peer = (V1Peer *)extra;
-			peer->SendGroups(results);
-			MM::MMQueryTask::FreeServerListQuery(&results);
+			SendGroups(results);
 		}
 		void V1Peer::handle_list(char *data, int len) {
 			std::string mode, gamename;
@@ -196,17 +190,18 @@ namespace SB {
 
 			if(mode.compare("cmp") == 0) {				
 				req.req.all_keys = false;
-				req.callback = OnRetrievedServers;
 			} else if(mode.compare("info2") == 0) {
 				req.req.all_keys = true;
-				req.callback = OnRetrievedServerInfo;
 			} else if(mode.compare("groups") == 0) {
 				req.req.all_keys = true;
-				req.callback = OnRetrievedGroups;
 			} else {
 				send_error(true, "Unknown list mode");
 				return;
 			}
+
+			req.driver = mp_driver;
+			req.peer = this;
+			req.peer->IncRef();
 			query_task->AddRequest(req);
 			m_delete_flag = true; //server disconnects after this
 		}

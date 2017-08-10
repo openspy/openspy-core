@@ -1,6 +1,7 @@
 #ifndef _SBPEER_H
 #define _SBPEER_H
 #include "../main.h"
+#include <OS/Ref.h>
 #include "MMQuery.h"
 
 //Maximum length for the SQL filter string
@@ -22,7 +23,7 @@ namespace SB {
 	};
 
 
-	class Peer {
+	class Peer : public OS::Ref {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		virtual ~Peer();
@@ -36,14 +37,16 @@ namespace SB {
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
-
-		int GetPing();
-
+		
 		bool serverMatchesLastReq(MM::Server *server, bool require_push_flag = true);
 
 		virtual void informDeleteServers(MM::Server *server) = 0;
 		virtual void informNewServers(MM::Server *server) = 0;
 		virtual void informUpdateServers(MM::Server *server) = 0;
+
+		virtual void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) = 0;
+		virtual void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) = 0;
+		virtual void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) = 0;
 	protected:
 		void cacheServer(MM::Server *server, bool full_keys = false);
 		void DeleteServerFromCacheByIP(OS::Address address);
