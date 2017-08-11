@@ -45,6 +45,10 @@ namespace SB {
 		int GetNumConnections();
 
 		bool HasPeer(SB::Peer * peer);
+
+		void AddDeleteServer(MM::Server serv);
+		void AddNewServer(MM::Server serv);
+		void AddUpdateServer(MM::Server serv);
 	private:
 
 		void TickConnections(fd_set *fdset);
@@ -61,6 +65,11 @@ namespace SB {
 		int m_sb_version;
 
 		std::vector<SB::Peer *> m_peers_to_delete;
+
+		//safe for now, until pointers one day get added
+		std::queue<MM::Server> m_server_delete_queue;
+		std::queue<MM::Server> m_server_new_queue;
+		std::queue<MM::Server> m_server_update_queue;
 		
 		OS::CMutex *mp_mutex;
 

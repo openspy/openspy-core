@@ -123,8 +123,6 @@ namespace MM {
 
 		Redis::Command(mp_redis_connection, 0, "EXPIRE %s 300",server_key.c_str());
 
-
-		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR_CustKeys);
 		std::map<std::string, std::string>::iterator it = server->m_keys.begin();
 		while(it != server->m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;

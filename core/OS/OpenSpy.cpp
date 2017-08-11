@@ -106,7 +106,7 @@ namespace OS {
 			game.queryport = atoi(OS::strip_quotes(v.value._str).c_str());
 		}
 
-
+		/*
 		//for thugpro
 		game.popular_values.push_back("SKATOPIA");
 		game.popular_values.push_back("NEW ORLEANS");
@@ -124,6 +124,7 @@ namespace OS {
 		game.push_keys["maxplayers"] = KEYTYPE_BYTE;
 		game.push_keys["numplayers"] = KEYTYPE_BYTE;
 		game.push_keys["password"] = KEYTYPE_BYTE;
+		*/
 
 		end_error:
 			return game;

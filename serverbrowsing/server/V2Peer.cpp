@@ -25,9 +25,11 @@ namespace SB {
 		m_last_list_req.m_from_game.secretkey[0] = 0;
 		m_last_list_req.m_from_game.gamename[0] = 0;
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
+
+		printf("V2 create - %d\n", this->GetRefCount());
 	}
 	V2Peer::~V2Peer() {
-		printf("V2 delete %p\n", this);
+		printf("V2 delete %p - %d\n", this, this->GetRefCount());
 	}
 	void V2Peer::handle_packet(char *data, int len) {
 		if(len == 0)
@@ -192,7 +194,11 @@ namespace SB {
 		return p;
 
 	}
+	/*		
+		TODO: save this with game data and load it from that
+	*/
 	uint8_t *V2Peer::WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, uint8_t *buff, int *len, std::map<std::string, int> &field_types) {
+		
 		uint8_t *out = buff;
 		uint8_t var = KEYTYPE_STRING;
 		std::vector<MM::Server *>::iterator it = servers.list.begin();
@@ -306,7 +312,7 @@ namespace SB {
 
 		if (!m_sent_push_keys && send_push_keys) {
 			m_sent_push_keys = true;
-			SendPushKeys();
+			//SendPushKeys();
 		}
 	}
 	void V2Peer::setupCryptHeader(uint8_t **dst, int *len) {
@@ -340,10 +346,14 @@ namespace SB {
 		GOACryptInit(&(m_crypt_state), (unsigned char *)(&m_challenge), LIST_CHALLENGE_LEN);
 	}
 	void V2Peer::SendPacket(uint8_t *buff, int len, bool prepend_length) {
+		if (m_delete_flag) {
+			return;
+		}
 		uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 		uint8_t *p = (uint8_t*)&out_buff;
 		int out_len = 0;
 		int header_len = 0;
+
 		if (!m_sent_crypt_header && m_game.gameid != 0) {
 			//this is actually part of the main key list, not to be sent on each packet
 			setupCryptHeader(&p, &out_len);
@@ -354,7 +364,7 @@ namespace SB {
 			BufferWriteShort(&p, &out_len, Socket::htons(len + sizeof(uint16_t)));
 		}
 		BufferWriteData(&p, &out_len, buff, len);
-
+		
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)&out_buff) + header_len, out_len - header_len);
 		if(send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL) < 0)
 			m_delete_flag = true;
@@ -406,7 +416,6 @@ namespace SB {
 
 		MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
 		MM::MMQueryRequest req;
-		req.extra = this;
 
 		if(cache.key[0] != 0) {
 			req.type = MM::EMMQueryRequestType_GetServerByKey;
@@ -454,8 +463,6 @@ namespace SB {
 
 				MM::MMQueryRequest req;
 				MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
-				req.extra = this;
-
 				req.type = MM::EMMQueryRequestType_SubmitData;
 				req.SubmitData.from = m_address_info;
 				req.SubmitData.to = m_send_msg_to;
@@ -684,6 +691,9 @@ namespace SB {
 		SendPacket((uint8_t *)&buff, len, true);
 	}
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
+		if (m_delete_flag) {
+			return;
+		}
 		if(die) {
 			m_delete_flag = true;
 		}

@@ -1,6 +1,6 @@
 #ifndef _OS_TASK_H
 #define _OS_TASK_H
-#include <vector>
+#include <queue>
 namespace OS {
 	#define TASK_SLEEP_TIME 200
 	template<typename T>
@@ -14,14 +14,14 @@ namespace OS {
 		}
 		void AddRequest(T data) {
 			mp_mutex->lock();
-			m_request_list.push_back(data);
+			m_request_list.push(data);
 			mp_mutex->unlock();
 		}
 	protected:
 
 		CThread	*mp_thread;
 		CMutex *mp_mutex;
-		std::vector<T> m_request_list;
+		std::queue<T> m_request_list;
 	};
 }
 #endif //_OS_TASK_H

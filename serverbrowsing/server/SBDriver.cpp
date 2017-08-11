@@ -84,6 +84,26 @@ namespace SB {
 			}
 			it++;
 		}
+
+		MM::Server serv;
+		while (!m_server_delete_queue.empty()) {
+			serv = m_server_delete_queue.front();
+			m_server_delete_queue.pop();
+			SendDeleteServer(&serv);
+		}
+
+		while (!m_server_new_queue.empty()) {
+			serv = m_server_new_queue.front();
+			m_server_new_queue.pop();
+			SendNewServer(&serv);
+		}
+
+		while (!m_server_update_queue.empty()) {
+			serv = m_server_update_queue.front();
+			m_server_update_queue.pop();
+			SendUpdateServer(&serv);
+		}
+
 		mp_mutex->unlock();
 	}
 
@@ -204,5 +224,20 @@ namespace SB {
 			p->informUpdateServers(server);
 			it++;
 		}
+	}
+	void Driver::AddDeleteServer(MM::Server serv) {
+		mp_mutex->lock();
+		m_server_delete_queue.push(serv);
+		mp_mutex->unlock();
+	}
+	void Driver::AddNewServer(MM::Server serv) {
+		mp_mutex->lock();
+		m_server_new_queue.push(serv);
+		mp_mutex->unlock();
+	}
+	void Driver::AddUpdateServer(MM::Server serv) {
+		mp_mutex->lock();
+		m_server_update_queue.push(serv);
+		mp_mutex->unlock();
 	}
 }

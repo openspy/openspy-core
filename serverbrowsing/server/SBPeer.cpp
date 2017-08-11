@@ -6,7 +6,7 @@
 #include <OS/socketlib/socketlib.h>
 
 namespace SB {
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) {
+	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : OS::Ref() {
 		m_sd = sd;
 		mp_driver = driver;
 		m_address_info = *address_info;

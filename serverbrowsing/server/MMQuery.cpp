@@ -41,11 +41,11 @@ namespace MM {
 	    			while(it != task->m_drivers.end()) {
 	    				SB::Driver *driver = *it;
 			   			if(strcmp(msg_type,"del") == 0) {
-		    				driver->SendDeleteServer(server);
+							driver->AddDeleteServer(*server);
 		    			} else if(strcmp(msg_type,"new") == 0) {
-		    				driver->SendNewServer(server);
+							driver->AddNewServer(*server);
 		    			} else if(strcmp(msg_type,"update") == 0) {
-		    				driver->SendUpdateServer(server);
+							driver->AddUpdateServer(*server);
 		    			}
 	    				it++;
 	    			}
@@ -219,7 +219,6 @@ namespace MM {
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
 			server->wan_address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(v.value._str).c_str()));
 
-		Redis::Command(redis_ctx, 0, "SELECT %d", OS::ERedisDB_QR_CustKeys);
 		if(all_keys) {
 			reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
 			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
@@ -524,23 +523,7 @@ namespace MM {
 		FindAppend_ServKVFields(server, entry_name, "numservers", redis_ctx);
 
 		if(all_keys) {
-			/*
-			reply = (redisReply *)redisCommand(redis_ctx, "HKEYS %scustkeys", entry_name);
-			if (!reply)
-				goto error_cleanup;
-			if (reply->type == REDIS_REPLY_ARRAY) {
-				for (unsigned int j = 0; j < reply->elements; j++) {
-					std::string search_key = entry_name;
-					search_key += "custkeys";
-					FindAppend_ServKVFields(server, search_key, reply->element[j]->str, redis_ctx);
-					if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), reply->element[j]->str) == ret->captured_basic_fields.end()) {
-						ret->captured_basic_fields.push_back(reply->element[j]->str);
-					}
-				}
-			}*/
-
-
-
+	
 			do {
 				reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d match *", entry_name);
 				if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
@@ -641,15 +624,6 @@ namespace MM {
 					streamed_ret.first_set = true;
 					sent_servers = true;
 				}
-				
-				/*
-				MMQueryResponse resp;
-				resp.results = streamed_ret;
-				resp.request = *request;
-				resp.extra = request->extra;
-				resp.peer = request->peer;
-				request->driver->AddResponse(resp);*/
-
 				//printf("Add server req first: %d last: %d numservs: %d, cursor: %d\n", streamed_ret.first_set, streamed_ret.last_set, streamed_ret.list.size(), cursor);
 				request->peer->OnRetrievedServers(*request, streamed_ret, request->extra);
 				MM::MMQueryTask::FreeServerListQuery(&streamed_ret);
@@ -758,8 +732,6 @@ namespace MM {
 			server = GetServerByKey(v.value._str, redis_ctx);
 		}
 
-
-
 		return server;
 
 		error_cleanup:
@@ -805,8 +777,9 @@ namespace MM {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
 		for(;;) {
 			task->mp_mutex->lock();
-			while(task->m_request_list.size() > 0) {				
-				MMQueryRequest task_params = task->m_request_list.back();				
+			while(!task->m_request_list.empty()) {				
+				MMQueryRequest task_params = task->m_request_list.front();
+				task->m_request_list.pop();
 				switch(task_params.type) {
 					case EMMQueryRequestType_GetServers:
 						task->PerformServersQuery(task_params);
@@ -825,7 +798,7 @@ namespace MM {
 						break;
 				}
 				task_params.peer->DecRef();
-				task->m_request_list.pop_back();
+				
 			}
 			task->mp_mutex->unlock();
 			OS::Sleep(TASK_SLEEP_TIME);
