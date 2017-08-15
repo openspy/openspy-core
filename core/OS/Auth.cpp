@@ -590,30 +590,27 @@ namespace OS {
 	void *AuthTask::TaskThread(CThread *thread) {
 		AuthTask *task = (AuthTask *)thread->getParams();
 		for(;;) {
-			if(task->m_request_list.size() > 0) {
-				std::vector<AuthRequest>::iterator it = task->m_request_list.begin();
-				task->mp_mutex->lock();
-				while(it != task->m_request_list.end()) {
-					AuthRequest task_params = *it;
-					switch(task_params.type) {
-						case EAuthType_NickEmail_GPHash:
-							task->PerformAuth_NickEMail_GPHash(task_params);
-						break;
-						case EAuthType_NickEmail:
-							task->PerformAuth_NickEMail(task_params);
-						break;
-						case EAuthType_CreateUser_OrProfile:
-							task->PerformAuth_CreateUser_OrProfile(task_params);
-						break;
-						case EAuthType_PID_GStats_Sesskey:
-							task->PerformAuth_PID_GSStats_SessKey(task_params);
-						break;
-					}
-					it = task->m_request_list.erase(it);
-					continue;
+			task->mp_mutex->lock();
+			while(!task->m_request_list.empty()) {
+				AuthRequest task_params = task->m_request_list.front();
+				task->m_request_list.pop();
+				switch(task_params.type) {
+					case EAuthType_NickEmail_GPHash:
+						task->PerformAuth_NickEMail_GPHash(task_params);
+					break;
+					case EAuthType_NickEmail:
+						task->PerformAuth_NickEMail(task_params);
+					break;
+					case EAuthType_CreateUser_OrProfile:
+						task->PerformAuth_CreateUser_OrProfile(task_params);
+					break;
+					case EAuthType_PID_GStats_Sesskey:
+						task->PerformAuth_PID_GSStats_SessKey(task_params);
+					break;
 				}
-				task->mp_mutex->unlock();
+				continue;
 			}
+			task->mp_mutex->unlock();
 			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;

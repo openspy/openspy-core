@@ -81,44 +81,44 @@ bool read_integer(const char *filter, int &idx, int len, int &int_val, float &fl
 	}
 	return is_float;
 }
-bool checkMultiCharToken(const char *filter, int &idx, int len, CToken **token) {
+bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 
 	if(idx+1 > len) return false; //can't be multibyte since this is the end
 
 	if(strncmp(&filter[idx],"==", 2) == 0) {
-		*token = new CToken(EToken_Equals, NULL);
+		*token = CToken(EToken_Equals, NULL);
 		idx ++;
 	}else  if(strncmp(&filter[idx],"=", 1) == 0) {
-		*token = new CToken(EToken_Equals, NULL);
+		*token = CToken(EToken_Equals, NULL);
 	} else if(strncmp(&filter[idx],"!=", 2) == 0 || strncmp(&filter[idx],"<>", 2) == 0) {
-		*token = new CToken(EToken_NotEquals, NULL);
+		*token = CToken(EToken_NotEquals, NULL);
 		idx ++;
 	} else if(strncmp(&filter[idx],">=", 2) == 0) {
-		*token = new CToken(EToken_GreaterEquals, NULL);
+		*token = CToken(EToken_GreaterEquals, NULL);
 		idx ++;
 	} else if(strncmp(&filter[idx],"<=", 2) == 0) {
-		*token = new CToken(EToken_LessEquals, NULL);
+		*token = CToken(EToken_LessEquals, NULL);
 		idx ++;
 	} else if(strncmp(&filter[idx],"<", 1) == 0) {
-		*token = new CToken(EToken_Less, NULL);
+		*token = CToken(EToken_Less, NULL);
 	} else if(strncmp(&filter[idx],">", 1) == 0) {
-		*token = new CToken(EToken_Greater, NULL);
+		*token = CToken(EToken_Greater, NULL);
 	} else if(strncmp(&filter[idx],">", 1) == 0) {
-		*token = new CToken(EToken_Greater, NULL);
+		*token = CToken(EToken_Greater, NULL);
 	} else if(strncmp(&filter[idx],"||", 2) == 0 || strncmp(&filter[idx],"OR", 2) == 0) {
-		*token = new CToken(EToken_Or, NULL);
+		*token = CToken(EToken_Or, NULL);
 		idx ++;
 	} else if(strncmp(&filter[idx],"&&", 2) == 0) {
-		*token = new CToken(EToken_And, NULL);
+		*token = CToken(EToken_And, NULL);
 		idx ++;
 	} //same as above, but theres a different length :(
 	else if(strncasecmp(&filter[idx],"AND", 3) == 0) {
-		*token = new CToken(EToken_And, NULL);
+		*token = CToken(EToken_And, NULL);
 		idx += 2;
 	} else if(strncmp(&filter[idx],"(", 1) == 0) {
-		*token = new CToken(EToken_LeftBracket, NULL);
+		*token = CToken(EToken_LeftBracket, NULL);
 	} else if(strncmp(&filter[idx],")", 1) == 0) {
-		*token = new CToken(EToken_RightBracket, NULL);
+		*token = CToken(EToken_RightBracket, NULL);
 	}else {
 		return false;
 	}
@@ -153,18 +153,18 @@ int getPrecedence(ETokenType token_type) {
 	}
 	return 0;
 }
-std::vector<CToken *> CToken::convertToRPN(std::vector<CToken *> token_list) {
-	std::vector<CToken *> tokens;
-	std::vector<CToken *>::iterator it = token_list.begin();
-	std::stack<CToken *> operator_stack;
+std::vector<CToken> CToken::convertToRPN(std::vector<CToken> token_list) {
+	std::vector<CToken> tokens;
+	std::vector<CToken>::iterator it = token_list.begin();
+	std::stack<CToken> operator_stack;
 	while(it != token_list.end()) {
-		CToken* cur_token = *it;
-		ETokenType type = cur_token->getType();
+		CToken cur_token = *it;
+		ETokenType type = cur_token.getType();
 		if(type == EToken_Variable || type == EToken_Integer || type == EToken_String) { //catch all operands
 			tokens.push_back(cur_token);
 		} else if(isOperator(type)) {
-			while(!operator_stack.empty() && isOperator(operator_stack.top()->getType())) {
-				if(IsLAssocOperator(type) && getPrecedence(operator_stack.top()->getType()) >= getPrecedence(type)) {
+			while(!operator_stack.empty() && isOperator(operator_stack.top().getType())) {
+				if(IsLAssocOperator(type) && getPrecedence(operator_stack.top().getType()) >= getPrecedence(type)) {
 					tokens.push_back(operator_stack.top());
 					operator_stack.pop();
 				} else break;
@@ -173,7 +173,7 @@ std::vector<CToken *> CToken::convertToRPN(std::vector<CToken *> token_list) {
 		} else if(type == EToken_LeftBracket) {
 			operator_stack.push(cur_token);
 		} else if(type == EToken_RightBracket) {
-			while(!operator_stack.empty() && operator_stack.top()->getType() != EToken_LeftBracket) {
+			while(!operator_stack.empty() && operator_stack.top().getType() != EToken_LeftBracket) {
 				tokens.push_back(operator_stack.top());
 				operator_stack.pop();
 			}
@@ -192,9 +192,9 @@ std::vector<CToken *> CToken::convertToRPN(std::vector<CToken *> token_list) {
 	}
 	return tokens;
 }
-std::vector<CToken *> CToken::filterToTokenList(const char *filter) {
-	std::vector<CToken *> tokens;
-	CToken *token;
+std::vector<CToken> CToken::filterToTokenList(const char *filter) {
+	std::vector<CToken> tokens;
+	CToken token;
 	std::string variable_name = "";
 	int filterlen = strlen(filter);
 	for(int i=0;i<filterlen;i++) {
@@ -205,35 +205,35 @@ std::vector<CToken *> CToken::filterToTokenList(const char *filter) {
 		} else if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='�') {
 			//gets freed in token deconstructor
 			std::string str = readString(filter, ++i, filterlen);
-			token = new CToken(str);
+			token = CToken(str);
 			tokens.push_back(token);
 		} else if(filter[i] =='-') {
-			token = new CToken(EToken_Subtract, NULL);
+			token = CToken(EToken_Subtract, NULL);
 			tokens.push_back(token);
 		} else if(filter[i] =='+') {
-			token = new CToken(EToken_Add, NULL);
+			token = CToken(EToken_Add, NULL);
 			tokens.push_back(token);
 		}  else if(filter[i] =='/') {
-			token = new CToken(EToken_Divide, NULL);
+			token = CToken(EToken_Divide, NULL);
 			tokens.push_back(token);
 		} else if(filter[i] =='*') {
-			token = new CToken(EToken_Multiply, NULL);
+			token = CToken(EToken_Multiply, NULL);
 			tokens.push_back(token);
 		}else if(isdigit(filter[i])) { //begins with a digit at least.. so lets read it in
 			//TODO: float check
 			int intval;
 			float floatval;
 			if(read_integer(filter, i, filterlen, intval, floatval)) {
-				//token = new CToken(EToken_Float, (void *)floatval);
+				//token = CToken(EToken_Float, (void *)floatval);
 			} else {
-				token = new CToken(EToken_Integer, (void *)intval);
+				token = CToken(EToken_Integer, (void *)intval);
 			}
 			tokens.push_back(token);
 		}
 		else { //variable
 			const char *str = readVariable(filter, i, filterlen);
 			if(str == NULL) continue;
-			token = new CToken(EToken_Variable,std::string(str));
+			token = CToken(EToken_Variable,std::string(str));
 			tokens.push_back(token);
 			free((void *)str);
 
@@ -260,55 +260,44 @@ std::string tokenToString(CToken *token) {
 	return ss.str();
 }
 
-#define DEFINE_BOOLEAN_OPERATION(funcname, _operator) CToken * funcname (std::stack<CToken *> &stack) { \
+#define DEFINE_BOOLEAN_OPERATION(funcname, _operator) CToken funcname (std::stack<CToken> &stack) { \
 	bool val = true; \
 	if (stack.size() >= 2) { \
-		CToken *t1, *t2; \
+		CToken t1, t2; \
 		t2 = stack.top(); \
 		stack.pop(); \
 		t1 = stack.top(); \
 		stack.pop(); \
-		if (t1->getType() == EToken_Integer && t2->getType() == EToken_Integer) { \
+		if (t1.getType() == EToken_Integer && t2.getType() == EToken_Integer) { \
 			long i1, i2; \
-			i1 = (long)t1->getExtra(); \
-			i2 = (long)t2->getExtra(); \
+			i1 = (long)t1.getExtra(); \
+			i2 = (long)t2.getExtra(); \
 			val = i1 _operator i2; \
-		} else if(t1->getType() == EToken_String || t2->getType() == EToken_String) {\
-			std::string s1 = tokenToString(t1); \
-			std::string s2 = tokenToString(t2); \
+		} else if(t1.getType() == EToken_String || t2.getType() == EToken_String) {\
+			std::string s1 = tokenToString(&t1); \
+			std::string s2 = tokenToString(&t2); \
 			val = s1 _operator s2;\
 		} \
-		delete t1; \
-		delete t2; \
-		return new CToken(EToken_Integer, (void *)val); \
 	} \
-	else { \
-		return NULL; \
-	} \
+	return CToken(EToken_Integer, (void *)val); \
 }
 
-#define DEFINE_BOOLEAN_OPERATION_NOSTR(funcname, _operator) CToken * funcname (std::stack<CToken *> &stack) { \
+#define DEFINE_BOOLEAN_OPERATION_NOSTR(funcname, _operator) CToken funcname (std::stack<CToken> &stack) { \
 	bool val = true; \
 	if (stack.size() >= 2) { \
-		CToken *t1, *t2; \
+		CToken t1, t2; \
 		t2 = stack.top(); \
 		stack.pop(); \
 		t1 = stack.top(); \
-		if(!t1 || !t2) return NULL; \
 		stack.pop(); \
 		long i1, i2; \
-		if (t1->getType() == EToken_Integer && t2->getType() == EToken_Integer) { \
-			i1 = (long)t1->getExtra(); \
-			i2 = (long)t2->getExtra(); \
+		if (t1.getType() == EToken_Integer && t2.getType() == EToken_Integer) { \
+			i1 = (long)t1.getExtra(); \
+			i2 = (long)t2.getExtra(); \
 			val = (i1 _operator i2); \
 		}\
-		delete t1; \
-		delete t2; \
-		return new CToken(EToken_Integer, (void *)val); \
 	} \
-	else { \
-		return NULL; \
-	} \
+	return CToken(EToken_Integer, (void *)val); \
 }
 
 DEFINE_BOOLEAN_OPERATION(equals, == )
@@ -320,24 +309,22 @@ DEFINE_BOOLEAN_OPERATION_NOSTR(greaterthan, >)
 DEFINE_BOOLEAN_OPERATION_NOSTR(evaland, &&)
 DEFINE_BOOLEAN_OPERATION_NOSTR(evalor, || )
 
-#define DEFINE_MATH_OPERATION(funcname, _operator) CToken *funcname(std::stack<CToken *> &stack) { \
-	CToken *return_token = NULL; \
+#define DEFINE_MATH_OPERATION(funcname, _operator) CToken funcname(std::stack<CToken> &stack) { \
+	CToken return_token; \
 	int isum = 0; \
 	float fsum = 0.0f; \
 while (!stack.empty()) { \
-	if(stack.top() == NULL) return NULL; \
-	switch (stack.top()->getType()) { \
+	switch (stack.top().getType()) { \
 	case EToken_Integer: \
-	isum _operator (long)stack.top()->getExtra(); \
+	isum _operator (long)stack.top().getExtra(); \
 	break; \
 } \
-	delete stack.top();\
 	stack.pop(); \
 } \
 if (fsum != 0.0f) { \
 } \
 else if (isum != 0) { \
-	return_token = new CToken(EToken_Integer, (void *)isum); \
+	return_token = CToken(EToken_Integer, (void *)isum); \
 } \
 return return_token; \
 }
@@ -347,28 +334,28 @@ DEFINE_MATH_OPERATION(subtract, -= )
 DEFINE_MATH_OPERATION(multiply, *= )
 DEFINE_MATH_OPERATION(divide, /= )
 
-void fix_divide_zero(std::stack<CToken *> stack) {
-	CToken *t1, *t2;
+void fix_divide_zero(std::stack<CToken> stack) {
+	CToken t1, *t2;
 }
 
-bool evaluate(std::vector<CToken *> tokens, std::map<std::string, std::string>& kvList) {
-	std::vector<CToken *>::iterator it = tokens.begin();
-	CToken *ret;
-	std::stack<CToken *> operand_stack;
+bool evaluate(std::vector<CToken> tokens, std::map<std::string, std::string>& kvList) {
+	std::vector<CToken>::iterator it = tokens.begin();
+	CToken ret;
+	std::stack<CToken> operand_stack;
 	while(it != tokens.end()) {
-		if(isOperand((*it)->getType())) {
-			if ((*it)->getType() == EToken_Variable) {
-				TokenOperand tok = resolve_variable((const char *)(*it)->getString().c_str(),kvList);
+		if(isOperand((*it).getType())) {
+			if ((*it).getType() == EToken_Variable) {
+				TokenOperand tok = resolve_variable((const char *)(*it).getString().c_str(),kvList);
 				if(tok.token != EToken_String) {
-					ret = new CToken(tok.token, (void *)tok.ptr);
+					ret = CToken(tok.token, (void *)tok.ptr);
 				} else {
-					ret = new CToken(tok.sval);
+					ret = CToken(tok.sval);
 				}
 				operand_stack.push(ret);
 			} else
 				operand_stack.push(*it);
-		} else if(isOperator((*it)->getType())) {
-			switch((*it)->getType()) {
+		} else if(isOperator((*it).getType())) {
+			switch((*it).getType()) {
 				case EToken_Add:
 					ret = add(operand_stack);
 					operand_stack.push(ret);
@@ -418,17 +405,13 @@ bool evaluate(std::vector<CToken *> tokens, std::map<std::string, std::string>& 
 					operand_stack.push(ret);
 					break;
 			}
-			if(operand_stack.top() == NULL) return false;
-			delete *it;
 		}
 		it++;
 	}
 	bool retval = false;
 	if (!operand_stack.empty()) {
 		ret = operand_stack.top();
-		if(!ret) return false;
-		retval = ret->getType() == EToken_Integer && ret->getExtra() != 0;
-		delete ret;
+		retval = ret.getType() == EToken_Integer && ret.getExtra() != 0;
 	}
 	return retval;
 }

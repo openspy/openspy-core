@@ -237,12 +237,11 @@ namespace OS {
 		ProfileSearchTask *task = (ProfileSearchTask *)thread->getParams();
 		for(;;) {
 			if(task->m_request_list.size() > 0) {
-				std::vector<ProfileSearchRequest>::iterator it = task->m_request_list.begin();
 				task->mp_mutex->lock();
-				while(it != task->m_request_list.end()) {
-					ProfileSearchRequest task_params = *it;
+				while(!task->m_request_list.empty()) {
+					ProfileSearchRequest task_params = task->m_request_list.front();
+					task->m_request_list.pop();
 					PerformSearch(task_params);
-					it = task->m_request_list.erase(it);
 					continue;
 				}
 				task->mp_mutex->unlock();

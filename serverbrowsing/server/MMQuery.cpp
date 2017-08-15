@@ -37,19 +37,21 @@ namespace MM {
 	    			server = task->GetServerByKey(server_key, task->mp_redis_async_retrival_connection, strcmp(msg_type,"del") == 0);
 	    			if(!server) return;
 
+					MM::Server server_cpy = *server;
+					delete server;
 	    			std::vector<SB::Driver *>::iterator it = task->m_drivers.begin();
 	    			while(it != task->m_drivers.end()) {
 	    				SB::Driver *driver = *it;
 			   			if(strcmp(msg_type,"del") == 0) {
-							driver->AddDeleteServer(*server);
+							driver->AddDeleteServer(server_cpy);
 		    			} else if(strcmp(msg_type,"new") == 0) {
-							driver->AddNewServer(*server);
+							driver->AddNewServer(server_cpy);
 		    			} else if(strcmp(msg_type,"update") == 0) {
-							driver->AddUpdateServer(*server);
+							driver->AddUpdateServer(server_cpy);
 		    			}
 	    				it++;
 	    			}
-					delete server;
+					
 	    		}
 	    	}
 	    }
@@ -415,6 +417,9 @@ namespace MM {
 		if(!req || filterMatches(req->filter.c_str(), all_cust_keys)) {
 			ret->list.push_back(server);
 		}
+		else {
+			delete server;
+		}
 		goto true_exit;
 
 	error_cleanup:
@@ -626,8 +631,9 @@ namespace MM {
 				}
 				//printf("Add server req first: %d last: %d numservs: %d, cursor: %d\n", streamed_ret.first_set, streamed_ret.last_set, streamed_ret.list.size(), cursor);
 				request->peer->OnRetrievedServers(*request, streamed_ret, request->extra);
-				MM::MMQueryTask::FreeServerListQuery(&streamed_ret);
 			}
+
+			MM::MMQueryTask::FreeServerListQuery(&streamed_ret);
 		} while(cursor != 0);
 
 		error_cleanup:
@@ -686,8 +692,8 @@ namespace MM {
 					sent_servers = true;
 				}
 				request->peer->OnRetrievedGroups(*request, streamed_ret, request->extra);
-				MM::MMQueryTask::FreeServerListQuery(&streamed_ret);
 			}
+			MM::MMQueryTask::FreeServerListQuery(&streamed_ret);
 		} while(cursor != 0);
 
 		error_cleanup:
@@ -758,6 +764,7 @@ namespace MM {
 		ServerListQuery ret;
 		AppendServerEntry(request.key, &ret, true, false, NULL, NULL);
 		request.peer->OnRetrievedServerInfo(request, ret, request.extra);
+		MM::MMQueryTask::FreeServerListQuery(&ret);
 	}
 	void MMQueryTask::PerformGetServerByIP(MMQueryRequest request) {
 		ServerListQuery ret;
@@ -766,6 +773,8 @@ namespace MM {
 			ret.list.push_back(serv);
 
 		request.peer->OnRetrievedServerInfo(request, ret, request.extra);
+
+		MM::MMQueryTask::FreeServerListQuery(&ret);
 	}
 	void MMQueryTask::PerformSubmitData(MMQueryRequest request) {
 		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\send_msg\\%s\\%s\\%d\\%s\\%d\\%s\n",

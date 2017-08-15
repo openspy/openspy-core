@@ -46,9 +46,6 @@ namespace MM {
 		bool last_set;
 	};
 	
-
-	
-	
 	extern Redis::Connection *mp_redis_connection;
 
 	struct sServerListReq {

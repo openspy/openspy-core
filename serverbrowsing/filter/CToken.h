@@ -41,21 +41,21 @@ class CToken {
 public:
 	CToken() : m_extra(NULL), m_type(EToken_None) {}
 	CToken(ETokenType type, void *extra, bool no_free = false) :  m_extra (extra), m_type(type) {}
-	CToken(std::string extra) :  m_str (extra), m_type(EToken_String), m_extra(NULL) {}
+	CToken(std::string extra) : m_str(extra), m_type(EToken_String), m_extra(NULL) {}
 	CToken(ETokenType type, std::string extra) :  m_str (extra), m_type(type), m_extra(NULL) {}
 	~CToken();
 	ETokenType getType() { return m_type; }
 	void *getExtra() { return m_extra; }
 	std::string getString() { return m_str; }
-	static std::vector<CToken *> filterToTokenList(const char *filter);
-	static std::vector<CToken *> convertToRPN(std::vector<CToken *> token_list);
+	static std::vector<CToken> filterToTokenList(const char *filter);
+	static std::vector<CToken> convertToRPN(std::vector<CToken> token_list);
 private:
 	bool no_free;
 	ETokenType m_type;
 	void *m_extra; //ptr to int, null terminated string, etc if variable
 	std::string m_str;
 };
-TokenOperand resolve_variable(CToken *token, std::map<std::string, std::string>& kvList);
+TokenOperand resolve_variable(CToken token, std::map<std::string, std::string>& kvList);
 TokenOperand resolve_variable(const char *name, std::map<std::string, std::string>& kvList);
-bool evaluate(std::vector<CToken *> tokens, std::map<std::string, std::string>& kvList);
+bool evaluate(std::vector<CToken> tokens, std::map<std::string, std::string>& kvList);
 #endif

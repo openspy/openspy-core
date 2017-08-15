@@ -2,19 +2,16 @@
 #include <stdio.h>
 namespace OS {
 	CWin32Mutex::CWin32Mutex() {
-		m_mutex = ::CreateMutex( 
-        NULL,              // default security attributes
-        FALSE,             // initially not owned
-        NULL); 
+		InitializeCriticalSectionAndSpinCount(&m_critical_section, 0x00000400);
 	}
 	CWin32Mutex::~CWin32Mutex() {
- 		CloseHandle(m_mutex);
+		DeleteCriticalSection(&m_critical_section);
 	}
 	void CWin32Mutex::lock() {
-		WaitForSingleObject(&m_mutex, INFINITE);
+		EnterCriticalSection(&m_critical_section);
 	}
 	void CWin32Mutex::unlock() {
-		ReleaseMutex(&m_mutex);
+		LeaveCriticalSection(&m_critical_section);
 	}
 	
 	CMutex *CreateMutex() {

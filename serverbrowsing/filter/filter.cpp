@@ -7,8 +7,10 @@ bool filterMatches(const char *filter, std::map<std::string, std::string>& kvLis
 	if(filter == NULL || strlen(filter) == 0) {
 		return true;
 	}
-	std::vector<CToken *> token_list = CToken::filterToTokenList((const char *)filter);
+	std::vector<CToken> token_list = CToken::filterToTokenList((const char *)filter);
 
 	bool ret = evaluate(token_list, kvList);
+
+	//freeTokenList(token_list);
 	return ret;	
 }

@@ -147,18 +147,16 @@ namespace OS {
 		UserSearchTask *task = (UserSearchTask *)thread->getParams();
 		for(;;) {
 			if(task->m_request_list.size() > 0) {
-				std::vector<UserSearchRequest>::iterator it = task->m_request_list.begin();
 				task->mp_mutex->lock();
-				while(it != task->m_request_list.end()) {
-					UserSearchRequest task_params = *it;
+				while(!task->m_request_list.empty()) {
+					UserSearchRequest task_params = task->m_request_list.front();
+					task->m_request_list.pop();
 					switch(task_params.type) {
 						case EUserRequestType_Update:
 						case EUserRequestType_Search:
 							PerformRequest(task_params);
 						break;	
 					}
-					
-					it = task->m_request_list.erase(it);
 					continue;
 				}
 				task->mp_mutex->unlock();

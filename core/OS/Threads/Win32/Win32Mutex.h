@@ -10,7 +10,7 @@ namespace OS {
 		void lock();
 		void unlock();
 	private:
-		HANDLE m_mutex;
+		CRITICAL_SECTION m_critical_section;
 
 	};
 }
