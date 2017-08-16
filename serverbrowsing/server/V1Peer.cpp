@@ -186,8 +186,6 @@ namespace SB {
 				return;
 			}
 
-			MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
-
 			if(mode.compare("cmp") == 0) {				
 				req.req.all_keys = false;
 			} else if(mode.compare("info2") == 0) {
@@ -202,7 +200,7 @@ namespace SB {
 			req.driver = mp_driver;
 			req.peer = this;
 			req.peer->IncRef();
-			query_task->AddRequest(req);
+			MM::m_task_pool->AddRequest(req);
 			m_delete_flag = true; //server disconnects after this
 		}
 		void V1Peer::SendServerInfo(MM::ServerListQuery results) {

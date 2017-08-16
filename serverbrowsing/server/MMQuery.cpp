@@ -1,7 +1,7 @@
 #include "main.h"
-
-#include "server/SBDriver.h"
 #include "MMQuery.h"
+#include "server/SBDriver.h"
+#include "server/SBServer.h"
 
 #include <OS/socketlib/socketlib.h>
 
@@ -16,11 +16,41 @@
 
 namespace MM {
 
-
+	OS::TaskPool<MMQueryTask, MMQueryRequest> *m_task_pool = NULL;
+	Redis::Connection *mp_redis_async_retrival_connection;
+	OS::CThread *mp_async_thread;
+	Redis::Connection *mp_redis_async_connection;
+	MMQueryTask *mp_async_lookup_task = NULL;
 	const char *sb_mm_channel = "serverbrowsing.servers";
-	MMQueryTask *MMQueryTask::m_task_singleton = NULL;
+
+	void *setup_redis_async(OS::CThread *thread) {
+		struct timeval t;
+		t.tv_usec = 0;
+		t.tv_sec = 60;
+		mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
+
+		mp_async_lookup_task = new MMQueryTask();
+
+		Redis::LoopingCommand(mp_redis_async_connection, 60, MMQueryTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s", sb_mm_channel);
+		return NULL;
+	}
+
+	void SetupTaskPool(SBServer *server) {
+
+		struct timeval t;
+		t.tv_usec = 0;
+		t.tv_sec = 60;
+
+		mp_redis_async_retrival_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		mp_async_thread = OS::CreateThread(setup_redis_async, NULL, true);
+
+		m_task_pool = new OS::TaskPool<MMQueryTask, MMQueryRequest>(NUM_MM_QUERY_THREADS);
+		server->SetTaskPool(m_task_pool);
+	}
+
+
 	void MMQueryTask::onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
-		MMQueryTask *task = (MMQueryTask *)privdata;
+		MMQueryTask *task = (MMQueryTask *)mp_async_lookup_task;
 		Redis::Value v = reply.values.front();
 
 	    Server *server = NULL;
@@ -34,7 +64,7 @@ namespace MM {
 	    			find_param(1, temp_str, (char *)&server_key, sizeof(server_key));
 					free((void *)temp_str);
 
-	    			server = task->GetServerByKey(server_key, task->mp_redis_async_retrival_connection, strcmp(msg_type,"del") == 0);
+	    			server = mp_async_lookup_task->GetServerByKey(server_key, mp_redis_async_retrival_connection, strcmp(msg_type,"del") == 0);
 	    			if(!server) return;
 
 					MM::Server server_cpy = *server;
@@ -56,29 +86,19 @@ namespace MM {
 	    	}
 	    }
 	}
-
-	void *MMQueryTask::setup_redis_async(OS::CThread *thread) {
-		MMQueryTask *task = (MMQueryTask *)thread->getParams();
-
-		struct timeval t;
-		t.tv_usec = 0;
-		t.tv_sec = task->m_redis_timeout;
-		task->mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
-
-		Redis::LoopingCommand(task->mp_redis_async_connection, task->m_redis_timeout, MMQueryTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s", sb_mm_channel);
-		return NULL;
-	}
 	void MMQueryTask::AddDriver(SB::Driver *driver) {
-		m_drivers.push_back(driver);
+		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {
+			m_drivers.push_back(driver);
+		}
+		if (this != mp_async_lookup_task) {
+			mp_async_lookup_task->AddDriver(driver);
+		}
 	}
 	void MMQueryTask::RemoveDriver(SB::Driver *driver) {
-
-	}
-	MMQueryTask *MMQueryTask::getQueryTask() {
-		if(!MMQueryTask::m_task_singleton) {
-			MMQueryTask::m_task_singleton = new MMQueryTask();
+		std::vector<SB::Driver *>::iterator it = std::find(m_drivers.begin(), m_drivers.end(), driver);
+		if (it != m_drivers.end()) {
+			m_drivers.erase(it);
 		}
-		return MMQueryTask::m_task_singleton;
 	}
 	MMQueryTask::MMQueryTask() {
 		m_redis_timeout = 60;
@@ -88,9 +108,6 @@ namespace MM {
 		t.tv_sec = m_redis_timeout;
 
 		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
-		mp_redis_async_retrival_connection = Redis::Connect(OS_REDIS_ADDR, t);
-
-		mp_async_thread = OS::CreateThread(setup_redis_async, this, true);
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(MMQueryTask::TaskThread, this, true);
@@ -99,19 +116,14 @@ namespace MM {
 
 	MMQueryTask::~MMQueryTask() {
 		delete mp_thread;
-		delete mp_async_thread;
 		delete mp_mutex;
 
-		Redis::Disconnect(mp_redis_async_retrival_connection);
 		Redis::Disconnect(mp_redis_connection);
 
 	}
 
 	void MMQueryTask::Shutdown() {
-		MMQueryTask *query_task = getQueryTask();
 
-
-		delete query_task;
 	}
 
 	//////////////////////////////////////////////////
@@ -177,7 +189,7 @@ namespace MM {
 
 		v = reply.values.front();
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			std::string gameid_reply = OS::strip_quotes(v.value._str).c_str();
+			std::string gameid_reply = (v.value._str).c_str();
 			int gameid = atoi(gameid_reply.c_str());
 			if (req) {
 				server->game = req->m_from_game;
@@ -199,7 +211,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->id = atoi(OS::strip_quotes(v.value._str).c_str());
+			server->id = atoi((v.value._str).c_str());
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s wan_port", entry_name.c_str());
 
@@ -209,7 +221,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type== Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->wan_address.port = atoi(OS::strip_quotes(v.value._str).c_str());
+			server->wan_address.port = atoi((v.value._str).c_str());
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s wan_ip", entry_name.c_str());
 
@@ -219,7 +231,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->wan_address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(v.value._str).c_str()));
+			server->wan_address.ip = Socket::htonl(Socket::inet_addr((v.value._str).c_str()));
 
 		if(all_keys) {
 			reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
@@ -243,7 +255,7 @@ namespace MM {
 
 					std::string key = arr.arr_value.values[i].second.value._str;
 					if (arr.arr_value.values[i+1].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-						server->kvFields[key] = OS::strip_quotes(arr.arr_value.values[i + 1].second.value._str);
+						server->kvFields[key] = (arr.arr_value.values[i + 1].second.value._str);
 					}
 					else if(arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 						server->kvFields[key] = arr.arr_value.values[i + 1].second.value._int;
@@ -288,7 +300,7 @@ namespace MM {
 
 						std::string key = arr.arr_value.values[i].second.value._str;
 						if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-							server->kvPlayers[idx][key] = OS::strip_quotes(arr.arr_value.values[i + 1].second.value._str);
+							server->kvPlayers[idx][key] = (arr.arr_value.values[i + 1].second.value._str);
 						}
 						else if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 							server->kvPlayers[idx][key] = arr.arr_value.values[i + 1].second.value._int;
@@ -344,7 +356,7 @@ namespace MM {
 
 							std::string key = arr.arr_value.values[i].second.value._str;
 							if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-								server->kvTeams[idx][key] = OS::strip_quotes(arr.arr_value.values[i + 1].second.value._str);
+								server->kvTeams[idx][key] = (arr.arr_value.values[i + 1].second.value._str);
 							}
 							else if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 								server->kvTeams[idx][key] = arr.arr_value.values[i + 1].second.value._int;
@@ -386,7 +398,7 @@ namespace MM {
 
 						std::string key = arr.arr_value.values[i].second.value._str;
 						if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-							server->kvFields[key] = OS::strip_quotes(arr.arr_value.values[i + 1].second.value._str);
+							server->kvFields[key] = (arr.arr_value.values[i + 1].second.value._str);
 						}
 						else if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 							server->kvFields[key] = arr.arr_value.values[i + 1].second.value._int;
@@ -438,7 +450,7 @@ namespace MM {
 
 		v = reply.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			server->kvPlayers[index][key] = OS::strip_quotes(v.value._str);
+			server->kvPlayers[index][key] = (v.value._str);
 		}
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 			server->kvPlayers[index][key] = v.value._int;
@@ -456,7 +468,7 @@ namespace MM {
 
 		v = reply.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			server->kvTeams[index][key] = OS::strip_quotes(v.value._str);
+			server->kvTeams[index][key] = (v.value._str);
 		}
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 			server->kvTeams[index][key] = v.value._int;
@@ -474,7 +486,7 @@ namespace MM {
 
 		v = reply.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			server->kvFields[key] = OS::strip_quotes(v.value._str);
+			server->kvFields[key] = (v.value._str);
 		}
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 			server->kvFields[key] = v.value._int;
@@ -507,7 +519,7 @@ namespace MM {
 			server->game = request->req.m_for_game;
 		}
 		else {
-			server->game = OS::GetGameByID(atoi(OS::strip_quotes(v.value._str).c_str()));
+			server->game = OS::GetGameByID(atoi((v.value._str).c_str()));
 		}
 		
 		Redis::Command(redis_ctx, 0, "SELECT %d", OS::ERedisDB_SBGroups); //change context back to SB db id
@@ -518,8 +530,8 @@ namespace MM {
 
 		v = reply.values.front();
 
-		server->wan_address.ip = atoi(OS::strip_quotes(v.value._str).c_str()); //for V2
-		server->kvFields["groupid"] = OS::strip_quotes(v.value._str).c_str(); //for V1
+		server->wan_address.ip = atoi((v.value._str).c_str()); //for V2
+		server->kvFields["groupid"] = (v.value._str).c_str(); //for V1
 		
 		FindAppend_ServKVFields(server, entry_name, "maxwaiting", redis_ctx);
 		FindAppend_ServKVFields(server, entry_name, "hostname", redis_ctx);

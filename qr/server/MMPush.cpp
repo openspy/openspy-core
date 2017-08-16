@@ -126,7 +126,7 @@ namespace MM {
 		std::map<std::string, std::string>::iterator it = server->m_keys.begin();
 		while(it != server->m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;
-			Redis::Command(mp_redis_connection, 0, "HSET %scustkeys %s \"%s\"",server_key.c_str(),p.first.c_str(),p.second.c_str());
+			Redis::Command(mp_redis_connection, 0, "HSET %scustkeys %s \"%s\"",server_key.c_str(),p.first.c_str(),OS::escapeJSON(p.second).c_str());
 			it++;
 		}
 		Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys 300",server_key.c_str());
@@ -142,7 +142,7 @@ namespace MM {
 			it3 = p.second.begin();
 			while(it3 != p.second.end()) {
 				std::string s = *it3;
-				Redis::Command(mp_redis_connection, 0, "HSET %scustkeys_player_%d %s \"%s\"",server_key.c_str(), i,p.first.c_str(),s.c_str());
+				Redis::Command(mp_redis_connection, 0, "HSET %scustkeys_player_%d %s \"%s\"",server_key.c_str(), i,p.first.c_str(), OS::escapeJSON(s).c_str());
 				Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_player_%d 300",server_key.c_str(), i,p.first.c_str());
 				i++;
 				it3++;
@@ -159,7 +159,7 @@ namespace MM {
 			while(it3 != p.second.end()) {
 
 				std::string s = *it3;
-				Redis::Command(mp_redis_connection, 0, "HSET %scustkeys_team_%d %s \"%s\"",server_key.c_str(), i,p.first.c_str(),s.c_str());
+				Redis::Command(mp_redis_connection, 0, "HSET %scustkeys_team_%d %s \"%s\"",server_key.c_str(), i,p.first.c_str(), OS::escapeJSON(s).c_str());
 				Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_team_%d 300",server_key.c_str(), i);
 				i++;
 				it3++;
@@ -234,7 +234,7 @@ namespace MM {
 	}
 	int GetServerID() {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
-		Redis::Response resp = Redis::Command(mp_redis_connection, 0, "INCR %s", mp_pk_name);
+		Redis::Response resp = Redis::Command(mp_redis_connection, 1, "INCR %s", mp_pk_name);
 		Redis::Value v = resp.values.front();
 		int ret = -1;
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
@@ -243,6 +243,7 @@ namespace MM {
 		else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			ret = atoi(v.value._str.c_str());
 		}
+		printf("Get server ID: %d\n", ret);
 		return ret;
 	}
 }

@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Code\openspy-core\search\main.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Code\openspy-core\search\server\SMDriver.cpp">
+      <Filter>Sources\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Code\openspy-core\search\server\SMPeer.cpp">
+      <Filter>Sources\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Code\openspy-core\search\server\SMServer.cpp">
+      <Filter>Sources\Server</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Code\openspy-core\search\main.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Code\openspy-core\search\server\SMDriver.h">
+      <Filter>Headers\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Code\openspy-core\search\server\SMPeer.h">
+      <Filter>Headers\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Code\openspy-core\search\server\SMServer.h">
+      <Filter>Headers\Server</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Code\openspy-core\search\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Sources\Server">
+      <UniqueIdentifier>{FF6BFACD-F3DC-3780-8CE8-58B9F89EBB27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers\Server">
+      <UniqueIdentifier>{62164FDB-F94C-3BB8-B115-6A7D542D5DF7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sources">
+      <UniqueIdentifier>{171F494A-B7FA-3845-9C45-510A785E2158}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{2941A01C-4A0B-335C-9B6F-07328CDF1F60}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

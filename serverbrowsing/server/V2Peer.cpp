@@ -24,6 +24,7 @@ namespace SB {
 		m_last_list_req.m_from_game.gameid = 0;
 		m_last_list_req.m_from_game.secretkey[0] = 0;
 		m_last_list_req.m_from_game.gamename[0] = 0;
+		m_in_message = false;
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
 
 		printf("V2 create - %d\n", this->GetRefCount());
@@ -59,8 +60,7 @@ namespace SB {
 
 			if (m_game.secretkey[0] == 0 && request_type != SERVER_LIST_REQUEST) //only list req can define the game, anything else will result in a crash
 				return;
-
-
+			
  			//TODO: get expected lengths for each packet type and test, prior to execution
 			switch (request_type) {
 				case SERVER_LIST_REQUEST:
@@ -254,7 +254,14 @@ namespace SB {
 		uint8_t *p = (uint8_t *)&buff;
 		int len = 0;
 
-		BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
+		if (list_req.source_ip != 0) {
+			BufferWriteInt(&p, &len, Socket::htonl(list_req.source_ip));
+		}
+		else {
+			
+			BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
+		}
+		
 		BufferWriteShort(&p, &len, Socket::htons(list_req.m_from_game.queryport));
 
 		bool send_push_keys = false;
@@ -285,34 +292,43 @@ namespace SB {
 				BufferWriteByte(&p, &len, 0);
 			}
 
-			if (!servers.first_set) {
-				p = (uint8_t *)&buff;
-				len = 0;
-			}
-
 
 			std::vector<MM::Server *>::iterator it = servers.list.begin();
 			while (it != servers.list.end()) {
 				MM::Server *server = *it;
-				sendServerData(server, true, false, &p, &len, false, &field_types);
+				sendServerData(server, usepopularlist, false, servers.first_set ? &p : NULL, servers.first_set ? &len : NULL, false, &field_types);
 				it++;
+			}
+
+			if (!servers.first_set) {
+				p = (uint8_t *)&buff;
+				len = 0;
 			}
 
 			if (servers.list.empty() || servers.last_set) {
 				//terminator
 				BufferWriteByte((uint8_t **)&p, &len, 0x00);
 				BufferWriteInt((uint8_t **)&p, &len, -1);
-				send_push_keys = true;
+				if (!list_req.send_groups) {
+					send_push_keys = true;
+				}				
 			}
 
 		}
 
 		gettimeofday(&m_last_recv, NULL); //prevent timeout during long lists
-		SendPacket((uint8_t *)&buff, len, false);
+
+		if (len > 0) {
+			SendPacket((uint8_t *)&buff, len, false);
+		}
 
 		if (!m_sent_push_keys && send_push_keys) {
 			m_sent_push_keys = true;
-			//SendPushKeys();
+			SendPushKeys();
+		}
+
+		if (servers.last_set) {
+			m_in_message = false;
 		}
 	}
 	void V2Peer::setupCryptHeader(uint8_t **dst, int *len) {
@@ -383,7 +399,6 @@ namespace SB {
 			return buffer;
 
 		 if(!req.req.no_server_list) {
-		 	MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
 			if (req.req.send_groups) {
 				req.type = MM::EMMQueryRequestType_GetGroups;
 			}
@@ -395,7 +410,9 @@ namespace SB {
 			req.driver = mp_driver;
 			req.peer = this;
 			req.peer->IncRef();
-			query_task->AddRequest(req);
+
+			m_in_message = true;
+			MM::m_task_pool->AddRequest(req);
 		} else {
 			//send empty server list
 			MM::ServerListQuery servers;
@@ -414,7 +431,6 @@ namespace SB {
 		address.port = Socket::htons(BufferReadShort(&p, &len));
 		sServerCache cache = FindServerByIP(address);
 
-		MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
 		MM::MMQueryRequest req;
 
 		if(cache.key[0] != 0) {
@@ -431,7 +447,7 @@ namespace SB {
 		req.peer = this;
 		req.driver = mp_driver;
 		req.peer->IncRef();
-		query_task->AddRequest(req);
+		MM::m_task_pool->AddRequest(req);
 		return p;
 	}
 	void V2Peer::send_ping() {
@@ -462,14 +478,13 @@ namespace SB {
 				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);
 
 				MM::MMQueryRequest req;
-				MM::MMQueryTask *query_task = MM::MMQueryTask::getQueryTask();
 				req.type = MM::EMMQueryRequestType_SubmitData;
 				req.SubmitData.from = m_address_info;
 				req.SubmitData.to = m_send_msg_to;
 				req.SubmitData.base64 = base64;
 				req.peer = this;
 				req.peer->IncRef();
-				query_task->AddRequest(req);
+				MM::m_task_pool->AddRequest(req);
 				free((void *)base64);
 				m_next_packet_send_msg = false;
 			} else {
@@ -643,7 +658,7 @@ namespace SB {
 		int len = 0;
 
 		sServerCache cache = FindServerByKey(server->key);
-		if(cache.key[0] == 0 || !m_last_list_req.push_updates) return;
+		if(cache.key[0] == 0 || !m_last_list_req.push_updates || m_in_message) return;
 
 		DeleteServerFromCacheByKey(server->key);
 
@@ -654,7 +669,7 @@ namespace SB {
 	}
 	void V2Peer::informNewServers(MM::Server *server) {
 		sServerCache cache = FindServerByKey(server->key);
-		if(cache.key[0] != 0 || !m_last_list_req.push_updates) return;
+		if(cache.key[0] != 0 || !m_last_list_req.push_updates || m_in_message) return;
 		if(server) {
 			if(serverMatchesLastReq(server)) {
 				cacheServer(server);
@@ -663,7 +678,7 @@ namespace SB {
 		}
 	}
 	void V2Peer::informUpdateServers(MM::Server *server) {
-		if(!m_last_list_req.push_updates) return;
+		if(!m_last_list_req.push_updates || m_in_message) return;
 		sServerCache cache = FindServerByKey(server->key);
 
 		//client never recieved server notification, add to cache and send anyways, as it will be registered as a new server by the SB SDK

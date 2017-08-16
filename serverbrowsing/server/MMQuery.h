@@ -4,6 +4,7 @@
 
 #include <OS/OpenSpy.h>
 #include <OS/Task.h>
+#include <OS/TaskPool.h>
 #include <OS/Thread.h>
 #include <OS/Mutex.h>
 #include <OS/Redis.h>
@@ -11,7 +12,7 @@
 #include <map>
 #include <string>
 
-
+class SBServer;
 namespace SB {
 	class Driver;
 	class Peer;
@@ -110,7 +111,6 @@ namespace MM {
 		public:
 			MMQueryTask();
 			~MMQueryTask();
-			static MMQueryTask *getQueryTask();
 			static void Shutdown();
 
 			static void FreeServerListQuery(struct MM::ServerListQuery *query);
@@ -118,12 +118,10 @@ namespace MM {
 			void AddDriver(SB::Driver *driver);
 			void RemoveDriver(SB::Driver *driver);
 
+			static void MMQueryTask::onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
 		private:
+			
 			static void *TaskThread(OS::CThread *thread);
-
-			static void *setup_redis_async(OS::CThread *thread);
-
-			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
 
 			void AppendServerEntry(std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, Redis::Connection *redis_ctx, const sServerListReq *req);
 			void AppendGroupEntry(const char *entry_name, ServerListQuery *ret, Redis::Connection *redis_ctx, bool all_keys, const MMQueryRequest *request);
@@ -146,16 +144,14 @@ namespace MM {
 
 			std::vector<SB::Driver *> m_drivers;
 			Redis::Connection *mp_redis_connection;
-			Redis::Connection *mp_redis_async_retrival_connection;
-			Redis::Connection *mp_redis_async_connection;
-			struct event_base *mp_event_base;
-
 			time_t m_redis_timeout;
-
-			OS::CThread *mp_async_thread;
-
-			static MMQueryTask *m_task_singleton;
 	};
+
+	#define NUM_MM_QUERY_THREADS 8
+	extern OS::TaskPool<MMQueryTask, MMQueryRequest> *m_task_pool;
+	void SetupTaskPool(SBServer *server);
+	void *setup_redis_async(OS::CThread *thread);
+
 };
 
 #endif //_MM_QUERY_H

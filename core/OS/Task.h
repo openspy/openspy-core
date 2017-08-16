@@ -17,6 +17,9 @@ namespace OS {
 			m_request_list.push(data);
 			mp_mutex->unlock();
 		}
+		int GetListSize() {
+			return m_request_list.size();
+		}
 	protected:
 
 		CThread	*mp_thread;

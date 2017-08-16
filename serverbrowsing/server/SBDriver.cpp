@@ -42,11 +42,8 @@ namespace SB {
 
 		mp_mutex = OS::CreateMutex();
 
-		MM::MMQueryTask::getQueryTask()->AddDriver(this);
-
 	}
 	Driver::~Driver() {
-		MM::MMQueryTask::getQueryTask()->RemoveDriver(this);
 		//end all MMQuery tasks first, otherwise can crash here
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {

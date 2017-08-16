@@ -39,6 +39,8 @@ namespace QR {
 		m_recv_instance_key = false;
 
 		m_sent_challenge = false;
+		m_server_pushed = false;
+		m_server_info.id = -1;
 		m_server_info.m_game.gameid = 0;
 		memset(&m_challenge, 0, sizeof(m_challenge));
 
