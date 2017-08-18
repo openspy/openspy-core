@@ -118,7 +118,7 @@ namespace MM {
 			void AddDriver(SB::Driver *driver);
 			void RemoveDriver(SB::Driver *driver);
 
-			static void MMQueryTask::onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
+			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
 		private:
 			
 			static void *TaskThread(OS::CThread *thread);

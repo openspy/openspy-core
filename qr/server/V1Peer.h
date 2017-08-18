@@ -42,6 +42,8 @@ namespace QR {
 		void parse_rules(char *recvbuf, int len);
 		void parse_players(char *recvbuf, int len);
 
+		void Delete();
+
 		uint8_t m_challenge[7];
 		uint8_t m_ping_challenge[7];
 		bool m_sent_challenge;

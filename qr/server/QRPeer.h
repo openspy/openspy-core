@@ -6,6 +6,7 @@
 
 #include <OS/legacy/gsmsalg.h>
 
+#include <OS/Ref.h>
 #include "MMPush.h"
 
 #define REQUEST_KEY_LEN 4
@@ -14,7 +15,7 @@
 namespace QR {
 	class Driver;
 
-	class Peer {
+	class Peer : public OS::Ref {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		virtual ~Peer();

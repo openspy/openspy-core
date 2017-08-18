@@ -13,7 +13,6 @@ namespace QR {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		
 		Socket::Init();
-		MM::Init(this);
 		uint32_t bind_ip = INADDR_ANY;
 		
 		if ((m_sd = Socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0){

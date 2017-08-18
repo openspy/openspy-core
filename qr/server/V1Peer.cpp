@@ -34,9 +34,6 @@ namespace QR {
 		gettimeofday(&m_last_ping, NULL);
 	}
 	V1Peer::~V1Peer() {
-		if(m_server_pushed) {
-			MM::DeleteServer(&m_server_info);
-		}
 	}
 	
 	void V1Peer::think() {
@@ -46,14 +43,14 @@ namespace QR {
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > QR1_PING_TIME*2) {
-			m_delete_flag = true;
+			Delete();
 			m_timeout_flag = true;
 		}
 	}
 
 	void V1Peer::handle_packet(char *recvbuf, int len) {
 		if(len < 0) {
-			m_delete_flag = true;
+			Delete();
 			return;
 		} else if(len == 0) {
 			return;
@@ -80,7 +77,7 @@ namespace QR {
 	void V1Peer::send_error(bool die, const char *fmt, ...) {
 		std::ostringstream s;
 		if(die) 
-			m_delete_flag = true;
+			Delete();
 
 
 		s << "\\error\\" << fmt << "\\fatal\\" << m_delete_flag;
@@ -132,6 +129,7 @@ namespace QR {
 				return;
 			}
 		}
+		
 		gettimeofday(&m_last_recv, NULL);
 		switch(m_query_state) {
 			case EV1_CQS_Basic:
@@ -153,12 +151,19 @@ namespace QR {
 				break;
 			case EV1_CQS_Players:
 				parse_players(recvbuf, len);
+				MM::MMPushRequest req;
+				req.peer = this;
+				req.server = &m_server_info;
+				
+				req.peer->IncRef();
 				if(!m_pushed_server) {
 					m_pushed_server = true;
-					MM::PushServer(&m_server_info, true);	
+					req.type = MM::EMMPushRequestType_PushServer;
 				} else {
-					MM::UpdateServer(&m_server_info);
+					req.type = MM::EMMPushRequestType_UpdateServer;
 				}
+
+				MM::m_task_pool->AddRequest(req);
 				m_query_state = EV1_CQS_Complete;
 				return;
 				break;
@@ -196,8 +201,7 @@ namespace QR {
 			}
 		} else if(state_changed == 2) {
 			m_validated = false;
-			MM::DeleteServer(&m_server_info, true);
-			m_delete_flag = true;
+			Delete();
 			return;
 		}
 
@@ -252,7 +256,18 @@ namespace QR {
 		}
 		int c = sendto(m_sd,(char *)&out_buff,out_len,0,(struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
 		if(c < 0) {
-			m_delete_flag = true;
+			Delete();
 		}
+	}
+	void V1Peer::Delete() {
+		if (m_server_pushed) {
+			MM::MMPushRequest req;
+			req.peer = this;
+			req.server = &m_server_info;
+			req.peer->IncRef();
+			req.type = MM::EMMPushRequestType_DeleteServer;
+			MM::m_task_pool->AddRequest(req);
+		}
+		m_delete_flag = true;
 	}
 }
