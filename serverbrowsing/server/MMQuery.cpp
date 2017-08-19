@@ -794,6 +794,12 @@ namespace MM {
 			request.SubmitData.from.sin_port,Socket::inet_ntoa(request.SubmitData.to.sin_addr),
 			request.SubmitData.to.sin_port,request.SubmitData.base64.c_str());
 	}
+	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {
+		request.peer->OnRecievedGameInfoPair(OS::GetGameByName(request.gamenames[0].c_str()), OS::GetGameByName(request.gamenames[1].c_str()), request.extra);
+	}
+	void MMQueryTask::PerformGetGameInfoByGameName(MMQueryRequest request) {
+		request.peer->OnRecievedGameInfo(OS::GetGameByName(request.gamenames[0].c_str()), request.extra);
+	}
 	void *MMQueryTask::TaskThread(OS::CThread *thread) {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
 		for(;;) {
@@ -817,9 +823,14 @@ namespace MM {
 					case EMMQueryRequestType_SubmitData:
 						task->PerformSubmitData(task_params);
 						break;
+					case EMMQueryRequestType_GetGameInfoByGameName:
+						task->PerformGetGameInfoByGameName(task_params);
+						break;
+					case EMMQueryRequestType_GetGameInfoPairByGameName:
+						task->PerformGetGameInfoPairByGameName(task_params);
+						break;
 				}
 				task_params.peer->DecRef();
-				
 			}
 			task->mp_mutex->unlock();
 			OS::Sleep(TASK_SLEEP_TIME);

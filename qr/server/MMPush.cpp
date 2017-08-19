@@ -25,6 +25,7 @@ namespace MM {
 		uint8_t *data_out;
 		int data_len;
 		Redis::Value v = reply.values.front();
+		QR::Server *server = (QR::Server *)privdata;
 
 		char msg_type[16], server_key[64];
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
@@ -42,7 +43,7 @@ namespace MM {
 						struct sockaddr_in address;
 						address.sin_port = Socket::htons(atoi(to_port));
 						address.sin_addr.s_addr = Socket::inet_addr((const char *)&to_ip);
-						QR::Peer *peer = NULL;//mp_driver->find_client(&address);
+						QR::Peer *peer = server->find_client(&address);
 						if (!peer) {
 							goto end_exit;
 							
@@ -117,6 +118,9 @@ namespace MM {
 					case EMMPushRequestType_DeleteServer:
 						task->PerformDeleteServer(task_params);
 						break;
+					case EMMPushRequestType_GetGameInfoByGameName:
+						task->PerformGetGameInfo(task_params);
+						break;
 				}
 				task_params.peer->DecRef();
 
@@ -135,6 +139,10 @@ namespace MM {
 	}
 	void MMPushTask::PerformDeleteServer(MMPushRequest request) {
 		DeleteServer(request.server, true);
+	}
+	void MMPushTask::PerformGetGameInfo(MMPushRequest request) {
+		OS::GameData game_info = OS::GetGameByName(request.gamename.c_str());
+		request.peer->OnGetGameInfo(game_info, request.extra);
 	}
 	void MMPushTask::PushServer(ServerInfo *server, bool publish, int pk_id) {
 		int id = pk_id;
@@ -306,7 +314,7 @@ namespace MM {
 		t.tv_sec = 60;
 
 		mp_redis_async_retrival_connection = Redis::Connect(OS_REDIS_ADDR, t);
-		mp_async_thread = OS::CreateThread(setup_redis_async, NULL, true);
+		mp_async_thread = OS::CreateThread(setup_redis_async, server, true);
 
 		m_task_pool = new OS::TaskPool<MMPushTask, MMPushRequest>(NUM_MM_PUSH_THREADS);
 		server->SetTaskPool(m_task_pool);

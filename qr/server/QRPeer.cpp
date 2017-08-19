@@ -14,6 +14,10 @@ namespace QR {
 		m_timeout_flag = false;
 		m_sd = sd;
 		m_address_info = *address_info;
+		m_server_info.id = -1;
+		m_server_info.m_game.gameid = 0;
+		m_server_info.m_game.gamename[0] = 0;
+		m_sent_game_query = false;
 		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());
 	}
 	Peer::~Peer() {

@@ -10,7 +10,7 @@
 #include "MMPush.h"
 
 #define REQUEST_KEY_LEN 4
-#define QR2_PING_TIME 300
+#define QR2_PING_TIME 120
 namespace QR {
 	class Driver;
 
@@ -25,10 +25,12 @@ namespace QR {
 
 		void send_error(bool die, const char *fmt, ...);
 		void SendClientMessage(uint8_t *data, int data_len);
+		void OnGetGameInfo(OS::GameData game_info, void *extra);
 	private:
 		void handle_heartbeat(char *buff, int len);
 		void handle_challenge(char *buff, int len);
 		void handle_keepalive(char *buff, int len);
+		void handle_available(char *buff, int len);
 
 		void SendPacket(const uint8_t *buff, int len);
 		void send_ping();

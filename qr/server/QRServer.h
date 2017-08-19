@@ -10,6 +10,7 @@ namespace MM {
 	typedef struct _MMPushRequest MMPushRequest;
 }
 namespace QR {
+	class Peer;
 	class Server : public INetServer {
 	public:
 		Server();
@@ -18,6 +19,7 @@ namespace QR {
 		void tick();
 		void shutdown();
 		void SetTaskPool(OS::TaskPool<MM::MMPushTask, MM::MMPushRequest> *pool);
+		Peer *find_client(struct sockaddr_in *address);
 	private:
 		
 	};

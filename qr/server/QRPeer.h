@@ -31,6 +31,9 @@ namespace QR {
 
 		virtual void send_error(bool die, const char *fmt, ...) = 0;
 		virtual void SendClientMessage(uint8_t *data, int data_len) = 0;
+
+
+		virtual void OnGetGameInfo(OS::GameData game_info, void *extra) = 0;
 	protected:
 
 
@@ -49,6 +52,7 @@ namespace QR {
 		int m_sd;
 
 		bool m_server_pushed;
+		bool m_sent_game_query;
 
 		MM::ServerInfo m_server_info;
 	};

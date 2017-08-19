@@ -47,6 +47,8 @@ namespace SB {
 		virtual void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) = 0;
 		virtual void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) = 0;
 		virtual void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) = 0;
+		virtual void OnRecievedGameInfo(const OS::GameData game_data, void *extra) = 0;
+		virtual void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) = 0;
 	protected:
 		void cacheServer(MM::Server *server, bool full_keys = false);
 		void DeleteServerFromCacheByIP(OS::Address address);

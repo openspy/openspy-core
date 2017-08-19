@@ -48,10 +48,22 @@ namespace QR {
 			if (!peer->ShouldDelete()) {
 				peer->think();
 			}
-			else {
-				//delete if marked for deletiontel
+			else if (std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
+				//marked for delection, dec reference and delete when zero
 				it = m_connections.erase(it);
-				delete peer;				
+				peer->DecRef();
+				m_peers_to_delete.push_back(peer);
+				continue;
+			}
+			it++;
+		}
+
+		it = m_peers_to_delete.begin();
+		while (it != m_peers_to_delete.end()) {
+			QR::Peer *p = *it;
+			if (p->GetRefCount() == 0) {
+				delete p;
+				it = m_peers_to_delete.erase(it);
 				continue;
 			}
 			it++;

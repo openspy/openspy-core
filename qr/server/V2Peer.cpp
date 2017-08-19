@@ -33,15 +33,13 @@
 #define QR_MAGIC_1 0xFE
 #define QR_MAGIC_2 0xFD
 
-
 namespace QR {
 	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver,address_info,sd) {
 		m_recv_instance_key = false;
 
 		m_sent_challenge = false;
 		m_server_pushed = false;
-		m_server_info.id = -1;
-		m_server_info.m_game.gameid = 0;
+		memset(&m_instance_key, 0, sizeof(m_instance_key));
 		memset(&m_challenge, 0, sizeof(m_challenge));
 
 		m_server_info.m_address.port = Socket::htons(m_address_info.sin_port);
@@ -86,6 +84,9 @@ namespace QR {
 
 		printf("QR got type: %02x || %d\n",type, len);
 		switch(type) {
+			case PACKET_AVAILABLE:
+				handle_available((char *)buff, buflen);
+				break;
 			case PACKET_HEARTBEAT:
 				printf("Got qr heartbeat\n");
 				handle_heartbeat((char *)buff, buflen);
@@ -101,16 +102,12 @@ namespace QR {
 				printf("Got client msg ack %d\n",buflen);
 			break;
 		}
-
-		if(!m_sent_challenge) {
-			send_challenge();
-		}
 	}
 	void V2Peer::handle_challenge(char *buff, int len) {
 		char challenge_resp[90] = { 0 };
 		int outlen = 0;
 		uint8_t *p = (uint8_t *)challenge_resp;
-		if(m_server_info.m_game.gamename[0] == 0) {
+		if(m_server_info.m_game.gameid == 0) {
 			send_error(true, "Unknown game");
 			return;
 		}
@@ -123,11 +120,10 @@ namespace QR {
 				MM::MMPushRequest req;
 				req.peer = this;
 				req.server = &m_server_info;
-
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_PushServer;
-				MM::m_task_pool->AddRequest(req);
 				m_server_pushed = true;
+				MM::m_task_pool->AddRequest(req);
 			}
 			m_sent_challenge = true;
 		}
@@ -198,7 +194,6 @@ namespace QR {
 					else {
 						team_keys[name][player] = std::string((const char *)x);
 					}
-
 				} else {
 					if(player_keys[name].size() <= player) {
 						player_keys[name].push_back(std::string((const char *)x));
@@ -220,27 +215,89 @@ namespace QR {
 		m_server_info.m_team_keys 	= team_keys;
 
 		//register gamename
-		m_server_info.m_game = OS::GetGameByName(m_server_info.m_keys["gamename"].c_str());
-
-		if(m_server_info.m_game.gameid == 0) {
-			send_error(true, "Game not found");
-			return;
+		MM::MMPushRequest req;
+		req.peer = this;
+		if (m_server_info.m_game.gameid != 0) {
+			if (m_server_pushed) {
+				if (m_server_info.m_keys.find("statechanged") != m_server_info.m_keys.end() && atoi(m_server_info.m_keys["statechanged"].c_str()) == 2) {
+					Delete();
+					return;
+				}
+				req.server = &m_server_info;
+				req.peer->IncRef();
+				req.type = MM::EMMPushRequestType_UpdateServer;
+				MM::m_task_pool->AddRequest(req);
+			}
+			else {
+				OnGetGameInfo(m_server_info.m_game, (void *)1);
+			}
 		}
-
-		if(atoi(server_keys["statechanged"].c_str()) == 2) {
-			Delete();
-			return;
-		}
-
-		//TODO: check if changed and only push changes
-		if(m_server_pushed) {
-			MM::MMPushRequest req;
-			req.peer = this;
-			req.server = &m_server_info;
-
+		else if(!m_sent_game_query){
+			m_sent_game_query = true;
 			req.peer->IncRef();
-			req.type = MM::EMMPushRequestType_UpdateServer;
+			req.extra = (void *)1;
+			req.gamename = m_server_info.m_keys["gamename"];
+			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
 			MM::m_task_pool->AddRequest(req);
+		}
+	}
+	void V2Peer::handle_available(char *buff, int len) {
+		MM::MMPushRequest req;
+		req.peer = this;
+		req.peer->IncRef();
+		req.extra = (void *)2;
+
+		uint8_t *p= (uint8_t *)(buff + sizeof(m_instance_key));
+		int buflen = len - sizeof(m_instance_key);
+		char *str = (char *)BufferReadNTS((uint8_t **)&p, &buflen);
+
+		if (str) {
+			req.gamename = str;
+			free((void *)str);
+		}
+
+		req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
+		MM::m_task_pool->AddRequest(req);
+	}
+	void V2Peer::OnGetGameInfo(OS::GameData game_info, void *extra) {
+		if (extra == (void *)1) {
+			m_server_info.m_game = game_info;
+			if (m_server_info.m_game.gameid == 0) {
+				send_error(true, "Game not found");
+				return;
+			}
+
+			if (m_server_info.m_keys.find("statechanged") != m_server_info.m_keys.end() && atoi(m_server_info.m_keys["statechanged"].c_str()) == 2) {
+				Delete();
+				return;
+			}
+
+			if (!m_sent_challenge) {
+				send_challenge();
+			}
+
+			//TODO: check if changed and only push changes
+			if (m_server_pushed) {
+				MM::MMPushRequest req;
+				req.peer = this;
+				req.server = &m_server_info;
+				req.peer->IncRef();
+				req.type = MM::EMMPushRequestType_UpdateServer;
+				MM::m_task_pool->AddRequest(req);
+			}
+		}
+		else if(extra == (void *)2) {
+			char sendbuf[90] = { 0 };
+			int outlen = 0;
+
+			if (game_info.gameid == 0) {
+				game_info.disabled_services = OS::QR2_GAME_UNAVAILABLE;
+			}
+			uint8_t *p = (uint8_t *)&sendbuf;
+			BufferWriteByte((uint8_t**)&p, &outlen, PACKET_AVAILABLE);
+			BufferWriteIntRE((uint8_t**)&p, &outlen, game_info.disabled_services);
+			SendPacket((uint8_t *)&sendbuf, outlen);
+			Delete();
 		}
 	}
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
@@ -279,8 +336,9 @@ namespace QR {
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > QR2_PING_TIME) {
-			Delete();
 			m_timeout_flag = true;
+			send_error(true, "Timeout");
+			
 		}
 	}
 

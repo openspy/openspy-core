@@ -33,11 +33,13 @@ namespace MM {
 		EMMPushRequestType_PushServer,
 		EMMPushRequestType_UpdateServer,
 		EMMPushRequestType_DeleteServer,
+		EMMPushRequestType_GetGameInfoByGameName,
 	};
 	typedef struct _MMPushRequest {
 		EMMPushRequestType type;
 		QR::Peer *peer;
 		ServerInfo *server;
+		std::string gamename;
 		void *extra;
 	} MMPushRequest;
 	class MMPushTask : public OS::Task<MMPushRequest> {
@@ -54,6 +56,7 @@ namespace MM {
 			void PerformPushServer(MMPushRequest request);
 			void PerformUpdateServer(MMPushRequest request);
 			void PerformDeleteServer(MMPushRequest request);
+			void PerformGetGameInfo(MMPushRequest request);
 
 			void PushServer(ServerInfo *server, bool publish, int pk_id = -1);
 			void UpdateServer(ServerInfo *server);

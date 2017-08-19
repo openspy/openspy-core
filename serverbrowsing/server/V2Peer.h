@@ -58,6 +58,8 @@ namespace SB {
 				void informDeleteServers(MM::Server *server);
 				void informNewServers(MM::Server *server);
 				void informUpdateServers(MM::Server *server);
+				void OnRecievedGameInfo(const OS::GameData game_data, void *extra);
+				void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra);
 			private:
 
 
@@ -97,6 +99,7 @@ namespace SB {
 				bool m_sent_push_keys;
 
 				bool m_in_message;
+				bool m_got_game_pair;
 		};
 
 }

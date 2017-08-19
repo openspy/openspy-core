@@ -46,6 +46,7 @@ namespace QR {
 		int m_sd;
 
 		std::vector<Peer *> m_connections;
+		std::vector<Peer *> m_peers_to_delete;
 		
 		struct sockaddr_in m_local_addr;
 

@@ -66,8 +66,15 @@ namespace MM {
 		bool push_updates;
 		bool no_server_list;
 		
+
+		//used after lookup
 		OS::GameData m_for_game;
 		OS::GameData m_from_game;
+
+
+		//used before lookup
+		std::string m_for_gamename;
+		std::string m_from_gamename;
 
 		bool all_keys;
 		
@@ -80,6 +87,8 @@ namespace MM {
 		EMMQueryRequestType_GetServerByKey,
 		EMMQueryRequestType_GetServerByIP,
 		EMMQueryRequestType_SubmitData,
+		EMMQueryRequestType_GetGameInfoByGameName,
+		EMMQueryRequestType_GetGameInfoPairByGameName, //get 2 game names in same thread
 	};
 	typedef struct _MMQueryRequest {
 		EMMQueryRequestType type;
@@ -96,6 +105,8 @@ namespace MM {
 		//} sQueryData;
 		SB::Driver *driver;
 		SB::Peer *peer;
+
+		std::string gamenames[2];
 		void *extra;
 	} MMQueryRequest;
 
@@ -140,7 +151,9 @@ namespace MM {
 			void PerformGroupsQuery(MMQueryRequest request);
 			void PerformSubmitData(MMQueryRequest request);
 			void PerformGetServerByKey(MMQueryRequest request);
-			void PerformGetServerByIP(MMQueryRequest request);			
+			void PerformGetServerByIP(MMQueryRequest request);
+			void PerformGetGameInfoPairByGameName(MMQueryRequest request);
+			void PerformGetGameInfoByGameName(MMQueryRequest request);
 
 			std::vector<SB::Driver *> m_drivers;
 			Redis::Connection *mp_redis_connection;

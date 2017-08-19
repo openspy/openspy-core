@@ -25,6 +25,7 @@ namespace SB {
 		m_last_list_req.m_from_game.secretkey[0] = 0;
 		m_last_list_req.m_from_game.gamename[0] = 0;
 		m_in_message = false;
+		m_got_game_pair = false;
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
 
 		printf("V2 create - %d\n", this->GetRefCount());
@@ -100,20 +101,14 @@ namespace SB {
 		for_gamename = (const char *)BufferReadNTS(buffer, &buf_remain);
 		from_gamename = (const char *)BufferReadNTS(buffer, &buf_remain);
 
-		if (from_gamename) {
-			req.m_from_game = OS::GetGameByName(from_gamename);
-			free((void *)from_gamename);
-		} else {
+		if (!from_gamename) {
 			send_error(true, "No from gamename");
 			if(for_gamename)
 				free((void *)for_gamename);
 			return req;
 		}
 
-		if (for_gamename) {
-			req.m_for_game = OS::GetGameByName(for_gamename);
-			free((void *)for_gamename);
-		} else {
+		if (!for_gamename) {
 			send_error(true, "No for gamename");
 
 			if (from_gamename)
@@ -121,18 +116,6 @@ namespace SB {
 
 			return req;
 		}
-
-		printf("query gamemode %s\n",req.m_for_game.gamename);
-
-		if(req.m_for_game.gamename[0] == 0) {
-			send_error(true, "Invalid query game");
-			return req;
-		}
-		if (req.m_from_game.gamename[0] == 0) {
-			send_error(true, "Invalid source game");
-			return req;
-		}
-
 
 		BufferReadData(buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
 
@@ -179,6 +162,10 @@ namespace SB {
 		}
 
 
+		req.m_for_gamename = for_gamename;
+		req.m_from_gamename = from_gamename;
+		free((void *)for_gamename);
+		free((void *)from_gamename);
 		return req;
 
 	}
@@ -391,15 +378,54 @@ namespace SB {
 
 		req.req = this->ParseListRequest(&buffer, remain);
 
+
+		OS::GameData old_gamedata[2];
+		req.req.m_from_game = m_last_list_req.m_from_game;
+		req.req.m_for_game = m_last_list_req.m_for_game;
 		m_last_list_req = req.req;
 
-		m_game = req.req.m_from_game;
 
-		if (m_game.secretkey[0] == 0)
-			return buffer;
+		if (!m_got_game_pair || std::string(m_last_list_req.m_for_game.gamename).compare(req.req.m_for_gamename) != 0) {
+			req.type = MM::EMMQueryRequestType_GetGameInfoPairByGameName;
+			req.gamenames[0] = req.req.m_from_gamename;
+			req.gamenames[1] = req.req.m_for_gamename;
+			req.peer = this;
+			req.peer->IncRef();
+			MM::m_task_pool->AddRequest(req);
+		}
+		else {
+			this->OnRecievedGameInfoPair(m_game, m_last_list_req.m_for_game, NULL);
+		}
 
-		 if(!req.req.no_server_list) {
-			if (req.req.send_groups) {
+		return buffer;
+	}
+	void V2Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {
+
+	}
+	void V2Peer::OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) {
+		
+		MM::MMQueryRequest req;
+		
+		m_last_list_req.m_from_game = game_data_first;
+		m_game = m_last_list_req.m_from_game;
+
+		m_last_list_req.m_for_game = game_data_second;
+		req.req = m_last_list_req;
+
+		if (m_game.gameid == 0) {
+			send_error(true, "Invalid source gamename");
+			return;
+		}
+
+		if (req.req.m_for_game.gameid == 0) {
+			send_error(true, "Invalid target gamename");
+			return;
+		}
+
+		m_got_game_pair = true;
+
+		if (!m_last_list_req.no_server_list) {
+			if (m_last_list_req.send_groups) {
 				req.type = MM::EMMQueryRequestType_GetGroups;
 			}
 			else {
@@ -413,15 +439,13 @@ namespace SB {
 
 			m_in_message = true;
 			MM::m_task_pool->AddRequest(req);
-		} else {
+		}
+		else {
 			//send empty server list
 			MM::ServerListQuery servers;
 			servers.requested_fields = req.req.field_list;
 			SendListQueryResp(servers, req.req);
 		}
-
-
-		return buffer;
 	}
 	uint8_t *V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
 		uint8_t *p = (uint8_t *)buffer;

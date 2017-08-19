@@ -33,6 +33,7 @@ namespace QR {
 
 		void send_error(bool die, const char *fmt, ...);
 		void SendClientMessage(uint8_t *data, int data_len);
+		void OnGetGameInfo(OS::GameData game_info, void *extra);
 	private:
 		void SendPacket(const uint8_t *buff, int len, bool attach_final);
 		void send_ping();
