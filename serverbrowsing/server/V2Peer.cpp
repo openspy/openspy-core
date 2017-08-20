@@ -27,8 +27,6 @@ namespace SB {
 		m_in_message = false;
 		m_got_game_pair = false;
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
-
-		printf("V2 create - %d\n", this->GetRefCount());
 	}
 	V2Peer::~V2Peer() {
 		printf("V2 delete %p - %d\n", this, this->GetRefCount());
@@ -45,10 +43,13 @@ namespace SB {
 		uint8_t request_type = 0;
 
 
+		int idx = 0;
 		while((buffer - (uint8_t*)data) < len) {
 			uint32_t buff_len = Socket::htons(BufferReadShort(&buffer, &pos)); //length
 
 			buff_len -= sizeof(uint16_t);
+
+			printf("** Buffer loop idx: %d\n", ++idx);
 
 
 			if(pos > len || ((char *)buffer + buff_len) > end) {
@@ -57,14 +58,19 @@ namespace SB {
 
 			request_type = BufferReadByte(&buffer, &pos);
 
+			printf("Request type: %d\n", request_type);
+
 			gettimeofday(&m_last_recv, NULL);
 
-			if (m_game.secretkey[0] == 0 && request_type != SERVER_LIST_REQUEST) //only list req can define the game, anything else will result in a crash
+			if (m_game.secretkey[0] == 0 && request_type != SERVER_LIST_REQUEST && request_type != SEND_MESSAGE_REQUEST) { //only list req can define the game, anything else will result in a crash
+				printf("No game key non req\n");
 				return;
+			}
 			
  			//TODO: get expected lengths for each packet type and test, prior to execution
 			switch (request_type) {
 				case SERVER_LIST_REQUEST:
+					printf("GOt server list req\n");
 					buffer = ProcessListRequset(buffer, pos);
 					break;
 				case KEEPALIVE_MESSAGE:
@@ -125,7 +131,7 @@ namespace SB {
 		BufferReadData(buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
 
 		filter = (const char *)BufferReadNTS(buffer, &buf_remain);
-		printf("Filter is: %s\n", filter);
+		
 		if(filter) {
 			req.filter = filter;
 			free((void *)filter);
@@ -519,8 +525,11 @@ namespace SB {
 		int len = 0;
 		if (waiting_packet || m_next_packet_send_msg) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
-			if (len <= 0) {
+			if (len < 0) {
 				m_delete_flag = true;
+				return;
+			}
+			else if (len == 0) {
 				return;
 			}
 			if(m_next_packet_send_msg) {
@@ -802,7 +811,6 @@ namespace SB {
 			m_delete_flag = true;
 
 		va_end(args);
-		printf("SBV2 die: %s\n", fmt);
 	}
 
 

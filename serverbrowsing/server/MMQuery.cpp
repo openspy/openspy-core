@@ -790,7 +790,7 @@ namespace MM {
 	}
 	void MMQueryTask::PerformSubmitData(MMQueryRequest request) {
 		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\send_msg\\%s\\%s\\%d\\%s\\%d\\%s",
-			sb_mm_channel,request.SubmitData.game.gamename,Socket::inet_ntoa(request.SubmitData.from.sin_addr),
+			sb_mm_channel,/*request.SubmitData.game.gamename*/"REMOVED",Socket::inet_ntoa(request.SubmitData.from.sin_addr),
 			request.SubmitData.from.sin_port,Socket::inet_ntoa(request.SubmitData.to.sin_addr),
 			request.SubmitData.to.sin_port,request.SubmitData.base64.c_str());
 	}
