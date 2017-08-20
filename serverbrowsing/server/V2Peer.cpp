@@ -431,7 +431,7 @@ namespace SB {
 			else {
 				req.type = MM::EMMQueryRequestType_GetServers;
 			}
-			req.req.all_keys = false;
+			req.req.all_keys = true; //required for localip0, etc, TODO: find way that doesn't require retrieving full keys
 			req.req.send_wan_ip = true;
 			req.driver = mp_driver;
 			req.peer = this;
@@ -498,6 +498,10 @@ namespace SB {
 		int len = 0;
 		if (waiting_packet) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
+			if (len == 0) {
+				m_delete_flag = true;
+				return;
+			}
 			if(m_next_packet_send_msg) {
 				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);
 
@@ -506,6 +510,7 @@ namespace SB {
 				req.SubmitData.from = m_address_info;
 				req.SubmitData.to = m_send_msg_to;
 				req.SubmitData.base64 = base64;
+				req.SubmitData.game = m_game;
 				req.peer = this;
 				req.peer->IncRef();
 				MM::m_task_pool->AddRequest(req);
@@ -557,8 +562,10 @@ namespace SB {
 			} else {
 				flags |= CONNECT_NEGOTIATE_FLAG;
 			}
-		} else {
+		}
+		else {
 			flags |= CONNECT_NEGOTIATE_FLAG;
+		}
 		
 		if(server->kvFields.find("localip0") != server->kvFields.end()) { //TODO: scan localips??
 			int addr = inet_addr(server->kvFields["localip0"].c_str());
