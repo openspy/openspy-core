@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include  <algorithm>
 
 #include "QRServer.h"
 #include <OS/legacy/buffwriter.h>

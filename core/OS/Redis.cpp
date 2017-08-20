@@ -63,7 +63,7 @@ namespace Redis {
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(port);
-		addr.sin_addr.S_un.S_addr = ip;
+		addr.sin_addr.s_addr = ip;
 		int r = connect(ret->sd, (sockaddr *)&addr, sizeof(addr));
 		if (r < 0) {
 			//error
@@ -235,7 +235,7 @@ namespace Redis {
 	void Disconnect(Connection *connection) {
 
 		free(connection->read_buff);
-		closesocket(connection->sd);
+		close(connection->sd);
 	}
 	bool CheckError(Response r) {
 		return r.values.size() == 0 || r.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR;
