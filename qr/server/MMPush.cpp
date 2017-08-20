@@ -172,8 +172,8 @@ namespace MM {
 
 
 
-		Redis::Command(mp_redis_connection, 0, "SET IPMAP_%s_%s-%d %s", server->m_game.gamename, ipinput, server->m_address.port, server_key.c_str());
-		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s_%s-%d 300", server->m_game.gamename, ipinput, server->m_address.port);
+		Redis::Command(mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput, server->m_address.port, server_key.c_str());
+		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d 300", ipinput, server->m_address.port);
 
 
 		Redis::Command(mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server->m_game.gameid);

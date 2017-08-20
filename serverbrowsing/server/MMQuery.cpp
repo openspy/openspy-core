@@ -738,7 +738,7 @@ namespace MM {
 
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 
-		s << "GET IPMAP_" << game.gamename << "_" << ipinput << "-" << address.port;
+		s << "GET IPMAP_" << ipinput << "-" << address.port;
 		std::string cmd = s.str();
 		reply = Redis::Command(mp_redis_connection, 0, cmd.c_str());
 		if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)

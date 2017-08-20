@@ -27,6 +27,7 @@ namespace SB {
 		m_in_message = false;
 		m_got_game_pair = false;
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
+		printf("New V2Peer\n");
 	}
 	V2Peer::~V2Peer() {
 		printf("V2 delete %p - %d\n", this, this->GetRefCount());
@@ -62,10 +63,10 @@ namespace SB {
 
 			gettimeofday(&m_last_recv, NULL);
 
-			if (m_game.secretkey[0] == 0 && request_type != SERVER_LIST_REQUEST && request_type != SEND_MESSAGE_REQUEST) { //only list req can define the game, anything else will result in a crash
+			/*if (m_game.secretkey[0] == 0 && request_type != SERVER_LIST_REQUEST && request_type != SEND_MESSAGE_REQUEST) { //only list req can define the game, anything else will result in a crash
 				printf("No game key non req\n");
 				return;
-			}
+			}*/
 			
  			//TODO: get expected lengths for each packet type and test, prior to execution
 			switch (request_type) {
