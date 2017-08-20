@@ -12,11 +12,15 @@ namespace OS {
 			static void SafeIncr(uint32_t *val) {
 				#ifdef _WIN32
 					InterlockedIncrement(val);
+				#else
+					__sync_fetch_and_add(val, 1);
 				#endif
 			}
 			static void SafeDecr(uint32_t *val) {
 				#ifdef _WIN32
 					InterlockedDecrement(val);
+				#else
+					__sync_fetch_and_sub(val, 1);
 				#endif
 			}
 	};
