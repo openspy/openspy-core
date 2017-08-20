@@ -27,15 +27,12 @@ namespace SB {
 		m_in_message = false;
 		m_got_game_pair = false;
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
-		printf("New V2Peer\n");
 	}
 	V2Peer::~V2Peer() {
-		printf("V2 delete %p - %d\n", this, this->GetRefCount());
 	}
 	void V2Peer::handle_packet(char *data, int len) {
 		if(len == 0)
 			return;
-
 
 		uint8_t *buffer = (uint8_t *)data;
 		void *end = (void *)((char *)data + len);
@@ -43,6 +40,7 @@ namespace SB {
 
 		uint8_t request_type = 0;
 
+		bool break_flag = false;
 
 		int idx = 0;
 		while((buffer - (uint8_t*)data) < len) {
@@ -50,16 +48,17 @@ namespace SB {
 
 			buff_len -= sizeof(uint16_t);
 
-			printf("** Buffer loop idx: %d\n", ++idx);
-
-
-			if(pos > len || ((char *)buffer + buff_len) > end) {
-				break;
+			bool improper_length = false;
+			if(((char *)buffer + buff_len) > end) {
+				improper_length = true;
 			}
 
 			request_type = BufferReadByte(&buffer, &pos);
 
-			printf("Request type: %d\n", request_type);
+			if(improper_length && request_type != SEND_MESSAGE_REQUEST) {
+				m_delete_flag = true;
+				break;
+			}
 
 			gettimeofday(&m_last_recv, NULL);
 
@@ -67,32 +66,40 @@ namespace SB {
 				printf("No game key non req\n");
 				return;
 			}*/
-			
- 			//TODO: get expected lengths for each packet type and test, prior to execution
+
+			//TODO: get expected lengths for each packet type and test, prior to execution
 			switch (request_type) {
 				case SERVER_LIST_REQUEST:
-					printf("GOt server list req\n");
+					printf("***** Got server list req\n");
 					buffer = ProcessListRequset(buffer, pos);
 					break;
 				case KEEPALIVE_MESSAGE:
+					buffer++; len--;
 					break;
 				case SEND_MESSAGE_REQUEST:
 					printf("**** GOT SEND MSG REQ - %d\n", pos);
 					buffer = ProcessSendMessage(buffer, pos);
+					break_flag = true;
 				break;
 				case MAPLOOP_REQUEST:
+					break_flag = true;
 				break;
 				case PLAYERSEARCH_REQUEST:
+					break_flag = true;
 				break;
 				case SERVER_INFO_REQUEST:
 					printf("**** GOT SERVER INFO REQ\n");
 					buffer = ProcessInfoRequest(buffer, pos);
 				break;
 				default:
-					printf("Got unknown data\n");
+					printf("***** unknown req %d\n", request_type);
+					break_flag = true;
 					break;
 			}
 			pos = buffer - (uint8_t*)data;
+			if(pos >= len || break_flag) {
+				break;
+			}
 		}
 
 	}
@@ -526,11 +533,8 @@ namespace SB {
 		int len = 0;
 		if (waiting_packet || m_next_packet_send_msg) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
-			if (len < 0) {
+			if (len <= 0) {
 				m_delete_flag = true;
-				return;
-			}
-			else if (len == 0) {
 				return;
 			}
 			if(m_next_packet_send_msg) {

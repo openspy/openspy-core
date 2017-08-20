@@ -43,6 +43,7 @@ namespace MM {
 
 		mp_redis_async_retrival_connection = Redis::Connect(OS_REDIS_ADDR, t);
 		mp_async_thread = OS::CreateThread(setup_redis_async, NULL, true);
+		OS::Sleep(200);
 
 		m_task_pool = new OS::TaskPool<MMQueryTask, MMQueryRequest>(NUM_MM_QUERY_THREADS);
 		server->SetTaskPool(m_task_pool);
