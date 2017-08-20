@@ -539,6 +539,8 @@ namespace SB {
 		}
 		int len = 0;
 		uint8_t flags = 0;
+		int private_ip = 0;
+		int private_port = 0;
 		if(full_keys) {
 			flags |= HAS_FULL_RULES_FLAG;
 		} else {
@@ -548,6 +550,32 @@ namespace SB {
 		if (server->wan_address.port != server->game.queryport) {
 			flags |= NONSTANDARD_PORT_FLAG;
 		}
+		if(server->kvFields.find("natneg") != server->kvFields.end()) {
+			int natneg_val = atoi(server->kvFields["natneg"].c_str());
+			if(natneg_val == 0) {
+				flags |= UNSOLICITED_UDP_FLAG;
+			} else {
+				flags |= CONNECT_NEGOTIATE_FLAG;
+			}
+		} else {
+			flags |= CONNECT_NEGOTIATE_FLAG;
+		
+		if(server->kvFields.find("localip0") != server->kvFields.end()) { //TODO: scan localips??
+			int addr = inet_addr(server->kvFields["localip0"].c_str());
+			flags |= PRIVATE_IP_FLAG;
+			private_ip = addr;
+		}
+		
+		if(server->kvFields.find("localport") != server->kvFields.end()) {
+			int localport = atoi(server->kvFields["localport"].c_str());
+			if(server->game.queryport != localport) {
+				flags |= NONSTANDARD_PORT_FLAG;
+				private_port = localport;
+			}
+		}
+		
+		
+		
 		if(push) {
 			BufferWriteByte(&p, &len, PUSH_SERVER_MESSAGE);
 		}
@@ -560,10 +588,10 @@ namespace SB {
 		}
 
 		if (flags & PRIVATE_IP_FLAG) {
-			BufferWriteInt(&p, &len, Socket::htonl(server->lan_address.ip));
+			BufferWriteInt(&p, &len, /*Socket::htonl*/(private_ip));
 		}
 		if (flags & NONSTANDARD_PRIVATE_PORT_FLAG) {
-			BufferWriteShort(&p, &len, Socket::htons(server->lan_address.port));
+			BufferWriteShort(&p, &len, Socket::htons(private_port));
 		}
 
 		if(flags & HAS_KEYS_FLAG) {
