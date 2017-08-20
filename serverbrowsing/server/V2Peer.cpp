@@ -15,7 +15,6 @@
 #define SERVCHAL_LEN 25
 namespace SB {
 	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd) {
-		m_next_packet_send_msg = false;
 		m_sent_crypt_header = false;
 		m_sent_push_keys = false;
 		m_game.secretkey[0] = 0;
@@ -70,6 +69,7 @@ namespace SB {
 				case KEEPALIVE_MESSAGE:
 					break;
 				case SEND_MESSAGE_REQUEST:
+					printf("**** GOT SEND MSG REQ - %d\n", pos);
 					buffer = ProcessSendMessage(buffer, pos);
 				break;
 				case MAPLOOP_REQUEST:
@@ -77,8 +77,12 @@ namespace SB {
 				case PLAYERSEARCH_REQUEST:
 				break;
 				case SERVER_INFO_REQUEST:
+					printf("**** GOT SERVER INFO REQ\n");
 					buffer = ProcessInfoRequest(buffer, pos);
 				break;
+				default:
+					printf("Got unknown data\n");
+					break;
 			}
 			pos = buffer - (uint8_t*)data;
 		}
@@ -173,10 +177,21 @@ namespace SB {
 		uint8_t *p = buffer;
 		int len = remain;
 
-
 		m_send_msg_to.sin_addr.s_addr = (BufferReadInt(&p, &len));
 		m_send_msg_to.sin_port = Socket::htons(BufferReadShort(&p, &len));
-		m_next_packet_send_msg = true;
+
+		const char *base64 = OS::BinToBase64Str((uint8_t *)p, len);
+
+		MM::MMQueryRequest req;
+		req.type = MM::EMMQueryRequestType_SubmitData;
+		req.SubmitData.from = m_address_info;
+		req.SubmitData.to = m_send_msg_to;
+		req.SubmitData.base64 = base64;
+		req.SubmitData.game = m_game;
+		req.peer = this;
+		req.peer->IncRef();
+		MM::m_task_pool->AddRequest(req);
+		free((void *)base64);
 
 		return p;
 
@@ -437,7 +452,7 @@ namespace SB {
 			req.peer = this;
 			req.peer->IncRef();
 
-			m_in_message = true;
+			//m_in_message = true;
 			MM::m_task_pool->AddRequest(req);
 		}
 		else {
@@ -498,27 +513,11 @@ namespace SB {
 		int len = 0;
 		if (waiting_packet) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
-			if (len == 0) {
+			if (len <= 0) {
 				m_delete_flag = true;
 				return;
 			}
-			if(m_next_packet_send_msg) {
-				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);
-
-				MM::MMQueryRequest req;
-				req.type = MM::EMMQueryRequestType_SubmitData;
-				req.SubmitData.from = m_address_info;
-				req.SubmitData.to = m_send_msg_to;
-				req.SubmitData.base64 = base64;
-				req.SubmitData.game = m_game;
-				req.peer = this;
-				req.peer->IncRef();
-				MM::m_task_pool->AddRequest(req);
-				free((void *)base64);
-				m_next_packet_send_msg = false;
-			} else {
-				this->handle_packet(buf, len);
-			}
+			this->handle_packet(buf, len);
 		}
 
 		send_ping();
