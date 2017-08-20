@@ -77,6 +77,14 @@ namespace OS {
 	#define OS_MAX_GAMENAME 32
 	#define OS_MAX_DESCRIPTION 64
 	#define OS_MAX_SECRETKEY 7
+	
+	typedef enum
+	{
+		QR2_GAME_AVAILABLE,
+		QR2_GAME_UNAVAILABLE,
+		QR2_GAME_TEMPORARILY_UNAVAILABLE,
+	} QRV2AvailableStatus;
+	
 	typedef struct {
 		int gameid;
 		int queryport;

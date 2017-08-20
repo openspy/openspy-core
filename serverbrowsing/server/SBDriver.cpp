@@ -1,6 +1,7 @@
 #include "SBDriver.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include  <algorithm>
 
 #include "SBServer.h"
 #include <OS/legacy/buffwriter.h>

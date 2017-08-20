@@ -1,6 +1,7 @@
 #ifndef _OS_TASKPOOL_H
 #define _OS_TASKPOOL_H
 #include "Task.h"
+#include <limits.h>
 namespace OS {
 	template<typename T, typename R>
 	class TaskPool {
@@ -12,7 +13,7 @@ namespace OS {
 			}
 		}
 		~TaskPool() {
-			std::vector< T* >::iterator it = m_tasks.begin();
+			typename std::vector< T* >::iterator it = m_tasks.begin();
 			while (it != m_tasks.end()) {
 				delete *it;
 				it++;
@@ -20,8 +21,8 @@ namespace OS {
 		}
 		void AddRequest(R data) {
 			T *lowest = NULL, *task;
-			std::vector< T* >::iterator it = m_tasks.begin();
-			int lowest_count = 9999999999, size;
+			typename std::vector< T* >::iterator it = m_tasks.begin();
+			unsigned int lowest_count = UINT_MAX, size;
 			while(it != m_tasks.end()) {
 				task = *it;
 				size = task->GetListSize();
