@@ -91,6 +91,7 @@ namespace SB {
 				bool m_sent_crypt_header;
 				uint8_t m_challenge[LIST_CHALLENGE_LEN];
 
+				bool m_next_packet_send_msg;
 				struct sockaddr_in m_send_msg_to;
 
 				GOACryptState m_crypt_state;

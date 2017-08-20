@@ -15,6 +15,7 @@
 #define SERVCHAL_LEN 25
 namespace SB {
 	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd) {
+		m_next_packet_send_msg = false;
 		m_sent_crypt_header = false;
 		m_sent_push_keys = false;
 		m_game.secretkey[0] = 0;
@@ -180,18 +181,23 @@ namespace SB {
 		m_send_msg_to.sin_addr.s_addr = (BufferReadInt(&p, &len));
 		m_send_msg_to.sin_port = Socket::htons(BufferReadShort(&p, &len));
 
-		const char *base64 = OS::BinToBase64Str((uint8_t *)p, len);
+		if (len > 0) {
+			const char *base64 = OS::BinToBase64Str((uint8_t *)p, len);
+			MM::MMQueryRequest req;
+			req.type = MM::EMMQueryRequestType_SubmitData;
+			req.SubmitData.from = m_address_info;
+			req.SubmitData.to = m_send_msg_to;
+			req.SubmitData.base64 = base64;
+			req.SubmitData.game = m_game;
+			req.peer = this;
+			req.peer->IncRef();
+			MM::m_task_pool->AddRequest(req);
+			free((void *)base64);
 
-		MM::MMQueryRequest req;
-		req.type = MM::EMMQueryRequestType_SubmitData;
-		req.SubmitData.from = m_address_info;
-		req.SubmitData.to = m_send_msg_to;
-		req.SubmitData.base64 = base64;
-		req.SubmitData.game = m_game;
-		req.peer = this;
-		req.peer->IncRef();
-		MM::m_task_pool->AddRequest(req);
-		free((void *)base64);
+		}
+		else {
+			m_next_packet_send_msg = true;
+		}
 
 		return p;
 
@@ -511,13 +517,29 @@ namespace SB {
 	void V2Peer::think(bool waiting_packet) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 		int len = 0;
-		if (waiting_packet) {
+		if (waiting_packet || m_next_packet_send_msg) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
 			if (len <= 0) {
 				m_delete_flag = true;
 				return;
 			}
-			this->handle_packet(buf, len);
+			if(m_next_packet_send_msg) {
+				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);
+
+				MM::MMQueryRequest req;
+				req.type = MM::EMMQueryRequestType_SubmitData;
+				req.SubmitData.from = m_address_info;
+				req.SubmitData.to = m_send_msg_to;
+				req.SubmitData.base64 = base64;
+				req.SubmitData.game = m_game;
+				req.peer = this;
+				req.peer->IncRef();
+				MM::m_task_pool->AddRequest(req);
+				free((void *)base64);
+				m_next_packet_send_msg = false;
+			} else {
+				this->handle_packet(buf, len);
+			}
 		}
 
 		send_ping();
