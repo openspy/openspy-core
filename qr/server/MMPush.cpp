@@ -165,7 +165,7 @@ namespace MM {
 		Redis::Command(mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
 
 		
-		std::string ipinput = server->m_address.ToString(false);
+		std::string ipinput = server->m_address.ToString(true);
 
 
 

@@ -793,7 +793,7 @@ namespace MM {
 	}
 	void MMQueryTask::PerformSubmitData(MMQueryRequest request) {
 
-		std::string src_ip = request.SubmitData.from.ToString(false), dst_ip = request.SubmitData.to.ToString(false);
+		std::string src_ip = request.SubmitData.from.ToString(true), dst_ip = request.SubmitData.to.ToString(true);
 		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\send_msg\\%s\\%s\\%d\\%s\\%d\\%s",
 			sb_mm_channel,
 			/*request.SubmitData.game.gamename*/
