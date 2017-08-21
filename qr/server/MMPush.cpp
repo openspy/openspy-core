@@ -164,21 +164,18 @@ namespace MM {
 		Redis::Command(mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server->m_game.gameid);
 		Redis::Command(mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
 
-
-		struct sockaddr_in addr;
-		addr.sin_port = Socket::htons(server->m_address.port);
-		addr.sin_addr.s_addr = Socket::htonl(server->m_address.ip);
-		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
+		
+		std::string ipinput = server->m_address.ToString(false);
 
 
 
-		Redis::Command(mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput, server->m_address.port, server_key.c_str());
-		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d 300", ipinput, server->m_address.port);
+		Redis::Command(mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), server->m_address.port, server_key.c_str());
+		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d 300", ipinput.c_str(), server->m_address.port);
 
 
 		Redis::Command(mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server->m_game.gameid);
 		Redis::Command(mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), server->m_address.port);
-		Redis::Command(mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), ipinput);
+		Redis::Command(mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), ipinput.c_str());
 
 		Redis::Command(mp_redis_connection, 0, "INCR %s num_beats", server_key.c_str());
 
@@ -193,7 +190,6 @@ namespace MM {
 		}
 		Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys 300", server_key.c_str());
 
-		//std::m,server->m_game.gamename,groupid,idap<std::string, std::vector<std::string> > m_player_keys;
 		std::map<std::string, std::vector<std::string> >::iterator it2 = server->m_player_keys.begin();
 
 		int i = 0;

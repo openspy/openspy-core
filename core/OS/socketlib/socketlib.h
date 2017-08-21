@@ -2,6 +2,8 @@
 #define _SOCKETLIB_H
 #include <OS/OpenSpy.h>
 #include <stdint.h>
+
+#define ADDR_STR_LEN 46
 namespace Socket {
 	// API prototypes must match the unix implementation
 	typedef int(*fdapi_socket)(int af, int type, int protocol);

@@ -260,7 +260,9 @@ namespace SB {
 			std::ostringstream resp;
 			int field_count;
 			struct sockaddr_in address_info;
-			const char *ip_address;
+
+			char ip_address[ADDR_STR_LEN];
+
 			std::vector<std::string>::iterator it;
 			results.captured_basic_fields.insert(results.captured_basic_fields.begin(), "ip"); //insert ip/port field
 			field_count = results.captured_basic_fields.size(); // + results.captured_player_fields.size() + results.captured_team_fields.size();
@@ -278,7 +280,8 @@ namespace SB {
 				it = results.captured_basic_fields.begin();
 				address_info.sin_port = serv->wan_address.port;
 				address_info.sin_addr.s_addr = Socket::htonl(serv->wan_address.ip);
-				ip_address = Socket::inet_ntoa(address_info.sin_addr);
+				Socket::inet_ntop(AF_INET, &(address_info.sin_addr), ip_address, ADDR_STR_LEN);
+
 				resp << "\\" << ip_address << ":" << address_info.sin_port; //add ip/port
 				while(it != results.captured_basic_fields.end()) {
 					std::string field = *it;

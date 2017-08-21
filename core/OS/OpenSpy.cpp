@@ -430,7 +430,11 @@ namespace OS {
 		struct sockaddr_in addr;
 		addr.sin_port = Socket::htons(port);
 		addr.sin_addr.s_addr = Socket::htonl(ip);
-		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
+
+		char ipinput[ADDR_STR_LEN];
+		Socket::inet_ntop(AF_INET, &(addr.sin_addr), ipinput, ADDR_STR_LEN);
+
+
 		std::ostringstream s;
 		s << ipinput;
 		if(!ip_only) {

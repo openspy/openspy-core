@@ -96,8 +96,8 @@ namespace MM {
 			sServerListReq req;
 			struct {
 				std::string base64;
-				struct sockaddr_in from;
-				struct sockaddr_in to;
+				OS::Address from;
+				OS::Address to;
 				OS::GameData game;
 			} SubmitData;
 			OS::Address address; //used for GetServerByIP

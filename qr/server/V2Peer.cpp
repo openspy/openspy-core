@@ -370,8 +370,9 @@ namespace QR {
 		uint32_t key = rand() % 100000 + 1;
 
 		BufferWriteByte(&p, &blen, PACKET_CLIENT_MESSAGE);
-		BufferWriteInt(&p, &blen, key);
+		BufferWriteData((uint8_t **)&p, &blen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
 
+		BufferWriteInt(&p, &blen, key);
 		BufferWriteData(&p, &blen, data, data_len);
 		SendPacket((uint8_t *)&buff, blen);
 	}

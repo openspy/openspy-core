@@ -735,7 +735,9 @@ namespace MM {
 		struct sockaddr_in addr;
 		addr.sin_port = Socket::htons(address.port);
 		addr.sin_addr.s_addr = Socket::htonl(address.ip);
-		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
+
+		char ipinput[ADDR_STR_LEN];
+		Socket::inet_ntop(AF_INET, &(addr.sin_addr), ipinput, ADDR_STR_LEN);
 
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 
@@ -790,10 +792,17 @@ namespace MM {
 		MM::MMQueryTask::FreeServerListQuery(&ret);
 	}
 	void MMQueryTask::PerformSubmitData(MMQueryRequest request) {
+
+		std::string src_ip = request.SubmitData.from.ToString(false), dst_ip = request.SubmitData.to.ToString(false);
 		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\send_msg\\%s\\%s\\%d\\%s\\%d\\%s",
-			sb_mm_channel,/*request.SubmitData.game.gamename*/"REMOVED",Socket::inet_ntoa(request.SubmitData.from.sin_addr),
-			request.SubmitData.from.sin_port,Socket::inet_ntoa(request.SubmitData.to.sin_addr),
-			request.SubmitData.to.sin_port,request.SubmitData.base64.c_str());
+			sb_mm_channel,
+			/*request.SubmitData.game.gamename*/
+			"REMOVED",
+			src_ip.c_str(),
+			request.SubmitData.from.GetPort(),
+			dst_ip.c_str(),
+			request.SubmitData.to.GetPort(),
+			request.SubmitData.base64.c_str());
 	}
 	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {
 		request.peer->OnRecievedGameInfoPair(OS::GetGameByName(request.gamenames[0].c_str()), OS::GetGameByName(request.gamenames[1].c_str()), request.extra);

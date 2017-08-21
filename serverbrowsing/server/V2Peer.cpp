@@ -193,7 +193,7 @@ namespace SB {
 		int len = remain;
 
 		m_send_msg_to.sin_addr.s_addr = (BufferReadInt(&p, &len));
-		m_send_msg_to.sin_port = Socket::htons(BufferReadShort(&p, &len));
+		m_send_msg_to.sin_port = BufferReadShort(&p, &len);
 
 		if (len > 0) {
 			const char *base64 = OS::BinToBase64Str((uint8_t *)p, len);
