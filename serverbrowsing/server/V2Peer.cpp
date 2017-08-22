@@ -182,7 +182,7 @@ namespace SB {
 		req.m_for_gamename = for_gamename;
 		req.m_from_gamename = from_gamename;
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d", OS::Address(m_address_info).ToString().c_str(), req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups);
+		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: %d %d, gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s", OS::Address(m_address_info).ToString().c_str(), req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups, req.max_results, OS::Address(req.send_wan_ip, 0).ToString().c_str());
 
 
 		if(filter)
@@ -203,7 +203,7 @@ namespace SB {
 		m_send_msg_to.sin_port = BufferReadShort(&p, &len);
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to ", OS::Address(m_address_info).ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", OS::Address(m_address_info).ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
 		if (len > 0) {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", OS::Address(m_address_info).ToString().c_str(), len);
 			const char *base64 = OS::BinToBase64Str((uint8_t *)p, len);
@@ -504,13 +504,18 @@ namespace SB {
 		if(cache.key[0] != 0) {
 			req.type = MM::EMMQueryRequestType_GetServerByKey;
 			req.key = cache.key;
+			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, cached %s %s", OS::Address(m_address_info).ToString().c_str(),cache.wan_address.ToString().c_str(),cache.key.c_str()) ;
 			cache.full_keys = true;
 		} else {
 			req.type = MM::EMMQueryRequestType_GetServerByIP;
 			req.address = address;
 			req.req.m_for_game = m_last_list_req.m_for_game;
 			req.SubmitData.game = req.req.m_for_game;
+
+			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", OS::Address(m_address_info).ToString().c_str(), req.address.ToString().c_str());
 		}
+
+		
 
 		req.peer = this;
 		req.driver = mp_driver;
@@ -631,6 +636,14 @@ namespace SB {
 		if(push) {
 			BufferWriteByte(&p, &len, PUSH_SERVER_MESSAGE);
 		}
+
+		
+
+		if (server->wan_address.GetIP() == -1) {
+			return;
+		}
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] WAN Address: %s", OS::Address(m_address_info).ToString().c_str(), OS::Address(server->wan_address).ToString().c_str());
 
 		BufferWriteByte(&p, &len, flags); //flags
 		BufferWriteInt(&p, &len, Socket::htonl(server->wan_address.ip)); //ip
