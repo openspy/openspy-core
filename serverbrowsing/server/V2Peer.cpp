@@ -155,6 +155,7 @@ namespace SB {
 		req.send_groups = options & SEND_GROUPS;
 		req.push_updates = options & PUSH_UPDATES; //requesting updates,
 		req.no_server_list = options & NO_SERVER_LIST;
+		req.send_wan_ip = false; //??
 
 		if (options & ALTERNATE_SOURCE_IP) {
 			req.source_ip = BufferReadInt(buffer, &buf_remain);
@@ -182,7 +183,7 @@ namespace SB {
 		req.m_for_gamename = for_gamename;
 		req.m_from_gamename = from_gamename;
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: %d %d, gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s", OS::Address(m_address_info).ToString().c_str(), req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups, req.max_results, OS::Address(req.send_wan_ip, 0).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: %d %d, gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s", OS::Address(m_address_info).ToString().c_str(), req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str());
 
 
 		if(filter)
