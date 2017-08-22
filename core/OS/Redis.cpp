@@ -217,7 +217,6 @@ namespace Redis {
 
 		if (sleepMS != 0) {
 			OS::Sleep(sleepMS);
-			printf("Redis sleep: %d\n", sleepMS);
 		}
 
 		while (true) {

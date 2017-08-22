@@ -94,7 +94,6 @@ namespace QR {
 			it++;
 		}
 		Peer *ret = NULL;
-		printf("Creating peer version %d\n", version);
 		switch(version) {
 			case 1:
 				ret = new V1Peer(this, address, m_sd);

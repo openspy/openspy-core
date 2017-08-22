@@ -17,7 +17,7 @@ namespace QR {
 
 	class Peer : public OS::Ref {
 	public:
-		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version);
 		virtual ~Peer();
 		
 		virtual void think() = 0;
@@ -50,6 +50,7 @@ namespace QR {
 		bool m_timeout_flag;
 
 		int m_sd;
+		int m_version;
 
 		bool m_server_pushed;
 		bool m_sent_game_query;

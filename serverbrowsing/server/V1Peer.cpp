@@ -22,7 +22,7 @@
 #include <OS/KVReader.h>
 
 namespace SB {
-		V1Peer::V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : SB::Peer(driver, address_info, sd) {
+		V1Peer::V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : SB::Peer(driver, address_info, sd, 1) {
 			std::ostringstream s;
 
 			memset(&m_challenge,0,sizeof(m_challenge));
@@ -107,6 +107,8 @@ namespace SB {
 				m_delete_flag = true;
 			}
 			resp << "\\error\\" << str;
+
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", OS::Address(m_address_info).ToString().c_str(), resp.str().c_str());
 			SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), true);
 		}
 		void V1Peer::handle_gamename(char *data, int len) {
@@ -227,13 +229,6 @@ namespace SB {
 			req.req.all_keys = false;
 
 
-
-			if(req.req.m_from_game.gameid == 0) {
-				send_error(false, "Gamename not found");
-				return;
-			}
-
-
 			req.type = MM::EMMQueryRequestType_GetGameInfoByGameName;
 			req.req.send_groups = false;
 			if(mode.compare("cmp") == 0) {				
@@ -247,6 +242,8 @@ namespace SB {
 				send_error(true, "Unknown list mode");
 				return;
 			}
+
+			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", OS::Address(m_address_info).ToString().c_str(), req.req.m_from_gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.send_groups, req.req.all_keys);
 
 			req.extra = (void *)1;
 			m_last_list_req = req.req;

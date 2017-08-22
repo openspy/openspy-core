@@ -25,7 +25,7 @@ namespace SB {
 
 	class Peer : public OS::Ref {
 	public:
-		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version);
 		virtual ~Peer();
 		
 		virtual void think(bool packet_waiting) = 0;
@@ -56,7 +56,7 @@ namespace SB {
 		sServerCache FindServerByIP(OS::Address address);
 		sServerCache FindServerByKey(std::string key);
 
-
+		int m_version;
 		int m_sd;
 		OS::GameData m_game;
 		Driver *mp_driver;

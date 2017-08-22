@@ -71,7 +71,7 @@ namespace SB {
 				void setupCryptHeader(uint8_t **dst, int *len);
 
 				//request type handles
-				uint8_t *ProcessListRequset(uint8_t *buffer, int remain);
+				uint8_t *ProcessListRequest(uint8_t *buffer, int remain);
 				uint8_t *ProcessSendMessage(uint8_t *buffer, int remain);
 				uint8_t *ProcessInfoRequest(uint8_t *buffer, int remain);
 

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <sstream>
 #include "QRServer.h"
 
 
@@ -34,7 +34,7 @@
 #define QR_MAGIC_2 0xFD
 
 namespace QR {
-	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver,address_info,sd) {
+	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver,address_info,sd,2) {
 		m_recv_instance_key = false;
 
 		m_sent_challenge = false;
@@ -50,7 +50,6 @@ namespace QR {
 
 	}
 	V2Peer::~V2Peer() {
-		printf("V2 client deleted pushed: %d - %d %d\n", m_server_pushed,m_timeout_flag, m_delete_flag);
 	}
 
 	void V2Peer::SendPacket(const uint8_t *buff, int len) {
@@ -63,9 +62,6 @@ namespace QR {
 		sendto(m_sd,(char *)&sendbuf,blen,0,(struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
 	}
 	void V2Peer::handle_packet(char *recvbuf, int len) {
-		printf("QR2 handle packet %d\n", len);
-
-
 		uint8_t *buff = (uint8_t *)recvbuf;
 		int buflen = len;
 
@@ -75,31 +71,28 @@ namespace QR {
 			uint8_t instance_key[REQUEST_KEY_LEN];
 			BufferReadData((uint8_t **)&buff, (int *)&len, (uint8_t *)&instance_key, sizeof(instance_key));
 			if(memcmp((uint8_t *)&instance_key, (uint8_t *)&m_instance_key, sizeof(instance_key)) != 0) {
-				printf("possible spoofed packet\n"); //TODO: send echo and capture response
+				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet", OS::Address(m_address_info).ToString().c_str());
 				return;
 			}
 		}
 
 		gettimeofday(&m_last_recv, NULL);
 
-		printf("QR got type: %02x || %d\n",type, len);
 		switch(type) {
 			case PACKET_AVAILABLE:
 				handle_available((char *)buff, buflen);
 				break;
 			case PACKET_HEARTBEAT:
-				printf("Got qr heartbeat\n");
 				handle_heartbeat((char *)buff, buflen);
 			break;
 			case PACKET_CHALLENGE:
-				printf("Got qr challenge\n");
 				handle_challenge((char *)buff, buflen);
 			break;
 			case PACKET_KEEPALIVE:
 				handle_keepalive((char *)buff, buflen);
 			break;
 			case PACKET_CLIENT_MESSAGE_ACK:
-				printf("Got client msg ack %d\n",buflen);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Client Message ACK", OS::Address(m_address_info).ToString().c_str());
 			break;
 		}
 	}
@@ -113,6 +106,7 @@ namespace QR {
 		}
 		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (unsigned char *)&m_server_info.m_game.secretkey, 0);
 		if(strcmp(buff,challenge_resp) == 0) { //matching challenge
+			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", OS::Address(m_address_info).ToString().c_str(), m_server_info.m_game.gamename);
 			BufferWriteByte((uint8_t**)&p, &outlen,PACKET_CLIENT_REGISTERED);
 			BufferWriteData((uint8_t **)&p, &outlen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
 			SendPacket((uint8_t *)&challenge_resp, outlen);
@@ -126,6 +120,9 @@ namespace QR {
 				MM::m_task_pool->AddRequest(req);
 			}
 			m_sent_challenge = true;
+		}
+		else {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Incorrect challenge for gamename: %s", OS::Address(m_address_info).ToString().c_str(), m_server_info.m_game.gamename);
 		}
 	}
 	void V2Peer::handle_keepalive(char *buff, int len) {
@@ -147,6 +144,9 @@ namespace QR {
 			BufferReadData((uint8_t **)&buff, (int *)&len, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
 			m_recv_instance_key = true;
 		}
+
+		std::stringstream ss;
+
 		while((buff[0] != 0 && len > 0) || (i%2 != 0)) {
 
 			x = BufferReadNTS((uint8_t **)&buff,&len);
@@ -155,6 +155,7 @@ namespace QR {
 				key = std::string((char *)x);
 			} else {
 				value = std::string((char *)x);
+				ss << "(" << key << "," << value << ") ";
 			}
 
 			if(value.length() > 0) {
@@ -164,6 +165,11 @@ namespace QR {
 			free((void *)x);
 			i++;
 		}
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
+		ss.str("");
+
+
 		uint16_t num_values = 0;
 		BufferReadByte((uint8_t**)&buff,&len); //skip null byte(seperator)
 		while((num_values = BufferReadShortRE((uint8_t**)&buff,&len))) {
@@ -194,12 +200,14 @@ namespace QR {
 					else {
 						team_keys[name][player] = std::string((const char *)x);
 					}
+					ss << "T(" << player << ") (" << name.c_str() << "," << x << ") ";
 				} else {
 					if(player_keys[name].size() <= player) {
 						player_keys[name].push_back(std::string((const char *)x));
 					} else {
 						player_keys[name][player] = std::string((const char *)x);
 					}
+					ss << "P(" << player << ") (" << name.c_str() << "," << x << " ) ";
 				}
 				free((void *)x);
 				i++;
@@ -209,6 +217,10 @@ namespace QR {
 				}
 			}
 		}
+
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
+		ss.str("");
 
 		m_server_info.m_keys = server_keys;
 		m_server_info.m_player_keys = player_keys;
@@ -293,6 +305,7 @@ namespace QR {
 			if (game_info.gameid == 0) {
 				game_info.disabled_services = OS::QR2_GAME_UNAVAILABLE;
 			}
+
 			uint8_t *p = (uint8_t *)&sendbuf;
 			BufferWriteByte((uint8_t**)&p, &outlen, PACKET_AVAILABLE);
 			BufferWriteIntRE((uint8_t**)&p, &outlen, game_info.disabled_services);
@@ -308,6 +321,8 @@ namespace QR {
 			m_timeout_flag = false;
 			Delete();
 		}
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Error:", OS::Address(m_address_info).ToString().c_str(), fmt);
 	}
 	void V2Peer::send_ping() {
 		//check for timeout

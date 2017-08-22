@@ -8,7 +8,7 @@
 
 
 namespace QR {
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) {
+	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version) {
 		m_server_pushed = false;
 		m_delete_flag = false;
 		m_timeout_flag = false;
@@ -18,10 +18,11 @@ namespace QR {
 		m_server_info.m_game.gameid = 0;
 		m_server_info.m_game.gamename[0] = 0;
 		m_sent_game_query = false;
-		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());
+		m_version = version;
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connections version: %d",OS::Address(m_address_info).ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "Connection from %s closed",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d",OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
 	}
 	bool Peer::isTeamString(const char *string) {
 		int len = strlen(string);

@@ -11,6 +11,8 @@
 
 #ifndef _WIN32
 	#include "OS/Logger/Unix/UnixLogger.h"
+#else
+	#include "OS/Logger/Win32/Win32Logger.h"
 #endif
 
 #include <OS/legacy/helpers.h>
@@ -30,6 +32,8 @@ namespace OS {
 
 		#ifndef _WIN32
 			g_logger = new UnixLogger(appName);
+		#elif _WIN32
+			g_logger = new Win32Logger(appName);
 		#endif
 	}
 	void Shutdown() {

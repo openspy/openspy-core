@@ -19,7 +19,7 @@
 #include <OS/KVReader.h>
 
 namespace QR {
-	V1Peer::V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd) {
+	V1Peer::V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd, 1) {
 		memset(&m_challenge, 0, sizeof(m_challenge));
 		gen_random((char *)&m_challenge, 6);
 		m_sent_challenge = false;
@@ -136,6 +136,7 @@ namespace QR {
 			}
 		}
 
+
 		gettimeofday(&m_last_recv, NULL);
 		switch (m_query_state) {
 		case EV1_CQS_Basic:
@@ -188,6 +189,8 @@ namespace QR {
 		int state_changed = data_parser.GetValueInt("statechanged");
 
 		gamename = data_parser.GetValue("gamename");
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", OS::Address(m_address_info).ToString().c_str(), recvbuf);
 		//m_server_info.m_game = OS::GetGameByName(gamename.c_str());
 
 		if (m_server_info.m_game.gameid != 0) {
@@ -244,6 +247,8 @@ namespace QR {
 
 		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
 		validation = data_parser.GetValue("echo");
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Echo: %s", OS::Address(m_address_info).ToString().c_str(), recvbuf);
 
 		if (memcmp(validation.c_str(), m_challenge, sizeof(m_challenge)) == 0) {
 			gettimeofday(&m_last_recv, NULL);

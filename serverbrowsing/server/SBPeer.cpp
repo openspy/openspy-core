@@ -6,7 +6,7 @@
 #include <OS/socketlib/socketlib.h>
 
 namespace SB {
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : OS::Ref() {
+	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version) : OS::Ref() {
 		m_sd = sd;
 		mp_driver = driver;
 		m_address_info = *address_info;
@@ -14,12 +14,13 @@ namespace SB {
 		m_timeout_flag = false;
 		gettimeofday(&m_last_ping, NULL);
 
+		m_version = version;
 		mp_mutex = OS::CreateMutex();
 
-		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version %d",OS::Address(m_address_info).ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "Connection from %s closed",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d",OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
 		close(m_sd);
 		delete mp_mutex;
 	}

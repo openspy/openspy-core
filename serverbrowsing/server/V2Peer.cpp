@@ -14,7 +14,7 @@
 #define CRYPTCHAL_LEN 10
 #define SERVCHAL_LEN 25
 namespace SB {
-	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd) {
+	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd, 2) {
 		m_next_packet_send_msg = false;
 		m_sent_crypt_header = false;
 		m_sent_push_keys = false;
@@ -56,6 +56,7 @@ namespace SB {
 			request_type = BufferReadByte(&buffer, &pos);
 
 			if(improper_length && request_type != SEND_MESSAGE_REQUEST) {
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got improper length packet, type: %d", OS::Address(m_address_info).ToString().c_str(), request_type);
 				m_delete_flag = true;
 				break;
 			}
@@ -70,29 +71,28 @@ namespace SB {
 			//TODO: get expected lengths for each packet type and test, prior to execution
 			switch (request_type) {
 				case SERVER_LIST_REQUEST:
-					printf("***** Got server list req\n");
-					buffer = ProcessListRequset(buffer, pos);
+					buffer = ProcessListRequest(buffer, pos);
 					break;
 				case KEEPALIVE_MESSAGE:
 					buffer++; len--;
 					break;
 				case SEND_MESSAGE_REQUEST:
-					printf("**** GOT SEND MSG REQ - %d\n", pos);
 					buffer = ProcessSendMessage(buffer, pos);
 					break_flag = true;
 				break;
 				case MAPLOOP_REQUEST:
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got map request", OS::Address(m_address_info).ToString().c_str(), request_type);
 					break_flag = true;
 				break;
 				case PLAYERSEARCH_REQUEST:
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got playersearch request", OS::Address(m_address_info).ToString().c_str(), request_type);
 					break_flag = true;
 				break;
 				case SERVER_INFO_REQUEST:
-					printf("**** GOT SERVER INFO REQ\n");
 					buffer = ProcessInfoRequest(buffer, pos);
 				break;
 				default:
-					printf("***** unknown req %d\n", request_type);
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d", OS::Address(m_address_info).ToString().c_str(), request_type);
 					break_flag = true;
 					break;
 			}
@@ -142,13 +142,11 @@ namespace SB {
 		
 		if(filter) {
 			req.filter = filter;
-			free((void *)filter);
 		}
 		field_list = (const char *)BufferReadNTS(buffer, &buf_remain);
 
 		if (field_list) {
 			req.field_list = OS::KeyStringToVector(field_list);
-			free((void *)field_list);
 		}
 
 
@@ -183,6 +181,15 @@ namespace SB {
 
 		req.m_for_gamename = for_gamename;
 		req.m_from_gamename = from_gamename;
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d", OS::Address(m_address_info).ToString().c_str(), req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups);
+
+
+		if(filter)
+			free((void *)filter);
+		if(field_list)
+			free((void *)field_list);
+
 		free((void *)for_gamename);
 		free((void *)from_gamename);
 		return req;
@@ -195,7 +202,10 @@ namespace SB {
 		m_send_msg_to.sin_addr.s_addr = (BufferReadInt(&p, &len));
 		m_send_msg_to.sin_port = BufferReadShort(&p, &len);
 
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to ", OS::Address(m_address_info).ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
 		if (len > 0) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", OS::Address(m_address_info).ToString().c_str(), len);
 			const char *base64 = OS::BinToBase64Str((uint8_t *)p, len);
 			MM::MMQueryRequest req;
 			req.type = MM::EMMQueryRequestType_SubmitData;
@@ -407,12 +417,11 @@ namespace SB {
 		if(send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL) < 0)
 			m_delete_flag = true;
 	}
-	uint8_t *V2Peer::ProcessListRequset(uint8_t *buffer, int remain) {
+	uint8_t *V2Peer::ProcessListRequest(uint8_t *buffer, int remain) {
 		MM::MMQueryRequest req;
 		req.extra = this;
 
 		req.req = this->ParseListRequest(&buffer, remain);
-
 
 		OS::GameData old_gamedata[2];
 		req.req.m_from_game = m_last_list_req.m_from_game;
@@ -538,6 +547,7 @@ namespace SB {
 				return;
 			}
 			if(m_next_packet_send_msg) {
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", OS::Address(m_address_info).ToString().c_str(), len);
 				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);
 
 				MM::MMQueryRequest req;
@@ -814,6 +824,8 @@ namespace SB {
 		send_str[len] = 0;
 		if (send(m_sd, (const char *)&send_str, strlen(send_str)+1, MSG_NOSIGNAL) < 0)
 			m_delete_flag = true;
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", OS::Address(m_address_info).ToString().c_str(), send_str, die);
 
 		va_end(args);
 	}
