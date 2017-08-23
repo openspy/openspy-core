@@ -9,16 +9,10 @@ public:
 	/*
 		Check for incoming data, etc
 	*/
-	virtual void tick(fd_set *fdset) = 0;
-	virtual void think(fd_set *fdset) = 0;
+	virtual void think(bool listen_waiting) = 0;
 	virtual int getListenerSocket() = 0;
+	virtual const std::vector<int> getSockets() = 0;
 	INetServer *getServer() { return m_server; }
-
-	
-	////////////////////////
-	// required by SelectNetEventManager
-	//  returns highest socket 
-	virtual int setup_fdset(fd_set *fdset) = 0;
 protected:
 	INetServer *m_server;
 };
