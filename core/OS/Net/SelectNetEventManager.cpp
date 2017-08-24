@@ -50,6 +50,7 @@ int SelectNetEventManager::setup_fdset() {
 		std::vector<int> sockets = driver->getSockets();
 		std::vector<int>::iterator it2 = sockets.begin();
 		int sd;
+		FD_SET(driver->getListenerSocket(), &m_fdset);
 		while (it2 != sockets.end()) {
 			sd = *it2;
 			if (sd >= hsock) {
@@ -59,8 +60,6 @@ int SelectNetEventManager::setup_fdset() {
 			FD_SET(sd, &m_fdset);
 			it2++;
 		}
-		//add listening socket/clients to fd
-
 		it++;
 	}
 	return hsock;

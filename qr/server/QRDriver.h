@@ -24,8 +24,7 @@ namespace QR {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
-		void tick(fd_set *fdset);
-		void think(fd_set *fdset);
+		void think(bool listener_waiting);
 		int getListenerSocket();
 		uint16_t getPort();
 		uint32_t getBindIP();
@@ -34,14 +33,12 @@ namespace QR {
 		Peer *find_client(struct sockaddr_in *address);
 		Peer *find_or_create(struct sockaddr_in *address, int version = 2);
 
-		int setup_fdset(fd_set *fdset);
-
-
+		const std::vector<int> getSockets();
 		int GetNumConnections();
 
 	private:
 
-		void TickConnections(fd_set *fdset);
+		void TickConnections();
 
 		int m_sd;
 

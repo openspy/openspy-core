@@ -26,17 +26,14 @@ namespace SB {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port, int version = 2);
 		~Driver();
-		void tick(fd_set *fdset);
-		void think(fd_set *fdset);
+		void think(bool listen_waiting);
 		int getListenerSocket();
 		uint16_t getPort();
 		uint32_t getBindIP();
 		uint32_t getDeltaTime();
 
 		Peer *find_client(struct sockaddr_in *address);
-
-		int setup_fdset(fd_set *fdset);
-		
+		const std::vector<int> getSockets();
 		void SendDeleteServer(MM::Server *server);
 	    void SendNewServer(MM::Server *server);
 	    void SendUpdateServer(MM::Server *server);
@@ -51,7 +48,7 @@ namespace SB {
 		void AddUpdateServer(MM::Server serv);
 	private:
 
-		void TickConnections(fd_set *fdset);
+		void TickConnections();
 
 		int m_sd;
 		int m_version;

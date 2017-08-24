@@ -40,9 +40,34 @@ namespace QR {
 			it++;
 		}
 	}
-	void Driver::think(fd_set *fdset) {
-		TickConnections(fdset);
+	void Driver::think(bool listener_waiting) {
+		TickConnections();
 
+		if (listener_waiting) {
+			char recvbuf[MAX_DATA_SIZE + 1];
+
+			struct sockaddr_in si_other;
+			socklen_t slen = sizeof(struct sockaddr_in);
+
+			int len = recvfrom(m_sd, (char *)&recvbuf, sizeof(recvbuf), 0, (struct sockaddr *)&si_other, &slen);
+
+			Peer *peer = NULL;
+			if (len > 0) {
+				peer = find_or_create(&si_other, recvbuf[0] == '\\' ? 1 : 2);
+			}
+			else {
+				peer = find_client(&si_other);
+			}
+			if (peer) {
+				if (len > 0) {
+					recvbuf[len] = 0;
+					peer->handle_packet((char *)&recvbuf, len);
+				}
+				else if (len < 0) {
+					peer->SetDelete(true);
+				}
+			}
+		}
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
@@ -69,6 +94,17 @@ namespace QR {
 			}
 			it++;
 		}
+	}
+
+	const std::vector<int> Driver::getSockets() {
+		std::vector<int> sockets;
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			sockets.push_back(p->GetSocket());
+			it++;
+		}
+		return sockets;
 	}
 
 	Peer *Driver::find_client(struct sockaddr_in *address) {
@@ -105,37 +141,6 @@ namespace QR {
 		m_connections.push_back(ret);
 		return ret;
 	}
-	void Driver::tick(fd_set *fdset) {
-
-		TickConnections(fdset);
-		if (!FD_ISSET(m_sd, fdset)) {
-			return;
-		}
-		char recvbuf[MAX_DATA_SIZE + 1];
-
-		struct sockaddr_in si_other;
-		socklen_t slen = sizeof(struct sockaddr_in);
-
-		int len = recvfrom(m_sd,(char *)&recvbuf,sizeof(recvbuf),0,(struct sockaddr *)&si_other,&slen);
-		
-		Peer *peer = NULL;
-		if(len > 0) {
-			peer = find_or_create(&si_other, recvbuf[0] == '\\' ? 1 : 2);
-		} else {
-			peer = find_client(&si_other);
-		}
-		if(peer) {
-			if(len > 0) {
-				recvbuf[len] = 0;
-				peer->handle_packet((char *)&recvbuf, len);
-			} else if(len < 0) {
-				peer->SetDelete(true);
-			}
-		}
-
-
-	}
-
 
 	int Driver::getListenerSocket() {
 		return m_sd;
@@ -149,27 +154,7 @@ namespace QR {
 		return m_connections.size();
 	}
 
-
-	int Driver::setup_fdset(fd_set *fdset) {
-
-		int hsock = m_sd;
-		FD_SET(m_sd, fdset);
-		
-		/* not needed because UDP
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = *it;
-			int sd = p->GetSocket();
-			FD_SET(sd, fdset);
-			if (sd > hsock)
-				hsock = sd;
-			it++;
-		}
-		*/
-		return hsock;
-	}
-
-	void Driver::TickConnections(fd_set *fdset) {
+	void Driver::TickConnections() {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;

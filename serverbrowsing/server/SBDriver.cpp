@@ -55,56 +55,71 @@ namespace SB {
 
 		delete mp_mutex;
 	}
-	void Driver::think(fd_set *fdset) {
+	void Driver::think(bool listen_waiting) {
 		mp_mutex->lock();
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			if (!peer->ShouldDelete())
-				peer->think(FD_ISSET(peer->GetSocket(), fdset));
-			else if(std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
-				//marked for delection, dec reference and delete when zero
-				it = m_connections.erase(it);
-				peer->DecRef();
-				m_peers_to_delete.push_back(peer);
-				continue;
+		if (listen_waiting) {
+			socklen_t psz = sizeof(struct sockaddr_in);
+			struct sockaddr_in peer;
+			int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
+			if (sda <= 0) return;
+			Peer *mp_peer = NULL;
+			switch (m_version) {
+			case 1:
+				mp_peer = new V1Peer(this, &peer, sda);
+				break;
+			case 2:
+				mp_peer = new V2Peer(this, &peer, sda);
+				break;
 			}
-			it++;
+			m_connections.push_back(mp_peer);
+			mp_peer->think(true);
 		}
-
-		it = m_peers_to_delete.begin();
-		while (it != m_peers_to_delete.end()) {
-			SB::Peer *p = *it;
-			if (p->GetRefCount() == 0) {
-				delete p;
-				it = m_peers_to_delete.erase(it);
-				continue;
+		else {
+			std::vector<Peer *>::iterator it = m_connections.begin();
+			while (it != m_connections.end()) {
+				Peer *peer = *it;
+				if (peer->ShouldDelete() && std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
+					//marked for delection, dec reference and delete when zero
+					it = m_connections.erase(it);
+					peer->DecRef();
+					m_peers_to_delete.push_back(peer);
+					continue;
+				}
+				it++;
 			}
-			it++;
-		}
 
-		MM::Server serv;
-		while (!m_server_delete_queue.empty()) {
-			serv = m_server_delete_queue.front();
-			m_server_delete_queue.pop();
-			SendDeleteServer(&serv);
-		}
+			it = m_peers_to_delete.begin();
+			while (it != m_peers_to_delete.end()) {
+				SB::Peer *p = *it;
+				if (p->GetRefCount() == 0) {
+					delete p;
+					it = m_peers_to_delete.erase(it);
+					continue;
+				}
+				it++;
+			}
 
-		while (!m_server_new_queue.empty()) {
-			serv = m_server_new_queue.front();
-			m_server_new_queue.pop();
-			SendNewServer(&serv);
-		}
+			MM::Server serv;
+			while (!m_server_delete_queue.empty()) {
+				serv = m_server_delete_queue.front();
+				m_server_delete_queue.pop();
+				SendDeleteServer(&serv);
+			}
 
-		while (!m_server_update_queue.empty()) {
-			serv = m_server_update_queue.front();
-			m_server_update_queue.pop();
-			SendUpdateServer(&serv);
-		}
+			while (!m_server_new_queue.empty()) {
+				serv = m_server_new_queue.front();
+				m_server_new_queue.pop();
+				SendNewServer(&serv);
+			}
 
+			while (!m_server_update_queue.empty()) {
+				serv = m_server_update_queue.front();
+				m_server_update_queue.pop();
+				SendUpdateServer(&serv);
+			}
+		}
 		mp_mutex->unlock();
 	}
-
 
 	Peer *Driver::find_client(struct sockaddr_in *address) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
@@ -118,30 +133,6 @@ namespace SB {
 		}
 		return NULL;
 	}
-	void Driver::tick(fd_set *fdset) {
-
-		TickConnections(fdset);
-		if (!FD_ISSET(m_sd, fdset)) {
-			return;
-		}
-		socklen_t psz = sizeof(struct sockaddr_in);
-		struct sockaddr_in peer;
-		int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
-		if (sda <= 0) return;
-		Peer *mp_peer = NULL;
-		switch(m_version) {
-			case 1:
-				mp_peer = new V1Peer(this, &peer, sda);
-				break;
-			case 2:
-				mp_peer = new V2Peer(this, &peer, sda);
-			break;
-		}
-		m_connections.push_back(mp_peer);
-		mp_peer->think(true);
-
-	}
-
 	bool Driver::HasPeer(SB::Peer * peer) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
@@ -173,29 +164,22 @@ namespace SB {
 		return m_connections.size();
 	}
 
-
-	int Driver::setup_fdset(fd_set *fdset) {
-
-		int hsock = m_sd;
-		FD_SET(m_sd, fdset);
-		
+	const std::vector<int> Driver::getSockets() {
+		std::vector<int> sockets;
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			int sd = p->GetSocket();
-			FD_SET(sd, fdset);
-			if (sd > hsock)
-				hsock = sd;
+			sockets.push_back(p->GetSocket());
 			it++;
 		}
-		return hsock + 1;
+		return sockets;
 	}
 
-	void Driver::TickConnections(fd_set *fdset) {
+	void Driver::TickConnections() {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			p->think(FD_ISSET(p->GetSocket(), fdset));
+			p->think(false);
 			it++;
 		}
 	}
