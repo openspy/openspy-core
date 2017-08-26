@@ -38,7 +38,7 @@ namespace MM {
 	typedef struct _MMPushRequest {
 		EMMPushRequestType type;
 		QR::Peer *peer;
-		ServerInfo *server;
+		ServerInfo server;
 		std::string gamename;
 		void *extra;
 	} MMPushRequest;
@@ -58,9 +58,9 @@ namespace MM {
 			void PerformDeleteServer(MMPushRequest request);
 			void PerformGetGameInfo(MMPushRequest request);
 
-			void PushServer(ServerInfo *server, bool publish, int pk_id = -1);
-			void UpdateServer(ServerInfo *server);
-			void DeleteServer(ServerInfo *server, bool publish);
+			int PushServer(ServerInfo server, bool publish, int pk_id = -1);
+			void UpdateServer(ServerInfo server);
+			void DeleteServer(ServerInfo server, bool publish);
 			int GetServerID();
 			std::vector<QR::Driver *> m_drivers;
 			Redis::Connection *mp_redis_connection;

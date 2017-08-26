@@ -160,7 +160,7 @@ namespace QR {
 			parse_players(recvbuf, len);
 			MM::MMPushRequest req;
 			req.peer = this;
-			req.server = &m_server_info;
+			req.server = m_server_info;
 
 			req.peer->IncRef();
 			if (!m_pushed_server) {
@@ -199,7 +199,7 @@ namespace QR {
 		else if(!m_sent_game_query){
 			MM::MMPushRequest req;
 			req.peer = this;
-			req.server = &m_server_info;
+			req.server = m_server_info;
 			req.extra = (void *)state_changed;
 			req.gamename = gamename;
 			m_sent_game_query = true;
@@ -299,11 +299,14 @@ namespace QR {
 		if (m_server_pushed) {
 			MM::MMPushRequest req;
 			req.peer = this;
-			req.server = &m_server_info;
+			req.server = m_server_info;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_DeleteServer;
 			MM::m_task_pool->AddRequest(req);
 		}
 		m_delete_flag = true;
+	}
+	void V1Peer::OnRegisteredServer(int pk_id, void *extra) {
+
 	}
 }

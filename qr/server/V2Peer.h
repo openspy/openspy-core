@@ -26,6 +26,7 @@ namespace QR {
 		void send_error(bool die, const char *fmt, ...);
 		void SendClientMessage(uint8_t *data, int data_len);
 		void OnGetGameInfo(OS::GameData game_info, void *extra);
+		void OnRegisteredServer(int pk_id, void *extra);
 	private:
 		void handle_heartbeat(char *buff, int len);
 		void handle_challenge(char *buff, int len);

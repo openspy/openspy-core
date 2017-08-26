@@ -31,9 +31,11 @@ namespace QR {
 
 		virtual void send_error(bool die, const char *fmt, ...) = 0;
 		virtual void SendClientMessage(uint8_t *data, int data_len) = 0;
+		
 
 
 		virtual void OnGetGameInfo(OS::GameData game_info, void *extra) = 0;
+		virtual void OnRegisteredServer(int pk_id, void *extra) = 0;
 	protected:
 
 

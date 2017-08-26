@@ -107,13 +107,10 @@ namespace QR {
 		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (unsigned char *)&m_server_info.m_game.secretkey, 0);
 		if(strcmp(buff,challenge_resp) == 0) { //matching challenge
 			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", OS::Address(m_address_info).ToString().c_str(), m_server_info.m_game.gamename);
-			BufferWriteByte((uint8_t**)&p, &outlen,PACKET_CLIENT_REGISTERED);
-			BufferWriteData((uint8_t **)&p, &outlen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
-			SendPacket((uint8_t *)&challenge_resp, outlen);
 			if(m_sent_challenge) {
 				MM::MMPushRequest req;
 				req.peer = this;
-				req.server = &m_server_info;
+				req.server = m_server_info;
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_PushServer;
 				m_server_pushed = true;
@@ -235,7 +232,7 @@ namespace QR {
 					Delete();
 					return;
 				}
-				req.server = &m_server_info;
+				req.server = m_server_info;
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_UpdateServer;
 				MM::m_task_pool->AddRequest(req);
@@ -293,7 +290,7 @@ namespace QR {
 			if (m_server_pushed) {
 				MM::MMPushRequest req;
 				req.peer = this;
-				req.server = &m_server_info;
+				req.server = m_server_info;
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_UpdateServer;
 				MM::m_task_pool->AddRequest(req);
@@ -396,11 +393,21 @@ namespace QR {
 		if (m_server_pushed) {
 			MM::MMPushRequest req;
 			req.peer = this;
-			req.server = &m_server_info;
+			req.server = m_server_info;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_DeleteServer;
 			MM::m_task_pool->AddRequest(req);
 		}
 		m_delete_flag = true;
+	}
+	void V2Peer::OnRegisteredServer(int pk_id, void *extra) {
+		char buff[10];
+		char *p = (char *)&buff;
+		int outlen = 0;
+		m_server_info.id = pk_id;
+		BufferWriteByte((uint8_t**)&p, &outlen, PACKET_CLIENT_REGISTERED);
+		BufferWriteData((uint8_t **)&p, &outlen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
+		SendPacket((uint8_t *)&buff, outlen);
+		
 	}
 }

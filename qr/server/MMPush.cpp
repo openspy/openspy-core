@@ -131,11 +131,14 @@ namespace MM {
 		return NULL;
 	}
 	void MMPushTask::PerformPushServer(MMPushRequest request) {
-		PushServer(request.server, true, request.server->id);
+		int pk_id = PushServer(request.server, true, request.server.id);
+		if (request.server.id != pk_id) {
+			request.peer->OnRegisteredServer(pk_id, request.extra);
+		}
 	}
 	void MMPushTask::PerformUpdateServer(MMPushRequest request) {
 		DeleteServer(request.server, false);
-		PushServer(request.server, false, request.server->id);
+		PushServer(request.server, false, request.server.id);
 	}
 	void MMPushTask::PerformDeleteServer(MMPushRequest request) {
 		DeleteServer(request.server, true);
@@ -144,7 +147,7 @@ namespace MM {
 		OS::GameData game_info = OS::GetGameByName(request.gamename.c_str());
 		request.peer->OnGetGameInfo(game_info, request.extra);
 	}
-	void MMPushTask::PushServer(ServerInfo *server, bool publish, int pk_id) {
+	int MMPushTask::PushServer(ServerInfo server, bool publish, int pk_id) {
 		int id = pk_id;
 		int groupid = 0;
 
@@ -152,29 +155,29 @@ namespace MM {
 			id = GetServerID();
 		}
 
-		server->id = id;
-		server->groupid = groupid;
+		server.id = id;
+		server.groupid = groupid;
 
 		std::ostringstream s;
-		s << server->m_game.gamename << ":" << groupid << ":" << id << ":";
+		s << server.m_game.gamename << ":" << groupid << ":" << id << ":";
 		std::string server_key = s.str();
 
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 
-		Redis::Command(mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server->m_game.gameid);
+		Redis::Command(mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server.m_game.gameid);
 		Redis::Command(mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
 
 		
-		std::string ipinput = server->m_address.ToString(true);
+		std::string ipinput = server.m_address.ToString(true);
 
 
 
-		Redis::Command(mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), server->m_address.port, server_key.c_str());
-		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d 300", ipinput.c_str(), server->m_address.port);
+		Redis::Command(mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), server.m_address.port, server_key.c_str());
+		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d 300", ipinput.c_str(), server.m_address.port);
 
 
-		Redis::Command(mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server->m_game.gameid);
-		Redis::Command(mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), server->m_address.port);
+		Redis::Command(mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server.m_game.gameid);
+		Redis::Command(mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), server.m_address.port);
 		Redis::Command(mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), ipinput.c_str());
 
 		Redis::Command(mp_redis_connection, 0, "INCR %s num_beats", server_key.c_str());
@@ -182,20 +185,20 @@ namespace MM {
 
 		Redis::Command(mp_redis_connection, 0, "EXPIRE %s 300", server_key.c_str());
 
-		std::map<std::string, std::string>::iterator it = server->m_keys.begin();
-		while (it != server->m_keys.end()) {
+		std::map<std::string, std::string>::iterator it = server.m_keys.begin();
+		while (it != server.m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;
 			Redis::Command(mp_redis_connection, 0, "HSET %scustkeys %s \"%s\"", server_key.c_str(), p.first.c_str(), OS::escapeJSON(p.second).c_str());
 			it++;
 		}
 		Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys 300", server_key.c_str());
 
-		std::map<std::string, std::vector<std::string> >::iterator it2 = server->m_player_keys.begin();
+		std::map<std::string, std::vector<std::string> >::iterator it2 = server.m_player_keys.begin();
 
 		int i = 0;
 		std::pair<std::string, std::vector<std::string> > p;
 		std::vector<std::string>::iterator it3;
-		while (it2 != server->m_player_keys.end()) {
+		while (it2 != server.m_player_keys.end()) {
 			p = *it2;
 			it3 = p.second.begin();
 			while (it3 != p.second.end()) {
@@ -210,8 +213,8 @@ namespace MM {
 		}
 
 
-		it2 = server->m_team_keys.begin();
-		while (it2 != server->m_team_keys.end()) {
+		it2 = server.m_team_keys.begin();
+		while (it2 != server.m_team_keys.end()) {
 			p = *it2;
 			it3 = p.second.begin();
 			while (it3 != p.second.end()) {
@@ -231,40 +234,42 @@ namespace MM {
 		if (publish)
 			Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\new\\%s", sb_mm_channel, server_key.c_str());
 
+		return id;
+
 	}
-	void MMPushTask::UpdateServer(ServerInfo *server) {
+	void MMPushTask::UpdateServer(ServerInfo server) {
 		//remove all keys and readd
 		DeleteServer(server, false);
-		PushServer(server, false, server->id);
+		PushServer(server, false, server.id);
 
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\update\\%s:%d:%d:", sb_mm_channel, server->m_game.gamename, server->groupid, server->id);
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\update\\%s:%d:%d:", sb_mm_channel, server.m_game.gamename, server.groupid, server.id);
 	}
-	void MMPushTask::DeleteServer(ServerInfo *server, bool publish) {
-		int groupid = server->groupid;
-		int id = server->id;
+	void MMPushTask::DeleteServer(ServerInfo server, bool publish) {
+		int groupid = server.groupid;
+		int id = server.id;
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		if (publish) {
-			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server->m_game.gamename, server->groupid, server->id);
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\del\\%s:%d:%d:", sb_mm_channel, server->m_game.gamename, groupid, id);
+			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server.m_game.gamename, server.groupid, server.id);
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\del\\%s:%d:%d:", sb_mm_channel, server.m_game.gamename, groupid, id);
 		}
 		else {
-			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:", server->m_game.gamename, server->groupid, server->id);
-			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys", server->m_game.gamename, server->groupid, server->id);
+			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:", server.m_game.gamename, server.groupid, server.id);
+			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys", server.m_game.gamename, server.groupid, server.id);
 
 			int i = 0;
-			int groupid = server->groupid;
-			int id = server->id;
+			int groupid = server.groupid;
+			int id = server.id;
 
-			std::map<std::string, std::vector<std::string> >::iterator it2 = server->m_player_keys.begin();
+			std::map<std::string, std::vector<std::string> >::iterator it2 = server.m_player_keys.begin();
 
 			std::pair<std::string, std::vector<std::string> > p;
 			std::vector<std::string>::iterator it3;
-			while (it2 != server->m_player_keys.end()) {
+			while (it2 != server.m_player_keys.end()) {
 				p = *it2;
 				it3 = p.second.begin();
 				while (it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
 					std::string s = *it3;
-					Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys_player_%d", server->m_game.gamename, groupid, id, i);
+					Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys_player_%d", server.m_game.gamename, groupid, id, i);
 					i++;
 					it3++;
 				}
@@ -274,13 +279,13 @@ namespace MM {
 			}
 
 
-			it2 = server->m_team_keys.begin();
-			while (it2 != server->m_team_keys.end()) {
+			it2 = server.m_team_keys.begin();
+			while (it2 != server.m_team_keys.end()) {
 				p = *it2;
 				it3 = p.second.begin();
 				while (it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
 					std::string s = *it3;
-					Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys_team_%d", server->m_game.gamename, groupid, id, i);
+					Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys_team_%d", server.m_game.gamename, groupid, id, i);
 					i++;
 					it3++;
 				}
