@@ -5,7 +5,6 @@
 	#include "NetPeer.h"
 	#include <OS/socketlib/socketlib.h>
 
-
 	EPollNetEventManager::EPollNetEventManager() {
 		m_exit_flag = false;
 
@@ -48,28 +47,31 @@
 		}
 	}
 	void EPollNetEventManager::RegisterSocket(INetPeer *peer) {
-		EPollDataInfo *data_info = (EPollDataInfo *)malloc(sizeof(EPollDataInfo));
+		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {
+			EPollDataInfo *data_info = (EPollDataInfo *)malloc(sizeof(EPollDataInfo));
 
-		struct epoll_event ev;
-		ev.events = 0;
-		ev.data.ptr = data_info;
+			struct epoll_event ev;
+			ev.events = EPOLLIN;
+			ev.data.ptr = data_info;
 
-		data_info->ptr = peer;
-		data_info->is_peer = true;
+			data_info->ptr = peer;
+			data_info->is_peer = true;
 
-		m_datainfo_map[peer] = data_info;
+			m_datainfo_map[peer] = data_info;
 
-		epoll_ctl(m_epollfd, EPOLL_CTL_ADD, peer->GetSocket(), &ev);
+			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, peer->GetSocket(), &ev);
+		}
 	}
 	void EPollNetEventManager::UnregisterSocket(INetPeer *peer) {
-		if(m_datainfo_map.find(peer) != m_datainfo_map.end()) {
-			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLET;
-			ev.data.ptr = peer;
-			epoll_ctl(m_epollfd, EPOLL_CTL_DEL, peer->GetSocket(), &ev);
-			free((void *)m_datainfo_map[peer]);
+		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {
+			if(m_datainfo_map.find(peer) != m_datainfo_map.end()) {
+				struct epoll_event ev;
+				ev.events = EPOLLIN;
+				ev.data.ptr = peer;
+				epoll_ctl(m_epollfd, EPOLL_CTL_DEL, peer->GetSocket(), &ev);
+				free((void *)m_datainfo_map[peer]);
+			}
 		}
-
 	}
 
 	void EPollNetEventManager::setupDrivers() {
@@ -84,7 +86,7 @@
 			data_info->is_peer = false;
 
 			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLET;
+			ev.events = EPOLLIN;
 			ev.data.ptr = data_info;
 
 			m_datainfo_map[driver] = data_info;

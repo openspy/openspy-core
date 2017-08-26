@@ -39,7 +39,8 @@ void SelectNetEventManager::run() {
 		while (it2 != net_peers.end()) {
 			INetPeer *peer = *it2;
 			int sd = peer->GetSocket();
-			peer->think(FD_ISSET(sd, &m_fdset));
+			if(sd != driver->getListenerSocket())
+				peer->think(FD_ISSET(sd, &m_fdset));
 			it2++;
 		}
 		it++;
@@ -68,9 +69,10 @@ int SelectNetEventManager::setup_fdset() {
 				if (sd > hsock) {
 					hsock = sd;
 				}
-
-				FD_SET(sd, &m_fdset);
-				m_cached_sockets.push_back(sd);
+				if (sd != driver->getListenerSocket()) {
+					FD_SET(sd, &m_fdset);
+					m_cached_sockets.push_back(sd);
+				}
 				it2++;
 			}
 			it++;
