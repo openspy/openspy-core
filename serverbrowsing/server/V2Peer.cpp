@@ -644,8 +644,6 @@ namespace SB {
 			return;
 		}
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] WAN Address: %s", OS::Address(m_address_info).ToString().c_str(), OS::Address(server->wan_address).ToString().c_str());
-
 		BufferWriteByte(&p, &len, flags); //flags
 		BufferWriteInt(&p, &len, Socket::htonl(server->wan_address.ip)); //ip
 
