@@ -12,11 +12,11 @@
 #include "V2Peer.h"
 namespace QR {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
-		
+
 		Socket::Init();
 		uint32_t bind_ip = INADDR_ANY;
-		
-		if ((m_sd = Socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0){
+
+		if ((m_sd = Socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
 			//signal error
 		}
 
@@ -71,10 +71,7 @@ namespace QR {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
-			if (!peer->ShouldDelete()) {
-				peer->think();
-			}
-			else if (std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
+			if (peer->ShouldDelete() && std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
 				//marked for delection, dec reference and delete when zero
 				it = m_connections.erase(it);
 				peer->DecRef();
@@ -130,13 +127,13 @@ namespace QR {
 			it++;
 		}
 		Peer *ret = NULL;
-		switch(version) {
-			case 1:
-				ret = new V1Peer(this, address, m_sd);
-				break;
-			case 2:
-				ret = new V2Peer(this, address, m_sd);
-				break;
+		switch (version) {
+		case 1:
+			ret = new V1Peer(this, address, m_sd);
+			break;
+		case 2:
+			ret = new V2Peer(this, address, m_sd);
+			break;
 		}
 		m_connections.push_back(ret);
 		return ret;
@@ -158,8 +155,18 @@ namespace QR {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			p->think();
+			p->think(false);
 			it++;
 		}
+	}
+	const std::vector<INetPeer *> Driver::getPeers() {
+		std::vector<INetPeer *> peers;
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			INetPeer *p = (INetPeer *)*it;
+			peers.push_back(p);
+			it++;
+		}
+		return peers;
 	}
 }

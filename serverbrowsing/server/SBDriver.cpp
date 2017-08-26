@@ -222,4 +222,13 @@ namespace SB {
 		m_server_update_queue.push(serv);
 		mp_mutex->unlock();
 	}
+	const std::vector<INetPeer *> Driver::getPeers() {
+		std::vector<INetPeer *> peers;
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			peers.push_back((INetPeer *)*it);
+			it++;
+		}
+		return peers;
+	}
 }

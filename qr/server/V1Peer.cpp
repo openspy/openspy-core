@@ -38,7 +38,7 @@ namespace QR {
 	V1Peer::~V1Peer() {
 	}
 
-	void V1Peer::think() {
+	void V1Peer::think(bool listener_waiting) {
 		send_ping();
 
 		//check for timeout

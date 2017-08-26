@@ -8,7 +8,7 @@
 
 
 namespace QR {
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version) {
+	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version) : INetPeer(driver, address_info, sd) {
 		m_server_pushed = false;
 		m_delete_flag = false;
 		m_timeout_flag = false;

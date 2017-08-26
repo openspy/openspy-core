@@ -1,10 +1,11 @@
 #ifndef _NETPEER_H
 #define _NETPEER_H
 #include <OS/Ref.h>
+class INetDriver;
 class INetPeer : public OS::Ref {
 	public:
-		INetPeer(INetDriver *driver, struct sockaddr_in *address_info, int sd) { mp_driver = driver; m_address_info = *address_info; m_sd = sd; };
-		virtual ~INetPeer();
+		INetPeer(INetDriver *driver, struct sockaddr_in *address_info, int sd) : OS::Ref() { mp_driver = driver; m_address_info = *address_info; m_sd = sd; };
+		~INetPeer() { close(m_sd); }
 
 		virtual void think(bool packet_waiting) = 0;
 		const struct sockaddr_in *getAddress() { return &m_address_info; }

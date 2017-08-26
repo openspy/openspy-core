@@ -6,8 +6,8 @@
 #include <OS/socketlib/socketlib.h>
 
 namespace SB {
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version) : OS::Ref() {
-		m_sd = sd;
+	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version) : INetPeer(driver, address_info, sd) {
+
 		mp_driver = driver;
 		m_address_info = *address_info;
 		m_delete_flag = false;
@@ -21,7 +21,6 @@ namespace SB {
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d",OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
-		close(m_sd);
 		delete mp_mutex;
 	}
 

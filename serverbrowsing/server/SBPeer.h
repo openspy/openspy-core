@@ -1,7 +1,8 @@
 #ifndef _SBPEER_H
 #define _SBPEER_H
 #include "../main.h"
-#include <OS/Ref.h>
+#include <OS/Net/NetPeer.h>
+
 #include "MMQuery.h"
 
 //Maximum length for the SQL filter string
@@ -23,15 +24,13 @@ namespace SB {
 	};
 
 
-	class Peer : public OS::Ref {
+	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version);
 		virtual ~Peer();
 		
 		virtual void think(bool packet_waiting) = 0;
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
-
-		int GetSocket() { return m_sd; };
 
 
 
@@ -57,7 +56,7 @@ namespace SB {
 		sServerCache FindServerByKey(std::string key);
 
 		int m_version;
-		int m_sd;
+
 		OS::GameData m_game;
 		Driver *mp_driver;
 

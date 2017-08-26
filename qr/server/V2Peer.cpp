@@ -272,6 +272,7 @@ namespace QR {
 		MM::m_task_pool->AddRequest(req);
 	}
 	void V2Peer::OnGetGameInfo(OS::GameData game_info, void *extra) {
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got game %s", OS::Address(m_address_info).ToString().c_str(), game_info.gamename);
 		if (extra == (void *)1) {
 			m_server_info.m_game = game_info;
 			if (m_server_info.m_game.gameid == 0) {
@@ -344,7 +345,7 @@ namespace QR {
 		}
 
 	}
-	void V2Peer::think() {
+	void V2Peer::think(bool listener_waiting) {
 		send_ping();
 
 		//check for timeout

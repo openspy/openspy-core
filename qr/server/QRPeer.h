@@ -6,6 +6,7 @@
 
 #include <OS/legacy/gsmsalg.h>
 
+#include <OS/Net/NetPeer.h>
 #include <OS/Ref.h>
 #include "MMPush.h"
 
@@ -15,15 +16,14 @@
 namespace QR {
 	class Driver;
 
-	class Peer : public OS::Ref {
+	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version);
 		virtual ~Peer();
 		
-		virtual void think() = 0;
+		virtual void think(bool listener_waiting) = 0;
 		virtual void handle_packet(char *recvbuf, int len) = 0;		
 
-		int GetSocket() { return m_sd; };
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
 		bool ShouldDelete() { return m_delete_flag; };
 		void SetDelete(bool del) { m_delete_flag = del; };
@@ -49,7 +49,6 @@ namespace QR {
 		bool m_delete_flag;
 		bool m_timeout_flag;
 
-		int m_sd;
 		int m_version;
 
 		bool m_server_pushed;

@@ -19,7 +19,7 @@ namespace QR {
 		V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~V2Peer();
 		
-		void think();
+		void think(bool listener_waiting);
 
 		void handle_packet(char *recvbuf, int len);
 

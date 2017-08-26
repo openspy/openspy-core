@@ -17,7 +17,7 @@ void SelectNetEventManager::run() {
     timeout.tv_sec = 1;
 
     int hsock = setup_fdset();
-    if(Socket::select(hsock + 1, &m_fdset, NULL, NULL, &timeout) < 0) {
+    if(Socket::select(hsock, &m_fdset, NULL, NULL, &timeout) < 0) {
     	//return;
     }
     if(m_exit_flag) {
@@ -29,7 +29,7 @@ void SelectNetEventManager::run() {
 		INetDriver *driver = *it;
 		driver->think(FD_ISSET(driver->getListenerSocket(), &m_fdset));
 
-		std::vector<INetPeer *> net_peers;
+		std::vector<INetPeer *> net_peers = driver->getPeers();
 		std::vector<INetPeer *>::iterator it2 = net_peers.begin();
 		while (it2 != net_peers.end()) {
 			INetPeer *peer = *it2;
@@ -49,12 +49,15 @@ int SelectNetEventManager::setup_fdset() {
 
 		std::vector<int> sockets = driver->getSockets();
 		std::vector<int>::iterator it2 = sockets.begin();
-		int sd;
-		FD_SET(driver->getListenerSocket(), &m_fdset);
+		int sd = driver->getListenerSocket();
+		FD_SET(sd, &m_fdset);
+		if (sd > hsock) {
+			hsock = sd;
+		}
 		while (it2 != sockets.end()) {
 			sd = *it2;
-			if (sd >= hsock) {
-				hsock = sd + 1;
+			if (sd > hsock) {
+				hsock = sd;
 			}
 
 			FD_SET(sd, &m_fdset);
@@ -62,5 +65,5 @@ int SelectNetEventManager::setup_fdset() {
 		}
 		it++;
 	}
-	return hsock;
+	return hsock + 1;
 }

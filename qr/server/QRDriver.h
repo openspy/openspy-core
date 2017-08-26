@@ -36,6 +36,8 @@ namespace QR {
 		const std::vector<int> getSockets();
 		int GetNumConnections();
 
+		const std::vector<INetPeer *> getPeers();
+
 	private:
 
 		void TickConnections();
