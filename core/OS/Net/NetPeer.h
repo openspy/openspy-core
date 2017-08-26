@@ -1,7 +1,7 @@
 #ifndef _NETPEER_H
 #define _NETPEER_H
 #include <OS/Ref.h>
-class INetDriver;
+#include "NetDriver.h"
 class INetPeer : public OS::Ref {
 	public:
 		INetPeer(INetDriver *driver, struct sockaddr_in *address_info, int sd) : OS::Ref() { mp_driver = driver; m_address_info = *address_info; m_sd = sd; };
