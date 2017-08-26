@@ -9,7 +9,7 @@
 #include "Threads/Win32/WinThread.h"
 #include "Threads/Win32/Win32Mutex.h"
 #define EVTMGR_USE_SELECT 1
-#define EVTMGR_USE_EPOLL 0
+//#define EVTMGR_USE_EPOLL 0
 typedef int socklen_t;
 #ifndef snprintf
 	#define snprintf sprintf_s
@@ -20,7 +20,7 @@ typedef int socklen_t;
 #define close closesocket
 int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #else
-#define EVTMGR_USE_SELECT 0
+//#define EVTMGR_USE_SELECT 0
 #define EVTMGR_USE_EPOLL 1
 #include <unistd.h>
 #include <sys/socket.h>
