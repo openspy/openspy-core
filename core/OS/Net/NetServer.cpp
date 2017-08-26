@@ -1,7 +1,17 @@
 #include "NetServer.h"
-#include "SelectNetEventManager.h"
+#if EVTMGR_USE_SELECT
+	#include "SelectNetEventManager.h"
+#elif EVTMGR_USE_EPOLL
+	#include "EPollNetEventManager.h"
+#endif
+
+
 INetServer::INetServer() {
+	#ifdef EVTMGR_USE_SELECT
 	mp_net_event_mgr = new SelectNetEventManager();
+	#elif EVTMGR_USE_EPOLL
+	mp_net_event_mgr = new EPollNetEventManager();
+	#endif
 }
 INetServer::~INetServer() {
 	delete mp_net_event_mgr;
@@ -18,4 +28,10 @@ void INetServer::NetworkTick() {
 }
 void INetServer::flagExit() {
 	mp_net_event_mgr->flagExit();	
+}
+void INetServer::RegisterSocket(INetPeer *peer) {
+	mp_net_event_mgr->RegisterSocket(peer);
+}
+void INetServer::UnregisterSocket(INetPeer *peer) {
+	mp_net_event_mgr->UnregisterSocket(peer);
 }

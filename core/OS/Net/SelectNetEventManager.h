@@ -1,15 +1,27 @@
 #ifndef _SELECTNETEVENTMGR_H
-#define _SELECTNETEVENTMGR_H
-#include <OS/OpenSpy.h>
-#include "NetEventManager.h"
-#include <vector>
-class SelectNetEventManager : public INetEventManager {
-public:
-	SelectNetEventManager();
-	~SelectNetEventManager();
-	void run();
-private:
-	int setup_fdset();
-	fd_set  m_fdset;
-};
+	#if EVTMGR_USE_SELECT
+		#define _SELECTNETEVENTMGR_H
+		#include <OS/OpenSpy.h>
+		#include "NetEventManager.h"
+		#include <vector>
+
+		#define SELECT_TIMEOUT 1000000
+
+		class SelectNetEventManager : public INetEventManager {
+		public:
+			SelectNetEventManager();
+			~SelectNetEventManager();
+
+			void RegisterSocket(INetPeer *peer);
+			void UnregisterSocket(INetPeer *peer);
+			void run();
+		private:
+			int setup_fdset();
+			fd_set  m_fdset;
+
+			bool m_dirty_fdset;
+			std::vector<int> m_cached_sockets;
+			int m_hsock;
+		};
+	#endif
 #endif //_SELECTNETEVENTMGR_H

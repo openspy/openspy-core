@@ -49,6 +49,7 @@ namespace SB {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
+			m_server->UnregisterSocket(peer);
 			delete peer;
 			it++;
 		}
@@ -72,6 +73,7 @@ namespace SB {
 				break;
 			}
 			m_connections.push_back(mp_peer);
+			m_server->RegisterSocket(mp_peer);
 			mp_peer->think(true);
 		}
 		else {
@@ -82,6 +84,7 @@ namespace SB {
 					//marked for delection, dec reference and delete when zero
 					it = m_connections.erase(it);
 					peer->DecRef();
+					m_server->UnregisterSocket(peer);
 					m_peers_to_delete.push_back(peer);
 					continue;
 				}

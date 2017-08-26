@@ -36,6 +36,7 @@ namespace QR {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
+			m_server->UnregisterSocket(peer);
 			delete peer;
 			it++;
 		}
@@ -76,6 +77,8 @@ namespace QR {
 				it = m_connections.erase(it);
 				peer->DecRef();
 				m_peers_to_delete.push_back(peer);
+
+				m_server->UnregisterSocket(peer);
 				continue;
 			}
 			it++;
@@ -135,6 +138,7 @@ namespace QR {
 			ret = new V2Peer(this, address, m_sd);
 			break;
 		}
+		m_server->RegisterSocket(ret);
 		m_connections.push_back(ret);
 		return ret;
 	}

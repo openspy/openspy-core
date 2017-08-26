@@ -16,6 +16,9 @@ public:
 	*/
 	void addNetworkDriver(INetDriver *driver);
 	void flagExit();
+
+	void RegisterSocket(INetPeer *peer);
+	void UnregisterSocket(INetPeer *peer);
 protected:
 	void NetworkTick(); //fires the INetEventMgr
 //private:

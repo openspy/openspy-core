@@ -544,7 +544,6 @@ namespace SB {
 
 	}
 	void V2Peer::think(bool waiting_packet) {
-		printf("think packet waiting: %d\n", waiting_packet);
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 		int len = 0;
 		if (waiting_packet || m_next_packet_send_msg) {

@@ -39,10 +39,10 @@ int main() {
     
 
 	g_gameserver = new SBServer();
-    //g_legacyms_driver = new SB::Driver(g_gameserver, "0.0.0.0", 28900, 1);
+    g_legacyms_driver = new SB::Driver(g_gameserver, "0.0.0.0", 28900, 1);
     g_ms_driver = new SB::Driver(g_gameserver, "0.0.0.0", 28910, 2);
 
-    //g_gameserver->addNetworkDriver(g_legacyms_driver);
+    g_gameserver->addNetworkDriver(g_legacyms_driver);
 	g_gameserver->addNetworkDriver(g_ms_driver);
 
 	g_gameserver->init();

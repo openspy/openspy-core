@@ -9,6 +9,9 @@ class INetEventManager {
 		virtual void run() = 0;
 		void addNetworkDriver(INetDriver *driver);
 		void flagExit();
+
+		virtual void RegisterSocket(INetPeer *peer) = 0;
+		virtual void UnregisterSocket(INetPeer *peer) = 0;
 	protected:
 		bool m_exit_flag;
 		std::vector<INetDriver *> m_net_drivers;
