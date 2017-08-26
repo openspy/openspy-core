@@ -1,6 +1,7 @@
 #ifndef _EPOLLNETEVENTMGR_H
 #define _EPOLLNETEVENTMGR_H
 #include <OS/OpenSpy.h>
+#include <sys/epoll.h>
 	#if EVTMGR_USE_EPOLL
 		#include "NetEventManager.h"
 		#include <vector>
