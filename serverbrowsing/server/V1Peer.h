@@ -30,13 +30,13 @@ namespace SB {
 		void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra);
 
 
-		void SendPacket(const uint8_t *buff, int len, bool attach_final);
+		void SendPacket(const uint8_t *buff, int len, bool attach_final, bool skip_encryption = false);
 		void SendServers(MM::ServerListQuery results);
 		void SendServerInfo(MM::ServerListQuery results);
 		void SendGroups(MM::ServerListQuery results);
-		void handle_packet(char *data, int len);
-		void handle_gamename(char *data, int len);
-		void handle_list(char *data, int len);
+		void handle_packet(const char *data, int len);
+		void handle_gamename(const char *data, int len);
+		void handle_list(const char *data, int len);
 		void send_error(bool disconnect, const char *fmt, ...);
 		void send_crypt_header(int enctype);
 		std::string field_cleanup(std::string s);
@@ -48,6 +48,9 @@ namespace SB {
 		unsigned char *m_keyptr;
 		bool m_validated;
 
+
+		int m_waiting_gamedata; //1 = waiting, 2 = process packet queue
+		std::queue<std::string> m_waiting_packets;
 	};
 }
 #endif //_SAMPRAKPEER_H

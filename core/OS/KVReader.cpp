@@ -68,7 +68,7 @@ namespace OS {
 		return std::pair<std::unordered_map<std::string, std::string>::const_iterator, std::unordered_map<std::string, std::string>::const_iterator>(m_kv_map.begin(),m_kv_map.end());
 	}
 	int KVReader::GetIndex(int n) {
-		return abs((int)(n - m_kv_map.size())) - 1;
+		return 0;//abs((int)(n - m_kv_map.size())) - 1;
 	}
 	bool KVReader::HasKey(std::string name) {
 		return m_kv_map.find(name) != m_kv_map.end();

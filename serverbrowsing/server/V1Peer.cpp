@@ -29,6 +29,7 @@ namespace SB {
 			gen_random((char *)&m_challenge,6);
 
 			m_enctype = 0;
+			m_waiting_gamedata = 0;
 			m_validated = false;
 			m_keyptr = NULL;
 
@@ -51,6 +52,14 @@ namespace SB {
 		void V1Peer::think(bool packet_waiting) {
 			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 			int len;
+			if (m_waiting_gamedata == 2) {
+				m_waiting_gamedata = 0;
+				while (!m_waiting_packets.empty()) {
+					std::string cmd = m_waiting_packets.front();
+					m_waiting_packets.pop();
+					handle_packet(cmd.c_str(), cmd.length());
+				}
+			}
 			if (packet_waiting) {
 				len = recv(m_sd, (char *)&buf, MAX_OUTGOING_REQUEST_SIZE, 0);
 				buf[len] = 0;
@@ -111,7 +120,7 @@ namespace SB {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", OS::Address(m_address_info).ToString().c_str(), resp.str().c_str());
 			SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), true);
 		}
-		void V1Peer::handle_gamename(char *data, int len) {
+		void V1Peer::handle_gamename(const char *data, int len) {
 			OS::KVReader data_parser = OS::KVReader(std::string(data));
 			MM::MMQueryRequest req;
 
@@ -120,16 +129,12 @@ namespace SB {
 			int enctype = data_parser.GetValueInt("enctype");
 			std::string gamename = data_parser.GetValue("gamename");
 
-			if(!m_game.gameid) {
-				send_error(true, "Gamename not found");
-				return;
-			}
+		
+			validation = data_parser.GetValue("validate");
+			m_validation = validation;
 
-			if(enctype != 0) {
-				validation = data_parser.GetValue("validate");
-				m_validation = validation;
-			}
 			req.type = MM::EMMQueryRequestType_GetGameInfoByGameName;
+			m_waiting_gamedata = 1;
 			req.gamenames[0] = gamename;
 			req.extra = (void *)2;
 			req.driver = mp_driver;
@@ -138,11 +143,15 @@ namespace SB {
 			m_enctype = enctype;
 			MM::m_task_pool->AddRequest(req);
 		}
-		void V1Peer::handle_packet(char *data, int len) {
+		void V1Peer::handle_packet(const char *data, int len) {
 			if(len < 0) {
 				m_delete_flag = true;
 				return;
 			} else if(len == 0) {
+				return;
+			}
+			if (m_waiting_gamedata == 1) {
+				m_waiting_packets.push(std::string(data));
 				return;
 			}
 			OS::KVReader kv_parser = OS::KVReader(std::string(data));
@@ -150,10 +159,11 @@ namespace SB {
 			std::string command;
 			gettimeofday(&m_last_recv, NULL);
 
-			command = kv_parser.GetValueByIdx(0);
+			printf("MS got: %s\n", data);
+			command = kv_parser.GetKeyByIdx(0);
 			if(strcmp(command.c_str(),"gamename") == 0 && !m_validated) {
 				handle_gamename(data, len);
-			} else if(strcmp(command.c_str(), "list") == 0 && m_validated) {
+			} else if(strcmp(command.c_str(), "list") == 0) {
 				handle_list(data, len);
 			}
 			else {
@@ -164,13 +174,19 @@ namespace SB {
 			SendServerInfo(results);
 		}
 		void V1Peer::OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
-			SendServers(results);
+			if (request.req.all_keys) {
+				SendServerInfo(results);
+			}
+			else {
+				SendServers(results);
+			}			
 		}
 		void V1Peer::OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
 			SendGroups(results);
 		}
 		void V1Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {
 			int type = (int)extra;
+			m_waiting_gamedata = 2;
 			if (type == 1) {
 				if (game_data.gameid == 0) {
 					send_error(true, "Invalid target gamename");
@@ -197,13 +213,14 @@ namespace SB {
 				if(strcmp(realvalidate,m_validation.c_str()) == 0) {
 					send_crypt_header(m_enctype);
 					m_validated = true;
+					printf("Valided successfully\n");
 				} else {
 					send_error(true, "Validation error");
 					return;
 				}
 			}
 		}
-		void V1Peer::handle_list(char *data, int len) {
+		void V1Peer::handle_list(const char *data, int len) {
 			std::string mode, gamename;
 
 			OS::KVReader kv_parser(data);
@@ -230,6 +247,7 @@ namespace SB {
 
 
 			req.type = MM::EMMQueryRequestType_GetGameInfoByGameName;
+			m_waiting_gamedata = 1;
 			req.req.send_groups = false;
 			if(mode.compare("cmp") == 0) {				
 				req.req.all_keys = false;
@@ -243,7 +261,7 @@ namespace SB {
 				return;
 			}
 
-			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", OS::Address(m_address_info).ToString().c_str(), req.req.m_from_gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.send_groups, req.req.all_keys);
+			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", OS::Address(m_address_info).ToString().c_str(), req.req.m_from_game.gamename, req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
 
 			req.extra = (void *)1;
 			m_last_list_req = req.req;
@@ -287,8 +305,10 @@ namespace SB {
 				}
 				it2++;
 			}
-			SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), true);
-			m_delete_flag = true;
+			SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), results.last_set);
+
+			if(results.last_set)
+				m_delete_flag = true;
 		}
 		void V1Peer::SendGroups(MM::ServerListQuery results) {
 			uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
@@ -348,7 +368,7 @@ namespace SB {
 				}
 				it2++;
 			}
-			SendPacket((const uint8_t *)buff, len, true);
+			SendPacket((const uint8_t *)buff, len, results.last_set);
 		}
 		void V1Peer::SendServers(MM::ServerListQuery results) {
 			uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE + 1];
@@ -364,10 +384,12 @@ namespace SB {
 				BufferWriteShort((uint8_t **)&p,&len,Socket::htons(serv->wan_address.port));
 				it++;
 			}
-			SendPacket((const uint8_t *)&out_buff, len, true);
-			m_delete_flag = true;
+			if (results.last_set) {
+				m_delete_flag = true;
+			}
+			SendPacket((const uint8_t *)&out_buff, len, results.last_set);
 		}
-		void V1Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
+		void V1Peer::SendPacket(const uint8_t *buff, int len, bool attach_final, bool skip_encryption) {
 			uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
 			uint8_t *p = (uint8_t*)&out_buff;
 			int out_len = 0;
@@ -375,10 +397,12 @@ namespace SB {
 			if(attach_final) {
 				BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
 			}
-			switch(m_enctype) {
+			if (!skip_encryption) {
+				switch (m_enctype) {
 				case 2:
-					m_keyptr = encshare1((unsigned int *)&m_cryptkey_enctype2, (unsigned char *)&out_buff, out_len,m_keyptr);
-				break;
+					m_keyptr = encshare1((unsigned int *)&m_cryptkey_enctype2, (unsigned char *)&out_buff, out_len, m_keyptr);
+					break;
+				}
 			}
 			int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
 			if(c < 0) {
@@ -401,7 +425,7 @@ namespace SB {
 				}
 				BufferWriteByte((uint8_t **)&p,&len,sizeof(cryptkey)^0xEC);
 				BufferWriteData((uint8_t **)&p, &len, (uint8_t *)&cryptkey, sizeof(cryptkey));
-				SendPacket((const uint8_t *)&buff, len, false);
+				SendPacket((const uint8_t *)&buff, len, false, true);
 			}
 
 		}
