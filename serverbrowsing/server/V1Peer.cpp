@@ -310,8 +310,8 @@ namespace SB {
 			}
 			SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), results.last_set);
 
-			if(results.last_set)
-				m_delete_flag = true;
+			//if(results.last_set)
+				//m_delete_flag = true;
 		}
 		void V1Peer::SendGroups(MM::ServerListQuery results) {
 			uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
