@@ -40,6 +40,7 @@ namespace QR {
 		void send_ping();
 		void handle_echo(char *recvbuf, int len);
 		void handle_heartbeat(char *recvbuf, int len);
+		void handle_validate(char *recvbuf, int len);
 		void handle_ready_query_state(char *recvbuf, int len);
 		void parse_rules(char *recvbuf, int len);
 		void parse_players(char *recvbuf, int len);

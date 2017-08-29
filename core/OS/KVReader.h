@@ -3,6 +3,7 @@
 
 #include <OS/OpenSpy.h>
 #include <unordered_map>
+#include <vector>
 #include <iterator>
 /*
 	This is not thread safe!!
@@ -21,11 +22,13 @@ namespace OS {
 		std::pair<std::string, std::string> GetPairByIdx(int n);
 		std::string 						GetValue(std::string key);
 		int 								GetValueInt(std::string key);
-		std::pair<std::unordered_map<std::string, std::string>::const_iterator, std::unordered_map<std::string, std::string>::const_iterator> GetHead() const;
+		std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> GetHead() const;
 		bool HasKey(std::string name);
 	private:
 		int GetIndex(int n); //map internal index to external index
-		std::unordered_map<std::string, std::string> m_kv_map;
+		std::vector<std::pair<std::string, std::string>>::const_iterator FindKey(std::string key);
+		std::vector<std::pair<std::string, std::string>>::const_iterator FindValue(std::string key);
+		std::vector< std::pair<std::string, std::string> > m_kv_map;
 	};
 }
 #endif //_OS_KVREADER_H

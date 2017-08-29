@@ -61,8 +61,7 @@ namespace QR {
 
 		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
 
-		std::string command = data_parser.GetValueByIdx(0);
-
+		std::string command = data_parser.GetKeyByIdx(0);
 
 		//gettimeofday(&m_last_recv, NULL); //not here due to spoofing
 
@@ -71,6 +70,9 @@ namespace QR {
 		}
 		else if (command.compare("echo") == 0) {
 			handle_echo(recvbuf, len);
+		}
+		else if (command.compare("validate") == 0) {
+			handle_validate(recvbuf, len);
 		}
 		else {
 			if (m_query_state != EV1_CQS_Complete) {
@@ -93,13 +95,25 @@ namespace QR {
 	}
 	void V1Peer::parse_rules(char *recvbuf, int len) {
 		m_server_info.m_keys = OS::KeyStringToMap(recvbuf);
+
+		if(m_server_info.m_keys.find("echo") != m_server_info.m_keys.cend())
+			m_server_info.m_keys.erase(m_server_info.m_keys.find("echo"));
+
+		std::stringstream ss;
+		std::map<std::string, std::string>::iterator it = m_server_info.m_keys.begin();
+		while (it != m_server_info.m_keys.end()) {
+			std::pair<std::string, std::string> p = *it;
+			ss << "(" << p.first << ", " << p.second << ") ";
+			it++;
+		}
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
 	}
 	void V1Peer::parse_players(char *recvbuf, int len) {
-
+		std::stringstream ss;
 		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
 
-		std::pair<std::unordered_map<std::string, std::string>::const_iterator, std::unordered_map<std::string, std::string>::const_iterator> it_pair = data_parser.GetHead();
-		std::unordered_map<std::string, std::string>::const_iterator it = it_pair.first;
+		std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it_pair = data_parser.GetHead();
+		std::vector<std::pair< std::string, std::string> >::const_iterator it = it_pair.first;
 		while (it != it_pair.second) {
 
 			std::pair<std::string, std::string> p = *it;
@@ -108,15 +122,19 @@ namespace QR {
 			value = p.second;
 
 			std::string::size_type index_seperator = p.first.rfind('_');
-
 			if (index_seperator != std::string::npos) {
 				m_server_info.m_player_keys[p.first.substr(0, index_seperator + 1)].push_back(p.second);
+
+				ss << "P(" << m_server_info.m_player_keys[p.first.substr(0, index_seperator + 1)].size()-1 << ") ( " << p.first << "," << p.second << ") ";
 			}
 
 			if (p.first.compare("final") == 0)
 				break;
 			it++;
 		}
+
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
 	}
 	void V1Peer::handle_ready_query_state(char *recvbuf, int len) {
 		std::ostringstream s;
@@ -137,7 +155,8 @@ namespace QR {
 		}
 
 
-		gettimeofday(&m_last_recv, NULL);
+		gettimeofday(&m_last_recv, NULL); //validated, update ping
+
 		switch (m_query_state) {
 		case EV1_CQS_Basic:
 			m_server_info.m_keys.clear();
@@ -181,6 +200,27 @@ namespace QR {
 		s << "\\echo\\ " << m_challenge;
 		SendPacket((const uint8_t*)s.str().c_str(), s.str().length(), false);
 	}
+	void V1Peer::handle_validate(char *recvbuf, int len) {
+		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
+		std::string validate = data_parser.GetValue("validate");
+
+		unsigned char *validation = gsseckey(NULL, (unsigned char *)m_challenge, (unsigned char *)m_server_info.m_game.secretkey, 0);
+
+		if (strcmp((const char *)validation, (const char *)validate.c_str()) == 0) {
+			m_validated = true;
+			m_query_state = EV1_CQS_Basic;
+			std::stringstream s;
+			s << "\\basic\\\\echo\\" << m_challenge;
+			SendPacket((uint8_t*)s.str().c_str(), s.str().length(), true);
+
+			gettimeofday(&m_last_recv, NULL); //validated, update ping
+		}
+		else {
+			m_validated = false;
+			send_error(true, "Validation failure");
+		}
+		free((void *)validation);
+	}
 	void V1Peer::handle_heartbeat(char *recvbuf, int len) {
 		
 		std::string gamename;
@@ -216,28 +256,13 @@ namespace QR {
 			send_error(true, "unknown game");
 			return;
 		}
-
-		if (state_changed == 1) {
+		if (m_validated) {
 			m_query_state = EV1_CQS_Basic;
-			if (m_validated) {
-				s << "\\basic\\\\echo\\" << m_challenge;
-			}
-			else {
-				if (!m_uses_validation) {
-					s << "\\basic\\\\echo\\" << m_challenge;
-				}
-				else {
-					s << "\\basic\\\\secure\\" << m_challenge;
-				}
-
-			}
+			s << "\\basic\\\\echo\\" << m_challenge;
 		}
-		else if (state_changed == 2) {
-			m_validated = false;
-			Delete();
-			return;
+		else {
+			s << "\\secure\\" << m_challenge;
 		}
-
 		if (s.str().length() > 0)
 			SendPacket((const uint8_t*)s.str().c_str(), s.str().length(), false);
 	}
@@ -259,7 +284,7 @@ namespace QR {
 			else { //just validated, recieve server info for MMPush
 				m_validated = true;
 				m_query_state = EV1_CQS_Basic;
-				s << "\\basic\\\\echo\\" << m_challenge;
+				s << "\\basic\\";
 				if (s.str().length() > 0)
 					SendPacket((const uint8_t*)s.str().c_str(), s.str().length(), false);
 			}
@@ -290,6 +315,9 @@ namespace QR {
 		if (attach_final) {
 			BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
 		}
+
+		out_buff[out_len] = 0;
+
 		int c = sendto(m_sd, (char *)&out_buff, out_len, 0, (struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
 		if (c < 0) {
 			Delete();

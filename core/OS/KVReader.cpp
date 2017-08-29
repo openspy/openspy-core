@@ -17,10 +17,12 @@ namespace OS {
 
 		while(std::getline (ss,token, c)) {
 			if(i % 2 == 0) {
-				key = token;
+				key = OS::strip_whitespace(token);
 			} else {
-				value = token;
-				m_kv_map[key] = value;
+				value = OS::strip_whitespace(token);
+				if (!HasKey(key) && value.length()) {
+					m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
+				}					
 			}
 			i++;
 		}
@@ -43,13 +45,13 @@ namespace OS {
 		n = GetIndex(n);
 		if(m_kv_map.size() < (unsigned int)n)
 			return std::pair<std::string, std::string>("", "");
-		std::unordered_map<std::string, std::string>::const_iterator it = m_kv_map.begin();
+		std::vector<std::pair<std::string, std::string>>::const_iterator it = m_kv_map.begin();
 		std::advance(it, n);
 
 		return *it;
 	}
 	std::string KVReader::GetValue(std::string key) {
-		std::unordered_map<std::string, std::string>::const_iterator it = m_kv_map.find(key);
+		std::vector<std::pair<std::string, std::string>>::const_iterator it = FindKey(key);
 		if(it == m_kv_map.end()) {
 			return "";
 		}
@@ -57,20 +59,42 @@ namespace OS {
 		return (*it).second;
 	}
 	int	KVReader::GetValueInt(std::string key) {
-		std::unordered_map<std::string, std::string>::const_iterator it = m_kv_map.find(key);
+		std::vector<std::pair<std::string, std::string>>::const_iterator it = FindKey(key);
 		if(it == m_kv_map.end()) {
 			return 0;
 		}
 
 		return atoi((*it).second.c_str());
 	}
-	std::pair<std::unordered_map<std::string, std::string>::const_iterator, std::unordered_map<std::string, std::string>::const_iterator> KVReader::GetHead() const {
-		return std::pair<std::unordered_map<std::string, std::string>::const_iterator, std::unordered_map<std::string, std::string>::const_iterator>(m_kv_map.begin(),m_kv_map.end());
+	std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> KVReader::GetHead() const {
+		return std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator>(m_kv_map.begin(),m_kv_map.end());
 	}
 	int KVReader::GetIndex(int n) {
-		return 0;//abs((int)(n - m_kv_map.size())) - 1;
+		return n;//abs((int)(n - m_kv_map.size())) - 1;
 	}
 	bool KVReader::HasKey(std::string name) {
-		return m_kv_map.find(name) != m_kv_map.end();
+		return FindKey(name) != m_kv_map.cend();
+	}
+	std::vector<std::pair<std::string, std::string>>::const_iterator KVReader::FindKey(std::string key) {
+		std::vector<std::pair<std::string, std::string>>::const_iterator it = m_kv_map.cbegin();
+		while (it != m_kv_map.cend()) {
+			std::pair<std::string, std::string> p = *it;
+			if (p.first.compare(key) == 0) {
+				return it;
+			}
+			it++;
+		}
+		return m_kv_map.cend();
+	}
+	std::vector<std::pair<std::string, std::string>>::const_iterator KVReader::FindValue(std::string key) {
+		std::vector<std::pair<std::string, std::string>>::const_iterator it = m_kv_map.cbegin();
+		while (it != m_kv_map.cend()) {
+			std::pair<std::string, std::string> p = *it;
+			if (p.second.compare(key) == 0) {
+				return it;
+			}
+			it++;
+		}
+		return m_kv_map.cend();
 	}
 }

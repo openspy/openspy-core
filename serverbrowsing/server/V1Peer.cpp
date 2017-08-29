@@ -159,15 +159,19 @@ namespace SB {
 			std::string command;
 			gettimeofday(&m_last_recv, NULL);
 
-			printf("MS got: %s\n", data);
 			command = kv_parser.GetKeyByIdx(0);
 			if(strcmp(command.c_str(),"gamename") == 0 && !m_validated) {
 				handle_gamename(data, len);
-			} else if(strcmp(command.c_str(), "list") == 0) {
+			}
+			else if (strcmp(command.c_str(), "list") == 0) {
 				handle_list(data, len);
 			}
+			else if (strcmp(command.c_str(), "queryid") == 0) {
+
+			}
 			else {
-				send_error(true, "Cannot handle request");
+				//send_error(true, "Cannot handle request");
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", OS::Address(m_address_info).ToString().c_str(), data);
 			}
 		}
 		void V1Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
@@ -213,7 +217,6 @@ namespace SB {
 				if(strcmp(realvalidate,m_validation.c_str()) == 0) {
 					send_crypt_header(m_enctype);
 					m_validated = true;
-					printf("Valided successfully\n");
 				} else {
 					send_error(true, "Validation error");
 					return;
