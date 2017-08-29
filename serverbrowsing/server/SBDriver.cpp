@@ -121,6 +121,8 @@ namespace SB {
 				SendUpdateServer(&serv);
 			}
 		}
+
+		TickConnections();
 		mp_mutex->unlock();
 	}
 
