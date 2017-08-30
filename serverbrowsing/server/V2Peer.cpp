@@ -546,7 +546,7 @@ namespace SB {
 	void V2Peer::think(bool waiting_packet) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 		int len = 0;
-		if (waiting_packet || m_next_packet_send_msg) {
+		if (waiting_packet) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
 			if (len <= 0) {
 				m_delete_flag = true;
