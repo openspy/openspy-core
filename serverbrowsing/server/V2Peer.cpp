@@ -606,15 +606,17 @@ namespace SB {
 		if (server->wan_address.port != server->game.queryport) {
 			flags |= NONSTANDARD_PORT_FLAG;
 		}
+		int natneg_val = 0;
 		if(server->kvFields.find("natneg") != server->kvFields.end()) {
-			int natneg_val = atoi(server->kvFields["natneg"].c_str());
-			if(natneg_val == 0) {
-				flags |= UNSOLICITED_UDP_FLAG;
-			} else {
-				flags |= CONNECT_NEGOTIATE_FLAG;
-			}
+			natneg_val = atoi(server->kvFields["natneg"].c_str());
 		}
 		else {
+			flags |= CONNECT_NEGOTIATE_FLAG;
+		}
+
+		if(natneg_val == 0) {
+			flags |= UNSOLICITED_UDP_FLAG;
+		} else {
 			flags |= CONNECT_NEGOTIATE_FLAG;
 		}
 		

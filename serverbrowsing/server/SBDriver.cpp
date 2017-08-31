@@ -57,7 +57,6 @@ namespace SB {
 		delete mp_mutex;
 	}
 	void Driver::think(bool listen_waiting) {
-		mp_mutex->lock();
 		if (listen_waiting) {
 			socklen_t psz = sizeof(struct sockaddr_in);
 			struct sockaddr_in peer;
@@ -103,27 +102,37 @@ namespace SB {
 			}
 
 			MM::Server serv;
+			mp_mutex->lock();
 			while (!m_server_delete_queue.empty()) {
 				serv = m_server_delete_queue.front();
 				m_server_delete_queue.pop();
+				mp_mutex->unlock();
 				SendDeleteServer(&serv);
+				mp_mutex->lock();
 			}
+			mp_mutex->unlock();
 
 			while (!m_server_new_queue.empty()) {
 				serv = m_server_new_queue.front();
 				m_server_new_queue.pop();
+				mp_mutex->unlock();
 				SendNewServer(&serv);
+				mp_mutex->lock();
 			}
+			mp_mutex->unlock();
 
+			mp_mutex->lock();
 			while (!m_server_update_queue.empty()) {
 				serv = m_server_update_queue.front();
 				m_server_update_queue.pop();
+				mp_mutex->unlock();
 				SendUpdateServer(&serv);
+				mp_mutex->lock();
 			}
+			mp_mutex->unlock();
 		}
 
 		TickConnections();
-		mp_mutex->unlock();
 	}
 
 	Peer *Driver::find_client(struct sockaddr_in *address) {

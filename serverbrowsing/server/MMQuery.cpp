@@ -815,8 +815,10 @@ namespace MM {
 		for(;;) {
 			task->mp_mutex->lock();
 			while(!task->m_request_list.empty()) {				
+				
 				MMQueryRequest task_params = task->m_request_list.front();
 				task->m_request_list.pop();
+				task->mp_mutex->unlock();
 				switch(task_params.type) {
 					case EMMQueryRequestType_GetServers:
 						task->PerformServersQuery(task_params);
@@ -841,6 +843,8 @@ namespace MM {
 						break;
 				}
 				task_params.peer->DecRef();
+
+				task->mp_mutex->lock();
 			}
 			task->mp_mutex->unlock();
 			OS::Sleep(TASK_SLEEP_TIME);
