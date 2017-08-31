@@ -62,9 +62,11 @@ namespace MM {
 		uint32_t max_results;
 		
 		bool send_groups;
-		bool send_wan_ip;
+		//bool send_wan_ip;
 		bool push_updates;
 		bool no_server_list;
+		bool no_list_cache;
+		bool send_fields_for_all;
 		
 
 		//used after lookup

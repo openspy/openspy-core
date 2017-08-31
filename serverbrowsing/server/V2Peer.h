@@ -83,7 +83,7 @@ namespace SB {
 				void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
 
 				void SendListQueryResp(struct MM::ServerListQuery servers, const MM::sServerListReq list_req, bool usepopularlist = true, bool send_fullkeys = false);
-				void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false, const std::map<std::string, int> *optimized_fields = NULL);
+				void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false, const std::map<std::string, int> *optimized_fields = NULL, bool no_keys = false);
 				uint8_t *WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, uint8_t *buff, int *len, std::map<std::string, int> &field_types);
 				void SendPushKeys();
 				void send_error(bool die, const char *fmt, ...);

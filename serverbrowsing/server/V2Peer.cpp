@@ -153,9 +153,12 @@ namespace SB {
 		options = Socket::htonl(BufferReadInt(buffer, &buf_remain));
 
 		req.send_groups = options & SEND_GROUPS;
-		req.push_updates = options & PUSH_UPDATES; //requesting updates,
+		
+		req.send_fields_for_all = options & SEND_FIELDS_FOR_ALL;
 		req.no_server_list = options & NO_SERVER_LIST;
-		req.send_wan_ip = false; //??
+		req.push_updates = options & PUSH_UPDATES; //requesting updates,
+		req.no_list_cache = options & NO_LIST_CACHE;
+		
 
 		if (options & ALTERNATE_SOURCE_IP) {
 			req.source_ip = BufferReadInt(buffer, &buf_remain);
@@ -183,7 +186,7 @@ namespace SB {
 		req.m_for_gamename = for_gamename;
 		req.m_from_gamename = from_gamename;
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: %d %d, gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s", OS::Address(m_address_info).ToString().c_str(), req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: %d %d, gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s, fields4all: %d, no_srv_list: %d, no_list_cache: %d, updates: %d", OS::Address(m_address_info).ToString().c_str(), req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str(), req.send_fields_for_all, req.no_server_list, req.no_list_cache, req.push_updates);
 
 
 		if(filter)
@@ -329,7 +332,10 @@ namespace SB {
 			std::vector<MM::Server *>::iterator it = servers.list.begin();
 			while (it != servers.list.end()) {
 				MM::Server *server = *it;
-				sendServerData(server, usepopularlist, false, servers.first_set ? &p : NULL, servers.first_set ? &len : NULL, false, &field_types);
+				//deer hunter fix:
+					//game relied on not having the basic keys first queries directly via QR2(no natneg) due to STATE_BASICKEYS being set from basic keys, the game would not query
+				sendServerData(server, usepopularlist, false, servers.first_set ? &p : NULL, servers.first_set ? &len : NULL, false, &field_types, true);
+				sendServerData(server, usepopularlist, false, servers.first_set ? &p : NULL, servers.first_set ? &len : NULL, false, &field_types, false);
 				it++;
 			}
 
@@ -477,7 +483,6 @@ namespace SB {
 				req.type = MM::EMMQueryRequestType_GetServers;
 			}
 			req.req.all_keys = true; //required for localip0, etc, TODO: find way that doesn't require retrieving full keys
-			req.req.send_wan_ip = true;
 			req.driver = mp_driver;
 			req.peer = this;
 			req.peer->IncRef();
@@ -584,7 +589,7 @@ namespace SB {
 			m_delete_flag = true;
 		}
 	}
-	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys, const std::map<std::string, int> *optimized_fields) {
+	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys, const std::map<std::string, int> *optimized_fields, bool no_keys) {
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 		uint8_t *p = (uint8_t *)&buf;
 
@@ -597,10 +602,13 @@ namespace SB {
 		uint8_t flags = 0;
 		int private_ip = 0;
 		int private_port = 0;
-		if(full_keys) {
-			flags |= HAS_FULL_RULES_FLAG;
-		} else {
-			flags |= HAS_KEYS_FLAG;
+		if (!no_keys) {
+			if (full_keys) {
+				flags |= HAS_FULL_RULES_FLAG;
+			}
+			else {
+				flags |= HAS_KEYS_FLAG;
+			}
 		}
 
 		if (server->wan_address.port != server->game.queryport) {
@@ -674,7 +682,7 @@ namespace SB {
 					Write values
 				*/
 				if(usepopularlist) {
-					if(push_it == server->game.popular_values.end()) {
+					if(push_it == server->game.popular_values.end()) { //not a popular value, must write directly
 						int type = KEYTYPE_STRING;
 						if(optimized_fields) {
 							if(optimized_fields->find(*tok_it) != optimized_fields->end())
@@ -705,7 +713,7 @@ namespace SB {
 							BufferWriteByte(&p, &len, 0);
 						}
 					}
-					else {
+					else { //write popular string index
 						BufferWriteByte(&p, &len, std::distance(server->game.popular_values.begin(), push_it));
 					}
 				}
