@@ -97,9 +97,8 @@ namespace SB {
 				GOACryptState m_crypt_state;
 
 				bool m_sent_push_keys;
-
-				bool m_in_message;
 				bool m_got_game_pair;
+				bool m_in_message;
 		};
 
 }

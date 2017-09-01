@@ -88,6 +88,8 @@ namespace OS {
 		QR2_GAME_UNAVAILABLE,
 		QR2_GAME_TEMPORARILY_UNAVAILABLE,
 	} QRV2AvailableStatus;
+
+	#define OS_COMPATIBILITY_FLAG_SBV2_FROMGAME_LIST_NOKEYS 1
 	
 	typedef struct {
 		int gameid;
@@ -96,6 +98,7 @@ namespace OS {
 		char description[OS_MAX_DESCRIPTION];
 		char secretkey[OS_MAX_SECRETKEY];
 		char disabled_services; //0= ok, 1 = temp, 2 = perm
+		int compatibility_flags;
 		std::vector<std::string> popular_values;
 		std::map<std::string, uint8_t> push_keys; //SB push keys + type(hostname/KEYTYPE_STRING)
 	} GameData;

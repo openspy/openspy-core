@@ -186,7 +186,7 @@ namespace SB {
 		req.m_for_gamename = for_gamename;
 		req.m_from_gamename = from_gamename;
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: %d %d, gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s, fields4all: %d, no_srv_list: %d, no_list_cache: %d, updates: %d", OS::Address(m_address_info).ToString().c_str(), req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str(), req.send_fields_for_all, req.no_server_list, req.no_list_cache, req.push_updates);
+		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: (%d %d %d), gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s, fields4all: %d, no_srv_list: %d, no_list_cache: %d, updates: %d, options: %d", OS::Address(m_address_info).ToString().c_str(), req.protocol_version, req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str(), req.send_fields_for_all, req.no_server_list, req.no_list_cache, req.push_updates, options);
 
 
 		if(filter)
@@ -301,6 +301,7 @@ namespace SB {
 		BufferWriteShort(&p, &len, Socket::htons(list_req.m_from_game.queryport));
 
 		bool send_push_keys = false;
+		bool no_keys = list_req.m_from_game.compatibility_flags & OS_COMPATIBILITY_FLAG_SBV2_FROMGAME_LIST_NOKEYS;
 
 		if(!list_req.no_server_list) {
 			BufferWriteByte(&p, &len, list_req.field_list.size());
@@ -328,14 +329,10 @@ namespace SB {
 				BufferWriteByte(&p, &len, 0);
 			}
 
-
 			std::vector<MM::Server *>::iterator it = servers.list.begin();
 			while (it != servers.list.end()) {
 				MM::Server *server = *it;
-				//deer hunter fix:
-					//game relied on not having the basic keys first queries directly via QR2(no natneg) due to STATE_BASICKEYS being set from basic keys, the game would not query
-				sendServerData(server, usepopularlist, false, servers.first_set ? &p : NULL, servers.first_set ? &len : NULL, false, &field_types, true);
-				sendServerData(server, usepopularlist, false, servers.first_set ? &p : NULL, servers.first_set ? &len : NULL, false, &field_types, false);
+					sendServerData(server, usepopularlist, false, servers.first_set ? &p : NULL, servers.first_set ? &len : NULL, false, &field_types, no_keys);
 				it++;
 			}
 
@@ -442,6 +439,7 @@ namespace SB {
 			req.gamenames[1] = req.req.m_for_gamename;
 			req.peer = this;
 			req.peer->IncRef();
+			m_in_message = true;
 			MM::m_task_pool->AddRequest(req);
 		}
 		else {
@@ -451,12 +449,13 @@ namespace SB {
 		return buffer;
 	}
 	void V2Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {
-
+		m_in_message = false;
 	}
 	void V2Peer::OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) {
+		m_in_message = false;
 		
 		MM::MMQueryRequest req;
-		
+
 		m_last_list_req.m_from_game = game_data_first;
 		m_game = m_last_list_req.m_from_game;
 
@@ -487,7 +486,7 @@ namespace SB {
 			req.peer = this;
 			req.peer->IncRef();
 
-			//m_in_message = true;
+			m_in_message = true;
 			MM::m_task_pool->AddRequest(req);
 		}
 		else {
@@ -515,11 +514,11 @@ namespace SB {
 		} else {
 			req.type = MM::EMMQueryRequestType_GetServerByIP;
 			req.address = address;
-			req.req.m_for_game = m_last_list_req.m_for_game;
-			req.SubmitData.game = req.req.m_for_game;
-
 			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", OS::Address(m_address_info).ToString().c_str(), req.address.ToString().c_str());
 		}
+
+		req.req.m_for_game = m_game;
+		req.SubmitData.game = m_game;
 
 		
 
@@ -602,14 +601,6 @@ namespace SB {
 		uint8_t flags = 0;
 		int private_ip = 0;
 		int private_port = 0;
-		if (!no_keys) {
-			if (full_keys) {
-				flags |= HAS_FULL_RULES_FLAG;
-			}
-			else {
-				flags |= HAS_KEYS_FLAG;
-			}
-		}
 
 		if (server->wan_address.port != server->game.queryport) {
 			flags |= NONSTANDARD_PORT_FLAG;
@@ -642,7 +633,14 @@ namespace SB {
 			}
 		}
 		
-		
+		if (!no_keys) {
+			if (full_keys) {
+				flags |= HAS_FULL_RULES_FLAG;
+			}
+			else {
+				flags |= HAS_KEYS_FLAG;
+			}
+		}
 		
 		if(push) {
 			BufferWriteByte(&p, &len, PUSH_SERVER_MESSAGE);
