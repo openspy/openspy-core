@@ -106,8 +106,7 @@ namespace MM {
 			task->mp_mutex->lock();
 			while (!task->m_request_list.empty()) {
 				MMPushRequest task_params = task->m_request_list.front();
-				task->m_request_list.pop();
-				
+				task->mp_mutex->unlock();
 				switch (task_params.type) {
 					case EMMPushRequestType_PushServer:
 						task->PerformPushServer(task_params);
@@ -123,7 +122,8 @@ namespace MM {
 						break;
 				}
 				task_params.peer->DecRef();
-
+				task->mp_mutex->lock();
+				task->m_request_list.pop();
 			}
 			task->mp_mutex->unlock();
 			OS::Sleep(TASK_SLEEP_TIME);
