@@ -118,6 +118,9 @@ namespace OS {
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			game.compatibility_flags = atoi(OS::strip_quotes(v.value._str).c_str());
 		}
+		else {
+			game.compatibility_flags = 0;
+		}
 
 		/*
 		//for thugpro
