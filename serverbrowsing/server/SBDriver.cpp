@@ -43,6 +43,8 @@ namespace SB {
 
 		mp_mutex = OS::CreateMutex();
 
+		makeNonBlocking(m_sd);
+
 	}
 	Driver::~Driver() {
 		//end all MMQuery tasks first, otherwise can crash here
