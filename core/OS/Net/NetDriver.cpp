@@ -1,5 +1,9 @@
 #include "NetDriver.h"
 #include "NetPeer.h"
+
+#ifndef _WIN32
+#include <sys/ioctl.h>
+#endif
 INetDriver::INetDriver(INetServer *server) {
 	m_server = server;
 
@@ -19,7 +23,7 @@ void INetDriver::makeNonBlocking(int sd) {
 	fcntl(sd, F_SETFL, flags | O_NONBLOCK);
 	#else
 	/* Otherwise, use the old way of doing it */
-	ioctl(sd, FIOBIO, &mode);
+	ioctl(sd, FIONBIO, &mode);
 	#endif
 }
 void INetDriver::makeNonBlocking(INetPeer *peer) {

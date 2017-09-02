@@ -552,11 +552,11 @@ namespace SB {
 		int len = 0;
 		if (waiting_packet) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
-			if (len <= 0) {
-				m_delete_flag = true;
+			if (Socket::wouldBlock()) {
 				return;
 			}
-			if (Socket::wouldBlock()) {
+			if (len <= 0) {
+				m_delete_flag = true;
 				return;
 			}
 			if(m_next_packet_send_msg) {

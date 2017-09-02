@@ -13,6 +13,7 @@ namespace SB {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		gettimeofday(&m_last_ping, NULL);
+		gettimeofday(&m_last_recv, NULL);
 
 		m_version = version;
 		mp_mutex = OS::CreateMutex();
