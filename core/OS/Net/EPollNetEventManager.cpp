@@ -51,7 +51,7 @@
 			EPollDataInfo *data_info = (EPollDataInfo *)malloc(sizeof(EPollDataInfo));
 
 			struct epoll_event ev;
-			ev.events = EPOLLIN;
+			ev.events = EPOLLIN | EPOLLET;
 			ev.data.ptr = data_info;
 
 			data_info->ptr = peer;
@@ -66,7 +66,7 @@
 		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {
 			if(m_datainfo_map.find(peer) != m_datainfo_map.end()) {
 				struct epoll_event ev;
-				ev.events = EPOLLIN;
+				ev.events = EPOLLIN | EPOLLET;
 				ev.data.ptr = peer;
 				epoll_ctl(m_epollfd, EPOLL_CTL_DEL, peer->GetSocket(), &ev);
 				free((void *)m_datainfo_map[peer]);
@@ -86,7 +86,7 @@
 			data_info->is_peer = false;
 
 			struct epoll_event ev;
-			ev.events = EPOLLIN;
+			ev.events = EPOLLIN | EPOLLET;
 			ev.data.ptr = data_info;
 
 			m_datainfo_map[driver] = data_info;
