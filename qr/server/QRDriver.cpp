@@ -20,6 +20,8 @@ namespace QR {
 			//signal error
 		}
 
+		makeNonBlocking(m_sd);
+
 		m_local_addr.sin_port = Socket::htons(port);
 		m_local_addr.sin_addr.s_addr = Socket::htonl(bind_ip);
 		m_local_addr.sin_family = AF_INET;

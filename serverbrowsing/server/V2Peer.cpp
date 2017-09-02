@@ -556,6 +556,9 @@ namespace SB {
 				m_delete_flag = true;
 				return;
 			}
+			if (Socket::wouldBlock()) {
+				return;
+			}
 			if(m_next_packet_send_msg) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", OS::Address(m_address_info).ToString().c_str(), len);
 				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);

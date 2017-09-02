@@ -71,9 +71,10 @@ namespace SB {
 				mp_peer = new V2Peer(this, &peer, sda);
 				break;
 			}
+
+			makeNonBlocking(mp_peer);
 			m_connections.push_back(mp_peer);
 			m_server->RegisterSocket(mp_peer);
-			mp_peer->think(true);
 		}
 		else {
 			std::vector<Peer *>::iterator it = m_connections.begin();

@@ -53,6 +53,9 @@ namespace Socket {
 	extern fdapi_socket         socket;
 	extern sktlib_inetaddr		inet_addr;
 	extern sktlib_inetntoa 		inet_ntoa;
+
 	void Init();
+
+	bool wouldBlock();
 }
 #endif //_SOCKETLIB_H

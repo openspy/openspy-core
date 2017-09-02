@@ -54,4 +54,8 @@ namespace Socket {
 
 		inet_ntoa	= (sktlib_inetntoa)GetProcAddress(mdl, "inet_ntoa");
 	}
+
+	bool wouldBlock() {
+		return WSAGetLastError() == WSAEWOULDBLOCK;
+	}
 }

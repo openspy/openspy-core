@@ -46,4 +46,7 @@ namespace Socket {
 		inet_addr = (sktlib_inetaddr)::inet_addr;
 		inet_ntoa	= (sktlib_inetntoa)::inet_ntoa;
 	}
+	bool wouldBlock() {
+		return errno == EWOULDBLOCK;
+	}
 }

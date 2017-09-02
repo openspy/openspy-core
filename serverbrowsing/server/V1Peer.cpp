@@ -62,6 +62,13 @@ namespace SB {
 			}
 			if (packet_waiting) {
 				len = recv(m_sd, (char *)&buf, MAX_OUTGOING_REQUEST_SIZE, 0);
+				if (Socket::wouldBlock()) {
+					return;
+				}
+				if (len <= 0) {
+					m_delete_flag = true;
+					return;
+				}
 				buf[len] = 0;
 				if(len == 0) goto end;
 
