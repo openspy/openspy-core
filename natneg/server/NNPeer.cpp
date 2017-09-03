@@ -11,7 +11,7 @@
 
 
 namespace NN {
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) {
+	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		m_sd = sd;
@@ -20,13 +20,13 @@ namespace NN {
 		m_cookie = 0;
 		m_client_index = 0;
 		m_client_version = 0;
-		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",OS::Address(m_address_info).ToString().c_str());
 
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "Connection from %s closed",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed",OS::Address(m_address_info).ToString().c_str());
 	}
-	void Peer::think() {
+	void Peer::think(bool waiting_packet) {
 		struct timeval time_now;
 		gettimeofday(&time_now, NULL);
 
@@ -85,7 +85,7 @@ namespace NN {
 		m_cookie = packet->cookie;
 		m_client_index = packet->Packet.Init.clientindex;
 
-		NN::NNQueryTask::getQueryTask()->SubmitClient(this);
+		SubmitClient();
 		
 		packet->packettype = NN_INITACK;
 		sendPacket(packet);
@@ -125,7 +125,7 @@ namespace NN {
 	void Peer::OnGotPeerAddress(OS::Address address) {
 		if(m_peer_address.GetIP() == 0) {
 			m_peer_address = address;
-			NN::NNQueryTask::getQueryTask()->SubmitClient(this); //resubmit for other client
+			SubmitClient(); //resubmit for other client
 			SendConnectPacket(m_peer_address);
 		}
 	}
@@ -154,5 +154,11 @@ namespace NN {
 		p.Packet.Connect.remotePort = remote_addr.sin_port;
 		sendPacket(&p);
 	}
-
+	void Peer::SubmitClient() {
+		NNBackendRequest req;
+		req.type = NN::ENNQueryRequestType_SubmitClient;
+		this->IncRef();
+		req.peer = this;
+		NN::m_task_pool->AddRequest(req);
+	}
 }

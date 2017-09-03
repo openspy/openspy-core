@@ -100,12 +100,7 @@ namespace QR {
 
 	const std::vector<int> Driver::getSockets() {
 		std::vector<int> sockets;
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = *it;
-			sockets.push_back(p->GetSocket());
-			it++;
-		}
+		sockets.push_back(m_sd);
 		return sockets;
 	}
 

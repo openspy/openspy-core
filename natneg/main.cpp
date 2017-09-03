@@ -33,8 +33,10 @@ int main() {
 	OS::Init("natneg");
     Socket::Init();
 
+	#ifndef _WIN32
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
+	#endif
 
 
 	g_gameserver = new NN::Server();

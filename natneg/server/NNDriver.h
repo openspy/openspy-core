@@ -24,8 +24,7 @@ namespace NN {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
-		void tick(fd_set *fdset);
-		void think(fd_set *fdset);
+		void think(bool packet_waiting);
 		int getListenerSocket();
 		uint16_t getPort();
 		uint32_t getBindIP();
@@ -34,24 +33,23 @@ namespace NN {
 		Peer *find_client(struct sockaddr_in *address);
 		Peer *find_or_create(struct sockaddr_in *address);
 
-		int setup_fdset(fd_set *fdset);
-
 		void OnGotCookie(int cookie, int client_idx, OS::Address address);
 
-		int GetNumConnections();
+		const std::vector<INetPeer *> getPeers();
+		const std::vector<int> getSockets();
 
 	private:
 
-		void TickConnections(fd_set *fdset);
+		void TickConnections();
 
 		int m_sd;
 
 		std::vector<Peer *> m_connections;
-		
+		std::vector<Peer *> m_peers_to_delete;
+
 		struct sockaddr_in m_local_addr;
 
 		struct timeval m_server_start;
-
 	};
 }
 #endif //_QRDRIVER_H

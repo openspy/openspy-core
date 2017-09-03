@@ -5,22 +5,25 @@
 #include "structs.h"
 #include "NNDriver.h"
 
+#include <OS/Net/NetPeer.h>
+
 #define NN_DEADBEAT_TIME 60 //number of seconds for the natneg peer to wait before declaring the other party a no-show
 #define NN_TIMEOUT_TIME 120 //time in seconds to d/c when haven't recieved any msg
 namespace NN {
 	class Driver;
 
-	class Peer {
+	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~Peer();
 		
-		void think();
+		void think(bool waiting_packet);
 		void handle_packet(char *recvbuf, int len);		
 
 		int GetSocket() { return m_sd; };
 		OS::Address getAddress();
 		bool ShouldDelete() { return m_delete_flag; };
+		void SetDelete(bool set) { m_delete_flag = set; };
 		bool IsTimeout() { return m_timeout_flag; }
 		uint32_t GetCookie() { return m_cookie; }
 		uint8_t GetClientIndex() { return m_client_index; }
@@ -34,7 +37,7 @@ namespace NN {
 		void handleInitPacket(NatNegPacket *packet);
 		void handleReportPacket(NatNegPacket *packet);
 		void handleAddressCheckPacket(NatNegPacket *packet);
-
+		void SubmitClient();
 
 		void sendPacket(NatNegPacket *packet);
 
