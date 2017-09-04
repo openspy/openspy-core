@@ -159,7 +159,6 @@ namespace OS {
 			redis_ctx = OS::redis_internal_connection;
 		}
 		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
-
 		//memset(&ret, 0, sizeof(ret));
 		int cursor = 0;
 		do {

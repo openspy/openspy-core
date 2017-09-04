@@ -32,7 +32,7 @@ namespace OS {
 				}
 				it++;
 			}			
-			task->AddRequest(data);
+			lowest->AddRequest(data);
 		}
 		const std::vector< T* > getTasks() {
 			return m_tasks;

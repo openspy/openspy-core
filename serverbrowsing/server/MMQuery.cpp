@@ -805,10 +805,10 @@ namespace MM {
 			request.SubmitData.base64.c_str());
 	}
 	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {
-		request.peer->OnRecievedGameInfoPair(OS::GetGameByName(request.gamenames[0].c_str()), OS::GetGameByName(request.gamenames[1].c_str()), request.extra);
+		request.peer->OnRecievedGameInfoPair(OS::GetGameByName(request.gamenames[0].c_str(), this->mp_redis_connection), OS::GetGameByName(request.gamenames[1].c_str(), this->mp_redis_connection), request.extra);
 	}
 	void MMQueryTask::PerformGetGameInfoByGameName(MMQueryRequest request) {
-		request.peer->OnRecievedGameInfo(OS::GetGameByName(request.gamenames[0].c_str()), request.extra);
+		request.peer->OnRecievedGameInfo(OS::GetGameByName(request.gamenames[0].c_str(), this->mp_redis_connection), request.extra);
 	}
 	void *MMQueryTask::TaskThread(OS::CThread *thread) {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
@@ -816,9 +816,14 @@ namespace MM {
 			
 			while(task->mp_thread_poller->wait()) {
 				task->mp_mutex->lock();
-				MMQueryRequest task_params = task->m_request_list.front();
-				task->mp_mutex->unlock();
-				switch(task_params.type) {
+				if (task->m_request_list.empty()) {
+					task->mp_mutex->unlock();
+					break;
+				}
+				while (!task->m_request_list.empty()) {
+					MMQueryRequest task_params = task->m_request_list.front();
+					task->mp_mutex->unlock();
+					switch (task_params.type) {
 					case EMMQueryRequestType_GetServers:
 						task->PerformServersQuery(task_params);
 						break;
@@ -840,11 +845,13 @@ namespace MM {
 					case EMMQueryRequestType_GetGameInfoPairByGameName:
 						task->PerformGetGameInfoPairByGameName(task_params);
 						break;
+					}
+
+					task->mp_mutex->lock();
+					task_params.peer->DecRef();
+					task->m_request_list.pop();
 				}
 
-				task->mp_mutex->lock();
-				task_params.peer->DecRef();
-				task->m_request_list.pop();
 				task->mp_mutex->unlock();
 			}
 		}

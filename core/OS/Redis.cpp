@@ -199,6 +199,7 @@ namespace Redis {
 		}
 		conn->read_buff[len] = 0;
 		int diff = 0;
+
 		parse_response(conn->read_buff, diff, &resp, NULL);
 		return resp;
 	}

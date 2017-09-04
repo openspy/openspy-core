@@ -143,7 +143,7 @@ namespace MM {
 		DeleteServer(request.server, true);
 	}
 	void MMPushTask::PerformGetGameInfo(MMPushRequest request) {
-		OS::GameData game_info = OS::GetGameByName(request.gamename.c_str());
+		OS::GameData game_info = OS::GetGameByName(request.gamename.c_str(), mp_redis_connection);
 		request.peer->OnGetGameInfo(game_info, request.extra);
 	}
 	int MMPushTask::PushServer(ServerInfo server, bool publish, int pk_id) {
@@ -249,6 +249,7 @@ namespace MM {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		if (publish) {
 			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server.m_game.gamename, server.groupid, server.id);
+			Redis::Command(mp_redis_connection, 0, "EXPIRE %s:%d:%d: 300", server.m_game.gamename, server.groupid, server.id);
 			Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\del\\%s:%d:%d:", sb_mm_channel, server.m_game.gamename, groupid, id);
 		}
 		else {
