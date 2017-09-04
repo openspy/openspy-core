@@ -8,6 +8,7 @@
 #include <WinSock.h>
 #include "Threads/Win32/WinThread.h"
 #include "Threads/Win32/Win32Mutex.h"
+#include "Threads/Win32/Win32ThreadPoller.h"
 #define EVTMGR_USE_SELECT 1
 //#define EVTMGR_USE_EPOLL 0
 typedef int socklen_t;
@@ -153,6 +154,7 @@ namespace OS {
 	//thread
 	CThread *CreateThread(ThreadEntry *entry, void *param, bool auto_start);
 	CMutex *CreateMutex();
+	CThreadPoller *CreateThreadPoller();
 
 	void Sleep(int time_ms);
 

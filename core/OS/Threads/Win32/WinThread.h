@@ -1,5 +1,5 @@
-#ifndef _CPTHREAD_H
-#define _CPTHREAD_H
+#ifndef _CWIN32THREAD_H
+#define _CWIN32THREAD_H
 #include <Windows.h>
 #include <OS/Thread.h>
 #undef CreateMutex

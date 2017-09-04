@@ -813,9 +813,9 @@ namespace MM {
 	void *MMQueryTask::TaskThread(OS::CThread *thread) {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
 		for(;;) {
-			task->mp_mutex->lock();
-			while(!task->m_request_list.empty()) {				
-				
+			
+			while(task->mp_thread_poller->wait()) {
+				task->mp_mutex->lock();
 				MMQueryRequest task_params = task->m_request_list.front();
 				task->mp_mutex->unlock();
 				switch(task_params.type) {
@@ -841,13 +841,12 @@ namespace MM {
 						task->PerformGetGameInfoPairByGameName(task_params);
 						break;
 				}
-				task_params.peer->DecRef();
 
 				task->mp_mutex->lock();
+				task_params.peer->DecRef();
 				task->m_request_list.pop();
+				task->mp_mutex->unlock();
 			}
-			task->mp_mutex->unlock();
-			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;
 	}

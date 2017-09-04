@@ -1,4 +1,4 @@
-#ifndef _CWIN32PMUTEX_H
+#ifndef _CWIN32MUTEX_H
 #define _CWIN32MUTEX_H
 #include <windows.h>
 #include <OS/Mutex.h>

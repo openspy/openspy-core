@@ -282,6 +282,13 @@ namespace OS {
 			return new OS::CPMutex();
 		#endif
 	}
+	CThreadPoller *CreateThreadPoller() {
+		#if _WIN32
+		return new OS::CWin32ThreadPoller();
+		#else
+		return new OS::CLinuxThreadPoller();
+		#endif
+	}
 	std::string strip_quotes(std::string s) {
 		if(s[0] != '"' || s[s.length()-1] != '"')
 			return s;
