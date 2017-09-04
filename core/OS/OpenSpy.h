@@ -34,6 +34,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <sys/times.h>
 #include "Threads/PThreads/PThread.h"
 #include "Threads/PThreads/PMutex.h"
+#include "Threads/PThreads/PThreadPoller.h"
 
 #define stricmp strcasecmp
 #define sprintf_s snprintf

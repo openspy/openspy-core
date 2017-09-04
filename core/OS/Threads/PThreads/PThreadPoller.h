@@ -12,6 +12,7 @@ namespace OS {
 	private:
         pthread_mutex_t m_mutex;
         pthread_cond_t 	m_condition;
+		int m_signal_count;
 	};
 }
 #endif //_CWIN32MUTEX_H

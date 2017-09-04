@@ -286,7 +286,7 @@ namespace OS {
 		#if _WIN32
 		return new OS::CWin32ThreadPoller();
 		#else
-		return new OS::CLinuxThreadPoller();
+		return new OS::CPThreadPoller();
 		#endif
 	}
 	std::string strip_quotes(std::string s) {

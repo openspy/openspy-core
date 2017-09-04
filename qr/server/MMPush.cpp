@@ -103,8 +103,8 @@ namespace MM {
 	void *MMPushTask::TaskThread(OS::CThread *thread) {
 		MMPushTask *task = (MMPushTask *)thread->getParams();
 		for (;;) {
-			task->mp_mutex->lock();
-			while (!task->m_request_list.empty()) {
+			while (task->mp_thread_poller->wait()) {
+				task->mp_mutex->lock();
 				MMPushRequest task_params = task->m_request_list.front();
 				task->mp_mutex->unlock();
 				switch (task_params.type) {
@@ -121,12 +121,11 @@ namespace MM {
 						task->PerformGetGameInfo(task_params);
 						break;
 				}
-				task_params.peer->DecRef();
 				task->mp_mutex->lock();
+				task_params.peer->DecRef();
 				task->m_request_list.pop();
+				task->mp_mutex->unlock();
 			}
-			task->mp_mutex->unlock();
-			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;
 	}

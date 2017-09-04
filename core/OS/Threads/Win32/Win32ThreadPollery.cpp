@@ -10,7 +10,6 @@ namespace OS {
 	CWin32ThreadPoller::~CWin32ThreadPoller() {
 	}
 	bool CWin32ThreadPoller::wait() {
-		
 		if (m_signal_count == 0) {
 			m_poll_value = m_wait_value;
 			WaitOnAddress(&m_poll_value, &m_wait_value, sizeof(ULONG), INFINITE);
