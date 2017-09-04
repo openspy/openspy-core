@@ -68,6 +68,7 @@ namespace SB {
 		bool m_timeout_flag;
 
 		std::vector<sServerCache> m_visible_servers;
+		std::vector<OS::Address> m_serv_info_reqs_pending;
 
 		MM::sServerListReq m_last_list_req;
 

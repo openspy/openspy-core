@@ -505,6 +505,7 @@ namespace SB {
 		sServerCache cache = FindServerByIP(address);
 
 		MM::MMQueryRequest req;
+		req.address = address;
 
 		if(cache.key[0] != 0) {
 			req.type = MM::EMMQueryRequestType_GetServerByKey;
@@ -516,11 +517,24 @@ namespace SB {
 			req.address = address;
 			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", OS::Address(m_address_info).ToString().c_str(), req.address.ToString().c_str());
 		}
+		
+
+		mp_mutex->lock();
+		std::vector<OS::Address>::iterator it = m_serv_info_reqs_pending.begin();
+		while (it != m_serv_info_reqs_pending.end()) {
+			OS::Address addr = *it;
+			if (addr.GetIP() == address.GetIP() && addr.GetPort() == address.GetPort()) {
+				OS::LogText(OS::ELogLevel_Info, "[%s] Dropping existing request %s", OS::Address(m_address_info).ToString().c_str(), req.address.ToString().c_str());
+				mp_mutex->unlock();
+				return p;
+			}
+			it++;
+		}
+		m_serv_info_reqs_pending.push_back(address);
+		mp_mutex->unlock();
 
 		req.req.m_for_game = m_game;
 		req.SubmitData.game = m_game;
-
-		
 
 		req.peer = this;
 		req.driver = mp_driver;
@@ -861,6 +875,18 @@ namespace SB {
 		SendListQueryResp(results, request.req);
 	}
 	void V2Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+		mp_mutex->lock();
+		std::vector<OS::Address>::iterator it = m_serv_info_reqs_pending.begin();
+		OS::Address req_addr = request.address;
+		while (it != m_serv_info_reqs_pending.end()) {
+			OS::Address addr = *it;
+			if (addr.GetIP() == req_addr.GetIP() && req_addr.GetPort() == addr.GetPort()) {
+				it = m_serv_info_reqs_pending.erase(it);
+				continue;
+			}
+			it++;
+		}
+		mp_mutex->unlock();
 		if (results.list.size() == 0) return;
 		MM::Server *server = results.list.front();
 		if (server) {
