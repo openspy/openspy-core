@@ -144,9 +144,6 @@ namespace SB {
 			m_waiting_gamedata = 1;
 			req.gamenames[0] = gamename;
 			req.extra = (void *)2;
-			req.driver = mp_driver;
-			req.peer = this;
-			req.peer->IncRef();
 			m_enctype = enctype;
 			AddRequest(req);
 		}
@@ -208,9 +205,6 @@ namespace SB {
 				m_last_list_req.m_for_game = game_data;
 				req.req = m_last_list_req;
 				req.type = req.req.send_groups ? MM::EMMQueryRequestType_GetGroups : MM::EMMQueryRequestType_GetServers;
-				req.driver = mp_driver;
-				req.peer = this;
-				req.peer->IncRef();
 				AddRequest(req);
 			}
 			else if (type == 2) {
@@ -276,9 +270,6 @@ namespace SB {
 
 			req.extra = (void *)1;
 			m_last_list_req = req.req;
-			req.driver = mp_driver;
-			req.peer = this;
-			req.peer->IncRef();
 			AddRequest(req);
 			// //server disconnects after this
 		}

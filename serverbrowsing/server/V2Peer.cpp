@@ -217,8 +217,6 @@ namespace SB {
 			req.SubmitData.to = m_send_msg_to;
 			req.SubmitData.base64 = base64;
 			req.SubmitData.game = m_game;
-			req.peer = this;
-			req.peer->IncRef();
 			AddRequest(req);
 			free((void *)base64);
 
@@ -437,8 +435,6 @@ namespace SB {
 			req.type = MM::EMMQueryRequestType_GetGameInfoPairByGameName;
 			req.gamenames[0] = req.req.m_from_gamename;
 			req.gamenames[1] = req.req.m_for_gamename;
-			req.peer = this;
-			req.peer->IncRef();
 			m_in_message = true;
 			AddRequest(req);
 		}
@@ -482,10 +478,6 @@ namespace SB {
 				req.type = MM::EMMQueryRequestType_GetServers;
 			}
 			req.req.all_keys = true; //required for localip0, etc, TODO: find way that doesn't require retrieving full keys
-			req.driver = mp_driver;
-			req.peer = this;
-			req.peer->IncRef();
-
 			m_in_message = true;
 			AddRequest(req);
 		}
@@ -522,10 +514,6 @@ namespace SB {
 
 		req.req.m_for_game = m_game;
 		req.SubmitData.game = m_game;
-
-		req.peer = this;
-		req.driver = mp_driver;
-		req.peer->IncRef();
 		AddRequest(req);
 		return p;
 	}
@@ -570,8 +558,6 @@ namespace SB {
 				req.SubmitData.to = m_send_msg_to;
 				req.SubmitData.base64 = base64;
 				req.SubmitData.game = m_game;
-				req.peer = this;
-				req.peer->IncRef();
 				AddRequest(req);
 				free((void *)base64);
 				m_next_packet_send_msg = false;

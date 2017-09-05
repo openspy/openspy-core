@@ -83,7 +83,6 @@ namespace SB {
 		mp_mutex->lock();
 		if(FindServerByIP(server->wan_address).key[0] == 0) {
 			item.wan_address = server->wan_address;
-			//strcpy(item.key,server->key.c_str());
 			item.key = server->key;
 			item.full_keys = full_keys;
 			m_visible_servers.push_back(item);
@@ -114,11 +113,17 @@ namespace SB {
 				return;
 			}
 		}
+		req.peer = this;
+		req.peer->IncRef();
+		req.driver = mp_driver;
 		MM::m_task_pool->AddRequest(req);
 	}
 	void Peer::FlushPendingRequests() {
 		while (!m_pending_request_list.empty()) {
 			MM::MMQueryRequest req = m_pending_request_list.front();
+			req.peer = this;
+			req.peer->IncRef();
+			req.driver = mp_driver;
 			MM::m_task_pool->AddRequest(req);
 			m_pending_request_list.pop();
 		}
