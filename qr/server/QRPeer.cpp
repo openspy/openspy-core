@@ -15,11 +15,12 @@ namespace QR {
 		m_sd = sd;
 		m_address_info = *address_info;
 		m_server_info.id = -1;
+		m_server_info.groupid = 0;
 		m_server_info.m_game.gameid = 0;
 		m_server_info.m_game.gamename[0] = 0;
 		m_sent_game_query = false;
 		m_version = version;
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connections version: %d",OS::Address(m_address_info).ToString().c_str(), m_version);
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version: %d",OS::Address(m_address_info).ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d",OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);

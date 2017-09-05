@@ -151,7 +151,10 @@ namespace MM {
 		int groupid = 0;
 
 		if (id == -1) {
-			id = GetServerID();
+			id = TryFindServerID(server);
+			if (id == -1) {
+				id = GetServerID();
+			}
 		}
 
 		server.id = id;
@@ -165,6 +168,8 @@ namespace MM {
 
 		Redis::Command(mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server.m_game.gameid);
 		Redis::Command(mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
+
+		Redis::Command(mp_redis_connection, 0, "HDEL %s deleted", server_key.c_str()); //incase resume
 
 		
 		std::string ipinput = server.m_address.ToString(true);
@@ -297,9 +302,9 @@ namespace MM {
 	}
 	int MMPushTask::GetServerID() {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		int ret = -1;
 		Redis::Response resp = Redis::Command(mp_redis_connection, 1, "INCR %s", mp_pk_name);
 		Redis::Value v = resp.values.front();
-		int ret = -1;
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 			ret = v.value._int;
 		}
@@ -322,5 +327,34 @@ namespace MM {
 	}
 	void Shutdown() {
 
+	}
+	int MMPushTask::TryFindServerID(ServerInfo server) {
+		std::string ip = server.m_address.ToString(true);
+		std::stringstream map;
+		map << "IPMAP_" << ip << "-" << server.m_address.port;
+		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::Response resp = Redis::Command(mp_redis_connection, 0, "EXISTS %s", map.str().c_str());
+		Redis::Value v = resp.values.front();
+		int ret = -1;
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+			ret = v.value._int;
+		}
+		else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			ret = atoi(v.value._str.c_str());
+		}
+		if (ret == 1) {
+			resp = Redis::Command(mp_redis_connection, 0, "HGET %s id", map.str().c_str());
+			v = resp.values.front();
+			if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+				ret = v.value._int;
+			}
+			else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+				ret = atoi(v.value._str.c_str());
+			}
+			return ret;
+		}
+		else {
+			return -1;
+		}
 	}
 }
