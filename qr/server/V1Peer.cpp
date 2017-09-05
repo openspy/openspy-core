@@ -60,7 +60,10 @@ namespace QR {
 		}
 
 		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
-
+		if (data_parser.Size() < 1) {
+			Delete();
+			return;
+		}
 		std::string command = data_parser.GetKeyByIdx(0);
 
 		//gettimeofday(&m_last_recv, NULL); //not here due to spoofing

@@ -160,6 +160,11 @@ namespace SB {
 			}
 			OS::KVReader kv_parser = OS::KVReader(std::string(data));
 
+			if (kv_parser.Size() < 1) {
+				m_delete_flag = true;
+				return;
+			}
+
 			std::string command;
 			gettimeofday(&m_last_recv, NULL);
 
