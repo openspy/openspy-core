@@ -264,7 +264,7 @@ namespace QR {
 			req.gamename = str;
 			free((void *)str);
 		}
-
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got available request: %s", OS::Address(m_address_info).ToString().c_str(), req.gamename.c_str());
 		req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
 		MM::m_task_pool->AddRequest(req);
 	}
