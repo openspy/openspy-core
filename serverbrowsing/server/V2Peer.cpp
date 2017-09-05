@@ -219,7 +219,7 @@ namespace SB {
 			req.SubmitData.game = m_game;
 			req.peer = this;
 			req.peer->IncRef();
-			MM::m_task_pool->AddRequest(req);
+			AddRequest(req);
 			free((void *)base64);
 
 		}
@@ -440,7 +440,7 @@ namespace SB {
 			req.peer = this;
 			req.peer->IncRef();
 			m_in_message = true;
-			MM::m_task_pool->AddRequest(req);
+			AddRequest(req);
 		}
 		else {
 			this->OnRecievedGameInfoPair(m_game, m_last_list_req.m_for_game, NULL);
@@ -453,7 +453,7 @@ namespace SB {
 	}
 	void V2Peer::OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) {
 		m_in_message = false;
-		
+			
 		MM::MMQueryRequest req;
 
 		m_last_list_req.m_from_game = game_data_first;
@@ -487,7 +487,7 @@ namespace SB {
 			req.peer->IncRef();
 
 			m_in_message = true;
-			MM::m_task_pool->AddRequest(req);
+			AddRequest(req);
 		}
 		else {
 			//send empty server list
@@ -495,6 +495,8 @@ namespace SB {
 			servers.requested_fields = req.req.field_list;
 			SendListQueryResp(servers, req.req);
 		}
+
+		FlushPendingRequests();
 	}
 	uint8_t *V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
 		uint8_t *p = (uint8_t *)buffer;
@@ -524,7 +526,7 @@ namespace SB {
 		req.peer = this;
 		req.driver = mp_driver;
 		req.peer->IncRef();
-		MM::m_task_pool->AddRequest(req);
+		AddRequest(req);
 		return p;
 	}
 	void V2Peer::send_ping() {
@@ -570,7 +572,7 @@ namespace SB {
 				req.SubmitData.game = m_game;
 				req.peer = this;
 				req.peer->IncRef();
-				MM::m_task_pool->AddRequest(req);
+				AddRequest(req);
 				free((void *)base64);
 				m_next_packet_send_msg = false;
 			} else {

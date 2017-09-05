@@ -70,6 +70,10 @@ namespace SB {
 		std::vector<sServerCache> m_visible_servers;
 		MM::sServerListReq m_last_list_req;
 
+		void AddRequest(MM::MMQueryRequest req);
+		void FlushPendingRequests();
+		std::queue<MM::MMQueryRequest> m_pending_request_list; //process after we retrieve src/dst gamenames
+
 
 		OS::CMutex *mp_mutex;
 	private:

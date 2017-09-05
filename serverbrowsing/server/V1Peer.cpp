@@ -148,7 +148,7 @@ namespace SB {
 			req.peer = this;
 			req.peer->IncRef();
 			m_enctype = enctype;
-			MM::m_task_pool->AddRequest(req);
+			AddRequest(req);
 		}
 		void V1Peer::handle_packet(const char *data, int len) {
 			if(len < 0) {
@@ -211,7 +211,7 @@ namespace SB {
 				req.driver = mp_driver;
 				req.peer = this;
 				req.peer->IncRef();
-				MM::m_task_pool->AddRequest(req);
+				AddRequest(req);
 			}
 			else if (type == 2) {
 				char realvalidate[16];
@@ -229,6 +229,7 @@ namespace SB {
 					return;
 				}
 			}
+			FlushPendingRequests();
 		}
 		void V1Peer::handle_list(const char *data, int len) {
 			std::string mode, gamename;
@@ -278,7 +279,7 @@ namespace SB {
 			req.driver = mp_driver;
 			req.peer = this;
 			req.peer->IncRef();
-			MM::m_task_pool->AddRequest(req);
+			AddRequest(req);
 			// //server disconnects after this
 		}
 		void V1Peer::SendServerInfo(MM::ServerListQuery results) {
@@ -452,6 +453,5 @@ namespace SB {
 
 
 		void V1Peer::OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) {
-
 		}
 }

@@ -107,4 +107,20 @@ namespace SB {
 		mp_mutex->unlock();
 		return ret;		
 	}
+	void Peer::AddRequest(MM::MMQueryRequest req) {
+		if (req.type != MM::EMMQueryRequestType_GetGameInfoByGameName && req.type != MM::EMMQueryRequestType_GetGameInfoPairByGameName) {
+			if (m_game.gameid == 0) {
+				m_pending_request_list.push(req);
+				return;
+			}
+		}
+		MM::m_task_pool->AddRequest(req);
+	}
+	void Peer::FlushPendingRequests() {
+		while (!m_pending_request_list.empty()) {
+			MM::MMQueryRequest req = m_pending_request_list.front();
+			MM::m_task_pool->AddRequest(req);
+			m_pending_request_list.pop();
+		}
+	}
 }
