@@ -50,7 +50,6 @@ namespace QR {
 
 	}
 	V2Peer::~V2Peer() {
-		printf("bye bye\n");
 	}
 
 	void V2Peer::SendPacket(const uint8_t *buff, int len) {
