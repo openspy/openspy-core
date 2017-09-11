@@ -6,6 +6,9 @@
 #include <OS/Mutex.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
+#include <OS/TaskPool.h>
+
+#include <OS/Net/NetPeer.h>
 
 //#define OPENSPY_WEBSERVICES_URL "http://10.10.10.10"
 #define OPENSPY_AUTH_URL OPENSPY_WEBSERVICES_URL "/backend/auth"
@@ -25,8 +28,8 @@ namespace OS {
 		CREATE_RESPONSE_INVALID_UNIQUENICK,
 	};
 	typedef struct {
-		const char *session_key;
-		const char *hash_proof;
+		std::string session_key;
+		std::string hash_proof;
 		AuthResponseCode response_code;
 	} AuthData;
 	typedef void (*AuthCallback)(bool success, User user, Profile profile, AuthData auth_data, void *extra, int operation_id);
@@ -62,20 +65,19 @@ namespace OS {
 		void *extra;
 
 		int operation_id;
+
+		INetPeer *peer;
 	} AuthRequest;
 
 	class AuthTask : public Task<AuthRequest> {
 		public:
 			AuthTask();
 			~AuthTask();
-			static bool HasAuthTask();
-			static AuthTask *getAuthTask();
-			static void TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id);
-			static void TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id);
-			static void TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id);
-			static void TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra, int operation_id);
+			static void TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
+			static void TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
+			static void TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
+			static void TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 		private:
-			static void PerformSearch(AuthRequest request);
 			static AuthTask *m_task_singleton;
 			static void *TaskThread(CThread *thread);
 			void PerformAuth_NickEMail_GPHash(AuthRequest request);
@@ -84,5 +86,8 @@ namespace OS {
 			void PerformAuth_PID_GSStats_SessKey(AuthRequest request);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 	};
+	extern OS::TaskPool<AuthTask, AuthRequest> *m_auth_task_pool;
+	void SetupAuthTaskPool(int num_tasks);
+	void ShutdownAuthTaskPool();
 }
 #endif //_OS_AUTH_H

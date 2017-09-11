@@ -6,7 +6,7 @@
 #include <jwt/jwt.h>
 
 namespace OS {
-	UserSearchTask *UserSearchTask::m_task_singleton = NULL;
+	OS::TaskPool<UserSearchTask, UserSearchRequest> *m_user_search_task_pool = NULL;
 	struct curl_data {
 	    json_t *json_data;
 	};
@@ -145,23 +145,28 @@ namespace OS {
 
 	void *UserSearchTask::TaskThread(CThread *thread) {
 		UserSearchTask *task = (UserSearchTask *)thread->getParams();
-		for(;;) {
-			if(task->m_request_list.size() > 0) {
-				task->mp_mutex->lock();
-				while(!task->m_request_list.empty()) {
-					UserSearchRequest task_params = task->m_request_list.front();
-					task->m_request_list.pop();
-					switch(task_params.type) {
-						case EUserRequestType_Update:
-						case EUserRequestType_Search:
-							PerformRequest(task_params);
-						break;	
-					}
-					continue;
-				}
+		while (task->mp_thread_poller->wait()) {
+			task->mp_mutex->lock();
+			if (task->m_request_list.empty()) {
 				task->mp_mutex->unlock();
+				break;
 			}
-			OS::Sleep(TASK_SLEEP_TIME);
+			while (!task->m_request_list.empty()) {
+				UserSearchRequest task_params = task->m_request_list.front();
+				task->mp_mutex->unlock();
+					
+				switch(task_params.type) {
+					case EUserRequestType_Update:
+					case EUserRequestType_Search:
+						PerformRequest(task_params);
+					break;	
+				}
+				task->mp_mutex->lock();
+				if (task_params.peer)
+					task_params.peer->DecRef();
+				task->m_request_list.pop();
+			}
+			task->mp_mutex->unlock();
 		}
 		return NULL;
 	}
@@ -174,10 +179,10 @@ namespace OS {
 		delete mp_mutex;
 		delete mp_thread;
 	}
-	UserSearchTask *UserSearchTask::getUserTask() {
-		if(!UserSearchTask::m_task_singleton) {
-			UserSearchTask::m_task_singleton = new UserSearchTask();
-		}
-		return UserSearchTask::m_task_singleton;
+	void SetupUserSearchTaskPool(int num_tasks) {
+		m_user_search_task_pool = new OS::TaskPool<UserSearchTask, UserSearchRequest>(num_tasks);
+	}
+	void ShutdownUserSearchTaskPool() {
+		delete m_user_search_task_pool;
 	}
 }

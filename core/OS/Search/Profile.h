@@ -5,6 +5,8 @@
 #include <OS/Mutex.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
+#include <OS/TaskPool.h>
+#include <OS/Net/NetPeer.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -44,6 +46,7 @@ namespace OS {
 		OS::User user_search_details;
 		int skip;
 		void *extra;
+		INetPeer *peer;
 		ProfileSearchCallback callback;
 		EProfileSearchType type;
 	} ProfileSearchRequest;
@@ -54,12 +57,14 @@ namespace OS {
 		public:
 			ProfileSearchTask();
 			~ProfileSearchTask();
-			static ProfileSearchTask *getProfileTask();
 		private:
 			static void PerformSearch(ProfileSearchRequest request);
-			static ProfileSearchTask *m_task_singleton;
 			static void *TaskThread(CThread *thread);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 	};
+	extern OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *m_profile_search_task_pool;
+	OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *GetProfileTaskPool();
+	void SetupProfileTaskPool(int num_tasks);
+	void ShutdownProfileTaskPool();
 }
 #endif //_SEARCH_USER_H

@@ -54,7 +54,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 
 #include <OS/Logger.h>
 
-#define OPENSPY_WEBSERVICES_URL "http://192.168.0.46"
+#define OPENSPY_WEBSERVICES_URL "http://os-auth.us-east-1.elasticbeanstalk.com"
 #define OS_REDIS_SERV "openspy.u95v0m.0001.use1.cache.amazonaws.com"
 #define OS_REDIS_PORT 6379
 #define OS_REDIS_ADDR "127.0.0.1:6379"
@@ -135,7 +135,7 @@ namespace OS {
 	void split(const std::string &s, char delim, Out result);
 	std::vector<std::string> split(const std::string &s, char delim);
 
-	void Init(const char *appName);
+	void Init(const char *appName, int num_async_tasks);
 	void Shutdown();
 	std::map<std::string, std::string> KeyStringToMap(std::string input);
 	std::vector<std::string> KeyStringToVector(std::string input);

@@ -7,7 +7,7 @@
 
 
 namespace OS {
-	AuthTask *AuthTask::m_task_singleton = NULL;
+	OS::TaskPool<AuthTask, AuthRequest> *m_auth_task_pool = NULL;
 	struct curl_data {
 	    std::string buffer;
 	};
@@ -78,8 +78,6 @@ namespace OS {
 		profile.id = 0;
 		OS::AuthData auth_data;
 
-		auth_data.session_key = NULL;
-		auth_data.hash_proof = NULL;
 		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
@@ -210,8 +208,6 @@ namespace OS {
 		profile.id = 0;
 		OS::AuthData auth_data;
 
-		auth_data.session_key = NULL;
-		auth_data.hash_proof = NULL;
 		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
@@ -326,10 +322,7 @@ namespace OS {
 		user.id = 0;
 		profile.id = 0;
 		OS::AuthData auth_data;
-
-		auth_data.session_key = NULL;
-		auth_data.hash_proof = NULL;
-
+		
 		jwt_free(jwt);
 
 		auth_data.response_code = (AuthResponseCode)-1;
@@ -435,8 +428,6 @@ namespace OS {
 		profile.id = 0;
 		OS::AuthData auth_data;
 
-		auth_data.session_key = NULL;
-		auth_data.hash_proof = NULL;
 		auth_data.response_code = (AuthResponseCode)-1;
 
 		char *json = jwt_get_grants_json(jwt, NULL);
@@ -508,7 +499,7 @@ namespace OS {
 			free((void *)jwt_encoded);
 		json_decref(send_obj);
 	}
-	void AuthTask::TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id) {
+	void AuthTask::TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_NickEmail_GPHash;
 		request.email = email;
@@ -522,9 +513,13 @@ namespace OS {
 		request.create_session = true;
 		request.operation_id = operation_id;
 		request.namespaceid = 0;
-		AuthTask::getAuthTask()->AddRequest(request);
+		if (peer) {
+			peer->IncRef();
+		}
+		request.peer = peer;
+		m_auth_task_pool->AddRequest(request);
 	}
-	void AuthTask::TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id) {
+	void AuthTask::TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_NickEmail;
 		request.email = email;
@@ -536,9 +531,13 @@ namespace OS {
 		request.create_session = make_session;
 		request.operation_id = operation_id;
 		request.namespaceid = 0;
-		AuthTask::getAuthTask()->AddRequest(request);
+		if (peer) {
+			peer->IncRef();
+		}
+		request.peer = peer;
+		m_auth_task_pool->AddRequest(request);
 	}
-	void AuthTask::TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id) {
+	void AuthTask::TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_CreateUser_OrProfile;
 		request.email = email;
@@ -552,9 +551,13 @@ namespace OS {
 		request.create_session = create_session;
 		request.operation_id = operation_id;
 		request.namespaceid = 0;
-		AuthTask::getAuthTask()->AddRequest(request);
+		if (peer) {
+			peer->IncRef();
+		}
+		request.peer = peer;
+		m_auth_task_pool->AddRequest(request);
 	}
-	void AuthTask::TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra, int operation_id) {
+	void AuthTask::TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_PID_GStats_Sesskey;
 
@@ -568,7 +571,11 @@ namespace OS {
 		request.create_session = true;
 		request.namespaceid = 0;
 		request.partnercode = 0;
-		AuthTask::getAuthTask()->AddRequest(request);
+		if (peer) {
+			peer->IncRef();
+		}
+		request.peer = peer;
+		m_auth_task_pool->AddRequest(request);
 	}
 	AuthTask::AuthTask() {
 		mp_mutex = OS::CreateMutex();
@@ -578,41 +585,46 @@ namespace OS {
 		delete mp_mutex;
 		delete mp_thread;
 	}
-	AuthTask *AuthTask::getAuthTask() {
-		if(!AuthTask::m_task_singleton) {
-			AuthTask::m_task_singleton = new AuthTask();
-		}
-		return AuthTask::m_task_singleton;
-	}
-	bool AuthTask::HasAuthTask() {
-		return AuthTask::m_task_singleton != NULL;
-	}
 	void *AuthTask::TaskThread(CThread *thread) {
 		AuthTask *task = (AuthTask *)thread->getParams();
-		for(;;) {
+		while (task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
-			while(!task->m_request_list.empty()) {
+			if (task->m_request_list.empty()) {
+				task->mp_mutex->unlock();
+				break;
+			}
+			while (!task->m_request_list.empty()) {
 				AuthRequest task_params = task->m_request_list.front();
-				task->m_request_list.pop();
-				switch(task_params.type) {
-					case EAuthType_NickEmail_GPHash:
-						task->PerformAuth_NickEMail_GPHash(task_params);
+				task->mp_mutex->unlock();
+				switch (task_params.type) {
+				case EAuthType_NickEmail_GPHash:
+					task->PerformAuth_NickEMail_GPHash(task_params);
 					break;
-					case EAuthType_NickEmail:
-						task->PerformAuth_NickEMail(task_params);
+				case EAuthType_NickEmail:
+					task->PerformAuth_NickEMail(task_params);
 					break;
-					case EAuthType_CreateUser_OrProfile:
-						task->PerformAuth_CreateUser_OrProfile(task_params);
+				case EAuthType_CreateUser_OrProfile:
+					task->PerformAuth_CreateUser_OrProfile(task_params);
 					break;
-					case EAuthType_PID_GStats_Sesskey:
-						task->PerformAuth_PID_GSStats_SessKey(task_params);
+				case EAuthType_PID_GStats_Sesskey:
+					task->PerformAuth_PID_GSStats_SessKey(task_params);
 					break;
 				}
-				continue;
+
+				task->mp_mutex->lock();
+				if(task_params.peer)
+					task_params.peer->DecRef();
+				task->m_request_list.pop();
 			}
+
 			task->mp_mutex->unlock();
-			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;
+	}
+	void SetupAuthTaskPool(int num_tasks) {
+		m_auth_task_pool = new OS::TaskPool<AuthTask, AuthRequest>(num_tasks);
+	}
+	void ShutdownAuthTaskPool() {
+		delete m_auth_task_pool;
 	}
 }

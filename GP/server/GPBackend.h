@@ -1,17 +1,14 @@
 #ifndef _GP_BACKEND_H
 #define _GP_BACKEND_H
 #include <GP/server/GPPeer.h>
-#include <hiredis/hiredis.h>
-#include <hiredis/async.h>
-
+#include <OS/OpenSpy.h>
+#include <OS/Redis.h>
 #include <OS/GPShared.h>
 
-#define _WINSOCK2API_
-#include <stdint.h>
-#include <hiredis/adapters/libevent.h>
-#include <event.h>
-#undef _WINSOCK2API_
-
+namespace GP {
+	class Server;
+	class Driver;
+}
 namespace GPBackend {
 
 	enum EGPRedisRequestType {
@@ -74,50 +71,54 @@ namespace GPBackend {
 		} uReqData;
 		GPShared::GPStatus StatusInfo; //cannot be in union due to OS::Address
 		void *extra;
+		GP::Peer *peer;
 		GPBackendRedisCallback callback;
 		
 	} GPBackendRedisRequest;
-
-
-	
-
 
 	class GPBackendRedisTask : public OS::Task<GPBackendRedisRequest> {
 		public:
 			GPBackendRedisTask();
 			~GPBackendRedisTask();
-			static void Shutdown();
-			static GPBackendRedisTask *getGPBackendRedisTask();
-			static void MakeBuddyRequest(int from_profileid, int to_profileid, const char *reason);
+			static void MakeBuddyRequest(GP::Peer *peer, int to_profileid, const char *reason);
 			static void SetPresenceStatus(int from_profileid, GPShared::GPStatus status, GP::Peer *peer);
-			static void MakeAuthorizeBuddyRequest(int adding_target, int adding_source);
-			static void MakeDelBuddyRequest(int adding_target, int adding_source);
-			static void MakeRevokeAuthRequest(int adding_target, int adding_source);
+			static void MakeAuthorizeBuddyRequest(GP::Peer *peer, int target);
+			static void MakeDelBuddyRequest(GP::Peer *peer, int target);
+			static void MakeRevokeAuthRequest(GP::Peer *peer, int target);
 			static void SendLoginEvent(GP::Peer *peer);
 			static void SendMessage(GP::Peer *peer, int to_profileid, char msg_type, const char *message);
-			static void MakeBlockRequest(int from_profileid, int block_id);
-			static void MakeRemoveBlockRequest(int from_profileid, int block_id);
+			static void MakeBlockRequest(GP::Peer *peer, int block_id);
+			static void MakeRemoveBlockRequest(GP::Peer *peer, int block_id);
+
+			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
+
+			void AddDriver(GP::Driver *driver);
+			void RemoveDriver(GP::Driver *driver);
+
 		private:
 			static void *setup_redis_async_sub(OS::CThread *thread);
-			static GPBackendRedisTask *m_task_singleton;
 			static void *TaskThread(OS::CThread *thread);
-			void Perform_BuddyRequest(struct sBuddyRequest request);
-			void Perform_AuthorizeAdd(struct sAuthorizeAdd request);
-			void Perform_DelBuddy(struct sDelBuddy request, bool send_revoke);
-			void Perform_SetPresenceStatus(GPShared::GPStatus status, void *extra);
-			void Perform_SendLoginEvent(GP::Peer *peer);
-			void Perform_SendBuddyMessage(GP::Peer *peer, struct sBuddyMessage msg);
-			void Perform_BlockBuddy(struct sBlockBuddy msg);
-			void Perform_DelBuddyBlock(struct sBlockBuddy msg);
-			void Perform_SendGPBuddyStatus(GP::Peer *peer);
+			void Perform_BuddyRequest(GPBackendRedisRequest request);
+			void Perform_AuthorizeAdd(GPBackendRedisRequest request);
+			void Perform_DelBuddy(GPBackendRedisRequest request);
+			void Perform_SetPresenceStatus(GPBackendRedisRequest request);
+			void Perform_SendLoginEvent(GPBackendRedisRequest request);
+			void Perform_SendBuddyMessage(GPBackendRedisRequest request);
+			void Perform_BlockBuddy(GPBackendRedisRequest request);
+			void Perform_DelBuddyBlock(GPBackendRedisRequest request);
+			void Perform_SendGPBuddyStatus(GPBackendRedisRequest request);
 
 			void load_and_send_gpstatus(GP::Peer *peer, json_t *json);
 
-			redisContext *mp_redis_connection;
-			redisAsyncContext *mp_redis_subscribe_connection;
+			Redis::Connection *mp_redis_connection;
+			Redis::Connection *mp_redis_subscribe_connection;
 			OS::CThread *mp_redis_async_thread;
-
-			struct event_base *mp_base_event;
+			std::vector<GP::Driver *> m_drivers;
 	};
+	#define NUM_PRESENCE_THREADS 8
+	extern OS::TaskPool<GPBackendRedisTask, GPBackendRedisRequest> *m_task_pool;
+	void SetupTaskPool(GP::Server *server);
+	void ShutdownTaskPool();
+	void *setup_redis_async(OS::CThread *thread);
 }
 #endif //_GP_BACKEND_H

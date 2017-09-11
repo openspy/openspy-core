@@ -18,7 +18,7 @@ using namespace GPShared;
 
 namespace GP {
 
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) {
+	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
 		m_sd = sd;
 		mp_driver = driver;
 		m_address_info = *address_info;
@@ -26,6 +26,7 @@ namespace GP {
 		m_timeout_flag = false;
 		mp_mutex = OS::CreateMutex();
 		gettimeofday(&m_last_ping, NULL);
+		gettimeofday(&m_last_recv, NULL);
 
 		m_status.status = GP_OFFLINE;
 		m_status.status_str[0] = 0;
@@ -205,18 +206,22 @@ namespace GP {
 		OS::ProfileSearchRequest request;
 		request.profile_search_details = m_profile;
 		request.extra = this;
+		request.peer = this;
+		request.peer->IncRef();
 		request.type = OS::EProfileSearch_UpdateProfile;
 		request.callback = Peer::m_update_profile_callback;
-		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+		OS::m_profile_search_task_pool->AddRequest(request);
 
 		if(send_userupdate) {
 			OS::UserSearchRequest user_request;
 			user_request.search_params = m_user;
 			user_request.type = OS::EUserRequestType_Update;
 			user_request.extra = this;
+			user_request.peer = this;
+			user_request.peer->IncRef();
 			user_request.callback = NULL;
 			user_request.search_params = m_user;
-			OS::UserSearchTask::getUserTask()->AddRequest(user_request);
+			OS::m_user_search_task_pool->AddRequest(user_request);
 		}
 	}
 	void Peer::handle_updateui(const char *data, int len) {
@@ -271,7 +276,7 @@ namespace GP {
 		request.extra = this;
 		request.callback = NULL;
 		request.search_params = m_user;
-		OS::UserSearchTask::getUserTask()->AddRequest(request);
+		OS::m_user_search_task_pool->AddRequest(request);
 	}
 	void Peer::handle_registernick(const char *data, int len) {
 		
@@ -294,16 +299,16 @@ namespace GP {
 		}
 		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
+		request.peer = this;
+		request.peer->IncRef();
 		request.type = OS::EProfileSearch_CreateProfile;
 		request.callback = Peer::m_create_profile_callback;
-		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		std::ostringstream s;
 		Peer *peer = (Peer *)extra;
-		if(!g_gbl_gp_driver->HasPeer(peer))
-			return;
-
+		
 		s << "\\dpr\\" << (int)(response_reason == OS::EProfileResponseType_Success);
 		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
@@ -311,9 +316,11 @@ namespace GP {
 		OS::ProfileSearchRequest request;
 		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
+		request.peer = this;
+		request.peer->IncRef();
 		request.type = OS::EProfileSearch_DeleteProfile;
 		request.callback = Peer::m_delete_profile_callback;
-		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::handle_login(const char *data, int len) {
 		char challenge[128 + 1];
@@ -386,7 +393,7 @@ namespace GP {
 		}
 		mp_mutex->unlock();
 
-		GPBackend::GPBackendRedisTask::MakeBuddyRequest(m_profile.id, newprofileid, reason);
+		GPBackend::GPBackendRedisTask::MakeBuddyRequest(this, newprofileid, reason);
 	}
 	void Peer::send_add_buddy_request(int from_profileid, const char *reason) {
 		////\bm\1\f\157928340\msg\I have authorized your request to add me to your list\final
@@ -403,8 +410,6 @@ namespace GP {
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		Peer *peer = (Peer *)extra;
-		if(!g_gbl_gp_driver->HasPeer(peer))
-			return;
 		peer->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\bdy\\" << results.size();
@@ -429,8 +434,6 @@ namespace GP {
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		Peer *peer = (Peer *)extra;
-		if(!g_gbl_gp_driver->HasPeer(peer))
-			return;
 		peer->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\blk\\" << results.size();
@@ -451,29 +454,33 @@ namespace GP {
 		OS::ProfileSearchRequest request;
 		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
+		request.peer = this;
+		request.peer->IncRef();
 		request.type = OS::EProfileSearch_Buddies;
 		request.callback = Peer::m_buddy_list_lookup_callback;
-		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::send_blocks() {
 		OS::ProfileSearchRequest request;
 		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
+		request.peer = this;
+		request.peer->IncRef();
 		request.type = OS::EProfileSearch_Blocks;
 		request.callback = Peer::m_block_list_lookup_callback;
-		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::handle_delbuddy(const char *data, int len) {
 		int delprofileid = find_paramint("delprofileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeDelBuddyRequest(m_profile.id, delprofileid);
+		GPBackend::GPBackendRedisTask::MakeDelBuddyRequest(this, delprofileid);
 	}
 	void Peer::handle_revoke(const char *data, int len) {
 		int delprofileid = find_paramint("profileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeRevokeAuthRequest(delprofileid, m_profile.id);
+		GPBackend::GPBackendRedisTask::MakeRevokeAuthRequest(this, delprofileid);
 	}
 	void Peer::handle_authadd(const char *data, int len) {
 		int fromprofileid = find_paramint("fromprofileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeAuthorizeBuddyRequest(m_profile.id, fromprofileid);
+		GPBackend::GPBackendRedisTask::MakeAuthorizeBuddyRequest(this, fromprofileid);
 	}
 	void Peer::send_authorize_add(int profileid) {
 		std::ostringstream s;
@@ -514,22 +521,24 @@ namespace GP {
 		m_search_operation_id = find_paramint("id",(char *)data);		
 		request.profile_search_details.id = profileid;
 		request.extra = this;
+		request.peer = this;
+		request.peer->IncRef();
 		request.callback = Peer::m_getprofile_callback;
 		request.type = OS::EProfileSearch_Profiles;
-		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::handle_addblock(const char *data, int len) {
 		int profileid = find_paramint("profileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeBlockRequest(m_profile.id, profileid);
+		GPBackend::GPBackendRedisTask::MakeBlockRequest(this, profileid);
 	}
 	void Peer::handle_removeblock(const char *data, int len) {
 		int profileid = find_paramint("profileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeRemoveBlockRequest(m_profile.id, profileid);
+		GPBackend::GPBackendRedisTask::MakeRemoveBlockRequest(this, profileid);
 	}
 	void Peer::handle_keepalive(const char *data, int len) {
-		std::ostringstream s;
-		s << "\\ka\\";
-		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		//std::ostringstream s;
+		//s << "\\ka\\";
+		//SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::handle_bm(const char *data, int len) {
 		char msg[GP_REASON_LEN+1];
@@ -553,9 +562,6 @@ namespace GP {
 	}
 	void Peer::m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		Peer *peer = (Peer *)extra;
-		if(!g_gbl_gp_driver->HasPeer(peer)) {
-			return;
-		}
 		std::vector<OS::Profile>::iterator it = results.begin();
 		while(it != results.end()) {
 			OS::Profile p = *it;
@@ -667,6 +673,8 @@ namespace GP {
 		if(attach_final) {
 			BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
 		}
+		out_buff[out_len] = 0;
+		OS::LogText(OS::ELogLevel_Info, "Sending: %s", out_buff);
 		int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
 		if(c < 0) {
 			m_delete_flag = true;
@@ -674,13 +682,16 @@ namespace GP {
 	}
 	void Peer::send_ping() {
 		//check for timeout
+		
+		/*
 		struct timeval current_time;
-
 		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_ping.tv_sec > GP_PING_TIME) {
+		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME) {
+			gettimeofday(&m_last_ping, NULL);
 			std::string ping_packet = "\\ka\\";
 			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
 		}
+		*/
 	}
 	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response, int operation_id) {
 		const char *email = NULL;
@@ -694,14 +705,11 @@ namespace GP {
 			}
 			email = first_at+1;
 		}
- 		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this, operation_id);
+ 		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this, operation_id, this);
 	}
 	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
 		Peer *peer = (Peer *)extra;
-		if(!g_gbl_gp_driver->HasPeer(peer)) {
-			return;
-		}
-		if(!peer->m_backend_session_key.length() && auth_data.session_key)
+		if(!peer->m_backend_session_key.length() && auth_data.session_key.length())
 			peer->m_backend_session_key = auth_data.session_key;
 
 		peer->m_user = user;
@@ -720,10 +728,10 @@ namespace GP {
 			if(profile.uniquenick.length()) {
 				ss << "\\uniquenick\\" << profile.uniquenick;
 			}
-			if(auth_data.session_key) {
+			if(auth_data.session_key.length()) {
 				ss << "\\lt\\" << auth_data.session_key;
 			}
-			if(auth_data.hash_proof) {
+			if(auth_data.hash_proof.length()) {
 				ss << "\\proof\\" << auth_data.hash_proof;
 			}
 			ss << "\\id\\" << operation_id;

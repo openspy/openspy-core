@@ -71,15 +71,15 @@ class AuthService(BaseService):
         return auth_success
 
     def test_gp_nick_email_by_profile(self, profile, client_challenge, server_challenge, client_response):
-        md5_pw = hashlib.md5(profile.user.password).hexdigest()
+        md5_pw = hashlib.md5(profile.user.password.encode('utf-8')).hexdigest()
         crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email,client_challenge, server_challenge, md5_pw)
-        true_resp = hashlib.md5(crypt_buf).hexdigest()
+        true_resp = hashlib.md5(crypt_buf.encode('utf-8')).hexdigest()
 
         if profile.user.partnercode != self.PARTNERID_GAMESPY:
             proof = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
         else:
             proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
-        proof = hashlib.md5(proof).hexdigest()
+        proof = hashlib.md5(proof.encode('utf-8')).hexdigest()
         if true_resp == client_response:
             return proof
         return None

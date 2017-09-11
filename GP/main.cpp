@@ -29,11 +29,13 @@ int main() {
        exit(EXIT_FAILURE);
     }
 
-    OS::Init("GP");
+    OS::Init("GP", 8);
     Socket::Init();
 
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
+	#ifndef _WIN32
+	    signal(SIGINT, sig_handler);
+	    signal(SIGTERM, sig_handler);
+	#endif
 
 	g_gameserver = new GP::Server();
     g_driver = new GP::Driver(g_gameserver, "0.0.0.0", GP_SERVER_PORT);
@@ -47,8 +49,8 @@ int main() {
     delete g_gameserver;
     delete g_driver;
 
-    OS::Shutdown();
-    GPBackend::GPBackendRedisTask::Shutdown();
+	GPBackend::ShutdownTaskPool();
+    OS::Shutdown();	
     return 0;
 
 }

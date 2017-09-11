@@ -812,48 +812,45 @@ namespace MM {
 	}
 	void *MMQueryTask::TaskThread(OS::CThread *thread) {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
-		for(;;) {
-			
-			while(task->mp_thread_poller->wait()) {
-				task->mp_mutex->lock();
-				if (task->m_request_list.empty()) {
-					task->mp_mutex->unlock();
+		while(task->mp_thread_poller->wait()) {
+			task->mp_mutex->lock();
+			if (task->m_request_list.empty()) {
+				task->mp_mutex->unlock();
+				continue;
+			}
+			while (!task->m_request_list.empty()) {
+				MMQueryRequest task_params = task->m_request_list.front();
+				task->mp_mutex->unlock();
+				switch (task_params.type) {
+				case EMMQueryRequestType_GetServers:
+					task->PerformServersQuery(task_params);
+					break;
+				case EMMQueryRequestType_GetGroups:
+					task->PerformGroupsQuery(task_params);
+					break;
+				case EMMQueryRequestType_GetServerByKey:
+					task->PerformGetServerByKey(task_params);
+					break;
+				case EMMQueryRequestType_GetServerByIP:
+					task->PerformGetServerByIP(task_params);
+					break;
+				case EMMQueryRequestType_SubmitData:
+					task->PerformSubmitData(task_params);
+					break;
+				case EMMQueryRequestType_GetGameInfoByGameName:
+					task->PerformGetGameInfoByGameName(task_params);
+					break;
+				case EMMQueryRequestType_GetGameInfoPairByGameName:
+					task->PerformGetGameInfoPairByGameName(task_params);
 					break;
 				}
-				while (!task->m_request_list.empty()) {
-					MMQueryRequest task_params = task->m_request_list.front();
-					task->mp_mutex->unlock();
-					switch (task_params.type) {
-					case EMMQueryRequestType_GetServers:
-						task->PerformServersQuery(task_params);
-						break;
-					case EMMQueryRequestType_GetGroups:
-						task->PerformGroupsQuery(task_params);
-						break;
-					case EMMQueryRequestType_GetServerByKey:
-						task->PerformGetServerByKey(task_params);
-						break;
-					case EMMQueryRequestType_GetServerByIP:
-						task->PerformGetServerByIP(task_params);
-						break;
-					case EMMQueryRequestType_SubmitData:
-						task->PerformSubmitData(task_params);
-						break;
-					case EMMQueryRequestType_GetGameInfoByGameName:
-						task->PerformGetGameInfoByGameName(task_params);
-						break;
-					case EMMQueryRequestType_GetGameInfoPairByGameName:
-						task->PerformGetGameInfoPairByGameName(task_params);
-						break;
-					}
 
-					task->mp_mutex->lock();
-					task_params.peer->DecRef();
-					task->m_request_list.pop();
-				}
-
-				task->mp_mutex->unlock();
+				task->mp_mutex->lock();
+				task_params.peer->DecRef();
+				task->m_request_list.pop();
 			}
+
+			task->mp_mutex->unlock();
 		}
 		return NULL;
 	}

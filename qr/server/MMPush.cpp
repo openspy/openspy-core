@@ -102,30 +102,28 @@ namespace MM {
 	}
 	void *MMPushTask::TaskThread(OS::CThread *thread) {
 		MMPushTask *task = (MMPushTask *)thread->getParams();
-		for (;;) {
-			while (task->mp_thread_poller->wait()) {
-				task->mp_mutex->lock();
-				MMPushRequest task_params = task->m_request_list.front();
-				task->mp_mutex->unlock();
-				switch (task_params.type) {
-					case EMMPushRequestType_PushServer:
-						task->PerformPushServer(task_params);
-						break;
-					case EMMPushRequestType_UpdateServer:
-						task->PerformUpdateServer(task_params);
-						break;
-					case EMMPushRequestType_DeleteServer:
-						task->PerformDeleteServer(task_params);
-						break;
-					case EMMPushRequestType_GetGameInfoByGameName:
-						task->PerformGetGameInfo(task_params);
-						break;
-				}
-				task->mp_mutex->lock();
-				task_params.peer->DecRef();
-				task->m_request_list.pop();
-				task->mp_mutex->unlock();
+		while (task->mp_thread_poller->wait()) {
+			task->mp_mutex->lock();
+			MMPushRequest task_params = task->m_request_list.front();
+			task->mp_mutex->unlock();
+			switch (task_params.type) {
+				case EMMPushRequestType_PushServer:
+					task->PerformPushServer(task_params);
+					break;
+				case EMMPushRequestType_UpdateServer:
+					task->PerformUpdateServer(task_params);
+					break;
+				case EMMPushRequestType_DeleteServer:
+					task->PerformDeleteServer(task_params);
+					break;
+				case EMMPushRequestType_GetGameInfoByGameName:
+					task->PerformGetGameInfo(task_params);
+					break;
 			}
+			task->mp_mutex->lock();
+			task_params.peer->DecRef();
+			task->m_request_list.pop();
+			task->mp_mutex->unlock();
 		}
 		return NULL;
 	}

@@ -4,6 +4,8 @@
 #include <OS/Thread.h>
 #include <OS/Mutex.h>
 #include <OS/User.h>
+#include <OS/TaskPool.h>
+#include <OS/Net/NetPeer.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -31,6 +33,7 @@ namespace OS {
 		int skip;
 		void *extra;
 		UserSearchCallback callback;
+		INetPeer *peer;
 	} UserSearchRequest;
 
 	
@@ -39,12 +42,13 @@ namespace OS {
 		public:
 			UserSearchTask();
 			~UserSearchTask();
-			static UserSearchTask *getUserTask();
 		private:
 			static void PerformRequest(UserSearchRequest request);
-			static UserSearchTask *m_task_singleton;
 			static void *TaskThread(CThread *thread);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
-	};	
+	};
+	extern OS::TaskPool<UserSearchTask, UserSearchRequest> *m_user_search_task_pool;
+	void SetupUserSearchTaskPool(int num_tasks);
+	void ShutdownUserSearchTaskPool();
 }
 #endif //_SEARCH_USER_H

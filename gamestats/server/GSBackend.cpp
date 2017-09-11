@@ -1,6 +1,8 @@
 #include <stdio.h>
-#include "GPBackend.h"
-#include "GPDriver.h"
+#include <OS/OpenSpy.h>
+#include "GSBackend.h"
+#include "GSDriver.h"
+#include "GSServer.h"
 #include <stdlib.h>
 #include <string.h>
 #include <OS/socketlib/socketlib.h>
@@ -27,15 +29,14 @@
 #define GP_PERSIST_BACKEND_URL  OPENSPY_WEBSERVICES_URL "/backend/persist"
 #define GP_PERSIST_BACKEND_CRYPTKEY "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
 
-namespace GPBackend {
+namespace GSBackend {
 	struct curl_data {
 	    //json_t *json_data;
 	    std::string buffer;
 	};
 
-	PersistBackendTask *PersistBackendTask::m_task_singleton = NULL;
+	OS::TaskPool<PersistBackendTask, PersistBackendRequest> *m_task_pool = NULL;
 
-	const char *gp_buddies_channel = "persist";
 	/* callback for curl fetch */
 	size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
 		if(!contents) {
@@ -49,78 +50,24 @@ namespace GPBackend {
 	    return realsize;
 	}
 
-	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
-	    redisReply *r = (redisReply*)reply;
-
-	    if (reply == NULL) return;
-	    int to_profileid, from_profileid;
-	    char msg_type[16], reason[GP_REASON_LEN + 1];
-	    GP::Peer *peer = NULL;
-	    if (r->type == REDIS_REPLY_ARRAY) {
-	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
-	    		if(strcmp(r->element[1]->str,gp_buddies_channel) == 0) {
-	    			if(!find_param("type", r->element[2]->str,(char *)&msg_type, sizeof(msg_type))) {
-	    					return;
-	    			}
-	    		}
-	    	}
-	    }
-	}
-	void *PersistBackendTask::setup_redis_async_sub(OS::CThread *thread) {
-		PersistBackendTask *task = (PersistBackendTask *)thread->getParams();
-		task->mp_event_base = event_base_new();
-
-	    task->mp_redis_subscribe_connection = redisAsyncConnect(OS_REDIS_SERV, OS_REDIS_PORT);
-
-	    redisLibeventAttach(task->mp_redis_subscribe_connection, task->mp_event_base);
-
-	    redisAsyncCommand(task->mp_redis_subscribe_connection, onRedisMessage, NULL, "SUBSCRIBE %s",gp_buddies_channel);
-
-	    event_base_dispatch(task->mp_event_base);
-	}
-
 	PersistBackendTask::PersistBackendTask() {
-		mp_redis_async_thread = OS::CreateThread(setup_redis_async_sub, this, true);
-
-		struct timeval t;
-		t.tv_usec = 0;
-		t.tv_sec = 3;
-
-		mp_redis_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
-
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(PersistBackendTask::TaskThread, this, true);
 	}
 	PersistBackendTask::~PersistBackendTask() {
 		delete mp_thread;
-		delete mp_redis_async_thread;
 		delete mp_mutex;
-
-		event_base_free(mp_event_base);
-
-		redisFree(mp_redis_connection);
-		redisAsyncFree(mp_redis_subscribe_connection);
 	}
-	void PersistBackendTask::Shutdown() {
-		PersistBackendTask *task = getPersistBackendTask();
-
-		delete task;
-	}
-	PersistBackendTask *PersistBackendTask::getPersistBackendTask() {
-		if(!PersistBackendTask::m_task_singleton) {
-			PersistBackendTask::m_task_singleton = new PersistBackendTask();
-		}
-		return PersistBackendTask::m_task_singleton;
-	}
-	void PersistBackendTask::SubmitNewGameSession(GP::Peer *peer, void* extra, PersistBackendCallback cb) {
+	void PersistBackendTask::SubmitNewGameSession(GS::Peer *peer, void* extra, PersistBackendCallback cb) {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
 		req.type = EPersistRequestType_NewGame;
 		req.callback = cb;
-		getPersistBackendTask()->AddRequest(req);
+		peer->IncRef();
+		m_task_pool->AddRequest(req);
 	}
-	void PersistBackendTask::SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GP::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb) {
+	void PersistBackendTask::SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb) {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
@@ -128,7 +75,9 @@ namespace GPBackend {
 		req.game_instance_identifier = game_instance_identifier;
 		req.callback = cb;
 		req.kvMap = kvMap;
-		getPersistBackendTask()->AddRequest(req);
+
+		peer->IncRef();
+		m_task_pool->AddRequest(req);
 	}
 	void PersistBackendTask::PerformNewGameSession(PersistBackendRequest req) {
 		json_t *send_json = json_object();
@@ -243,7 +192,7 @@ namespace GPBackend {
 		json_decref(send_json);
 
 	}
-	void PersistBackendTask::SubmitSetPersistData(int profileid, GP::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set) {
+	void PersistBackendTask::SubmitSetPersistData(int profileid, GS::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set) {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
@@ -254,9 +203,10 @@ namespace GPBackend {
 		req.data_index = index;
 		req.data_kv_set = kv_set;
 		req.profileid = profileid;
-		getPersistBackendTask()->AddRequest(req);
+		peer->IncRef();
+		m_task_pool->AddRequest(req);
 	}
-	void PersistBackendTask::SubmitGetPersistData(int profileid, GP::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList) {
+	void PersistBackendTask::SubmitGetPersistData(int profileid, GS::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList) {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
@@ -266,7 +216,8 @@ namespace GPBackend {
 		req.data_type = type;
 		req.data_index = index;
 		req.keyList = keyList;
-		getPersistBackendTask()->AddRequest(req);
+		peer->IncRef();
+		m_task_pool->AddRequest(req);
 	}
 	void PersistBackendTask::PerformSetPersistData(PersistBackendRequest req) {
 		json_t *send_json = json_object();
@@ -390,36 +341,62 @@ namespace GPBackend {
 	}
 	void *PersistBackendTask::TaskThread(OS::CThread *thread) {
 		PersistBackendTask *task = (PersistBackendTask *)thread->getParams();
-		for(;;) {
-			if(task->m_request_list.size() > 0) {
-				std::vector<PersistBackendRequest>::iterator it = task->m_request_list.begin();
-				task->mp_mutex->lock();
-				while(it != task->m_request_list.end()) {
-					PersistBackendRequest task_params = *it;
-					if(GP::g_gbl_gp_driver->HasPeer(task_params.mp_peer)) {
+		for (;;) {
 
-						switch(task_params.type) {
-							case EPersistRequestType_NewGame:
-								task->PerformNewGameSession(task_params);
-							break;
-							case EPersistRequestType_UpdateGame:
-								task->PerformUpdateGameSession(task_params);
-							break;
-							case EPersistRequestType_SetUserData:
-								task->PerformSetPersistData(task_params);
-							break;
-							case EPersistRequestType_GetUserData:
-								task->PerformGetPersistData(task_params);
-							break;
-						}
-					}
-					it = task->m_request_list.erase(it);
+			while (task->mp_thread_poller->wait()) {
+				task->mp_mutex->lock();
+				if (task->m_request_list.empty()) {
+					task->mp_mutex->unlock();
 					continue;
 				}
+				while (!task->m_request_list.empty()) {
+					PersistBackendRequest task_params = task->m_request_list.front();
+					task->mp_mutex->unlock();
+
+					switch (task_params.type) {
+						case EPersistRequestType_NewGame:
+							task->PerformNewGameSession(task_params);
+							break;
+						case EPersistRequestType_UpdateGame:
+							task->PerformUpdateGameSession(task_params);
+							break;
+						case EPersistRequestType_SetUserData:
+							task->PerformSetPersistData(task_params);
+							break;
+						case EPersistRequestType_GetUserData:
+							task->PerformGetPersistData(task_params);
+							break;
+					}
+
+					task->mp_mutex->lock();
+					task_params.mp_peer->DecRef();
+					task->m_request_list.pop();
+				}
+
 				task->mp_mutex->unlock();
 			}
-			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;
 	}
+	void PersistBackendTask::AddDriver(GS::Driver *driver) {
+		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {
+			m_drivers.push_back(driver);
+		}
+	}
+	void PersistBackendTask::RemoveDriver(GS::Driver *driver) {
+		std::vector<GS::Driver *>::iterator it = std::find(m_drivers.begin(), m_drivers.end(), driver);
+		if (it != m_drivers.end()) {
+			it = m_drivers.erase(it);
+		}
+	}
+	void SetupTaskPool(GS::Server *server) {
+		OS::Sleep(200);
+
+		m_task_pool = new OS::TaskPool<PersistBackendTask, PersistBackendRequest>(NUM_STATS_THREADS);
+		server->SetTaskPool(m_task_pool);
+	}
+	void ShutdownTaskPool() {
+
+	}
+
 }

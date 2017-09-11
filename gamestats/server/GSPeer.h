@@ -1,6 +1,10 @@
 #ifndef _GPPEER_H
 #define _GPPEER_H
 #include "../main.h"
+
+#include <OS/Net/NetPeer.h>
+#include <OS/Ref.h>
+
 #include <OS/Auth.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
@@ -11,17 +15,18 @@
 
 #include <OS/GPShared.h>
 
-#include "GPBackend.h"
+
+#include "GSBackend.h"
 
 
-namespace GP {
+namespace GS {
 	typedef struct {
 		int profileid;
 		int operation_id;
 	} GPPersistRequestData;
 	class Driver;
 
-	class Peer {
+	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~Peer();
@@ -45,20 +50,20 @@ namespace GP {
 
 	private:
 		//packet handlers
-		static void newGameCreateCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra);
+		static void newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_newgame(const char *data, int len);
 
-		static void updateGameCreateCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra);
+		static void updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_updgame(const char *data, int len);
 
 		void handle_authp(const char *data, int len);
 		void handle_auth(const char *data, int len);
 		void handle_getpid(const char *data, int len);
 
-		static void getPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra);
+		static void getPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_getpd(const char *data, int len);
 
-		static void setPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra);
+		static void setPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_setpd(const char *data, int len);
 
 		//login

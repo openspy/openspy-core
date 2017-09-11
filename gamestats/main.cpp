@@ -4,9 +4,9 @@
 #include <sstream>
 #include <OS/Net/NetServer.h>
 #include <OS/socketlib/socketlib.h>
-#include "server/GPServer.h"
-#include "server/GPDriver.h"
-#include "server/GPBackend.h"
+#include "server/GSServer.h"
+#include "server/GSDriver.h"
+#include "server/GSBackend.h"
 INetServer *g_gameserver = NULL;
 INetDriver *g_driver = NULL;
 bool g_running = true;
@@ -29,14 +29,16 @@ int main() {
        exit(EXIT_FAILURE);
     }
     
-    OS::Init("gamestats");
+    OS::Init("gamestats", 4);
     Socket::Init();
 
+	#ifndef _WIN32
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
+	#endif
 
-	g_gameserver = new GP::Server();
-    g_driver = new GP::Driver(g_gameserver, "0.0.0.0", STATS_SERVER_PORT);
+	g_gameserver = new GS::Server();
+    g_driver = new GS::Driver(g_gameserver, "0.0.0.0", STATS_SERVER_PORT);
 	g_gameserver->addNetworkDriver(g_driver);
 	g_gameserver->init();
 	while(g_running) {
@@ -45,8 +47,9 @@ int main() {
     delete g_gameserver;
     delete g_driver;
 
+	GSBackend::ShutdownTaskPool();
     OS::Shutdown();
-    GPBackend::PersistBackendTask::Shutdown();
+    
     return 0;
 }
 

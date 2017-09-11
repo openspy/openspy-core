@@ -1,5 +1,5 @@
-#include "GPPeer.h"
-#include "GPDriver.h"
+#include "GSPeer.h"
+#include "GSDriver.h"
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
 #include <OS/legacy/helpers.h>
@@ -12,7 +12,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include "GPBackend.h"
+#include "GSBackend.h"
 
 #include <OS/GPShared.h>
 
@@ -21,9 +21,9 @@
 
 using namespace GPShared;
 
-namespace GP {
+namespace GS {
 
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) {
+	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
 		m_sd = sd;
 		mp_driver = driver;
 		m_address_info = *address_info;
@@ -147,7 +147,7 @@ namespace GP {
 		ss << "\\getpidr\\-1\\lid\\" << operation_id;
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}
-	void Peer::getPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
+	void Peer::getPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		if(!g_gbl_gp_driver->HasPeer(peer)) {
 			free((void *)extra);
 			return;
@@ -221,10 +221,10 @@ namespace GP {
 		persist_request_data->profileid = pid;
 		persist_request_data->operation_id = operation_id;
 
-		GPBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList);
+		GSBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList);
 	}
 
-	void Peer::setPersistDataCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
+	void Peer::setPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		if(!g_gbl_gp_driver->HasPeer(peer)) {
 			free((void *)extra);
 			return;
@@ -268,7 +268,7 @@ namespace GP {
 		persist_request_data->profileid = pid;
 		persist_request_data->operation_id = operation_id;
 
-		GPBackend::PersistBackendTask::SubmitSetPersistData(m_profile.id, this, (void *)persist_request_data, setPersistDataCallback, b64_str, persist_type, data_index, kv_set);
+		GSBackend::PersistBackendTask::SubmitSetPersistData(m_profile.id, this, (void *)persist_request_data, setPersistDataCallback, b64_str, persist_type, data_index, kv_set);
 
 		free((void *)b64_str);
 	}
@@ -306,7 +306,7 @@ namespace GP {
 		ss << "\\lc\\2\\sesskey\\" << m_session_key << "\\proof\\0\\id\\" << local_id;
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}
-	void Peer::newGameCreateCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
+	void Peer::newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		if(!g_gbl_gp_driver->HasPeer(peer))
 			return;
 
@@ -314,9 +314,9 @@ namespace GP {
 
 	}
 	void Peer::handle_newgame(const char *data, int len) {
-		GPBackend::PersistBackendTask::SubmitNewGameSession(this, NULL, newGameCreateCallback);
+		GSBackend::PersistBackendTask::SubmitNewGameSession(this, NULL, newGameCreateCallback);
 	}
-	void Peer::updateGameCreateCallback(bool success, GPBackend::PersistBackendResponse response_data, GP::Peer *peer, void* extra) {
+	void Peer::updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		if(!g_gbl_gp_driver->HasPeer(peer))
 			return;
 	}
@@ -335,7 +335,7 @@ namespace GP {
 			}
 		}
 		game_data = OS::KeyStringToMap(gamedata);
-		GPBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_current_game_identifier, updateGameCreateCallback);
+		GSBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_current_game_identifier, updateGameCreateCallback);
 		/*
 		std::map<std::string,std::string>::iterator it = game_data.begin();
 		while(it != game_data.end()) {

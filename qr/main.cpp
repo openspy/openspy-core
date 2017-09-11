@@ -36,7 +36,7 @@ int main() {
 	#endif
 
 	Socket::Init();
-  	OS::Init("qr");
+  	OS::Init("qr", 0);
 	
   	g_gameserver = new QR::Server();
     g_driver = new QR::Driver(g_gameserver, "0.0.0.0", MASTER_PORT);

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "GPBackend.h"
 #include "GPDriver.h"
+#include "GPServer.h"
 #include <stdlib.h>
 #include <string.h>
 #include <OS/socketlib/socketlib.h>
@@ -28,8 +29,9 @@ namespace GPBackend {
 	    json_t *json_data;
 	};
 
-	GPBackendRedisTask *GPBackendRedisTask::m_task_singleton = NULL;
-
+	OS::TaskPool<GPBackendRedisTask, GPBackendRedisRequest> *m_task_pool = NULL;
+	Redis::Connection *mp_redis_async_connection = NULL;
+	OS::CThread *mp_async_thread = NULL;
 	const char *gp_buddies_channel = "presence.buddies";
 	/* callback for curl fetch */
 	size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
@@ -58,7 +60,8 @@ namespace GPBackend {
 	    return realsize;
 	}
 
-	void onRedisMessage(redisAsyncContext *c, void *reply, void *privdata) {
+	void GPBackendRedisTask::onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
+		/*
 	    redisReply *r = (redisReply*)reply;
 
 	    if (reply == NULL) return;
@@ -133,19 +136,19 @@ namespace GPBackend {
 	    			}
 	    		}
 	    	}
-	    }
+	    }*/
 	}
 	void *GPBackendRedisTask::setup_redis_async_sub(OS::CThread *thread) {
 		GPBackendRedisTask *task = (GPBackendRedisTask *)thread->getParams();
-		task->mp_base_event = event_base_new();
 
-	    task->mp_redis_subscribe_connection = redisAsyncConnect(OS_REDIS_SERV, OS_REDIS_PORT);
 
-	    redisLibeventAttach(task->mp_redis_subscribe_connection, task->mp_base_event);
+		struct timeval t;
+		t.tv_usec = 0;
+		t.tv_sec = 60;
+		task->mp_redis_subscribe_connection  = Redis::Connect(OS_REDIS_ADDR, t);
 
-	    redisAsyncCommand(task->mp_redis_subscribe_connection, onRedisMessage, NULL, "SUBSCRIBE %s",gp_buddies_channel);
+		Redis::LoopingCommand(task->mp_redis_subscribe_connection, 60, GPBackendRedisTask::onRedisMessage, NULL, "SUBSCRIBE %s",gp_buddies_channel);
 
-	    event_base_dispatch(task->mp_base_event);
 	    return NULL;
 	}
 
@@ -157,7 +160,7 @@ namespace GPBackend {
 		t.tv_usec = 0;
 		t.tv_sec = 3;
 
-		mp_redis_connection = redisConnectWithTimeout(OS_REDIS_SERV, OS_REDIS_PORT, t);
+		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(GPBackendRedisTask::TaskThread, this, true);
@@ -167,25 +170,16 @@ namespace GPBackend {
 		delete mp_redis_async_thread;
 		delete mp_mutex;
 
-		redisFree(mp_redis_connection);
+		Redis::Disconnect(mp_redis_connection);
 		if(mp_redis_subscribe_connection)
-			redisAsyncFree(mp_redis_subscribe_connection);
-
-		event_base_free(mp_base_event);
+			Redis::Disconnect(mp_redis_subscribe_connection);
 	}
-	GPBackendRedisTask *GPBackendRedisTask::getGPBackendRedisTask() {
-		if(!GPBackendRedisTask::m_task_singleton) {
-			GPBackendRedisTask::m_task_singleton = new GPBackendRedisTask();
-		}
-		return GPBackendRedisTask::m_task_singleton;
-	}
-	void GPBackendRedisTask::Shutdown() {
-		delete getGPBackendRedisTask();
-	}
-	void GPBackendRedisTask::MakeBuddyRequest(int from_profileid, int to_profileid, const char *reason) {
+	void GPBackendRedisTask::MakeBuddyRequest(GP::Peer *peer, int to_profileid, const char *reason) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_BuddyRequest;
-		req.uReqData.BuddyRequest.from_profileid = from_profileid;
+		req.peer = peer;
+		peer->IncRef();
+		req.uReqData.BuddyRequest.from_profileid = peer->GetProfileID();
 		req.uReqData.BuddyRequest.to_profileid = to_profileid;
 
 		int len = strlen(reason);
@@ -195,131 +189,132 @@ namespace GPBackend {
 		strncpy(req.uReqData.BuddyRequest.reason, reason, len);
 		req.uReqData.BuddyRequest.reason[len] = 0;
 
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		m_task_pool->AddRequest(req);
 	}
-	void GPBackendRedisTask::MakeDelBuddyRequest(int adding_target, int adding_source) {
+	void GPBackendRedisTask::MakeDelBuddyRequest(GP::Peer *peer, int target) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_DelBuddy;
-		req.uReqData.DelBuddy.from_profileid = adding_source;
-		req.uReqData.DelBuddy.to_profileid = adding_target;
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		req.peer = peer;
+		peer->IncRef();
+		req.uReqData.DelBuddy.from_profileid = peer->GetProfileID();
+		req.uReqData.DelBuddy.to_profileid = target;
+		m_task_pool->AddRequest(req);
 	}
-	void GPBackendRedisTask::MakeRevokeAuthRequest(int adding_target, int adding_source) {
+	void GPBackendRedisTask::MakeRevokeAuthRequest(GP::Peer *peer, int target) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_RevokeAuth;
-		req.uReqData.DelBuddy.from_profileid = adding_source;
-		req.uReqData.DelBuddy.to_profileid = adding_target;
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		req.peer = peer;
+		peer->IncRef();
+		req.uReqData.DelBuddy.from_profileid = peer->GetProfileID();
+		req.uReqData.DelBuddy.to_profileid = target;
+		m_task_pool->AddRequest(req);
 	}
-	void GPBackendRedisTask::MakeAuthorizeBuddyRequest(int adding_target, int adding_source) {
+	void GPBackendRedisTask::MakeAuthorizeBuddyRequest(GP::Peer *peer, int target) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_AuthorizeAdd;
-		req.uReqData.AuthorizeAdd.from_profileid = adding_source;
-		req.uReqData.AuthorizeAdd.to_profileid = adding_target;
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		req.peer = peer;
+		peer->IncRef();
+		req.uReqData.AuthorizeAdd.from_profileid = peer->GetProfileID();
+		req.uReqData.AuthorizeAdd.to_profileid = target;
+		m_task_pool->AddRequest(req);
 	}
 	void GPBackendRedisTask::SetPresenceStatus(int from_profileid, GPShared::GPStatus status, GP::Peer *peer) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_UpdateStatus;
+		req.peer = peer;
+		peer->IncRef();
 		req.StatusInfo = status;
 		req.extra = (void *)peer;
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		m_task_pool->AddRequest(req);
 	}
 	void *GPBackendRedisTask::TaskThread(OS::CThread *thread) {
 		GPBackendRedisTask *task = (GPBackendRedisTask *)thread->getParams();
-		for(;;) {
-			if(task->m_request_list.size() > 0) {
-				std::vector<GPBackendRedisRequest>::iterator it = task->m_request_list.begin();
+		for (;;) {
+
+			while (task->mp_thread_poller->wait()) {
 				task->mp_mutex->lock();
-				while(it != task->m_request_list.end()) {
-					GPBackendRedisRequest task_params = *it;
-					switch(task_params.type) {
-						case EGPRedisRequestType_BuddyRequest:
-							task->Perform_BuddyRequest(task_params.uReqData.BuddyRequest);
-						break;
-						case EGPRedisRequestType_AuthorizeAdd:
-							task->Perform_AuthorizeAdd(task_params.uReqData.AuthorizeAdd);
-						break;
-						case EGPRedisRequestType_UpdateStatus:
-							task->Perform_SetPresenceStatus(task_params.StatusInfo, task_params.extra);
-						break;
-						case EGPRedisRequestType_DelBuddy:
-							task->Perform_DelBuddy(task_params.uReqData.DelBuddy, false);
-						break;
-						case EGPRedisRequestType_RevokeAuth:
-							task->Perform_DelBuddy(task_params.uReqData.DelBuddy, true);
-						break;
-						case EGPRedisRequestType_SendLoginEvent:
-							task->Perform_SendLoginEvent((GP::Peer *)task_params.extra);
-						break;
-						case EGPRedisRequestType_BuddyMessage:
-							task->Perform_SendBuddyMessage((GP::Peer *)task_params.extra, task_params.uReqData.BuddyMessage);
-						break;
-						case EGPRedisRequestType_AddBlock:
-							task->Perform_BlockBuddy(task_params.uReqData.BlockMessage);
-						break;
-						case EGPRedisRequestType_DelBlock:
-							task->Perform_DelBuddyBlock(task_params.uReqData.BlockMessage);
-						break;
-						case EGPRedisRequestType_SendGPBuddyStatus:
-							task->Perform_SendGPBuddyStatus((GP::Peer *)task_params.extra);
-						break;
-					}
-					it = task->m_request_list.erase(it);
+				if (task->m_request_list.empty()) {
+					task->mp_mutex->unlock();
 					continue;
 				}
+				while (!task->m_request_list.empty()) {
+					GPBackendRedisRequest task_params = task->m_request_list.front();
+					task->mp_mutex->unlock();
+					switch (task_params.type) {
+					case EGPRedisRequestType_BuddyRequest:
+						task->Perform_BuddyRequest(task_params);
+						break;
+					case EGPRedisRequestType_AuthorizeAdd:
+						task->Perform_AuthorizeAdd(task_params);
+						break;
+					case EGPRedisRequestType_UpdateStatus:
+						task->Perform_SetPresenceStatus(task_params);
+						break;
+					case EGPRedisRequestType_RevokeAuth:
+					case EGPRedisRequestType_DelBuddy:
+						task->Perform_DelBuddy(task_params);
+						break;
+					case EGPRedisRequestType_SendLoginEvent:
+						task->Perform_SendLoginEvent(task_params);
+						break;
+					case EGPRedisRequestType_BuddyMessage:
+						task->Perform_SendBuddyMessage(task_params);
+						break;
+					case EGPRedisRequestType_AddBlock:
+						task->Perform_BlockBuddy(task_params);
+						break;
+					case EGPRedisRequestType_DelBlock:
+						task->Perform_DelBuddyBlock(task_params);
+						break;
+					case EGPRedisRequestType_SendGPBuddyStatus:
+						task->Perform_SendGPBuddyStatus(task_params);
+						break;
+					}
+
+					task->mp_mutex->lock();
+					if(task_params.peer)
+						task_params.peer->DecRef();
+					task->m_request_list.pop();
+				}
+
 				task->mp_mutex->unlock();
 			}
-			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;
 	}
-	void GPBackendRedisTask::Perform_SetPresenceStatus(GPShared::GPStatus status, void *extra) {
-		GP::Peer *peer = (GP::Peer *)extra;
-		int profileid = peer->GetProfileID();
-		redisAppendCommand(this->mp_redis_connection, "SELECT %d", GP_BACKEND_REDIS_DB);
-		redisAppendCommand(this->mp_redis_connection, "HSET status_%d status %d", profileid, status.status);
-		redisAppendCommand(this->mp_redis_connection, "HSET status_%d status_string %s", profileid, status.status_str);
-		redisAppendCommand(this->mp_redis_connection, "HSET status_%d location_string %s", profileid, status.location_str);
-		redisAppendCommand(this->mp_redis_connection, "HSET status_%d quiet_flags %d", profileid, status.quiet_flags);
+	void GPBackendRedisTask::Perform_SetPresenceStatus(GPBackendRedisRequest request) {
+		int profileid = request.peer->GetProfileID();
+		Redis::Command(mp_redis_connection, 0, "SELECT %d", GP_BACKEND_REDIS_DB);
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d status %d", profileid, request.StatusInfo.status);
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d status_string %s", profileid, request.StatusInfo.status_str);
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d location_string %s", profileid, request.StatusInfo.location_str);
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d quiet_flags %d", profileid, request.StatusInfo.quiet_flags);
 
 		struct sockaddr_in addr;
-		addr.sin_port = Socket::htons(status.address.port);
-		addr.sin_addr.s_addr = (status.address.ip);
+		addr.sin_port = Socket::htons(request.StatusInfo.address.port);
+		addr.sin_addr.s_addr = (request.StatusInfo.address.ip);
 		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
-		redisAppendCommand(this->mp_redis_connection, "HSET status_%d ip %s", profileid, ipinput);
-		redisAppendCommand(this->mp_redis_connection, "HSET status_%d port %d", profileid, addr.sin_port);
-		redisAppendCommand(this->mp_redis_connection, "EXPIRE status_%d %d", profileid, GP_STATUS_EXPIRE_TIME);
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d ip %s", profileid, ipinput);
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d port %d", profileid, addr.sin_port);
+		Redis::Command(mp_redis_connection, 0, "EXPIRE status_%d %d", profileid, GP_STATUS_EXPIRE_TIME);
 
-		redisAppendCommand(this->mp_redis_connection, "PUBLISH %s \\type\\status_update\\profileid\\%d\\status_string\\%s\\status\\%d\\location_string\\%s\\quiet_flags\\%d\\ip\\%s\\port\\%d",
-		 gp_buddies_channel, profileid,status.status_str,status.status,status.location_str,
-		 status.quiet_flags,ipinput,addr.sin_port); //TODO: escape this
-
-		for(int i=0;i<9;i++) {
-			redisReply *reply;
-			int r = redisGetReply(this->mp_redis_connection, (void **) &reply );
-			freeReplyObject(reply);
-		}
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\type\\status_update\\profileid\\%d\\status_string\\%s\\status\\%d\\location_string\\%s\\quiet_flags\\%d\\ip\\%s\\port\\%d",
+		 gp_buddies_channel, profileid, request.StatusInfo.status_str, request.StatusInfo.status, request.StatusInfo.location_str,
+			request.StatusInfo.quiet_flags,ipinput,addr.sin_port); //TODO: escape this
 	}
-	void GPBackendRedisTask::Perform_BuddyRequest(struct sBuddyRequest request) {
-		redisAppendCommand(this->mp_redis_connection, "SELECT %d", GP_BACKEND_REDIS_DB);
-		redisAppendCommand(this->mp_redis_connection, "HSET add_req_%d %d %s", request.to_profileid, request.from_profileid, request.reason);
-		redisAppendCommand(this->mp_redis_connection, "EXPIRE add_req_%d %d", request.to_profileid, BUDDY_ADDREQ_EXPIRETIME);
+	void GPBackendRedisTask::Perform_BuddyRequest(GPBackendRedisRequest request) {
+		Redis::Command(mp_redis_connection, 0, "SELECT %d", GP_BACKEND_REDIS_DB);
+		Redis::Command(mp_redis_connection, 0, "HSET add_req_%d %d %s", request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.reason);
+		Redis::Command(mp_redis_connection, 0, "EXPIRE add_req_%d %d", request.uReqData.BuddyRequest.to_profileid, BUDDY_ADDREQ_EXPIRETIME);
 
-		redisAppendCommand(this->mp_redis_connection, "PUBLISH %s \\type\\add_request\\from_profileid\\%d\\to_profileid\\%d\\reason\\%s", gp_buddies_channel, request.from_profileid, request.to_profileid, request.reason); //TODO: escape this
-
-		for(int i=0;i<4;i++) {
-			redisReply *reply;
-			int r = redisGetReply(this->mp_redis_connection, (void **) &reply );
-			freeReplyObject(reply);
-		}
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\type\\add_request\\from_profileid\\%d\\to_profileid\\%d\\reason\\%s", gp_buddies_channel, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.reason); //TODO: escape this
 	}
-	void GPBackendRedisTask::Perform_AuthorizeAdd(struct sAuthorizeAdd request) {
+	void GPBackendRedisTask::Perform_AuthorizeAdd(GPBackendRedisRequest request) {
 		curl_data recv_data;
 		json_t *send_obj = json_object();
 		json_object_set_new(send_obj, "mode", json_string("authorize_buddy_add"));
-		json_object_set_new(send_obj, "from_profileid", json_integer(request.from_profileid));
-		json_object_set_new(send_obj, "to_profileid", json_integer(request.to_profileid));
+		json_object_set_new(send_obj, "from_profileid", json_integer(request.uReqData.BuddyRequest.from_profileid));
+		json_object_set_new(send_obj, "to_profileid", json_integer(request.uReqData.BuddyRequest.to_profileid));
 
 
 		CURL *curl = curl_easy_init();
@@ -371,13 +366,13 @@ namespace GPBackend {
 		if(jwt_encoded)
 			free((void *)jwt_encoded);
 	}
-	void GPBackendRedisTask::Perform_DelBuddy(struct sDelBuddy request, bool send_revoke) {
+	void GPBackendRedisTask::Perform_DelBuddy(GPBackendRedisRequest request) {
 		curl_data recv_data;
 		json_t *send_obj = json_object();
 		json_object_set_new(send_obj, "mode", json_string("del_buddy"));
-		json_object_set_new(send_obj, "from_profileid", json_integer(request.from_profileid));
-		json_object_set_new(send_obj, "to_profileid", json_integer(request.to_profileid));
-		json_object_set_new(send_obj, "send_revoke", send_revoke ? json_true() : json_false());
+		json_object_set_new(send_obj, "from_profileid", json_integer(request.uReqData.BuddyRequest.from_profileid));
+		json_object_set_new(send_obj, "to_profileid", json_integer(request.uReqData.BuddyRequest.to_profileid));
+		json_object_set_new(send_obj, "send_revoke", request.type == EGPRedisRequestType_RevokeAuth ? json_true() : json_false());
 
 
 		CURL *curl = curl_easy_init();
@@ -432,17 +427,20 @@ namespace GPBackend {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_SendLoginEvent;
 		req.extra = (void *)peer;
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		req.peer = peer;
+		peer->IncRef();
+		m_task_pool->AddRequest(req);
+		peer->IncRef();
 
 		req.type = EGPRedisRequestType_SendGPBuddyStatus;
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		m_task_pool->AddRequest(req);
 
 	}
-	void GPBackendRedisTask::Perform_SendLoginEvent(GP::Peer *peer) {
+	void GPBackendRedisTask::Perform_SendLoginEvent(GPBackendRedisRequest request) {
 		curl_data recv_data;
 		json_t *send_obj = json_object();
 		json_object_set_new(send_obj, "mode", json_string("send_presence_login_messages"));
-		json_object_set_new(send_obj, "profileid", json_integer(peer->GetProfileID()));
+		json_object_set_new(send_obj, "profileid", json_integer(request.peer->GetProfileID()));
 
 
 		CURL *curl = curl_easy_init();
@@ -496,6 +494,8 @@ namespace GPBackend {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_BuddyMessage;
 		req.extra = (void *)peer;
+		req.peer = peer;
+		peer->IncRef();
 		req.uReqData.BuddyMessage.to_profileid = to_profileid;
 
 
@@ -508,16 +508,16 @@ namespace GPBackend {
 
 		req.uReqData.BuddyMessage.type = msg_type;
 
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		m_task_pool->AddRequest(req);
 	}
-	void GPBackendRedisTask::Perform_SendBuddyMessage(GP::Peer *peer, struct sBuddyMessage msg) {
+	void GPBackendRedisTask::Perform_SendBuddyMessage(GPBackendRedisRequest request) {
 		curl_data recv_data;
 		json_t *send_obj = json_object();
 		json_object_set_new(send_obj, "mode", json_string("send_buddy_message"));
-		json_object_set_new(send_obj, "to_profileid", json_integer(msg.to_profileid));
-		json_object_set_new(send_obj, "from_profileid", json_integer(peer->GetProfileID()));
-		json_object_set_new(send_obj, "type", json_integer(msg.type));
-		json_object_set_new(send_obj, "message", json_string(msg.message));
+		json_object_set_new(send_obj, "to_profileid", json_integer(request.uReqData.BuddyMessage.to_profileid));
+		json_object_set_new(send_obj, "from_profileid", json_integer(request.peer->GetProfileID()));
+		json_object_set_new(send_obj, "type", json_integer(request.uReqData.BuddyMessage.type));
+		json_object_set_new(send_obj, "message", json_string(request.uReqData.BuddyMessage.message));
 
 
 		CURL *curl = curl_easy_init();
@@ -568,26 +568,30 @@ namespace GPBackend {
 		if(jwt_encoded)
 			free((void *)jwt_encoded);
 	}
-	void GPBackendRedisTask::MakeBlockRequest(int from_profileid, int block_id) {
+	void GPBackendRedisTask::MakeBlockRequest(GP::Peer *peer, int block_id) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_AddBlock;
-		req.uReqData.BlockMessage.from_profileid = from_profileid;
+		peer->IncRef();
+		req.peer = peer;
+		req.uReqData.BlockMessage.from_profileid = peer->GetProfileID();
 		req.uReqData.BlockMessage.to_profileid = block_id;
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		m_task_pool->AddRequest(req);
 	}
-	void GPBackendRedisTask::MakeRemoveBlockRequest(int from_profileid, int block_id) {
+	void GPBackendRedisTask::MakeRemoveBlockRequest(GP::Peer *peer, int block_id) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_DelBlock;
-		req.uReqData.BlockMessage.from_profileid = from_profileid;
+		peer->IncRef();
+		req.peer = peer;
+		req.uReqData.BlockMessage.from_profileid = peer->GetProfileID();
 		req.uReqData.BlockMessage.to_profileid = block_id;
-		GPBackendRedisTask::getGPBackendRedisTask()->AddRequest(req);
+		m_task_pool->AddRequest(req);
 	}
-	void GPBackendRedisTask::Perform_BlockBuddy(struct sBlockBuddy msg) {
+	void GPBackendRedisTask::Perform_BlockBuddy(GPBackendRedisRequest request) {
 		curl_data recv_data;
 		json_t *send_obj = json_object();
 		json_object_set_new(send_obj, "mode", json_string("block_buddy"));
-		json_object_set_new(send_obj, "to_profileid", json_integer(msg.to_profileid));
-		json_object_set_new(send_obj, "from_profileid", json_integer(msg.from_profileid));
+		json_object_set_new(send_obj, "to_profileid", json_integer(request.uReqData.BuddyRequest.to_profileid));
+		json_object_set_new(send_obj, "from_profileid", json_integer(request.uReqData.BuddyRequest.from_profileid));
 
 
 		CURL *curl = curl_easy_init();
@@ -638,12 +642,12 @@ namespace GPBackend {
 		if(jwt_encoded)
 			free((void *)jwt_encoded);
 	}
-	void GPBackendRedisTask::Perform_DelBuddyBlock(struct sBlockBuddy msg) {
+	void GPBackendRedisTask::Perform_DelBuddyBlock(GPBackendRedisRequest request) {
 		curl_data recv_data;
 		json_t *send_obj = json_object();
 		json_object_set_new(send_obj, "mode", json_string("del_block_buddy"));
-		json_object_set_new(send_obj, "to_profileid", json_integer(msg.to_profileid));
-		json_object_set_new(send_obj, "from_profileid", json_integer(msg.from_profileid));
+		json_object_set_new(send_obj, "to_profileid", json_integer(request.uReqData.BuddyRequest.to_profileid));
+		json_object_set_new(send_obj, "from_profileid", json_integer(request.uReqData.BuddyRequest.from_profileid));
 
 
 		CURL *curl = curl_easy_init();
@@ -763,11 +767,11 @@ namespace GPBackend {
 		peer->inform_status_update(profileid, status, true);
 
 	}
-	void GPBackendRedisTask::Perform_SendGPBuddyStatus(GP::Peer *peer) {
+	void GPBackendRedisTask::Perform_SendGPBuddyStatus(GPBackendRedisRequest request) {
 		curl_data recv_data;
 		json_t *send_obj = json_object();
 		json_object_set_new(send_obj, "mode", json_string("get_buddies_status"));
-		json_object_set_new(send_obj, "profileid", json_integer(peer->GetProfileID()));
+		json_object_set_new(send_obj, "profileid", json_integer(request.peer->GetProfileID()));
 
 
 		CURL *curl = curl_easy_init();
@@ -810,7 +814,7 @@ namespace GPBackend {
 				int num_items = json_array_size(status_array);
 				for(int i=0;i<num_items;i++) {
 					json_t *status = json_array_get(status_array, i);
-					load_and_send_gpstatus(peer, status);
+					load_and_send_gpstatus(request.peer, status);
 				}
 			}
 
@@ -827,5 +831,42 @@ namespace GPBackend {
 
 		if(jwt_encoded)
 			free((void *)jwt_encoded);
+	}
+	void GPBackendRedisTask::AddDriver(GP::Driver *driver) {
+		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {
+			m_drivers.push_back(driver);
+		}
+	}
+	void GPBackendRedisTask::RemoveDriver(GP::Driver *driver) {
+		std::vector<GP::Driver *>::iterator it = std::find(m_drivers.begin(), m_drivers.end(), driver);
+		if (it != m_drivers.end()) {
+			m_drivers.erase(it);
+		}
+	}
+	void *setup_redis_async(OS::CThread *thread) {
+		struct timeval t;
+		t.tv_usec = 0;
+		t.tv_sec = 60;
+		mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		
+		Redis::LoopingCommand(mp_redis_async_connection, 60, GPBackendRedisTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s", gp_buddies_channel);
+		return NULL;
+	}
+
+	void SetupTaskPool(GP::Server *server) {
+
+		struct timeval t;
+		t.tv_usec = 0;
+		t.tv_sec = 60;
+
+		mp_async_thread = OS::CreateThread(setup_redis_async, NULL, true);
+		OS::Sleep(200);
+
+		m_task_pool = new OS::TaskPool<GPBackendRedisTask, GPBackendRedisRequest>(NUM_PRESENCE_THREADS);
+		server->SetTaskPool(m_task_pool);
+	}
+
+	void ShutdownTaskPool() {
+		delete m_task_pool;
 	}
 }

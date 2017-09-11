@@ -1,14 +1,14 @@
-#include "GPDriver.h"
+#include "GSDriver.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "GPServer.h"
-#include "GPPeer.h"
+#include "GSServer.h"
+#include "GSPeer.h"
 #include <OS/socketlib/socketlib.h>
 
 #include <OS/GPShared.h>
 
-namespace GP {
+namespace GS {
 	Driver *g_gbl_gp_driver;
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		g_gbl_gp_driver = this;
@@ -46,20 +46,46 @@ namespace GP {
 			it++;
 		}
 	}
-	void Driver::think(fd_set *fdset) {
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			if (!peer->ShouldDelete())
-				peer->think(FD_ISSET(peer->GetSocket(), fdset));
-			else {
-				//delete if marked for deletiontel
-				it = m_connections.erase(it);
-				delete peer;				
-				continue;
-			}
-			it++;
+	void Driver::think(bool listen_waiting) {
+		if (listen_waiting) {
+			socklen_t psz = sizeof(struct sockaddr_in);
+			struct sockaddr_in address;
+			int sda = Socket::accept(m_sd, (struct sockaddr *)&address, &psz);
+			if (sda <= 0) return;
+			Peer *peer = new Peer(this, &address, sda);
+
+			makeNonBlocking(sda);
+			m_connections.push_back(peer);
+			m_server->RegisterSocket(peer);
 		}
+		else {
+			std::vector<Peer *>::iterator it = m_connections.begin();
+			while (it != m_connections.end()) {
+				Peer *peer = *it;
+				if (peer->ShouldDelete() && std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
+					//marked for delection, dec reference and delete when zero
+					it = m_connections.erase(it);
+					peer->DecRef();
+					m_server->UnregisterSocket(peer);
+					m_peers_to_delete.push_back(peer);
+					continue;
+				}
+				it++;
+			}
+
+			it = m_peers_to_delete.begin();
+			while (it != m_peers_to_delete.end()) {
+				GS::Peer *p = *it;
+				if (p->GetRefCount() == 0) {
+					delete p;
+					it = m_peers_to_delete.erase(it);
+					continue;
+				}
+				it++;
+			}
+		}
+
+		TickConnections();
 	}
 
 	Peer *Driver::find_client(struct sockaddr_in *address) {
@@ -97,22 +123,6 @@ namespace GP {
 		}
 		return false;
 	}
-	void Driver::tick(fd_set *fdset) {
-
-		TickConnections(fdset);
-		if (!FD_ISSET(m_sd, fdset)) {
-			return;
-		}
-		socklen_t psz = sizeof(struct sockaddr_in);
-		struct sockaddr_in peer;
-		int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
-		if (sda <= 0) return;
-		Peer *mp_peer = new Peer(this, &peer, sda);
-		m_connections.push_back(mp_peer);
-		mp_peer->think(true);
-
-	}
-
 
 	int Driver::getListenerSocket() {
 		return m_sd;
@@ -134,28 +144,11 @@ namespace GP {
 	}
 
 
-	int Driver::setup_fdset(fd_set *fdset) {
-
-		int hsock = m_sd;
-		FD_SET(m_sd, fdset);
-		
+	void Driver::TickConnections() {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			int sd = p->GetSocket();
-			FD_SET(sd, fdset);
-			if (sd > hsock)
-				hsock = sd;
-			it++;
-		}
-		return hsock + 1;
-	}
-
-	void Driver::TickConnections(fd_set *fdset) {
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = *it;
-			p->think(FD_ISSET(p->GetSocket(), fdset));
+			p->think(false);
 			it++;
 		}
 	}
@@ -169,5 +162,25 @@ namespace GP {
 			it++;
 		}
 		return NULL;
+	}
+
+	const std::vector<INetPeer *> Driver::getPeers() {
+		std::vector<INetPeer *> peers;
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			peers.push_back((INetPeer *)*it);
+			it++;
+		}
+		return peers;
+	}
+	const std::vector<int> Driver::getSockets() {
+		std::vector<int> sockets;
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			sockets.push_back(p->GetSocket());
+			it++;
+		}
+		return sockets;
 	}
 }

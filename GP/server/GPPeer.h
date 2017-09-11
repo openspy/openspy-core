@@ -11,10 +11,12 @@
 
 #include <OS/GPShared.h>
 
+#include <OS/Net/NetPeer.h>
+
 namespace GP {
 	class Driver;
 
-	class Peer {
+	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~Peer();

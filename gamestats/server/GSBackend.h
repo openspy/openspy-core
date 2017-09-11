@@ -1,17 +1,9 @@
 #ifndef _GP_BACKEND_H
 #define _GP_BACKEND_H
-#include <GP/server/GPPeer.h>
-#include <hiredis/hiredis.h>
-#include <hiredis/async.h>
+#include <OS/TaskPool.h>
 
 #include <OS/GPShared.h>
 
-#define _WINSOCK2API_
-#include <stdint.h>
-#include <hiredis/hiredis.h>
-#include <hiredis/adapters/libevent.h>
-#include <event.h>
-#undef _WINSOCK2API_
 
 /********
 persisttype_t
@@ -23,11 +15,13 @@ pd_public_rw: Readable by any client, set by the authenicated client is belongs 
 *********/
 typedef enum {pd_private_ro, pd_private_rw, pd_public_ro, pd_public_rw} persisttype_t;
 
-namespace GP {
+namespace GS {
 	class Peer;
+	class Server;
+	class Driver;
 }
 
-namespace GPBackend {
+namespace GSBackend {
 
 
 
@@ -51,14 +45,14 @@ namespace GPBackend {
 		EPersistBackendRespType type;
 	} PersistBackendResponse;
 
-	typedef void (*PersistBackendCallback)(bool success, PersistBackendResponse response_data, GP::Peer *peer, void* extra);
+	typedef void (*PersistBackendCallback)(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 
 
 
 	typedef struct {
 		EPersistRequestType type;
 
-		GP::Peer *mp_peer;
+		GS::Peer *mp_peer;
 		void* 	  mp_extra;
 		PersistBackendCallback callback;
 
@@ -77,16 +71,16 @@ namespace GPBackend {
 		public:
 			PersistBackendTask();
 			~PersistBackendTask();
-			static void Shutdown();
-			static PersistBackendTask *getPersistBackendTask();
-			static void SubmitNewGameSession(GP::Peer *peer, void* extra, PersistBackendCallback cb);
-			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GP::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb);
-			static void SubmitSetPersistData(int profileid, GP::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set);
-			static void SubmitGetPersistData(int profileid, GP::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList);
+			static void SubmitNewGameSession(GS::Peer *peer, void* extra, PersistBackendCallback cb);
+			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb);
+			static void SubmitSetPersistData(int profileid, GS::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set);
+			static void SubmitGetPersistData(int profileid, GS::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList);
+
+			void AddDriver(GS::Driver *driver);
+			void RemoveDriver(GS::Driver *driver);
 
 		private:
 			static PersistBackendTask *m_task_singleton;
-			static void *setup_redis_async_sub(OS::CThread *thread);
 			static void *TaskThread(OS::CThread *thread);
 
 			void PerformNewGameSession(PersistBackendRequest req);
@@ -94,13 +88,13 @@ namespace GPBackend {
 			void PerformSetPersistData(PersistBackendRequest req);
 			void PerformGetPersistData(PersistBackendRequest req);
 
-
-			redisContext *mp_redis_connection;
-			redisAsyncContext *mp_redis_subscribe_connection;
-
-			OS::CThread *mp_redis_async_thread;
-			struct event_base *mp_event_base;
+			std::vector<GS::Driver *> m_drivers;
 
 	};
+	#define NUM_STATS_THREADS 8
+	extern OS::TaskPool<PersistBackendTask, PersistBackendRequest> *m_task_pool;
+	void SetupTaskPool(GS::Server *server);
+	void ShutdownTaskPool();
+
 }
 #endif //_GP_BACKEND_H

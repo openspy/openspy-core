@@ -8,26 +8,26 @@
 #include <ctype.h>
 
 namespace OS {
-	ProfileSearchTask *ProfileSearchTask::m_task_singleton = NULL;
+	OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *m_profile_search_task_pool = NULL;
 	struct curl_data {
-	    std::string buffer;
+		std::string buffer;
 	};
 	/* callback for curl fetch */
-	size_t ProfileSearchTask::curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
-		if(!contents) {
+	size_t ProfileSearchTask::curl_callback(void *contents, size_t size, size_t nmemb, void *userp) {
+		if (!contents) {
 			return 0;
 		}
-	    size_t realsize = size * nmemb;                             /* calculate buffer size */
-	    curl_data *data = (curl_data *)userp;
+		size_t realsize = size * nmemb;                             /* calculate buffer size */
+		curl_data *data = (curl_data *)userp;
 		const char *p = (const char *)contents;
-		while(*p) {
-			if(isalnum(*p) || *p == '.')
+		while (*p) {
+			if (isalnum(*p) || *p == '.')
 				data->buffer += *(p);
 			else break;
 			p++;
 		}
 
-	    return realsize;
+		return realsize;
 	}
 	void ProfileSearchTask::PerformSearch(ProfileSearchRequest request) {
 		curl_data recv_data;
@@ -37,65 +37,66 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object();
 
-		switch(request.type) {
-			default:
-			case EProfileSearch_Profiles:
-				json_object_set_new(send_obj, "mode", json_string("profile_search"));
+		switch (request.type) {
+		default:
+		case EProfileSearch_Profiles:
+			json_object_set_new(send_obj, "mode", json_string("profile_search"));
 			break;
-			case EProfileSearch_Buddies:
-				json_object_set_new(send_obj, "mode", json_string("buddies_search"));
+		case EProfileSearch_Buddies:
+			json_object_set_new(send_obj, "mode", json_string("buddies_search"));
 			break;
-			case EProfileSearch_Blocks:
-				json_object_set_new(send_obj, "mode", json_string("blocks_search"));
+		case EProfileSearch_Blocks:
+			json_object_set_new(send_obj, "mode", json_string("blocks_search"));
 			break;
-			case EProfileSearch_Buddies_Reverse:
-				json_object_set_new(send_obj, "mode", json_string("buddies_reverse_search"));
+		case EProfileSearch_Buddies_Reverse:
+			json_object_set_new(send_obj, "mode", json_string("buddies_reverse_search"));
 			break;
-			case EProfileSearch_CreateProfile:
-				json_object_set_new(send_obj, "mode", json_string("create_profile"));
+		case EProfileSearch_CreateProfile:
+			json_object_set_new(send_obj, "mode", json_string("create_profile"));
 			break;
-			case EProfileSearch_DeleteProfile:
-				json_object_set_new(send_obj, "mode", json_string("delete_profile"));
+		case EProfileSearch_DeleteProfile:
+			json_object_set_new(send_obj, "mode", json_string("delete_profile"));
 			break;
-			case EProfileSearch_UpdateProfile:
-				json_object_set_new(send_obj, "mode", json_string("update_profile"));
+		case EProfileSearch_UpdateProfile:
+			json_object_set_new(send_obj, "mode", json_string("update_profile"));
 			break;
 		}
-		
 
 
-		if(request.profile_search_details.id != 0 && request.type != EProfileSearch_UpdateProfile) {
+
+		if (request.profile_search_details.id != 0 && request.type != EProfileSearch_UpdateProfile) {
 			json_object_set_new(send_obj, "profileid", json_integer(request.profile_search_details.id));
-		} else {
+		}
+		else {
 
-			if(request.profile_search_details.id != 0)
+			if (request.profile_search_details.id != 0)
 				json_object_set_new(send_obj, "profileid", json_integer(request.profile_search_details.id));
 
 			//user parameters
-			if(request.user_search_details.email.length())
+			if (request.user_search_details.email.length())
 				json_object_set_new(send_obj, "email", json_string(request.user_search_details.email.c_str()));
 
-			
+
 			json_object_set_new(send_obj, "partnercode", json_integer(request.user_search_details.partnercode));
 
 
 			//profile parameters
-			if(request.profile_search_details.nick.length())
+			if (request.profile_search_details.nick.length())
 				json_object_set_new(send_obj, "profilenick", json_string(request.profile_search_details.nick.c_str()));
 
-			if(request.profile_search_details.uniquenick.length())
+			if (request.profile_search_details.uniquenick.length())
 				json_object_set_new(send_obj, "uniquenick", json_string(request.profile_search_details.uniquenick.c_str()));
 
-			if(request.profile_search_details.firstname.length())
+			if (request.profile_search_details.firstname.length())
 				json_object_set_new(send_obj, "firstname", json_string(request.profile_search_details.firstname.c_str()));
 
-			if(request.profile_search_details.lastname.length())
+			if (request.profile_search_details.lastname.length())
 				json_object_set_new(send_obj, "lastname", json_string(request.profile_search_details.lastname.c_str()));
 
-			if(request.profile_search_details.icquin)
+			if (request.profile_search_details.icquin)
 				json_object_set_new(send_obj, "icquin", json_integer(request.profile_search_details.icquin));
 
-			if(request.profile_search_details.zipcode)
+			if (request.profile_search_details.zipcode)
 				json_object_set_new(send_obj, "zipcode", json_integer(request.profile_search_details.zipcode));
 
 			json_object_set_new(send_obj, "sex", json_integer(request.profile_search_details.sex));
@@ -112,12 +113,12 @@ namespace OS {
 			json_object_set_new(send_obj, "lat", json_real(request.profile_search_details.lat));
 
 
-			if(request.namespaceids.size()) {
+			if (request.namespaceids.size()) {
 				json_t *namespaceids_json = json_array();
 
 				//json_array_append_new(v_array, json_real(v));
 				std::vector<int>::iterator it = request.namespaceids.begin();
-				while(it != request.namespaceids.end()) {
+				while (it != request.namespaceids.end()) {
 					int v = *it;
 					json_array_append_new(namespaceids_json, json_integer(v));
 					it++;
@@ -128,11 +129,11 @@ namespace OS {
 			}
 		}
 
-		if(request.target_profileids.size()) {
+		if (request.target_profileids.size()) {
 			json_t *profileids_json = json_array();
 
 			std::vector<int>::iterator it = request.target_profileids.begin();
-			while(it != request.target_profileids.end()) {
+			while (it != request.target_profileids.end()) {
 				int v = *it;
 				json_array_append_new(profileids_json, json_integer(v));
 				it++;
@@ -146,7 +147,7 @@ namespace OS {
 
 		//build jwt
 		jwt_t *jwt;
-		jwt_new(&jwt); 
+		jwt_new(&jwt);
 		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
 		jwt_add_grants_json(jwt, json_data);
 		char *jwt_encoded = jwt_encode_str(jwt);
@@ -154,7 +155,7 @@ namespace OS {
 		CURL *curl = curl_easy_init();
 		CURLcode res;
 		EProfileResponseType error = EProfileResponseType_GenericError;
-		if(curl) {
+		if (curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
 
@@ -171,10 +172,10 @@ namespace OS {
 			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
 
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
-			if(res == CURLE_OK) {
+			if (res == CURLE_OK) {
 				jwt_t *jwt;
 				jwt_new(&jwt);
 				json_t *json_data = NULL;
@@ -185,68 +186,74 @@ namespace OS {
 
 				char *json = jwt_get_grants_json(jwt, NULL);
 
-				if(json) {
+				if (json) {
 					json_data = json_loads(json, 0, NULL);
 					free((void *)json);
 				}
-				
-				if(json_data) {
+
+				if (json_data) {
 					error = EProfileResponseType_Success;
 					json_t *profiles_obj = json_object_get(json_data, "profiles");
-					if(profiles_obj) {
+					if (profiles_obj) {
 						int num_profiles = json_array_size(profiles_obj);
-						for(int i=0;i<num_profiles;i++) {
+						for (int i = 0; i < num_profiles; i++) {
 							json_t *profile_obj = json_array_get(profiles_obj, i);
 							OS::Profile profile = OS::LoadProfileFromJson(profile_obj);
-							if(users_map.find(profile.userid) == users_map.end()) {
+							if (users_map.find(profile.userid) == users_map.end()) {
 								json_t *user_obj = json_object_get(profile_obj, "user");
 								users_map[profile.userid] = OS::LoadUserFromJson(user_obj);
 							}
 							results.push_back(profile);
 						}
-					} else {
+					}
+					else {
 						//check for single profile
 						profiles_obj = json_object_get(json_data, "profile");
-						if(profiles_obj) {
+						if (profiles_obj) {
 							OS::Profile profile = OS::LoadProfileFromJson(profiles_obj);
 							results.push_back(profile);
 						}
 					}
 					json_decref(json_data);
-				} else {
+				}
+				else {
 					error = EProfileResponseType_GenericError;
 				}
 			}
 		}
 
-		if(jwt) {
+		if (jwt) {
 			jwt_free(jwt);
 		}
-
 	
-
-		if(send_obj)
+		if (send_obj)
 			json_decref(send_obj);
 
-		if(jwt_encoded)
+		if (jwt_encoded)
 			free((void *)jwt_encoded);
 		request.callback(error, results, users_map, request.extra);
 	}
-
 	void *ProfileSearchTask::TaskThread(CThread *thread) {
 		ProfileSearchTask *task = (ProfileSearchTask *)thread->getParams();
-		for(;;) {
-			if(task->m_request_list.size() > 0) {
-				task->mp_mutex->lock();
-				while(!task->m_request_list.empty()) {
-					ProfileSearchRequest task_params = task->m_request_list.front();
-					task->m_request_list.pop();
-					PerformSearch(task_params);
-					continue;
-				}
+		while (task->mp_thread_poller->wait()) {
+			task->mp_mutex->lock();
+			if (task->m_request_list.empty()) {
 				task->mp_mutex->unlock();
+				break;
 			}
-			OS::Sleep(TASK_SLEEP_TIME);
+			while (!task->m_request_list.empty()) {
+				ProfileSearchRequest task_params = task->m_request_list.front();
+				task->mp_mutex->unlock();
+
+				PerformSearch(task_params);
+
+				task->mp_mutex->lock();
+				if (task_params.peer)
+					task_params.peer->DecRef();
+				task->m_request_list.pop();
+			}
+
+			task->mp_mutex->unlock();
 		}
 		return NULL;
 	}
@@ -259,10 +266,13 @@ namespace OS {
 		delete mp_mutex;
 		delete mp_thread;
 	}
-	ProfileSearchTask *ProfileSearchTask::getProfileTask() {
-		if(!ProfileSearchTask::m_task_singleton) {
-			ProfileSearchTask::m_task_singleton = new ProfileSearchTask();
-		}
-		return ProfileSearchTask::m_task_singleton;
+	OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *GetProfileTaskPool() {
+		return m_profile_search_task_pool;
+	}
+	void SetupProfileTaskPool(int num_tasks) {
+		m_profile_search_task_pool = new OS::TaskPool<ProfileSearchTask, ProfileSearchRequest>(num_tasks);
+	}
+	void ShutdownProfileTaskPool() {
+		delete m_profile_search_task_pool;
 	}
 }

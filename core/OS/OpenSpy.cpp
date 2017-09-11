@@ -17,11 +17,15 @@
 
 #include <OS/legacy/helpers.h>
 
+#include <OS/Auth.h>
+#include <OS/Search/User.h>
+#include <OS/Search/Profile.h>
+
 namespace OS {
 	Logger *g_logger = NULL;
 	struct timeval redis_timeout;
 	Redis::Connection *redis_internal_connection = NULL;
-	void Init(const char *appName) {
+	void Init(const char *appName, int num_async_tasks) {
 
 		curl_global_init(CURL_GLOBAL_SSL);
 
@@ -35,13 +39,17 @@ namespace OS {
 		#elif _WIN32
 			g_logger = new Win32Logger(appName);
 		#endif
+
+		OS::SetupAuthTaskPool(num_async_tasks);
+		OS::SetupUserSearchTaskPool(num_async_tasks);
+		OS::SetupProfileTaskPool(num_async_tasks);
 	}
 	void Shutdown() {
-		if(AuthTask::HasAuthTask()) {
-			delete AuthTask::getAuthTask();
-		}
+		OS::ShutdownAuthTaskPool();
+		OS::ShutdownUserSearchTaskPool();
+		OS::ShutdownProfileTaskPool();
 
-		//redisFree(redis_internal_connection);
+		Redis::Disconnect(redis_internal_connection);
 		curl_global_cleanup();
 	}
 	OS::GameData GetGameByRedisKey(const char *key, Redis::Connection *redis_ctx = NULL) {

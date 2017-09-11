@@ -16,18 +16,16 @@
 
 #include <OS/GPShared.h>
 
-#define GP_PING_TIME (15)
+#define GP_PING_TIME (120)
 
 namespace GP {
 	class Peer;
 	class Driver;
-	extern Driver *g_gbl_gp_driver;
 	class Driver : public INetDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
-		void tick(fd_set *fdset);
-		void think(fd_set *fdset);
+		void think(bool packet_waiting);
 		int getListenerSocket();
 		uint16_t getPort();
 		uint32_t getBindIP();
@@ -39,15 +37,14 @@ namespace GP {
 		bool HasPeer(Peer *);
 		Peer *FindPeerByProfileID(int profileid);
 
-		int setup_fdset(fd_set *fdset);
-		
 		void InformStatusUpdate(int from_profileid, GPShared::GPStatus status);
 
 		int GetNumConnections();
-
+		const std::vector<int> getSockets();
+		const std::vector<INetPeer *> getPeers();
 	private:
 
-		void TickConnections(fd_set *fdset);
+		void TickConnections();
 
 		int m_sd;
 
@@ -56,6 +53,8 @@ namespace GP {
 		struct sockaddr_in m_local_addr;
 
 		struct timeval m_server_start;
+
+		std::vector<GP::Peer *> m_peers_to_delete;
 
 	};
 }
