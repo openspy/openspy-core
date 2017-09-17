@@ -463,8 +463,10 @@ namespace GPShared {
 
 	typedef struct {
 		GPEnum status; //GP_OFFLINE
-		char status_str[GP_STATUS_STRING_LEN + 1];
-		char location_str[GP_LOCATION_STRING_LEN + 1];
+		//char status_str[GP_STATUS_STRING_LEN + 1];
+		//char location_str[GP_LOCATION_STRING_LEN + 1];
+		std::string status_str;
+		std::string location_str;
 		OS::Address address;
 		uint8_t quiet_flags;
 	} GPStatus;

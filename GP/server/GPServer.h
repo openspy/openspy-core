@@ -13,6 +13,8 @@ namespace GP {
 		void tick();
 		void shutdown();
 		void SetTaskPool(OS::TaskPool<GPBackend::GPBackendRedisTask, GPBackend::GPBackendRedisRequest> *pool);
+		INetPeer *findPeerByProfile(int profile_id);
+		void InformStatusUpdate(int from_profileid, GPShared::GPStatus status);
 	private:
 		
 	};

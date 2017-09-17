@@ -80,7 +80,7 @@ namespace GPBackend {
 		public:
 			GPBackendRedisTask();
 			~GPBackendRedisTask();
-			static void MakeBuddyRequest(GP::Peer *peer, int to_profileid, const char *reason);
+			static void MakeBuddyRequest(GP::Peer *peer, int to_profileid, std::string reason);
 			static void SetPresenceStatus(int from_profileid, GPShared::GPStatus status, GP::Peer *peer);
 			static void MakeAuthorizeBuddyRequest(GP::Peer *peer, int target);
 			static void MakeDelBuddyRequest(GP::Peer *peer, int target);
@@ -96,7 +96,6 @@ namespace GPBackend {
 			void RemoveDriver(GP::Driver *driver);
 
 		private:
-			static void *setup_redis_async_sub(OS::CThread *thread);
 			static void *TaskThread(OS::CThread *thread);
 			void Perform_BuddyRequest(GPBackendRedisRequest request);
 			void Perform_AuthorizeAdd(GPBackendRedisRequest request);
@@ -111,8 +110,6 @@ namespace GPBackend {
 			void load_and_send_gpstatus(GP::Peer *peer, json_t *json);
 
 			Redis::Connection *mp_redis_connection;
-			Redis::Connection *mp_redis_subscribe_connection;
-			OS::CThread *mp_redis_async_thread;
 			std::vector<GP::Driver *> m_drivers;
 	};
 	#define NUM_PRESENCE_THREADS 8

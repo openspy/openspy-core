@@ -9,7 +9,7 @@
 
 #include <OS/OpenSpy.h>
 #include <OS/Thread.h>
-
+#include <OS/KVReader.h>
 #include <OS/legacy/helpers.h>
 
 #include <sstream>
@@ -61,101 +61,84 @@ namespace GPBackend {
 	}
 
 	void GPBackendRedisTask::onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
-		/*
-	    redisReply *r = (redisReply*)reply;
+		Redis::Value v = reply.values.front();
 
-	    if (reply == NULL) return;
-	    int to_profileid, from_profileid;
-	    char msg_type[16], reason[GP_REASON_LEN + 1];
-	    GP::Peer *peer = NULL;
-	    if (r->type == REDIS_REPLY_ARRAY) {
-	    	if(r->elements == 3 && r->element[2]->type == REDIS_REPLY_STRING) {
-	    		if(strcmp(r->element[1]->str,gp_buddies_channel) == 0) {
-	    			if(!find_param("type", r->element[2]->str,(char *)&msg_type, sizeof(msg_type))) {
-	    					return;
-	    			}
+		GP::Server *server = (GP::Server *)privdata;
 
-	    			if(!strcmp(msg_type, "add_request")) {
-	    				find_param("reason", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
-	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
-	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);;
-	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
-	    				if(peer) {
-	    					peer->send_add_buddy_request(from_profileid, reason);
-	    				}
-	    			} else if(!strcmp(msg_type, "authorize_add")) {
-	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
-	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
-	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(from_profileid);
-	    				if(peer) {
-	    					peer->send_authorize_add(to_profileid);
-	    				}
-	    			} else if(!strcmp(msg_type, "status_update")) {
-	    				GPShared::GPStatus status;
-	    				from_profileid = find_paramint("profileid", r->element[2]->str);
-	    				status.status = (GPShared::GPEnum)find_paramint("status", r->element[2]->str);
-	    				find_param("status_string", r->element[2]->str,(char *)&status.status_str, sizeof(status.status_str));
-	    				find_param("location_string", r->element[2]->str,(char *)&status.location_str, sizeof(status.location_str));
-	    				status.quiet_flags = (GPShared::GPEnum)find_paramint("quiet_flags", r->element[2]->str);
-	    				find_param("ip", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
-	    				status.address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reason).c_str()));
-	    				status.address.port = Socket::htons(find_paramint("port", r->element[2]->str));
-	    				GP::g_gbl_gp_driver->InformStatusUpdate(from_profileid, status);
-	    			} else if(!strcmp(msg_type, "del_buddy")) {
-	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
-	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
-	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
-	    				if(peer) {
-	    					peer->send_revoke_message(from_profileid, 0);
-	    				}
-	    			} else if(!strcmp(msg_type, "buddy_message")) {
-	    				char type = find_paramint("msg_type", r->element[2]->str);
-						int timestamp = find_paramint("timestamp", r->element[2]->str);
-	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
-	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
-	    				find_param("message", r->element[2]->str,(char *)&reason, sizeof(reason)-1);
-	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
-	    				if(peer) {
-	    					peer->send_buddy_message(type, from_profileid, timestamp, reason);
-	    				}
-	    			} else if(!strcmp(msg_type, "block_buddy")) {
-	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
-	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
-	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
-	    				if(peer) {
-	    					peer->send_user_blocked(from_profileid);
-	    				}
+		std::string msg_type, reason;
+		int to_profileid, from_profileid;
+		GP::Peer *peer = NULL;
 
-	    			} else if(!strcmp(msg_type, "del_block_buddy")) {
-	    				to_profileid = find_paramint("to_profileid", r->element[2]->str);
-	    				from_profileid = find_paramint("from_profileid", r->element[2]->str);
-	    				peer = GP::g_gbl_gp_driver->FindPeerByProfileID(to_profileid);
-	    				if(peer) {
-	    					peer->send_user_block_deleted(from_profileid);
-	    				}
-	    			}
-	    		}
-	    	}
-	    }*/
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+			if (v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
+
+				if (strcmp(v.arr_value.values[1].second.value._str.c_str(), gp_buddies_channel) == 0) {
+					OS::KVReader reader = v.arr_value.values[2].second.value._str;
+					msg_type = reader.GetValue("type");
+					if (msg_type.compare("add_request") == 0) {
+						reason = reader.GetValue("reason");
+						to_profileid = reader.GetValueInt("to_profileid");
+						from_profileid = reader.GetValueInt("from_profileid");
+						peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
+						if (peer) {
+							peer->send_add_buddy_request(from_profileid, reason.c_str());
+						}
+					} else if (msg_type.compare("authorize_add") == 0) {
+						to_profileid = reader.GetValueInt("to_profileid");
+						from_profileid = reader.GetValueInt("from_profileid");
+						peer = (GP::Peer *)server->findPeerByProfile(from_profileid);
+						if (peer) {
+							peer->send_authorize_add(to_profileid);
+						}
+					} else if (msg_type.compare("status_update") == 0) {
+						GPShared::GPStatus status;
+						from_profileid = reader.GetValueInt("from_profileid");
+						status.status = (GPShared::GPEnum)reader.GetValueInt("status");
+
+						status.status_str = reader.GetValue("status_string");
+						status.location_str = reader.GetValue("location_string");
+						status.quiet_flags = (GPShared::GPEnum)reader.GetValueInt("quiet_flags");
+						reason = reader.GetValue("ip");
+						status.address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reason).c_str()));
+						status.address.port = Socket::htons(reader.GetValueInt("port"));
+						server->InformStatusUpdate(from_profileid, status);
+					} else if (msg_type.compare("del_buddy") == 0) {
+						to_profileid = reader.GetValueInt("to_profileid");
+						from_profileid = reader.GetValueInt("from_profileid");
+						peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
+						if (peer) {
+							peer->send_revoke_message(from_profileid, 0);
+						}
+					} else if (msg_type.compare("buddy_message") == 0) {
+						char type = reader.GetValueInt("msg_type");
+						int timestamp = reader.GetValueInt("timestamp");
+						to_profileid = reader.GetValueInt("to_profileid");
+						from_profileid = reader.GetValueInt("from_profileid");
+						reason = reader.GetValue("message");
+						peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
+						if (peer) {
+							peer->send_buddy_message(type, from_profileid, timestamp, reason.c_str());
+						}
+					} else if (msg_type.compare("block_buddy") == 0) {
+						to_profileid = reader.GetValueInt("to_profileid");
+						from_profileid = reader.GetValueInt("from_profileid");
+						peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
+						if (peer) {
+							peer->send_user_blocked(from_profileid);
+						}
+					} else if (msg_type.compare("del_block_buddy") == 0) {
+						to_profileid = reader.GetValueInt("to_profileid");
+						from_profileid = reader.GetValueInt("from_profileid");
+						peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
+						if (peer) {
+							peer->send_user_block_deleted(from_profileid);
+						}
+					}
+				}
+			}
+		}
 	}
-	void *GPBackendRedisTask::setup_redis_async_sub(OS::CThread *thread) {
-		GPBackendRedisTask *task = (GPBackendRedisTask *)thread->getParams();
-
-
-		struct timeval t;
-		t.tv_usec = 0;
-		t.tv_sec = 60;
-		task->mp_redis_subscribe_connection  = Redis::Connect(OS_REDIS_ADDR, t);
-
-		Redis::LoopingCommand(task->mp_redis_subscribe_connection, 60, GPBackendRedisTask::onRedisMessage, NULL, "SUBSCRIBE %s",gp_buddies_channel);
-
-	    return NULL;
-	}
-
 	GPBackendRedisTask::GPBackendRedisTask() {
-		mp_redis_subscribe_connection = NULL;
-		mp_redis_async_thread = OS::CreateThread(setup_redis_async_sub, this, true);
-
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 3;
@@ -167,14 +150,11 @@ namespace GPBackend {
 	}
 	GPBackendRedisTask::~GPBackendRedisTask() {
 		delete mp_thread;
-		delete mp_redis_async_thread;
 		delete mp_mutex;
 
 		Redis::Disconnect(mp_redis_connection);
-		if(mp_redis_subscribe_connection)
-			Redis::Disconnect(mp_redis_subscribe_connection);
 	}
-	void GPBackendRedisTask::MakeBuddyRequest(GP::Peer *peer, int to_profileid, const char *reason) {
+	void GPBackendRedisTask::MakeBuddyRequest(GP::Peer *peer, int to_profileid, std::string reason) {
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_BuddyRequest;
 		req.peer = peer;
@@ -182,11 +162,11 @@ namespace GPBackend {
 		req.uReqData.BuddyRequest.from_profileid = peer->GetProfileID();
 		req.uReqData.BuddyRequest.to_profileid = to_profileid;
 
-		int len = strlen(reason);
+		int len = reason.length();
 		if(len > GP_REASON_LEN)
 			len = GP_REASON_LEN;
 
-		strncpy(req.uReqData.BuddyRequest.reason, reason, len);
+		strncpy(req.uReqData.BuddyRequest.reason, reason.c_str(), len);
 		req.uReqData.BuddyRequest.reason[len] = 0;
 
 		m_task_pool->AddRequest(req);
@@ -722,10 +702,7 @@ namespace GPBackend {
 			len = strlen(str);
 			if(len > GP_STATUS_STRING_LEN)
 				len = GP_STATUS_STRING_LEN;
-			strncpy(status.status_str, str, len);
-			status.status_str[len] = 0;
-		} else {
-			status.status_str[0] = 0;
+			status.status_str = str;
 		}
 
 
@@ -738,8 +715,7 @@ namespace GPBackend {
 			len = strlen(str);
 			if(len > GP_LOCATION_STRING_LEN)
 				len = GP_LOCATION_STRING_LEN;
-			strncpy(status.location_str, str, len);
-			status.location_str[len] = 0;
+			status.location_str = str;
 		} else {
 			status.location_str[0] = 0;
 		}
@@ -859,7 +835,7 @@ namespace GPBackend {
 		t.tv_usec = 0;
 		t.tv_sec = 60;
 
-		mp_async_thread = OS::CreateThread(setup_redis_async, NULL, true);
+		mp_async_thread = OS::CreateThread(setup_redis_async, server, true);
 		OS::Sleep(200);
 
 		m_task_pool = new OS::TaskPool<GPBackendRedisTask, GPBackendRedisRequest>(NUM_PRESENCE_THREADS);

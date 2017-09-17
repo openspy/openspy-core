@@ -9,12 +9,23 @@
 
 #include <OS/Search/User.h>
 
+#include <OS/KVReader.h>
 #include <sstream>
 #include <algorithm>
 
 #include "GPBackend.h"
 
 using namespace GPShared;
+
+#define LoadParamInt(read_name, write_var, var_name) if(var_name.HasKey(read_name)) { \
+		write_var = var_name.GetValueInt(read_name); \
+	} else { \
+		write_var = 0;\
+	}
+
+#define LoadParam(read_name, write_var, var_name) if(var_name.HasKey(read_name)) { \
+		write_var = var_name.GetValue(read_name); \
+	}
 
 namespace GP {
 
@@ -35,14 +46,14 @@ namespace GP {
 		m_status.address.ip = address_info->sin_addr.s_addr;
 		m_status.address.port = address_info->sin_port;
 
-		OS::LogText(OS::ELogLevel_Info, "New connection from %s",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",OS::Address(m_address_info).ToString().c_str());
 
 		gen_random(m_challenge, CHALLENGE_LEN);
 
 		send_login_challenge(1);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "Connection from %s closed",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed",OS::Address(m_address_info).ToString().c_str());
 		delete mp_mutex;
 		close(m_sd);
 	}
@@ -88,48 +99,50 @@ namespace GP {
 	}
 	void Peer::handle_packet(char *data, int len) {
 		printf("GP Handle(%d): %s\n", len,data);
-		char command[32];
-		if(!find_param(0, data,(char *)&command, sizeof(command))) {
-			m_delete_flag = true;
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		if (data_parser.Size() < 1) {
+			send_error(GPShared::GP_PARSE);
 			return;
 		}
+		std::string command = data_parser.GetKeyByIdx(0);
+
 		gettimeofday(&m_last_recv, NULL);
-		if(!strcmp(command, "login")) {
+		if(!command.compare("login")) {
 			handle_login(data, len);
 			return;
-		} else if(strcmp(command, "ka")) {
+		} else if(!command.compare("ka")) {
 			handle_keepalive(data, len);
 		}
 		if(m_backend_session_key.length() > 0) {
-			if(!strcmp(command, "status")) {
+			if(command.compare("status") == 0) {
 				handle_status(data, len);
-			} else if(!strcmp(command, "addbuddy")) {
+			} else if(command.compare("addbuddy") == 0) {
 				handle_addbuddy(data, len);
-			} else if(!strcmp(command, "delbuddy")) {
+			} else if(command.compare("delbuddy") == 0) {
 				handle_delbuddy(data, len);
-			} else if(!strcmp(command, "addblock")) {
+			} else if(command.compare("addblock") == 0) {
 				handle_addblock(data, len);
-			} else if(!strcmp(command, "removeblock")) {
+			} else if(command.compare("removeblock") == 0) {
 				handle_removeblock(data, len);
-			} else if(!strcmp(command, "revoke")) {
+			} else if(command.compare("revoke") == 0) {
 				handle_revoke(data, len);
-			} else if(!strcmp(command, "authadd")) {
+			} else if(command.compare("authadd") == 0) {
 				handle_authadd(data, len);
-			} else if(!strcmp(command, "getprofile")) {
+			} else if(command.compare("getprofile") == 0) {
 				handle_getprofile(data, len);
-			} else if(!strcmp(command, "bm")) {
+			} else if(command.compare("bm") == 0) {
 				handle_bm(data, len);
-			} else if(!strcmp(command, "pinvite")) {
+			} else if(command.compare("pinvite") == 0) {
 				handle_pinvite(data, len);
-			} else if(!strcmp(command, "newprofile")) {
+			} else if(command.compare("newprofile") == 0) {
 				handle_newprofile(data, len);
-			} else if(!strcmp(command, "delprofile")) {
+			} else if(command.compare("delprofile") == 0) {
 				handle_delprofile(data, len);
-			} else if(!strcmp(command, "registernick")) {
+			} else if(command.compare("registernick") == 0) {
 				handle_registernick(data, len);
-			} else if(!strcmp(command, "registercdkey")) {
+			} else if(command.compare("registercdkey") == 0) {
 				handle_registercdkey(data, len);
-			} else if(!strcmp(command, "updatepro")) {
+			} else if(command.compare("updatepro") == 0) {
 				handle_updatepro(data, len);
 			}
 		}
@@ -141,67 +154,33 @@ namespace GP {
 	*/
 	void Peer::handle_updatepro(const char *data, int len) {
 		bool send_userupdate = false;
-		char buff[GP_STATUS_STRING_LEN + 1];
-		if(find_param("zipcode", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.zipcode = atoi(buff);
-		}
-		if(find_param("sex", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.sex = atoi(buff);
-		}
-		if(find_param("pic", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.pic = atoi(buff);
-		}
-		if(find_param("ooc", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.ooc = atoi(buff);
-		}
-		if(find_param("ind", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.ind = atoi(buff);
-		}
-		if(find_param("mar", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.mar = atoi(buff);
-		}
-		if(find_param("chc", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.chc = atoi(buff);
-		}
-		if(find_param("i1", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.i1 = atoi(buff);
-		}
-		if(find_param("birthday", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.birthday = atoi(buff);
-		}
-		if(find_param("publicmask", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			send_userupdate = true;
-			m_user.publicmask = atoi(buff);
-		}
 
-		if(find_param("nick", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.nick = buff;
-		}
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
 
-		if(find_param("uniquenick", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.uniquenick = buff;
+
+		LoadParamInt("zipcode", m_profile.zipcode, data_parser)
+		LoadParamInt("sex", m_profile.sex, data_parser)
+		LoadParamInt("pic", m_profile.pic, data_parser)
+		LoadParamInt("ooc", m_profile.ooc, data_parser)
+		LoadParamInt("ind", m_profile.ind, data_parser)
+		LoadParamInt("mar", m_profile.mar, data_parser)
+		LoadParamInt("chc", m_profile.chc, data_parser)
+		LoadParamInt("i1", m_profile.i1, data_parser)
+		LoadParamInt("birthday", m_profile.birthday, data_parser)
+		LoadParamInt("publicmask", m_user.publicmask, data_parser) //user param
+
+		if (data_parser.HasKey("publicmask")) {
+				send_userupdate = true;
 		}
-		if(find_param("firstname", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.firstname = buff;
-		}
-		if(find_param("lastname", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.lastname = buff;
-		}
-		if(find_param("countrycode", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.countrycode = buff;
-		}
-		if(find_param("videocard1string", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.videocardstring[0] = buff;
-		}
-		if(find_param("videocard2string", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.videocardstring[1] = buff;
-		}
-		if(find_param("osstring", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.osstring = buff;
-		}
-		if(find_param("aim", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_profile.aim = buff;
-		}
+		LoadParam("nick", m_profile.nick, data_parser)
+		LoadParam("uniquenick", m_profile.uniquenick, data_parser)
+		LoadParam("firstname", m_profile.firstname, data_parser)
+		LoadParam("lastname", m_profile.lastname, data_parser)
+		LoadParam("countrycode", m_profile.countrycode, data_parser)
+		LoadParam("videocard1string", m_profile.videocardstring[0], data_parser)
+		LoadParam("videocard2string", m_profile.videocardstring[1], data_parser)
+		LoadParam("osstring", m_profile.osstring, data_parser)
+		LoadParam("aim", m_profile.aim, data_parser)
 
 		OS::ProfileSearchRequest request;
 		request.profile_search_details = m_profile;
@@ -227,41 +206,23 @@ namespace GP {
 	void Peer::handle_updateui(const char *data, int len) {
 		char buff[GP_STATUS_STRING_LEN + 1];
 		OS::UserSearchRequest request;
-		if(find_param("cpubrandid", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_user.cpu_brandid = atoi(buff);
-		}
 
-		if(find_param("cpuspeed", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_user.cpu_speed = atoi(buff);
-		}
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		
+		LoadParamInt("cpubrandid", m_user.cpu_brandid, data_parser)
+		LoadParamInt("cpuspeed", m_user.cpu_speed, data_parser)
+		LoadParamInt("vidocard1ram", m_user.videocard_ram[0], data_parser)
+		LoadParamInt("vidocard2ram", m_user.videocard_ram[1], data_parser)
+		LoadParamInt("connectionid", m_user.connectionid, data_parser)
+		LoadParamInt("connectionspeed", m_user.connectionspeed, data_parser)
+		LoadParamInt("hasnetwork", m_user.hasnetwork, data_parser)
+		LoadParam("email", m_user.email, data_parser)
 
-		if(find_param("vidocard1ram", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_user.videocard_ram[0] = atoi(buff);
-		}
 
-		if(find_param("vidocard2ram", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_user.videocard_ram[1] = atoi(buff);
-		}
-
-		if(find_param("connectionid", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_user.connectionid = atoi(buff);
-		}
-
-		if(find_param("connectionspeed", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_user.connectionspeed = atoi(buff);
-		}
-
-		if(find_param("hasnetwork", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_user.hasnetwork = atoi(buff);
-		}
-
-		if(find_param("email", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			m_user.email = buff;
-		}
-
-		if(find_param("passwordenc", (char *)data, (char *)&buff, GP_STATUS_STRING_LEN)) {
-			int passlen = strlen(buff);
-			char *dpass = (char *)base64_decode((uint8_t *)buff, &passlen);
+		if(data_parser.HasKey("passwordenc")) {
+			std::string pwenc = data_parser.GetValue("passwordenc");
+			int passlen = pwenc.length();
+			char *dpass = (char *)base64_decode((uint8_t *)pwenc.c_str(), &passlen);
 			passlen = gspassenc((uint8_t *)dpass);
 
 			if(dpass)
@@ -291,13 +252,16 @@ namespace GP {
 	}
 	void Peer::handle_newprofile(const char *data, int len) {
 		OS::ProfileSearchRequest request;
-		char nick[GP_NICK_LEN + 1], oldnick[GP_NICK_LEN + 1];
-		bool replace = find_paramint("replace", (char *)data) != 0;
-		find_param("nick",(char *)data, (char *)&nick,GP_NICK_LEN);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		int replace = data_parser.GetValueInt("replace");
+		std::string nick, oldnick;
+		nick = data_parser.GetValue("nick");
+		
 		if(replace) { //TODO: figure out replaces functionality
-			find_param("oldnick",(char *)data, (char *)&oldnick,GP_NICK_LEN);
+			oldnick = data_parser.GetValue("oldnick");
 		}
 		request.profile_search_details.id = m_profile.id;
+		request.profile_search_details.nick = nick;
 		request.extra = this;
 		request.peer = this;
 		request.peer->IncRef();
@@ -323,43 +287,54 @@ namespace GP {
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::handle_login(const char *data, int len) {
-		char challenge[128 + 1];
-		char user[84 + 1];
 		char gamename[33 + 1];
-		char response[33 + 1];
-		int partnercode = find_paramint("partnerid",(char *)data);
-		int peer_port = find_paramint("port",(char *)data);
-		int sdkrev = find_paramint("sdkrevision",(char *)data);
-		int namespaceid = find_paramint("namespaceid",(char *)data);
-		int quiet = find_paramint("quiet",(char *)data);
 
-		int operation_id = find_paramint("id",(char *)data);		
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+
+		int partnercode = data_parser.GetValueInt("partnerid");
+		int peer_port = data_parser.GetValueInt("port");
+		int sdkrev = data_parser.GetValueInt("sdkrevision");
+		int namespaceid = data_parser.GetValueInt("namespaceid");
+		int quiet = data_parser.GetValueInt("quiet");
+
+		int operation_id = data_parser.GetValueInt("id");
 		int type = 0;
 
-		if(!find_param("challenge",(char *)data, (char *)&challenge,sizeof(challenge)-1)) {
-			m_delete_flag = true;
+		if (!data_parser.HasKey("challenge")) {
+			send_error(GPShared::GP_PARSE);
 			return;
 		}
-		if(!find_param("user",(char *)data, (char *)&user,sizeof(user)-1)) {
-			m_delete_flag = true;
-			return;
-		} else {
+		if (data_parser.HasKey("user")) {
 			type = 1;
 		}
-		if(!find_param("response",(char *)data, (char *)&response,sizeof(response)-1)) {
-			m_delete_flag = true;
+		else {
+			send_error(GPShared::GP_LOGIN_CONNECTION_FAILED);
 			return;
 		}
+		if (!data_parser.HasKey("response")) {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
+		std::string challenge = data_parser.GetValue("challenge");
+		std::string user = data_parser.GetValue("user");
+		std::string response = data_parser.GetValue("response");
 
 		if(type == 1) {
-			perform_nick_email_auth(user, partnercode, m_challenge, challenge, response, operation_id);
+			perform_nick_email_auth(user.c_str(), partnercode, m_challenge, challenge.c_str(), response.c_str(), operation_id);
 		}
 	}
 	void Peer::handle_pinvite(const char *data, int len) {
 		//profileid\10000\productid\1
 		std::ostringstream s;
-		int profileid = find_paramint("profileid", (char *)data);
-		int productid = find_paramint("productid", (char *)data);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		int profileid = 0;
+		if (data_parser.HasKey("profileid")) {
+			profileid = data_parser.GetValueInt("profileid");
+		}
+		int productid = 0;
+		if (data_parser.HasKey("productid")) {
+			productid = data_parser.GetValueInt("productid");
+		}
 
 		s << "|p|" << productid;
 		s << "|l|" << m_status.location_str;
@@ -367,10 +342,16 @@ namespace GP {
 		GPBackend::GPBackendRedisTask::SendMessage(this, profileid, GPI_BM_INVITE, s.str().c_str());
 	}
 	void Peer::handle_status(const char *data, int len) {
-		m_status.status = (GPEnum)find_paramint("status",(char *)data);
-
-		find_param("statstring",(char *)data, (char *)&m_status.status_str,GP_STATUS_STRING_LEN);
-		find_param("locstring",(char *)data, (char *)&m_status.location_str,GP_LOCATION_STRING_LEN);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		if (data_parser.HasKey("status")) {
+			m_status.status = (GPEnum)data_parser.GetValueInt("status");
+		}
+		if (data_parser.HasKey("statstring")) {
+			m_status.status_str = data_parser.GetValue("statstring");
+		}
+		if (data_parser.HasKey("locstring")) {
+			m_status.location_str = data_parser.GetValue("locstring");
+		}
 
 		GPBackend::GPBackendRedisTask::SetPresenceStatus(m_profile.id, m_status, this);
 	}
@@ -378,9 +359,21 @@ namespace GP {
 
 	}
 	void Peer::handle_addbuddy(const char *data, int len) {
-		int newprofileid = find_paramint("newprofileid",(char *)data);
-		char reason[GP_REASON_LEN + 1];
-		find_param("reason",(char *)data, (char *)&reason,GP_REASON_LEN);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		int newprofileid = 0;
+		std::string reason;
+		if (data_parser.HasKey("reason")) {
+			reason = data_parser.GetValue("reason");
+		}
+
+		if (data_parser.HasKey("newprofileid")) {
+			newprofileid = data_parser.GetValueInt("newprofileid");
+		}
+		else {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
+
 		mp_mutex->lock();
 		if(m_buddies.find(newprofileid) != m_buddies.end()) {
 			mp_mutex->unlock();
@@ -471,16 +464,38 @@ namespace GP {
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::handle_delbuddy(const char *data, int len) {
-		int delprofileid = find_paramint("delprofileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeDelBuddyRequest(this, delprofileid);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		if (data_parser.HasKey("delprofileid")) {
+			int delprofileid = data_parser.GetValueInt("delprofileid");
+			GPBackend::GPBackendRedisTask::MakeDelBuddyRequest(this, delprofileid);
+		}
+		else {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
 	}
 	void Peer::handle_revoke(const char *data, int len) {
-		int delprofileid = find_paramint("profileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeRevokeAuthRequest(this, delprofileid);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		if (data_parser.HasKey("profileid")) {
+			int delprofileid = data_parser.GetValueInt("profileid");
+			GPBackend::GPBackendRedisTask::MakeRevokeAuthRequest(this, delprofileid);
+		} else {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
+
 	}
 	void Peer::handle_authadd(const char *data, int len) {
-		int fromprofileid = find_paramint("fromprofileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeAuthorizeBuddyRequest(this, fromprofileid);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		if (data_parser.HasKey("fromprofileid")) {
+			int fromprofileid = data_parser.GetValueInt("fromprofileid");
+			GPBackend::GPBackendRedisTask::MakeAuthorizeBuddyRequest(this, fromprofileid);
+		} else {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
+		
+		
 	}
 	void Peer::send_authorize_add(int profileid) {
 		std::ostringstream s;
@@ -517,23 +532,39 @@ namespace GP {
 	}
 	void Peer::handle_getprofile(const char *data, int len) {
 		OS::ProfileSearchRequest request;
-		int profileid = find_paramint("profileid",(char *)data);		
-		m_search_operation_id = find_paramint("id",(char *)data);		
-		request.profile_search_details.id = profileid;
-		request.extra = this;
-		request.peer = this;
-		request.peer->IncRef();
-		request.callback = Peer::m_getprofile_callback;
-		request.type = OS::EProfileSearch_Profiles;
-		OS::m_profile_search_task_pool->AddRequest(request);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		if (data_parser.HasKey("profileid") && data_parser.HasKey("id")) {
+			int profileid = data_parser.GetValueInt("profileid");
+			m_search_operation_id = data_parser.GetValueInt("id");
+			request.profile_search_details.id = profileid;
+			request.extra = this;
+			request.peer = this;
+			request.peer->IncRef();
+			request.callback = Peer::m_getprofile_callback;
+			request.type = OS::EProfileSearch_Profiles;
+			OS::m_profile_search_task_pool->AddRequest(request);
+		}
 	}
 	void Peer::handle_addblock(const char *data, int len) {
-		int profileid = find_paramint("profileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeBlockRequest(this, profileid);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		if (data_parser.HasKey("profileid")) {
+			int profileid = data_parser.GetValueInt("profileid");
+			GPBackend::GPBackendRedisTask::MakeBlockRequest(this, profileid);
+		} else {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
+		
 	}
 	void Peer::handle_removeblock(const char *data, int len) {
-		int profileid = find_paramint("profileid",(char *)data);
-		GPBackend::GPBackendRedisTask::MakeRemoveBlockRequest(this, profileid);
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		if (data_parser.HasKey("profileid")) {
+			int profileid = data_parser.GetValueInt("profileid");
+			GPBackend::GPBackendRedisTask::MakeRemoveBlockRequest(this, profileid);
+		}  else {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
 	}
 	void Peer::handle_keepalive(const char *data, int len) {
 		//std::ostringstream s;
@@ -542,13 +573,15 @@ namespace GP {
 	}
 	void Peer::handle_bm(const char *data, int len) {
 		char msg[GP_REASON_LEN+1];
-		int to_profileid = find_paramint("t", (char *)data);
-		int msg_type = find_paramint("bm", (char *)data);
-		if(!find_param("msg",(char *)data, (char *)&msg,GP_REASON_LEN)) {
-			return;
-		}
 
-		switch(msg_type) {
+
+		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		if (data_parser.HasKey("t") && data_parser.HasKey("bm") && data_parser.HasKey("msg")) {
+			int to_profileid = data_parser.GetValueInt("t");
+			int msg_type = data_parser.GetValueInt("bm");
+			std::string msg = data_parser.GetValue("msg");
+			
+			switch (msg_type) {
 			case GPI_BM_MESSAGE:
 			case GPI_BM_UTM:
 			case GPI_BM_PING:
@@ -556,9 +589,13 @@ namespace GP {
 				break;
 			default:
 				return;
-		}
+			}
 
-		GPBackend::GPBackendRedisTask::SendMessage(this, to_profileid, msg_type, msg);
+			GPBackend::GPBackendRedisTask::SendMessage(this, to_profileid, msg_type, msg.c_str());
+		}
+		else {
+			send_error(GPShared::GP_PARSE);
+		}
 	}
 	void Peer::m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		Peer *peer = (Peer *)extra;
