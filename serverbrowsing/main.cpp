@@ -22,8 +22,9 @@ void sig_handler(int signo)
     shutdown();
 }
 
-int main() {
 
+#include <OS/Analytics/AnalyticsMgr.h>
+int main() {
     int i = atexit(on_exit);
     if (i != 0) {
        fprintf(stderr, "cannot set exit function\n");

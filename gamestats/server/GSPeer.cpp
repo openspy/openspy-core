@@ -376,7 +376,7 @@ namespace GS {
 			return;
 		}
 
-		if(!peer->m_backend_session_key.length() && auth_data.session_key)
+		if(!peer->m_backend_session_key.length() && auth_data.session_key.length())
 			peer->m_backend_session_key = auth_data.session_key;
 
 		peer->m_user = user;
@@ -388,7 +388,7 @@ namespace GS {
 		if(success) {
 			ss << "\\pauthr\\" << profile.id;
 
-			if(auth_data.session_key) {
+			if(auth_data.session_key.length()) {
 				ss << "\\lt\\" << auth_data.session_key;
 			}
 			ss << "\\lid\\" << operation_id;

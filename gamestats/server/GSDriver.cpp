@@ -1,6 +1,7 @@
 #include "GSDriver.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>
 
 #include "GSServer.h"
 #include "GSPeer.h"

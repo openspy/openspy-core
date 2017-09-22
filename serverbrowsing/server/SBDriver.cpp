@@ -248,4 +248,8 @@ namespace SB {
 		}
 		return peers;
 	}
+	OS::MetricInstance Driver::GetMetrics() {
+		OS::MetricInstance peer_metric;
+		return peer_metric;
+	}
 }

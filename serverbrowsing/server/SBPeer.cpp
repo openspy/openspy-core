@@ -128,4 +128,9 @@ namespace SB {
 			m_pending_request_list.pop();
 		}
 	}
+
+	OS::MetricInstance Peer::GetMetrics() {
+		OS::MetricInstance peer_metric;
+		return peer_metric;
+	}
 }

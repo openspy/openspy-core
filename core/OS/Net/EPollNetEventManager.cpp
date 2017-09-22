@@ -2,7 +2,9 @@
 #if EVTMGR_USE_EPOLL
 	#include "EPollNetEventManager.h"
 	#include <stdio.h>
+	#include "NetServer.h"
 	#include "NetPeer.h"
+	#include <algorithm>
 	#include <OS/socketlib/socketlib.h>
 
 	EPollNetEventManager::EPollNetEventManager() {
@@ -38,10 +40,17 @@
 			}
 		}
 
+
+		std::vector<INetServer *> ticked_servers;
 		//force peer think false for ping logic, etc
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while(it != m_net_drivers.end()) {
 			INetDriver *driver = *it;
+			INetServer *server = driver->getServer();
+			if(std::find(ticked_servers.begin(),ticked_servers.end(), server) == ticked_servers.end()) {
+				server->tick();
+				ticked_servers.push_back(server);
+			}
 			driver->think(false);
 			it++;
 		}

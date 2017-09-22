@@ -47,6 +47,8 @@ namespace SB {
 		void AddDeleteServer(MM::Server serv);
 		void AddNewServer(MM::Server serv);
 		void AddUpdateServer(MM::Server serv);
+
+		OS::MetricInstance GetMetrics();
 	private:
 
 		void TickConnections();

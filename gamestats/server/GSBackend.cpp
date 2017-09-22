@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <algorithm>
 #include <OS/OpenSpy.h>
 #include "GSBackend.h"
 #include "GSDriver.h"

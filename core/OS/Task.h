@@ -13,9 +13,9 @@ namespace OS {
 
 		}
 		void AddRequest(T data) {
-			//mp_mutex->lock();
+			mp_mutex->lock();
 			m_request_list.push(data);
-			//mp_mutex->unlock();
+			mp_mutex->unlock();
 			
 			mp_thread_poller->signal();
 		}

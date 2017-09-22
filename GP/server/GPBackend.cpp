@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <algorithm>
 #include "GPBackend.h"
 #include "GPDriver.h"
 #include "GPServer.h"
