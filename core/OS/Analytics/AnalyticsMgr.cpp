@@ -19,17 +19,15 @@ namespace OS {
 	void AnalyticsManager::SubmitServer(INetServer *server) {
 		m_metrics = server->GetMetrics();
 		UploadMetricTree(m_metrics);
-
-		
 	}
-	void AnalyticsManager::AppendMetricArrayToJson(json_t *object, struct _Value value) {
-		std::vector<std::pair<MetricType, struct _Value> > values = value.arr_value.values;
+	void AnalyticsManager::AppendMetricArrayToJson(json_t *object, MetricArrayValue value) {
+		std::vector<std::pair<MetricType, struct _Value> > values = value.values;
 		std::vector<std::pair<MetricType, struct _Value> >::iterator it = values.begin();
 		while(it != values.end()) {
 			std::pair<MetricType, struct _Value> p = *it;
-			if(p.first == MetricType_Array)  {
+			if(p.second.type == MetricType_Array)  {
 				json_t *sub_object = json_object();
-				AppendMetricArrayToJson(sub_object, p.second);
+				AppendMetricArrayToJson(sub_object, p.second.arr_value);
 				json_object_set(object, p.second.key.c_str(), sub_object);
 			} else {
 				AppendMetricScalarToJson(object, p.second.key, p.second);
@@ -40,7 +38,7 @@ namespace OS {
 	}
 	void AnalyticsManager::AppendMetricToJson(json_t *object, MetricInstance metric) {
 		if(metric.value.type == MetricType_Array) {
-			AppendMetricArrayToJson(object, metric.value);
+			AppendMetricArrayToJson(object, metric.value.arr_value);
 		} else {
 			AppendMetricScalarToJson(object, metric.key, metric.value);
 		}

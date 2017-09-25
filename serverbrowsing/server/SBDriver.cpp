@@ -80,6 +80,8 @@ namespace SB {
 		}
 		else {
 			std::vector<Peer *>::iterator it = m_connections.begin();
+			/*
+			
 			while (it != m_connections.end()) {
 				Peer *peer = *it;
 				if (peer->ShouldDelete() && std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
@@ -91,7 +93,7 @@ namespace SB {
 					continue;
 				}
 				it++;
-			}
+			}*/
 
 			it = m_peers_to_delete.begin();
 			while (it != m_peers_to_delete.end()) {
@@ -250,6 +252,31 @@ namespace SB {
 	}
 	OS::MetricInstance Driver::GetMetrics() {
 		OS::MetricInstance peer_metric;
+		OS::MetricValue arr_value2, value, peers;
+
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			INetPeer * peer = (INetPeer *)*it;
+			OS::Address address = *peer->getAddress();
+			value = peer->GetMetrics().value;
+
+			value.key = address.ToString(false);
+
+			printf("Peer: %s, %d\n", value.key.c_str(), value.arr_value.values.size());
+			peers.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, value));			
+			it++;
+		}
+
+		peers.key = "peers";
+		arr_value2.type = OS::MetricType_Array;
+		peers.type = OS::MetricType_Array;
+		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, peers));
+	
+
+		peer_metric.key = OS::Address(m_local_addr).ToString(false);
+		arr_value2.key = peer_metric.key;
+		peer_metric.value = arr_value2;
+		
 		return peer_metric;
 	}
 }

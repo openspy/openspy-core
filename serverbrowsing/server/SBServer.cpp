@@ -20,7 +20,7 @@ void SBServer::tick() {
 	}
 
 	
-	//NetworkTick(); //called by the main loop
+	NetworkTick();
 }
 void SBServer::shutdown() {
 
@@ -41,40 +41,22 @@ void SBServer::SetTaskPool(OS::TaskPool<MM::MMQueryTask, MM::MMQueryRequest> *po
 }
 OS::MetricInstance SBServer::GetMetrics() {
 	OS::MetricInstance peer_metric;
-	OS::MetricValue value, arr_value;
+	OS::MetricValue value, arr_value, arr_value2;
 	
-	value.value._str = "127.0.0.1:555";
-	value.key = "ip";
-	value.type = OS::MetricType_String;
-	arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
-	value.type = OS::MetricType_Integer;
-	value.value._int = 11662;
-	value.key = "bytes_in";
-	arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-	value.value._int = 512312461;
-	value.key = "bytes_out";
-	arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-	value.value._int = 521222;
-	value.key = "packets_in";
-	arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-	value.value._int = 99915256;
-	value.key = "packets_out";
-	arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-	value.value._int = 99915256;
-	value.key = "packets_out";
-	arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-	value.value._int = 666;
-	value.key = "total_requets";
-	arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 	
+	std::vector<INetDriver *>::iterator it2 = m_net_drivers.begin();
+	int idx = 0;
+	while (it2 != m_net_drivers.end()) {
+		SB::Driver *driver = (SB::Driver *)*it2;
+		arr_value2 = driver->GetMetrics().value;
+		it2++;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, arr_value2));
+	}
+
+	
+
 	arr_value.type = OS::MetricType_Array;
-	peer_metric.key = "peer";
 	peer_metric.value = arr_value;
 	return peer_metric;
 }

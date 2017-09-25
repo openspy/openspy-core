@@ -23,6 +23,24 @@ namespace SB {
 		bool full_keys;
 	};
 
+	typedef struct _PeerStats {
+		int total_requests;
+		int version;
+
+		long long bytes_in;
+		long long bytes_out;
+
+		int packets_in;
+		int packets_out;
+
+		int num_requests;
+
+		OS::Address m_address;
+		OS::GameData from_game;
+
+		bool disconnected;
+	} PeerStats;
+
 
 	class Peer : public INetPeer {
 	public:
@@ -78,6 +96,7 @@ namespace SB {
 
 
 		OS::CMutex *mp_mutex;
+		PeerStats m_peer_stats;
 	private:
 
 

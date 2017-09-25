@@ -131,6 +131,44 @@ namespace SB {
 
 	OS::MetricInstance Peer::GetMetrics() {
 		OS::MetricInstance peer_metric;
+		OS::MetricValue arr_value2, value;
+
+		value.value._str = OS::Address(m_address_info).ToString(false);
+		value.key = "ip";
+		value.type = OS::MetricType_String;
+		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.type = OS::MetricType_Integer;
+		value.value._int = m_peer_stats.bytes_in;
+		value.key = "bytes_in";
+		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = m_peer_stats.bytes_out;
+		value.key = "bytes_out";
+		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = m_peer_stats.packets_in;
+		value.key = "packets_in";
+		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = m_peer_stats.packets_out;
+		value.key = "packets_out";
+		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = m_peer_stats.num_requests;
+		value.key = "total_requets";
+		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		arr_value2.type = OS::MetricType_Array;
+	
+
+		
+		value.type = OS::MetricType_String;	
+		value.key = "gamename";
+		value.value._str = m_last_list_req.m_for_game.gamename;
+		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		peer_metric.value = arr_value2;
+		peer_metric.key = "keyyy";
 		return peer_metric;
 	}
 }

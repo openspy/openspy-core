@@ -19,7 +19,7 @@ namespace OS {
 		void SubmitServer(INetServer *server);
 	private:
 		void UploadMetricTree(MetricInstance metric);
-		void AppendMetricArrayToJson(json_t *object, struct _Value value);
+		void AppendMetricArrayToJson(json_t *object, MetricArrayValue value);
 		void AppendMetricToJson(json_t *array, MetricInstance metric);
 		void AppendMetricScalarToJson(json_t *object, std::string key, struct _Value value);
 		static AnalyticsManager *mp_singleton;
