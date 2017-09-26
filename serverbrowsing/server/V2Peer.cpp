@@ -26,6 +26,7 @@ namespace SB {
 		m_last_list_req.m_from_game.gamename[0] = 0;
 		m_in_message = false;
 		m_got_game_pair = false;
+
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
 	}
 	V2Peer::~V2Peer() {
@@ -416,6 +417,10 @@ namespace SB {
 		BufferWriteData(&p, &out_len, buff, len);
 		
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)&out_buff) + header_len, out_len - header_len);
+
+		m_peer_stats.bytes_out += out_len;
+		m_peer_stats.packets_out++;
+
 		if(send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL) < 0)
 			m_delete_flag = true;
 	}
@@ -429,7 +434,6 @@ namespace SB {
 		req.req.m_from_game = m_last_list_req.m_from_game;
 		req.req.m_for_game = m_last_list_req.m_for_game;
 		m_last_list_req = req.req;
-
 
 		if (!m_got_game_pair || std::string(m_last_list_req.m_for_game.gamename).compare(req.req.m_for_gamename) != 0) {
 			req.type = MM::EMMQueryRequestType_GetGameInfoPairByGameName;
@@ -467,6 +471,8 @@ namespace SB {
 			send_error(true, "Invalid target gamename");
 			return;
 		}
+
+		m_peer_stats.from_game = m_last_list_req.m_from_game;
 
 		m_got_game_pair = true;
 
@@ -542,12 +548,17 @@ namespace SB {
 		if (waiting_packet) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
 			if (Socket::wouldBlock()) {
+				printf("V2 would block\n");
 				return;
 			}
 			if (len <= 0) {
 				m_delete_flag = true;
 				return;
 			}
+
+			m_peer_stats.packets_in++;
+			m_peer_stats.bytes_in += len;
+
 			if(m_next_packet_send_msg) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", OS::Address(m_address_info).ToString().c_str(), len);
 				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);
@@ -832,7 +843,11 @@ namespace SB {
 		char send_str[1092]; //mtu size
 		int len = vsprintf(send_str, fmt, args);
 		send_str[len] = 0;
-		if (send(m_sd, (const char *)&send_str, strlen(send_str)+1, MSG_NOSIGNAL) < 0)
+
+
+		m_peer_stats.bytes_out += len+1;
+		m_peer_stats.packets_out++;
+		if (send(m_sd, (const char *)&send_str, len+1, MSG_NOSIGNAL) < 0)
 			m_delete_flag = true;
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", OS::Address(m_address_info).ToString().c_str(), send_str, die);

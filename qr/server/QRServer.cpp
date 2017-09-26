@@ -16,6 +16,12 @@ namespace QR {
 		MM::SetupTaskPool(this);
 	}
 	void Server::tick() {
+		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
+		while (it != m_net_drivers.end()) {
+			INetDriver *driver = *it;
+			driver->think(false);
+			it++;
+		}
 		NetworkTick();
 	}
 	void Server::shutdown() {

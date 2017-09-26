@@ -33,8 +33,6 @@ namespace SB {
 		int packets_in;
 		int packets_out;
 
-		int num_requests;
-
 		OS::Address m_address;
 		OS::GameData from_game;
 

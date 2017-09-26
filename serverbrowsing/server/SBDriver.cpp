@@ -80,20 +80,19 @@ namespace SB {
 		}
 		else {
 			std::vector<Peer *>::iterator it = m_connections.begin();
-			/*
-			
 			while (it != m_connections.end()) {
 				Peer *peer = *it;
 				if (peer->ShouldDelete() && std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
 					//marked for delection, dec reference and delete when zero
 					it = m_connections.erase(it);
 					peer->DecRef();
+
 					m_server->UnregisterSocket(peer);
 					m_peers_to_delete.push_back(peer);
 					continue;
 				}
 				it++;
-			}*/
+			}
 
 			it = m_peers_to_delete.begin();
 			while (it != m_peers_to_delete.end()) {
@@ -262,7 +261,6 @@ namespace SB {
 
 			value.key = address.ToString(false);
 
-			printf("Peer: %s, %d\n", value.key.c_str(), value.arr_value.values.size());
 			peers.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, value));			
 			it++;
 		}

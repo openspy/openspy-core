@@ -72,6 +72,9 @@ namespace SB {
 				buf[len] = 0;
 				if(len == 0) goto end;
 
+				m_peer_stats.packets_in++;
+				m_peer_stats.bytes_in += len;
+
 				/* split by \\final\\  */
 				char *p = (char *)&buf;
 				char *x;
@@ -208,6 +211,7 @@ namespace SB {
 				MM::MMQueryRequest req;
 				m_last_list_req.m_from_game = m_game;
 				m_last_list_req.m_for_game = game_data;
+
 				req.req = m_last_list_req;
 				req.type = req.req.send_groups ? MM::EMMQueryRequestType_GetGroups : MM::EMMQueryRequestType_GetServers;
 				AddRequest(req);
@@ -219,6 +223,7 @@ namespace SB {
 					return;
 				}
 				m_game = game_data;
+				m_peer_stats.from_game = m_game;
 				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (unsigned char *)m_game.secretkey, m_enctype);
 				if(strcmp(realvalidate,m_validation.c_str()) == 0) {
 					send_crypt_header(m_enctype);
@@ -411,6 +416,10 @@ namespace SB {
 					break;
 				}
 			}
+
+			m_peer_stats.bytes_out += out_len;
+			m_peer_stats.packets_out++;
+
 			int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
 			if(c < 0) {
 				m_delete_flag = true;

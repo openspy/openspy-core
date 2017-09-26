@@ -16,6 +16,8 @@ namespace SB {
 		gettimeofday(&m_last_recv, NULL);
 
 		m_version = version;
+		m_peer_stats.version = version;
+		m_peer_stats.m_address = *address_info;
 		mp_mutex = OS::CreateMutex();
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version %d",OS::Address(m_address_info).ToString().c_str(), m_version);
@@ -116,6 +118,8 @@ namespace SB {
 		req.peer = this;
 		req.peer->IncRef();
 		req.driver = mp_driver;
+
+		m_peer_stats.total_requests++;
 		MM::m_task_pool->AddRequest(req);
 	}
 	void Peer::FlushPendingRequests() {
@@ -124,6 +128,7 @@ namespace SB {
 			req.peer = this;
 			req.peer->IncRef();
 			req.driver = mp_driver;
+			m_peer_stats.total_requests++;
 			MM::m_task_pool->AddRequest(req);
 			m_pending_request_list.pop();
 		}
@@ -155,8 +160,8 @@ namespace SB {
 		value.key = "packets_out";
 		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
-		value.value._int = m_peer_stats.num_requests;
-		value.key = "total_requets";
+		value.value._int = m_peer_stats.total_requests;
+		value.key = "total_requests";
 		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 		arr_value2.type = OS::MetricType_Array;
 	
