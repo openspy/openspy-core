@@ -65,7 +65,9 @@ namespace SB {
 		virtual void OnRecievedGameInfo(const OS::GameData game_data, void *extra) = 0;
 		virtual void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) = 0;
 
+		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
 		OS::MetricInstance GetMetrics();
+		PeerStats GetPeerStats() { if(m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 	protected:
 		void cacheServer(MM::Server *server, bool full_keys = false);
 		void DeleteServerFromCacheByIP(OS::Address address);

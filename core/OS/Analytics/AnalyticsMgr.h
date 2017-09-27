@@ -7,7 +7,7 @@
 #include <OS/Net/NetServer.h>
 #include "Metric.h"
 
-#define ANALYTICS_SUBMIT_TIME 1
+#define ANALYTICS_SUBMIT_TIME 15
 namespace OS {
 	class AnalyticsManager {
 	public:

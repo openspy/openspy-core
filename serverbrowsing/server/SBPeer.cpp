@@ -20,6 +20,15 @@ namespace SB {
 		m_peer_stats.m_address = *address_info;
 		mp_mutex = OS::CreateMutex();
 
+		m_peer_stats.m_address = m_address_info;
+		m_peer_stats.bytes_in = 0;
+		m_peer_stats.bytes_out = 0;
+		m_peer_stats.packets_in = 0;
+		m_peer_stats.packets_out = 0;
+		m_peer_stats.from_game.gamename[0] = 0;
+		m_peer_stats.from_game.gameid = 0;
+		m_peer_stats.disconnected = false;
+
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version %d",OS::Address(m_address_info).ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
@@ -134,46 +143,54 @@ namespace SB {
 		}
 	}
 
-	OS::MetricInstance Peer::GetMetrics() {
-		OS::MetricInstance peer_metric;
-		OS::MetricValue arr_value2, value;
-
-		value.value._str = OS::Address(m_address_info).ToString(false);
+	OS::MetricValue Peer::GetMetricItemFromStats(PeerStats stats) {
+		OS::MetricValue arr_value, value;
+		value.value._str = stats.m_address.ToString(false);
 		value.key = "ip";
 		value.type = OS::MetricType_String;
-		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.disconnected;
+		value.key = "disconnected";
+		value.type = OS::MetricType_Integer;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));		
 
 		value.type = OS::MetricType_Integer;
-		value.value._int = m_peer_stats.bytes_in;
+		value.value._int = stats.bytes_in;
 		value.key = "bytes_in";
-		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
-		value.value._int = m_peer_stats.bytes_out;
+		value.value._int = stats.bytes_out;
 		value.key = "bytes_out";
-		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
-		value.value._int = m_peer_stats.packets_in;
+		value.value._int = stats.packets_in;
 		value.key = "packets_in";
-		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
-		value.value._int = m_peer_stats.packets_out;
+		value.value._int = stats.packets_out;
 		value.key = "packets_out";
-		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
-		value.value._int = m_peer_stats.total_requests;
+		value.value._int = stats.total_requests;
 		value.key = "total_requests";
-		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-		arr_value2.type = OS::MetricType_Array;
-	
-
-		
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		arr_value.type = OS::MetricType_Array;
+			
 		value.type = OS::MetricType_String;	
 		value.key = "gamename";
-		value.value._str = m_last_list_req.m_for_game.gamename;
-		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		value.value._str = stats.from_game.gamename;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
-		peer_metric.value = arr_value2;
-		peer_metric.key = "keyyy";
+
+		arr_value.key = stats.m_address.ToString(false);
+		return arr_value;
+	}
+	OS::MetricInstance Peer::GetMetrics() {
+		OS::MetricInstance peer_metric;
+
+		peer_metric.value = GetMetricItemFromStats(m_peer_stats);
+		peer_metric.key = "peer";
 		return peer_metric;
 	}
 }

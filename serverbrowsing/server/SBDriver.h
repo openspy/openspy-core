@@ -70,6 +70,7 @@ namespace SB {
 		std::queue<MM::Server> m_server_delete_queue;
 		std::queue<MM::Server> m_server_new_queue;
 		std::queue<MM::Server> m_server_update_queue;
+		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 		
 		OS::CMutex *mp_mutex;
 
