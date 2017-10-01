@@ -47,9 +47,7 @@ void SBServer::SetTaskPool(OS::TaskPool<MM::MMQueryTask, MM::MMQueryRequest> *po
 }
 OS::MetricInstance SBServer::GetMetrics() {
 	OS::MetricInstance peer_metric;
-	OS::MetricValue value, arr_value, arr_value2;
-	
-
+	OS::MetricValue value, arr_value, arr_value2, container_val;
 	
 	std::vector<INetDriver *>::iterator it2 = m_net_drivers.begin();
 	int idx = 0;
@@ -60,9 +58,11 @@ OS::MetricInstance SBServer::GetMetrics() {
 		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, arr_value2));
 	}
 
-	
-
 	arr_value.type = OS::MetricType_Array;
-	peer_metric.value = arr_value;
+	arr_value.key = std::string(OS::g_hostName) + std::string(":") + std::string(OS::g_appName);
+
+	container_val.type = OS::MetricType_Array;
+	container_val.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, arr_value));
+	peer_metric.value = container_val;
 	return peer_metric;
 }

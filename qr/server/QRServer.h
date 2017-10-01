@@ -20,8 +20,9 @@ namespace QR {
 		void shutdown();
 		void SetTaskPool(OS::TaskPool<MM::MMPushTask, MM::MMPushRequest> *pool);
 		Peer *find_client(struct sockaddr_in *address);
+		OS::MetricInstance GetMetrics();
 	private:
-		
+		struct timeval m_last_analytics_submit_time;
 	};
 }
 #endif //_CHCGAMESERVER_H

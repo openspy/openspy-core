@@ -25,8 +25,11 @@ namespace OS {
 	Logger *g_logger = NULL;
 	struct timeval redis_timeout;
 	Redis::Connection *redis_internal_connection = NULL;
-	void Init(const char *appName, int num_async_tasks) {
-
+	const char *g_appName = NULL;
+	const char *g_hostName = NULL;
+	void Init(const char *appName, int num_async_tasks, const char *hostName) {
+		g_appName = appName;
+		g_hostName = hostName;
 		curl_global_init(CURL_GLOBAL_SSL);
 
 		redis_timeout.tv_usec = 0;

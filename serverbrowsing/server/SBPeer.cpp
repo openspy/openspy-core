@@ -173,7 +173,7 @@ namespace SB {
 		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
 		value.value._int = stats.total_requests;
-		value.key = "total_requests";
+		value.key = "pending_requests";
 		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 		arr_value.type = OS::MetricType_Array;
 			
@@ -182,15 +182,28 @@ namespace SB {
 		value.value._str = stats.from_game.gamename;
 		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
+		value.type = OS::MetricType_Integer;	
+		value.key = "version";
+		value.value._int = stats.version;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
 
 		arr_value.key = stats.m_address.ToString(false);
 		return arr_value;
+	}
+	void Peer::ResetMetrics() {
+		m_peer_stats.bytes_in = 0;
+		m_peer_stats.bytes_out = 0;
+		m_peer_stats.packets_in = 0;
+		m_peer_stats.packets_out = 0;
 	}
 	OS::MetricInstance Peer::GetMetrics() {
 		OS::MetricInstance peer_metric;
 
 		peer_metric.value = GetMetricItemFromStats(m_peer_stats);
 		peer_metric.key = "peer";
+
+		ResetMetrics();
+
 		return peer_metric;
 	}
 }

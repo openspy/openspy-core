@@ -59,11 +59,18 @@ namespace QR {
 		BufferWriteByte((uint8_t**)&p,&blen,QR_MAGIC_1);
 		BufferWriteByte((uint8_t**)&p,&blen,QR_MAGIC_2);
 		BufferWriteData((uint8_t**)&p,&blen,buff, len);
+
+		m_peer_stats.packets_out++;
+		m_peer_stats.bytes_out += blen;
+
 		sendto(m_sd,(char *)&sendbuf,blen,0,(struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
 	}
 	void V2Peer::handle_packet(char *recvbuf, int len) {
 		uint8_t *buff = (uint8_t *)recvbuf;
 		int buflen = len;
+
+		m_peer_stats.packets_in++;
+		m_peer_stats.bytes_in += len;
 
 		uint8_t type = BufferReadByte((uint8_t**)&buff,&buflen);
 
@@ -75,6 +82,7 @@ namespace QR {
 				return;
 			}
 		}
+
 
 		gettimeofday(&m_last_recv, NULL);
 
@@ -114,6 +122,7 @@ namespace QR {
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_PushServer;
 				m_server_pushed = true;
+				m_peer_stats.pending_requests++;
 				MM::m_task_pool->AddRequest(req);
 			}
 			m_sent_challenge = true;
@@ -235,6 +244,7 @@ namespace QR {
 				req.server = m_server_info;
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_UpdateServer;
+				m_peer_stats.pending_requests++;
 				MM::m_task_pool->AddRequest(req);
 			}
 			else {
@@ -247,6 +257,7 @@ namespace QR {
 			req.extra = (void *)1;
 			req.gamename = m_server_info.m_keys["gamename"];
 			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
+			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
 		}
 	}
@@ -266,9 +277,11 @@ namespace QR {
 		}
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got available request: %s", OS::Address(m_address_info).ToString().c_str(), req.gamename.c_str());
 		req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
+		m_peer_stats.pending_requests++;
 		MM::m_task_pool->AddRequest(req);
 	}
 	void V2Peer::OnGetGameInfo(OS::GameData game_info, void *extra) {
+		m_peer_stats.from_game = game_info;
 		if (extra == (void *)1) {
 			m_server_info.m_game = game_info;
 			if (m_server_info.m_game.gameid == 0) {
@@ -292,6 +305,7 @@ namespace QR {
 				req.server = m_server_info;
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_UpdateServer;
+				m_peer_stats.pending_requests++;
 				MM::m_task_pool->AddRequest(req);
 			}
 		}
@@ -395,6 +409,7 @@ namespace QR {
 			req.server = m_server_info;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_DeleteServer;
+			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
 		}
 		m_delete_flag = true;

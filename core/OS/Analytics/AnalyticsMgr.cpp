@@ -1,9 +1,10 @@
 #include "AnalyticsMgr.h"
-
+#include <curl/curl.h>
 namespace OS {
 	AnalyticsManager *AnalyticsManager::mp_singleton = NULL;
 	AnalyticsManager::AnalyticsManager() {
-
+		mp_mutex = OS::CreateMutex();
+		mp_thread = OS::CreateThread(AnalyticsManager::TaskThread, this, true);
 	}
 	AnalyticsManager::~AnalyticsManager() {
 		
@@ -17,8 +18,11 @@ namespace OS {
 	}
 
 	void AnalyticsManager::SubmitServer(INetServer *server) {
-		m_metrics = server->GetMetrics();
-		UploadMetricTree(m_metrics);
+		mp_mutex->lock();
+		m_metric_list.push_back(server->GetMetrics());
+		mp_mutex->unlock();
+
+		mp_thread_poller->signal();
 	}
 	void AnalyticsManager::AppendMetricArrayToJson(json_t *object, MetricArrayValue value) {
 		std::vector<std::pair<MetricType, struct _Value> > values = value.values;
@@ -58,12 +62,55 @@ namespace OS {
 				break;
 		}
 	}
-	void AnalyticsManager::UploadMetricTree(MetricInstance metric) {
-		json_t *array = json_object();
-		AppendMetricToJson(array, metric);
+	void *AnalyticsManager::TaskThread(OS::CThread *thread) {
+		AnalyticsManager *task = (AnalyticsManager *)thread->getParams();
+		while(task->mp_thread_poller->wait()) {
+			task->mp_mutex->lock();
 
-		//dump blah blah
-		char *json_data = json_dumps(array, JSON_INDENT(0));
-		printf("JSON: %s\n", json_data);
+			std::vector<MetricInstance>::iterator it = task->m_metric_list.begin();
+			while(it != task->m_metric_list.end()) {
+
+				MetricInstance instance = *it;
+				json_t *array = json_object();
+				task->AppendMetricToJson(array, instance);
+
+				char *json_data = json_dumps(array, JSON_INDENT(0));
+				task->UploadJson(json_data);
+
+				free((void *)json_data);	
+				it++;
+			}
+			task->m_metric_list.clear();
+			task->mp_mutex->unlock();
+		}
+	}
+	void AnalyticsManager::UploadJson(const char *str) {
+		CURL *curl = curl_easy_init();
+		CURLcode res;
+		if(curl) {
+			struct curl_slist *chunk = NULL;
+			chunk = curl_slist_append(chunk, "Content-Type: application/json");
+			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_ANALYTICS_MGR_URL);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, str);
+
+			/* set default user agent */
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSAnalyticsMgr");
+
+			/* set timeout */
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+
+			/* enable location redirects */
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+			/* set maximum allowed redirects */
+			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+
+			curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+
+			res = curl_easy_perform(curl);
+
+			curl_easy_cleanup(curl);
+			curl_slist_free_all(chunk);
+		}
 	}
 }

@@ -59,6 +59,9 @@ namespace QR {
 			return;
 		}
 
+		m_peer_stats.packets_in++;
+		m_peer_stats.bytes_in += len;
+
 		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
 		if (data_parser.Size() < 1) {
 			Delete();
@@ -192,7 +195,7 @@ namespace QR {
 			else {
 				req.type = MM::EMMPushRequestType_UpdateServer;
 			}
-
+			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
 			m_query_state = EV1_CQS_Complete;
 			return;
@@ -248,12 +251,14 @@ namespace QR {
 			m_sent_game_query = true;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
+			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
 		}
 	}
 	void V1Peer::OnGetGameInfo(OS::GameData game_info, void *extra) {
 		std::ostringstream s;
 		int state_changed = (int)extra;
+		m_peer_stats.from_game = game_info;
 		m_server_info.m_game = game_info;
 		if (!m_server_info.m_game.gameid) {
 			send_error(true, "unknown game");
@@ -321,6 +326,9 @@ namespace QR {
 
 		out_buff[out_len] = 0;
 
+		m_peer_stats.packets_out++;
+		m_peer_stats.bytes_out += out_len;
+
 		int c = sendto(m_sd, (char *)&out_buff, out_len, 0, (struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
 		if (c < 0) {
 			Delete();
@@ -333,6 +341,7 @@ namespace QR {
 			req.server = m_server_info;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_DeleteServer;
+			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
 		}
 		m_delete_flag = true;

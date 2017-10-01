@@ -14,6 +14,25 @@
 #define CHALLENGE_LEN 20
 #define KV_MAX_LEN 64
 namespace QR {
+
+	typedef struct _PeerStats {
+		int pending_requests;
+		int version;
+
+		long long bytes_in;
+		long long bytes_out;
+
+		int packets_in;
+		int packets_out;
+
+		OS::Address m_address;
+		OS::GameData from_game;
+
+		bool disconnected;
+	} PeerStats;
+
+
+
 	class Driver;
 
 	class Peer : public INetPeer {
@@ -36,9 +55,12 @@ namespace QR {
 
 		virtual void OnGetGameInfo(OS::GameData game_info, void *extra) = 0;
 		virtual void OnRegisteredServer(int pk_id, void *extra) = 0;
+
+		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
+		OS::MetricInstance GetMetrics();
+		PeerStats GetPeerStats() { if(m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 	protected:
-
-
+		void ResetMetrics();
 
 		bool isTeamString(const char *string);
 
@@ -57,6 +79,8 @@ namespace QR {
 		bool m_sent_game_query;
 
 		MM::ServerInfo m_server_info;
+
+		PeerStats m_peer_stats;
 	};
 }
 #endif //_QRPEER_H

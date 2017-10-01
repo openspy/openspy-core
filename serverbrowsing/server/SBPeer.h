@@ -24,7 +24,7 @@ namespace SB {
 	};
 
 	typedef struct _PeerStats {
-		int total_requests;
+		int total_requests; //should be renamed to "pending requests"
 		int version;
 
 		long long bytes_in;
@@ -74,6 +74,8 @@ namespace SB {
 		void DeleteServerFromCacheByKey(std::string key);
 		sServerCache FindServerByIP(OS::Address address);
 		sServerCache FindServerByKey(std::string key);
+
+		void ResetMetrics();
 
 		int m_version;
 

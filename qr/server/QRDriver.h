@@ -1,6 +1,9 @@
 #ifndef _QRDRIVER_H
 #define _QRDRIVER_H
 #include <stdint.h>
+#include <queue>
+#include <OS/OpenSpy.h>
+#include <OS/Mutex.h>
 #include <OS/Net/NetDriver.h>
 
 #include "QRPeer.h"
@@ -17,7 +20,7 @@
 #define MAX_DATA_SIZE 1400
 namespace QR {
 	class Peer;
-
+	typedef struct _PeerStats PeerStats;
 
 
 	class Driver : public INetDriver {
@@ -37,7 +40,7 @@ namespace QR {
 		int GetNumConnections();
 
 		const std::vector<INetPeer *> getPeers();
-
+		OS::MetricInstance GetMetrics();
 	private:
 
 		void TickConnections();
@@ -50,6 +53,10 @@ namespace QR {
 		struct sockaddr_in m_local_addr;
 
 		struct timeval m_server_start;
+
+		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
+
+		OS::CMutex *mp_mutex;
 
 	};
 }

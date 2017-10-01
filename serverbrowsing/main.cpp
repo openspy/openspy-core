@@ -36,7 +36,7 @@ int main() {
 	#endif
 
 	Socket::Init();
-	OS::Init("serverbrowsing", 0);
+	OS::Init("serverbrowsing", 0, "chc");
     
 
 	g_gameserver = new SBServer();
