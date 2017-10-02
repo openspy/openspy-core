@@ -32,7 +32,7 @@ namespace OS {
 			if(p.second.type == MetricType_Array)  {
 				json_t *sub_object = json_object();
 				AppendMetricArrayToJson(sub_object, p.second.arr_value);
-				json_object_set(object, p.second.key.c_str(), sub_object);
+				json_object_set_new(object, p.second.key.c_str(), sub_object);
 			} else {
 				AppendMetricScalarToJson(object, p.second.key, p.second);
 			}
@@ -78,6 +78,7 @@ namespace OS {
 				task->UploadJson(json_data);
 
 				free((void *)json_data);	
+				json_decref(array);
 				it++;
 			}
 			task->m_metric_list.clear();
