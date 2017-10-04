@@ -7,7 +7,7 @@
 namespace QR {
 
 	Server::Server() : INetServer() {
-		
+		gettimeofday(&m_last_analytics_submit_time, NULL);
 	}
 
 	Server::~Server() {
@@ -30,7 +30,6 @@ namespace QR {
 			driver->think(false);
 			it++;
 		}
-		NetworkTick();
 	}
 	void Server::shutdown() {
 
