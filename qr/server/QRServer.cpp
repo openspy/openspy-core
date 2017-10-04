@@ -30,6 +30,7 @@ namespace QR {
 			driver->think(false);
 			it++;
 		}
+		NetworkTick();
 	}
 	void Server::shutdown() {
 

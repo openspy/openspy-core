@@ -25,6 +25,7 @@ void SBServer::tick() {
 		driver->think(false);
 		it++;
 	}
+	NetworkTick();
 }
 void SBServer::shutdown() {
 

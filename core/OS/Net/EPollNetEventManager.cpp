@@ -41,16 +41,10 @@
 		}
 
 
-		std::vector<INetServer *> ticked_servers;
 		//force peer think false for ping logic, etc
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while(it != m_net_drivers.end()) {
 			INetDriver *driver = *it;
-			INetServer *server = driver->getServer();
-			if(std::find(ticked_servers.begin(),ticked_servers.end(), server) == ticked_servers.end()) {
-				server->tick();
-				ticked_servers.push_back(server);
-			}
 			driver->think(false);
 			it++;
 		}
