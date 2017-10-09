@@ -143,8 +143,8 @@ namespace QR {
 
 
 		MM::ServerInfo server_info, old_server_info = m_server_info;
-		server_info.m_game = m_game;
-		server_info.m_address = m_address;
+		server_info.m_game = m_server_info.m_game;
+		server_info.m_address = m_server_info.m_address;
 		server_info.id = m_server_info.id;
 		server_info.groupid = m_server_info.groupid;
 

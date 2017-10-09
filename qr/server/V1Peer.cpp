@@ -100,14 +100,14 @@ namespace QR {
 
 	}
 	void V1Peer::parse_rules(char *recvbuf, int len) {
-		m_server_info.m_keys = OS::KeyStringToMap(recvbuf);
+		m_dirty_server_info.m_keys = OS::KeyStringToMap(recvbuf);
 
-		if(m_server_info.m_keys.find("echo") != m_server_info.m_keys.cend())
-			m_server_info.m_keys.erase(m_server_info.m_keys.find("echo"));
+		if(m_dirty_server_info.m_keys.find("echo") != m_dirty_server_info.m_keys.cend())
+			m_dirty_server_info.m_keys.erase(m_dirty_server_info.m_keys.find("echo"));
 
 		std::stringstream ss;
-		std::map<std::string, std::string>::iterator it = m_server_info.m_keys.begin();
-		while (it != m_server_info.m_keys.end()) {
+		std::map<std::string, std::string>::iterator it = m_dirty_server_info.m_keys.begin();
+		while (it != m_dirty_server_info.m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;
 			ss << "(" << p.first << ", " << p.second << ") ";
 			it++;
@@ -129,9 +129,9 @@ namespace QR {
 
 			std::string::size_type index_seperator = p.first.rfind('_');
 			if (index_seperator != std::string::npos) {
-				m_server_info.m_player_keys[p.first.substr(0, index_seperator + 1)].push_back(p.second);
+				m_dirty_server_info.m_player_keys[p.first.substr(0, index_seperator + 1)].push_back(p.second);
 
-				ss << "P(" << m_server_info.m_player_keys[p.first.substr(0, index_seperator + 1)].size()-1 << ") ( " << p.first << "," << p.second << ") ";
+				ss << "P(" << m_dirty_server_info.m_player_keys[p.first.substr(0, index_seperator + 1)].size()-1 << ") ( " << p.first << "," << p.second << ") ";
 			}
 
 			if (p.first.compare("final") == 0)
@@ -165,8 +165,8 @@ namespace QR {
 
 		switch (m_query_state) {
 		case EV1_CQS_Basic:
-			m_server_info.m_keys.clear();
-			m_server_info.m_player_keys.clear();
+			m_dirty_server_info.m_keys.clear();
+			m_dirty_server_info.m_player_keys.clear();
 			s << "\\info\\";
 			parse_rules(recvbuf, len);
 			m_query_state = EV1_CQS_Info;
@@ -185,7 +185,9 @@ namespace QR {
 			parse_players(recvbuf, len);
 			MM::MMPushRequest req;
 			req.peer = this;
-			req.server = m_server_info;
+			req.server = m_dirty_server_info;
+			req.old_server = m_server_info;
+			m_server_info = m_dirty_server_info;
 
 			req.peer->IncRef();
 			if (!m_pushed_server) {
@@ -260,6 +262,8 @@ namespace QR {
 		int state_changed = (int)extra;
 		m_peer_stats.from_game = game_info;
 		m_server_info.m_game = game_info;
+
+		m_dirty_server_info = m_server_info;
 		if (!m_server_info.m_game.gameid) {
 			send_error(true, "unknown game");
 			return;
@@ -347,6 +351,7 @@ namespace QR {
 		m_delete_flag = true;
 	}
 	void V1Peer::OnRegisteredServer(int pk_id, void *extra) {
-
+		m_server_info.id = pk_id;
+		m_dirty_server_info = m_server_info;
 	}
 }

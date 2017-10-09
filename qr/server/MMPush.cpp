@@ -135,8 +135,9 @@ namespace MM {
 	}
 	void MMPushTask::PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request) {
 		//find missing keys and push deletes
-		std::vector<std::string>::iterator it = request.old_server.m_keys.begin();
-		std::map<std::string, std::string>::iterator it2;
+		std::map<std::string, std::string>::iterator it = request.old_server.m_keys.begin();
+		std::map<std::string, std::vector<std::string> >::iterator it2;
+		std::vector<std::string>::iterator it3;
 		std::vector<std::string> missing_keys, missing_team_keys, missing_player_keys;
 		while (it != request.old_server.m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;
@@ -146,37 +147,42 @@ namespace MM {
 			it++;
 		}
 
-		it = request.old_server.m_player_keys.begin();
-		while(it != request.old_server.m_player_keys.end()) {
-			std::pair<std::string, std::vector<std::string> > p = *it;
+		
+
+		it2 = request.old_server.m_player_keys.begin();
+		while(it2 != request.old_server.m_player_keys.end()) {
+			std::pair<std::string, std::vector<std::string> > p = *it2;
 			if(request.server.m_player_keys.find(p.first) == request.server.m_player_keys.end()) {
 				missing_player_keys.push_back(p.first);
 			}
-			it++;
+			it2++;
 		}
-
-		it = request.old_server.m_team_keys.begin();
-		while(it != request.old_server.m_team_keys.end()) {
-			std::pair<std::string, std::vector<std::string> > p = *it;
+		
+		it2 = request.old_server.m_team_keys.begin();
+		while(it2 != request.old_server.m_team_keys.end()) {
+			std::pair<std::string, std::vector<std::string> > p = *it2;
 			if(request.server.m_team_keys.find(p.first) == request.server.m_team_keys.end()) {
 				missing_team_keys.push_back(p.first);
 			}
-			it++;
+			it2++;
 		}
 
-
+		
 		std::ostringstream ss;
 		ss << request.old_server.m_game.gamename << ":" << request.old_server.groupid << ":" << request.old_server.id << ":";
 		std::string server_key = ss.str();
 
 
+
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
-		it = missing_keys.begin();
-		while(it != missing_keys.end()) {
-			std::string s = *it;
+		it3 = missing_keys.begin();
+		while(it3 != missing_keys.end()) {
+			std::string s = *it3;
 			Redis::Command(mp_redis_connection, 0, "HDEL %scustkeys %s", ss.str().c_str(),s.c_str());
-			it++;
+			it3++;
 		}
+
+		
 
 		int idx = 0;
 		ss.str("");
@@ -194,16 +200,16 @@ namespace MM {
 			if(ret <= 0) {
 				break;
 			}
-			it = missing_player_keys.begin();
-			while(it != missing_player_keys.end()) {
-				std::string name = *it;
+			it3 = missing_player_keys.begin();
+			while(it3 != missing_player_keys.end()) {
+				std::string name = *it3;
 				Redis::Command(mp_redis_connection, 0, "HDEL %s %s", ss.str().c_str(), name.c_str());
-				it++;
+				it3++;
 			}
 			Redis::Command(mp_redis_connection, 0, "HDEL %s %s", ss.str().c_str());
 			ss.str("");
 		}
-
+		
 		idx = 0;
 		ss.str("");
 		while(true) {
@@ -220,11 +226,11 @@ namespace MM {
 			if(ret <= 0) {
 				break;
 			}
-			it = missing_team_keys.begin();
-			while(it != missing_team_keys.end()) {
-				std::string name = *it;
+			it3 = missing_team_keys.begin();
+			while(it3 != missing_team_keys.end()) {
+				std::string name = *it3;
 				Redis::Command(mp_redis_connection, 0, "HDEL %s %s", ss.str().c_str(), name.c_str());
-				it++;
+				it3++;
 			}
 			Redis::Command(mp_redis_connection, 0, "HDEL %s %s", ss.str().c_str());
 			ss.str("");
@@ -237,13 +243,12 @@ namespace MM {
 			std::pair<std::string, std::string> p = *it;
 			if(std::find(missing_keys.begin(), missing_keys.end(), p.first) == missing_keys.end()) {
 				if(request.server.m_keys[p.first].compare(request.old_server.m_keys[p.first]) != 0) {
-					modified_server.server.m_keys[p.first] = request.server.m_keys[p.first];
+					modified_server.m_keys[p.first] = request.server.m_keys[p.first];
 				} 
 			}
 			it++;
 		}
 
-		std::vector<std::string>::iterator it3;
 		it2 = request.server.m_player_keys.begin();
 		while(it2 != request.server.m_player_keys.end()) {
 			std::pair<std::string, std::vector<std::string> > p = *it2;
@@ -251,10 +256,10 @@ namespace MM {
 				it3 = p.second.begin();
 				idx = 0;
 				while(it3 != p.second.end()) {
-					if(request.server.m_player_keys[p.first][idx].compare(request.old_server.m_player_keys[idx]) == 0) {
-						modified_server.m_player_keys[p.first][idx].push_back(std::string());
+					if(request.server.m_player_keys[p.first][idx].compare(request.old_server.m_player_keys[p.first][idx]) == 0) {
+						modified_server.m_player_keys[p.first][idx] = (std::string());
 					} else {
-						modified_server.m_player_keys[p.first][idx].push_back(request.server.m_player_keys[idx]);
+						modified_server.m_player_keys[p.first][idx] = (request.server.m_player_keys[p.first][idx]);
 					}
 					idx++;
 					it3++;
@@ -270,10 +275,10 @@ namespace MM {
 				it3 = p.second.begin();
 				idx = 0;
 				while(it3 != p.second.end()) {
-					if(request.server.m_team_keys[p.first][idx].compare(request.old_server.m_team_keys[idx]) == 0) {
-						modified_server.m_team_keys[p.first][idx].push_back(std::string());
+					if(request.server.m_team_keys[p.first][idx].compare(request.old_server.m_team_keys[p.first][idx]) == 0) {
+						modified_server.m_team_keys[p.first][idx] = (std::string());
 					} else {
-						modified_server.m_team_keys[p.first][idx].push_back(request.server.m_team_keys[idx]);
+						modified_server.m_team_keys[p.first][idx] = (request.server.m_team_keys[p.first][idx]);
 					}
 					idx++;
 					it3++;
@@ -282,9 +287,6 @@ namespace MM {
 			it2++;
 		}
 		PushServer(modified_server, false, request.server.id);
-	}
-	void MMPushTask::PerformAddAndUpdateExistingKeys(MMPushTask request) {
-		
 	}
 	void MMPushTask::PerformUpdateServer(MMPushRequest request) {
 		DeleteServer(request.server, false);
@@ -358,8 +360,10 @@ namespace MM {
 			it3 = p.second.begin();
 			while (it3 != p.second.end()) {
 				std::string s = *it3;
-				Redis::Command(mp_redis_connection, 0, "HSET %scustkeys_player_%d %s \"%s\"", server_key.c_str(), i, p.first.c_str(), OS::escapeJSON(s).c_str());
-				Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_player_%d 300", server_key.c_str(), i, p.first.c_str());
+				if(s.length() > 0) {
+					Redis::Command(mp_redis_connection, 0, "HSET %scustkeys_player_%d %s \"%s\"", server_key.c_str(), i, p.first.c_str(), OS::escapeJSON(s).c_str());
+					Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_player_%d 300", server_key.c_str(), i, p.first.c_str());
+				}
 				i++;
 				it3++;
 			}
@@ -375,8 +379,10 @@ namespace MM {
 			while (it3 != p.second.end()) {
 
 				std::string s = *it3;
-				Redis::Command(mp_redis_connection, 0, "HSET %scustkeys_team_%d %s \"%s\"", server_key.c_str(), i, p.first.c_str(), OS::escapeJSON(s).c_str());
-				Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_team_%d 300", server_key.c_str(), i);
+				if(s.length() > 0) {
+					Redis::Command(mp_redis_connection, 0, "HSET %scustkeys_team_%d %s \"%s\"", server_key.c_str(), i, p.first.c_str(), OS::escapeJSON(s).c_str());
+					Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_team_%d 300", server_key.c_str(), i);
+				}
 				i++;
 				it3++;
 			}

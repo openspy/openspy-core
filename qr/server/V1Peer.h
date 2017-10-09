@@ -57,6 +57,7 @@ namespace QR {
 		bool m_pushed_server;
 
 		EV1ClientQueryState m_query_state;
+		MM::ServerInfo m_dirty_server_info;
 	};
 }
 #endif //_V1PEER_H
