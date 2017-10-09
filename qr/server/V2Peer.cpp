@@ -140,9 +140,13 @@ namespace QR {
 		unsigned int i = 0;
 		uint8_t *x;
 
-		std::map<std::string, std::string> server_keys;
-		std::map<std::string, std::vector<std::string> > player_keys;
-		std::map<std::string, std::vector<std::string> > team_keys;
+
+
+		MM::ServerInfo server_info, old_server_info = m_server_info;
+		server_info.m_game = m_game;
+		server_info.m_address = m_address;
+		server_info.id = m_server_info.id;
+		server_info.groupid = m_server_info.groupid;
 
 		std::string key, value;
 
@@ -165,7 +169,7 @@ namespace QR {
 			}
 
 			if(value.length() > 0) {
-				server_keys[key] = value;
+				server_info.m_keys[key] = value;
 				value = std::string();
 			}
 			free((void *)x);
@@ -200,18 +204,18 @@ namespace QR {
 				x = BufferReadNTS((uint8_t **)&buff,&len);
 
 				if(isTeamString(name.c_str())) {
-					if(team_keys[name].size() <= player) {
-						team_keys[name].push_back(std::string((const char *)x));
+					if(server_info.m_team_keys[name].size() <= player) {
+						server_info.m_team_keys[name].push_back(std::string((const char *)x));
 					}
 					else {
-						team_keys[name][player] = std::string((const char *)x);
+						server_info.m_team_keys[name][player] = std::string((const char *)x);
 					}
 					ss << "T(" << player << ") (" << name.c_str() << "," << x << ") ";
 				} else {
-					if(player_keys[name].size() <= player) {
-						player_keys[name].push_back(std::string((const char *)x));
+					if(server_info.m_player_keys[name].size() <= player) {
+						server_info.m_player_keys[name].push_back(std::string((const char *)x));
 					} else {
-						player_keys[name][player] = std::string((const char *)x);
+						server_info.m_player_keys[name][player] = std::string((const char *)x);
 					}
 					ss << "P(" << player << ") (" << name.c_str() << "," << x << " ) ";
 				}
@@ -228,9 +232,7 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
 		ss.str("");
 
-		m_server_info.m_keys = server_keys;
-		m_server_info.m_player_keys = player_keys;
-		m_server_info.m_team_keys 	= team_keys;
+		m_server_info = server_info;
 
 		//register gamename
 		MM::MMPushRequest req;
@@ -242,6 +244,7 @@ namespace QR {
 					return;
 				}
 				req.server = m_server_info;
+				req.old_server = old_server_info;
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_UpdateServer;
 				m_peer_stats.pending_requests++;

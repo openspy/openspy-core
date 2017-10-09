@@ -39,6 +39,7 @@ namespace MM {
 		EMMPushRequestType type;
 		QR::Peer *peer;
 		ServerInfo server;
+		ServerInfo old_server;
 		std::string gamename;
 		void *extra;
 	} MMPushRequest;
@@ -58,6 +59,9 @@ namespace MM {
 			void PerformDeleteServer(MMPushRequest request);
 			void PerformGetGameInfo(MMPushRequest request);
 
+			//server update functions
+			void PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request);
+			
 			int PushServer(ServerInfo server, bool publish, int pk_id = -1);
 			void UpdateServer(ServerInfo server);
 			void DeleteServer(ServerInfo server, bool publish);
