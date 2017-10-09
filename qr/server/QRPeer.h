@@ -13,6 +13,7 @@
 #define REQUEST_KEY_LEN 4
 #define CHALLENGE_LEN 20
 #define KV_MAX_LEN 64
+#define HB_THROTTLE_TIME 10
 namespace QR {
 
 	typedef struct _PeerStats {
@@ -68,7 +69,7 @@ namespace QR {
 
 		struct sockaddr_in m_address_info;
 
-		struct timeval m_last_recv, m_last_ping;
+		struct timeval m_last_recv, m_last_ping, m_last_heartbeat;
 
 		bool m_delete_flag;
 		bool m_timeout_flag;

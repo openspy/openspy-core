@@ -44,6 +44,7 @@ namespace QR {
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
+
 		if (current_time.tv_sec - m_last_recv.tv_sec > QR1_PING_TIME * 2) {
 			Delete();
 			m_timeout_flag = true;
@@ -197,8 +198,15 @@ namespace QR {
 			else {
 				req.type = MM::EMMPushRequestType_UpdateServer;
 			}
-			m_peer_stats.pending_requests++;
-			MM::m_task_pool->AddRequest(req);
+
+			struct timeval current_time;
+			gettimeofday(&current_time, NULL);
+			if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME || req.type == MM::EMMPushRequestType_PushServer) {
+				gettimeofday(&m_last_heartbeat, NULL);
+				m_peer_stats.pending_requests++;
+				MM::m_task_pool->AddRequest(req);
+			}
+
 			m_query_state = EV1_CQS_Complete;
 			return;
 			break;

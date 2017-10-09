@@ -234,6 +234,7 @@ namespace QR {
 
 		m_server_info = server_info;
 
+
 		//register gamename
 		MM::MMPushRequest req;
 		req.peer = this;
@@ -243,12 +244,17 @@ namespace QR {
 					Delete();
 					return;
 				}
-				req.server = m_server_info;
-				req.old_server = old_server_info;
-				req.peer->IncRef();
-				req.type = MM::EMMPushRequestType_UpdateServer;
-				m_peer_stats.pending_requests++;
-				MM::m_task_pool->AddRequest(req);
+				struct timeval current_time;
+				gettimeofday(&current_time, NULL);
+				if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME) {
+					gettimeofday(&m_last_heartbeat, NULL);
+					req.server = m_server_info;
+					req.old_server = old_server_info;
+					req.peer->IncRef();
+					req.type = MM::EMMPushRequestType_UpdateServer;
+					m_peer_stats.pending_requests++;
+					MM::m_task_pool->AddRequest(req);
+				}
 			}
 			else {
 				OnGetGameInfo(m_server_info.m_game, (void *)1);
@@ -303,13 +309,18 @@ namespace QR {
 
 			//TODO: check if changed and only push changes
 			if (m_server_pushed) {
-				MM::MMPushRequest req;
-				req.peer = this;
-				req.server = m_server_info;
-				req.peer->IncRef();
-				req.type = MM::EMMPushRequestType_UpdateServer;
-				m_peer_stats.pending_requests++;
-				MM::m_task_pool->AddRequest(req);
+				struct timeval current_time;
+				gettimeofday(&current_time, NULL);
+				if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME) {
+					gettimeofday(&m_last_heartbeat, NULL);
+					MM::MMPushRequest req;
+					req.peer = this;
+					req.server = m_server_info;
+					req.peer->IncRef();
+					req.type = MM::EMMPushRequestType_UpdateServer;
+					m_peer_stats.pending_requests++;
+					MM::m_task_pool->AddRequest(req);
+				}
 			}
 		}
 		else if(extra == (void *)2) {
