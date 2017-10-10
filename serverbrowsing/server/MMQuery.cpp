@@ -91,7 +91,7 @@ namespace MM {
 		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {
 			m_drivers.push_back(driver);
 		}
-		if (this != mp_async_lookup_task) {
+		if (this != mp_async_lookup_task && mp_async_lookup_task) {
 			mp_async_lookup_task->AddDriver(driver);
 		}
 	}
