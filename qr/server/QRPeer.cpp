@@ -32,7 +32,7 @@ namespace QR {
 		m_peer_stats.from_game.gameid = 0;
 		m_peer_stats.disconnected = false;
 
-		gettimeofday(&m_last_heartbeat, NULL);
+		memset(&m_last_heartbeat,0,sizeof(m_last_heartbeat));
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version: %d",OS::Address(m_address_info).ToString().c_str(), m_version);
 	}

@@ -32,6 +32,7 @@ namespace MM {
 	enum EMMPushRequestType {
 		EMMPushRequestType_PushServer,
 		EMMPushRequestType_UpdateServer,
+		EMMPushRequestType_UpdateServer_NoDiff,
 		EMMPushRequestType_DeleteServer,
 		EMMPushRequestType_GetGameInfoByGameName,
 	};

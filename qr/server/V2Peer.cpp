@@ -118,7 +118,8 @@ namespace QR {
 			if(m_sent_challenge) {
 				MM::MMPushRequest req;
 				req.peer = this;
-				req.server = m_server_info;
+				req.server = m_dirty_server_info;
+				m_server_info = m_dirty_server_info;
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_PushServer;
 				m_server_pushed = true;
@@ -232,21 +233,22 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
 		ss.str("");
 
-		m_server_info = server_info;
-
+		m_dirty_server_info = server_info;
 
 		//register gamename
 		MM::MMPushRequest req;
 		req.peer = this;
 		if (m_server_info.m_game.gameid != 0) {
 			if (m_server_pushed) {
-				if (m_server_info.m_keys.find("statechanged") != m_server_info.m_keys.end() && atoi(m_server_info.m_keys["statechanged"].c_str()) == 2) {
+				if (server_info.m_keys.find("statechanged") != server_info.m_keys.end() && atoi(server_info.m_keys["statechanged"].c_str()) == 2) {
 					Delete();
 					return;
 				}
 				struct timeval current_time;
 				gettimeofday(&current_time, NULL);
 				if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME) {
+
+					m_server_info = server_info;
 					gettimeofday(&m_last_heartbeat, NULL);
 					req.server = m_server_info;
 					req.old_server = old_server_info;
@@ -264,7 +266,7 @@ namespace QR {
 			m_sent_game_query = true;
 			req.peer->IncRef();
 			req.extra = (void *)1;
-			req.gamename = m_server_info.m_keys["gamename"];
+			req.gamename = server_info.m_keys["gamename"];
 			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
 			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
@@ -293,6 +295,7 @@ namespace QR {
 		m_peer_stats.from_game = game_info;
 		if (extra == (void *)1) {
 			m_server_info.m_game = game_info;
+			m_dirty_server_info.m_game = game_info;
 			if (m_server_info.m_game.gameid == 0) {
 				send_error(true, "Game not found");
 				return;
@@ -317,7 +320,7 @@ namespace QR {
 					req.peer = this;
 					req.server = m_server_info;
 					req.peer->IncRef();
-					req.type = MM::EMMPushRequestType_UpdateServer;
+					req.type = MM::EMMPushRequestType_UpdateServer_NoDiff;
 					m_peer_stats.pending_requests++;
 					MM::m_task_pool->AddRequest(req);
 				}

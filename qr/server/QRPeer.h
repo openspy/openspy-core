@@ -79,7 +79,7 @@ namespace QR {
 		bool m_server_pushed;
 		bool m_sent_game_query;
 
-		MM::ServerInfo m_server_info;
+		MM::ServerInfo m_server_info, m_dirty_server_info;
 
 		PeerStats m_peer_stats;
 	};
