@@ -271,7 +271,7 @@ namespace MM {
 			do {
 				s << entry_name << "custkeys_player_" << idx;
 				key = s.str();
-				s.str("");
+
 				reply = Redis::Command(redis_ctx, 0, "EXISTS %s", key.c_str());
 				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
 					break;
@@ -311,6 +311,7 @@ namespace MM {
 							ret->captured_player_fields.push_back(arr.arr_value.values[i].second.value._str);
 						}
 					}
+					s.str("");
 				} while (cursor != 0);
 				idx++;
 			} while (true);
@@ -321,7 +322,6 @@ namespace MM {
 			do {
 				s << entry_name << "custkeys_team_" << idx;
 				key = s.str();
-				s.str("");
 
 				reply = Redis::Command(redis_ctx, 0, "EXISTS %s", key.c_str());
 				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
@@ -368,6 +368,7 @@ namespace MM {
 							}
 						}
 					}
+					s.str("");
 				} while(cursor != 0);
 				idx++;
 			} while(true);

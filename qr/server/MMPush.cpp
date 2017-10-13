@@ -113,9 +113,6 @@ namespace MM {
 				case EMMPushRequestType_UpdateServer:
 					task->PerformDeleteMissingKeysAndUpdateChanged(task_params);
 					break;
-				case EMMPushRequestType_UpdateServer_NoDiff:
-					task->PerformUpdateServer(task_params);
-				break;
 				case EMMPushRequestType_DeleteServer:
 					task->PerformDeleteServer(task_params);
 					break;
@@ -259,7 +256,7 @@ namespace MM {
 				it3 = p.second.begin();
 				idx = 0;
 				while(it3 != p.second.end()) {
-					if(request.old_server.m_player_keys[p.first].size() > idx && request.server.m_player_keys[p.first].size() > idx && request.server.m_player_keys[p.first][idx].compare(request.old_server.m_player_keys[p.first][idx]) == 0) {
+					if(request.old_server.m_player_keys[p.first].size() < idx && request.server.m_player_keys[p.first].size() < idx && request.server.m_player_keys[p.first][idx].compare(request.old_server.m_player_keys[p.first][idx]) == 0) {
 						modified_server.m_player_keys[p.first].push_back(std::string());
 					} else {
 						modified_server.m_player_keys[p.first].push_back(request.server.m_player_keys[p.first][idx]);
@@ -278,7 +275,7 @@ namespace MM {
 				it3 = p.second.begin();
 				idx = 0;
 				while(it3 != p.second.end()) {
-					if(request.old_server.m_player_keys.size() > idx && request.server.m_player_keys.size() > idx && request.server.m_team_keys[p.first][idx].compare(request.old_server.m_team_keys[p.first][idx]) == 0) {
+					if(request.old_server.m_player_keys.size() < idx && request.server.m_player_keys.size() < idx && request.server.m_team_keys[p.first][idx].compare(request.old_server.m_team_keys[p.first][idx]) == 0) {
 						modified_server.m_team_keys[p.first].push_back(std::string());
 					} else {
 						modified_server.m_team_keys[p.first].push_back(request.server.m_team_keys[p.first][idx]);
