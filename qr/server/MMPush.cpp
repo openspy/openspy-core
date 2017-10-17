@@ -262,9 +262,9 @@ namespace MM {
 
 		//create ServerInfo struct with changed keys only
 		ServerInfo modified_server;
-		modified_server.m_game = request.old_server.m_game;
-		modified_server.id = request.old_server.id;
-		modified_server.m_address = request.old_server.m_address;
+		modified_server.m_game = request.server.m_game;
+		modified_server.id = request.server.id;
+		modified_server.m_address = request.server.m_address;
 		it = request.server.m_keys.begin();
 		while(it != request.server.m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;

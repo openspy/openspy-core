@@ -238,7 +238,7 @@ namespace QR {
 		//register gamename
 		MM::MMPushRequest req;
 		req.peer = this;
-		if (m_server_info.m_game.gameid != 0) {
+		if (server_info.m_game.gameid != 0) {
 			if (m_server_pushed) {
 				if (server_info.m_keys.find("statechanged") != server_info.m_keys.end() && atoi(server_info.m_keys["statechanged"].c_str()) == 2) {
 					Delete();
@@ -261,7 +261,7 @@ namespace QR {
 				}
 			}
 			else {
-				OnGetGameInfo(m_server_info.m_game, (void *)1);
+				OnGetGameInfo(server_info.m_game, (void *)1);
 			}
 		}
 		else if(!m_sent_game_query){
@@ -321,6 +321,7 @@ namespace QR {
 					gettimeofday(&m_last_heartbeat, NULL);
 					MM::MMPushRequest req;
 					req.peer = this;
+					m_dirty_server_info = m_server_info;
 					req.server = m_server_info;
 					req.peer->IncRef();
 					req.type = MM::EMMPushRequestType_UpdateServer_NoDiff;
