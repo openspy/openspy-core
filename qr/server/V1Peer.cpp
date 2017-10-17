@@ -40,6 +40,7 @@ namespace QR {
 
 	void V1Peer::think(bool listener_waiting) {
 		send_ping();
+		SubmitDirtyServer();
 
 		//check for timeout
 		struct timeval current_time;
@@ -185,12 +186,6 @@ namespace QR {
 		case EV1_CQS_Players:
 			parse_players(recvbuf, len);
 			MM::MMPushRequest req;
-			req.peer = this;
-			req.server = m_dirty_server_info;
-			req.old_server = m_server_info;
-			m_server_info = m_dirty_server_info;
-
-			req.peer->IncRef();
 			if (!m_pushed_server) {
 				m_pushed_server = true;
 				req.type = MM::EMMPushRequestType_PushServer;
@@ -202,9 +197,19 @@ namespace QR {
 			struct timeval current_time;
 			gettimeofday(&current_time, NULL);
 			if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME || req.type == MM::EMMPushRequestType_PushServer) {
+				req.peer = this;
+				req.server = m_dirty_server_info;
+				req.old_server = m_server_info;
+				m_server_info = m_dirty_server_info;
+
+				req.peer->IncRef();
+
+				m_server_info_dirty = false;
 				gettimeofday(&m_last_heartbeat, NULL);
 				m_peer_stats.pending_requests++;
 				MM::m_task_pool->AddRequest(req);
+			} else {
+				m_server_info_dirty = true;
 			}
 
 			m_query_state = EV1_CQS_Complete;

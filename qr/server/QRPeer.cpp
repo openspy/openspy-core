@@ -32,6 +32,8 @@ namespace QR {
 		m_peer_stats.from_game.gameid = 0;
 		m_peer_stats.disconnected = false;
 
+		m_server_info_dirty = false;
+
 		memset(&m_last_heartbeat,0,sizeof(m_last_heartbeat));
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version: %d",OS::Address(m_address_info).ToString().c_str(), m_version);
@@ -111,5 +113,22 @@ namespace QR {
 		ResetMetrics();
 
 		return peer_metric;
+	}
+	void Peer::SubmitDirtyServer() {
+		if(!m_server_info_dirty)
+			return;
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME) {
+			MM::MMPushRequest req;
+			m_server_info = m_dirty_server_info;
+			m_server_info_dirty = false;
+			req.peer = this;
+			req.server = m_server_info;
+			req.peer->IncRef();
+			req.type = MM::EMMPushRequestType_UpdateServer;
+			m_peer_stats.pending_requests++;
+			MM::m_task_pool->AddRequest(req);
+		}
 	}
 }

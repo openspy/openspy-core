@@ -60,6 +60,9 @@ namespace QR {
 		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
 		OS::MetricInstance GetMetrics();
 		PeerStats GetPeerStats() { if(m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
+
+		bool ServerDirty() { return m_server_info_dirty; };
+		void SubmitDirtyServer();
 	protected:
 		void ResetMetrics();
 
@@ -80,6 +83,7 @@ namespace QR {
 		bool m_sent_game_query;
 
 		MM::ServerInfo m_server_info, m_dirty_server_info;
+		bool m_server_info_dirty;
 
 		PeerStats m_peer_stats;
 	};

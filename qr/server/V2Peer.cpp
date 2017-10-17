@@ -247,7 +247,7 @@ namespace QR {
 				struct timeval current_time;
 				gettimeofday(&current_time, NULL);
 				if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME) {
-
+					m_server_info_dirty = false;
 					m_server_info = server_info;
 					gettimeofday(&m_last_heartbeat, NULL);
 					req.server = m_server_info;
@@ -256,6 +256,8 @@ namespace QR {
 					req.type = MM::EMMPushRequestType_UpdateServer;
 					m_peer_stats.pending_requests++;
 					MM::m_task_pool->AddRequest(req);
+				} else {
+					m_server_info_dirty = true;
 				}
 			}
 			else {
@@ -315,6 +317,7 @@ namespace QR {
 				struct timeval current_time;
 				gettimeofday(&current_time, NULL);
 				if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME) {
+					m_server_info_dirty = false;
 					gettimeofday(&m_last_heartbeat, NULL);
 					MM::MMPushRequest req;
 					req.peer = this;
@@ -374,6 +377,7 @@ namespace QR {
 	}
 	void V2Peer::think(bool listener_waiting) {
 		send_ping();
+		SubmitDirtyServer();
 
 		//check for timeout
 		struct timeval current_time;
