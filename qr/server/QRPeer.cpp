@@ -121,9 +121,11 @@ namespace QR {
 		gettimeofday(&current_time, NULL);
 		if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME) {
 			MM::MMPushRequest req;
+			req.old_server = m_server_info;
 			m_server_info = m_dirty_server_info;
 			m_server_info_dirty = false;
 			req.peer = this;
+
 			req.server = m_server_info;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_UpdateServer;
