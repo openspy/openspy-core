@@ -171,7 +171,7 @@ namespace MM {
 
 		
 		std::ostringstream ss;
-		ss << request.old_server.m_game.gamename << ":" << request.old_server.groupid << ":" << request.old_server.id << ":";
+		ss << request.server.m_game.gamename << ":" << request.server.groupid << ":" << request.server.id << ":";
 		std::string server_key = ss.str();
 
 
