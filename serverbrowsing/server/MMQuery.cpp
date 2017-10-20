@@ -814,10 +814,6 @@ namespace MM {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
 		while(task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
-			if (task->m_request_list.empty()) {
-				task->mp_mutex->unlock();
-				continue;
-			}
 			while (!task->m_request_list.empty()) {
 				MMQueryRequest task_params = task->m_request_list.front();
 				task->mp_mutex->unlock();
