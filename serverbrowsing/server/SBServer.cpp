@@ -31,6 +31,7 @@ void SBServer::shutdown() {
 
 }
 void SBServer::SetTaskPool(OS::TaskPool<MM::MMQueryTask, MM::MMQueryRequest> *pool) {
+	mp_task_pool = pool;
 	const std::vector<MM::MMQueryTask *> task_list = pool->getTasks();
 	std::vector<MM::MMQueryTask *>::const_iterator it = task_list.begin();
 	while (it != task_list.end()) {
@@ -64,4 +65,22 @@ OS::MetricInstance SBServer::GetMetrics() {
 	container_val.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, arr_value));
 	peer_metric.value = container_val;
 	return peer_metric;
+}
+
+void SBServer::debug_dump() {
+	std::vector<INetDriver *>::iterator it2 = m_net_drivers.begin();
+	while (it2 != m_net_drivers.end()) {
+		SB::Driver *driver = (SB::Driver *)*it2;
+		driver->debug_dump();
+		it2++;
+	}
+
+	printf("Task Pool: \n");
+	std::vector<MM::MMQueryTask *> task_list = mp_task_pool->getTasks();
+	std::vector<MM::MMQueryTask *>::const_iterator it = task_list.begin();
+	while (it != task_list.end()) {
+		MM::MMQueryTask *task = *it;
+		task->debug_dump();
+		it++;
+	}
 }

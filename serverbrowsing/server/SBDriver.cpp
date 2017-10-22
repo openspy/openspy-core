@@ -291,4 +291,15 @@ namespace SB {
 		mp_mutex->unlock();
 		return peer_metric;
 	}
+	void Driver::debug_dump() {
+		printf("Driver: %p\n", this);
+		printf("Peers: \n");
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			INetPeer * peer = (INetPeer *)*it;
+			OS::Address address = *peer->getAddress();
+			printf("[%s]\n",address.ToString(false).c_str());
+			it++;
+		}
+	}
 }

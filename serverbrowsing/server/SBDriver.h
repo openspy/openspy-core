@@ -49,6 +49,7 @@ namespace SB {
 		void AddUpdateServer(MM::Server serv);
 
 		OS::MetricInstance GetMetrics();
+		void debug_dump();
 	private:
 
 		void TickConnections();

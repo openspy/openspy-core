@@ -103,6 +103,7 @@ namespace MM {
 	}
 	MMQueryTask::MMQueryTask() {
 		m_redis_timeout = 60;
+		m_thread_awake = false;
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -110,6 +111,7 @@ namespace MM {
 
 		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
 
+		mp_timer = OS::HiResTimer::makeTimer();
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(MMQueryTask::TaskThread, this, true);
 
@@ -814,9 +816,11 @@ namespace MM {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
 		while(task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
+			task->m_thread_awake = true;
 			while (!task->m_request_list.empty()) {
 				MMQueryRequest task_params = task->m_request_list.front();
 				task->mp_mutex->unlock();
+				task->mp_timer->start();
 				switch (task_params.type) {
 				case EMMQueryRequestType_GetServers:
 					task->PerformServersQuery(task_params);
@@ -840,14 +844,23 @@ namespace MM {
 					task->PerformGetGameInfoPairByGameName(task_params);
 					break;
 				}
-
+				task->mp_timer->stop();
+				if(task_params.peer) {
+					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", OS::Address(*task_params.peer->getAddress()).ToString().c_str(), task_params.type, task->mp_timer->time_elapsed()  / 1000000.0);	
+				}
+				
 				task->mp_mutex->lock();
 				task_params.peer->DecRef();
 				task->m_request_list.pop();
 			}
-
+			task->m_thread_awake = false;
 			task->mp_mutex->unlock();
 		}
 		return NULL;
+	}
+	void MMQueryTask::debug_dump() {
+		mp_mutex->lock();
+		printf("Task [%p] awake: %d, num_tasks: %d\n", this, m_thread_awake, m_request_list.size());
+		mp_mutex->unlock();
 	}
 }

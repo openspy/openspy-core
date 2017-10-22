@@ -12,6 +12,8 @@
 #include <map>
 #include <string>
 
+#include <OS/Timer/HiResTimer.h>
+
 class SBServer;
 namespace SB {
 	class Driver;
@@ -132,6 +134,8 @@ namespace MM {
 			void RemoveDriver(SB::Driver *driver);
 
 			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
+
+			void debug_dump();
 		private:
 			
 			static void *TaskThread(OS::CThread *thread);
@@ -160,6 +164,8 @@ namespace MM {
 			std::vector<SB::Driver *> m_drivers;
 			Redis::Connection *mp_redis_connection;
 			time_t m_redis_timeout;
+			bool m_thread_awake;
+			OS::HiResTimer *mp_timer;
 	};
 
 	#define NUM_MM_QUERY_THREADS 8

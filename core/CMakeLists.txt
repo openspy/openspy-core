@@ -18,9 +18,11 @@ file (GLOB LOGGER_SRCS "OS/Logger/*.cpp")
 file (GLOB LOGGER_HDRS "OS/Logger/*.h")
 file (GLOB ANALYTICS_SRCS "OS/Analytics/*.cpp")
 file (GLOB ANALYTICS_HDRS "OS/Analytics/*.h")
+file (GLOB TIMER_SRCS "OS/Timer/*.cpp")
+file (GLOB TIMER_HDRS "OS/Timer/*.h")
 
 
-set (ALL_SRCS ${SOCKET_SRCS} ${SOCKET_HDRS} ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${ANALYTICS_SRCS} ${ANALYTICS_HDRS})
+set (ALL_SRCS ${SOCKET_SRCS} ${SOCKET_HDRS} ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${ANALYTICS_SRCS} ${ANALYTICS_HDRS} ${TIMER_SRCS} ${TIMER_HDRS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -71,8 +73,13 @@ ELSE() #unix
 	file(GLOB PLAT_LOGGER_HDRS "OS/Logger/Unix/*.h")	
 	source_group("Headers\\OS\\Logger\\Unix\\" FILES ${PLAT_LOGGER_HDRS})
 
+	file(GLOB PLAT_TIMER_SRCS "OS/Timer/Unix/*.cpp")
+	source_group("Sources\\OS\\Timer\\Unix\\" FILES ${PLAT_TIMER_SRCS})
 
-	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS})
+	file(GLOB PLAT_TIMER_HDRS "OS/Timer/Unix/*.h")	
+	source_group("Headers\\OS\\Timer\\Unix\\" FILES ${PLAT_TIMER_HDRS})
+
+	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
 	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
 	target_link_libraries(openspy hiredis event pthread ssl crypto curl jwt jansson)
 ENDIF()

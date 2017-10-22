@@ -421,8 +421,11 @@ namespace SB {
 		m_peer_stats.bytes_out += out_len;
 		m_peer_stats.packets_out++;
 
-		if(send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL) < 0)
+		int c = 0;
+		if((c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL)) < 0) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d", OS::Address(m_address_info).ToString().c_str(),c);
 			m_delete_flag = true;
+		}
 	}
 	uint8_t *V2Peer::ProcessListRequest(uint8_t *buffer, int remain) {
 		MM::MMQueryRequest req;
@@ -548,7 +551,6 @@ namespace SB {
 		if (waiting_packet) {
 			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
 			if (Socket::wouldBlock()) {
-				printf("V2 would block\n");
 				return;
 			}
 			if (len <= 0) {

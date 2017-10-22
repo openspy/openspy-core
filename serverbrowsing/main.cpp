@@ -16,10 +16,17 @@ void on_exit(void) {
     shutdown();
 }
 
-
+void debug_dump() {
+    ((SBServer *)g_gameserver)->debug_dump();
+}
 void sig_handler(int signo)
 {
-    shutdown();
+    if(signo == SIGTERM) {
+        shutdown();    
+    } else if(signo == SIGINT) {
+        debug_dump();
+    }
+    
 }
 
 
