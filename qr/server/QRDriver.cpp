@@ -44,9 +44,9 @@ namespace QR {
 		}
 	}
 	void Driver::think(bool listener_waiting) {
-		mp_mutex->lock();
+		
 		TickConnections();
-
+		mp_mutex->lock();
 		if (listener_waiting) {
 			char recvbuf[MAX_DATA_SIZE + 1];
 

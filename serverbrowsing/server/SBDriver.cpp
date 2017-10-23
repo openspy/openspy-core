@@ -79,6 +79,7 @@ namespace SB {
 			m_server->RegisterSocket(mp_peer);
 		}
 		else {
+			mp_mutex->lock();
 			std::vector<Peer *>::iterator it = m_connections.begin();
 			while (it != m_connections.end()) {
 				Peer *peer = *it;
@@ -108,36 +109,24 @@ namespace SB {
 			}
 
 			MM::Server serv;
-			mp_mutex->lock();
 			while (!m_server_delete_queue.empty()) {
 				serv = m_server_delete_queue.front();
 				m_server_delete_queue.pop();
-				mp_mutex->unlock();
 				SendDeleteServer(&serv);
-				mp_mutex->lock();
 			}
-			mp_mutex->unlock();
 
 			while (!m_server_new_queue.empty()) {
 				serv = m_server_new_queue.front();
 				m_server_new_queue.pop();
-				mp_mutex->unlock();
 				SendNewServer(&serv);
-				mp_mutex->lock();
 			}
-			mp_mutex->unlock();
-
-			mp_mutex->lock();
 			while (!m_server_update_queue.empty()) {
 				serv = m_server_update_queue.front();
 				m_server_update_queue.pop();
-				mp_mutex->unlock();
 				SendUpdateServer(&serv);
-				mp_mutex->lock();
 			}
 			mp_mutex->unlock();
 		}
-
 		TickConnections();
 	}
 
