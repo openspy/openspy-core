@@ -18,6 +18,7 @@
 #endif
 
 #define SB_PING_TIME 30
+#define DRIVER_THREAD_TIME 1000
 
 namespace SB {
 	class Peer;
@@ -51,7 +52,7 @@ namespace SB {
 		OS::MetricInstance GetMetrics();
 		void debug_dump();
 	private:
-
+		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
 
 		int m_sd;
@@ -74,6 +75,7 @@ namespace SB {
 		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 		
 		OS::CMutex *mp_mutex;
+		OS::CThread *mp_thread;
 
 	};
 

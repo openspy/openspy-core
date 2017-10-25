@@ -42,12 +42,14 @@
 
 
 		//force peer think false for ping logic, etc
+		/* Moved to seperate thread within driver
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while(it != m_net_drivers.end()) {
 			INetDriver *driver = *it;
 			driver->think(false);
 			it++;
 		}
+		*/
 	}
 	void EPollNetEventManager::RegisterSocket(INetPeer *peer) {
 		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {

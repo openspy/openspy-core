@@ -18,6 +18,7 @@
 #endif
 
 #define MAX_DATA_SIZE 1400
+#define DRIVER_THREAD_TIME 1000
 namespace QR {
 	class Peer;
 	typedef struct _PeerStats PeerStats;
@@ -42,7 +43,7 @@ namespace QR {
 		const std::vector<INetPeer *> getPeers();
 		OS::MetricInstance GetMetrics();
 	private:
-
+		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
 
 		int m_sd;
@@ -57,6 +58,7 @@ namespace QR {
 		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		OS::CMutex *mp_mutex;
+		OS::CThread *mp_thread;
 
 	};
 }

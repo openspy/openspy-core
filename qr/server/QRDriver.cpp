@@ -32,6 +32,7 @@ namespace QR {
 		gettimeofday(&m_server_start, NULL);
 
 		mp_mutex = OS::CreateMutex();
+		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
 
 	}
 	Driver::~Driver() {
@@ -41,6 +42,44 @@ namespace QR {
 			m_server->UnregisterSocket(peer);
 			delete peer;
 			it++;
+		}
+		delete mp_thread;
+		delete mp_mutex;
+	}
+	void *Driver::TaskThread(OS::CThread *thread) {
+		Driver *driver = (Driver *)thread->getParams();
+		for(;;) {
+			driver->TickConnections();
+			driver->mp_mutex->lock();
+			std::vector<Peer *>::iterator it = driver->m_connections.begin();
+			while (it != driver->m_connections.end()) {
+				Peer *peer = *it;
+				if (peer->ShouldDelete() && std::find(driver->m_peers_to_delete.begin(), driver->m_peers_to_delete.end(), peer) == driver->m_peers_to_delete.end()) {
+					//marked for delection, dec reference and delete when zero
+					it = driver->m_connections.erase(it);
+					peer->DecRef();
+					driver->m_peers_to_delete.push_back(peer);
+
+					driver->m_stats_queue.push(peer->GetPeerStats());
+
+					driver->m_server->UnregisterSocket(peer);
+					continue;
+				}
+				it++;
+			}
+
+			it = driver->m_peers_to_delete.begin();
+			while (it != driver->m_peers_to_delete.end()) {
+				QR::Peer *p = *it;
+				if (p->GetRefCount() == 0) {
+					delete p;
+					it = driver->m_peers_to_delete.erase(it);
+					continue;
+				}
+				it++;
+			}
+			driver->mp_mutex->unlock();
+			OS::Sleep(DRIVER_THREAD_TIME);
 		}
 	}
 	void Driver::think(bool listener_waiting) {
@@ -71,33 +110,6 @@ namespace QR {
 					peer->SetDelete(true);
 				}
 			}
-		}
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			if (peer->ShouldDelete() && std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
-				//marked for delection, dec reference and delete when zero
-				it = m_connections.erase(it);
-				peer->DecRef();
-				m_peers_to_delete.push_back(peer);
-
-				m_stats_queue.push(peer->GetPeerStats());
-
-				m_server->UnregisterSocket(peer);
-				continue;
-			}
-			it++;
-		}
-
-		it = m_peers_to_delete.begin();
-		while (it != m_peers_to_delete.end()) {
-			QR::Peer *p = *it;
-			if (p->GetRefCount() == 0) {
-				delete p;
-				it = m_peers_to_delete.erase(it);
-				continue;
-			}
-			it++;
 		}
 		mp_mutex->unlock();
 	}

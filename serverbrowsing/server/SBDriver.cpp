@@ -42,6 +42,7 @@ namespace SB {
 		m_version = version;
 
 		mp_mutex = OS::CreateMutex();
+		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
 
 		makeNonBlocking(m_sd);
 
@@ -55,8 +56,62 @@ namespace SB {
 			delete peer;
 			it++;
 		}
-
+		delete mp_thread;
 		delete mp_mutex;
+	}
+	void *Driver::TaskThread(OS::CThread *thread) {
+		Driver *driver = (Driver *)thread->getParams();
+		for(;;) {
+			driver->mp_mutex->lock();
+			std::vector<Peer *>::iterator it = driver->m_connections.begin();
+			while (it != driver->m_connections.end()) {
+				Peer *peer = *it;
+				if (peer->ShouldDelete() && std::find(driver->m_peers_to_delete.begin(), driver->m_peers_to_delete.end(), peer) == driver->m_peers_to_delete.end()) {
+					//marked for delection, dec reference and delete when zero
+					it = driver->m_connections.erase(it);
+					peer->DecRef();
+
+					driver->m_server->UnregisterSocket(peer);
+
+					driver->m_stats_queue.push(peer->GetPeerStats());
+					driver->m_peers_to_delete.push_back(peer);
+					continue;
+				}
+				it++;
+			}
+
+			it = driver->m_peers_to_delete.begin();
+			while (it != driver->m_peers_to_delete.end()) {
+				SB::Peer *p = *it;
+				if (p->GetRefCount() == 0) {
+					delete p;
+					it = driver->m_peers_to_delete.erase(it);
+					continue;
+				}
+				it++;
+			}
+
+			MM::Server serv;
+			while (!driver->m_server_delete_queue.empty()) {
+				serv = driver->m_server_delete_queue.front();
+				driver->m_server_delete_queue.pop();
+				driver->SendDeleteServer(&serv);
+			}
+
+			while (!driver->m_server_new_queue.empty()) {
+				serv = driver->m_server_new_queue.front();
+				driver->m_server_new_queue.pop();
+				driver->SendNewServer(&serv);
+			}
+			while (!driver->m_server_update_queue.empty()) {
+				serv = driver->m_server_update_queue.front();
+				driver->m_server_update_queue.pop();
+				driver->SendUpdateServer(&serv);
+			}
+			driver->TickConnections();
+			driver->mp_mutex->unlock();
+			OS::Sleep(DRIVER_THREAD_TIME);
+		}
 	}
 	void Driver::think(bool listen_waiting) {
 		if (listen_waiting) {
@@ -75,59 +130,12 @@ namespace SB {
 			}
 
 			makeNonBlocking(mp_peer);
+
+			mp_mutex->lock();
 			m_connections.push_back(mp_peer);
 			m_server->RegisterSocket(mp_peer);
-		}
-		else {
-			mp_mutex->lock();
-			std::vector<Peer *>::iterator it = m_connections.begin();
-			while (it != m_connections.end()) {
-				Peer *peer = *it;
-				if (peer->ShouldDelete() && std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
-					//marked for delection, dec reference and delete when zero
-					it = m_connections.erase(it);
-					peer->DecRef();
-
-					m_server->UnregisterSocket(peer);
-
-					m_stats_queue.push(peer->GetPeerStats());
-					m_peers_to_delete.push_back(peer);
-					continue;
-				}
-				it++;
-			}
-
-			it = m_peers_to_delete.begin();
-			while (it != m_peers_to_delete.end()) {
-				SB::Peer *p = *it;
-				if (p->GetRefCount() == 0) {
-					delete p;
-					it = m_peers_to_delete.erase(it);
-					continue;
-				}
-				it++;
-			}
-
-			MM::Server serv;
-			while (!m_server_delete_queue.empty()) {
-				serv = m_server_delete_queue.front();
-				m_server_delete_queue.pop();
-				SendDeleteServer(&serv);
-			}
-
-			while (!m_server_new_queue.empty()) {
-				serv = m_server_new_queue.front();
-				m_server_new_queue.pop();
-				SendNewServer(&serv);
-			}
-			while (!m_server_update_queue.empty()) {
-				serv = m_server_update_queue.front();
-				m_server_update_queue.pop();
-				SendUpdateServer(&serv);
-			}
 			mp_mutex->unlock();
 		}
-		TickConnections();
 	}
 
 	Peer *Driver::find_client(struct sockaddr_in *address) {
