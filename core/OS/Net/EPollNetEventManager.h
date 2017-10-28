@@ -6,8 +6,8 @@
 		#include "NetEventManager.h"
 		#include <vector>
 		#include <map>
-		#define MAX_EPOLL_EVENTS 256
-		#define EPOLL_TIMEOUT 1000
+		#define MAX_EPOLL_EVENTS 4096
+		#define EPOLL_TIMEOUT 200
 
 		typedef struct {
 			bool is_peer;

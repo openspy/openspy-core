@@ -32,7 +32,9 @@ void SelectNetEventManager::run() {
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 	while(it != m_net_drivers.end()) {
 		INetDriver *driver = *it;
-		driver->think(FD_ISSET(driver->getListenerSocket(), &m_fdset));
+		if(FD_ISSET(driver->getListenerSocket(), &m_fdset)) {
+			driver->think(true);
+		}
 
 		std::vector<INetPeer *> net_peers = driver->getPeers();
 		std::vector<INetPeer *>::iterator it2 = net_peers.begin();

@@ -7,7 +7,6 @@
 
 namespace SB {
 	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version) : INetPeer(driver, address_info, sd) {
-
 		mp_driver = driver;
 		m_address_info = *address_info;
 		m_delete_flag = false;

@@ -24,6 +24,12 @@ namespace SB {
 			< 0) {
 			//signal error
 		}
+		#if SO_REUSEPORT
+		if (Socket::setsockopt(m_sd, SOL_SOCKET, SO_REUSEPORT, (char *)&on, sizeof(on))
+			< 0) {
+			//signal error
+		}
+		#endif
 
 		m_local_addr.sin_port = Socket::htons(port);
 		m_local_addr.sin_addr.s_addr = Socket::htonl(bind_ip);
@@ -115,26 +121,29 @@ namespace SB {
 	}
 	void Driver::think(bool listen_waiting) {
 		if (listen_waiting) {
-			socklen_t psz = sizeof(struct sockaddr_in);
-			struct sockaddr_in peer;
-			int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
-			if (sda <= 0) return;
-			Peer *mp_peer = NULL;
-			switch (m_version) {
-			case 1:
-				mp_peer = new V1Peer(this, &peer, sda);
-				break;
-			case 2:
-				mp_peer = new V2Peer(this, &peer, sda);
-				break;
+			while(true) {
+				socklen_t psz = sizeof(struct sockaddr_in);
+				struct sockaddr_in peer;
+				int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
+				if (sda <= 0) return;
+				Peer *mp_peer = NULL;
+				switch (m_version) {
+				case 1:
+					mp_peer = new V1Peer(this, &peer, sda);
+					break;
+				case 2:
+					mp_peer = new V2Peer(this, &peer, sda);
+					break;
+				}
+
+				makeNonBlocking(mp_peer);
+
+				mp_mutex->lock();
+				m_connections.push_back(mp_peer);
+				m_server->RegisterSocket(mp_peer);
+				mp_mutex->unlock();
+				//mp_peer->think(true);
 			}
-
-			makeNonBlocking(mp_peer);
-
-			mp_mutex->lock();
-			m_connections.push_back(mp_peer);
-			m_server->RegisterSocket(mp_peer);
-			mp_mutex->unlock();
 		}
 	}
 
@@ -240,12 +249,14 @@ namespace SB {
 		mp_mutex->unlock();
 	}
 	const std::vector<INetPeer *> Driver::getPeers() {
+		mp_mutex->lock();
 		std::vector<INetPeer *> peers;
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			peers.push_back((INetPeer *)*it);
 			it++;
 		}
+		mp_mutex->unlock();
 		return peers;
 	}
 
@@ -292,11 +303,14 @@ namespace SB {
 		printf("Driver: %p\n", this);
 		printf("Peers: \n");
 		std::vector<Peer *>::iterator it = m_connections.begin();
+		int i = 0;
 		while (it != m_connections.end()) {
 			INetPeer * peer = (INetPeer *)*it;
 			OS::Address address = *peer->getAddress();
 			printf("[%s]\n",address.ToString(false).c_str());
+			i++;
 			it++;
 		}
+		printf("Peer Count: %d\n", i);
 	}
 }

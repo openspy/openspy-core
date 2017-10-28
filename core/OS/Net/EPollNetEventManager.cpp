@@ -41,15 +41,15 @@
 		}
 
 
-		//force peer think false for ping logic, etc
-		/* Moved to seperate thread within driver
-		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
-		while(it != m_net_drivers.end()) {
-			INetDriver *driver = *it;
-			driver->think(false);
-			it++;
+		//force TCP accept, incase of high connection load, will not block due to non-blocking sockets
+		if(nr_events == 0) {
+			std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
+			while(it != m_net_drivers.end()) {
+				INetDriver *driver = *it;
+				driver->think(true);
+				it++;
+			}
 		}
-		*/
 	}
 	void EPollNetEventManager::RegisterSocket(INetPeer *peer) {
 		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {
@@ -80,7 +80,6 @@
 	}
 
 	void EPollNetEventManager::setupDrivers() {
-		EPollDataInfo *data_info;
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while(it != m_net_drivers.end()) {
 			INetDriver *driver = *it;

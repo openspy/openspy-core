@@ -6,7 +6,7 @@
 class INetPeer : public OS::Ref {
 	public:
 		INetPeer(INetDriver *driver, struct sockaddr_in *address_info, int sd) : OS::Ref() { mp_driver = driver; m_address_info = *address_info; m_sd = sd; };
-		~INetPeer() { if (m_sd != mp_driver->getListenerSocket()) { close(m_sd); } }
+		virtual ~INetPeer() { if (m_sd != mp_driver->getListenerSocket()) { close(m_sd); } }
 
 		virtual void think(bool packet_waiting) = 0;
 		const struct sockaddr_in *getAddress() { return &m_address_info; }

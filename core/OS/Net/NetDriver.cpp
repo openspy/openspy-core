@@ -4,6 +4,10 @@
 #ifndef _WIN32
 #include <sys/ioctl.h>
 #endif
+
+ #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 INetDriver::INetDriver(INetServer *server) {
 	m_server = server;
 
@@ -20,7 +24,8 @@ void INetDriver::makeNonBlocking(int sd) {
 	/* Fixme: O_NONBLOCK is defined but broken on SunOS 4.1.x and AIX 3.2.5. */
 	if (-1 == (mode = fcntl(sd, F_GETFL, 0)))
 		mode = 0;
-	fcntl(sd, F_SETFL, flags | O_NONBLOCK);
+	mode |= O_NONBLOCK;
+	fcntl(sd, F_SETFL, mode);
 	#else
 	/* Otherwise, use the old way of doing it */
 	ioctl(sd, FIONBIO, &mode);
