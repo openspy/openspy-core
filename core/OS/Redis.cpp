@@ -57,7 +57,7 @@ namespace Redis {
 		uint32_t ip = resolv(address);
 
 		ret->sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		setsockopt(ret->sd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+		//setsockopt(ret->sd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
 
 		sockaddr_in addr;
 		memset(&addr, 0, sizeof(addr));
