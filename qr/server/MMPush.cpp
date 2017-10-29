@@ -10,6 +10,8 @@
 #include <sstream>
 #include <algorithm>
 
+#define MM_PUSH_EXPIRE_TIME 1800
+
 namespace MM {
 	const char *sb_mm_channel = "serverbrowsing.servers";
 	OS::TaskPool<MMPushTask, MMPushRequest> *m_task_pool = NULL;
@@ -359,7 +361,7 @@ namespace MM {
 
 
 		Redis::Command(mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), server.m_address.port, server_key.c_str());
-		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d 300", ipinput.c_str(), server.m_address.port);
+		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d %d", ipinput.c_str(), server.m_address.port, MM_PUSH_EXPIRE_TIME);
 
 
 		if(pk_id == -1) {
@@ -371,7 +373,7 @@ namespace MM {
 		Redis::Command(mp_redis_connection, 0, "INCR %s num_beats", server_key.c_str());
 
 
-		Redis::Command(mp_redis_connection, 0, "EXPIRE %s 300", server_key.c_str());
+		Redis::Command(mp_redis_connection, 0, "EXPIRE %s %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME);
 
 		std::map<std::string, std::string>::iterator it = server.m_keys.begin();
 		while (it != server.m_keys.end()) {
@@ -379,7 +381,7 @@ namespace MM {
 			Redis::Command(mp_redis_connection, 0, "HSET %scustkeys %s \"%s\"", server_key.c_str(), p.first.c_str(), OS::escapeJSON(p.second).c_str());
 			it++;
 		}
-		Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys 300", server_key.c_str());
+		Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME);
 
 		std::map<std::string, std::vector<std::string> >::iterator it2 = server.m_player_keys.begin();
 
@@ -403,7 +405,7 @@ namespace MM {
 		}
 
 		for(i=0;i<max_idx;i++) {
-			Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_player_%d 300", server_key.c_str(), i);
+			Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_player_%d %d", server_key.c_str(), i, MM_PUSH_EXPIRE_TIME);
 		}
 		i=0;
 
@@ -426,7 +428,7 @@ namespace MM {
 			it2++;
 		}
 		for(i=0;i<max_idx;i++) {
-			Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_team_%d 300", server_key.c_str(), i);
+			Redis::Command(mp_redis_connection, 0, "EXPIRE %scustkeys_team_%d %d", server_key.c_str(), i, MM_PUSH_EXPIRE_TIME);
 		}
 		i=0;
 
@@ -450,7 +452,7 @@ namespace MM {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		if (publish) {
 			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server.m_game.gamename, server.groupid, server.id);
-			Redis::Command(mp_redis_connection, 0, "EXPIRE %s:%d:%d: 300", server.m_game.gamename, server.groupid, server.id);
+			Redis::Command(mp_redis_connection, 0, "EXPIRE %s:%d:%d: %d", server.m_game.gamename, server.groupid, server.id, MM_PUSH_EXPIRE_TIME);
 			Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\del\\%s:%d:%d:", sb_mm_channel, server.m_game.gamename, groupid, id);
 		}
 		else {
