@@ -161,4 +161,14 @@ namespace NN {
 		req.peer = this;
 		NN::m_task_pool->AddRequest(req);
 	}
+	OS::MetricInstance Peer::GetMetrics() {
+		OS::MetricInstance peer_metric;
+
+		//peer_metric.value = GetMetricItemFromStats(m_peer_stats);
+		//peer_metric.key = "peer";
+
+		//ResetMetrics();
+
+		return peer_metric;
+	}
 }

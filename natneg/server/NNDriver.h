@@ -37,7 +37,7 @@ namespace NN {
 
 		const std::vector<INetPeer *> getPeers();
 		const std::vector<int> getSockets();
-
+		OS::MetricInstance GetMetrics();
 	private:
 
 		void TickConnections();

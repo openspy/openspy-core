@@ -29,6 +29,7 @@ namespace NN {
 		uint8_t GetClientIndex() { return m_client_index; }
 
 		void OnGotPeerAddress(OS::Address address);
+		OS::MetricInstance GetMetrics();
 	protected:
 
 		void SendConnectPacket(OS::Address address);

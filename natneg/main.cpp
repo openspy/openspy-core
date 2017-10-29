@@ -30,7 +30,7 @@ int main() {
        exit(EXIT_FAILURE);
     }
 
-    OS::Init("natneg",0);
+    OS::Init("natneg",0, "chc");
     Socket::Init();
 
 	#ifndef _WIN32
