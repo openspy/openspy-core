@@ -49,8 +49,8 @@ namespace QR {
 	void *Driver::TaskThread(OS::CThread *thread) {
 		Driver *driver = (Driver *)thread->getParams();
 		for(;;) {
-			driver->TickConnections();
 			driver->mp_mutex->lock();
+			driver->TickConnections();
 			std::vector<Peer *>::iterator it = driver->m_connections.begin();
 			while (it != driver->m_connections.end()) {
 				Peer *peer = *it;
@@ -83,9 +83,8 @@ namespace QR {
 		}
 	}
 	void Driver::think(bool listener_waiting) {
-		
-		TickConnections();
 		mp_mutex->lock();
+		TickConnections();
 		if (listener_waiting) {
 			char recvbuf[MAX_DATA_SIZE + 1];
 
@@ -178,12 +177,14 @@ namespace QR {
 	}
 	const std::vector<INetPeer *> Driver::getPeers() {
 		std::vector<INetPeer *> peers;
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			INetPeer *p = (INetPeer *)*it;
 			peers.push_back(p);
 			it++;
 		}
+		mp_mutex->unlock();
 		return peers;
 	}
 	OS::MetricInstance Driver::GetMetrics() {
