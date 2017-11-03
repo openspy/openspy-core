@@ -84,6 +84,7 @@ namespace OS {
 			task->m_metric_list.clear();
 			task->mp_mutex->unlock();
 		}
+		return NULL;
 	}
 	void AnalyticsManager::UploadJson(const char *str) {
 		CURL *curl = curl_easy_init();
