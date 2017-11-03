@@ -11,11 +11,7 @@ namespace OS {
 		bool wait();
 		void signal();
 	private:
-		ULONG m_poll_value; // global, accessible to all threads
-		ULONG m_wait_value;
-		ULONG m_bad_value;
-		int m_signal_count;
-
+		HANDLE m_handle;
 	};
 }
 #endif //_CWIN32MUTEX_H
