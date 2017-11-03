@@ -19,6 +19,7 @@ void on_exit(void) {
 void debug_dump() {
     ((SBServer *)g_gameserver)->debug_dump();
 }
+#ifndef _WIN32
 void sig_handler(int signo)
 {
     if(signo == SIGTERM) {
@@ -28,7 +29,7 @@ void sig_handler(int signo)
     }
     
 }
-
+#endif
 
 #include <OS/Analytics/AnalyticsMgr.h>
 int main() {
