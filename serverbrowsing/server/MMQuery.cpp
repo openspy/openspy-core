@@ -502,6 +502,7 @@ namespace MM {
 		Redis::Response reply;
 		Redis::Value v, arr;
 		int cursor = 0;
+		std::map<std::string, std::string> all_cust_keys; //used for filtering
 
 		/*
 		XXX: add redis error checks, cleanup on error, etc
@@ -582,9 +583,11 @@ namespace MM {
 				FindAppend_ServKVFields(server, entry, field, redis_ctx);
 				it++;
 			}
-	}
+		}
 
-		ret->list.push_back(server);
+		all_cust_keys = server->kvFields;
+		if(!request || filterMatches(request->req.filter.c_str(), all_cust_keys))
+			ret->list.push_back(server);
 		return;
 
 	error_cleanup:
