@@ -192,12 +192,14 @@ namespace SB {
 
 	const std::vector<int> Driver::getSockets() {
 		std::vector<int> sockets;
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
 			sockets.push_back(p->GetSocket());
 			it++;
 		}
+		mp_mutex->unlock();
 		return sockets;
 	}
 
