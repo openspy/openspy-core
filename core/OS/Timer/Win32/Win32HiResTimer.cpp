@@ -16,7 +16,11 @@ void Win32HiResTimer::stop() {
 	QueryPerformanceCounter(&m_end_time);
 }
 long long Win32HiResTimer::time_elapsed() {
-	return m_end_time.QuadPart - m_start_time.QuadPart;
+	LARGE_INTEGER ElapsedMicroseconds;
+	ElapsedMicroseconds.QuadPart = m_end_time.QuadPart - m_start_time.QuadPart;
+	ElapsedMicroseconds.QuadPart *= 1000000;
+	ElapsedMicroseconds.QuadPart /= m_frequency.QuadPart;
+	return ElapsedMicroseconds.QuadPart;
 }
 
 OS::HiResTimer *OS::HiResTimer::makeTimer() {
