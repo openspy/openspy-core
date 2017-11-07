@@ -450,6 +450,9 @@ namespace OS {
 		ip = 0;
 		port = 0;
 	}
+	uint16_t Address::GetPort()	{
+		return Socket::htons(port);
+	}
 	const struct sockaddr_in Address::GetInAddr() {
 		struct sockaddr_in ret;
 		ret.sin_family = AF_INET;
@@ -471,7 +474,7 @@ namespace OS {
 		std::ostringstream s;
 		s << ipinput;
 		if(!ip_only) {
- 			s << ":" << port;
+ 			s << ":" << Socket::htons(port);
 		}
 		return s.str();
 	}

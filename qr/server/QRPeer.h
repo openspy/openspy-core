@@ -1,13 +1,7 @@
 #ifndef _QRPEER_H
 #define _QRPEER_H
 #include "../main.h"
-
-#include "QRDriver.h"
-
-#include <OS/legacy/gsmsalg.h>
-
 #include <OS/Net/NetPeer.h>
-#include <OS/Ref.h>
 #include "MMPush.h"
 
 #define REQUEST_KEY_LEN 4

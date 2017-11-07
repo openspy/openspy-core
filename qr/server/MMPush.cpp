@@ -76,10 +76,14 @@ namespace MM {
 		t.tv_usec = 0;
 		t.tv_sec = 60;
 
+		mp_timer = OS::HiResTimer::makeTimer();
+		m_thread_awake = false;
+
 		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(MMPushTask::TaskThread, this, true);
+
 	}
 	MMPushTask::~MMPushTask() {
 		delete mp_thread;
@@ -106,9 +110,12 @@ namespace MM {
 		MMPushTask *task = (MMPushTask *)thread->getParams();
 		while (task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
-			MMPushRequest task_params = task->m_request_list.front();
-			task->mp_mutex->unlock();
-			switch (task_params.type) {
+			task->m_thread_awake = true;
+			while (!task->m_request_list.empty()) {
+				MMPushRequest task_params = task->m_request_list.front();
+				task->mp_mutex->unlock();
+				task->mp_timer->start();
+				switch (task_params.type) {
 				case EMMPushRequestType_PushServer:
 					task->PerformPushServer(task_params);
 					break;
@@ -124,10 +131,17 @@ namespace MM {
 				case EMMPushRequestType_GetGameInfoByGameName:
 					task->PerformGetGameInfo(task_params);
 					break;
+				}
+				task->mp_timer->stop();
+				if (task_params.peer) {
+					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", OS::Address(*task_params.peer->getAddress()).ToString().c_str(), task_params.type, task->mp_timer->time_elapsed() / 1000000.0);
+				}
+
+				task->mp_mutex->lock();
+				task_params.peer->DecRef();
+				task->m_request_list.pop();
 			}
-			task->mp_mutex->lock();
-			task_params.peer->DecRef();
-			task->m_request_list.pop();
+			task->m_thread_awake = false;
 			task->mp_mutex->unlock();
 		}
 		return NULL;
@@ -144,6 +158,13 @@ namespace MM {
 		std::map<std::string, std::vector<std::string> >::iterator it2;
 		std::vector<std::string>::iterator it3;
 		std::vector<std::string> missing_keys, missing_team_keys, missing_player_keys;
+
+		Redis::Value v;
+		Redis::Response resp;
+		std::string name;
+		int idx = 0;
+		bool force_delete = false;
+		ServerInfo modified_server;
 
 		while (it != request.old_server.m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;
@@ -186,20 +207,17 @@ namespace MM {
 			it3++;
 		}
 
-		
-
-		int idx = 0;
 		ss.str("");
 		while(true) {
-			bool force_delete = false;
+			force_delete = false;
 			if(request.server.m_player_keys.size() > 0) {
 				if(idx > (*request.server.m_player_keys.begin()).second.size()) {
 					force_delete = true;
 				}
 			}
 			ss << server_key << "custkeys_player_" << idx++;
-			Redis::Response resp = Redis::Command(mp_redis_connection, 0, "EXISTS %s", ss.str().c_str());
-			Redis::Value v = resp.values.front();
+			resp = Redis::Command(mp_redis_connection, 0, "EXISTS %s", ss.str().c_str());
+			v = resp.values.front();
 			int ret = -1;
 			if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 				ret = v.value._int;
@@ -216,7 +234,7 @@ namespace MM {
 			}
 			it3 = missing_player_keys.begin();
 			while(it3 != missing_player_keys.end()) {
-				std::string name = *it3;
+				name = *it3;
 				Redis::Command(mp_redis_connection, 0, "HDEL %s %s", ss.str().c_str(), name.c_str());
 				it3++;
 			}
@@ -229,7 +247,7 @@ namespace MM {
 		idx = 0;
 		ss.str("");
 		while(true) {
-			bool force_delete = false;
+			force_delete = false;
 			if(request.server.m_team_keys.size() > 0) {
 				if(idx > (*request.server.m_team_keys.begin()).second.size()) {
 					force_delete = true;
@@ -237,8 +255,8 @@ namespace MM {
 			}
 
 			ss << server_key << "custkeys_team_" << idx++;
-			Redis::Response resp = Redis::Command(mp_redis_connection, 0, "EXISTS %s", ss.str().c_str());
-			Redis::Value v = resp.values.front();
+			resp = Redis::Command(mp_redis_connection, 0, "EXISTS %s", ss.str().c_str());
+			v = resp.values.front();
 			int ret = -1;
 			if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 				ret = v.value._int;
@@ -263,7 +281,6 @@ namespace MM {
 		}
 
 		//create ServerInfo struct with changed keys only
-		ServerInfo modified_server;
 		modified_server.m_game = request.server.m_game;
 		modified_server.id = request.server.id;
 		modified_server.m_address = request.server.m_address;
@@ -360,13 +377,13 @@ namespace MM {
 
 
 
-		Redis::Command(mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), server.m_address.port, server_key.c_str());
-		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d %d", ipinput.c_str(), server.m_address.port, MM_PUSH_EXPIRE_TIME);
+		Redis::Command(mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), server.m_address.GetPort(), server_key.c_str());
+		Redis::Command(mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d %d", ipinput.c_str(), server.m_address.GetPort(), MM_PUSH_EXPIRE_TIME);
 
 
 		if(pk_id == -1) {
 			Redis::Command(mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server.m_game.gameid);
-			Redis::Command(mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), server.m_address.port);
+			Redis::Command(mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), server.m_address.GetPort());
 			Redis::Command(mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), ipinput.c_str());
 		}
 

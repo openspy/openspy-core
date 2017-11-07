@@ -2,7 +2,7 @@
 #include <stdio.h>
 namespace OS {
 	CWin32Mutex::CWin32Mutex() {
-		InitializeCriticalSectionAndSpinCount(&m_critical_section, 0x00000400);
+		InitializeCriticalSection(&m_critical_section);
 	}
 	CWin32Mutex::~CWin32Mutex() {
 		DeleteCriticalSection(&m_critical_section);

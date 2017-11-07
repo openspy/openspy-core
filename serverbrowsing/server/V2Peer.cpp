@@ -405,7 +405,7 @@ namespace SB {
 		int out_len = 0;
 		int header_len = 0;
 
-		if (!m_sent_crypt_header && m_game.gameid != 0) {
+		if (!m_sent_crypt_header && m_game.secretkey[0] != 0) {
 			//this is actually part of the main key list, not to be sent on each packet
 			setupCryptHeader(&p, &out_len);
  			header_len = out_len;
@@ -465,12 +465,12 @@ namespace SB {
 		m_last_list_req.m_for_game = game_data_second;
 		req.req = m_last_list_req;
 
-		if (m_game.gameid == 0) {
+		if (m_game.secretkey[0] == 0) {
 			send_error(true, "Invalid source gamename");
 			return;
 		}
 
-		if (req.req.m_for_game.gameid == 0) {
+		if (req.req.m_for_game.secretkey[0] == 0) {
 			send_error(true, "Invalid target gamename");
 			return;
 		}
@@ -503,8 +503,9 @@ namespace SB {
 		uint8_t *p = (uint8_t *)buffer;
 		int len = remain;
 		OS::Address address;
-		address.ip = Socket::htonl(BufferReadInt(&p, &len));
-		address.port = Socket::htons(BufferReadShort(&p, &len));
+		address.ip = BufferReadInt(&p, &len);
+		address.port = BufferReadShort(&p, &len);
+
 		sServerCache cache = FindServerByIP(address);
 
 		MM::MMQueryRequest req;
@@ -653,10 +654,10 @@ namespace SB {
 		}
 
 		BufferWriteByte(&p, &len, flags); //flags
-		BufferWriteInt(&p, &len, Socket::htonl(server->wan_address.ip)); //ip
+		BufferWriteInt(&p, &len, server->wan_address.ip); //ip
 
 		if (flags & NONSTANDARD_PORT_FLAG) {
-			BufferWriteShort(&p, &len, Socket::htons(server->wan_address.port));
+			BufferWriteShort(&p, &len, server->wan_address.port);
 		}
 
 		if (flags & PRIVATE_IP_FLAG) {
@@ -862,6 +863,7 @@ namespace SB {
 		SendListQueryResp(results, request.req);
 	}
 	void V2Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+		printf("OnRetrievedServerInfo: %d\n", results.list.size());
 		if (results.list.size() == 0) return;
 		MM::Server *server = results.list.front();
 		if (server) {

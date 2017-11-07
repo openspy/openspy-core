@@ -10,6 +10,9 @@
 #include <OS/TaskPool.h>
 
 #include "QRServer.h"
+
+#include <OS/Timer/HiResTimer.h>
+
 namespace QR {
 	class Server;
 	class Driver;
@@ -70,6 +73,9 @@ namespace MM {
 			std::vector<QR::Driver *> m_drivers;
 			Redis::Connection *mp_redis_connection;
 			time_t m_redis_timeout;
+
+			bool m_thread_awake;
+			OS::HiResTimer *mp_timer;
 
 
 	};

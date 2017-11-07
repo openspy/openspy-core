@@ -125,7 +125,7 @@ namespace OS {
 		Address();
 		Address(uint32_t ip, uint16_t port);
 		uint32_t GetIP() { return ip; };
-		uint16_t GetPort() { return port; };
+		uint16_t GetPort();
 		const struct sockaddr_in GetInAddr();
 		std::string ToString(bool ip_only = false);
 	//private:

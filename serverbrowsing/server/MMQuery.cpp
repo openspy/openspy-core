@@ -224,7 +224,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type== Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->wan_address.port = atoi((v.value._str).c_str());
+			server->wan_address.port = Socket::htons(atoi((v.value._str).c_str()));
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s wan_ip", entry_name.c_str());
 
@@ -234,7 +234,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->wan_address.ip = Socket::htonl(Socket::inet_addr((v.value._str).c_str()));
+			server->wan_address.ip = Socket::inet_addr((v.value._str).c_str());
 
 		if(all_keys) {
 			reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
@@ -736,17 +736,10 @@ namespace MM {
 		std::ostringstream s;
 		Redis::Response reply;
 		Redis::Value v;
-
-		struct sockaddr_in addr;
-		addr.sin_port = Socket::htons(address.port);
-		addr.sin_addr.s_addr = Socket::htonl(address.ip);
-
-		char ipinput[ADDR_STR_LEN];
-		Socket::inet_ntop(AF_INET, &(addr.sin_addr), ipinput, ADDR_STR_LEN);
-
+		
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 
-		s << "GET IPMAP_" << ipinput << "-" << address.port;
+		s << "GET IPMAP_" << address.ToString(true) << "-" << address.GetPort();
 		std::string cmd = s.str();
 		reply = Redis::Command(mp_redis_connection, 0, cmd.c_str());
 		if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)

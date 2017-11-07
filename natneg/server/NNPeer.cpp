@@ -221,7 +221,6 @@ namespace NN {
 		if (m_found_partner) {
 			return;
 		}
-		printf("GOt peer address - %s\n", address.ToString().c_str());
 		m_peer_address = address;
 		m_found_partner = true;
 
@@ -242,11 +241,7 @@ namespace NN {
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			if (!m_got_natify_request || time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
-				printf("send conn packet\n");
 				SendConnectPacket(m_peer_address);
-			}
-			else {
-				printf("not sending connect packet\n");
 			}
 		}
 
@@ -268,7 +263,6 @@ namespace NN {
 		}
 		NatNegPacket p;
 		struct sockaddr_in remote_addr = address.GetInAddr();
-		printf("SendConnectPacket: %s\n", address.ToString().c_str());
 
 		p.packettype = NN_CONNECT;
 		p.Packet.Connect.finished = FINISHED_NOERROR;
@@ -288,7 +282,6 @@ namespace NN {
 		p.version = m_client_version;
 
 		p.Packet.Preinit.state = state;
-		printf("send preinit: %d\n", state);
 		p.packettype = NN_PREINIT_ACK;
 		sendPacket(&p);
 	}

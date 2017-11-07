@@ -42,8 +42,7 @@ namespace QR {
 		memset(&m_instance_key, 0, sizeof(m_instance_key));
 		memset(&m_challenge, 0, sizeof(m_challenge));
 
-		m_server_info.m_address.port = Socket::htons(m_address_info.sin_port);
-		m_server_info.m_address.ip = Socket::htonl(m_address_info.sin_addr.s_addr);
+		m_server_info.m_address = m_address_info;
 
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
@@ -108,7 +107,7 @@ namespace QR {
 		char challenge_resp[90] = { 0 };
 		int outlen = 0;
 		uint8_t *p = (uint8_t *)challenge_resp;
-		if(m_server_info.m_game.gameid == 0) {
+		if(m_server_info.m_game.secretkey[0] == 0) {
 			send_error(true, "Unknown game");
 			return;
 		}
@@ -298,7 +297,7 @@ namespace QR {
 		if (extra == (void *)1) {
 			m_server_info.m_game = game_info;
 			m_dirty_server_info.m_game = game_info;
-			if (m_server_info.m_game.gameid == 0) {
+			if (m_server_info.m_game.secretkey[0] == 0) {
 				send_error(true, "Game not found");
 				return;
 			}
@@ -334,7 +333,7 @@ namespace QR {
 			char sendbuf[90] = { 0 };
 			int outlen = 0;
 
-			if (game_info.gameid == 0) {
+			if (game_info.secretkey[0] == 0) {
 				game_info.disabled_services = OS::QR2_GAME_UNAVAILABLE;
 			}
 
