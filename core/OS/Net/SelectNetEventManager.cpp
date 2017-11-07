@@ -18,7 +18,7 @@ void SelectNetEventManager::run() {
 	struct timeval timeout;
 
     memset(&timeout,0,sizeof(struct timeval));
-    timeout.tv_usec = SELECT_TIMEOUT;
+    timeout.tv_sec = SELECT_TIMEOUT;
 
 	int hsock = setup_fdset();
 
@@ -32,17 +32,16 @@ void SelectNetEventManager::run() {
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 	while(it != m_net_drivers.end()) {
 		INetDriver *driver = *it;
-		if(FD_ISSET(driver->getListenerSocket(), &m_fdset)) {
+		if(FD_ISSET(driver->getListenerSocket(), &m_fdset))
 			driver->think(true);
-		}
 
 		std::vector<INetPeer *> net_peers = driver->getPeers();
 		std::vector<INetPeer *>::iterator it2 = net_peers.begin();
 		while (it2 != net_peers.end()) {
 			INetPeer *peer = *it2;
 			int sd = peer->GetSocket();
-			if(sd != driver->getListenerSocket())
-				peer->think(FD_ISSET(sd, &m_fdset));
+			if(sd != driver->getListenerSocket() && FD_ISSET(sd, &m_fdset))
+				peer->think(true);
 			it2++;
 		}
 		it++;

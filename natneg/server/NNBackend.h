@@ -11,6 +11,7 @@
 #include <OS/Mutex.h>
 
 #include <OS/socketlib/socketlib.h>
+#include <OS/Timer/HiResTimer.h>
 
 #include <vector>
 #include <map>
@@ -21,19 +22,12 @@
 
 namespace NN {
 	struct _NNBackendRequest;
-	typedef struct {
-		uint32_t cookie;
-		uint8_t client_index;
-		OS::Address address;
-	} NNClientData;
 	enum ENNQueryRequestType {
 		ENNQueryRequestType_SubmitClient,
-		ENNQueryRequestType_SubmitCookie,
+		ENNQueryRequestType_PerformERTTest,
 	};
 	typedef struct _NNBackendRequest {
 		ENNQueryRequestType type;
-
-		NNClientData data;
 		void *extra;
 		NN::Peer *peer;
 	} NNBackendRequest;
@@ -52,11 +46,12 @@ namespace NN {
 			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
 
 			void PerformSubmit(NNBackendRequest request);
-			void PerformSubmitClient(NNBackendRequest request);
-
+			void PerformERTTest(NNBackendRequest request);
 			std::vector<NN::Driver *> m_drivers;
 			Redis::Connection *mp_redis_connection;
 			time_t m_redis_timeout;
+			bool m_thread_awake;
+			OS::HiResTimer *mp_timer;
 	};
 	#define NUM_NN_QUERY_THREADS 8
 	extern OS::TaskPool<NNQueryTask, NNBackendRequest> *m_task_pool;

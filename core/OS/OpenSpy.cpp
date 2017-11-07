@@ -429,8 +429,8 @@ namespace OS {
 		this->port = port;
 	}
 	Address::Address(struct sockaddr_in addr) {
-		ip = Socket::htonl(addr.sin_addr.s_addr);
-		port = Socket::htons(addr.sin_port);
+		ip = addr.sin_addr.s_addr;
+		port = addr.sin_port;
 	}
 	Address::Address(const char *str) {
 		char address[16];
@@ -454,15 +454,15 @@ namespace OS {
 		struct sockaddr_in ret;
 		ret.sin_family = AF_INET;
 		memset(&ret.sin_zero,0,sizeof(ret.sin_zero));
-		ret.sin_addr.s_addr = Socket::htonl(ip);
-		ret.sin_port = Socket::htons(port);
+		ret.sin_addr.s_addr = ip;
+		ret.sin_port = port;
 		return ret;
 
 	}
 	std::string Address::ToString(bool ip_only) {
 		struct sockaddr_in addr;
-		addr.sin_port = Socket::htons(port);
-		addr.sin_addr.s_addr = Socket::htonl(ip);
+		addr.sin_port = (port);
+		addr.sin_addr.s_addr = (ip);
 
 		char ipinput[ADDR_STR_LEN];
 		Socket::inet_ntop(AF_INET, &(addr.sin_addr), ipinput, ADDR_STR_LEN);

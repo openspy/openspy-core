@@ -5,7 +5,7 @@
 		#include "NetEventManager.h"
 		#include <vector>
 
-		#define SELECT_TIMEOUT 1000000
+		#define SELECT_TIMEOUT 5
 
 		class SelectNetEventManager : public INetEventManager {
 		public:

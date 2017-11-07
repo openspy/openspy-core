@@ -18,8 +18,14 @@ namespace NN {
 		m_address_info = *address_info;
 
 		m_cookie = 0;
-		m_client_index = 0;
+		m_client_index = -1;
 		m_client_version = 0;
+		m_gamename = "";
+		m_found_partner = false;
+		m_got_natify_request = false;
+		m_got_preinit = false;
+		m_sent_connect = false;
+		memset(&m_ert_test_time, 0, sizeof(m_ert_test_time));
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",OS::Address(m_address_info).ToString().c_str());
 
 	}
@@ -36,10 +42,22 @@ namespace NN {
 			return;
 		}
 
-		if(m_peer_address.GetIP() == 0) {
+		if(!m_found_partner) {
 			if(time_now.tv_sec - m_init_time.tv_sec > NN_DEADBEAT_TIME) {
 				sendPeerIsDeadbeat();
 				m_delete_flag = true;
+			}
+		}
+		else {
+			if (m_got_natify_request && time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
+				if (m_found_partner) {
+					if (m_got_preinit) {
+						SendPreInitPacket(NN_PREINIT_READY);
+					}
+					else {
+						SendConnectPacket(m_peer_address);
+					}					
+				}
 			}
 		}
 	}
@@ -57,9 +75,20 @@ namespace NN {
 
 		gettimeofday(&m_last_recv, NULL);
 
+		packet->cookie = Socket::htonl(packet->cookie);
+		if (m_cookie == 0) {
+			m_cookie = packet->cookie;
+		}
 		m_client_version = packet->version;
 
+		int packetSize = packetSizeFromType(packet->packettype);
+		if (recvbuf[len] == 0 && m_gamename.length() == 0) {
+			m_gamename = (const char *)&recvbuf[packetSize];
+		}
 		switch(packet->packettype) {
+			case NN_PREINIT:
+				handlePreInitPacket(packet);
+			break;
 			case NN_INIT:
 				handleInitPacket(packet);
 			break;
@@ -67,9 +96,9 @@ namespace NN {
 				handleAddressCheckPacket(packet);
 			break;
 			case NN_NATIFY_REQUEST:
-				printf("NN::NatifyRequest\n");
+				handleNatifyPacket(packet);
 			break;
-			case NN_CONNECT_PING: //should never be recieved
+			case NN_CONNECT_PING:
 			break;
 			case NN_CONNECT_ACK:
 			break;
@@ -77,24 +106,71 @@ namespace NN {
 				handleReportPacket(packet);
 			break;
 			default:
-				printf("unknown natneg packet: %d\n",packet->packettype);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d, version: %d", OS::Address(m_address_info).ToString().c_str(), packet->packettype, packet->version);
 			break;
 		}
 	}
+	void Peer::handlePreInitPacket(NatNegPacket *packet) {
+		if (m_got_preinit)
+			return;
+		m_client_id = packet->Packet.Preinit.clientID;
+		m_client_index = packet->Packet.Preinit.clientindex;
+		//SendPreInitPacket(NN_PREINIT_WAITING_FOR_CLIENT);
+		m_got_preinit = true;
+		SendPreInitPacket(NN_PREINIT_READY);
+		//SubmitClient(true);
+	}
 	void Peer::handleInitPacket(NatNegPacket *packet) {
-		m_cookie = packet->cookie;
 		m_client_index = packet->Packet.Init.clientindex;
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, game: %s", OS::Address(m_address_info).ToString().c_str(), packet->version, m_client_index, m_cookie, m_gamename.c_str());
 
 		SubmitClient();
 		
 		packet->packettype = NN_INITACK;
 		sendPacket(packet);
 
-		gettimeofday(&m_init_time, NULL);
+		if (m_found_partner) {
+			SendConnectPacket(m_peer_address);
+		}
+
+		//gettimeofday(&m_init_time, NULL);
+	}
+	void Peer::handleNatifyPacket(NatNegPacket *packet) {
+		NNBackendRequest req;
+		if (!m_got_natify_request) {
+			m_got_natify_request = true;
+			gettimeofday(&m_ert_test_time, NULL);
+		}
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got ERTTest type %d", OS::Address(m_address_info).ToString().c_str(), packet->Packet.Init.porttype);
+		switch (packet->Packet.Init.porttype) {
+			//case NN_PT_GP: //??
+			case NN_PT_NN1: //solicited ERT reply
+				packet->packettype = NN_ERTTEST;
+				sendPacket(packet);
+				break;
+			case NN_PT_NN2: //unsolicited IP ERT reply
+				req.type = NN::ENNQueryRequestType_PerformERTTest;
+				req.extra = (void *)2;
+				this->IncRef();
+				req.peer = this;
+				NN::m_task_pool->AddRequest(req);
+				break;
+			case NN_PT_NN3: //unsolicited IP&Port ERT reply				
+				req.type = NN::ENNQueryRequestType_PerformERTTest;
+				req.extra = (void *)3;
+				this->IncRef();
+				req.peer = this;
+				NN::m_task_pool->AddRequest(req);
+				break;
+		}
 	}
 	void Peer::handleReportPacket(NatNegPacket *packet) {
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got report- client idx: %d, cookie: %d, game: %s, port type: %d, neg result: %d, neg type: %d, nat mapping scheme: %d", OS::Address(m_address_info).ToString().c_str(), m_client_index, m_cookie, packet->Packet.Report.gamename, packet->Packet.Report.porttype, packet->Packet.Report.negResult, packet->Packet.Report.natType, packet->Packet.Report.natMappingScheme);
 		packet->packettype = NN_REPORT_ACK;
 		sendPacket(packet);
+
 	}
 	void Peer::handleAddressCheckPacket(NatNegPacket *packet) {
 		packet->packettype = NN_ADDRESS_REPLY;
@@ -102,56 +178,118 @@ namespace NN {
 		packet->Packet.Init.localport = m_address_info.sin_port;
 		sendPacket(packet);
 	}
-	void Peer::sendPacket(NatNegPacket *packet) {
+	int Peer::packetSizeFromType(uint8_t type) {
 		int size = 0;
-		switch(packet->packettype) {
+		switch (type) {
+			case NN_PREINIT:
+			case NN_PREINIT_ACK:
+				size = PREINITPACKET_SIZE;
+				break;
 			case NN_ADDRESS_REPLY:
+			case NN_NATIFY_REQUEST:
+			case NN_ERTTEST:
+			case NN_INIT:
 			case NN_INITACK:
 				size = INITPACKET_SIZE;
 				break;
+			case NN_CONNECT_ACK:
+			case NN_CONNECT_PING:
 			case NN_CONNECT:
 				size = CONNECTPACKET_SIZE;
 				break;
+			case NN_REPORT:
 			case NN_REPORT_ACK:
 				size = REPORTPACKET_SIZE;
 				break;
 
 		}
+		return size;
+	}
+	void Peer::sendPacket(NatNegPacket *packet) {
+		int size = packetSizeFromType(packet->packettype);
+		memcpy(packet->magic, NNMagicData, NATNEG_MAGIC_LEN);
+
+		packet->version = m_client_version;
+		packet->cookie = Socket::htonl(m_cookie);
+
 		sendto(m_sd,(char *)packet,size,0,(struct sockaddr *)&m_address_info,sizeof(struct sockaddr));
 	}
 	OS::Address Peer::getAddress() {
 		return OS::Address(m_address_info);
 	}
 	void Peer::OnGotPeerAddress(OS::Address address) {
-		if(m_peer_address.GetIP() == 0) {
-			m_peer_address = address;
-			SubmitClient(); //resubmit for other client
-			SendConnectPacket(m_peer_address);
+		if (m_found_partner) {
+			return;
 		}
+		printf("GOt peer address - %s\n", address.ToString().c_str());
+		m_peer_address = address;
+		m_found_partner = true;
+
+		/*if (is_preinit && m_got_preinit) {
+			struct timeval time_now;
+			gettimeofday(&time_now, NULL);
+			if (time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
+				printf("send preinit ready\n");
+				SendPreInitPacket(NN_PREINIT_READY);
+			}
+			else {
+				printf("send preinit matchup\n");
+				SendPreInitPacket(NN_PREINIT_WAITING_FOR_MATCHUP);
+				//SendPreInitPacket(NN_PREINIT_READY);
+			}
+		}
+		else*/ {
+			struct timeval time_now;
+			gettimeofday(&time_now, NULL);
+			if (!m_got_natify_request || time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
+				printf("send conn packet\n");
+				SendConnectPacket(m_peer_address);
+			}
+			else {
+				printf("not sending connect packet\n");
+			}
+		}
+
+		SubmitClient(); //resubmit for other client
 	}
 	void Peer::sendPeerIsDeadbeat() {
 		NatNegPacket p;
-		memcpy(p.magic, NNMagicData, NATNEG_MAGIC_LEN);
 		p.version = m_client_version;
 		p.packettype = NN_CONNECT;
-		p.cookie = m_cookie;
 		p.Packet.Connect.finished = FINISHED_ERROR_DEADBEAT_PARTNER;
 		sendPacket(&p);
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
+		if (!m_sent_connect) {
+			m_sent_connect = true;
+		}
+		else {
+			return;
+		}
 		NatNegPacket p;
-		struct sockaddr_in remote_addr = m_peer_address.GetInAddr();
-		memcpy(p.magic, NNMagicData, NATNEG_MAGIC_LEN);
+		struct sockaddr_in remote_addr = address.GetInAddr();
+		printf("SendConnectPacket: %s\n", address.ToString().c_str());
 
-		p.version = m_client_version;
-		p.Packet.Connect.gotyourdata = 'B'; //??
 		p.packettype = NN_CONNECT;
-		p.cookie = m_cookie;
-		
 		p.Packet.Connect.finished = FINISHED_NOERROR;
 
-		p.Packet.Connect.remoteIP = Socket::htonl(remote_addr.sin_addr.s_addr);
+		p.Packet.Connect.remoteIP = remote_addr.sin_addr.s_addr;
 		p.Packet.Connect.remotePort = remote_addr.sin_port;
+
+		sendPacket(&p);
+
+		//p.Packet.Connect.gotyourdata = 1;
+		//p.packettype = NN_CONNECT_PING;
+		//sendPacket(&p);
+	}
+	void Peer::SendPreInitPacket(uint8_t state) {
+		NatNegPacket p;
+
+		p.version = m_client_version;
+
+		p.Packet.Preinit.state = state;
+		printf("send preinit: %d\n", state);
+		p.packettype = NN_PREINIT_ACK;
 		sendPacket(&p);
 	}
 	void Peer::SubmitClient() {

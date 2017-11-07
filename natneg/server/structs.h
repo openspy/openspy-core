@@ -139,4 +139,6 @@ typedef struct _HandlerData {
 	struct sockaddr si_other;
 } HandlerData;
 
+typedef uint32_t NNCookieType;
+
 #endif

@@ -4,6 +4,7 @@
 
 #include <OS/TaskPool.h>
 #include <OS/Redis.h>
+#define NATNEG_COOKIE_TIME 300 
 namespace NN {
 	OS::TaskPool<NNQueryTask, NNBackendRequest> *m_task_pool = NULL;
 	Redis::Connection *mp_redis_async_retrival_connection;
@@ -12,26 +13,31 @@ namespace NN {
 	NNQueryTask *mp_async_lookup_task = NULL;
 
 	const char *nn_channel = "natneg.backend";
+
 	void *NNQueryTask::TaskThread(OS::CThread *thread) {
 		NNQueryTask *task = (NNQueryTask *)thread->getParams();
-		for(;;) {
+		while(task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
+			task->m_thread_awake = true;
 			while (!task->m_request_list.empty()) {
 				NNBackendRequest task_params = task->m_request_list.front();
 				task->mp_mutex->unlock();
-
+				task->mp_timer->start();
 				switch (task_params.type) {
-					case ENNQueryRequestType_SubmitCookie:
+					case ENNQueryRequestType_SubmitClient:
 						task->PerformSubmit(task_params);
 						break;
+					case ENNQueryRequestType_PerformERTTest:
+						task->PerformERTTest(task_params);
+						break;
 				}
-
+				task->mp_timer->stop();
 				task_params.peer->DecRef();
 				task->mp_mutex->lock();
 				task->m_request_list.pop();
 			}
+			task->m_thread_awake = false;
 			task->mp_mutex->unlock();
-			OS::Sleep(TASK_SLEEP_TIME);
 		}
 		return NULL;
 	}
@@ -52,7 +58,7 @@ namespace NN {
 					find_param(0, temp_str, (char *)&type, sizeof(type) - 1);
 					if (!strcmp(type, "natneg_init")) {
 						find_param("ipstr", temp_str, (char *)&ip_str, sizeof(ip_str) - 1);
-						int cookie = find_paramint("natneg_init", temp_str);
+						NNCookieType cookie = (NNCookieType)find_paramint("natneg_init", temp_str);
 						int client_idx = find_paramint("index", temp_str);
 						OS::Address addr((const char *)&ip_str);
 						server->OnGotCookie(cookie, client_idx, addr);
@@ -69,8 +75,11 @@ namespace NN {
 		t.tv_usec = 0;
 		t.tv_sec = 60;
 
+		m_thread_awake = false;
+
 		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
 
+		mp_timer = OS::HiResTimer::makeTimer();
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(NNQueryTask::TaskThread, this, true);
 	}
@@ -91,15 +100,23 @@ namespace NN {
 	void NNQueryTask::RemoveDriver(NN::Driver *driver) {
 
 	}
-
+	void NNQueryTask::PerformERTTest(NNBackendRequest task_params) {
+		OS::Address address = task_params.peer->getAddress();
+		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\natneg_erttest\\%s\\type\\%d", nn_channel, address.ToString().c_str(),task_params.extra);
+	}
 	void NNQueryTask::PerformSubmit(NNBackendRequest task_params) {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
 
-		OS::Address address = task_params.data.address;
+		OS::Address address = task_params.peer->getAddress();
 
-		Redis::Command(mp_redis_connection, 0, "HSET nn_cookie_%u %d %s", task_params.data.cookie,task_params.data.client_index, address.ToString());
-		Redis::Command(mp_redis_connection, 0, "EXPIRE nn_cookie_%u 300", task_params.data.cookie);
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\natneg_init\\%u\\index\\%d\\ipstr\\%s", nn_channel, task_params.data.cookie, task_params.data.client_index, address.ToString());
+		Redis::Command(mp_redis_connection, 0, "HSET nn_cookie_%d %d %s", task_params.peer->GetCookie(),task_params.peer->GetClientIndex(), address.ToString().c_str());
+		Redis::Command(mp_redis_connection, 0, "EXPIRE nn_cookie_%d %d", task_params.peer->GetCookie(), NATNEG_COOKIE_TIME);
+		switch (task_params.type) {
+			case NN::ENNQueryRequestType_SubmitClient:
+				Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\natneg_init\\%d\\index\\%d\\ipstr\\%s\\gamename\\%s", nn_channel, task_params.peer->GetCookie(), task_params.peer->GetClientIndex(), address.ToString().c_str(), task_params.peer->getGamename().c_str());
+				break;
+		}
 
 	}
 

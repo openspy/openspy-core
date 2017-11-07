@@ -32,18 +32,58 @@ namespace NN {
 		makeNonBlocking(m_sd);
 
 		gettimeofday(&m_server_start, NULL);
+
+		mp_mutex = OS::CreateMutex();
+		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
 	}
 	Driver::~Driver() {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
+			m_server->UnregisterSocket(peer);
 			delete peer;
 			it++;
 		}
+		delete mp_thread;
+		delete mp_mutex;
+	}
+	void *Driver::TaskThread(OS::CThread *thread) {
+		Driver *driver = (Driver *)thread->getParams();
+		for (;;) {
+			driver->mp_mutex->lock();
+			driver->TickConnections();
+			std::vector<Peer *>::iterator it = driver->m_connections.begin();
+			while (it != driver->m_connections.end()) {
+				Peer *peer = *it;
+				if (peer->ShouldDelete() && std::find(driver->m_peers_to_delete.begin(), driver->m_peers_to_delete.end(), peer) == driver->m_peers_to_delete.end()) {
+					//marked for delection, dec reference and delete when zero
+					it = driver->m_connections.erase(it);
+					peer->DecRef();
+					driver->m_peers_to_delete.push_back(peer);
+
+					//driver->m_stats_queue.push(peer->GetPeerStats());
+
+					driver->m_server->UnregisterSocket(peer);
+					continue;
+				}
+				it++;
+			}
+
+			it = driver->m_peers_to_delete.begin();
+			while (it != driver->m_peers_to_delete.end()) {
+				NN::Peer *p = *it;
+				if (p->GetRefCount() == 0) {
+					delete p;
+					it = driver->m_peers_to_delete.erase(it);
+					continue;
+				}
+				it++;
+			}
+			driver->mp_mutex->unlock();
+			OS::Sleep(DRIVER_THREAD_TIME);
+		}
 	}
 	void Driver::think(bool listener_waiting) {
-		TickConnections();
-
 		if (listener_waiting) {
 			char recvbuf[MAX_DATA_SIZE + 1];
 
@@ -68,31 +108,6 @@ namespace NN {
 					peer->SetDelete(true);
 				}
 			}
-		}
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			if (peer->ShouldDelete() && std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
-				//marked for delection, dec reference and delete when zero
-				it = m_connections.erase(it);
-				peer->DecRef();
-				m_peers_to_delete.push_back(peer);
-
-				m_server->UnregisterSocket(peer);
-				continue;
-			}
-			it++;
-		}
-
-		it = m_peers_to_delete.begin();
-		while (it != m_peers_to_delete.end()) {
-			Peer *p = *it;
-			if (p->GetRefCount() == 0) {
-				delete p;
-				it = m_peers_to_delete.erase(it);
-				continue;
-			}
-			it++;
 		}
 	}
 
@@ -128,15 +143,17 @@ namespace NN {
 		return htonl(m_local_addr.sin_addr.s_addr);
 	}
 
-	void Driver::OnGotCookie(int cookie, int client_idx, OS::Address address) {
+	void Driver::OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address) {
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			if(p->GetCookie() == cookie && p->GetClientIndex() != client_idx) {
+			if(p->GetCookie() == cookie && p->GetClientIndex() != client_idx && p->GetClientIndex() != -1) {
 				p->OnGotPeerAddress(address);
 			}
 			it++;
 		}
+		mp_mutex->unlock();
 	}
 
 	void Driver::TickConnections() {
@@ -150,12 +167,14 @@ namespace NN {
 
 	const std::vector<INetPeer *> Driver::getPeers() {
 		std::vector<INetPeer *> peers;
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			INetPeer *p = (INetPeer *)*it;
 			peers.push_back(p);
 			it++;
 		}
+		mp_mutex->unlock();
 		return peers;
 	}
 	const std::vector<int> Driver::getSockets() {

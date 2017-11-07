@@ -5,6 +5,9 @@
 #include <OS/TaskPool.h>
 #include <OS/Net/NetServer.h>
 #include <OS/Analytics/Metric.h>
+
+#include "structs.h"
+
 #define NATNEG_PORT 27901
 namespace NN {
 	class NNQueryTask;
@@ -16,7 +19,7 @@ namespace NN {
 			void tick();
 			void shutdown();
 			void SetTaskPool(OS::TaskPool<NN::NNQueryTask, NN::NNBackendRequest> *pool);
-			void OnGotCookie(int cookie, int client_idx, OS::Address address);
+			void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address);
 			OS::MetricInstance GetMetrics();
 		private:
 		
