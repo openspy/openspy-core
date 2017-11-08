@@ -33,7 +33,7 @@ namespace NN {
 				}
 				task->mp_timer->stop();
 				if (task_params.peer) {
-					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", OS::Address(*task_params.peer->getAddress()).ToString().c_str(), task_params.type, task->mp_timer->time_elapsed() / 1000000.0);
+					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", OS::Address(task_params.peer->getAddress()).ToString().c_str(), task_params.type, task->mp_timer->time_elapsed() / 1000000.0);
 				}
 				task_params.peer->DecRef();
 				task->mp_mutex->lock();
@@ -98,10 +98,18 @@ namespace NN {
 
 
 	void NNQueryTask::AddDriver(NN::Driver *driver) {
-		m_drivers.push_back(driver);
+		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {
+			m_drivers.push_back(driver);
+		}
+		if (this != mp_async_lookup_task && mp_async_lookup_task) {
+			mp_async_lookup_task->AddDriver(driver);
+		}
 	}
 	void NNQueryTask::RemoveDriver(NN::Driver *driver) {
-
+		std::vector<NN::Driver *>::iterator it = std::find(m_drivers.begin(), m_drivers.end(), driver);
+		if (it != m_drivers.end()) {
+			m_drivers.erase(it);
+		}
 	}
 	void NNQueryTask::PerformERTTest(NNBackendRequest task_params) {
 		OS::Address address = task_params.peer->getAddress();
