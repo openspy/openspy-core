@@ -1,6 +1,6 @@
 #include "NNPeer.h"
 #include "NNBackend.h"
-
+#include <algorithm>
 #include <OS/legacy/helpers.h>
 
 #include <OS/TaskPool.h>
