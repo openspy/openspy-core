@@ -65,7 +65,10 @@ namespace NN {
 						NNCookieType cookie = (NNCookieType)find_paramint("natneg_init", temp_str);
 						int client_idx = find_paramint("index", temp_str);
 						OS::Address addr((const char *)&ip_str);
-						server->OnGotCookie(cookie, client_idx, addr);
+
+						find_param("privateip", temp_str, (char *)&ip_str, sizeof(ip_str) - 1);
+						OS::Address private_addr((const char *)&ip_str);
+						server->OnGotCookie(cookie, client_idx, addr, private_addr);
 					}
 				end_exit:
 					free((void *)temp_str);
@@ -126,7 +129,7 @@ namespace NN {
 		Redis::Command(mp_redis_connection, 0, "EXPIRE nn_cookie_%d %d", task_params.peer->GetCookie(), NATNEG_COOKIE_TIME);
 		switch (task_params.type) {
 			case NN::ENNQueryRequestType_SubmitClient:
-				Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\natneg_init\\%d\\index\\%d\\ipstr\\%s\\gamename\\%s", nn_channel, task_params.peer->GetCookie(), task_params.peer->GetClientIndex(), address.ToString().c_str(), task_params.peer->getGamename().c_str());
+				Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\natneg_init\\%d\\index\\%d\\ipstr\\%s\\gamename\\%s\\privateip\\%s", nn_channel, task_params.peer->GetCookie(), task_params.peer->GetClientIndex(), address.ToString().c_str(), task_params.peer->getGamename().c_str(), task_params.peer->getPrivateAddress().ToString());
 				break;
 		}
 

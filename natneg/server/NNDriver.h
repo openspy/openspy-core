@@ -32,7 +32,7 @@ namespace NN {
 		Peer *find_client(struct sockaddr_in *address);
 		Peer *find_or_create(struct sockaddr_in *address);
 
-		void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address);
+		void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address);
 
 		const std::vector<INetPeer *> getPeers();
 		const std::vector<int> getSockets();

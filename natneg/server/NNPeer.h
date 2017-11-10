@@ -39,13 +39,14 @@ namespace NN {
 
 		int GetSocket() { return m_sd; };
 		OS::Address getAddress();
+		OS::Address getPrivateAddress() { return m_private_address; };
 		bool ShouldDelete() { return m_delete_flag; };
 		void SetDelete(bool set) { m_delete_flag = set; };
 		bool IsTimeout() { return m_timeout_flag; }
 		NNCookieType GetCookie() { return m_cookie; }
 		uint8_t GetClientIndex() { return m_client_index; }
 
-		void OnGotPeerAddress(OS::Address address);
+		void OnGotPeerAddress(OS::Address address, OS::Address private_address);
 		std::string getGamename() { return m_gamename; };
 
 		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
@@ -80,6 +81,7 @@ namespace NN {
 		uint8_t m_client_version;
 		uint8_t m_state;
 		uint32_t m_client_id;
+		OS::Address m_private_address;
 
 		OS::Address m_peer_address;
 		bool m_found_partner;

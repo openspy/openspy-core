@@ -143,13 +143,13 @@ namespace NN {
 		return htonl(m_local_addr.sin_addr.s_addr);
 	}
 
-	void Driver::OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address) {
+	void Driver::OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address) {
 		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
 			if(p->GetCookie() == cookie && p->GetClientIndex() != client_idx && p->GetClientIndex() != -1) {
-				p->OnGotPeerAddress(address);
+				p->OnGotPeerAddress(address, private_address);
 			}
 			it++;
 		}

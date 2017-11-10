@@ -19,7 +19,7 @@ namespace NN {
 			void tick();
 			void shutdown();
 			void SetTaskPool(OS::TaskPool<NN::NNQueryTask, NN::NNBackendRequest> *pool);
-			void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address);
+			void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address);
 			OS::MetricInstance GetMetrics();
 		private:
 			struct timeval m_last_analytics_submit_time;

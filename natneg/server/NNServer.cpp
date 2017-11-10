@@ -45,11 +45,11 @@ namespace NN {
 			it++;
 		}
 	}
-	void Server::OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address) {
+	void Server::OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {
 			NN::Driver *driver = (NN::Driver *)*it;
-			driver->OnGotCookie(cookie, client_idx, address);
+			driver->OnGotCookie(cookie, client_idx, address, private_address);
 			it++;
 		}
 	}

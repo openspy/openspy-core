@@ -26,6 +26,7 @@ namespace NN {
 		m_got_preinit = false;
 		m_sent_connect = false;
 		memset(&m_ert_test_time, 0, sizeof(m_ert_test_time));
+		memset(&m_init_time, 0, sizeof(m_init_time));
 		ResetMetrics();
 		m_peer_stats.m_address = *address_info;
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",OS::Address(m_address_info).ToString().c_str());
@@ -45,7 +46,7 @@ namespace NN {
 		}
 
 		if(!m_found_partner) {
-			if(time_now.tv_sec - m_init_time.tv_sec > NN_DEADBEAT_TIME) {
+			if(time_now.tv_sec - m_init_time.tv_sec > NN_DEADBEAT_TIME && m_init_time.tv_sec != 0) {
 				sendPeerIsDeadbeat();
 				m_delete_flag = true;
 			}
@@ -130,6 +131,8 @@ namespace NN {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, game: %s", OS::Address(m_address_info).ToString().c_str(), packet->version, m_client_index, m_cookie, m_gamename.c_str());
 
 		SubmitClient();
+
+		m_private_address = OS::Address(packet->Packet.Init.localip, packet->Packet.Init.localport);
 		
 		packet->packettype = NN_INITACK;
 		sendPacket(packet);
@@ -223,11 +226,17 @@ namespace NN {
 	OS::Address Peer::getAddress() {
 		return OS::Address(m_address_info);
 	}
-	void Peer::OnGotPeerAddress(OS::Address address) {
+	void Peer::OnGotPeerAddress(OS::Address address, OS::Address private_address) {
 		if (m_found_partner) {
 			return;
 		}
-		m_peer_address = address;
+		if (address.GetIP() == getAddress().GetIP()) {
+			m_peer_address = private_address;
+		}
+		else {
+			m_peer_address = address;
+		}
+		
 		m_found_partner = true;
 
 		/*if (is_preinit && m_got_preinit) {
