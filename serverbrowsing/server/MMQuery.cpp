@@ -534,7 +534,7 @@ namespace MM {
 
 		v = reply.values.front();
 
-		server->wan_address.ip = atoi((v.value._str).c_str()); //for V2
+		server->wan_address.ip = Socket::htonl(atoi((v.value._str).c_str())); //for V2
 		server->kvFields["groupid"] = (v.value._str).c_str(); //for V1
 		
 		FindAppend_ServKVFields(server, entry_name, "maxwaiting", redis_ctx);

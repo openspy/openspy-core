@@ -290,7 +290,7 @@ namespace SB {
 		int len = 0;
 
 		if (list_req.source_ip != 0) {
-			BufferWriteInt(&p, &len, Socket::htonl(list_req.source_ip));
+			BufferWriteInt(&p, &len, list_req.source_ip);
 		}
 		else {
 			
@@ -863,7 +863,6 @@ namespace SB {
 		SendListQueryResp(results, request.req);
 	}
 	void V2Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
-		printf("OnRetrievedServerInfo: %d\n", results.list.size());
 		if (results.list.size() == 0) return;
 		MM::Server *server = results.list.front();
 		if (server) {
