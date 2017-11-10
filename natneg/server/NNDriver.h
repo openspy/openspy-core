@@ -1,11 +1,9 @@
-#ifndef _QRDRIVER_H
-#define _QRDRIVER_H
+#ifndef _NNDRIVER_H
+#define _NNDRIVER_H
 #include <stdint.h>
 #include <OS/Net/NetDriver.h>
 
-#include "NNPeer.h"
-
-
+#include <queue>
 #include <map>
 #include <vector>
 #ifdef _WIN32
@@ -19,7 +17,7 @@
 namespace NN {
 	class Peer;
 
-
+	typedef struct _PeerStats PeerStats;
 
 	class Driver : public INetDriver {
 	public:
@@ -52,8 +50,10 @@ namespace NN {
 
 		struct timeval m_server_start;
 
+		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
+
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;
 	};
 }
-#endif //_QRDRIVER_H
+#endif //_NNDRIVER_H

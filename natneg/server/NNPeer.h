@@ -1,9 +1,8 @@
-#ifndef _QRPEER_H
-#define _QRPEER_H
+#ifndef _NNPEER_H
+#define _NNPEER_H
 #include "../main.h"
 
 #include "structs.h"
-#include "NNDriver.h"
 
 #include <OS/Net/NetPeer.h>
 
@@ -11,7 +10,24 @@
 #define NN_TIMEOUT_TIME 120 //time in seconds to d/c when haven't recieved any msg
 #define NN_NATIFY_WAIT_TIME 10 //wait 10 seconds for NN SDK to detect NAT type
 namespace NN {
+
 	class Driver;
+
+	typedef struct _PeerStats {
+		int pending_requests;
+		int version;
+
+		long long bytes_in;
+		long long bytes_out;
+
+		int packets_in;
+		int packets_out;
+
+		OS::Address m_address;
+		OS::GameData from_game;
+
+		bool disconnected;
+	} PeerStats;
 
 	class Peer : public INetPeer {
 	public:
@@ -30,10 +46,13 @@ namespace NN {
 		uint8_t GetClientIndex() { return m_client_index; }
 
 		void OnGotPeerAddress(OS::Address address);
-		OS::MetricInstance GetMetrics();
 		std::string getGamename() { return m_gamename; };
-	protected:
 
+		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
+		OS::MetricInstance GetMetrics();
+		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
+	protected:
+		void ResetMetrics();
 		static int packetSizeFromType(uint8_t type);
 
 		void SendConnectPacket(OS::Address address);
@@ -70,6 +89,8 @@ namespace NN {
 		bool m_got_natify_request;
 		bool m_got_preinit;
 		bool m_sent_connect;
+
+		PeerStats m_peer_stats;
 	};
 }
 #endif //_QRPEER_H

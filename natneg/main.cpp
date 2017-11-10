@@ -5,6 +5,7 @@
 #include <OS/socketlib/socketlib.h>
 #include <OS/Net/NetServer.h>
 #include "server/NNServer.h"
+#include "server/NNPeer.h"
 #include "server/NNDriver.h"
 #include "server/NNBackend.h"
 INetServer *g_gameserver = NULL;
@@ -76,7 +77,7 @@ int gettimeofday(struct timeval * tp, struct timezone * tzp)
 
     GetSystemTime( &system_time );
     SystemTimeToFileTime( &system_time, &file_time );
-    time =  ((uint64_t)file_time.dwLowDateTime )      ;
+    time =  ((uint64_t)file_time.dwLowDateTime );
     time += ((uint64_t)file_time.dwHighDateTime) << 32;
 
     tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);

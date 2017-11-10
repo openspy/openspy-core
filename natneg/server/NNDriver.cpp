@@ -61,7 +61,7 @@ namespace NN {
 					peer->DecRef();
 					driver->m_peers_to_delete.push_back(peer);
 
-					//driver->m_stats_queue.push(peer->GetPeerStats());
+					driver->m_stats_queue.push(peer->GetPeerStats());
 
 					driver->m_server->UnregisterSocket(peer);
 					continue;
@@ -187,7 +187,7 @@ namespace NN {
 	}
 	OS::MetricInstance Driver::GetMetrics() {
 		OS::MetricInstance peer_metric;
-		/*OS::MetricValue arr_value2, value, peers;
+		OS::MetricValue arr_value2, value, peers;
 
 		mp_mutex->lock();
 
@@ -199,11 +199,11 @@ namespace NN {
 
 			value.key = address.ToString(false);
 
-			peers.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, value));			
+			peers.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, value));
 			it++;
 		}
 
-		while(!m_stats_queue.empty()) {
+		while (!m_stats_queue.empty()) {
 			PeerStats stats = m_stats_queue.front();
 			m_stats_queue.pop();
 			peers.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, Peer::GetMetricItemFromStats(stats)));
@@ -213,13 +213,13 @@ namespace NN {
 		arr_value2.type = OS::MetricType_Array;
 		peers.type = OS::MetricType_Array;
 		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, peers));
-	
+
 
 		peer_metric.key = OS::Address(m_local_addr).ToString(false);
 		arr_value2.key = peer_metric.key;
 		peer_metric.value = arr_value2;
-		
-		mp_mutex->unlock();*/
+
+		mp_mutex->unlock();
 		return peer_metric;
 	}
 }

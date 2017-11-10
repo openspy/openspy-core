@@ -22,7 +22,7 @@ namespace NN {
 			void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address);
 			OS::MetricInstance GetMetrics();
 		private:
-		
+			struct timeval m_last_analytics_submit_time;
 	};
 }
 #endif //_CHCGAMESERVER_H

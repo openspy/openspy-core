@@ -1,3 +1,4 @@
+#include "NNPeer.h"
 #include "NNBackend.h"
 
 #include <OS/legacy/helpers.h>
