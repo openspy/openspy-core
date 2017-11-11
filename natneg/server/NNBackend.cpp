@@ -129,7 +129,7 @@ namespace NN {
 		Redis::Command(mp_redis_connection, 0, "EXPIRE nn_cookie_%d %d", task_params.peer->GetCookie(), NATNEG_COOKIE_TIME);
 		switch (task_params.type) {
 			case NN::ENNQueryRequestType_SubmitClient:
-				Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\natneg_init\\%d\\index\\%d\\ipstr\\%s\\gamename\\%s\\privateip\\%s", nn_channel, task_params.peer->GetCookie(), task_params.peer->GetClientIndex(), address.ToString().c_str(), task_params.peer->getGamename().c_str(), task_params.peer->getPrivateAddress().ToString());
+				Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\natneg_init\\%d\\index\\%d\\ipstr\\%s\\gamename\\%s\\privateip\\%s", nn_channel, task_params.peer->GetCookie(), task_params.peer->GetClientIndex(), address.ToString().c_str(), task_params.peer->getGamename().c_str(), task_params.peer->getPrivateAddress().ToString().c_str());
 				break;
 		}
 
