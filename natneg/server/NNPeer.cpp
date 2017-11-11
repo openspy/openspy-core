@@ -127,12 +127,12 @@ namespace NN {
 	}
 	void Peer::handleInitPacket(NatNegPacket *packet) {
 		m_client_index = packet->Packet.Init.clientindex;
+		m_private_address = OS::Address(packet->Packet.Init.localip, packet->Packet.Init.localport);
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, game: %s", OS::Address(m_address_info).ToString().c_str(), packet->version, m_client_index, m_cookie, m_gamename.c_str());
 
 		SubmitClient();
 
-		m_private_address = OS::Address(packet->Packet.Init.localip, packet->Packet.Init.localport);
 		
 		packet->packettype = NN_INITACK;
 		sendPacket(packet);
