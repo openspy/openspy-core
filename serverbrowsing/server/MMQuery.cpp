@@ -813,7 +813,6 @@ namespace MM {
 			task->m_thread_awake = true;
 			while (!task->m_request_list.empty()) {
 				MMQueryRequest task_params = task->m_request_list.front();
-				task->mp_mutex->unlock();
 				task->mp_timer->start();
 				switch (task_params.type) {
 				case EMMQueryRequestType_GetServers:
@@ -843,7 +842,6 @@ namespace MM {
 					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", OS::Address(*task_params.peer->getAddress()).ToString().c_str(), task_params.type, task->mp_timer->time_elapsed()  / 1000000.0);	
 				}
 				
-				task->mp_mutex->lock();
 				task_params.peer->DecRef();
 				task->m_request_list.pop();
 			}
