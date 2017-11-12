@@ -32,7 +32,7 @@ namespace NN {
 
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, connect sent: %d",OS::Address(m_address_info).ToString().c_str(), m_sent_connect);
 	}
 	void Peer::think(bool waiting_packet) {
 		struct timeval time_now;
@@ -64,8 +64,7 @@ namespace NN {
 		}
 	}
 	void Peer::handle_packet(char *recvbuf, int len) {
-		if(len < 0) {
-			m_delete_flag = true;
+		if(len <= 0) {
 			return;
 		}
 		m_peer_stats.packets_in++;
