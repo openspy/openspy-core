@@ -69,7 +69,7 @@ namespace NN {
 						find_param("privateip", temp_str, (char *)&ip_str, sizeof(ip_str) - 1);
 						OS::Address private_addr((const char *)&ip_str);
 
-						OS::LogText(OS::ELogLevel_Info, "[%s] Async got cookie: %d - %d - %s - %s", OS::Address(task_params.peer->getAddress()).ToString().c_str(), cookie, client_idx, addr.ToString(), private_addr.ToString());
+						OS::LogText(OS::ELogLevel_Info, "Async got cookie: %d - %d - %s - %s", cookie, client_idx, addr.ToString(), private_addr.ToString());
 						server->OnGotCookie(cookie, client_idx, addr, private_addr);
 					}
 				end_exit:

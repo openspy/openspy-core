@@ -268,7 +268,7 @@ namespace NN {
 		p.packettype = NN_CONNECT;
 		p.Packet.Connect.finished = FINISHED_ERROR_DEADBEAT_PARTNER;
 		sendPacket(&p);
-		OS::LogText(OS::ELogLevel_Info, "[%s] Sending deadbeat", OS::Address(m_address_info).ToString().c_str(), address.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Sending deadbeat", OS::Address(m_address_info).ToString().c_str());
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
 		if (!m_sent_connect) {
