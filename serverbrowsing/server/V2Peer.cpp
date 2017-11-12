@@ -4,7 +4,6 @@
 #include <OS/OpenSpy.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
-#include <OS/socketlib/socketlib.h>
 #include <limits.h>
 #include <sstream>
 #include <algorithm>
@@ -45,7 +44,7 @@ namespace SB {
 
 		int idx = 0;
 		while((buffer - (uint8_t*)data) < len) {
-			uint32_t buff_len = Socket::htons(BufferReadShort(&buffer, &pos)); //length
+			uint32_t buff_len = htons(BufferReadShort(&buffer, &pos)); //length
 
 			buff_len -= sizeof(uint16_t);
 
@@ -151,7 +150,7 @@ namespace SB {
 		}
 
 
-		options = Socket::htonl(BufferReadInt(buffer, &buf_remain));
+		options = htonl(BufferReadInt(buffer, &buf_remain));
 
 		req.send_groups = options & SEND_GROUPS;
 		
@@ -297,7 +296,7 @@ namespace SB {
 			BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
 		}
 		
-		BufferWriteShort(&p, &len, Socket::htons(list_req.m_from_game.queryport));
+		BufferWriteShort(&p, &len, htons(list_req.m_from_game.queryport));
 
 		bool send_push_keys = false;
 		bool no_keys = list_req.m_from_game.compatibility_flags & OS_COMPATIBILITY_FLAG_SBV2_FROMGAME_LIST_NOKEYS;
@@ -412,7 +411,7 @@ namespace SB {
 			m_sent_crypt_header = true;
 		}
 		if(prepend_length) {
-			BufferWriteShort(&p, &out_len, Socket::htons(len + sizeof(uint16_t)));
+			BufferWriteShort(&p, &out_len, htons(len + sizeof(uint16_t)));
 		}
 		BufferWriteData(&p, &out_len, buff, len);
 		
@@ -664,7 +663,7 @@ namespace SB {
 			BufferWriteInt(&p, &len, /*Socket::htonl*/(private_ip));
 		}
 		if (flags & NONSTANDARD_PRIVATE_PORT_FLAG) {
-			BufferWriteShort(&p, &len, Socket::htons(private_port));
+			BufferWriteShort(&p, &len, htons(private_port));
 		}
 
 		if(flags & HAS_KEYS_FLAG) {
@@ -699,7 +698,7 @@ namespace SB {
 									BufferWriteByte(&p, &len, (atoi(value.c_str())));
 									break;
 								case KEYTYPE_SHORT:
-									BufferWriteShort(&p, &len, Socket::htons(atoi(value.c_str())));
+									BufferWriteShort(&p, &len, htons(atoi(value.c_str())));
 									break;
 								case KEYTYPE_STRING:
 									BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
@@ -788,8 +787,8 @@ namespace SB {
 		DeleteServerFromCacheByKey(server->key);
 
 		BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
-		BufferWriteInt(&p, &len, Socket::htonl(server->wan_address.ip));
-		BufferWriteShort(&p, &len, Socket::htons(server->wan_address.port));
+		BufferWriteInt(&p, &len, server->wan_address.ip);
+		BufferWriteShort(&p, &len, server->wan_address.port);
 		SendPacket((uint8_t *)&buf, len, true);
 	}
 	void V2Peer::informNewServers(MM::Server *server) {

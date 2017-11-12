@@ -4,8 +4,6 @@
 #include <curl/curl.h>
 #include <iomanip>
 
-#include <OS/socketlib/socketlib.h>
-
 #include "Auth.h"
 #include "Logger.h"
 
@@ -444,14 +442,14 @@ namespace OS {
 			strncpy(address, str, len);
 			address[len] = 0;
 		}
-		ip = Socket::inet_addr((const char *)&address);
+		ip = inet_addr((const char *)&address);
 	}
 	Address::Address() {
 		ip = 0;
 		port = 0;
 	}
 	uint16_t Address::GetPort()	{
-		return Socket::htons(port);
+		return htons(port);
 	}
 	const struct sockaddr_in Address::GetInAddr() {
 		struct sockaddr_in ret;
@@ -467,14 +465,18 @@ namespace OS {
 		addr.sin_port = (port);
 		addr.sin_addr.s_addr = (ip);
 
-		char ipinput[ADDR_STR_LEN];
-		Socket::inet_ntop(AF_INET, &(addr.sin_addr), ipinput, ADDR_STR_LEN);
+		char ipinput[64];
+		#ifdef _WIN32
+		typedef const char* (*fdapi_inet_ntop)(int af, const void *src, char *dst, size_t size);
+		fdapi_inet_ntop inet_ntop = (fdapi_inet_ntop)GetProcAddress(NULL, "inet_ntop");
+		#endif
+		inet_ntop(AF_INET, &(addr.sin_addr), ipinput, sizeof(ipinput));
 
 
 		std::ostringstream s;
 		s << ipinput;
 		if(!ip_only) {
- 			s << ":" << Socket::htons(port);
+ 			s << ":" << htons(port);
 		}
 		return s.str();
 	}
@@ -520,5 +522,8 @@ namespace OS {
 			it++;
 		}
 		return best_result;
+	}
+	bool wouldBlock() {
+		return errno == EWOULDBLOCK;
 	}
 }

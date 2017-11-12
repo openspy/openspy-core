@@ -7,24 +7,21 @@
 #include "NNPeer.h"
 #include "NNBackend.h"
 #include "NNDriver.h"
-#include <OS/socketlib/socketlib.h>
 
 namespace NN {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
-		
-		Socket::Init();
 		// /NN::Init(this);
 		uint32_t bind_ip = INADDR_ANY;
 		
-		if ((m_sd = Socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0){
+		if ((m_sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0){
 			printf("Socket error\n");
 			//signal error
 		}
 
-		m_local_addr.sin_port = Socket::htons(port);
-		m_local_addr.sin_addr.s_addr = Socket::htonl(bind_ip);
+		m_local_addr.sin_port = htons(port);
+		m_local_addr.sin_addr.s_addr = htonl(bind_ip);
 		m_local_addr.sin_family = AF_INET;
-		int n = Socket::bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
+		int n = bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
 		if (n < 0) {
 			//signal error
 		}
@@ -144,16 +141,16 @@ namespace NN {
 	}
 
 	void Driver::OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address) {
-		mp_mutex->lock();
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = *it;
+		const std::vector < INetPeer * > peers = this->getPeers(true);
+		std::vector<INetPeer *>::const_iterator it = peers.begin();
+		while (it != peers.end()) {
+			Peer *p = (Peer *)*it;
 			if(p->GetCookie() == cookie && p->GetClientIndex() != client_idx && p->GetClientIndex() != -1) {
 				p->OnGotPeerAddress(address, private_address);
 			}
+			p->DecRef();
 			it++;
 		}
-		mp_mutex->unlock();
 	}
 
 	void Driver::TickConnections() {
@@ -165,12 +162,15 @@ namespace NN {
 		}
 	}
 
-	const std::vector<INetPeer *> Driver::getPeers() {
+	const std::vector<INetPeer *> Driver::getPeers(bool inc_ref) {
 		std::vector<INetPeer *> peers;
 		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			INetPeer *p = (INetPeer *)*it;
+			if (inc_ref) {
+				p->IncRef();
+			}
 			peers.push_back(p);
 			it++;
 		}

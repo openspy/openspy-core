@@ -1,6 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
+#include <OS/OpenSpy.h>
 #include "helpers.h"
-#include <OS/socketlib/socketlib.h>
 int delimit(char *data) {
     char      *p;
     for(p = data; *p && (*p != '\r') && (*p != '\n'); p++);
@@ -157,7 +157,7 @@ uint32_t resolv(char *host) {
     struct  hostent *hp;
     uint32_t    host_ip;
 
-    host_ip = Socket::inet_addr(host);
+    host_ip = inet_addr(host);
     if(host_ip == INADDR_NONE) {
         hp = gethostbyname(host);
         if(!hp) {

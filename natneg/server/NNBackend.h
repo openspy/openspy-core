@@ -10,7 +10,6 @@
 #include <OS/Thread.h>
 #include <OS/Mutex.h>
 
-#include <OS/socketlib/socketlib.h>
 #include <OS/Timer/HiResTimer.h>
 
 #include <vector>

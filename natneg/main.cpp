@@ -2,7 +2,6 @@
 #include <map>
 #include <string>
 #include <sstream>
-#include <OS/socketlib/socketlib.h>
 #include <OS/Net/NetServer.h>
 #include "server/NNServer.h"
 #include "server/NNPeer.h"
@@ -32,7 +31,6 @@ int main() {
     }
 
     OS::Init("natneg",0, "chc");
-    Socket::Init();
 
 	#ifndef _WIN32
     signal(SIGINT, sig_handler);

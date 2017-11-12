@@ -5,7 +5,6 @@
 #include "SelectNetEventManager.h"
 #include <stdio.h>
 #include "NetPeer.h"
-#include <OS/socketlib/socketlib.h>
 SelectNetEventManager::SelectNetEventManager() {
 	m_exit_flag = false;
 	m_dirty_fdset = true;
@@ -22,7 +21,7 @@ void SelectNetEventManager::run() {
 
 	int hsock = setup_fdset();
 
-    if(Socket::select(hsock, &m_fdset, NULL, NULL, &timeout) < 0) {
+    if(select(hsock, &m_fdset, NULL, NULL, &timeout) < 0) {
     	//return;
     }
     if(m_exit_flag) {

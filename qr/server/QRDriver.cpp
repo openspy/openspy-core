@@ -6,25 +6,23 @@
 
 #include "QRPeer.h"
 #include "QRDriver.h"
-#include <OS/socketlib/socketlib.h>
 #include "V1Peer.h"
 #include "V2Peer.h"
 namespace QR {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 
-		Socket::Init();
 		uint32_t bind_ip = INADDR_ANY;
 
-		if ((m_sd = Socket::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+		if ((m_sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
 			//signal error
 		}
 
 		makeNonBlocking(m_sd);
 
-		m_local_addr.sin_port = Socket::htons(port);
-		m_local_addr.sin_addr.s_addr = Socket::htonl(bind_ip);
+		m_local_addr.sin_port = htons(port);
+		m_local_addr.sin_addr.s_addr = htonl(bind_ip);
 		m_local_addr.sin_family = AF_INET;
-		int n = Socket::bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
+		int n = bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
 		if (n < 0) {
 			//signal error
 		}
@@ -175,12 +173,15 @@ namespace QR {
 			it++;
 		}
 	}
-	const std::vector<INetPeer *> Driver::getPeers() {
+	const std::vector<INetPeer *> Driver::getPeers(bool inc_ref) {
 		std::vector<INetPeer *> peers;
 		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			INetPeer *p = (INetPeer *)*it;
+			if (inc_ref) {
+				p->IncRef();
+			}
 			peers.push_back(p);
 			it++;
 		}

@@ -2,7 +2,6 @@
 #include <map>
 #include <string>
 #include <sstream>
-#include <OS/socketlib/socketlib.h>
 #include <OS/Net/NetServer.h>
 #include "server/SBServer.h"
 #include "server/SBDriver.h"
@@ -41,9 +40,11 @@ int main() {
 	#ifndef _WIN32
 		signal(SIGINT, sig_handler);
 		signal(SIGTERM, sig_handler);
+	#else
+		WSADATA wsdata;
+		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
-	Socket::Init();
 	OS::Init("serverbrowsing", 0, "chc");
     
 

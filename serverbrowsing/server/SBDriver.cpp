@@ -9,18 +9,17 @@
 #include "SBPeer.h"
 #include "V1Peer.h"
 #include "V2Peer.h"
-#include <OS/socketlib/socketlib.h>
 
 #include "MMQuery.h"
 namespace SB {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version) : INetDriver(server) {
 		uint32_t bind_ip = INADDR_ANY;
 		
-		if ((m_sd = Socket::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
+		if ((m_sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
 			//signal error
 		}
 		int on = 1;
-		if (Socket::setsockopt(m_sd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on))
+		if (setsockopt(m_sd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on))
 			< 0) {
 			//signal error
 		}
@@ -31,14 +30,14 @@ namespace SB {
 		}
 		#endif
 
-		m_local_addr.sin_port = Socket::htons(port);
-		m_local_addr.sin_addr.s_addr = Socket::htonl(bind_ip);
+		m_local_addr.sin_port = htons(port);
+		m_local_addr.sin_addr.s_addr = htonl(bind_ip);
 		m_local_addr.sin_family = AF_INET;
-		int n = Socket::bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
+		int n = bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
 		if (n < 0) {
 			//signal error
 		}
-		if (Socket::listen(m_sd, SOMAXCONN)
+		if (listen(m_sd, SOMAXCONN)
 			< 0) {
 			//signal error
 		}
@@ -124,7 +123,7 @@ namespace SB {
 			while(true) {
 				socklen_t psz = sizeof(struct sockaddr_in);
 				struct sockaddr_in peer;
-				int sda = Socket::accept(m_sd, (struct sockaddr *)&peer, &psz);
+				int sda = accept(m_sd, (struct sockaddr *)&peer, &psz);
 				if (sda <= 0) return;
 				Peer *mp_peer = NULL;
 				switch (m_version) {
@@ -250,12 +249,15 @@ namespace SB {
 		m_server_update_queue.push(serv);
 		mp_mutex->unlock();
 	}
-	const std::vector<INetPeer *> Driver::getPeers() {
+	const std::vector<INetPeer *> Driver::getPeers(bool inc_ref) {
 		mp_mutex->lock();
 		std::vector<INetPeer *> peers;
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
-			peers.push_back((INetPeer *)*it);
+			INetPeer * p = (INetPeer *)*it;
+			peers.push_back(p);
+			if (inc_ref)
+				p->IncRef();
 			it++;
 		}
 		mp_mutex->unlock();

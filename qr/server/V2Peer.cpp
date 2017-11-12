@@ -6,13 +6,11 @@
 
 #include "QRPeer.h"
 #include "QRDriver.h"
-#include <OS/socketlib/socketlib.h>
 #include "V2Peer.h"
 
 #include <OS/legacy/buffwriter.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/enctypex_decoder.h>
-#include <OS/socketlib/socketlib.h>
 #include <OS/legacy/helpers.h>
 
 #define PACKET_QUERY              0x00  //S -> C

@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include <OS/socketlib/socketlib.h>
 #include "server/QRServer.h"
 #include "server/QRDriver.h"
 INetServer *g_gameserver = NULL;
@@ -33,9 +32,10 @@ int main() {
 	#ifndef _WIN32
 		signal(SIGINT, sig_handler);
 		signal(SIGTERM, sig_handler);
+	#else
+		WSADATA wsdata;
+		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
-
-	Socket::Init();
   	OS::Init("qr", 0, "chc");
 	
   	g_gameserver = new QR::Server();

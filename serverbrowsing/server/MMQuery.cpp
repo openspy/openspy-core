@@ -3,8 +3,6 @@
 #include "server/SBDriver.h"
 #include "server/SBServer.h"
 
-#include <OS/socketlib/socketlib.h>
-
 #include <OS/legacy/helpers.h>
 
 #include <OS/Thread.h>
@@ -224,7 +222,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type== Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->wan_address.port = Socket::htons(atoi((v.value._str).c_str()));
+			server->wan_address.port = htons(atoi((v.value._str).c_str()));
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s wan_ip", entry_name.c_str());
 
@@ -234,7 +232,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->wan_address.ip = Socket::inet_addr((v.value._str).c_str());
+			server->wan_address.ip = inet_addr((v.value._str).c_str());
 
 		if(all_keys) {
 			reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
@@ -534,7 +532,7 @@ namespace MM {
 
 		v = reply.values.front();
 
-		server->wan_address.ip = Socket::htonl(atoi((v.value._str).c_str())); //for V2
+		server->wan_address.ip = htonl(atoi((v.value._str).c_str())); //for V2
 		server->kvFields["groupid"] = (v.value._str).c_str(); //for V1
 		
 		FindAppend_ServKVFields(server, entry_name, "maxwaiting", redis_ctx);

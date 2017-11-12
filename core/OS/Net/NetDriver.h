@@ -15,7 +15,7 @@ public:
 	virtual int getListenerSocket() = 0;
 	virtual const std::vector<int> getSockets() = 0;
 	INetServer *getServer() { return m_server; }
-	virtual const std::vector<INetPeer *> getPeers() = 0;
+	virtual const std::vector<INetPeer *> getPeers(bool inc_ref = false) = 0;
 	virtual OS::MetricInstance GetMetrics() = 0;
 protected:
 	INetServer *m_server;

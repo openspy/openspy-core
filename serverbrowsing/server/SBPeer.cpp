@@ -3,7 +3,6 @@
 #include <OS/OpenSpy.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
-#include <OS/socketlib/socketlib.h>
 
 namespace SB {
 	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version) : INetPeer(driver, address_info, sd) {

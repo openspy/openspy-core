@@ -162,6 +162,8 @@ namespace OS {
 	void Sleep(int time_ms);
 
 	std::string FindBestMatch(std::vector<std::string> matches, std::string name);
+
+	bool wouldBlock();
 }
 
 

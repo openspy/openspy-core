@@ -3,7 +3,6 @@
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
 #include <OS/legacy/enctypex_decoder.h>
-#include <OS/socketlib/socketlib.h>
 #include <OS/legacy/helpers.h>
 
 #include "structs.h"
@@ -80,7 +79,7 @@ namespace NN {
 
 		gettimeofday(&m_last_recv, NULL);
 
-		packet->cookie = Socket::htonl(packet->cookie);
+		packet->cookie = htonl(packet->cookie);
 		if (m_cookie == 0) {
 			m_cookie = packet->cookie;
 		}
@@ -217,7 +216,7 @@ namespace NN {
 		memcpy(packet->magic, NNMagicData, NATNEG_MAGIC_LEN);
 
 		packet->version = m_client_version;
-		packet->cookie = Socket::htonl(m_cookie);
+		packet->cookie = htonl(m_cookie);
 
 		m_peer_stats.packets_out++;
 		m_peer_stats.bytes_out += size;

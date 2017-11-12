@@ -40,7 +40,7 @@ namespace QR {
 		const std::vector<int> getSockets();
 		int GetNumConnections();
 
-		const std::vector<INetPeer *> getPeers();
+		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		OS::MetricInstance GetMetrics();
 	private:
 		static void *TaskThread(OS::CThread *thread);

@@ -34,7 +34,7 @@ namespace SB {
 		uint32_t getDeltaTime();
 
 		Peer *find_client(struct sockaddr_in *address);
-		const std::vector<INetPeer *> getPeers();
+		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		const std::vector<int> getSockets();
 		void SendDeleteServer(MM::Server *server);
 	    void SendNewServer(MM::Server *server);

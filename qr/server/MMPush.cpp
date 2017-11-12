@@ -1,6 +1,5 @@
 
 #include "MMPush.h"
-#include <OS/socketlib/socketlib.h>
 
 #include <OS/Redis.h>
 #include <OS/legacy/helpers.h>
@@ -43,8 +42,8 @@ namespace MM {
 						find_param(5, temp_str, (char *)&to_port, sizeof(to_port) - 1);
 						find_param(6, temp_str, (char *)&data, sizeof(data) - 1);
 						struct sockaddr_in address;
-						address.sin_port = Socket::htons(atoi(to_port));
-						address.sin_addr.s_addr = Socket::inet_addr((const char *)&to_ip);
+						address.sin_port = htons(atoi(to_port));
+						address.sin_addr.s_addr = inet_addr((const char *)&to_ip);
 						QR::Peer *peer = server->find_client(&address);
 						if (!peer) {
 							goto end_exit;

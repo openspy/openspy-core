@@ -34,7 +34,7 @@ namespace NN {
 
 		void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address);
 
-		const std::vector<INetPeer *> getPeers();
+		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		const std::vector<int> getSockets();
 		OS::MetricInstance GetMetrics();
 	private:

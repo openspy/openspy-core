@@ -1,7 +1,6 @@
 #include <OS/OpenSpy.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
-#include <OS/socketlib/socketlib.h>
 #include <OS/legacy/enctypex_decoder.h>
 #include <OS/legacy/gsmsalg.h>
 #include <OS/legacy/enctype_shared.h>
@@ -62,7 +61,7 @@ namespace SB {
 			}
 			if (packet_waiting) {
 				len = recv(m_sd, (char *)&buf, MAX_OUTGOING_REQUEST_SIZE, 0);
-				if (Socket::wouldBlock()) {
+				if (OS::wouldBlock()) {
 					return;
 				}
 				if (len <= 0) {
@@ -286,9 +285,6 @@ namespace SB {
 		void V1Peer::SendServerInfo(MM::ServerListQuery results) {
 			std::ostringstream resp;
 			int field_count;
-			struct sockaddr_in address_info;
-
-			char ip_address[ADDR_STR_LEN];
 
 			std::vector<std::string>::iterator it;
 			results.captured_basic_fields.insert(results.captured_basic_fields.begin(), "ip"); //insert ip/port field
@@ -305,11 +301,8 @@ namespace SB {
 				MM::Server *serv = *it2;
 
 				it = results.captured_basic_fields.begin();
-				address_info.sin_port = serv->wan_address.port;
-				address_info.sin_addr.s_addr = Socket::htonl(serv->wan_address.ip);
-				Socket::inet_ntop(AF_INET, &(address_info.sin_addr), ip_address, ADDR_STR_LEN);
 
-				resp << "\\" << ip_address << ":" << address_info.sin_port; //add ip/port
+				resp << "\\" << serv->wan_address.ToString(); //add ip/port
 				while(it != results.captured_basic_fields.end()) {
 					std::string field = *it;
 					resp << "\\" << field_cleanup(serv->kvFields[field]);
@@ -392,8 +385,8 @@ namespace SB {
 			std::vector<MM::Server *>::iterator it = results.list.begin();
 			while(it != results.list.end()) {
 				MM::Server *serv = *it;
-				BufferWriteInt((uint8_t **)&p,&len,Socket::htonl(serv->wan_address.ip));
-				BufferWriteShort((uint8_t **)&p,&len,Socket::htons(serv->wan_address.port));
+				BufferWriteInt((uint8_t **)&p,&len,serv->wan_address.ip);
+				BufferWriteShort((uint8_t **)&p,&len,serv->wan_address.port);
 				it++;
 			}
 			if (results.last_set) {
