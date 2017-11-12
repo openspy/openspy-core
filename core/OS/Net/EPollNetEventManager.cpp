@@ -5,7 +5,6 @@
 	#include "NetServer.h"
 	#include "NetPeer.h"
 	#include <algorithm>
-	#include <OS/socketlib/socketlib.h>
 
 	EPollNetEventManager::EPollNetEventManager() {
 		m_exit_flag = false;
