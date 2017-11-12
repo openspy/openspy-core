@@ -24,7 +24,7 @@ namespace SB {
 			//signal error
 		}
 		#if SO_REUSEPORT
-		if (Socket::setsockopt(m_sd, SOL_SOCKET, SO_REUSEPORT, (char *)&on, sizeof(on))
+		if (setsockopt(m_sd, SOL_SOCKET, SO_REUSEPORT, (char *)&on, sizeof(on))
 			< 0) {
 			//signal error
 		}
