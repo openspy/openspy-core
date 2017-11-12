@@ -68,6 +68,8 @@ namespace NN {
 
 						find_param("privateip", temp_str, (char *)&ip_str, sizeof(ip_str) - 1);
 						OS::Address private_addr((const char *)&ip_str);
+
+						OS::LogText(OS::ELogLevel_Info, "[%s] Async got cookie: %d - %d - %s - %s", OS::Address(task_params.peer->getAddress()).ToString().c_str(), cookie, client_idx, addr.ToString(), private_addr.ToString());
 						server->OnGotCookie(cookie, client_idx, addr, private_addr);
 					}
 				end_exit:
@@ -130,6 +132,7 @@ namespace NN {
 		switch (task_params.type) {
 			case NN::ENNQueryRequestType_SubmitClient:
 				Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\natneg_init\\%d\\index\\%d\\ipstr\\%s\\gamename\\%s\\privateip\\%s", nn_channel, task_params.peer->GetCookie(), task_params.peer->GetClientIndex(), address.ToString().c_str(), task_params.peer->getGamename().c_str(), task_params.peer->getPrivateAddress().ToString().c_str());
+				
 				break;
 		}
 

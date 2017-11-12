@@ -268,6 +268,7 @@ namespace NN {
 		p.packettype = NN_CONNECT;
 		p.Packet.Connect.finished = FINISHED_ERROR_DEADBEAT_PARTNER;
 		sendPacket(&p);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Sending deadbeat", OS::Address(m_address_info).ToString().c_str(), address.ToString().c_str());
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
 		if (!m_sent_connect) {
@@ -286,6 +287,8 @@ namespace NN {
 		p.Packet.Connect.remotePort = remote_addr.sin_port;
 
 		sendPacket(&p);
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s)", OS::Address(m_address_info).ToString().c_str(), address.ToString().c_str());
 
 		//p.Packet.Connect.gotyourdata = 1;
 		//p.packettype = NN_CONNECT_PING;
