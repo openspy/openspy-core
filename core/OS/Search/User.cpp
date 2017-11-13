@@ -170,7 +170,7 @@ namespace OS {
 		}
 		return NULL;
 	}
-	UserSearchTask::UserSearchTask() : Task<UserSearchRequest>() {
+	UserSearchTask::UserSearchTask(int thread_index) : Task<UserSearchRequest>() {
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(UserSearchTask::TaskThread, this, true);
 

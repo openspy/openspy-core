@@ -12,9 +12,12 @@
 
 #include <serverbrowsing/filter/filter.h>
 
+#include <OS/Cache/GameCache.h>
+
 namespace MM {
 
 	OS::TaskPool<MMQueryTask, MMQueryRequest> *m_task_pool = NULL;
+	OS::GameCache *m_game_cache;
 	Redis::Connection *mp_redis_async_retrival_connection;
 	OS::CThread *mp_async_thread;
 	Redis::Connection *mp_redis_async_connection;
@@ -27,7 +30,7 @@ namespace MM {
 		t.tv_sec = 60;
 		mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
 
-		mp_async_lookup_task = new MMQueryTask();
+		mp_async_lookup_task = new MMQueryTask(NUM_MM_QUERY_THREADS);
 
 		Redis::LoopingCommand(mp_redis_async_connection, 60, MMQueryTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s", sb_mm_channel);
 		return NULL;
@@ -39,9 +42,15 @@ namespace MM {
 		t.tv_usec = 0;
 		t.tv_sec = 60;
 
+		OS::DataCacheTimeout gameCacheTimeout;
+		gameCacheTimeout.max_keys = 50;
+		gameCacheTimeout.timeout_time_secs = 7200;
+
 		mp_redis_async_retrival_connection = Redis::Connect(OS_REDIS_ADDR, t);
 		mp_async_thread = OS::CreateThread(setup_redis_async, NULL, true);
 		OS::Sleep(200);
+
+		m_game_cache = new OS::GameCache(NUM_MM_QUERY_THREADS+1, gameCacheTimeout);
 
 		m_task_pool = new OS::TaskPool<MMQueryTask, MMQueryRequest>(NUM_MM_QUERY_THREADS);
 		server->SetTaskPool(m_task_pool);
@@ -99,9 +108,11 @@ namespace MM {
 			m_drivers.erase(it);
 		}
 	}
-	MMQueryTask::MMQueryTask() {
+	MMQueryTask::MMQueryTask(int thread_index) {
 		m_redis_timeout = 60;
 		m_thread_awake = false;
+
+		m_thread_index = thread_index;
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -801,7 +812,24 @@ namespace MM {
 			request.SubmitData.base64.c_str());
 	}
 	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {
-		request.peer->OnRecievedGameInfoPair(OS::GetGameByName(request.gamenames[0].c_str(), this->mp_redis_connection), OS::GetGameByName(request.gamenames[1].c_str(), this->mp_redis_connection), request.extra);
+		OS::GameData games[2];
+		OS::GameCacheKey key;
+		if (!m_game_cache->LookupGameByName(request.gamenames[0], games[0])) {
+			printf("**** redis Lookup game: %s\n", request.gamenames[0].c_str());
+			games[0] = OS::GetGameByName(request.gamenames[0].c_str(), this->mp_redis_connection);
+			key.gamename = request.gamenames[0];
+			key.id = games[0].gameid;
+			m_game_cache->AddItem(m_thread_index, key, games[0]);
+		}		
+		if (!m_game_cache->LookupGameByName(request.gamenames[1], games[1])) {
+			printf("**** redis Lookup game 2: %s\n", request.gamenames[1].c_str());
+			games[1] = OS::GetGameByName(request.gamenames[1].c_str(), this->mp_redis_connection);
+			key.gamename = request.gamenames[1];
+			key.id = games[1].gameid;
+			m_game_cache->AddItem(m_thread_index, key, games[1]);
+		}
+		
+		request.peer->OnRecievedGameInfoPair(games[0], games[1], request.extra);
 	}
 	void MMQueryTask::PerformGetGameInfoByGameName(MMQueryRequest request) {
 		request.peer->OnRecievedGameInfo(OS::GetGameByName(request.gamenames[0].c_str(), this->mp_redis_connection), request.extra);
@@ -845,6 +873,7 @@ namespace MM {
 				task_params.peer->DecRef();
 				task->m_request_list.pop();
 			}
+			m_game_cache->timeoutMap(task->m_thread_index);
 			task->m_thread_awake = false;
 			task->mp_mutex->unlock();
 		}

@@ -71,7 +71,7 @@ namespace OS {
 
 	class AuthTask : public Task<AuthRequest> {
 		public:
-			AuthTask();
+			AuthTask(int thread_index);
 			~AuthTask();
 			static void TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);

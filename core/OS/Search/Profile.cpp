@@ -257,7 +257,7 @@ namespace OS {
 		}
 		return NULL;
 	}
-	ProfileSearchTask::ProfileSearchTask() : Task<ProfileSearchRequest>() {
+	ProfileSearchTask::ProfileSearchTask(int thread_index) : Task<ProfileSearchRequest>() {
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(ProfileSearchTask::TaskThread, this, true);
 

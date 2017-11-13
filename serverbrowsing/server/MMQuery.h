@@ -124,7 +124,7 @@ namespace MM {
 	
 	class MMQueryTask : public OS::Task<MMQueryRequest> {
 		public:
-			MMQueryTask();
+			MMQueryTask(int index);
 			~MMQueryTask();
 			static void Shutdown();
 
@@ -166,6 +166,7 @@ namespace MM {
 			time_t m_redis_timeout;
 			bool m_thread_awake;
 			OS::HiResTimer *mp_timer;
+			int m_thread_index;
 	};
 
 	#define NUM_MM_QUERY_THREADS 8

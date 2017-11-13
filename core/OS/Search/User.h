@@ -40,7 +40,7 @@ namespace OS {
 
 	class UserSearchTask : public Task<UserSearchRequest> {
 		public:
-			UserSearchTask();
+			UserSearchTask(int thread_index);
 			~UserSearchTask();
 		private:
 			static void PerformRequest(UserSearchRequest request);

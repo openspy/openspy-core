@@ -55,7 +55,7 @@ namespace OS {
 
 	class ProfileSearchTask : public Task<ProfileSearchRequest> {
 		public:
-			ProfileSearchTask();
+			ProfileSearchTask(int thread_index);
 			~ProfileSearchTask();
 		private:
 			static void PerformSearch(ProfileSearchRequest request);

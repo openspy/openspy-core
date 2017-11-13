@@ -577,7 +577,7 @@ namespace OS {
 		request.peer = peer;
 		m_auth_task_pool->AddRequest(request);
 	}
-	AuthTask::AuthTask() {
+	AuthTask::AuthTask(int thread_index) {
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(AuthTask::TaskThread, this, true);
 	}

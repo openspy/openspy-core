@@ -25,6 +25,7 @@ namespace OS {
 	Redis::Connection *redis_internal_connection = NULL;
 	const char *g_appName = NULL;
 	const char *g_hostName = NULL;
+
 	void Init(const char *appName, int num_async_tasks, const char *hostName) {
 		g_appName = appName;
 		g_hostName = hostName;
@@ -466,10 +467,8 @@ namespace OS {
 		addr.sin_addr.s_addr = (ip);
 
 		char ipinput[64];
-		#ifdef _WIN32
-		typedef const char* (*fdapi_inet_ntop)(int af, const void *src, char *dst, size_t size);
-		fdapi_inet_ntop inet_ntop = (fdapi_inet_ntop)GetProcAddress(NULL, "inet_ntop");
-		#endif
+		memset(&ipinput, 0, sizeof(ipinput));
+
 		inet_ntop(AF_INET, &(addr.sin_addr), ipinput, sizeof(ipinput));
 
 
@@ -526,4 +525,6 @@ namespace OS {
 	bool wouldBlock() {
 		return errno == EWOULDBLOCK;
 	}
+
+
 }

@@ -8,7 +8,7 @@ namespace OS {
 	public:
 		TaskPool(int num_threads) {
 			for(int i=0;i<num_threads;i++) {
-				T *task = new T();
+				T *task = new T(i);
 				m_tasks.push_back(task);
 			}
 		}
