@@ -231,7 +231,8 @@ namespace OS {
 
 		if (jwt_encoded)
 			free((void *)jwt_encoded);
-		request.callback(error, results, users_map, request.extra);
+
+		request.callback(error, results, users_map, request.extra, request.peer);
 	}
 	void *ProfileSearchTask::TaskThread(CThread *thread) {
 		ProfileSearchTask *task = (ProfileSearchTask *)thread->getParams();

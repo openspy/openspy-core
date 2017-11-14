@@ -20,7 +20,7 @@ namespace OS {
 		EUserResponseType_GenericError,
 		EUserResponseType_EmailInUse,
 	};
-	typedef void (*UserSearchCallback)(EUserResponseType response_type, std::vector<OS::User> results, void *extra);
+	typedef void (*UserSearchCallback)(EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer);
 
 	enum EUserRequestType {
 		EUserRequestType_Search,

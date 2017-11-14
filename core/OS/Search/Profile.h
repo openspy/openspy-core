@@ -27,7 +27,7 @@ namespace OS {
 		EProfileResponseType_UniqueNick_Invalid,
 		EProfileResponseType_UniqueNick_InUse,
 	};
-	typedef void (*ProfileSearchCallback)(EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+	typedef void (*ProfileSearchCallback)(EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 	enum EProfileSearchType {
 		EProfileSearch_Profiles,

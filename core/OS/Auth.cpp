@@ -156,7 +156,7 @@ namespace OS {
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
 
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id);
+				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		} else {
@@ -274,7 +274,7 @@ namespace OS {
 					success = false;
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id);
+				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
@@ -377,7 +377,7 @@ namespace OS {
 					success = false;
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id);
+				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
@@ -487,7 +487,7 @@ namespace OS {
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
 
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id);
+				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}

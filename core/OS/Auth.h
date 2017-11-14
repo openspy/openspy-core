@@ -32,7 +32,7 @@ namespace OS {
 		std::string hash_proof;
 		AuthResponseCode response_code;
 	} AuthData;
-	typedef void (*AuthCallback)(bool success, User user, Profile profile, AuthData auth_data, void *extra, int operation_id);
+	typedef void (*AuthCallback)(bool success, User user, Profile profile, AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 
 	enum EAuthType {
 		EAuthType_NickEmail_GPHash,

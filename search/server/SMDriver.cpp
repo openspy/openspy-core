@@ -6,7 +6,6 @@
 #include "SMPeer.h"
 
 namespace SM {
-	Driver *g_gbl_sm_driver;
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		uint32_t bind_ip = INADDR_ANY;
 		
@@ -35,9 +34,6 @@ namespace SM {
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
-
-		g_gbl_sm_driver = this;
-
 	}
 	Driver::~Driver() {
 		std::vector<Peer *>::iterator it = m_connections.begin();

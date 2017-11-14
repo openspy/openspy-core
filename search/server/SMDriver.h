@@ -56,6 +56,5 @@ namespace SM {
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;
 	};
-	extern Driver *g_gbl_sm_driver;
 }
 #endif //_SBDRIVER_H

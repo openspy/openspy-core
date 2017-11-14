@@ -140,7 +140,7 @@ namespace OS {
 			free((void *)jwt_encoded);
 
 		if(request.callback != NULL)
-			request.callback(resp_type, results, request.extra);
+			request.callback(resp_type, results, request.extra, request.peer);
 	}
 
 	void *UserSearchTask::TaskThread(CThread *thread) {
