@@ -13,7 +13,7 @@
 #else
 #include <sys/time.h>
 #endif
-
+#define DRIVER_THREAD_TIME 1000
 namespace SM {
 	class Peer;
 
@@ -21,8 +21,7 @@ namespace SM {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
-		void tick(fd_set *fdset);
-		void think(fd_set *fdset);
+		void think(bool listener_waiting);
 		int getListenerSocket();
 		uint16_t getPort();
 		uint32_t getBindIP();
@@ -32,15 +31,21 @@ namespace SM {
 		Peer *find_or_create(struct sockaddr_in *address);
 		bool HasPeer(Peer *);
 
-		int setup_fdset(fd_set *fdset);
-		
+		const std::vector<int> getSockets();
 		int GetNumConnections();
 
-	private:
+		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 
-		void TickConnections(fd_set *fdset);
+		OS::MetricInstance GetMetrics();
+	private:
+		static void *TaskThread(OS::CThread *thread);
+		void TickConnections();
 
 		int m_sd;
+		std::vector<SM::Peer *> m_peers_to_delete;
+
+		//safe for now, until pointers one day get added
+		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		std::vector<Peer *> m_connections;
 		
@@ -48,6 +53,8 @@ namespace SM {
 
 		struct timeval m_server_start;
 
+		OS::CMutex *mp_mutex;
+		OS::CThread *mp_thread;
 	};
 	extern Driver *g_gbl_sm_driver;
 }

@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include <OS/socketlib/socketlib.h>
 #include "server/SMServer.h"
 #include "server/SMDriver.h"
 INetServer *g_gameserver = NULL;
@@ -22,11 +21,15 @@ void sig_handler(int signo)
 }
 
 int main() {
-    OS::Init("search");
-    Socket::Init();
+    OS::Init("search", 8, "chc");
 
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
+	#ifndef _WIN32
+		signal(SIGINT, sig_handler);
+		signal(SIGTERM, sig_handler);
+	#else
+		WSADATA wsdata;
+		WSAStartup(MAKEWORD(1, 0), &wsdata);
+	#endif
 
 
 	g_gameserver = new SM::Server();

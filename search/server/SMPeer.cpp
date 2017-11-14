@@ -5,7 +5,6 @@
 #include <OS/legacy/helpers.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
-#include <OS/socketlib/socketlib.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
 #include <OS/Auth.h>
@@ -22,7 +21,7 @@ enum { //TODO: move into shared header
 
 namespace SM {
 	const char *Peer::mp_hidden_str = "[hidden]";
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) {
+	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
 		m_sd = sd;
 		mp_driver = driver;
 		m_address_info = *address_info;
@@ -228,7 +227,7 @@ namespace SM {
 		request.type = OS::EProfileSearch_Profiles;
 		request.extra = this;
 		request.callback = Peer::m_search_callback;
-		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
 		Peer *peer = (Peer *)extra;
@@ -300,7 +299,7 @@ namespace SM {
 		request.type = OS::EProfileSearch_Buddies;
 		request.extra = this;
 		request.callback = Peer::m_search_buddies_callback;
-		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 
 	void Peer::m_search_buddies_reverse_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
@@ -356,7 +355,7 @@ namespace SM {
 		request.type = OS::EProfileSearch_Buddies_Reverse;
 		request.extra = this;
 		request.callback = Peer::m_search_buddies_reverse_callback;
-		OS::ProfileSearchTask::getProfileTask()->AddRequest(request);
+		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::m_search_valid_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra) {
 		Peer *peer = (Peer *)extra;
@@ -381,7 +380,7 @@ namespace SM {
 		}
 		request.extra = this;
 		request.callback = Peer::m_search_valid_callback;
-		OS::UserSearchTask::getUserTask()->AddRequest(request);
+		OS::m_user_search_task_pool->AddRequest(request);
 	}
 	void Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
 		uint8_t out_buff[GPI_READ_SIZE + 1];
@@ -395,5 +394,69 @@ namespace SM {
 		if(c < 0) {
 			m_delete_flag = true;
 		}
+	}
+	OS::MetricValue Peer::GetMetricItemFromStats(PeerStats stats) {
+		OS::MetricValue arr_value, value;
+		value.value._str = stats.m_address.ToString(false);
+		value.key = "ip";
+		value.type = OS::MetricType_String;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.disconnected;
+		value.key = "disconnected";
+		value.type = OS::MetricType_Integer;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.type = OS::MetricType_Integer;
+		value.value._int = stats.bytes_in;
+		value.key = "bytes_in";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.bytes_out;
+		value.key = "bytes_out";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.packets_in;
+		value.key = "packets_in";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.packets_out;
+		value.key = "packets_out";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.total_requests;
+		value.key = "pending_requests";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		arr_value.type = OS::MetricType_Array;
+
+		value.type = OS::MetricType_String;
+		value.key = "gamename";
+		value.value._str = stats.from_game.gamename;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.type = OS::MetricType_Integer;
+		value.key = "version";
+		value.value._int = stats.version;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		arr_value.key = stats.m_address.ToString(false);
+		return arr_value;
+	}
+	void Peer::ResetMetrics() {
+		m_peer_stats.bytes_in = 0;
+		m_peer_stats.bytes_out = 0;
+		m_peer_stats.packets_in = 0;
+		m_peer_stats.packets_out = 0;
+		m_peer_stats.total_requests = 0;
+	}
+	OS::MetricInstance Peer::GetMetrics() {
+		OS::MetricInstance peer_metric;
+
+		peer_metric.value = GetMetricItemFromStats(m_peer_stats);
+		peer_metric.key = "peer";
+
+		ResetMetrics();
+
+		return peer_metric;
 	}
 }

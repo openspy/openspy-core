@@ -49,8 +49,24 @@ enum {
 #define SM_PING_TIME 120
 
 namespace SM {
+	typedef struct _PeerStats {
+		int total_requests;
+		int version;
+
+		long long bytes_in;
+		long long bytes_out;
+
+		int packets_in;
+		int packets_out;
+
+		OS::Address m_address;
+		OS::GameData from_game;
+
+		bool disconnected;
+	} PeerStats;
+
 	class Driver;
-	class Peer {
+	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~Peer();
@@ -66,6 +82,9 @@ namespace SM {
 
 		void SendPacket(const uint8_t *buff, int len, bool attach_final = true);
 
+		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
+		OS::MetricInstance GetMetrics();
+		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 	private:
 
 		void handle_search(const char *buf, int len);
@@ -88,6 +107,7 @@ namespace SM {
 
 		int m_sd;
 		Driver *mp_driver;
+		PeerStats m_peer_stats;
 
 		struct sockaddr_in m_address_info;
 
@@ -97,7 +117,7 @@ namespace SM {
 		bool m_timeout_flag;
 
 		static const char *mp_hidden_str;
-
+		void ResetMetrics();
 
 	};
 }
