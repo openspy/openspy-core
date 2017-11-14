@@ -658,11 +658,25 @@ namespace MM {
 			}
 
 			for(int i=0;i<arr.arr_value.values.size();i+=2) {
-				if (request) {
-					AppendServerEntry(arr.arr_value.values[i].second.value._str, &streamed_ret, req->all_keys, false, mp_redis_connection, req);
+				std::string server_key = arr.arr_value.values[i].second.value._str;
+				reply = Redis::Command(mp_redis_connection, 0, "EXISTS %s", server_key.c_str());
+				
+				if (Redis::CheckError(reply) || reply.values.size() == 0) {
+					continue;
 				}
 				else {
-					AppendServerEntry(arr.arr_value.values[i].second.value._str, &ret, req->all_keys, false, mp_redis_connection, req);
+					v = reply.values[0];
+					if ((v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 0) || (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("0") == 0)) {
+						Redis::Command(mp_redis_connection, 0, "ZREM %s \"%s\"", req->m_for_game.gamename, server_key.c_str());
+						continue;
+					}
+				}
+
+				if (request) {
+					AppendServerEntry(server_key, &streamed_ret, req->all_keys, false, mp_redis_connection, req);
+				}
+				else {
+					AppendServerEntry(server_key, &ret, req->all_keys, false, mp_redis_connection, req);
 				}
 			}
 			if (request && (!streamed_ret.list.empty() || streamed_ret.last_set)) {
