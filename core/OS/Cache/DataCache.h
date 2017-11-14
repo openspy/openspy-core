@@ -61,9 +61,9 @@ namespace OS {
 		void mergeMap(int thread_index) {
 			m_main_mutex->lock();
 			m_thread_mutexes[thread_index]->lock();
-			std::map<K, std::pair<V, struct timeval> >::iterator it = threadTempCache[thread_index].begin();
+			typename std::map<K, std::pair<V, struct timeval> >::iterator it = threadTempCache[thread_index].begin();
 			while (it != threadTempCache[thread_index].end()) {
-				std::pair<K, std::pair<V, struct timeval> > p = *it;
+				typename std::pair<K, std::pair<V, struct timeval> > p = *it;
 				mergedMap[p.first] = p.second;
 				it++;
 			}
@@ -79,10 +79,10 @@ namespace OS {
 
 			mergeMap(thread_index);
 
-			std::map<K, std::pair<V, struct timeval> >::iterator it = mergedMap.begin();
+			typename std::map<K, std::pair<V, struct timeval> >::iterator it = mergedMap.begin();
 			int idx = 0;
 			while (it != mergedMap.end()) {
-				std::pair<K, std::pair<V, struct timeval> > p = *it;
+				typename std::pair<K, std::pair<V, struct timeval> > p = *it;
 				if (time_now.tv_sec - p.second.second.tv_sec > m_timeout.timeout_time_secs || (++idx > m_timeout.max_keys && m_timeout.max_keys != -1)) {
 					it = mergedMap.erase(it);
 					continue;

@@ -76,11 +76,12 @@ namespace NN {
 		}
 	}
 
-	NNQueryTask::NNQueryTask() {
+	NNQueryTask::NNQueryTask(int thread_id) {
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 60;
 
+		m_thread_id = thread_id;
 		m_thread_awake = false;
 
 		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
@@ -140,7 +141,7 @@ namespace NN {
 		t.tv_usec = 0;
 		t.tv_sec = 1;
 		mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
-		mp_async_lookup_task = new NNQueryTask();
+		mp_async_lookup_task = new NNQueryTask(NUM_NN_QUERY_THREADS+1);
 		Redis::LoopingCommand(mp_redis_async_connection, 0, onRedisMessage, thread->getParams(), "SUBSCRIBE %s", nn_channel);
 		return NULL;
 	}

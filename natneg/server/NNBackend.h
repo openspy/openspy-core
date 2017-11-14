@@ -33,7 +33,7 @@ namespace NN {
 
 	class NNQueryTask : public OS::Task<NNBackendRequest> {
 		public:
-			NNQueryTask();
+			NNQueryTask(int thread_id);
 			~NNQueryTask();
 			static void Shutdown();
 			void AddDriver(NN::Driver *driver);
@@ -51,6 +51,7 @@ namespace NN {
 			time_t m_redis_timeout;
 			bool m_thread_awake;
 			OS::HiResTimer *mp_timer;
+			int m_thread_id;
 	};
 	#define NUM_NN_QUERY_THREADS 8
 	extern OS::TaskPool<NNQueryTask, NNBackendRequest> *m_task_pool;
