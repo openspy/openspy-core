@@ -208,11 +208,8 @@ namespace MM {
 			}
 			else {				
 				if (!m_game_cache->LookupGameByID(gameid, server->game)) {
-					OS::GameCacheKey key;
 					server->game = OS::GetGameByID(gameid, redis_ctx);
-					key.gamename = server->game.gamename;
-					key.id = server->game.gameid;
-					m_game_cache->AddItem(m_thread_index, key, server->game);
+					m_game_cache->AddGame(m_thread_index, server->game);
 				}				
 			}
 			
@@ -541,11 +538,8 @@ namespace MM {
 		}
 		else {
 			if (!m_game_cache->LookupGameByID(atoi((v.value._str).c_str()), server->game)) {
-				OS::GameCacheKey key;
 				server->game = OS::GetGameByID(atoi((v.value._str).c_str()), redis_ctx);
-				key.gamename = server->game.gamename;
-				key.id = server->game.gameid;
-				m_game_cache->AddItem(m_thread_index, key, server->game);
+				m_game_cache->AddGame(m_thread_index, server->game);
 			}
 		}
 		
@@ -841,18 +835,13 @@ namespace MM {
 	}
 	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {
 		OS::GameData games[2];
-		OS::GameCacheKey key;
 		if (!m_game_cache->LookupGameByName(request.gamenames[0], games[0])) {
 			games[0] = OS::GetGameByName(request.gamenames[0].c_str(), this->mp_redis_connection);
-			key.gamename = request.gamenames[0];
-			key.id = games[0].gameid;
-			m_game_cache->AddItem(m_thread_index, key, games[0]);
+			m_game_cache->AddGame(m_thread_index, games[0]);
 		}		
 		if (!m_game_cache->LookupGameByName(request.gamenames[1], games[1])) {
 			games[1] = OS::GetGameByName(request.gamenames[1].c_str(), this->mp_redis_connection);
-			key.gamename = request.gamenames[1];
-			key.id = games[1].gameid;
-			m_game_cache->AddItem(m_thread_index, key, games[1]);
+			m_game_cache->AddGame(m_thread_index, games[1]);
 		}
 		
 		request.peer->OnRecievedGameInfoPair(games[0], games[1], request.extra);

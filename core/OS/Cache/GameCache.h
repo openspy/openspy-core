@@ -47,6 +47,12 @@ namespace OS {
 				m_main_mutex->unlock();
 				return found;
 			}
+			void AddGame(int thread_index, OS::GameData game) {
+				GameCacheKey key;
+				key.id = game.gameid;
+				key.gamename = game.gamename;
+				AddItem(thread_index, key, game);
+			}
 	};
 }
 
