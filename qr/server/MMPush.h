@@ -49,7 +49,7 @@ namespace MM {
 	} MMPushRequest;
 	class MMPushTask : public OS::Task<MMPushRequest> {
 		public:
-			MMPushTask();
+			MMPushTask(int thread_index);
 			~MMPushTask();
 
 			void AddDriver(QR::Driver *driver);
@@ -76,6 +76,8 @@ namespace MM {
 
 			bool m_thread_awake;
 			OS::HiResTimer *mp_timer;
+
+			int m_thread_index;
 
 
 	};

@@ -206,14 +206,22 @@ namespace MM {
 			if (req) {
 				server->game = req->m_from_game;
 			}
-			else {
-				server->game = OS::GetGameByID(gameid, redis_ctx);
+			else {				
+				if (!m_game_cache->LookupGameByID(gameid, server->game)) {
+					OS::GameCacheKey key;
+					server->game = OS::GetGameByID(gameid, redis_ctx);
+					key.gamename = server->game.gamename;
+					key.id = server->id;
+					m_game_cache->AddItem(m_thread_index, key, server->game);
+				}				
 			}
 			
 			Redis::Command(redis_ctx, 0, "SELECT %d", OS::ERedisDB_QR);
 		}
 
 		server->key = entry_name;
+
+		Redis::Command(mp_redis_connection, 0, "ZINCRBY %s -1 \"%s\"", server->game.gamename, entry_name.c_str());
 
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s id", entry_name.c_str());
@@ -532,7 +540,13 @@ namespace MM {
 			server->game = request->req.m_for_game;
 		}
 		else {
-			server->game = OS::GetGameByID(atoi((v.value._str).c_str()));
+			if (!m_game_cache->LookupGameByID(atoi((v.value._str).c_str()), server->game)) {
+				OS::GameCacheKey key;
+				server->game = OS::GetGameByID(atoi((v.value._str).c_str()), redis_ctx);
+				key.gamename = server->game.gamename;
+				key.id = server->id;
+				m_game_cache->AddItem(m_thread_index, key, server->game);
+			}
 		}
 		
 		Redis::Command(redis_ctx, 0, "SELECT %d", OS::ERedisDB_SBGroups); //change context back to SB db id
@@ -619,7 +633,7 @@ namespace MM {
 		do {
 			ServerListQuery streamed_ret;
 			streamed_ret.requested_fields = ret.requested_fields;
-			reply = Redis::Command(mp_redis_connection, 0, "SCAN %d MATCH %s:*:", cursor, req->m_for_game.gamename);
+			reply = Redis::Command(mp_redis_connection, 0, "ZSCAN %s %d", req->m_for_game.gamename, cursor);
 			if (Redis::CheckError(reply))
 				goto error_cleanup;
 
@@ -643,7 +657,7 @@ namespace MM {
 				streamed_ret.last_set = true;
 			}
 
-			for(int i=0;i<arr.arr_value.values.size();i++) {
+			for(int i=0;i<arr.arr_value.values.size();i+=2) {
 				if (request) {
 					AppendServerEntry(arr.arr_value.values[i].second.value._str, &streamed_ret, req->all_keys, false, mp_redis_connection, req);
 				}
@@ -815,14 +829,12 @@ namespace MM {
 		OS::GameData games[2];
 		OS::GameCacheKey key;
 		if (!m_game_cache->LookupGameByName(request.gamenames[0], games[0])) {
-			printf("**** redis Lookup game: %s\n", request.gamenames[0].c_str());
 			games[0] = OS::GetGameByName(request.gamenames[0].c_str(), this->mp_redis_connection);
 			key.gamename = request.gamenames[0];
 			key.id = games[0].gameid;
 			m_game_cache->AddItem(m_thread_index, key, games[0]);
 		}		
 		if (!m_game_cache->LookupGameByName(request.gamenames[1], games[1])) {
-			printf("**** redis Lookup game 2: %s\n", request.gamenames[1].c_str());
 			games[1] = OS::GetGameByName(request.gamenames[1].c_str(), this->mp_redis_connection);
 			key.gamename = request.gamenames[1];
 			key.id = games[1].gameid;
@@ -832,7 +844,15 @@ namespace MM {
 		request.peer->OnRecievedGameInfoPair(games[0], games[1], request.extra);
 	}
 	void MMQueryTask::PerformGetGameInfoByGameName(MMQueryRequest request) {
-		request.peer->OnRecievedGameInfo(OS::GetGameByName(request.gamenames[0].c_str(), this->mp_redis_connection), request.extra);
+		OS::GameData game;
+		OS::GameCacheKey key;
+		if (!m_game_cache->LookupGameByName(request.gamenames[0], game)) {
+			game = OS::GetGameByName(request.gamenames[0].c_str(), this->mp_redis_connection);
+			key.gamename = request.gamenames[0];
+			key.id = game.gameid;
+			m_game_cache->AddItem(m_thread_index, key, game);
+		}
+		request.peer->OnRecievedGameInfo(game, request.extra);
 	}
 	void *MMQueryTask::TaskThread(OS::CThread *thread) {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();

@@ -65,15 +65,17 @@ namespace MM {
 		t.tv_usec = 0;
 		t.tv_sec = 1;
 		mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
-		mp_async_lookup_task = new MMPushTask();
+		mp_async_lookup_task = new MMPushTask(NUM_MM_PUSH_THREADS+1);
 		Redis::LoopingCommand(mp_redis_async_connection, 0, onRedisMessage, thread->getParams(), "SUBSCRIBE %s", sb_mm_channel);
 	    return NULL;
 	}
 
-	MMPushTask::MMPushTask() {
+	MMPushTask::MMPushTask(int thread_index) {
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 60;
+
+		m_thread_index = thread_index;
 
 		mp_timer = OS::HiResTimer::makeTimer();
 		m_thread_awake = false;
@@ -382,6 +384,9 @@ namespace MM {
 			Redis::Command(mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), server.m_address.GetPort());
 			Redis::Command(mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), ipinput.c_str());
 		}
+		else {
+			Redis::Command(mp_redis_connection, 0, "ZINCRBY %s 1 \"%s\"", server.m_game.gamename, server_key.c_str());
+		}
 
 		Redis::Command(mp_redis_connection, 0, "INCR %s num_beats", server_key.c_str());
 
@@ -446,8 +451,10 @@ namespace MM {
 		i=0;
 
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
-		if (publish)
+		if (publish) {
+			Redis::Command(mp_redis_connection, 0, "ZADD %s %d \"%s\"", server.m_game.gamename, pk_id, server_key.c_str());
 			Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\new\\%s", sb_mm_channel, server_key.c_str());
+		}
 
 		return id;
 
@@ -463,6 +470,7 @@ namespace MM {
 		int groupid = server.groupid;
 		int id = server.id;
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::Command(mp_redis_connection, 0, "ZREM %s \"%s:%d:%d:\"", server.m_game.gamename, server.m_game.gamename, server.groupid, server.id);
 		if (publish) {
 			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server.m_game.gamename, server.groupid, server.id);
 			Redis::Command(mp_redis_connection, 0, "EXPIRE %s:%d:%d: %d", server.m_game.gamename, server.groupid, server.id, MM_PUSH_EXPIRE_TIME);
