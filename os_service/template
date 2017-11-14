@@ -3,12 +3,10 @@
 #
 ### BEGIN INIT INFO
 # Provides:          OS_PROJ_NAME
-# Required-Start:    $remote_fs $syslog $time
-# Required-Stop:     $remote_fs $syslog $time
-# Should-Start:      $network $named slapd autofs ypbind nscd nslcd winbind
-# Should-Stop:       $network $named slapd autofs ypbind nscd nslcd winbind
+# Required-Start:    $local_fs $remote_fs $network $syslog $named
+# Required-Stop:     $local_fs $remote_fs $network $syslog $named
 # Default-Start:     2 3 4 5
-# Default-Stop:
+# Default-Stop:      0 1 6
 # Short-Description: Openspy generic init script
 # Description:       openspy init script
 ### END INIT INFO
