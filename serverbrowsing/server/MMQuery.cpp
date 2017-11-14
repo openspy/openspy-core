@@ -211,7 +211,7 @@ namespace MM {
 					OS::GameCacheKey key;
 					server->game = OS::GetGameByID(gameid, redis_ctx);
 					key.gamename = server->game.gamename;
-					key.id = server->id;
+					key.id = server->game.gameid;
 					m_game_cache->AddItem(m_thread_index, key, server->game);
 				}				
 			}
@@ -544,7 +544,7 @@ namespace MM {
 				OS::GameCacheKey key;
 				server->game = OS::GetGameByID(atoi((v.value._str).c_str()), redis_ctx);
 				key.gamename = server->game.gamename;
-				key.id = server->id;
+				key.id = server->game.gameid;
 				m_game_cache->AddItem(m_thread_index, key, server->game);
 			}
 		}
