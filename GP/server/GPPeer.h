@@ -15,7 +15,21 @@
 
 namespace GP {
 	class Driver;
+	typedef struct _PeerStats {
+		int total_requests;
+		int version;
 
+		long long bytes_in;
+		long long bytes_out;
+
+		int packets_in;
+		int packets_out;
+
+		OS::Address m_address;
+		OS::GameData from_game;
+
+		bool disconnected;
+	} PeerStats;
 	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
@@ -48,8 +62,11 @@ namespace GP {
 
 		void send_user_blocked(int from_profileid);
 		void send_user_block_deleted(int from_profileid);
-		//
 
+		//
+		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
+		OS::MetricInstance GetMetrics();
+		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 	private:
 		//packet handlers
 		void handle_login(const char *data, int len);
@@ -74,7 +91,7 @@ namespace GP {
 		void handle_registercdkey(const char *data, int len);
 
 		int m_search_operation_id;
-		static void m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 		void handle_bm(const char *data, int len);
 
@@ -88,20 +105,22 @@ namespace GP {
 		//
 
 		//login
-		void perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response, int operation_id);
+		void perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer);
 
-		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id);
-		static void m_buddy_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
-		static void m_block_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
-		static void m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
-		static void m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
-		static void m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra);
+		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
+		static void m_buddy_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_block_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 
 		void send_buddies();
 		void send_blocks();
 		void send_error(GPShared::GPErrorCode code);
 		void send_backend_auth_event();
+
+		void ResetMetrics();
 
 
 		int m_sd;
@@ -129,6 +148,7 @@ namespace GP {
 
 		OS::User m_user;
 		OS::Profile m_profile;
+		PeerStats m_peer_stats;
 
 		OS::CMutex *mp_mutex;
 	};

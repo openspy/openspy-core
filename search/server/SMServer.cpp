@@ -1,13 +1,27 @@
 #include "SMPeer.h"
 #include "SMServer.h"
 #include "SMDriver.h"
+#include <OS/Analytics/AnalyticsMgr.h>
 namespace SM {
 	Server::Server() : INetServer(){
-		
+		gettimeofday(&m_last_analytics_submit_time, NULL);
 	}
 	void Server::init() {
 	}
 	void Server::tick() {
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if (current_time.tv_sec - m_last_analytics_submit_time.tv_sec > ANALYTICS_SUBMIT_TIME) {
+			OS::AnalyticsManager::getSingleton()->SubmitServer(this);
+			gettimeofday(&m_last_analytics_submit_time, NULL);
+		}
+
+		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
+		while (it != m_net_drivers.end()) {
+			INetDriver *driver = *it;
+			driver->think(false);
+			it++;
+		}
 		NetworkTick();
 	}
 	void Server::shutdown() {

@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include <OS/socketlib/socketlib.h>
 #include "server/GPServer.h"
 #include "server/GPDriver.h"
 #include "server/GPBackend.h"
@@ -29,8 +28,7 @@ int main() {
        exit(EXIT_FAILURE);
     }
 
-    OS::Init("GP", 8);
-    Socket::Init();
+	OS::Init("GP", 8, "chc");
 
 	#ifndef _WIN32
 	    signal(SIGINT, sig_handler);

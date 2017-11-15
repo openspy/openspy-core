@@ -5,7 +5,6 @@
 #include <OS/legacy/helpers.h>
 #include <OS/legacy/buffreader.h>
 #include <OS/legacy/buffwriter.h>
-#include <OS/socketlib/socketlib.h>
 
 #include <OS/Search/User.h>
 
@@ -30,6 +29,7 @@ using namespace GPShared;
 namespace GP {
 
 	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
+		ResetMetrics();
 		m_sd = sd;
 		mp_driver = driver;
 		m_address_info = *address_info;
@@ -147,7 +147,7 @@ namespace GP {
 			}
 		}
 	}
-	void Peer::m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 	}
 	/*
 		Updates profile specific information
@@ -245,7 +245,7 @@ namespace GP {
 	void Peer::handle_registercdkey(const char *data, int len) {
 
 	}
-	void Peer::m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		if(response_reason == OS::EProfileResponseType_Success && results.size() > 0) {
 			OS::Profile profile = results.front();
 		}
@@ -269,12 +269,11 @@ namespace GP {
 		request.callback = Peer::m_create_profile_callback;
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
-	void Peer::m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
-		Peer *peer = (Peer *)extra;
 		
 		s << "\\dpr\\" << (int)(response_reason == OS::EProfileResponseType_Success);
-		peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::handle_delprofile(const char *data, int len) {
 		OS::ProfileSearchRequest request;
@@ -320,7 +319,7 @@ namespace GP {
 		std::string response = data_parser.GetValue("response");
 
 		if(type == 1) {
-			perform_nick_email_auth(user.c_str(), partnercode, m_challenge, challenge.c_str(), response.c_str(), operation_id);
+			perform_nick_email_auth(user.c_str(), partnercode, m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
 		}
 	}
 	void Peer::handle_pinvite(const char *data, int len) {
@@ -398,12 +397,11 @@ namespace GP {
 
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
-	void Peer::m_buddy_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_buddy_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
-		Peer *peer = (Peer *)extra;
-		peer->mp_mutex->lock();
+		((GP::Peer *)peer)->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\bdy\\" << results.size();
 			s << "\\list\\";
@@ -411,37 +409,36 @@ namespace GP {
 				OS::Profile p = *it;
 				s << p.id << ",";
 
-				if(peer->m_buddies.find(p.id) == peer->m_buddies.end())
-					peer->m_buddies[p.id] = GPShared::gp_default_status;
+				if(((GP::Peer *)peer)->m_buddies.find(p.id) == ((GP::Peer *)peer)->m_buddies.end())
+					((GP::Peer *)peer)->m_buddies[p.id] = GPShared::gp_default_status;
 
 				it++;
 			}
 			str = s.str();
 			str = str.substr(0, str.size()-1);
-			peer->SendPacket((const uint8_t *)str.c_str(),str.length());
+			((GP::Peer *)peer)->SendPacket((const uint8_t *)str.c_str(),str.length());
 		}
-		peer->mp_mutex->unlock();
+		((GP::Peer *)peer)->mp_mutex->unlock();
 	}
-	void Peer::m_block_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
+	void Peer::m_block_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
-		Peer *peer = (Peer *)extra;
-		peer->mp_mutex->lock();
+		((GP::Peer *)peer)->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\blk\\" << results.size();
 			s << "\\list\\";
 			while(it != results.end()) {
 				OS::Profile p = *it;
 				s << p.id << ",";
-				peer->m_blocks.push_back(p.id);
+				((GP::Peer *)peer)->m_blocks.push_back(p.id);
 				it++;
 			}
 			str = s.str();
 			str = str.substr(0, str.size()-1);
-			peer->SendPacket((const uint8_t *)str.c_str(),str.length());
+			((GP::Peer *)peer)->SendPacket((const uint8_t *)str.c_str(),str.length());
 		}
-		peer->mp_mutex->unlock();
+		((GP::Peer *)peer)->mp_mutex->unlock();
 	}
 	void Peer::send_buddies() {
 		OS::ProfileSearchRequest request;
@@ -597,8 +594,7 @@ namespace GP {
 			send_error(GPShared::GP_PARSE);
 		}
 	}
-	void Peer::m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra) {
-		Peer *peer = (Peer *)extra;
+	void Peer::m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::vector<OS::Profile>::iterator it = results.begin();
 		while(it != results.end()) {
 			OS::Profile p = *it;
@@ -617,7 +613,7 @@ namespace GP {
 			if(p.uniquenick.length()) {
 				s << "\\uniquenick\\" << p.uniquenick;
 			}
-			if(user.publicmask & GP_MASK_EMAIL || peer->m_profile.userid == user.id) {
+			if(user.publicmask & GP_MASK_EMAIL || ((GP::Peer *)peer)->m_profile.userid == user.id) {
 				if(user.email.length()) {
 					s << "\\email\\" << user.email;
 				}
@@ -631,13 +627,13 @@ namespace GP {
 				s << "\\lastname\\" << p.lastname;
 			}
 
-			if(user.publicmask & GP_MASK_HOMEPAGE || peer->m_profile.userid == user.id) {
+			if(user.publicmask & GP_MASK_HOMEPAGE || ((GP::Peer *)peer)->m_profile.userid == user.id) {
 				if(p.homepage.length()) {
 					s << "\\homepage\\" << p.homepage;
 				}
 			}
 
-			if(user.publicmask & GP_MASK_SEX || peer->m_profile.userid == user.id) {
+			if(user.publicmask & GP_MASK_SEX || ((GP::Peer *)peer)->m_profile.userid == user.id) {
 				s << "\\sex\\" << p.sex;
 			}
 
@@ -645,7 +641,7 @@ namespace GP {
 				s << "\\icquin\\" << p.icquin;
 			}
 
-			if(user.publicmask & GP_MASK_ZIPCODE || peer->m_profile.userid == user.id) {
+			if(user.publicmask & GP_MASK_ZIPCODE || ((GP::Peer *)peer)->m_profile.userid == user.id) {
 				if(p.zipcode) {
 					s << "\\zipcode\\" << p.zipcode;
 				}
@@ -667,11 +663,11 @@ namespace GP {
 				s << "\\pic\\" << p.mar;
 			}
 
-			if(user.publicmask & GP_MASK_BIRTHDAY || peer->m_profile.userid == user.id) {
+			if(user.publicmask & GP_MASK_BIRTHDAY || ((GP::Peer *)peer)->m_profile.userid == user.id) {
 				s << "\\birthday\\" << p.birthday;
 			}
 
-			if(user.publicmask & GP_MASK_COUNTRYCODE || peer->m_profile.userid == user.id) {
+			if(user.publicmask & GP_MASK_COUNTRYCODE || ((GP::Peer *)peer)->m_profile.userid == user.id) {
 				s << "\\countrycode\\" << p.countrycode;
 			}
 			s << "\\aim\\" << p.aim;
@@ -681,11 +677,11 @@ namespace GP {
 			s << "\\osstring\\" << p.osstring;
 
 
-			s << "\\id\\" << peer->m_search_operation_id;
+			s << "\\id\\" << ((GP::Peer *)peer)->m_search_operation_id;
 
 			s << "\\sig\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
 
-			peer->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+			((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 			it++;
 		}
 	}
@@ -730,7 +726,7 @@ namespace GP {
 		}
 		*/
 	}
-	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response, int operation_id) {
+	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
 		const char *email = NULL;
 		char nick[31 + 1];
 		const char *first_at = strchr(nick_email, '@');
@@ -744,13 +740,12 @@ namespace GP {
 		}
  		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this, operation_id, this);
 	}
-	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id) {
-		Peer *peer = (Peer *)extra;
-		if(!peer->m_backend_session_key.length() && auth_data.session_key.length())
-			peer->m_backend_session_key = auth_data.session_key;
+	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+		if(!((GP::Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())
+			((GP::Peer *)peer)->m_backend_session_key = auth_data.session_key;
 
-		peer->m_user = user;
-		peer->m_profile = profile;
+		((GP::Peer *)peer)->m_user = user;
+		((GP::Peer *)peer)->m_profile = profile;
 
 		std::ostringstream ss;
 		if(success) {
@@ -773,32 +768,32 @@ namespace GP {
 			}
 			ss << "\\id\\" << operation_id;
 
-			peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+			((GP::Peer *)peer)->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 
-			peer->send_buddies();
-			peer->send_blocks();
+			((GP::Peer *)peer)->send_buddies();
+			((GP::Peer *)peer)->send_blocks();
 
-			peer->send_backend_auth_event();
+			((GP::Peer *)peer)->send_backend_auth_event();
 		} else {
 			switch(auth_data.response_code) {
 				case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
-					peer->send_error(GP_LOGIN_BAD_EMAIL);
+					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_EMAIL);
 				break;
 				case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
-					peer->send_error(GP_LOGIN_BAD_PASSWORD);
+					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_PASSWORD);
 				break;
 				case OS::LOGIN_RESPONSE_INVALID_PROFILE:
-					peer->send_error(GP_LOGIN_BAD_PROFILE);
+					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_PROFILE);
 				break;
 				case OS::LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED:
-					peer->send_error(GP_LOGIN_BAD_UNIQUENICK);
+					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_UNIQUENICK);
 				break;
 				case OS::LOGIN_RESPONSE_DB_ERROR:
-					peer->send_error(GP_DATABASE);
+					((GP::Peer *)peer)->send_error(GP_DATABASE);
 				break;
 				case OS::LOGIN_RESPONSE_SERVERINITFAILED:
 				case OS::LOGIN_RESPONSE_SERVER_ERROR:
-					peer->send_error(GP_NETWORK);
+					((GP::Peer *)peer)->send_error(GP_NETWORK);
 				break;
 			}
 		}
@@ -888,5 +883,69 @@ namespace GP {
 	}
 	int Peer::GetProfileID() {
 		return m_profile.id;
+	}
+	OS::MetricValue Peer::GetMetricItemFromStats(PeerStats stats) {
+		OS::MetricValue arr_value, value;
+		value.value._str = stats.m_address.ToString(false);
+		value.key = "ip";
+		value.type = OS::MetricType_String;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.disconnected;
+		value.key = "disconnected";
+		value.type = OS::MetricType_Integer;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.type = OS::MetricType_Integer;
+		value.value._int = stats.bytes_in;
+		value.key = "bytes_in";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.bytes_out;
+		value.key = "bytes_out";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.packets_in;
+		value.key = "packets_in";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.packets_out;
+		value.key = "packets_out";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.value._int = stats.total_requests;
+		value.key = "pending_requests";
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+		arr_value.type = OS::MetricType_Array;
+
+		value.type = OS::MetricType_String;
+		value.key = "gamename";
+		value.value._str = stats.from_game.gamename;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		value.type = OS::MetricType_Integer;
+		value.key = "version";
+		value.value._int = stats.version;
+		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
+
+		arr_value.key = stats.m_address.ToString(false);
+		return arr_value;
+	}
+	void Peer::ResetMetrics() {
+		m_peer_stats.bytes_in = 0;
+		m_peer_stats.bytes_out = 0;
+		m_peer_stats.packets_in = 0;
+		m_peer_stats.packets_out = 0;
+		m_peer_stats.total_requests = 0;
+	}
+	OS::MetricInstance Peer::GetMetrics() {
+		OS::MetricInstance peer_metric;
+
+		peer_metric.value = GetMetricItemFromStats(m_peer_stats);
+		peer_metric.key = "peer";
+
+		ResetMetrics();
+
+		return peer_metric;
 	}
 }

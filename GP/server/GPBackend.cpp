@@ -5,7 +5,6 @@
 #include "GPServer.h"
 #include <stdlib.h>
 #include <string.h>
-#include <OS/socketlib/socketlib.h>
 
 
 #include <OS/OpenSpy.h>
@@ -100,8 +99,8 @@ namespace GPBackend {
 						status.location_str = reader.GetValue("location_string");
 						status.quiet_flags = (GPShared::GPEnum)reader.GetValueInt("quiet_flags");
 						reason = reader.GetValue("ip");
-						status.address.ip = Socket::htonl(Socket::inet_addr(OS::strip_quotes(reason).c_str()));
-						status.address.port = Socket::htons(reader.GetValueInt("port"));
+						status.address.ip = htonl(inet_addr(OS::strip_quotes(reason).c_str()));
+						status.address.port = htons(reader.GetValueInt("port"));
 						server->InformStatusUpdate(from_profileid, status);
 					} else if (msg_type.compare("del_buddy") == 0) {
 						to_profileid = reader.GetValueInt("to_profileid");
@@ -139,10 +138,12 @@ namespace GPBackend {
 			}
 		}
 	}
-	GPBackendRedisTask::GPBackendRedisTask() {
+	GPBackendRedisTask::GPBackendRedisTask(int thread_index) {
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 3;
+
+		m_thread_index = thread_index;
 
 		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
 
@@ -272,9 +273,9 @@ namespace GPBackend {
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d quiet_flags %d", profileid, request.StatusInfo.quiet_flags);
 
 		struct sockaddr_in addr;
-		addr.sin_port = Socket::htons(request.StatusInfo.address.port);
+		addr.sin_port = htons(request.StatusInfo.address.port);
 		addr.sin_addr.s_addr = (request.StatusInfo.address.ip);
-		const char *ipinput = Socket::inet_ntoa(addr.sin_addr);
+		const char *ipinput = request.StatusInfo.address.ToString(true).c_str();
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d ip %s", profileid, ipinput);
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d port %d", profileid, addr.sin_port);
 		Redis::Command(mp_redis_connection, 0, "EXPIRE status_%d %d", profileid, GP_STATUS_EXPIRE_TIME);
@@ -733,13 +734,13 @@ namespace GPBackend {
 
 		str = json_string_value(json_obj);
 		if(str)
-			status.address.ip = Socket::htonl(Socket::inet_addr(str));
+			status.address.ip = htonl(inet_addr(str));
 
 		json_obj = json_object_get(json, "port");
 		if(!json_obj)
 			return;
 		len = json_integer_value(json_obj);
-		status.address.port = Socket::htons(len);
+		status.address.port = htons(len);
 
 		peer->inform_status_update(profileid, status, true);
 

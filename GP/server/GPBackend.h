@@ -78,7 +78,7 @@ namespace GPBackend {
 
 	class GPBackendRedisTask : public OS::Task<GPBackendRedisRequest> {
 		public:
-			GPBackendRedisTask();
+			GPBackendRedisTask(int thread_index);
 			~GPBackendRedisTask();
 			static void MakeBuddyRequest(GP::Peer *peer, int to_profileid, std::string reason);
 			static void SetPresenceStatus(int from_profileid, GPShared::GPStatus status, GP::Peer *peer);
@@ -111,6 +111,7 @@ namespace GPBackend {
 
 			Redis::Connection *mp_redis_connection;
 			std::vector<GP::Driver *> m_drivers;
+			int m_thread_index;
 	};
 	#define NUM_PRESENCE_THREADS 8
 	extern OS::TaskPool<GPBackendRedisTask, GPBackendRedisRequest> *m_task_pool;

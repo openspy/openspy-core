@@ -15,8 +15,9 @@ namespace GP {
 		void SetTaskPool(OS::TaskPool<GPBackend::GPBackendRedisTask, GPBackend::GPBackendRedisRequest> *pool);
 		INetPeer *findPeerByProfile(int profile_id);
 		void InformStatusUpdate(int from_profileid, GPShared::GPStatus status);
+		OS::MetricInstance GetMetrics();
 	private:
-		
+		struct timeval m_last_analytics_submit_time;
 	};
 }
 #endif //_GPSERVER_H

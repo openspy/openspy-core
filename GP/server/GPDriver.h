@@ -17,7 +17,7 @@
 #include <OS/GPShared.h>
 
 #define GP_PING_TIME (120)
-
+#define DRIVER_THREAD_TIME 1000
 namespace GP {
 	class Peer;
 	class Driver;
@@ -34,16 +34,16 @@ namespace GP {
 		Peer *find_client(struct sockaddr_in *address);
 		Peer *find_or_create(struct sockaddr_in *address);
 
-		bool HasPeer(Peer *);
 		Peer *FindPeerByProfileID(int profileid);
 
 		void InformStatusUpdate(int from_profileid, GPShared::GPStatus status);
 
 		int GetNumConnections();
 		const std::vector<int> getSockets();
-		const std::vector<INetPeer *> getPeers();
+		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
+		OS::MetricInstance GetMetrics();
 	private:
-
+		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
 
 		int m_sd;
@@ -54,8 +54,11 @@ namespace GP {
 
 		struct timeval m_server_start;
 
-		std::vector<GP::Peer *> m_peers_to_delete;
+		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
+		std::vector<GP::Peer *> m_peers_to_delete;
+		OS::CMutex *mp_mutex;
+		OS::CThread *mp_thread;
 	};
 }
 #endif //_SBDRIVER_H
