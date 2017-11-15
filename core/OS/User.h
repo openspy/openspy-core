@@ -3,7 +3,22 @@
 #include <string>
 #include <jansson.h>
 namespace OS {
-	typedef struct {
+	class User {
+	public:
+		User() {
+			id = 0;
+			partnercode = 0;
+			videocard_ram[0] = 0;
+			videocard_ram[1] = 0;
+			cpu_speed = 0;
+			cpu_brandid = 0;
+			connectionspeed = 0;
+			connectionid = 0;
+			hasnetwork = false;
+			email_verified = false;
+			publicmask = 0;
+			deleted = false;
+		};
 		int id;
 		std::string email;
 		int partnercode;
@@ -20,7 +35,7 @@ namespace OS {
 		bool email_verified;
 		int publicmask; //appears as user var in GP
 		bool deleted;
-	} User;
+	};
 
 	User LoadUserFromJson(json_t *obj);
 }

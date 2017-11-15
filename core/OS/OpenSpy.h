@@ -57,7 +57,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #define OPENSPY_WEBSERVICES_URL "http://os-auth.us-east-1.elasticbeanstalk.com"
 #define OS_REDIS_SERV "opensly-redis.u95v0m.0001.use1.cache.amazonaws.com"
 #define OS_REDIS_PORT 6379
-#define OS_REDIS_ADDR "10.1.1.125:6379"
+#define OS_REDIS_ADDR "opensly-redis.u95v0m.0001.use1.cache.amazonaws.com:6379"
 
 namespace OS {
 	class Logger;

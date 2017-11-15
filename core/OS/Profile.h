@@ -3,7 +3,26 @@
 #include <string>
 #include <jansson.h>
 namespace OS {
-	typedef struct {
+	class Profile {
+	public:
+		Profile() { 
+			id = 0;
+			userid = 0;
+			namespaceid = 0;
+			deleted = false; 
+			icquin = 0;
+			zipcode = 0;
+			sex = 0; 
+			pic = 0;
+			ooc = 0;
+			ind = 0; 
+			mar = 0;
+			chc = 0; 
+			i1 = 0; 
+			birthday = 0; 
+			lon = 0.0; 
+			lat = 0.0;
+		};
 		int id;
 		int userid;
 		std::string nick;
@@ -32,7 +51,7 @@ namespace OS {
 		std::string videocardstring[2];
 		std::string osstring; //operating system str
 		std::string aim;		
-	} Profile;
+	};
 
 	Profile LoadProfileFromJson(json_t *obj);
 }

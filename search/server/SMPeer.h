@@ -105,12 +105,9 @@ namespace SM {
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 		void handle_newuser(const char *buf, int len);
 
-		int m_sd;
-		Driver *mp_driver;
 		PeerStats m_peer_stats;
 
-		struct sockaddr_in m_address_info;
-
+		
 		struct timeval m_last_recv, m_last_ping;
 
 		bool m_delete_flag;

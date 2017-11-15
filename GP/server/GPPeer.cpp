@@ -30,9 +30,6 @@ namespace GP {
 
 	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
 		ResetMetrics();
-		m_sd = sd;
-		mp_driver = driver;
-		m_address_info = *address_info;
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		mp_mutex = OS::CreateMutex();
@@ -55,7 +52,6 @@ namespace GP {
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed",OS::Address(m_address_info).ToString().c_str());
 		delete mp_mutex;
-		close(m_sd);
 	}
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];

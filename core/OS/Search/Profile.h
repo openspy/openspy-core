@@ -39,7 +39,9 @@ namespace OS {
 		EProfileSearch_UpdateProfile,
 	};
 
-	typedef struct {
+	class ProfileSearchRequest {
+	public:
+		ProfileSearchRequest() { skip = 0; extra = NULL; peer = NULL; callback = NULL; };
 		std::vector<int> target_profileids; //target search profile ids, only used for buddy reverse searches atm
 		std::vector<int> namespaceids;
 		OS::Profile profile_search_details;
@@ -49,7 +51,7 @@ namespace OS {
 		INetPeer *peer;
 		ProfileSearchCallback callback;
 		EProfileSearchType type;
-	} ProfileSearchRequest;
+	} ;
 
 	
 

@@ -34,6 +34,8 @@ namespace SM {
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
+
+		makeNonBlocking(m_sd);
 	}
 	Driver::~Driver() {
 		std::vector<Peer *>::iterator it = m_connections.begin();

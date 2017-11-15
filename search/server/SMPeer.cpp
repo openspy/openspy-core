@@ -22,15 +22,16 @@ enum { //TODO: move into shared header
 namespace SM {
 	const char *Peer::mp_hidden_str = "[hidden]";
 	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
-		m_sd = sd;
-		mp_driver = driver;
-		m_address_info = *address_info;
 		m_delete_flag = false;
 		m_timeout_flag = false;
+		mp_mutex = OS::CreateMutex();
+		ResetMetrics();
 		gettimeofday(&m_last_ping, NULL);
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", OS::Address(m_address_info).ToString().c_str());
 	}
 	Peer::~Peer() {
-		close(m_sd);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
+		delete mp_mutex;
 	}
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];
@@ -38,9 +39,13 @@ namespace SM {
 		int len, piece_len;
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
+			printf("recv: %d\n", len);
+			if (len <= 0) {
+				m_delete_flag = true;
+				return;
+			}
 			buf[len] = 0;
 			//if(len == 0) goto end;
-			if(len == 0) return;
 
 			/* split by \\final\\  */
 			char *p = (char *)&buf;
@@ -221,6 +226,7 @@ namespace SM {
 		request.type = OS::EProfileSearch_Profiles;
 		request.extra = this;
 		request.peer = this;
+		IncRef();
 		request.callback = Peer::m_search_callback;
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
@@ -287,6 +293,7 @@ namespace SM {
 		request.type = OS::EProfileSearch_Buddies;
 		request.extra = this;
 		request.peer = this;
+		IncRef();
 		request.callback = Peer::m_search_buddies_callback;
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
@@ -341,6 +348,7 @@ namespace SM {
 		request.type = OS::EProfileSearch_Buddies_Reverse;
 		request.extra = this;
 		request.peer = this;
+		IncRef();
 		request.callback = Peer::m_search_buddies_reverse_callback;
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
@@ -364,6 +372,7 @@ namespace SM {
 		}
 		request.extra = this;
 		request.peer = this;
+		IncRef();
 		request.callback = Peer::m_search_valid_callback;
 		OS::m_user_search_task_pool->AddRequest(request);
 	}

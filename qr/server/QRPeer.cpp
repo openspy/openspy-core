@@ -11,8 +11,6 @@ namespace QR {
 		m_server_pushed = false;
 		m_delete_flag = false;
 		m_timeout_flag = false;
-		m_sd = sd;
-		m_address_info = *address_info;
 		m_server_info.id = -1;
 		m_server_info.groupid = 0;
 		m_server_info.m_game.gameid = 0;

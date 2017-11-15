@@ -101,16 +101,26 @@ namespace OS {
 
 			json_object_set_new(send_obj, "sex", json_integer(request.profile_search_details.sex));
 
-			json_object_set_new(send_obj, "pic", json_integer(request.profile_search_details.pic));
-			json_object_set_new(send_obj, "ooc", json_integer(request.profile_search_details.ooc));
-			json_object_set_new(send_obj, "ind", json_integer(request.profile_search_details.ind));
-			json_object_set_new(send_obj, "mar", json_integer(request.profile_search_details.mar));
-			json_object_set_new(send_obj, "chc", json_integer(request.profile_search_details.chc));
-			json_object_set_new(send_obj, "i1", json_integer(request.profile_search_details.i1));
-			json_object_set_new(send_obj, "birthday", json_integer(request.profile_search_details.birthday));
+			if(request.profile_search_details.pic != 0)
+				json_object_set_new(send_obj, "pic", json_integer(request.profile_search_details.pic));
+			if (request.profile_search_details.ooc != 0)
+				json_object_set_new(send_obj, "ooc", json_integer(request.profile_search_details.ooc));
+			if (request.profile_search_details.ind!= 0)
+				json_object_set_new(send_obj, "ind", json_integer(request.profile_search_details.ind));
+			if (request.profile_search_details.mar!= 0)
+				json_object_set_new(send_obj, "mar", json_integer(request.profile_search_details.mar));
+			if (request.profile_search_details.chc != 0)
+				json_object_set_new(send_obj, "chc", json_integer(request.profile_search_details.chc));
+			if (request.profile_search_details.i1 != 0)
+				json_object_set_new(send_obj, "i1", json_integer(request.profile_search_details.i1));
 
-			json_object_set_new(send_obj, "lon", json_real(request.profile_search_details.lon));
-			json_object_set_new(send_obj, "lat", json_real(request.profile_search_details.lat));
+			if (request.profile_search_details.birthday != 0)
+				json_object_set_new(send_obj, "birthday", json_integer(request.profile_search_details.birthday));
+
+			if(request.profile_search_details.lon)
+				json_object_set_new(send_obj, "lon", json_real(request.profile_search_details.lon));
+			if(request.profile_search_details.lat)
+				json_object_set_new(send_obj, "lat", json_real(request.profile_search_details.lat));
 
 
 			if (request.namespaceids.size()) {
