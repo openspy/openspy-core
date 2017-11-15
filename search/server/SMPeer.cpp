@@ -39,7 +39,6 @@ namespace SM {
 		int len, piece_len;
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
-			printf("recv: %d\n", len);
 			if (len <= 0) {
 				m_delete_flag = true;
 				return;
