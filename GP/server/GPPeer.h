@@ -122,12 +122,8 @@ namespace GP {
 
 		void ResetMetrics();
 
-
-		int m_sd;
 		OS::GameData m_game;
 		Driver *mp_driver;
-
-		struct sockaddr_in m_address_info;
 
 		struct timeval m_last_recv, m_last_ping;
 
@@ -149,8 +145,6 @@ namespace GP {
 		OS::User m_user;
 		OS::Profile m_profile;
 		PeerStats m_peer_stats;
-
-		OS::CMutex *mp_mutex;
 	};
 }
 #endif //_GPPEER_H

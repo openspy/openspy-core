@@ -1,12 +1,15 @@
 #include "Win32ThreadPoller.h"
 #include <stdio.h>
 namespace OS {
+	static int cwin32_thread_poller_cnt = 0;
 	CWin32ThreadPoller::CWin32ThreadPoller() {
+		char name[32];
+		sprintf(name, "OS-Win32Poller-%d", cwin32_thread_poller_cnt++);
 		m_handle = CreateEvent(
 			NULL,               // default security attributes
 			TRUE,               // manual-reset event
 			FALSE,              // initial state is nonsignaled
-			TEXT("OS-Win32Poller")  // object name
+			TEXT(name)  // object name
 		);
 	}
 	CWin32ThreadPoller::~CWin32ThreadPoller() {

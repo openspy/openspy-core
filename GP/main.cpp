@@ -31,8 +31,11 @@ int main() {
 	OS::Init("GP", 8, "chc");
 
 	#ifndef _WIN32
-	    signal(SIGINT, sig_handler);
-	    signal(SIGTERM, sig_handler);
+		signal(SIGINT, sig_handler);
+		signal(SIGTERM, sig_handler);
+	#else
+		WSADATA wsdata;
+		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
 	g_gameserver = new GP::Server();

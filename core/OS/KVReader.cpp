@@ -20,7 +20,7 @@ namespace OS {
 				key = OS::strip_whitespace(token);
 			} else {
 				value = OS::strip_whitespace(token);
-				if (!HasKey(key) && value.length()) {
+				if (!HasKey(key)) {
 					m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
 				}					
 			}
