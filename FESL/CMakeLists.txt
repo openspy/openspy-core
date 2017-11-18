@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 
-project(SM)
+project(FESL)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -20,10 +20,10 @@ source_group("Sources\\Server" FILES ${SERVER_SRCS})
 source_group("Headers" FILES ${MAIN_HDRS})
 source_group("Headers\\Server" FILES ${SERVER_HDRS})
 
-add_executable (SM ${ALL_SRCS})
+add_executable (FESL ${ALL_SRCS})
 
 IF(WIN32)	
-	target_link_libraries(SM ws2_32.lib hiredis.lib Win32_Interop.lib openspy.lib)
+	target_link_libraries(FESL ws2_32.lib hiredis.lib Win32_Interop.lib openspy.lib)
 ELSE() #unix
-	target_link_libraries(SM hiredis event pthread openspy)
+	target_link_libraries(FESL hiredis event pthread openspy)
 ENDIF()
