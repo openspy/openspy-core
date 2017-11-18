@@ -35,7 +35,10 @@ int main() {
 	#ifndef _WIN32
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
-	#endif
+#else
+    WSADATA wsdata;
+    WSAStartup(MAKEWORD(1, 0), &wsdata);
+#endif
 
 
 	g_gameserver = new NN::Server();
