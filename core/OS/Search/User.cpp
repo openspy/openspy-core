@@ -3,41 +3,26 @@
 
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt/jwt.h>
 
 namespace OS {
 	OS::TaskPool<UserSearchTask, UserSearchRequest> *m_user_search_task_pool = NULL;
 	struct curl_data {
-	    json_t *json_data;
+		std::string buffer;
 	};
 	/* callback for curl fetch */
 	size_t UserSearchTask::curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
-		if(!contents) {
+		if (!contents) {
 			return 0;
 		}
-	    size_t realsize = size * nmemb;                             /* calculate buffer size */
-	    curl_data *data = (curl_data *)userp;
-
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_USERMGR_KEY, strlen(OPENSPY_USERMGR_KEY));
-
-		jwt_decode(&jwt, (const char *)contents, NULL, 0);
-
-		char *json = jwt_get_grants_json(jwt, NULL);
-
-		if(json) {
-			data->json_data = json_loads(json, 0, NULL);
-			free(json);
-		} else {
-			data->json_data = NULL;
-		}
-		jwt_free(jwt);
-	    return realsize;
+		size_t realsize = size * nmemb;                             /* calculate buffer size */
+		curl_data *data = (curl_data *)userp;
+		const char *p = (const char *)contents;
+		data->buffer += *p;
+		return realsize;
 	}
 	void UserSearchTask::PerformRequest(UserSearchRequest request) {
 		curl_data recv_data;
+		json_t *root = NULL;
 		std::vector<OS::User> results;
 		//build json object
 		json_t *send_obj = json_object();
@@ -80,12 +65,6 @@ namespace OS {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt); 
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_USERMGR_KEY, strlen(OPENSPY_USERMGR_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
 
 		CURL *curl = curl_easy_init();
 		CURLcode res;
@@ -93,7 +72,7 @@ namespace OS {
 
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_USERMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSSearchUser");
@@ -113,21 +92,20 @@ namespace OS {
 			res = curl_easy_perform(curl);
 
 			if(res == CURLE_OK) {
-				if(recv_data.json_data) {
-					json_t *user_obj = json_object_get(recv_data.json_data, "user");
-					if(user_obj) {
-						OS::User user = OS::LoadUserFromJson(user_obj);
-						results.push_back(user);
-					}
-					resp_type = EUserResponseType_Success;
-				} else {
-					resp_type = EUserResponseType_GenericError;
+				root = json_loads(recv_data.buffer.c_str(), 0, NULL);
+				json_t *user_obj = json_object_get(root, "user");
+				if(user_obj) {
+					OS::User user = OS::LoadUserFromJson(user_obj);
+					results.push_back(user);
 				}
+				resp_type = EUserResponseType_Success;
+			} else {
+				resp_type = EUserResponseType_GenericError;
 			}
 		}
 		
-		if(recv_data.json_data) {
-			json_decref(recv_data.json_data);
+		if(root) {
+			json_decref(root);
 		}
 
 		if(json_data)
@@ -136,8 +114,6 @@ namespace OS {
 		if(send_obj)
 			json_decref(send_obj);
 
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 
 		if(request.callback != NULL)
 			request.callback(resp_type, results, request.extra, request.peer);

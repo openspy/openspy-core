@@ -2,7 +2,6 @@
 #include <OS/Auth.h>
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt/jwt.h>
 #include <string>
 
 
@@ -13,20 +12,14 @@ namespace OS {
 	};
 	/* callback for curl fetch */
 	size_t AuthTask::curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
-		if(!contents) {
+		if (!contents) {
 			return 0;
 		}
-	    size_t realsize = size * nmemb;                             /* calculate buffer size */
-	    curl_data *data = (curl_data *)userp;
+		size_t realsize = size * nmemb;                             /* calculate buffer size */
+		curl_data *data = (curl_data *)userp;
 		const char *p = (const char *)contents;
-		while(*p) {
-			if(isalnum(*p) || *p == '.')
-				data->buffer += *(p);
-			else break;
-			p++;
-		}
-
-	    return realsize;
+		data->buffer += *p;
+		return realsize;
 	}
 	void AuthTask::PerformAuth_NickEMail_GPHash(AuthRequest request) {
 		curl_data recv_data;
@@ -58,18 +51,7 @@ namespace OS {
 
 
 		char *json_data_str = json_dumps(send_obj, 0);
-
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_data_str);
-
 		
-		char *jwt_encoded = jwt_encode_str(jwt);
-
-		free((void *)json_data_str);
-
 		CURL *curl = curl_easy_init();
 		CURLcode res;
 		Profile profile;
@@ -81,7 +63,7 @@ namespace OS {
 		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data_str);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
@@ -100,28 +82,12 @@ namespace OS {
 
 			res = curl_easy_perform(curl);
 
-			jwt_free(jwt);
-
-			bool success = false;
-
-			
+			bool success = false;			
 
 			if(res == CURLE_OK) {
 				
 
-				//build jwt
-				jwt_new(&jwt);
-				jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-
-				//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
-				jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
-
-				char *json = jwt_get_grants_json(jwt, NULL);
-
-				json_t *json_data = json_loads(json, 0, NULL);
-				free((void *)json);
-				jwt_free(jwt);
-
+				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 
 				if(json_data) {
 					json_t *success_obj = json_object_get(json_data, "success");
@@ -159,12 +125,11 @@ namespace OS {
 				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
-		} else {
-			jwt_free(jwt);
 		}
 
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
+		if(json_data_str)
+			free((void *)json_data_str);
+
 		json_decref(send_obj);
 	}
 	void AuthTask::PerformAuth_NickEMail(AuthRequest request) {
@@ -193,13 +158,6 @@ namespace OS {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
-
 		CURL *curl = curl_easy_init();
 		CURLcode res;
 		Profile profile;
@@ -211,7 +169,7 @@ namespace OS {
 		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
@@ -234,18 +192,8 @@ namespace OS {
 
 			if(res == CURLE_OK) {
 
-				//build jwt
-				jwt_t *jwt;
-				jwt_new(&jwt);
-				jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
+				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 
-				//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
-				jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
-
-				char *json = jwt_get_grants_json(jwt, NULL);
-
-				json_t *json_data = json_loads(json, 0, NULL);
-				jwt_free(jwt);
 
 				if(json_data) {
 					json_t *success_obj = json_object_get(json_data, "success");
@@ -278,8 +226,6 @@ namespace OS {
 			}
 			curl_easy_cleanup(curl);
 		}
-		jwt_free(jwt);
-		free((void *)jwt_encoded);
 		json_decref(send_obj);
 	}
 	void AuthTask::PerformAuth_CreateUser_OrProfile(AuthRequest request) {
@@ -308,13 +254,6 @@ namespace OS {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
-
 		CURL *curl = curl_easy_init();
 		CURLcode res;
 		Profile profile;
@@ -322,13 +261,11 @@ namespace OS {
 		user.id = 0;
 		profile.id = 0;
 		OS::AuthData auth_data;
-		
-		jwt_free(jwt);
 
 		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
@@ -350,17 +287,7 @@ namespace OS {
 			bool success = false;
 
 			if(res == CURLE_OK) {
-				//build jwt
-				jwt_new(&jwt);
-				jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-
-				//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
-				jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
-
-				char *json = jwt_get_grants_json(jwt, NULL);
-
-				json_t *json_data = json_loads(json, 0, NULL);
-				jwt_free(jwt);
+				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if(json_data) {
 					json_t *reason_json = json_object_get(json_data, "reason");
 					if(reason_json) {
@@ -384,8 +311,6 @@ namespace OS {
 		
 		if(json_data)
 			free(json_data);
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 		json_decref(send_obj);
 	}
 	void AuthTask::PerformAuth_PID_GSStats_SessKey(AuthRequest request) {
@@ -409,17 +334,6 @@ namespace OS {
 
 		char *json_dump = json_dumps(send_obj, 0);
 
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_dump);
-
-		if(json_dump)
-			free(json_dump);
-
-		char *jwt_encoded = jwt_encode_str(jwt);
-
 		CURL *curl = curl_easy_init();
 		CURLcode res;
 		Profile profile;
@@ -430,14 +344,11 @@ namespace OS {
 
 		auth_data.response_code = (AuthResponseCode)-1;
 
-		char *json = jwt_get_grants_json(jwt, NULL);
-
-		json_t *json_data = json_loads(json, 0, NULL);
 
 		if(curl) {
 
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_dump);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
@@ -459,6 +370,7 @@ namespace OS {
 			bool success = false;
 
 			if(res == CURLE_OK) {
+				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if(json_data) {
 					json_t *success_obj = json_object_get(json_data, "success");
 					if(success_obj == json_true()) {
@@ -482,6 +394,7 @@ namespace OS {
 					if(reason_json) {
 						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					}
+					json_decref(json_data);
 				} else {
 					success = false;
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
@@ -491,12 +404,7 @@ namespace OS {
 			}
 			curl_easy_cleanup(curl);
 		}
-		jwt_free(jwt);
 
-		json_decref(json_data);
-
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 		json_decref(send_obj);
 	}
 	void AuthTask::TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {

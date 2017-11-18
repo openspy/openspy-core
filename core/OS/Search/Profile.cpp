@@ -3,7 +3,6 @@
 
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt/jwt.h>
 
 #include <ctype.h>
 
@@ -20,13 +19,7 @@ namespace OS {
 		size_t realsize = size * nmemb;                             /* calculate buffer size */
 		curl_data *data = (curl_data *)userp;
 		const char *p = (const char *)contents;
-		while (*p) {
-			if (isalnum(*p) || *p == '.')
-				data->buffer += *(p);
-			else break;
-			p++;
-		}
-
+		data->buffer += *p;
 		return realsize;
 	}
 	void ProfileSearchTask::PerformSearch(ProfileSearchRequest request) {
@@ -155,19 +148,12 @@ namespace OS {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
-
 		CURL *curl = curl_easy_init();
 		CURLcode res;
 		EProfileResponseType error = EProfileResponseType_GenericError;
 		if (curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSSearchProfile");
@@ -186,20 +172,9 @@ namespace OS {
 
 			res = curl_easy_perform(curl);
 			if (res == CURLE_OK) {
-				jwt_t *jwt;
-				jwt_new(&jwt);
 				json_t *json_data = NULL;
-
-				jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-
-				jwt_decode(&jwt, (const char *)recv_data.buffer.c_str(), NULL, 0);
-
-				char *json = jwt_get_grants_json(jwt, NULL);
-
-				if (json) {
-					json_data = json_loads(json, 0, NULL);
-					free((void *)json);
-				}
+				
+				json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 
 				if (json_data) {
 					error = EProfileResponseType_Success;
@@ -232,15 +207,12 @@ namespace OS {
 			}
 		}
 
-		if (jwt) {
-			jwt_free(jwt);
+		if (json_data) {
+			free((void *)json_data);
 		}
-	
 		if (send_obj)
 			json_decref(send_obj);
 
-		if (jwt_encoded)
-			free((void *)jwt_encoded);
 
 		request.callback(error, results, users_map, request.extra, request.peer);
 	}
