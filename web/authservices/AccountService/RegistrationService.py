@@ -1,7 +1,5 @@
 from cgi import parse_qs, escape
 
-import jwt
-
 import uuid
 import hashlib
 
@@ -126,23 +124,22 @@ class RegistrationService(BaseService):
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
         request_body = env['wsgi.input'].read(request_body_size)
-        jwt_decoded = jwt.decode(request_body, self.SECRET_REGISTER_KEY, algorithm='HS256')
 
-        if "mode" in jwt_decoded:
-            if jwt_decoded["mode"] == "perform_verify_email":
-                response = self.handle_perform_verify_email(jwt_decoded)
-            elif jwt_decoded["mode"] == "resend_verify_email":
-                response = self.handle_resend_verify_email(jwt_decoded)
+        if "mode" in request_body:
+            if request_body["mode"] == "perform_verify_email":
+                response = self.handle_perform_verify_email(request_body)
+            elif request_body["mode"] == "resend_verify_email":
+                response = self.handle_resend_verify_email(request_body)
         else:
-            if 'partnercode' not in jwt_decoded:
+            if 'partnercode' not in request_body:
                 response['reason'] = self.REGISTRATION_ERROR_NO_PARTNERCODE
-                return jwt.encode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
+                return response
 
-            if 'password' not in jwt_decoded:
+            if 'password' not in request_body:
                 response['reason'] = self.REGISTRATION_ERROR_NO_PASS
-                return jwt.encode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
+                return response
 
-            user = self.try_register_user(jwt_decoded)
+            user = self.try_register_user(request_body)
             if user != None:
                 response['success'] = True
                 response['user'] = user
@@ -151,4 +148,4 @@ class RegistrationService(BaseService):
 
         start_response('200 OK', [('Content-Type','text/html')])
 
-        return jwt.encode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
+        return response

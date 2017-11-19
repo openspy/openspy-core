@@ -1,7 +1,5 @@
 from cgi import parse_qs, escape
 
-import jwt
-
 import uuid
 
 from playhouse.shortcuts import model_to_dict, dict_to_model
@@ -37,7 +35,7 @@ class AuthService(BaseService):
 
         self.PARTNERID_GAMESPY = 0
         self.PARTNERID_IGN = 10
-
+        self.PARTNERID_EA = 20
 
     def get_profile_by_uniquenick(self, uniquenick, namespaceid, partnercode):
         try:
@@ -302,73 +300,67 @@ class AuthService(BaseService):
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
         request_body = env['wsgi.input'].read(request_body_size)
-        jwt_decoded = jwt.decode(request_body, self.SECRET_AUTH_KEY, algorithm='HS256')
 
-        if 'mode' in jwt_decoded:
-            if jwt_decoded['mode'] == 'test_session':
-                response = self.test_session(jwt_decoded)
-                return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
-            elif jwt_decoded['mode'] == 'test_session_profileid':
-                response = self.test_session_by_profileid(jwt_decoded)
-                return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
-            elif jwt_decoded['mode'] == "pwreset":
-                response = self.handle_pw_reset(jwt_decoded)
-                return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
-            elif jwt_decoded['mode'] == "perform_pwreset":
-                response = self.handle_perform_pw_reset(jwt_decoded)
-                return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
-            elif jwt_decoded['mode'] == "del_session":
-                response = self.handle_delete_session(jwt_decoded)
-                return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        if 'mode' in request_body:
+            if request_body['mode'] == 'test_session':
+                return self.test_session(request_body)
+            elif request_body['mode'] == 'test_session_profileid':
+                return self.test_session_by_profileid(request_body)
+            elif request_body['mode'] == "pwreset":
+                return self.handle_pw_reset(request_body)
+            elif request_body['mode'] == "perform_pwreset":
+                return self.handle_perform_pw_reset(request_body)
+            elif request_body['mode'] == "del_session":
+                return self.handle_delete_session(request_body)
 
         #mode == "auth"
-        if 'namespaceid' not in jwt_decoded:
-            jwt_decoded['namespaceid'] = 0
-        if 'partnercode' not in jwt_decoded:
-            jwt_decoded['partnercode'] = 0
+        if 'namespaceid' not in request_body:
+            request_body['namespaceid'] = 0
+        if 'partnercode' not in request_body:
+            request_body['partnercode'] = 0
 
         hash_type = 'plain'
-        if 'hash_type' in jwt_decoded:
-            hash_type = jwt_decoded['hash_type']
+        if 'hash_type' in request_body:
+            hash_type = request_body['hash_type']
 
-        if 'password' not in jwt_decoded and hash_type == 'plain':
+        if 'password' not in request_body and hash_type == 'plain':
             response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
-            return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+            return response
         profile = None
         user = None
-        if 'uniquenick' in jwt_decoded:
-            profile = self.get_profile_by_uniquenick(jwt_decoded['uniquenick'], jwt_decoded['namespaceid'], jwt_decoded['partnercode'])
+        if 'uniquenick' in request_body:
+            profile = self.get_profile_by_uniquenick(request_body['uniquenick'], request_body['namespaceid'], request_body['partnercode'])
             if profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_INVALID_PROFILE
-        elif 'profilenick' in jwt_decoded and 'email' in jwt_decoded:
-            profile = self.get_profile_by_nick_email(jwt_decoded['profilenick'], jwt_decoded['email'], jwt_decoded['partnercode'])
+        elif 'profilenick' in request_body and 'email' in request_body:
+            profile = self.get_profile_by_nick_email(request_body['profilenick'], request_body['email'], request_body['partnercode'])
             if profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_INVALID_PROFILE
-        elif "email" in jwt_decoded:
-            user = self.get_user_by_email(jwt_decoded['email'], jwt_decoded['partnercode'])
+        elif "email" in request_body:
+            user = self.get_user_by_email(request_body['email'], request_body['partnercode'])
             if user == None:
                 response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
-        elif "userid" in jwt_decoded:
-            user = self.get_user_by_userid(jwt_decoded["userid"])
+        elif "userid" in request_body:
+            user = self.get_user_by_userid(request_body["userid"])
             if user == None:
                 response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
-        elif "profileid" in jwt_decoded:
-            profile = self.get_profile_by_id(jwt_decoded["profileid"])
+        elif "profileid" in request_body:
+            profile = self.get_profile_by_id(request_body["profileid"])
 
         auth_success = False
         if hash_type == 'plain' and profile != None:
-            auth_success = self.test_pass_plain_by_userid(profile.user.id, jwt_decoded['password'])
+            auth_success = self.test_pass_plain_by_userid(profile.user.id, request_body['password'])
         elif hash_type == 'plain' and user != None:
-            auth_success = self.test_pass_plain_by_userid(user.id, jwt_decoded['password'])
+            auth_success = self.test_pass_plain_by_userid(user.id, request_body['password'])
         elif hash_type == 'gp_nick_email' and profile != None:
-            proof = self.test_gp_nick_email_by_profile(profile, jwt_decoded['client_challenge'], jwt_decoded['server_challenge'], jwt_decoded['client_response'])
+            proof = self.test_gp_nick_email_by_profile(profile, request_body['client_challenge'], request_body['server_challenge'], request_body['client_response'])
             if proof != None:
                 auth_success = True
                 response['server_response'] = proof
         elif hash_type == 'nick_email' and profile != None:
-            auth_success = self.test_nick_email_by_profile(profile, jwt_decoded['password'])
+            auth_success = self.test_nick_email_by_profile(profile, request_body['password'])
         elif hash_type == 'auth_or_create_profile':
-            auth_resp = self.auth_or_create_profile(jwt_decoded)
+            auth_resp = self.auth_or_create_profile(request_body)
             if "reason" in auth_resp:
                 response['reason'] = auth_resp['reason']
                 success = False
@@ -380,7 +372,7 @@ class AuthService(BaseService):
                 user = profile.user
                 success = True
         elif hash_type == "gstats_pid_sesskey":
-            auth_success = self.test_gstats_sessionkey_response_by_profileid(profile, jwt_decoded["session_key"], jwt_decoded["client_response"])
+            auth_success = self.test_gstats_sessionkey_response_by_profileid(profile, request_body["session_key"], request_body["client_response"])
 
         if not auth_success and "reason" not in response:
             if user == None or profile == None:
@@ -400,15 +392,15 @@ class AuthService(BaseService):
 
             response['expiretime'] = 10000 #TODO: figure out what this is used for, should make unix timestamp of expire time
 
-        if "save_session" in jwt_decoded and jwt_decoded["save_session"] == True and response['success'] == True:
+        if "save_session" in request_body and request_body["save_session"] == True and response['success'] == True:
             if profile != None:
                 session_data = self.create_auth_session(profile, profile.user)
             elif user != None:
                 session_data = self.create_auth_session(False, user)
             response['session_key'] = session_data['session_key']
 
-        if "set_context" in jwt_decoded and "session_key" in response:
-            if jwt_decoded["set_context"] == "profile":
+        if "set_context" in request_body and "session_key" in response:
+            if request_body["set_context"] == "profile":
                 self.set_auth_context(response["session_key"], profile)
 
-        return jwt.encode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        return response

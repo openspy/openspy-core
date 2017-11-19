@@ -1,7 +1,5 @@
 from cgi import parse_qs, escape
 
-import jwt
-
 import uuid
 
 from playhouse.shortcuts import model_to_dict, dict_to_model
@@ -403,82 +401,81 @@ class UserProfileMgrService(BaseService):
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
         request_body = env['wsgi.input'].read(request_body_size)
-        jwt_decoded = jwt.decode(request_body, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
 
         response = {}
 
         success = False
 
-        if "mode" not in jwt_decoded:
+        if "mode" not in request_body:
             response['error'] = "INVALID_MODE"
-            return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+            return response
 
-        print("UserProfileMgrService Decoded: {}".format(jwt_decoded))
+        print("UserProfileMgrService Decoded: {}".format(request_body))
 
-        if jwt_decoded["mode"] == "update_profile":
-            resp = self.handle_update_profile(jwt_decoded)
+        if request_body["mode"] == "update_profile":
+            resp = self.handle_update_profile(request_body)
             if "error" in resp:
                 response['error'] = resp["error"]
             else:
                 success = True
-        elif jwt_decoded["mode"] == "get_profile":
-            profile = self.handle_get_profile(jwt_decoded)
+        elif request_body["mode"] == "get_profile":
+            profile = self.handle_get_profile(request_body)
             success = profile != None
             response['profile'] = profile
-        elif jwt_decoded["mode"] == "get_profiles":
-            profiles = self.handle_get_profiles(jwt_decoded)
+        elif request_body["mode"] == "get_profiles":
+            profiles = self.handle_get_profiles(request_body)
             success = True
             response['profiles'] = profiles
-        elif jwt_decoded["mode"] == "create_profile":
-            profile = self.handle_create_profile(jwt_decoded)
+        elif request_body["mode"] == "create_profile":
+            profile = self.handle_create_profile(request_body)
             if "error" in profile:
                 response['error'] = profile['error']
             elif profile != None:
                 success = True
                 response['profile'] = profile
-        elif jwt_decoded["mode"] == "delete_profile":
-            success = self.handle_delete_profile(jwt_decoded)
-        elif jwt_decoded["mode"] == "profile_search":
-            profiles = self.handle_profile_search(jwt_decoded)
+        elif request_body["mode"] == "delete_profile":
+            success = self.handle_delete_profile(request_body)
+        elif request_body["mode"] == "profile_search":
+            profiles = self.handle_profile_search(request_body)
             response['profiles'] = profiles
             success = True
-        elif jwt_decoded["mode"] == "authorize_buddy_add":
-            success = self.handle_authorize_buddy_add(jwt_decoded)
-        elif jwt_decoded["mode"] == "buddies_search":
-            profiles = self.handle_buddies_search(jwt_decoded)
+        elif request_body["mode"] == "authorize_buddy_add":
+            success = self.handle_authorize_buddy_add(request_body)
+        elif request_body["mode"] == "buddies_search":
+            profiles = self.handle_buddies_search(request_body)
             response['profiles'] = profiles
             success = True
-        elif jwt_decoded["mode"] == "buddies_reverse_search": #get who has who on given profileid
-            profiles = self.handle_reverse_buddies_search(jwt_decoded)
+        elif request_body["mode"] == "buddies_reverse_search": #get who has who on given profileid
+            profiles = self.handle_reverse_buddies_search(request_body)
             response['profiles'] = profiles
             success = True
-        elif jwt_decoded["mode"] == "blocks_search":
-            profiles = self.handle_blocks_search(jwt_decoded)
+        elif request_body["mode"] == "blocks_search":
+            profiles = self.handle_blocks_search(request_body)
             response['profiles'] = profiles
             success = True
-        elif jwt_decoded["mode"] == "del_buddy":
-            success = self.handle_del_buddy(jwt_decoded)
-        elif jwt_decoded["mode"] == "get_buddies_revokes":
-            revokes = self.handle_get_buddy_revokes(jwt_decoded)
+        elif request_body["mode"] == "del_buddy":
+            success = self.handle_del_buddy(request_body)
+        elif request_body["mode"] == "get_buddies_revokes":
+            revokes = self.handle_get_buddy_revokes(request_body)
             response['revokes'] = revokes
             success = True
-        elif jwt_decoded["mode"] == "send_presence_login_messages":
-            self.handle_send_presence_login_messages(jwt_decoded)
+        elif request_body["mode"] == "send_presence_login_messages":
+            self.handle_send_presence_login_messages(request_body)
             success = True
-        elif jwt_decoded["mode"] == "send_buddy_message":
-            revokes = self.send_buddy_message(jwt_decoded)
+        elif request_body["mode"] == "send_buddy_message":
+            revokes = self.send_buddy_message(request_body)
             response['revokes'] = revokes
             success = True
-        elif jwt_decoded["mode"] == "block_buddy":
-            success = self.handle_block_buddy(jwt_decoded)
-        elif jwt_decoded["mode"] == "del_block_buddy":
-            success = self.handle_del_block_buddy(jwt_decoded)
-        elif jwt_decoded["mode"] == "get_buddies_status":
-            statuses = self.handle_get_buddies_status(jwt_decoded)
+        elif request_body["mode"] == "block_buddy":
+            success = self.handle_block_buddy(request_body)
+        elif request_body["mode"] == "del_block_buddy":
+            success = self.handle_del_block_buddy(request_body)
+        elif request_body["mode"] == "get_buddies_status":
+            statuses = self.handle_get_buddies_status(request_body)
             response['statuses'] = statuses
             success = True
 
         response['success'] = success
         start_response('200 OK', [('Content-Type','text/html')])
         print("Resp: {}\n".format(response))
-        return jwt.encode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        return response

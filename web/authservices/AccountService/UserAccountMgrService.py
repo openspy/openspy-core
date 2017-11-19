@@ -1,7 +1,5 @@
 from cgi import parse_qs, escape
 
-import jwt
-
 import uuid
 
 from playhouse.shortcuts import model_to_dict, dict_to_model
@@ -62,20 +60,19 @@ class UserAccountMgrService(BaseService):
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
         request_body = env['wsgi.input'].read(request_body_size)
-        jwt_decoded = jwt.decode(request_body, self.SECRET_USERMGR_KEY, algorithm='HS256')
 
         response = {}
 
-        print("Run: {}\n".format(jwt_decoded))
+        print("Run: {}\n".format(request_body))
 
         success = False
-        if "mode" not in jwt_decoded:
+        if "mode" not in request_body:
             response['error'] = "INVALID_MODE"
 
-        if jwt_decoded["mode"] == "update_user":
-            success = self.handle_update_user(jwt_decoded)
-        elif jwt_decoded['mode'] == 'get_user':
-            user = self.handle_get_user(jwt_decoded)
+        if request_body["mode"] == "update_user":
+            success = self.handle_update_user(request_body)
+        elif request_body['mode'] == 'get_user':
+            user = self.handle_get_user(request_body)
             if user != None:
                 success = True
                 response['user'] = user
@@ -83,6 +80,5 @@ class UserAccountMgrService(BaseService):
         response['success'] = success
 
         start_response('200 OK', [('Content-Type','text/html')])
-        resp = jwt.encode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
-        print("Got Resp: {}\n{}\n".format(resp, response))
-        return resp
+        print("Got Resp: {}\n".format(response))
+        return response
