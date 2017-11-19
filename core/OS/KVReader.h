@@ -14,7 +14,7 @@
 namespace OS {
 	class KVReader {
 	public:
-		KVReader(std::string kv_pair, char delim = '\\');
+		KVReader(std::string kv_pair, char delim = '\\', char line_delim=0);
 		~KVReader();
 		std::string GetKeyByIdx(int n);
 		std::string GetValueByIdx(int n);

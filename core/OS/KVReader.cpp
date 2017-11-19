@@ -4,29 +4,40 @@
 #include <algorithm>
 #include <math.h>
 namespace OS {
-	KVReader::KVReader(std::string kv_pair, char delim) {
-		std::string token, key, value;
+	KVReader::KVReader(std::string kv_pair, char delim, char line_delim) {
+		std::string token, key, value, line;
 		int i = 0;
-		char c = delim;
 
-	    std::stringstream ss;
+	    std::stringstream ss, line_ss;
 	    if(kv_pair[0] == delim) {
 	    	kv_pair = kv_pair.substr(1,kv_pair.length()-1);
 		}
 	    ss.str(kv_pair);
 
-		while(std::getline (ss,token, c)) {
-			if(i % 2 == 0) {
-				key = OS::strip_whitespace(token);
-			} else {
-				value = OS::strip_whitespace(token);
-				if (!HasKey(key)) {
-					m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
-				}					
+		while (line_delim == 0 || std::getline(ss, line, line_delim)) {
+			if (line_delim == 0) {
+				line_ss = std::stringstream(ss.str());
 			}
-			i++;
+			else {
+				line_ss = std::stringstream(line);
+			}
+			i = 0;
+			while (std::getline(line_ss, token, delim)) {
+				if (i % 2 == 0) {
+					key = OS::strip_whitespace(token);
+				}
+				else {
+					value = OS::strip_whitespace(token);
+					if (!HasKey(key)) {
+						m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
+					}
+				}
+				i++;
+			}
+			if (line_delim == 0) {
+				break;
+			}
 		}
-
 	}
 	KVReader::~KVReader() {
 

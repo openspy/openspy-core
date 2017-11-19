@@ -110,7 +110,6 @@ namespace OS {
 							auth_data.session_key = json_string_value(server_response_json);
 						}
 
-					} else {
 					}
 					json_t *reason_json = json_object_get(json_data, "reason");
 					if(reason_json) {
