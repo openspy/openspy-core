@@ -130,7 +130,7 @@ namespace FESL {
 		makeNonBlocking(m_sd);
 
 
-		m_ssl_ctx = SSL_CTX_new(SSLv3_server_method());
+		m_ssl_ctx = SSL_CTX_new(SSLv3_method());
 
 		SSL_CTX_set_cipher_list(m_ssl_ctx, "ALL");
 		SSL_CTX_set_options(m_ssl_ctx, SSL_OP_ALL);

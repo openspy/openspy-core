@@ -108,11 +108,6 @@ namespace SM {
 		PeerStats m_peer_stats;
 
 		
-		struct timeval m_last_recv, m_last_ping;
-
-		bool m_delete_flag;
-		bool m_timeout_flag;
-
 		static const char *mp_hidden_str;
 		void ResetMetrics();
 
