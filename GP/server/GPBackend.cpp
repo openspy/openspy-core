@@ -17,7 +17,6 @@
 #include <OS/Search/Profile.h>
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt/jwt.h>
 
 #define GP_BACKEND_REDIS_DB 5
 #define BUDDY_ADDREQ_EXPIRETIME 604800
@@ -26,7 +25,7 @@
 
 namespace GPBackend {
 	struct curl_data {
-	    json_t *json_data;
+		std::string buffer;
 	};
 
 	OS::TaskPool<GPBackendRedisTask, GPBackendRedisRequest> *m_task_pool = NULL;
@@ -35,29 +34,14 @@ namespace GPBackend {
 	const char *gp_buddies_channel = "presence.buddies";
 	/* callback for curl fetch */
 	size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
-		if(!contents) {
+		if (!contents) {
 			return 0;
 		}
-	    size_t realsize = size * nmemb;                             /* calculate buffer size */
-	    curl_data *data = (curl_data *)userp;
-
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-
-		jwt_decode(&jwt, (const char *)contents, NULL, 0);
-
-		char *json = jwt_get_grants_json(jwt, NULL);
-
-		if(json) {
-			data->json_data = json_loads(json, 0, NULL);
-			free(json);
-		} else {
-			data->json_data = NULL;
-		}
-		jwt_free(jwt);
-	    return realsize;
+		size_t realsize = size * nmemb;                             /* calculate buffer size */
+		curl_data *data = (curl_data *)userp;
+		const char *p = (const char *)contents;
+		data->buffer += *p;
+		return realsize;
 	}
 
 	void GPBackendRedisTask::onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
@@ -305,17 +289,13 @@ namespace GPBackend {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		jwt_t *jwt;
-		jwt_new(&jwt);
 		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
+
 
 
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
@@ -335,18 +315,12 @@ namespace GPBackend {
 			res = curl_easy_perform(curl);
 		}
 
-		if(recv_data.json_data) {
-			json_decref(recv_data.json_data);
-		}
-
 		if(json_data)
 			free((void *)json_data);
 
 		if(send_obj)
 			json_decref(send_obj);
 
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 	}
 	void GPBackendRedisTask::Perform_DelBuddy(GPBackendRedisRequest request) {
 		curl_data recv_data;
@@ -363,17 +337,10 @@ namespace GPBackend {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
-
 
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
@@ -392,9 +359,6 @@ namespace GPBackend {
 
 			res = curl_easy_perform(curl);
 		}
-		if(recv_data.json_data) {
-			json_decref(recv_data.json_data);
-		}
 
 		if(json_data)
 			free((void *)json_data);
@@ -402,8 +366,6 @@ namespace GPBackend {
 		if(send_obj)
 			json_decref(send_obj);
 
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 	}
 	void GPBackendRedisTask::SendLoginEvent(GP::Peer *peer) {
 		GPBackendRedisRequest req;
@@ -431,17 +393,10 @@ namespace GPBackend {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
-
 
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
@@ -460,17 +415,11 @@ namespace GPBackend {
 
 			res = curl_easy_perform(curl);
 		}
-		if(recv_data.json_data) {
-			json_decref(recv_data.json_data);
-		}
 		if(json_data)
 			free((void *)json_data);
 
 		if(send_obj)
 			json_decref(send_obj);
-
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 	}
 	void GPBackendRedisTask::SendMessage(GP::Peer *peer, int to_profileid, char msg_type, const char *message) {
 		GPBackendRedisRequest req;
@@ -508,17 +457,10 @@ namespace GPBackend {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
-
 
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
@@ -538,17 +480,12 @@ namespace GPBackend {
 			res = curl_easy_perform(curl);
 		}
 
-		if(recv_data.json_data) {
-			json_decref(recv_data.json_data);
-		}
-		if(json_data)
+ 		if(json_data)
 			free((void *)json_data);
 
 		if(send_obj)
 			json_decref(send_obj);
 
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 	}
 	void GPBackendRedisTask::MakeBlockRequest(GP::Peer *peer, int block_id) {
 		GPBackendRedisRequest req;
@@ -582,17 +519,9 @@ namespace GPBackend {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
-
-
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
@@ -612,17 +541,11 @@ namespace GPBackend {
 			res = curl_easy_perform(curl);
 		}
 
-		if(recv_data.json_data) {
-			json_decref(recv_data.json_data);
-		}
 		if(json_data)
 			free((void *)json_data);
 
 		if(send_obj)
 			json_decref(send_obj);
-
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 	}
 	void GPBackendRedisTask::Perform_DelBuddyBlock(GPBackendRedisRequest request) {
 		curl_data recv_data;
@@ -638,17 +561,9 @@ namespace GPBackend {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
-
-
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
@@ -668,17 +583,12 @@ namespace GPBackend {
 			res = curl_easy_perform(curl);
 		}
 
-		if(recv_data.json_data) {
-			json_decref(recv_data.json_data);
-		}
 		if(json_data)
 			free((void *)json_data);
 
 		if(send_obj)
 			json_decref(send_obj);
 
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 	}
 	void GPBackendRedisTask::load_and_send_gpstatus(GP::Peer *peer, json_t *json) {
 		GPShared::GPStatus status;
@@ -758,17 +668,9 @@ namespace GPBackend {
 
 		char *json_data = json_dumps(send_obj, 0);
 
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_PROFILEMGR_KEY, strlen(OPENSPY_PROFILEMGR_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
-
-
 		if(curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jwt_encoded);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
 			/* set default user agent */
 			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
@@ -787,7 +689,9 @@ namespace GPBackend {
 
 			res = curl_easy_perform(curl);
 
-			json_t *status_array = json_object_get(recv_data.json_data, "statuses");
+			json_t *root = json_loads(recv_data.buffer.c_str(), 0, NULL);
+
+			json_t *status_array = json_object_get(root, "statuses");
 			if(status_array) {
 				int num_items = json_array_size(status_array);
 				for(int i=0;i<num_items;i++) {
@@ -796,19 +700,15 @@ namespace GPBackend {
 				}
 			}
 
+			json_decref(root);
+
 		}
 
-		if(recv_data.json_data) {
-			json_decref(recv_data.json_data);
-		}
 		if(json_data)
 			free((void *)json_data);
 
 		if(send_obj)
 			json_decref(send_obj);
-
-		if(jwt_encoded)
-			free((void *)jwt_encoded);
 	}
 	void GPBackendRedisTask::AddDriver(GP::Driver *driver) {
 		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {

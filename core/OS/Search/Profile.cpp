@@ -18,8 +18,7 @@ namespace OS {
 		}
 		size_t realsize = size * nmemb;                             /* calculate buffer size */
 		curl_data *data = (curl_data *)userp;
-		const char *p = (const char *)contents;
-		data->buffer += *p;
+		data->buffer += (const char *)contents;
 		return realsize;
 	}
 	void ProfileSearchTask::PerformSearch(ProfileSearchRequest request) {
@@ -68,6 +67,9 @@ namespace OS {
 			//user parameters
 			if (request.user_search_details.email.length())
 				json_object_set_new(send_obj, "email", json_string(request.user_search_details.email.c_str()));
+
+			if (request.user_search_details.id != 0)
+				json_object_set_new(send_obj, "userid", json_integer(request.user_search_details.id));
 
 
 			json_object_set_new(send_obj, "partnercode", json_integer(request.user_search_details.partnercode));

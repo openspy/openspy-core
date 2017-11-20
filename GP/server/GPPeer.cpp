@@ -58,8 +58,13 @@ namespace GP {
 		int len = 0, piece_len = 0;
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
+			if (OS::wouldBlock()) {
+				return;
+			}
+			if (len <= 0) {
+				goto end;
+			}
 			buf[len] = 0;
-			if(len <= 0) goto end;
 
 			/* split by \\final\\  */
 			char *p = (char *)&buf;
@@ -302,6 +307,9 @@ namespace GP {
 		if (data_parser.HasKey("user")) {
 			type = 1;
 		}
+		else if (data_parser.HasKey("authtoken")) {
+			type = 2;
+		}
 		else {
 			send_error(GPShared::GP_LOGIN_CONNECTION_FAILED);
 			return;
@@ -316,6 +324,10 @@ namespace GP {
 
 		if(type == 1) {
 			perform_nick_email_auth(user.c_str(), partnercode, m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
+		}
+		else if (type == 2) {
+			std::string authtoken = data_parser.GetValue("authtoken");
+			perform_preauth_auth(authtoken.c_str(), m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
 		}
 	}
 	void Peer::handle_pinvite(const char *data, int len) {
@@ -735,6 +747,9 @@ namespace GP {
 			email = first_at+1;
 		}
  		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this, operation_id, this);
+	}
+	void Peer::perform_preauth_auth(const char *auth_token, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
+		OS::AuthTask::TryAuthTicket(auth_token, server_challenge, client_challenge, response, m_nick_email_auth_cb, operation_id, this);
 	}
 	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
 		if(!((GP::Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())

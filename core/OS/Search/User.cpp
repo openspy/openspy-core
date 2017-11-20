@@ -16,8 +16,7 @@ namespace OS {
 		}
 		size_t realsize = size * nmemb;                             /* calculate buffer size */
 		curl_data *data = (curl_data *)userp;
-		const char *p = (const char *)contents;
-		data->buffer += *p;
+		data->buffer += (const char *)contents;
 		return realsize;
 	}
 	void UserSearchTask::PerformRequest(UserSearchRequest request) {

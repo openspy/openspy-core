@@ -65,8 +65,7 @@ namespace SB {
 					return;
 				}
 				if (len <= 0) {
-					m_delete_flag = true;
-					return;
+					goto end;
 				}
 				buf[len] = 0;
 				if(len == 0) goto end;

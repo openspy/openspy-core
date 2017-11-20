@@ -34,6 +34,9 @@ namespace FESL {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", OS::Address(m_address_info).ToString().c_str());
 		m_sequence_id = 1;
 		m_openssl_accepted = false;
+		m_logged_in = false;
+		m_pending_subaccounts = false;
+		m_got_profiles = false;
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
@@ -150,14 +153,46 @@ namespace FESL {
 		return true;
 	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
-		std::string kv_str = "TXN=Login\n"
-			"lkey=VlUiXUWPBS\n"
-			"nuid=hertc@example.com\n"
-			"displayName=6929968\n"
-			"profileId=636494100\n"
-			"userId=636494100\n";
-		SendPacket(FESL_TYPE_ACCOUNT, kv_str);
+		/*TXN=Login
+			returnEncryptedInfo=1
+			name=hertc
+			password=123321
+			machineId=
+			macAddr=$1c872c771a76
+			*/
+		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), /*OS_EA_PARTNER_CODE*/ 0, 0, kv_list.GetValue("password"), m_email_pass_auth_cb, NULL, 0, this);
 		return true;
+	}
+	void Peer::m_email_pass_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+		std::ostringstream s;
+		if (success) {
+			s << "TXN=Login\n";
+			s << "lkey=" << auth_data.session_key << "\n";
+			((Peer *)peer)->m_session_key = auth_data.session_key;
+			s << "displayName=" << profile.nick << "\n";
+			s << "userId=" << user.id << "\n";
+			s << "profileId=" << profile.id << "\n";
+			((Peer *)peer)->m_logged_in = true;
+			((Peer *)peer)->m_user = user;
+			((Peer *)peer)->m_profile = profile;
+			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
+
+			OS::ProfileSearchRequest request;
+			request.type = OS::EProfileSearch_Profiles;
+			request.user_search_details.id = user.id;
+			request.peer = peer;
+			peer->IncRef();
+			request.callback = Peer::m_search_callback;
+			OS::m_profile_search_task_pool->AddRequest(request);
+		}
+	}
+	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		((Peer *)peer)->m_profiles = results;
+		((Peer *)peer)->m_got_profiles = true;
+		if (((Peer *)peer)->m_pending_subaccounts) {
+			((Peer *)peer)->m_pending_subaccounts = false;
+			((Peer *)peer)->send_subaccounts();
+		}
 	}
 	bool Peer::m_acct_get_account(OS::KVReader kv_list) {
 		std::ostringstream s;
@@ -170,11 +205,11 @@ namespace FESL {
 		s << "dobMonth=1\n";
 		s << "dobYear=1980\n";
 		s << "name=Test\n";
-		s << "email=Test@example.com\n";
-		s << "profileID=636494100\n";
-		s << "userId=636494100\n";
-		s << "zipCode=90094\n";
-		s << "gender=U\n";
+		s << "email=" << m_user.email << "\n";
+		s << "profileID=" << m_profile.id << "\n";
+		s << "userId=" << m_user.id<< "\n";
+		s << "zipCode=" << m_profile.zipcode << "\n";
+		s << "gender=" << ((m_profile.sex == 0) ? 'M' : 'F') << "\n";
 		s << "eaMailFlag=0\n";
 		SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		return true;
@@ -185,17 +220,50 @@ namespace FESL {
 		SendPacket(FESL_TYPE_SUBS, kv_str);
 		return true;
 	}
+	void Peer::send_subaccounts() {
+		std::ostringstream s;
+		std::vector<OS::Profile>::iterator it = m_profiles.begin();
+		int i = 0;
+		s << "TXN=GetSubAccounts\n";
+		while (it != m_profiles.end()) {
+			OS::Profile profile = *it;
+			s << "subAccounts." << i++ << "=\"" << profile.uniquenick << "\"\n";
+			it++;
+		}
+		s << "subAccounts.[]=" << m_profiles.size() << "\n";
+		
+		SendPacket(FESL_TYPE_ACCOUNT, s.str());
+	}
+	void Peer::loginToSubAccount(std::string uniquenick) {
+		std::ostringstream s;
+
+		std::vector<OS::Profile>::iterator it = m_profiles.begin();
+		while (it != m_profiles.end()) {
+			OS::Profile profile = *it;
+			if (profile.uniquenick.compare(uniquenick) == 0) {
+				m_profile = profile;
+				s << "TXN=LoginSubAccount\n";
+				s << "lkey=" << m_session_key << "\n";
+				s << "profileId=" << m_profile.id << "\n";
+				s << "userId=" << m_profile.userid << "\n";
+				SendPacket(FESL_TYPE_ACCOUNT, s.str());
+				break;
+			}
+			it++;
+		}
+	}
 	bool Peer::m_acct_get_sub_accounts(OS::KVReader kv_list) {
-		std::string kv_str = "TXN=GetSubAccounts\n"
-			"subAccounts.0=\"test123\"\n"
-			"subAccounts.1=\"test666\"\n"
-			"subAccounts.[]=2\n";
-		SendPacket(FESL_TYPE_ACCOUNT, kv_str);
+		if (m_profiles.size() == 0) {
+			m_pending_subaccounts = true;
+		}
+		else {
+			send_subaccounts();
+		}
 		return true;
 	}
 	bool Peer::m_dobj_get_object_inventory(OS::KVReader kv_list) {
 		std::string kv_str = "TXN=GetObjectInventory\n"
-			"ObjectInventory.[] = 0\n";
+			"ObjectInventory.[]=0\n";
 		SendPacket(FESL_TYPE_DOBJ, kv_str);
 		return true;
 	}
@@ -208,23 +276,34 @@ namespace FESL {
 		SendPacket(FESL_TYPE_FSYS, s.str(), 0);
 	}
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {
-		std::ostringstream s;
-		s << "TXN=LoginSubAccount\n";
-		s << "lkey=CC3GjhFQQCyEAc7o_Cn4qoAAAKDw.\n";
-		s << "profileId=" << 636494100 << "\n";
-		s << "userId=" << 636494100 << "\n";
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
+		loginToSubAccount(kv_list.GetValue("name"));
 		return true;
 	}
 	bool Peer::m_acct_gamespy_preauth(OS::KVReader kv_list) {
-		std::ostringstream s;
-		s << "TXN=GameSpyPreAuth\n";
-		//s << "challenge=pass\n";  // this is the password used in gs_login_server
-		//s << "ticket=O%3d%3d%3d\n";   // base64 of ""
-		s << "challenge=hzplukkz\n";
-		s << "ticket=CC3GjhFQQCyEAc7o/GD5Zid8jtpGVE/EYNR1Gxh4KYVzQlMfd9FHsBwhxTNUW0MPKbr4bg90ckLkMflizg9iAACsg%3d%3d\n";
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
+		OS::AuthTask::TryMakeAuthTicket(m_profile.id, m_create_auth_ticket, NULL, 0, this);
 		return true;
+	}
+	void Peer::m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+		std::ostringstream s;
+		if (success) {
+			s << "TXN=GameSpyPreAuth\n";
+			/*s << "challenge=pass\n";  // this is the password used in gs_login_server
+			//s << "ticket=O%3d%3d%3d\n";   // base64 of "" */
+			if(auth_data.hash_proof.length())
+				s << "challenge=" << auth_data.hash_proof << "\n";
+			s << "ticket=" << auth_data.session_key << "\n";
+			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
+		}
+		else {
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "GameSpyPreAuth");
+		}
+	}
+	void Peer::SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN) {
+		std::ostringstream s;
+		s << "TXN=" << TXN << "\n";
+		s << "errorContainer=[]\n";
+		s << "errorCode=" << error << "\n";
+		SendPacket(type, s.str());
 	}
 	OS::MetricValue Peer::GetMetricItemFromStats(PeerStats stats) {
 		OS::MetricValue arr_value, value;

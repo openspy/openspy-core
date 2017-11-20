@@ -85,6 +85,10 @@ namespace OS {
 	#define OS_MAX_GAMENAME 32
 	#define OS_MAX_DESCRIPTION 64
 	#define OS_MAX_SECRETKEY 7
+
+	#define OS_GAMESPY_PARTNER_CODE 0
+	#define OS_IGN_PARTNER_CODE 10
+	#define OS_EA_PARTNER_CODE 20
 	
 	typedef enum
 	{

@@ -230,7 +230,6 @@ namespace SM {
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
-		printf("Search got %d results\n",results.size());
 		std::ostringstream s;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		while(it != results.end()) {
