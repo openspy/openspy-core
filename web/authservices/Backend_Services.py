@@ -67,8 +67,7 @@ def application(env, start_response):
 		start_response('400 BAD REQUEST', [('Content-Type','text/html')])
 		return [b'Bad Request']
 
-	resp = service.run(env, start_response)
-	print("Service resp: {}\n".format(resp))
+	resp = json.dumps(service.run(env, start_response))
 	if(type(resp)) != bytes:
 		return [str.encode(resp)]
 	else:

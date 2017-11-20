@@ -1,6 +1,7 @@
 from cgi import parse_qs, escape
 
 import uuid
+import json
 
 from playhouse.shortcuts import model_to_dict, dict_to_model
 
@@ -99,6 +100,19 @@ class AuthService(BaseService):
 
         return pw_hashed == client_response
 
+    def test_gp_preauth_by_ticket(self, request_body):
+        profile = self.get_profile_by_id(1)
+        response = {}
+        challenge = "asd"
+        token = "test"
+        md5_pw = hashlib.md5(challenge.encode('utf-8')).hexdigest()
+        crypt_buf = "{}{}{}{}{}{}".format(md5_pw, "                                                ",token, request_body['server_challenge'], request_body['client_challenge'], md5_pw)
+        true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
+        response['crypt_buf'] = crypt_buf
+        response['profile'] = model_to_dict(profile)
+        response["server_response"] = true_resp
+        response["success"] = True
+        return response
     def test_nick_email_by_profile(self, profile, password):
         return profile.user.password == password
     def create_auth_session(self, profile, user):
@@ -149,6 +163,15 @@ class AuthService(BaseService):
             return self.test_session(test_params)
         except Profile.DoesNotExist:
             return {'valid': False}
+    def handle_make_auth_ticket(self, params):
+        #if profile.user.partnercode != self.PARTNERID_GAMESPY:
+        #    proof = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
+        #else:
+        #    proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
+        #proof = hashlib.md5(str(proof).encode('utf-8')).hexdigest()
+        challenge = "asd"
+        token = "test"
+        return {"ticket": token, "challenge": challenge, "server_response": "servresp", "success": True}
     def handle_delete_session(self, params):
         userid = None
         session_key = None
@@ -299,8 +322,8 @@ class AuthService(BaseService):
         # When the method is POST the variable will be sent
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
-        request_body = env['wsgi.input'].read(request_body_size)
-
+        request_body = json.loads(env['wsgi.input'].read(request_body_size))
+        print("AuthService obj: {}".format(request_body))
         if 'mode' in request_body:
             if request_body['mode'] == 'test_session':
                 return self.test_session(request_body)
@@ -312,7 +335,8 @@ class AuthService(BaseService):
                 return self.handle_perform_pw_reset(request_body)
             elif request_body['mode'] == "del_session":
                 return self.handle_delete_session(request_body)
-
+            elif request_body['mode'] == 'make_auth_ticket':
+                return self.handle_make_auth_ticket(request_body)
         #mode == "auth"
         if 'namespaceid' not in request_body:
             request_body['namespaceid'] = 0
@@ -363,17 +387,22 @@ class AuthService(BaseService):
             auth_resp = self.auth_or_create_profile(request_body)
             if "reason" in auth_resp:
                 response['reason'] = auth_resp['reason']
-                success = False
             elif isinstance(auth_resp, dict):
                 response['profile'] = auth_resp
                 auth_success = True
                 #retrieve profile for save_session
                 profile = Profile.get((Profile.id == response['profile']['id']))
                 user = profile.user
-                success = True
         elif hash_type == "gstats_pid_sesskey":
             auth_success = self.test_gstats_sessionkey_response_by_profileid(profile, request_body["session_key"], request_body["client_response"])
-
+        elif hash_type == "gp_preauth":
+            response = self.test_gp_preauth_by_ticket(request_body)
+            if "reason" not in response:
+                auth_success = True
+                profile = Profile.get((Profile.id == response['profile']['id']))
+                user = profile.user
+            else:
+                response["success"] = False
         if not auth_success and "reason" not in response:
             if user == None or profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND

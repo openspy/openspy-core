@@ -1,6 +1,7 @@
 from cgi import parse_qs, escape
 
 import base64
+import json;
 
 from BaseService import BaseService
 
@@ -36,7 +37,7 @@ class PersistService(BaseService):
         # When the method is POST the variable will be sent
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
-        request_body = env['wsgi.input'].read(request_body_size)
+        request_body = json.loads(env['wsgi.input'].read(request_body_size))
 
         start_response('200 OK', [('Content-Type','text/html')])
 

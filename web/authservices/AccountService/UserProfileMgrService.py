@@ -1,6 +1,7 @@
 from cgi import parse_qs, escape
 
 import uuid
+import json
 
 from playhouse.shortcuts import model_to_dict, dict_to_model
 from BaseModel import BaseModel
@@ -400,7 +401,7 @@ class UserProfileMgrService(BaseService):
         # When the method is POST the variable will be sent
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
-        request_body = env['wsgi.input'].read(request_body_size)
+        request_body = json.loads(env['wsgi.input'].read(request_body_size))
 
         response = {}
 
