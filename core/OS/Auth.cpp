@@ -942,12 +942,8 @@ namespace OS {
 	}
 	void *AuthTask::TaskThread(CThread *thread) {
 		AuthTask *task = (AuthTask *)thread->getParams();
-		while (task->mp_thread_poller->wait()) {
+		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
-			if (task->m_request_list.empty()) {
-				task->mp_mutex->unlock();
-				break;
-			}
 			while (!task->m_request_list.empty()) {
 				AuthRequest task_params = task->m_request_list.front();
 				task->mp_mutex->unlock();
