@@ -134,6 +134,7 @@ namespace FESL {
 		void SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN);
 	private:
 		bool m_fsys_hello_handler(OS::KVReader kv_list);
+		bool m_fsys_memcheck_handler(OS::KVReader kv_list);
 		bool m_fsys_goodbye_handler(OS::KVReader kv_list);
 		bool m_acct_login_handler(OS::KVReader kv_list);
 		bool m_acct_get_account(OS::KVReader kv_list);
@@ -167,7 +168,6 @@ namespace FESL {
 		static void m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 		static void m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
-		int m_last_sub_send_seq;
 		void ResetMetrics();
 
 	};

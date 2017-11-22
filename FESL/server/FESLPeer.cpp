@@ -14,6 +14,7 @@
 namespace FESL {
 	CommandHandler Peer::m_commands[] = {
 		{ FESL_TYPE_FSYS, "Hello", &Peer::m_fsys_hello_handler },
+		{ FESL_TYPE_FSYS, "MemCheck", &Peer::m_fsys_memcheck_handler },
 		{ FESL_TYPE_FSYS, "Goodbye", &Peer::m_fsys_goodbye_handler },
 		{ FESL_TYPE_ACCOUNT, "Login", &Peer::m_acct_login_handler},
 		{ FESL_TYPE_SUBS, "GetEntitlementByBundle", &Peer::m_subs_get_entitlement_by_bundle },
@@ -39,7 +40,6 @@ namespace FESL {
 		m_logged_in = false;
 		m_pending_subaccounts = false;
 		m_got_profiles = false;
-		m_last_sub_send_seq = -1;
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
@@ -155,6 +155,11 @@ namespace FESL {
 		m_delete_flag = true;
 		return true;
 	}
+	bool Peer::m_fsys_memcheck_handler(OS::KVReader kv_list) {
+		printf("got memcheck\n");
+		//send_memcheck(0);
+		return true;
+	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
 		/*TXN=Login
 			returnEncryptedInfo=1
@@ -187,6 +192,9 @@ namespace FESL {
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
 			OS::m_profile_search_task_pool->AddRequest(request);
+		}
+		else {
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "Login");
 		}
 	}
 	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
@@ -231,12 +239,14 @@ namespace FESL {
 		std::vector<OS::Profile>::iterator it = m_profiles.begin();
 		int i = 0;
 		s << "TXN=GetSubAccounts\n";
+		s << "subAccounts.[]=" << m_profiles.size() << "\n";
 		while (it != m_profiles.end()) {
 			OS::Profile profile = *it;
 			s << "subAccounts." << i++ << "=\"" << profile.uniquenick << "\"\n";
 			it++;
 		}
-		s << "subAccounts.[]=" << m_profiles.size() << "\n";
+		
+		mp_mutex->unlock();
 		SendPacket(FESL_TYPE_ACCOUNT, s.str());
 	}
 	void Peer::loginToSubAccount(std::string uniquenick) {
@@ -250,7 +260,7 @@ namespace FESL {
 				s << "TXN=LoginSubAccount\n";
 				s << "lkey=" << m_session_key << "\n";
 				s << "profileId=" << m_profile.id << "\n";
-				s << "userId=" << m_profile.userid << "\n";
+				s << "userId=" << m_user.id << "\n";
 				SendPacket(FESL_TYPE_ACCOUNT, s.str());
 				break;
 			}
@@ -323,8 +333,9 @@ namespace FESL {
 				request.peer->IncRef();
 				request.type = OS::EProfileSearch_DeleteProfile;
 				request.callback = Peer::m_delete_profile_callback;
+				mp_mutex->unlock();
 				OS::m_profile_search_task_pool->AddRequest(request);
-				break;
+				return true;
 			}
 			it++;
 		}
@@ -347,8 +358,8 @@ namespace FESL {
 
 			std::ostringstream s;
 			s << "TXN=DisableSubAccount\n";
-			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
-			//((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)0, "DisableSubAccount");
+			//((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)0, "DisableSubAccount");
 		}
 		else {
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)FESL_ERROR_SYSTEM_ERROR, "DisableSubAccount");
@@ -381,6 +392,9 @@ namespace FESL {
 		std::ostringstream s;
 		s << "TXN=" << TXN << "\n";
 		s << "errorContainer=[]\n";
+		if (error == (FESL_ERROR)0) {
+			s << "errorType=" << error << "\n";
+		}
 		s << "errorCode=" << error << "\n";
 		SendPacket(type, s.str());
 	}
