@@ -6,16 +6,22 @@ import datetime
 class GPBirthDay(Field):
 	db_field = 'date'
 
-	def db_value(self, value):
+	def python_value(self, value):
 		if value != None:
 			day = (value >> 24) & 0xFF
 			month = (value >> 16) & 0xFF
 			year = (value & 0xFFFF)
 		else:
 			return None
+		if year == 0:
+			year = 1900
+		if day == 0:
+			day = 1
+		if month == 0: 
+			month = 1
 		return datetime.date(year,month,day)
 
-	def python_value(self, value):
+	def db_value(self, value):
 		day = 0
 		month = 0
 		year = 0

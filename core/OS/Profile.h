@@ -12,7 +12,7 @@ namespace OS {
 			deleted = false; 
 			icquin = 0;
 			zipcode = 0;
-			sex = 0; 
+			sex = -1; 
 			pic = 0;
 			ooc = 0;
 			ind = 0; 

@@ -19,7 +19,9 @@ namespace FESL {
 		{ FESL_TYPE_SUBS, "GetEntitlementByBundle", &Peer::m_subs_get_entitlement_by_bundle },
 		{ FESL_TYPE_ACCOUNT, "GetSubAccounts", &Peer::m_acct_get_sub_accounts },
 		{ FESL_TYPE_DOBJ, "GetObjectInventory", &Peer::m_dobj_get_object_inventory },
-		{ FESL_TYPE_ACCOUNT, "LoginSubAccount",  &Peer::m_acct_login_sub_account},
+		{ FESL_TYPE_ACCOUNT, "LoginSubAccount",  &Peer::m_acct_login_sub_account },
+		{ FESL_TYPE_ACCOUNT, "AddSubAccount",  &Peer::m_acct_add_sub_account },
+		{ FESL_TYPE_ACCOUNT, "DisableSubAccount",  &Peer::m_acct_disable_sub_account },
 		{ FESL_TYPE_ACCOUNT, "GetAccount", &Peer::m_acct_get_account },
 		{ FESL_TYPE_ACCOUNT, "GameSpyPreAuth", &Peer::m_acct_gamespy_preauth },
 	};
@@ -37,6 +39,7 @@ namespace FESL {
 		m_logged_in = false;
 		m_pending_subaccounts = false;
 		m_got_profiles = false;
+		m_last_sub_send_seq = -1;
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
@@ -187,12 +190,14 @@ namespace FESL {
 		}
 	}
 	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		((Peer *)peer)->mp_mutex->lock();
 		((Peer *)peer)->m_profiles = results;
+		((Peer *)peer)->mp_mutex->unlock();
 		((Peer *)peer)->m_got_profiles = true;
 		if (((Peer *)peer)->m_pending_subaccounts) {
 			((Peer *)peer)->m_pending_subaccounts = false;
 			((Peer *)peer)->send_subaccounts();
-		}
+		}		
 	}
 	bool Peer::m_acct_get_account(OS::KVReader kv_list) {
 		std::ostringstream s;
@@ -216,12 +221,13 @@ namespace FESL {
 	}
 	bool Peer::m_subs_get_entitlement_by_bundle(OS::KVReader kv_list) {
 		std::string kv_str = "TXN=GetEntitlementByBundle\n"
-			"EntitlementByBundle.[] = 0\n";
+			"EntitlementByBundle.[]=0\n";
 		SendPacket(FESL_TYPE_SUBS, kv_str);
 		return true;
 	}
 	void Peer::send_subaccounts() {
 		std::ostringstream s;
+		mp_mutex->lock();
 		std::vector<OS::Profile>::iterator it = m_profiles.begin();
 		int i = 0;
 		s << "TXN=GetSubAccounts\n";
@@ -231,12 +237,11 @@ namespace FESL {
 			it++;
 		}
 		s << "subAccounts.[]=" << m_profiles.size() << "\n";
-		
 		SendPacket(FESL_TYPE_ACCOUNT, s.str());
 	}
 	void Peer::loginToSubAccount(std::string uniquenick) {
 		std::ostringstream s;
-
+		mp_mutex->lock();
 		std::vector<OS::Profile>::iterator it = m_profiles.begin();
 		while (it != m_profiles.end()) {
 			OS::Profile profile = *it;
@@ -251,9 +256,10 @@ namespace FESL {
 			}
 			it++;
 		}
+		mp_mutex->unlock();
 	}
 	bool Peer::m_acct_get_sub_accounts(OS::KVReader kv_list) {
-		if (m_profiles.size() == 0) {
+		if (!m_got_profiles) { //NOT VALID!!!
 			m_pending_subaccounts = true;
 		}
 		else {
@@ -275,6 +281,79 @@ namespace FESL {
 		s << "salt=" << time(NULL) <<"\n";
 		SendPacket(FESL_TYPE_FSYS, s.str(), 0);
 	}
+	bool Peer::m_acct_add_sub_account(OS::KVReader kv_list) {
+		OS::ProfileSearchRequest request;
+		std::string nick, oldnick;
+		nick = kv_list.GetValue("name");
+
+		request.user_search_details.id = m_user.id;
+		//request.profile_search_details.id = m_profile.id;
+		request.profile_search_details.nick = nick;
+		request.profile_search_details.uniquenick = nick;
+		request.extra = this;
+		request.peer = this;
+		request.peer->IncRef();
+		request.type = OS::EProfileSearch_CreateProfile;
+		request.callback = Peer::m_create_profile_callback;
+		OS::m_profile_search_task_pool->AddRequest(request);
+		
+		return true;
+	}
+	void Peer::m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		if (response_reason == OS::EProfileResponseType_Success && results.size() > 0) {
+			((Peer *)peer)->mp_mutex->lock();
+			((Peer *)peer)->m_profiles.push_back(results.front());
+			((Peer *)peer)->mp_mutex->unlock();
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_NO_ERROR, "AddSubAccount");
+		}
+		else {
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_SYSTEM_ERROR, "AddSubAccount");
+		}
+	}
+	bool Peer::m_acct_disable_sub_account(OS::KVReader kv_list) {
+		mp_mutex->lock();
+		std::vector<OS::Profile>::iterator it = m_profiles.begin();
+		while (it != m_profiles.end()) {
+			OS::Profile profile = *it;
+			if (profile.uniquenick.compare(kv_list.GetValue("name")) == 0) {
+				OS::ProfileSearchRequest request;
+				request.profile_search_details.id = profile.id;
+				request.peer = this;
+				request.extra = (void *)profile.id;
+				request.peer->IncRef();
+				request.type = OS::EProfileSearch_DeleteProfile;
+				request.callback = Peer::m_delete_profile_callback;
+				OS::m_profile_search_task_pool->AddRequest(request);
+				break;
+			}
+			it++;
+		}
+		mp_mutex->unlock();
+		return true;
+	}
+	void Peer::m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		if (response_reason == OS::EProfileResponseType_Success) {
+			((Peer *)peer)->mp_mutex->lock();
+			std::vector<OS::Profile>::iterator it = ((Peer *)peer)->m_profiles.begin();
+			while (it != ((Peer *)peer)->m_profiles.end()) {
+				OS::Profile profile = *it;
+				if (profile.id == (int)extra) {
+					((Peer *)peer)->m_profiles.erase(it);
+					break;
+				}
+				it++;
+			}
+			((Peer *)peer)->mp_mutex->unlock();
+
+			std::ostringstream s;
+			s << "TXN=DisableSubAccount\n";
+			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
+			//((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)0, "DisableSubAccount");
+		}
+		else {
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)FESL_ERROR_SYSTEM_ERROR, "DisableSubAccount");
+		}
+	}	
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {
 		loginToSubAccount(kv_list.GetValue("name"));
 		return true;

@@ -56,66 +56,75 @@ namespace OS {
 
 
 
-		if (request.profile_search_details.id != 0 && request.type != EProfileSearch_UpdateProfile) {
+		/*if (request.profile_search_details.id != 0 && request.type != EProfileSearch_UpdateProfile) {
 			json_object_set_new(send_obj, "profileid", json_integer(request.profile_search_details.id));
 		}
-		else {
+		else */ {
+
+			json_t *profile_obj = json_object();
+			json_t *user_obj = json_object();
 
 			if (request.profile_search_details.id != 0)
-				json_object_set_new(send_obj, "profileid", json_integer(request.profile_search_details.id));
+				json_object_set_new(profile_obj, "id", json_integer(request.profile_search_details.id));
 
 			//user parameters
-			if (request.user_search_details.email.length())
-				json_object_set_new(send_obj, "email", json_string(request.user_search_details.email.c_str()));
+			if (request.user_search_details.email.length()) {
+				json_object_set_new(profile_obj, "email", json_string(request.user_search_details.email.c_str()));
+				json_object_set_new(user_obj, "email", json_string(request.user_search_details.email.c_str()));
+			}			
 
-			if (request.user_search_details.id != 0)
-				json_object_set_new(send_obj, "userid", json_integer(request.user_search_details.id));
+			if (request.user_search_details.id != 0) {
+				//json_object_set_new(profile_obj, "userid", json_integer(request.user_search_details.id));
+				json_object_set_new(user_obj, "id", json_integer(request.user_search_details.id));
+			}
 
 
-			json_object_set_new(send_obj, "partnercode", json_integer(request.user_search_details.partnercode));
+			json_object_set_new(user_obj, "partnercode", json_integer(request.user_search_details.partnercode));
 
 
 			//profile parameters
 			if (request.profile_search_details.nick.length())
-				json_object_set_new(send_obj, "profilenick", json_string(request.profile_search_details.nick.c_str()));
+				json_object_set_new(profile_obj, "nick", json_string(request.profile_search_details.nick.c_str()));
 
 			if (request.profile_search_details.uniquenick.length())
-				json_object_set_new(send_obj, "uniquenick", json_string(request.profile_search_details.uniquenick.c_str()));
+				json_object_set_new(profile_obj, "uniquenick", json_string(request.profile_search_details.uniquenick.c_str()));
 
 			if (request.profile_search_details.firstname.length())
-				json_object_set_new(send_obj, "firstname", json_string(request.profile_search_details.firstname.c_str()));
+				json_object_set_new(profile_obj, "firstname", json_string(request.profile_search_details.firstname.c_str()));
 
 			if (request.profile_search_details.lastname.length())
-				json_object_set_new(send_obj, "lastname", json_string(request.profile_search_details.lastname.c_str()));
+				json_object_set_new(profile_obj, "lastname", json_string(request.profile_search_details.lastname.c_str()));
 
 			if (request.profile_search_details.icquin)
-				json_object_set_new(send_obj, "icquin", json_integer(request.profile_search_details.icquin));
+				json_object_set_new(profile_obj, "icquin", json_integer(request.profile_search_details.icquin));
 
 			if (request.profile_search_details.zipcode)
-				json_object_set_new(send_obj, "zipcode", json_integer(request.profile_search_details.zipcode));
+				json_object_set_new(profile_obj, "zipcode", json_integer(request.profile_search_details.zipcode));
 
-			json_object_set_new(send_obj, "sex", json_integer(request.profile_search_details.sex));
+
+			if(request.profile_search_details.sex != -1)
+				json_object_set_new(profile_obj, "sex", json_integer(request.profile_search_details.sex));
 
 			if(request.profile_search_details.pic != 0)
-				json_object_set_new(send_obj, "pic", json_integer(request.profile_search_details.pic));
+				json_object_set_new(profile_obj, "pic", json_integer(request.profile_search_details.pic));
 			if (request.profile_search_details.ooc != 0)
-				json_object_set_new(send_obj, "ooc", json_integer(request.profile_search_details.ooc));
+				json_object_set_new(profile_obj, "ooc", json_integer(request.profile_search_details.ooc));
 			if (request.profile_search_details.ind!= 0)
-				json_object_set_new(send_obj, "ind", json_integer(request.profile_search_details.ind));
+				json_object_set_new(profile_obj, "ind", json_integer(request.profile_search_details.ind));
 			if (request.profile_search_details.mar!= 0)
-				json_object_set_new(send_obj, "mar", json_integer(request.profile_search_details.mar));
+				json_object_set_new(profile_obj, "mar", json_integer(request.profile_search_details.mar));
 			if (request.profile_search_details.chc != 0)
-				json_object_set_new(send_obj, "chc", json_integer(request.profile_search_details.chc));
+				json_object_set_new(profile_obj, "chc", json_integer(request.profile_search_details.chc));
 			if (request.profile_search_details.i1 != 0)
-				json_object_set_new(send_obj, "i1", json_integer(request.profile_search_details.i1));
+				json_object_set_new(profile_obj, "i1", json_integer(request.profile_search_details.i1));
 
 			if (request.profile_search_details.birthday != 0)
-				json_object_set_new(send_obj, "birthday", json_integer(request.profile_search_details.birthday));
+				json_object_set_new(profile_obj, "birthday", json_integer(request.profile_search_details.birthday));
 
 			if(request.profile_search_details.lon)
-				json_object_set_new(send_obj, "lon", json_real(request.profile_search_details.lon));
+				json_object_set_new(profile_obj, "lon", json_real(request.profile_search_details.lon));
 			if(request.profile_search_details.lat)
-				json_object_set_new(send_obj, "lat", json_real(request.profile_search_details.lat));
+				json_object_set_new(profile_obj, "lat", json_real(request.profile_search_details.lat));
 
 
 			if (request.namespaceids.size()) {
@@ -129,10 +138,14 @@ namespace OS {
 					it++;
 				}
 
-				json_object_set_new(send_obj, "namespaceids", namespaceids_json);
+				json_object_set_new(profile_obj, "namespaceids", namespaceids_json);
 
 			}
+			json_object_set(send_obj, "profile", profile_obj);
+			json_object_set(send_obj, "user", user_obj);
 		}
+
+
 
 		if (request.target_profileids.size()) {
 			json_t *profileids_json = json_array();

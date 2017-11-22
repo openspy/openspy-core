@@ -779,7 +779,7 @@ namespace OS {
 					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
 
-				request.callback(success, user, OS::Profile(), auth_data, request.extra, request.operation_id, request.peer);
+				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}

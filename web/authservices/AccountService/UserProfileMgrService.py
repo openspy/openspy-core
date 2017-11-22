@@ -14,6 +14,7 @@ from BaseService import BaseService
 import json
 import uuid
 import redis
+import os
 
 import time
 
@@ -22,7 +23,7 @@ class UserProfileMgrService(BaseService):
         BaseService.__init__(self)
         self.valid_characters = "1234567890#_-`()$-=;/@+&abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
         self.redis_presence_channel = "presence.buddies"
-        self.redis_presence_ctx = redis.StrictRedis(host='localhost', port=6379, db = 5)
+        self.redis_presence_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 5)
 
     def handle_update_profile(self, data):
 
@@ -31,9 +32,9 @@ class UserProfileMgrService(BaseService):
         if "profileid" in data["profile"]:
             data["profile"]["id"] = data["profile"]["profileid"]
             del data["profile"]["profileid"]
-        if "profilenick" in data["profile"]:
-            data["profile"]["nick"] = data["profile"]["profilenick"]
-            del data["profile"]["profilenick"]
+        if "nick" in data["profile"]:
+            data["profile"]["nick"] = data["profile"]["nick"]
+            del data["profile"]["nick"]
 
         profile_model = Profile.get((Profile.id == data['profile']['id']))
         namespaceid = 0
@@ -97,6 +98,7 @@ class UserProfileMgrService(BaseService):
             return True
     def handle_create_profile(self, data):
         profile_data = data["profile"]
+        user_data = data["user"]
         if "namespaceid" in profile_data:
                 namespaceid = profile_data["namespaceid"]
         else:
@@ -107,7 +109,7 @@ class UserProfileMgrService(BaseService):
             nick_available = self.check_uniquenick_available(profile_data["uniquenick"], namespaceid)
             if not nick_available:
                 return {'error': 'UNIQUENICK_IN_USE'}
-        user = User.get((User.id == data["userid"]))
+        user = User.get((User.id == user_data["id"]))
         if "nick" in profile_data:
             if not self.is_name_valid(profile_data["nick"]):
                 return {'error': 'INVALID_NICK'}
@@ -118,8 +120,9 @@ class UserProfileMgrService(BaseService):
         del profile["user"]
         return profile
     def handle_delete_profile(self, data):
+        profile_data = data["profile"]
         try:
-            profile = Profile.get((Profile.id == data["profileid"]))
+            profile = Profile.get((Profile.id == profile_data["id"]))
             if profile.deleted:
                 return False
             profile.deleted = True
@@ -134,40 +137,45 @@ class UserProfileMgrService(BaseService):
         #{u'chc': 0, u'ooc': 0, u'i1': 0, u'pic': 0, u'lon': 0.0, u'mar': 0, u'namespaceids': [1], u'lat': 0.0,
         #u'birthday': 0, u'mode': u'profile_search', u'partnercode': 0, u'ind': 0, u'sex': 0, u'email': u'sctest@gamespy.com'}
 
+        profile_search_data = search_data["profile"]
+        user_seach_data = search_data["user"]
+
         where_expression = ((Profile.deleted == False) & (User.deleted == False))
 
         #user search
-        if "userid" in search_data:
-            where_expression = ((where_expression) & (User.id == search_data["userid"]))
+        if "userid" in profile_search_data:
+            where_expression = ((where_expression) & (User.id == profile_search_data["userid"]))
+        elif "id" in user_seach_data:
+            where_expression = ((where_expression) & (User.id == user_seach_data["id"]))
 
-        if "email" in search_data:
-            where_expression = ((where_expression) & (User.email == search_data["email"]))
+        if "email" in user_seach_data:
+            where_expression = ((where_expression) & (User.email == user_seach_data["email"]))
 
-        if "partnercode" in search_data:
-            where_expression = ((where_expression) & (User.partnercode == search_data["partnercode"]))
+        if "partnercode" in profile_search_data:
+            where_expression = ((where_expression) & (User.partnercode == profile_search_data["partnercode"]))
 
         #profile search
-        if "profileid" in search_data:
-            where_expression = ((where_expression) & (Profile.id == search_data["profileid"]))
+        if "id" in profile_search_data:
+            where_expression = ((where_expression) & (Profile.id == profile_search_data["id"]))
 
-        if "profilenick" in search_data:
-            where_expression = ((where_expression) & (Profile.nick == search_data["profilenick"]))
+        if "nick" in profile_search_data:
+            where_expression = ((where_expression) & (Profile.nick == profile_search_data["nick"]))
 
-        if "uniquenick" in search_data:
-            where_expression = ((where_expression) & (Profile.uniquenick == search_data["uniquenick"]))
+        if "uniquenick" in profile_search_data:
+            where_expression = ((where_expression) & (Profile.uniquenick == profile_search_data["uniquenick"]))
 
-        if "firstname" in search_data:
-            where_expression = ((where_expression) & (Profile.firstname == search_data["firstname"]))
+        if "firstname" in profile_search_data:
+            where_expression = ((where_expression) & (Profile.firstname == profile_search_data["firstname"]))
 
-        if "lastname" in search_data:
-            where_expression = ((where_expression) & (Profile.firstname == search_data["lastname"]))
+        if "lastname" in profile_search_data:
+            where_expression = ((where_expression) & (Profile.firstname == profile_search_data["lastname"]))
 
-        if "icquin" in search_data:
-            where_expression = ((where_expression) & (Profile.icquin == search_data["icquin"]))
+        if "icquin" in profile_search_data:
+            where_expression = ((where_expression) & (Profile.icquin == profile_search_data["icquin"]))
 
-        if "namespaceids" in search_data:
+        if "namespaceids" in profile_search_data:
             namespace_expression = None
-            for namespaceid in search_data["namespaceids"]:
+            for namespaceid in profile_search_data["namespaceids"]:
                 if namespace_expression == None:
                     namespace_expression = (Profile.namespaceid == namespaceid)
                 else:
@@ -288,10 +296,11 @@ class UserProfileMgrService(BaseService):
         return ret
     #Get the buddies for a profile.
     def handle_buddies_search(self, request_data):
+        profile_data = request_data["profile"]
         if "profileid" not in request_data:
             return False
 
-        profile = Profile.get(Profile.id == request_data["profileid"])
+        profile = Profile.get(Profile.id == profile_data["id"])
 
         buddies = Buddy.select().where((Buddy.from_profile == profile))
         ret = []
@@ -309,10 +318,11 @@ class UserProfileMgrService(BaseService):
         return ret
 
     def handle_blocks_search(self, request_data):
-        if "profileid" not in request_data:
+        profile_data = request_data["profile"]
+        if "id" not in profile_data:
             return False
 
-        profile = Profile.get(Profile.id == request_data["profileid"])
+        profile = Profile.get(Profile.id == profile_data["id"])
 
         buddies = Block.select().where((Block.from_profile == profile))
         ret = []
@@ -331,9 +341,10 @@ class UserProfileMgrService(BaseService):
     #Get a list of profiles that have the specified profiles as buddies.
     def handle_reverse_buddies_search(self, request_data):
         ret = []
+        profile_data = request_data["profile"]
         try:
-            profile = Profile.get((Profile.id == request_data["profileid"]) & (Profile.deleted == False))
-            buddies = Buddy.select().where((Buddy.to_profile << request_data["target_profileids"])).execute()
+            profile = Profile.get((Profile.id == profile_data["profileid"]) & (Profile.deleted == False))
+            buddies = Buddy.select().where((Buddy.to_profile << profile_data["target_profileids"])).execute()
             for buddy in buddies:
                 model = model_to_dict(buddy)
                 to_profile = model['to_profile']
