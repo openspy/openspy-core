@@ -238,28 +238,24 @@ class AuthService(BaseService):
     def auth_or_create_profile(self, request_body):
         #{u'profilenick': u'sctest01', u'save_session': True, u'set_context': u'profile', u'hash_type': u'auth_or_create_profile', u'namespaceid': 1,
         #u'uniquenick': u'', u'partnercode': 0, u'password': u'gspy', u'email': u'sctest@gamespy.com'}
+        print("auth or create: {}\n".format(request_body))
         user_where = (User.deleted == False)
-        user_data = {}
-        if "email" in request_body:
-            user_data['email'] = request_body["email"]
-            user_where = (user_where) & (User.email == request_body["email"])
-        if "partnercode" in request_body:
-            user_data['partnercode'] = request_body["partnercode"]
-            partnercode = request_body["partnercode"]
+        user_data = request_body["user"]
+        if "email" in user_data:
+            user_where = (user_where) & (User.email == user_data["email"])
+        if "partnercode" in user_data:
+            user_data['partnercode'] = user_data["partnercode"]
+            partnercode = user_data["partnercode"]
         else:
             partnercode = 0
-
-        if "password" in request_body:
-            user_data['password'] = request_body["password"]
-        else:
-            return None
 
         user_where = (user_where) & (User.partnercode == partnercode)
 
         try:
             user = User.get(user_where)
             user = model_to_dict(user)
-            if user['password'] != request_body["password"]:
+            print("User: {}\nSendUsr: {}\n".format(user, user_data))
+            if user['password'] != user_data["password"]:
                 return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
         except User.DoesNotExist:
             register_svc = RegistrationService()
@@ -267,15 +263,13 @@ class AuthService(BaseService):
 
 
 
-        profile_data = {} #create data
+        profile_data = request_body["profile"] #create data
         profile_where = (Profile.deleted == False)
-        if "uniquenick" in request_body:
-            profile_where = (profile_where) & (Profile.uniquenick == request_body["uniquenick"])
-            profile_data['uniquenick'] = request_body["uniquenick"]
-        if "profilenick" in request_body:
-            profile_where = (profile_where) & (Profile.nick == request_body["profilenick"])
-            profile_data['nick'] = request_body["profilenick"]
-            profile_data['nick'] = request_body["profilenick"]
+        if "uniquenick" in profile_data:
+            profile_where = (profile_where) & (Profile.uniquenick == profile_data["uniquenick"])
+
+        if "nick" in profile_data:
+            profile_where = (profile_where) & (Profile.nick == profile_data['nick'])
 
         if "namespaceid" in request_body:
             namespaceid = request_body["namespaceid"]
@@ -317,7 +311,7 @@ class AuthService(BaseService):
         response = {}
         response['success'] = False
 
-        start_response('200 OK', [('Content-Type','text/html')])
+        start_response('200 OK', [('Content-Type','application/json')])
 
         # When the method is POST the variable will be sent
         # in the HTTP request body which is passed by the WSGI server

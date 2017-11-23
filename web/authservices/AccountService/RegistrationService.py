@@ -146,6 +146,6 @@ class RegistrationService(BaseService):
             else:
                 response['reason'] = self.REGISTRATION_EMAIL_PARTNERCODE_EXISTS
 
-        start_response('200 OK', [('Content-Type','text/html')])
+        start_response('200 OK', [('Content-Type','application/json')])
 
         return response
