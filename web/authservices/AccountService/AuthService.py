@@ -108,7 +108,6 @@ class AuthService(BaseService):
         md5_pw = hashlib.md5(challenge.encode('utf-8')).hexdigest()
         crypt_buf = "{}{}{}{}{}{}".format(md5_pw, "                                                ",token, request_body['server_challenge'], request_body['client_challenge'], md5_pw)
         true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
-        response['crypt_buf'] = crypt_buf
         response['profile'] = model_to_dict(profile)
         response["server_response"] = true_resp
         response["success"] = True
@@ -341,21 +340,33 @@ class AuthService(BaseService):
         if 'hash_type' in request_body:
             hash_type = request_body['hash_type']
 
-        if 'password' not in request_body and hash_type == 'plain':
-            response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
-            return response
+
         profile = None
         user = None
-        if 'uniquenick' in request_body:
-            profile = self.get_profile_by_uniquenick(request_body['uniquenick'], request_body['namespaceid'], request_body['partnercode'])
+
+        if "user" in request_body:
+            user_body = request_body["user"]
+        else:
+            user_body = {}
+        if "profile" in request_body:
+            profile_body = request_body["profile"]
+        else:
+            profile_body = {}
+
+        if 'password' not in user_body and hash_type == 'plain':
+            response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
+            return response
+
+        if 'uniquenick' in profile_body:
+            profile = self.get_profile_by_uniquenick(profile_body['uniquenick'], profile_body['namespaceid'], user_body['partnercode'])
             if profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_INVALID_PROFILE
-        elif 'profilenick' in request_body and 'email' in request_body:
-            profile = self.get_profile_by_nick_email(request_body['profilenick'], request_body['email'], request_body['partnercode'])
+        elif 'nick' in profile_body and 'email' in user_body:
+            profile = self.get_profile_by_nick_email(profile_body['nick'], user_body['email'], user_body['partnercode'])
             if profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_INVALID_PROFILE
-        elif "email" in request_body:
-            user = self.get_user_by_email(request_body['email'], request_body['partnercode'])
+        elif "email" in user_body:
+            user = self.get_user_by_email(user_body['email'], user_body['partnercode'])
             if user == None:
                 response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
         elif "userid" in request_body:
@@ -364,19 +375,25 @@ class AuthService(BaseService):
                 response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
         elif "profileid" in request_body:
             profile = self.get_profile_by_id(request_body["profileid"])
+        elif "id" in user_body:
+            user = self.get_user_by_userid(user_body["id"])
+            if user == None:
+                response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
+        elif "id" in profile_body:
+            profile = self.get_profile_by_id(profile_body["id"])
 
         auth_success = False
         if hash_type == 'plain' and profile != None:
-            auth_success = self.test_pass_plain_by_userid(profile.user.id, request_body['password'])
+            auth_success = self.test_pass_plain_by_userid(profile.user.id, user_body['password'])
         elif hash_type == 'plain' and user != None:
-            auth_success = self.test_pass_plain_by_userid(user.id, request_body['password'])
+            auth_success = self.test_pass_plain_by_userid(user.id, user_body['password'])
         elif hash_type == 'gp_nick_email' and profile != None:
             proof = self.test_gp_nick_email_by_profile(profile, request_body['client_challenge'], request_body['server_challenge'], request_body['client_response'])
             if proof != None:
                 auth_success = True
                 response['server_response'] = proof
         elif hash_type == 'nick_email' and profile != None:
-            auth_success = self.test_nick_email_by_profile(profile, request_body['password'])
+            auth_success = self.test_nick_email_by_profile(profile, user_body['password'])
         elif hash_type == 'auth_or_create_profile':
             auth_resp = self.auth_or_create_profile(request_body)
             if "reason" in auth_resp:
