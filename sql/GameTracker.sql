@@ -48,17 +48,17 @@ create table profiles (
 create table buddies (
 	to_profileid int,
 	from_profileid int,
-	foreign key fk_to_profileid(to_profileid)
+	foreign key fk_buddies_to_profileid(to_profileid)
 	references profiles(id),
-	foreign key fk_from_profileid(from_profileid)
+	foreign key fk_buddies_from_profileid(from_profileid)
 	references profiles(id)
 );
 
 create table blocks (
 	to_profileid int,
 	from_profileid int,
-	foreign key fk_to_profileid(to_profileid)
+	foreign key fk_blocks_to_profileid(to_profileid)
 	references profiles(id),
-	foreign key fk_from_profileid(from_profileid)
+	foreign key fk_blocks_from_profileid(from_profileid)
 	references profiles(id)
 );

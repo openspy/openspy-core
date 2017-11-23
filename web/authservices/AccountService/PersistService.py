@@ -39,7 +39,7 @@ class PersistService(BaseService):
         # in the file like wsgi.input environment variable.
         request_body = json.loads(env['wsgi.input'].read(request_body_size))
 
-        start_response('200 OK', [('Content-Type','text/html')])
+        start_response('200 OK', [('Content-Type','application/json')])
 
         if "type" in request_body:
             if request_body["type"] == "newgame":

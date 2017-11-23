@@ -79,6 +79,6 @@ class UserAccountMgrService(BaseService):
 
         response['success'] = success
 
-        start_response('200 OK', [('Content-Type','text/html')])
+        start_response('200 OK', [('Content-Type','application/json')])
         print("Got Resp: {}\n".format(response))
         return response
