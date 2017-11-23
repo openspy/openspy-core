@@ -11,17 +11,26 @@
 
 #include <sstream>
 
+/*
+bool m_acct_add_account(OS::KVReader kv_list) {
+bool m_acct_update_account(OS::KVReader kv_list)
+*/
+
 namespace FESL {
 	CommandHandler Peer::m_commands[] = {
 		{ FESL_TYPE_FSYS, "Hello", &Peer::m_fsys_hello_handler },
 		{ FESL_TYPE_FSYS, "MemCheck", &Peer::m_fsys_memcheck_handler },
 		{ FESL_TYPE_FSYS, "Goodbye", &Peer::m_fsys_goodbye_handler },
-		{ FESL_TYPE_ACCOUNT, "Login", &Peer::m_acct_login_handler},
 		{ FESL_TYPE_SUBS, "GetEntitlementByBundle", &Peer::m_subs_get_entitlement_by_bundle },
-		{ FESL_TYPE_ACCOUNT, "GetSubAccounts", &Peer::m_acct_get_sub_accounts },
 		{ FESL_TYPE_DOBJ, "GetObjectInventory", &Peer::m_dobj_get_object_inventory },
+		{ FESL_TYPE_ACCOUNT, "Login", &Peer::m_acct_login_handler },
+		{ FESL_TYPE_ACCOUNT, "GetCountryList", &Peer::m_acct_get_country_list },
+		{ FESL_TYPE_ACCOUNT, "GetTos", &Peer::m_acct_gettos_handler },
+		{ FESL_TYPE_ACCOUNT, "GetSubAccounts", &Peer::m_acct_get_sub_accounts },
 		{ FESL_TYPE_ACCOUNT, "LoginSubAccount",  &Peer::m_acct_login_sub_account },
 		{ FESL_TYPE_ACCOUNT, "AddSubAccount",  &Peer::m_acct_add_sub_account },
+		{ FESL_TYPE_ACCOUNT, "AddAccount",  &Peer::m_acct_add_account },
+		{ FESL_TYPE_ACCOUNT, "UpdateAccount",  &Peer::m_acct_update_account },
 		{ FESL_TYPE_ACCOUNT, "DisableSubAccount",  &Peer::m_acct_disable_sub_account },
 		{ FESL_TYPE_ACCOUNT, "GetAccount", &Peer::m_acct_get_account },
 		{ FESL_TYPE_ACCOUNT, "GameSpyPreAuth", &Peer::m_acct_gamespy_preauth },
@@ -91,7 +100,7 @@ namespace FESL {
 			}*/
 			OS::KVReader kv_data(buf, '=', '\n');
 			printf("Got EAMsg(%d):\n%s\n", len, buf);
-			printf("Seq ID: %08X\n", htonl(header.subtype));
+			printf("Seq ID: %08X %08X\n", htonl(header.subtype), header.type);
 			for (int i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
 				if (Peer::m_commands[i].type == htonl(header.type)) {
 					if (Peer::m_commands[i].command.compare(kv_data.GetValue("TXN")) == 0) {
@@ -461,5 +470,124 @@ namespace FESL {
 		ResetMetrics();
 
 		return peer_metric;
+	}
+
+	bool Peer::m_acct_get_country_list(OS::KVReader kv_list) {
+		std::ostringstream s;
+		s << "TXN=GetCountryList\n";
+		s << "countryList.0.description=\"North America\"\n";
+		s << "countryList.0.ISOCode=1\n";
+		SendPacket(FESL_TYPE_ACCOUNT, s.str());
+		return true;
+	}
+	bool Peer::m_acct_add_account(OS::KVReader kv_list) {
+		/*
+		Got EAMsg(166):
+		TXN=AddAccount
+		name=thisisatest
+		password=123321
+		email=chc@test.com
+		DOBDay=11
+		DOBMonth=11
+		DOBYear=1966
+		zipCode=111231
+		countryCode=1
+		eaMailFlag=1
+		thirdPartyMailFlag=1
+		*/
+		OS::User user;
+		OS::Profile profile;
+		user.email = kv_list.GetValue("email");
+		user.password = kv_list.GetValue("password");
+		profile.nick = kv_list.GetValue("nick");
+		profile.uniquenick = kv_list.GetValue("uniquenick");
+
+		profile.namespaceid = 0;
+		//user.partnercode = OS_EA_PARTNER_CODE;
+		user.partnercode = 0;
+		OS::AuthTask::TryCreateUser_OrProfile(profile.nick, profile.uniquenick, profile.namespaceid, user.email, user.partnercode, user.password, true, m_newuser_cb, NULL, 0, this);
+		
+		return true;
+	}
+	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+		FESL_ERROR err_code = FESL_ERROR_NO_ERROR;
+		if (auth_data.response_code != -1 && auth_data.response_code != OS::LOGIN_RESPONSE_SUCCESS) {
+			switch (auth_data.response_code) {
+			case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+				err_code = FESL_ERROR_ACCOUNT_EXISTS;
+				break;
+			default:
+				err_code = FESL_ERROR_SYSTEM_ERROR;
+				break;
+			}
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)err_code, "AddAccount");
+		}
+		else {
+			std::ostringstream s;
+			s << "TXN=AddAccount\n";
+			s << "userId=" << user.id << "\n";
+			s << "profileId=" << profile.id << "\n";
+			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
+
+		}
+	}
+	bool Peer::m_acct_update_account(OS::KVReader kv_list) {
+		/*
+		Got EAMsg(103):
+		TXN=UpdateAccount
+		email=chc@thmods.com
+		parentalEmail=
+		countryCode=1
+		eaMailFlag=1
+		thirdPartyMailFlag=0
+		*/
+
+		OS::Profile profile = m_profile;
+		OS::User user = m_user;
+		bool send_userupdate = false; //, send_profileupdate = false;
+
+		if (kv_list.GetValue("email").compare(m_user.email) == 0) {
+			user.email = kv_list.GetValue("email");
+			send_userupdate = true;
+		}
+		/*
+		OS::ProfileSearchRequest request;
+		request.profile_search_details = m_profile;
+		request.extra = NULL;
+		request.peer = this;
+		request.peer->IncRef();
+		request.type = OS::EProfileSearch_UpdateProfile;
+		request.callback = Peer::m_update_profile_callback;
+		OS::m_profile_search_task_pool->AddRequest(request);
+		*/
+
+		if (send_userupdate) {
+			OS::UserSearchRequest user_request;
+			user_request.search_params = user;
+			user_request.type = OS::EUserRequestType_Update;
+			user_request.extra = NULL;
+			user_request.peer = this;
+			user_request.peer->IncRef();
+			user_request.callback = Peer::m_update_user_callback;
+			OS::m_user_search_task_pool->AddRequest(user_request);
+		}
+		return true;
+	}
+	void Peer::m_update_user_callback(OS::EUserResponseType response_reason, std::vector<OS::User> results, void *extra, INetPeer *peer) {
+		std::ostringstream s;
+		s << "TXN=UpdateAccount\n";
+		if (response_reason == OS::EProfileResponseType_Success) {
+			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
+		}
+		else {
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_SYSTEM_ERROR, "UpdateAccount");
+		}
+	}
+	bool Peer::m_acct_gettos_handler(OS::KVReader kv_list) {
+		std::ostringstream s;
+		s << "TXN=GetTos\n";
+		s << "tos=\"Hi\"\n";
+		SendPacket(FESL_TYPE_FSYS, s.str());
+		return true;
 	}
 }

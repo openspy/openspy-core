@@ -146,6 +146,9 @@ namespace GP {
 			} else if(command.compare("updatepro") == 0) {
 				handle_updatepro(data, len);
 			}
+			else if (command.compare("logout") == 0) {
+				m_delete_flag = true;
+			}
 		}
 	}
 	void Peer::m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
@@ -157,34 +160,35 @@ namespace GP {
 		bool send_userupdate = false;
 
 		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		OS::Profile profile = m_profile;
+		OS::User user = m_user;
 
-
-		LoadParamInt("zipcode", m_profile.zipcode, data_parser)
-		LoadParamInt("sex", m_profile.sex, data_parser)
-		LoadParamInt("pic", m_profile.pic, data_parser)
-		LoadParamInt("ooc", m_profile.ooc, data_parser)
-		LoadParamInt("ind", m_profile.ind, data_parser)
-		LoadParamInt("mar", m_profile.mar, data_parser)
-		LoadParamInt("chc", m_profile.chc, data_parser)
-		LoadParamInt("i1", m_profile.i1, data_parser)
-		LoadParamInt("birthday", m_profile.birthday, data_parser)
-		LoadParamInt("publicmask", m_user.publicmask, data_parser) //user param
+		LoadParamInt("zipcode", profile.zipcode, data_parser)
+		LoadParamInt("sex", profile.sex, data_parser)
+		LoadParamInt("pic", profile.pic, data_parser)
+		LoadParamInt("ooc", profile.ooc, data_parser)
+		LoadParamInt("ind", profile.ind, data_parser)
+		LoadParamInt("mar", profile.mar, data_parser)
+		LoadParamInt("chc", profile.chc, data_parser)
+		LoadParamInt("i1", profile.i1, data_parser)
+		LoadParamInt("birthday", profile.birthday, data_parser)
+		LoadParamInt("publicmask", user.publicmask, data_parser) //user param
 
 		if (data_parser.HasKey("publicmask")) {
 				send_userupdate = true;
 		}
-		LoadParam("nick", m_profile.nick, data_parser)
-		LoadParam("uniquenick", m_profile.uniquenick, data_parser)
-		LoadParam("firstname", m_profile.firstname, data_parser)
-		LoadParam("lastname", m_profile.lastname, data_parser)
-		LoadParam("countrycode", m_profile.countrycode, data_parser)
-		LoadParam("videocard1string", m_profile.videocardstring[0], data_parser)
-		LoadParam("videocard2string", m_profile.videocardstring[1], data_parser)
-		LoadParam("osstring", m_profile.osstring, data_parser)
-		LoadParam("aim", m_profile.aim, data_parser)
+		LoadParam("nick", profile.nick, data_parser)
+		LoadParam("uniquenick", profile.uniquenick, data_parser)
+		LoadParam("firstname", profile.firstname, data_parser)
+		LoadParam("lastname", profile.lastname, data_parser)
+		LoadParam("countrycode", profile.countrycode, data_parser)
+		LoadParam("videocard1string", profile.videocardstring[0], data_parser)
+		LoadParam("videocard2string", profile.videocardstring[1], data_parser)
+		LoadParam("osstring", profile.osstring, data_parser)
+		LoadParam("aim", profile.aim, data_parser)
 
 		OS::ProfileSearchRequest request;
-		request.profile_search_details = m_profile;
+		request.profile_search_details = profile;
 		request.extra = this;
 		request.peer = this;
 		request.peer->IncRef();
@@ -194,13 +198,12 @@ namespace GP {
 
 		if(send_userupdate) {
 			OS::UserSearchRequest user_request;
-			user_request.search_params = m_user;
+			user_request.search_params = user;
 			user_request.type = OS::EUserRequestType_Update;
 			user_request.extra = this;
 			user_request.peer = this;
 			user_request.peer->IncRef();
 			user_request.callback = NULL;
-			user_request.search_params = m_user;
 			OS::m_user_search_task_pool->AddRequest(user_request);
 		}
 	}
