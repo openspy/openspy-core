@@ -79,6 +79,7 @@ field error names:
 */
 enum FESL_ERROR {
 	FESL_ERROR_AUTH_FAILURE = 122,
+	FESL_ERROR_ACCOUNT_NOT_FOUND = 102,
 	FESL_ERROR_ACCOUNT_EXISTS = 160,
 	FESL_ERROR_NO_ERROR = 182,
 	FESL_ERROR_SYSTEM_ERROR = 99,
@@ -135,6 +136,7 @@ namespace FESL {
 	private:
 		bool m_fsys_hello_handler(OS::KVReader kv_list);
 		bool m_fsys_memcheck_handler(OS::KVReader kv_list);
+		bool m_acct_gettos_handler(OS::KVReader kv_list);
 		bool m_fsys_goodbye_handler(OS::KVReader kv_list);
 		bool m_acct_login_handler(OS::KVReader kv_list);
 		bool m_acct_get_account(OS::KVReader kv_list);
@@ -145,8 +147,13 @@ namespace FESL {
 		bool m_dobj_get_object_inventory(OS::KVReader kv_list);
 		bool m_acct_add_sub_account(OS::KVReader kv_list);
 		bool m_acct_disable_sub_account(OS::KVReader kv_list);
+		bool m_acct_get_country_list(OS::KVReader kv_list);
+		bool m_acct_add_account(OS::KVReader kv_list);
+		bool m_acct_update_account(OS::KVReader kv_list);
 		static void m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_update_user_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer);
+		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 		void send_memcheck(int type, int salt = 0);
 		void send_subaccounts();
 		bool m_openssl_accepted;
