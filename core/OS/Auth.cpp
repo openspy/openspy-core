@@ -23,21 +23,21 @@ namespace OS {
 	void AuthTask::PerformAuth_NickEMail_GPHash(AuthRequest request) {
 		curl_data recv_data;
 		//build json object
-		json_t *send_obj = json_object();
+		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
 		if(request.nick.length())
-			json_object_set_new(send_obj, "profilenick", json_string(request.nick.c_str()));
+			json_object_set_new(profile_obj, "nick", json_string(request.nick.c_str()));
 		if(request.uniquenick.length())
-			json_object_set_new(send_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+			json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
 
 		if(request.email.length())
-			json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
+			json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
 
-		json_object_set_new(send_obj, "partnercode", json_integer(request.partnercode));
-		json_object_set_new(send_obj, "namespaceid", json_integer(request.namespaceid));
+		json_object_set_new(user_obj, "partnercode", json_integer(request.partnercode));
+		json_object_set_new(profile_obj, "namespaceid", json_integer(request.namespaceid));
 		
 		if(request.password.length())
-			json_object_set_new(send_obj, "password", json_string(request.password.c_str()));
+			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
 
 		json_object_set_new(send_obj, "hash_type", json_string("gp_nick_email"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
@@ -47,6 +47,9 @@ namespace OS {
 		json_object_set_new(send_obj, "server_challenge", json_string(request.server_challenge.c_str()));
 		json_object_set_new(send_obj, "client_challenge", json_string(request.client_challenge.c_str()));
 		json_object_set_new(send_obj, "client_response", json_string(request.client_response.c_str()));
+
+		json_object_set(send_obj, "user", user_obj);
+		json_object_set(send_obj, "profile", profile_obj);
 
 
 		char *json_data_str = json_dumps(send_obj, 0);
@@ -133,15 +136,15 @@ namespace OS {
 	void AuthTask::PerformAuth_PreAuth_Token(AuthRequest request) {
 		curl_data recv_data;
 		//build json object
-		json_t *send_obj = json_object();
+		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
 		if (request.nick.length())
-			json_object_set_new(send_obj, "profilenick", json_string(request.nick.c_str()));
+			json_object_set_new(profile_obj, "nick", json_string(request.nick.c_str()));
 		if (request.uniquenick.length())
-			json_object_set_new(send_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+			json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
 
 		if (request.email.length())
-			json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
+			json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
 
 		if (request.password.length())
 			json_object_set_new(send_obj, "auth_token", json_string(request.password.c_str()));
@@ -154,6 +157,8 @@ namespace OS {
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
 		json_object_set_new(send_obj, "save_session", request.create_session ? json_true() : json_false());
 
+		json_object_set(send_obj, "user", user_obj);
+		json_object_set(send_obj, "profile", profile_obj);
 
 		char *json_data = json_dumps(send_obj, 0);
 
@@ -237,25 +242,28 @@ namespace OS {
 	void AuthTask::PerformAuth_NickEMail(AuthRequest request) {
 		curl_data recv_data;
 		//build json object
-		json_t *send_obj = json_object();
+		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
 		if(request.nick.length())
-			json_object_set_new(send_obj, "profilenick", json_string(request.nick.c_str()));
+			json_object_set_new(profile_obj, "nick", json_string(request.nick.c_str()));
 		if(request.uniquenick.length())
-			json_object_set_new(send_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+			json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
 
 		if(request.email.length())
-			json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
+			json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
 
-		json_object_set_new(send_obj, "partnercode", json_integer(request.partnercode));
-		json_object_set_new(send_obj, "namespaceid", json_integer(request.namespaceid));
+		json_object_set_new(user_obj, "partnercode", json_integer(request.partnercode));
+		json_object_set_new(profile_obj, "namespaceid", json_integer(request.namespaceid));
 		
 		if(request.password.length())
-			json_object_set_new(send_obj, "password", json_string(request.password.c_str()));
+			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
 
 		json_object_set_new(send_obj, "hash_type", json_string("nick_email"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
 		json_object_set_new(send_obj, "save_session", request.create_session ? json_true() : json_false());
+
+		json_object_set(send_obj, "user", user_obj);
+		json_object_set(send_obj, "profile", profile_obj);
 
 
 		char *json_data = json_dumps(send_obj, 0);
@@ -333,25 +341,28 @@ namespace OS {
 	void AuthTask::PerformAuth_CreateUser_OrProfile(AuthRequest request) {
 		curl_data recv_data;
 		//build json object
-		json_t *send_obj = json_object();
+		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
 		if(request.nick.length())
-			json_object_set_new(send_obj, "profilenick", json_string(request.nick.c_str()));
+			json_object_set_new(profile_obj, "nick", json_string(request.nick.c_str()));
 		if(request.uniquenick.length())
-			json_object_set_new(send_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+			json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
 
 		if(request.email.length())
-			json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
+			json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
 
-		json_object_set_new(send_obj, "partnercode", json_integer(request.partnercode));
-		json_object_set_new(send_obj, "namespaceid", json_integer(request.namespaceid));
+		json_object_set_new(user_obj, "partnercode", json_integer(request.partnercode));
+		json_object_set_new(profile_obj, "namespaceid", json_integer(request.namespaceid));
 
 		if(request.password.length())
-			json_object_set_new(send_obj, "password", json_string(request.password.c_str()));
+			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
 
 		json_object_set_new(send_obj, "hash_type", json_string("auth_or_create_profile"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
 		json_object_set_new(send_obj, "save_session", request.create_session ? json_true() : json_false());
+
+		json_object_set(send_obj, "user", user_obj);
+		json_object_set(send_obj, "profile", profile_obj);
 
 
 		char *json_data = json_dumps(send_obj, 0);
@@ -510,9 +521,6 @@ namespace OS {
 
 		json_object_set_new(send_obj, "profileid", json_integer(request.profileid));
 		
-		if(request.password.length())
-			json_object_set_new(send_obj, "password", json_string(request.password.c_str()));
-
 		json_object_set_new(send_obj, "hash_type", json_string("gstats_pid_sesskey"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
 		json_object_set_new(send_obj, "save_session", request.create_session ? json_true() : json_false());
@@ -600,12 +608,12 @@ namespace OS {
 	void AuthTask::PerformAuth_EmailPass(AuthRequest request) {
 		curl_data recv_data;
 		//build json object
-		json_t *send_obj = json_object();
+		json_t *send_obj = json_object(), *user_obj = json_object();
 
-		json_object_set_new(send_obj, "email", json_string(request.email.c_str()));
+		json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
 
 		if (request.password.length())
-			json_object_set_new(send_obj, "password", json_string(request.password.c_str()));
+			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
 
 		json_object_set_new(send_obj, "hash_type", json_string("plain"));
 		json_object_set_new(send_obj, "set_context", json_string("user"));
@@ -613,6 +621,7 @@ namespace OS {
 
 		json_object_set_new(send_obj, "session_key", json_integer(request.session_key));
 
+		json_object_set(send_obj, "user", user_obj);
 
 		char *json_dump = json_dumps(send_obj, 0);
 
@@ -690,24 +699,27 @@ namespace OS {
 	void AuthTask::PerformAuth_Uniquenick_Password(AuthRequest request) {
 		curl_data recv_data;
 		//build json object
-		json_t *send_obj = json_object();
+		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
-		json_object_set_new(send_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+		json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
 
 		if (request.password.length())
-			json_object_set_new(send_obj, "password", json_string(request.password.c_str()));
+			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
 
 		if (request.partnercode != -1)
-			json_object_set_new(send_obj, "partnercode", json_integer(request.partnercode));
+			json_object_set_new(user_obj, "partnercode", json_integer(request.partnercode));
 
 		if (request.namespaceid != -1)
-			json_object_set_new(send_obj, "namespaceid", json_integer(request.namespaceid));
+			json_object_set_new(profile_obj, "namespaceid", json_integer(request.namespaceid));
 
 		json_object_set_new(send_obj, "hash_type", json_string("plain"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
 		json_object_set_new(send_obj, "save_session", request.create_session ? json_true() : json_false());
 
 		json_object_set_new(send_obj, "session_key", json_integer(request.session_key));
+
+		json_object_set(send_obj, "user", user_obj);
+		json_object_set(send_obj, "profile", profile_obj);
 
 
 		char *json_dump = json_dumps(send_obj, 0);
