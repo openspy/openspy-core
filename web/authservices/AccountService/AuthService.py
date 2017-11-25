@@ -101,16 +101,24 @@ class AuthService(BaseService):
         return pw_hashed == client_response
 
     def test_gp_preauth_by_ticket(self, request_body):
-        profile = self.get_profile_by_id(1)
+        
         response = {}
-        challenge = "asd"
-        token = "test"
+
+        token = requset_body['auth_token']
+
+        profileid = self.redis_ctx.hget("auth_token_{}".format(token), 'profileid')
+        profile = self.get_profile_by_id(profileid)
+        challenge = self.redis_ctx.hget("auth_token_{}".format(token), 'challenge')
+
+
         md5_pw = hashlib.md5(challenge.encode('utf-8')).hexdigest()
         crypt_buf = "{}{}{}{}{}{}".format(md5_pw, "                                                ",token, request_body['server_challenge'], request_body['client_challenge'], md5_pw)
         true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
         response['profile'] = model_to_dict(profile)
         response["server_response"] = true_resp
         response["success"] = True
+
+        self.redis_ctx.delete("auth_token_{}".format(token))
         return response
     def test_nick_email_by_profile(self, profile, password):
         return profile.user.password == password
@@ -163,13 +171,19 @@ class AuthService(BaseService):
         except Profile.DoesNotExist:
             return {'valid': False}
     def handle_make_auth_ticket(self, params):
-        #if profile.user.partnercode != self.PARTNERID_GAMESPY:
-        #    proof = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
-        #else:
-        #    proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
-        #proof = hashlib.md5(str(proof).encode('utf-8')).hexdigest()
-        challenge = "asd"
-        token = "test"
+        challenge = hashlib.sha1(str(uuid.uuid1()).encode('utf-8'))
+        challenge.update(str(uuid.uuid4()).encode('utf-8'))
+        challenge = challenge.hexdigest()
+
+        token = hashlib.sha1(str(uuid.uuid1()).encode('utf-8'))
+        token.update(str(uuid.uuid4()).encode('utf-8'))
+        token = token.hexdigest()
+
+        self.redis_ctx.hset("auth_token_{}".format(token), 'profileid', params['profileid'])
+        self.redis_ctx.hset("auth_token_{}".format(token), 'challenge', challenge)
+        self.redis_ctx.expires("auth_token_{}".format(token), "auth_token_{}".format(token))
+
+
         return {"ticket": token, "challenge": challenge, "server_response": "servresp", "success": True}
     def handle_delete_session(self, params):
         userid = None
@@ -283,6 +297,9 @@ class AuthService(BaseService):
             profile = Profile.get(profile_where)
             profile = model_to_dict(profile)
             del profile['user']['password']
+
+            if user["id"] != profile["user"]["id"]:
+                return {'reason': self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK}
         except Profile.DoesNotExist:
             user_profile_srv = UserProfileMgrService()
 
@@ -299,7 +316,6 @@ class AuthService(BaseService):
                 return {'reason' : reason}
             else:
                 response['profile'] = profile
-
         return profile
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
