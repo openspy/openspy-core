@@ -16,7 +16,7 @@ create table users (
 
 create table profiles (
 	id int auto_increment PRIMARY KEY,
-	nick varchar(31) not null,
+	nick varchar(31) null,
 	uniquenick varchar(21) null,
 	firstname  varchar(31) null,
 	lastname  varchar(31) null,
@@ -24,7 +24,7 @@ create table profiles (
 	icquin int null,
 	zipcode int null,
 	sex int null,
-	birthday int null,
+	birthday date null,
 	ooc int null,
 	ind int null,
 	inc int null,
