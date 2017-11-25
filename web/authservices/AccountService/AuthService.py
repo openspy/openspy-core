@@ -104,10 +104,10 @@ class AuthService(BaseService):
         
         response = {}
 
+        token = requset_body['auth_token']
+
         if not self.redis_ctx.exists("auth_token_{}".format(token)):
             return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
-
-        token = requset_body['auth_token']
 
         profileid = self.redis_ctx.hget("auth_token_{}".format(token), 'profileid')
         profile = self.get_profile_by_id(profileid)
