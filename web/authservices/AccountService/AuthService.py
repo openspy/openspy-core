@@ -253,7 +253,6 @@ class AuthService(BaseService):
         try:
             user = User.get(user_where)
             user = model_to_dict(user)
-            print("User: {}\nSendUsr: {}\n".format(user, user_data))
             if user['password'] != user_data["password"]:
                 return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
         except User.DoesNotExist:
