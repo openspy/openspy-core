@@ -184,7 +184,7 @@ class AuthService(BaseService):
 
         self.redis_ctx.hset("auth_token_{}".format(token), 'profileid', params['profileid'])
         self.redis_ctx.hset("auth_token_{}".format(token), 'challenge', challenge)
-        self.redis_ctx.expires("auth_token_{}".format(token), "auth_token_{}".format(token))
+        self.redis_ctx.expire("auth_token_{}".format(token), 300)
 
 
         return {"ticket": token, "challenge": challenge, "server_response": "servresp", "success": True}
