@@ -109,9 +109,9 @@ class AuthService(BaseService):
         if not self.redis_ctx.exists("auth_token_{}".format(token)):
             return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
 
-        profileid = self.redis_ctx.hget("auth_token_{}".format(token), 'profileid')
+        profileid = int(self.redis_ctx.hget("auth_token_{}".format(token), 'profileid'))
         profile = self.get_profile_by_id(profileid)
-        challenge = self.redis_ctx.hget("auth_token_{}".format(token), 'challenge')
+        challenge = str(self.redis_ctx.hget("auth_token_{}".format(token), 'challenge'))
 
 
         md5_pw = hashlib.md5(challenge.encode('utf-8')).hexdigest()
