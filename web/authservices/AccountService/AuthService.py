@@ -400,10 +400,12 @@ class AuthService(BaseService):
             elif isinstance(auth_resp, dict):
                 response['profile'] = auth_resp
                 response['success'] = True
+
+                if 'reason' in response:
+                    del response['reason']
                 if "reason" in auth_resp:
                     response['success'] = False
                     response['reason'] = auth_resp['reason']
-                    del response['reason']
                 auth_success = True
                 #retrieve profile for save_session
                 profile = Profile.get((Profile.id == response['profile']['id']))
