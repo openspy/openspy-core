@@ -286,7 +286,7 @@ class AuthService(BaseService):
         except Profile.DoesNotExist:
             user_profile_srv = UserProfileMgrService()
 
-            profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'userid': user['id']})
+            profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'user': user})
             print("Create profile: {}\n".format(profile))
             if "error" in profile:
                 reason = 0
@@ -297,6 +297,8 @@ class AuthService(BaseService):
                 elif profile["error"] == "UNIQUENICK_IN_USE":
                     reason = self.CREATE_RESPONSE_UNIQUENICK_IN_USE
                 return {'reason' : reason}
+            else:
+                response['profile'] = profile
 
         return profile
     def run(self, env, start_response):
