@@ -99,7 +99,9 @@ class UserProfileMgrService(BaseService):
     def handle_create_profile(self, data):
         print("CreateUser: {}\n".format(data))
         profile_data = data["profile"]
-        #user_data = data["user"]
+        user_data = None
+        if "user" in data:
+            user_data = data["user"]
         if "namespaceid" in profile_data:
                 namespaceid = profile_data["namespaceid"]
         else:
@@ -110,7 +112,7 @@ class UserProfileMgrService(BaseService):
             nick_available = self.check_uniquenick_available(profile_data["uniquenick"], namespaceid)
             if not nick_available:
                 return {'error': 'UNIQUENICK_IN_USE'}
-        user = User.get((User.id == data["userid"]))
+        user = User.get((User.id == user_data["id"]))
         if "nick" in profile_data:
             if not self.is_name_valid(profile_data["nick"]):
                 return {'error': 'INVALID_NICK'}
