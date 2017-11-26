@@ -150,6 +150,10 @@ namespace FESL {
 		bool m_acct_get_country_list(OS::KVReader kv_list);
 		bool m_acct_add_account(OS::KVReader kv_list);
 		bool m_acct_update_account(OS::KVReader kv_list);
+		bool m_acct_register_game_handler(OS::KVReader kv_list);
+		bool m_acct_send_account_name(OS::KVReader kv_list);
+		bool m_acct_send_account_password(OS::KVReader kv_list);
+		
 		static void m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_update_user_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer);

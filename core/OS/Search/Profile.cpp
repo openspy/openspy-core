@@ -118,8 +118,8 @@ namespace OS {
 			if (request.profile_search_details.i1 != 0)
 				json_object_set_new(profile_obj, "i1", json_integer(request.profile_search_details.i1));
 
-			if (request.profile_search_details.birthday != 0)
-				json_object_set_new(profile_obj, "birthday", json_integer(request.profile_search_details.birthday));
+			if (request.profile_search_details.birthday.GetYear() != 0)
+				json_object_set_new(profile_obj, "birthday", request.profile_search_details.birthday.GetJson());
 
 			if(request.profile_search_details.lon)
 				json_object_set_new(profile_obj, "lon", json_real(request.profile_search_details.lon));

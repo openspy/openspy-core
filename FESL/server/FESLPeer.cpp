@@ -24,6 +24,7 @@ namespace FESL {
 		{ FESL_TYPE_SUBS, "GetEntitlementByBundle", &Peer::m_subs_get_entitlement_by_bundle },
 		{ FESL_TYPE_DOBJ, "GetObjectInventory", &Peer::m_dobj_get_object_inventory },
 		{ FESL_TYPE_ACCOUNT, "Login", &Peer::m_acct_login_handler },
+		{ FESL_TYPE_ACCOUNT, "RegisterGame", &Peer::m_acct_register_game_handler },
 		{ FESL_TYPE_ACCOUNT, "GetCountryList", &Peer::m_acct_get_country_list },
 		{ FESL_TYPE_ACCOUNT, "GetTos", &Peer::m_acct_gettos_handler },
 		{ FESL_TYPE_ACCOUNT, "GetSubAccounts", &Peer::m_acct_get_sub_accounts },
@@ -34,6 +35,8 @@ namespace FESL {
 		{ FESL_TYPE_ACCOUNT, "DisableSubAccount",  &Peer::m_acct_disable_sub_account },
 		{ FESL_TYPE_ACCOUNT, "GetAccount", &Peer::m_acct_get_account },
 		{ FESL_TYPE_ACCOUNT, "GameSpyPreAuth", &Peer::m_acct_gamespy_preauth },
+		{ FESL_TYPE_ACCOUNT, "SendAccountName", &Peer::m_acct_send_account_name},
+		{ FESL_TYPE_ACCOUNT, "SendPassword", &Peer::m_acct_send_account_password},
 	};
 	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
 		m_delete_flag = false;
@@ -169,6 +172,12 @@ namespace FESL {
 		//send_memcheck(0);
 		return true;
 	}
+	
+	bool Peer::m_acct_register_game_handler(OS::KVReader kv_list) {
+		std::string kv_str = "TXN=RegisterGame\n";
+		SendPacket(FESL_TYPE_ACCOUNT, kv_str);
+		return true;
+	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
 		/*TXN=Login
 			returnEncryptedInfo=1
@@ -177,7 +186,7 @@ namespace FESL {
 			machineId=
 			macAddr=$1c872c771a76
 			*/
-		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), /*OS_EA_PARTNER_CODE*/ 0, 0, kv_list.GetValue("password"), m_email_pass_auth_cb, NULL, 0, this);
+		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), OS_EA_PARTNER_CODE, 0, kv_list.GetValue("password"), m_email_pass_auth_cb, NULL, 0, this);
 		return true;
 	}
 	void Peer::m_email_pass_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
@@ -186,7 +195,7 @@ namespace FESL {
 			s << "TXN=Login\n";
 			s << "lkey=" << auth_data.session_key << "\n";
 			((Peer *)peer)->m_session_key = auth_data.session_key;
-			s << "displayName=" << profile.nick << "\n";
+			s << "displayName=" << profile.uniquenick << "\n";
 			s << "userId=" << user.id << "\n";
 			s << "profileId=" << profile.id << "\n";
 			((Peer *)peer)->m_logged_in = true;
@@ -223,9 +232,9 @@ namespace FESL {
 		s << "countryCode=US\n";
 		s << "countryDesc=\"United States of America\"\n";
 		s << "thirdPartyMailFlag=0\n";
-		s << "dobDay=1\n";
-		s << "dobMonth=1\n";
-		s << "dobYear=1980\n";
+		s << "dobDay=" << m_profile.birthday.GetDay() << "\n";
+		s << "dobMonth=" << m_profile.birthday.GetMonth() << "\n";
+		s << "dobYear=" << m_profile.birthday.GetYear() << "\n";
 		s << "name=Test\n";
 		s << "email=" << m_user.email << "\n";
 		s << "profileID=" << m_profile.id << "\n";
@@ -278,7 +287,7 @@ namespace FESL {
 		mp_mutex->unlock();
 	}
 	bool Peer::m_acct_get_sub_accounts(OS::KVReader kv_list) {
-		if (!m_got_profiles) { //NOT VALID!!!
+		if (!m_got_profiles) {
 			m_pending_subaccounts = true;
 		}
 		else {
@@ -380,6 +389,12 @@ namespace FESL {
 	}
 	bool Peer::m_acct_gamespy_preauth(OS::KVReader kv_list) {
 		OS::AuthTask::TryMakeAuthTicket(m_profile.id, m_create_auth_ticket, NULL, 0, this);
+		return true;
+	}
+	bool Peer::m_acct_send_account_name(OS::KVReader kv_list) {
+		return true;
+	}
+	bool Peer::m_acct_send_account_password(OS::KVReader kv_list) {
 		return true;
 	}
 	void Peer::m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
@@ -499,13 +514,13 @@ namespace FESL {
 		OS::Profile profile;
 		user.email = kv_list.GetValue("email");
 		user.password = kv_list.GetValue("password");
-		profile.nick = kv_list.GetValue("nick");
-		profile.uniquenick = kv_list.GetValue("uniquenick");
+		profile.uniquenick = kv_list.GetValue("name");
+
+		profile.birthday = OS::Date::Date(kv_list.GetValueInt("DOBYear"), kv_list.GetValueInt("DOBMonth"), kv_list.GetValueInt("DOBDay"));
 
 		profile.namespaceid = 0;
-		//user.partnercode = OS_EA_PARTNER_CODE;
-		user.partnercode = 0;
-		OS::AuthTask::TryCreateUser_OrProfile(profile.nick, profile.uniquenick, profile.namespaceid, user.email, user.partnercode, user.password, true, m_newuser_cb, NULL, 0, this);
+		user.partnercode = OS_EA_PARTNER_CODE;
+		OS::AuthTask::TryCreateUser_OrProfile(user, profile, true, m_newuser_cb, NULL, 0, this);
 		
 		return true;
 	}

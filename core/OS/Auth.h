@@ -47,18 +47,14 @@ namespace OS {
 
 	typedef struct {
 
-		int profileid;
 		int session_key; //TODO: change to string
 
 		EAuthType type;
-		std::string nick;
-		std::string email;
-		int partnercode;
 		bool create_session;
-		std::string password;
 
-		std::string uniquenick;
-		int namespaceid;
+
+		OS::User user;
+		OS::Profile profile;
 
 		//gp hash specific
 		std::string server_challenge;
@@ -82,6 +78,7 @@ namespace OS {
 			static void TryAuthUniqueNick_Plain(std::string uniquenick, int partnercode, int namespaceid, std::string password, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
+			static void TryCreateUser_OrProfile(OS::User user, OS::Profile profile, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthEmailPassword(std::string email, int partnercode, std::string password, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryMakeAuthTicket(int profileid, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);

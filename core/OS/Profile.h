@@ -2,6 +2,7 @@
 #define _OS_PROFILE_H
 #include <string>
 #include <jansson.h>
+#include <OS/Date.h>
 namespace OS {
 	class Profile {
 	public:
@@ -19,7 +20,7 @@ namespace OS {
 			mar = 0;
 			chc = 0; 
 			i1 = 0; 
-			birthday = 0; 
+			birthday = Date(); 
 			lon = 0.0; 
 			lat = 0.0;
 		};
@@ -41,7 +42,7 @@ namespace OS {
 		int mar; //marriage id
 		int chc; //child count
 		int i1; //interests
-		int birthday;
+		OS::Date birthday;
 
 		float lon;
 		float lat;

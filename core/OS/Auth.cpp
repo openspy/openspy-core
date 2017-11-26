@@ -25,19 +25,19 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
-		if(request.nick.length())
-			json_object_set_new(profile_obj, "nick", json_string(request.nick.c_str()));
-		if(request.uniquenick.length())
-			json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+		if(request.profile.nick.length())
+			json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
+		if(request.profile.uniquenick.length())
+			json_object_set_new(profile_obj, "uniquenick", json_string(request.profile.uniquenick.c_str()));
 
-		if(request.email.length())
-			json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
+		if(request.user.email.length())
+			json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
 
-		json_object_set_new(user_obj, "partnercode", json_integer(request.partnercode));
-		json_object_set_new(profile_obj, "namespaceid", json_integer(request.namespaceid));
+		json_object_set_new(user_obj, "partnercode", json_integer(request.user.partnercode));
+		json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile.namespaceid));
 		
-		if(request.password.length())
-			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
+		if(request.user.password.length())
+			json_object_set_new(user_obj, "password", json_string(request.user.password.c_str()));
 
 		json_object_set_new(send_obj, "hash_type", json_string("gp_nick_email"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
@@ -138,16 +138,16 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
-		if (request.nick.length())
-			json_object_set_new(profile_obj, "nick", json_string(request.nick.c_str()));
-		if (request.uniquenick.length())
-			json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+		if (request.profile.nick.length())
+			json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
+		if (request.profile.uniquenick.length())
+			json_object_set_new(profile_obj, "uniquenick", json_string(request.profile.uniquenick.c_str()));
 
-		if (request.email.length())
-			json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
+		if (request.user.email.length())
+			json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
 
-		if (request.password.length())
-			json_object_set_new(send_obj, "auth_token", json_string(request.password.c_str()));
+		if (request.user.password.length())
+			json_object_set_new(send_obj, "auth_token", json_string(request.user.password.c_str()));
 
 		json_object_set_new(send_obj, "server_challenge", json_string(request.server_challenge.c_str()));
 		json_object_set_new(send_obj, "client_challenge", json_string(request.client_challenge.c_str()));
@@ -244,19 +244,19 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
-		if(request.nick.length())
-			json_object_set_new(profile_obj, "nick", json_string(request.nick.c_str()));
-		if(request.uniquenick.length())
-			json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+		if(request.profile.nick.length())
+			json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
+		if(request.profile.uniquenick.length())
+			json_object_set_new(profile_obj, "uniquenick", json_string(request.profile.uniquenick.c_str()));
 
-		if(request.email.length())
-			json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
+		if(request.user.email.length())
+			json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
 
-		json_object_set_new(user_obj, "partnercode", json_integer(request.partnercode));
-		json_object_set_new(profile_obj, "namespaceid", json_integer(request.namespaceid));
+		json_object_set_new(user_obj, "partnercode", json_integer(request.user.partnercode));
+		json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile.namespaceid));
 		
-		if(request.password.length())
-			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
+		if(request.user.password.length())
+			json_object_set_new(user_obj, "password", json_string(request.user.password.c_str()));
 
 		json_object_set_new(send_obj, "hash_type", json_string("nick_email"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
@@ -343,19 +343,24 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
-		if(request.nick.length())
-			json_object_set_new(profile_obj, "nick", json_string(request.nick.c_str()));
-		if(request.uniquenick.length())
-			json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+		if(request.profile.nick.length())
+			json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
+		if(request.profile.uniquenick.length())
+			json_object_set_new(profile_obj, "uniquenick", json_string(request.profile.uniquenick.c_str()));
 
-		if(request.email.length())
-			json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
+		if(request.user.email.length())
+			json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
 
-		json_object_set_new(user_obj, "partnercode", json_integer(request.partnercode));
-		json_object_set_new(profile_obj, "namespaceid", json_integer(request.namespaceid));
+		json_object_set_new(user_obj, "partnercode", json_integer(request.user.partnercode));
+		json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile.namespaceid));
 
-		if(request.password.length())
-			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
+		if(request.user.password.length())
+			json_object_set_new(user_obj, "password", json_string(request.user.password.c_str()));
+
+		if (request.profile.birthday.GetYear() != 0) {
+			json_object_set_new(profile_obj, "birthday", request.profile.birthday.GetJson());
+		}
+
 
 		json_object_set_new(send_obj, "hash_type", json_string("auth_or_create_profile"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
@@ -431,10 +436,10 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object();
 
-		json_object_set_new(send_obj, "profileid", json_integer(request.profileid));
+		json_object_set_new(send_obj, "profileid", json_integer(request.profile.id));
 
-		if (request.password.length())
-			json_object_set_new(send_obj, "password", json_string(request.password.c_str()));
+		if (request.user.password.length())
+			json_object_set_new(send_obj, "password", json_string(request.user.password.c_str()));
 
 		json_object_set_new(send_obj, "mode", json_string("make_auth_ticket"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
@@ -519,7 +524,7 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object();
 
-		json_object_set_new(send_obj, "profileid", json_integer(request.profileid));
+		json_object_set_new(send_obj, "profileid", json_integer(request.profile.id));
 		
 		json_object_set_new(send_obj, "hash_type", json_string("gstats_pid_sesskey"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
@@ -610,10 +615,10 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object(), *user_obj = json_object();
 
-		json_object_set_new(user_obj, "email", json_string(request.email.c_str()));
+		json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
 
-		if (request.password.length())
-			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
+		if (request.user.password.length())
+			json_object_set_new(user_obj, "password", json_string(request.user.password.c_str()));
 
 		json_object_set_new(send_obj, "hash_type", json_string("plain"));
 		json_object_set_new(send_obj, "set_context", json_string("user"));
@@ -701,16 +706,16 @@ namespace OS {
 		//build json object
 		json_t *send_obj = json_object(), *user_obj = json_object(), *profile_obj = json_object();
 
-		json_object_set_new(profile_obj, "uniquenick", json_string(request.uniquenick.c_str()));
+		json_object_set_new(profile_obj, "uniquenick", json_string(request.profile.uniquenick.c_str()));
 
-		if (request.password.length())
-			json_object_set_new(user_obj, "password", json_string(request.password.c_str()));
+		if (request.user.password.length())
+			json_object_set_new(user_obj, "password", json_string(request.user.password.c_str()));
 
-		if (request.partnercode != -1)
-			json_object_set_new(user_obj, "partnercode", json_integer(request.partnercode));
+		if (request.user.partnercode != -1)
+			json_object_set_new(user_obj, "partnercode", json_integer(request.user.partnercode));
 
-		if (request.namespaceid != -1)
-			json_object_set_new(profile_obj, "namespaceid", json_integer(request.namespaceid));
+		if (request.profile.namespaceid != -1)
+			json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile.namespaceid));
 
 		json_object_set_new(send_obj, "hash_type", json_string("plain"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
@@ -801,7 +806,7 @@ namespace OS {
 	void AuthTask::TryMakeAuthTicket(int profileid, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_MakeAuthTicket;
-		request.profileid = profileid;
+		request.profile.id = profileid;
 		request.session_key = 0;
 		request.extra = extra;
 		request.callback = cb;
@@ -816,11 +821,11 @@ namespace OS {
 	void AuthTask::TryAuthUniqueNick_Plain(std::string uniquenick, int partnercode, int namespaceid, std::string password, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_Uniquenick_Password;
-		request.uniquenick = uniquenick;
-		request.password = password;
+		request.profile.uniquenick = uniquenick;
+		request.user.password = password;
 		request.session_key = 0;
-		request.namespaceid = namespaceid;
-		request.partnercode = partnercode;
+		request.profile.namespaceid = namespaceid;
+		request.user.partnercode = partnercode;
 		request.extra = extra;
 		request.callback = cb;
 		request.create_session = true;
@@ -834,13 +839,13 @@ namespace OS {
 	void AuthTask::TryAuthEmailPassword(std::string email, int partnercode, std::string password, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_User_EmailPassword;
-		request.email = email;
-		request.partnercode = partnercode;
+		request.user.email = email;
+		request.user.partnercode = partnercode;
 		request.extra = extra;
 		request.callback = cb;
 		request.create_session = true;
 		request.operation_id = operation_id;
-		request.namespaceid = 0;
+		request.profile.namespaceid = 0;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -851,14 +856,14 @@ namespace OS {
 	void AuthTask::TryAuthTicket(const char *auth_token, const char *server_challenge, const char *client_challenge, const char *response, AuthCallback cb, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_PreAuth_Token;
-		request.password = auth_token;
+		request.user.password = auth_token;
 		request.server_challenge = server_challenge;
 		request.client_challenge = client_challenge;
 		request.client_response = response;
 		request.callback = cb;
 		request.create_session = true;
 		request.operation_id = operation_id;
-		request.namespaceid = 0;
+		request.profile.namespaceid = 0;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -869,9 +874,9 @@ namespace OS {
 	void AuthTask::TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_NickEmail_GPHash;
-		request.email = email;
-		request.nick = nick;
-		request.partnercode = partnercode;
+		request.user.email = email;
+		request.profile.nick = nick;
+		request.user.partnercode = partnercode;
 		request.server_challenge = server_chal;
 		request.client_challenge = client_chal;
 		request.client_response = client_response;
@@ -879,7 +884,7 @@ namespace OS {
 		request.callback = cb;
 		request.create_session = true;
 		request.operation_id = operation_id;
-		request.namespaceid = 0;
+		request.profile.namespaceid = 0;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -889,15 +894,31 @@ namespace OS {
 	void AuthTask::TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_NickEmail;
-		request.email = email;
-		request.nick = nick;
-		request.partnercode = partnercode;
+		request.user.email = email;
+		request.profile.nick = nick;
+		request.user.partnercode = partnercode;
 		request.extra = extra;
 		request.callback = cb;
-		request.password = pass;
+		request.user.password = pass;
 		request.create_session = make_session;
 		request.operation_id = operation_id;
-		request.namespaceid = 0;
+		request.profile.namespaceid = 0;
+		if (peer) {
+			peer->IncRef();
+		}
+		request.peer = peer;
+		m_auth_task_pool->AddRequest(request);
+	}
+	void AuthTask::TryCreateUser_OrProfile(OS::User user, OS::Profile profile, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
+		AuthRequest request;
+		request.type = EAuthType_CreateUser_OrProfile;
+		request.user = user;
+		request.profile = profile;
+		request.extra = extra;
+		request.callback = cb;
+		request.create_session = create_session;
+		request.operation_id = operation_id;
+		request.profile.namespaceid = 0;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -907,17 +928,17 @@ namespace OS {
 	void AuthTask::TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
 		request.type = EAuthType_CreateUser_OrProfile;
-		request.email = email;
-		request.nick = nick;
-		request.uniquenick = uniquenick;
-		request.partnercode = partnercode;
-		request.namespaceid = namespaceid;
+		request.user.email = email;
+		request.profile.nick = nick;
+		request.profile.uniquenick = uniquenick;
+		request.user.partnercode = partnercode;
+		request.profile.namespaceid = namespaceid;
 		request.extra = extra;
 		request.callback = cb;
-		request.password = password;
+		request.user.password = password;
 		request.create_session = create_session;
 		request.operation_id = operation_id;
-		request.namespaceid = 0;
+		request.profile.namespaceid = 0;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -928,7 +949,7 @@ namespace OS {
 		AuthRequest request;
 		request.type = EAuthType_PID_GStats_Sesskey;
 
-		request.profileid = profileid;
+		request.profile.id = profileid;
 		request.session_key = session_key;
 		request.client_response = response;
 
@@ -936,8 +957,8 @@ namespace OS {
 		request.operation_id = operation_id;
 		request.callback = cb;
 		request.create_session = true;
-		request.namespaceid = 0;
-		request.partnercode = 0;
+		request.profile.namespaceid = 0;
+		request.user.partnercode = 0;
 		if (peer) {
 			peer->IncRef();
 		}

@@ -98,10 +98,10 @@ namespace OS {
 			ret.i1 = 0;
 
 		j = json_object_get(obj, "birthday");
-		if(j && json_is_integer(j))
-			ret.birthday = json_integer_value(j);
+		if(j)
+			ret.birthday = OS::Date::GetDateFromJSON(j);
 		else 
-			ret.birthday = 0;
+			ret.birthday = OS::Date();
 
 		j = json_object_get(obj, "countrycode");
 		if(j && json_is_string(j))

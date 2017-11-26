@@ -171,8 +171,12 @@ namespace GP {
 		LoadParamInt("mar", profile.mar, data_parser)
 		LoadParamInt("chc", profile.chc, data_parser)
 		LoadParamInt("i1", profile.i1, data_parser)
-		LoadParamInt("birthday", profile.birthday, data_parser)
 		LoadParamInt("publicmask", user.publicmask, data_parser) //user param
+
+		if (data_parser.HasKey("birthday")) {
+			profile.birthday = OS::Date::GetDateFromGPValue(data_parser.GetValueInt("birthday"));
+
+		}
 
 		if (data_parser.HasKey("publicmask")) {
 				send_userupdate = true;
@@ -675,7 +679,7 @@ namespace GP {
 			}
 
 			if(user.publicmask & GP_MASK_BIRTHDAY || ((GP::Peer *)peer)->m_profile.userid == user.id) {
-				s << "\\birthday\\" << p.birthday;
+				s << "\\birthday\\" << p.birthday.GetGPDate();
 			}
 
 			if(user.publicmask & GP_MASK_COUNTRYCODE || ((GP::Peer *)peer)->m_profile.userid == user.id) {
