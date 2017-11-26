@@ -111,17 +111,17 @@ class AuthService(BaseService):
 
         profileid = int(self.redis_ctx.hget("auth_token_{}".format(token), 'profileid'))
         profile = self.get_profile_by_id(profileid)
-        challenge = str(self.redis_ctx.hget("auth_token_{}".format(token), 'challenge'))
+        challenge = self.redis_ctx.hget("auth_token_{}".format(token), 'challenge').decode('utf-8')
+        challenge = str(challenge).encode('utf-8')
 
-
-        md5_pw = hashlib.md5(challenge.encode('utf-8')).hexdigest()
+        md5_pw = hashlib.md5(challenge).hexdigest()
         crypt_buf = "{}{}{}{}{}{}".format(md5_pw, "                                                ",token, request_body['server_challenge'], request_body['client_challenge'], md5_pw)
         true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
         response['profile'] = model_to_dict(profile)
         response["server_response"] = true_resp
         response["success"] = True
 
-        self.redis_ctx.delete("auth_token_{}".format(token))
+        #self.redis_ctx.delete("auth_token_{}".format(token))
         return response
     def test_nick_email_by_profile(self, profile, password):
         return profile.user.password == password
