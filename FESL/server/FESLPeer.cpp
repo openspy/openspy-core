@@ -232,9 +232,9 @@ namespace FESL {
 		s << "countryCode=US\n";
 		s << "countryDesc=\"United States of America\"\n";
 		s << "thirdPartyMailFlag=0\n";
-		s << "dobDay=" << m_profile.birthday.GetDay() << "\n";
-		s << "dobMonth=" << m_profile.birthday.GetMonth() << "\n";
-		s << "dobYear=" << m_profile.birthday.GetYear() << "\n";
+		s << "dobDay=" << (int)m_profile.birthday.GetDay() << "\n";
+		s << "dobMonth=" << (int)m_profile.birthday.GetMonth() << "\n";
+		s << "dobYear=" << (int)m_profile.birthday.GetYear() << "\n";
 		s << "name=Test\n";
 		s << "email=" << m_user.email << "\n";
 		s << "profileID=" << m_profile.id << "\n";
