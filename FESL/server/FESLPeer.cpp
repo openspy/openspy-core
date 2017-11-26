@@ -62,8 +62,8 @@ namespace FESL {
 		char buf[FESL_READ_SIZE + 1];
 		socklen_t slen = sizeof(struct sockaddr_in);
 		int len = 0, piece_len = 0;
+		if (m_delete_flag) return;
 		if (packet_waiting) {
-
 			if (!m_openssl_accepted) {
 				if (SSL_accept(m_ssl_ctx) < 0) {
 					OS::LogText(OS::ELogLevel_Info, "[%s] SSL accept failed", OS::Address(m_address_info).ToString().c_str());
@@ -93,6 +93,7 @@ namespace FESL {
 				return;
 			}
 			if (len <= 0) {
+				m_delete_flag = true;
 				goto end;
 			}
 			gettimeofday(&m_last_recv, NULL);
@@ -115,6 +116,7 @@ namespace FESL {
 		}
 
 		end:
+		send_ping();
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
@@ -123,6 +125,15 @@ namespace FESL {
 			m_timeout_flag = true;
 		} else if(len == 0 && packet_waiting) {
 			m_delete_flag = true;
+		}
+	}
+	void Peer::send_ping() {
+		//check for timeout
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if(current_time.tv_sec - m_last_ping.tv_sec > FESL_PING_TIME) {
+			gettimeofday(&m_last_ping, NULL);
+			send_memcheck(0);
 		}
 	}
 	void Peer::SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence) {
@@ -232,9 +243,9 @@ namespace FESL {
 		s << "countryCode=US\n";
 		s << "countryDesc=\"United States of America\"\n";
 		s << "thirdPartyMailFlag=0\n";
-		s << "dobDay=" << m_profile.birthday.GetDay() << "\n";
-		s << "dobMonth=" << m_profile.birthday.GetMonth() << "\n";
-		s << "dobYear=" << m_profile.birthday.GetYear() << "\n";
+		s << "dobDay=" << (int)m_profile.birthday.GetDay() << "\n";
+		s << "dobMonth=" << (int)m_profile.birthday.GetMonth() << "\n";
+		s << "dobYear=" << (int)m_profile.birthday.GetYear() << "\n";
 		s << "name=Test\n";
 		s << "email=" << m_user.email << "\n";
 		s << "profileID=" << m_profile.id << "\n";

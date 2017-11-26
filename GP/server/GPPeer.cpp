@@ -56,6 +56,7 @@ namespace GP {
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];
 		int len = 0, piece_len = 0;
+		if (m_delete_flag) return;
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
 			if (OS::wouldBlock()) {
@@ -731,15 +732,13 @@ namespace GP {
 	void Peer::send_ping() {
 		//check for timeout
 		
-		/*
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME) {
+		if(current_time.tv_sec - m_last_ping.tv_sec > GP_PING_TIME) {
 			gettimeofday(&m_last_ping, NULL);
 			std::string ping_packet = "\\ka\\";
 			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
 		}
-		*/
 	}
 	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
 		const char *email = NULL;

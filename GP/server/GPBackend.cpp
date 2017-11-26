@@ -252,8 +252,8 @@ namespace GPBackend {
 		int profileid = request.peer->GetProfileID();
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", GP_BACKEND_REDIS_DB);
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d status %d", profileid, request.StatusInfo.status);
-		Redis::Command(mp_redis_connection, 0, "HSET status_%d status_string %s", profileid, request.StatusInfo.status_str);
-		Redis::Command(mp_redis_connection, 0, "HSET status_%d location_string %s", profileid, request.StatusInfo.location_str);
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d status_string %s", profileid, request.StatusInfo.status_str.c_str());
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d location_string %s", profileid, request.StatusInfo.location_str.c_str());
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d quiet_flags %d", profileid, request.StatusInfo.quiet_flags);
 
 		struct sockaddr_in addr;
@@ -265,7 +265,7 @@ namespace GPBackend {
 		Redis::Command(mp_redis_connection, 0, "EXPIRE status_%d %d", profileid, GP_STATUS_EXPIRE_TIME);
 
 		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\type\\status_update\\profileid\\%d\\status_string\\%s\\status\\%d\\location_string\\%s\\quiet_flags\\%d\\ip\\%s\\port\\%d",
-		 gp_buddies_channel, profileid, request.StatusInfo.status_str, request.StatusInfo.status, request.StatusInfo.location_str,
+		 gp_buddies_channel, profileid, request.StatusInfo.status_str.c_str(), request.StatusInfo.status, request.StatusInfo.location_str.c_str(),
 			request.StatusInfo.quiet_flags,ipinput,addr.sin_port); //TODO: escape this
 	}
 	void GPBackendRedisTask::Perform_BuddyRequest(GPBackendRedisRequest request) {

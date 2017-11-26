@@ -51,6 +51,7 @@ namespace SB {
 		void V1Peer::think(bool packet_waiting) {
 			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 			int len;
+			if (m_delete_flag) return;
 			if (m_waiting_gamedata == 2) {
 				m_waiting_gamedata = 0;
 				while (!m_waiting_packets.empty()) {
