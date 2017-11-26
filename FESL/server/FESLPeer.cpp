@@ -115,6 +115,7 @@ namespace FESL {
 		}
 
 		end:
+		send_ping();
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
@@ -123,6 +124,15 @@ namespace FESL {
 			m_timeout_flag = true;
 		} else if(len == 0 && packet_waiting) {
 			m_delete_flag = true;
+		}
+	}
+	void Peer::send_ping() {
+		//check for timeout
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if(current_time.tv_sec - m_last_ping.tv_sec > FESL_PING_TIME) {
+			gettimeofday(&m_last_ping, NULL);
+			SendPacket(FESL_TYPE_ACCOUNT, "TXN=Ping\n");
 		}
 	}
 	void Peer::SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence) {

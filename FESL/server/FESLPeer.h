@@ -171,6 +171,7 @@ namespace FESL {
 		bool m_got_profiles;
 		std::vector<OS::Profile> m_profiles;
 		std::string m_session_key;
+		void send_ping();
 
 		static CommandHandler m_commands[];
 
