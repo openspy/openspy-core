@@ -103,16 +103,19 @@ namespace FESL {
 				m_sequence_id = subtype & 0x0FFFFFFF;
 			}*/
 			OS::KVReader kv_data(buf, '=', '\n');
-			printf("Got EAMsg(%d):\n%s\n", len, buf);
-			printf("Seq ID: %08X %08X\n", htonl(header.subtype), header.type);
+			char *type;
 			for (int i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
 				if (Peer::m_commands[i].type == htonl(header.type)) {
 					if (Peer::m_commands[i].command.compare(kv_data.GetValue("TXN")) == 0) {
+						type = (char *)&Peer::m_commands[i].type;
+						OS::LogText(OS::ELogLevel_Info, "[%s] Got Command: %c%c%c%c %s", OS::Address(m_address_info).ToString().c_str(), type[3], type[2], type[1], type[0], Peer::m_commands[i].command.c_str());
 						(*this.*Peer::m_commands[i].mpFunc)(kv_data);
 						return;
 					}
 				}
 			}
+			type = (char *)&header.type;
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", OS::Address(m_address_info).ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
 		}
 
 		end:
@@ -156,7 +159,6 @@ namespace FESL {
 			send(m_sd, (const char *)&header, sizeof(header), MSG_NOSIGNAL);
 			send(m_sd, data.c_str(), data.length() + 1, MSG_NOSIGNAL);
 		}
-		printf("Send: %s\n", data.c_str());
 	}
 	bool Peer::m_fsys_hello_handler(OS::KVReader kv_list) {
 		/*
@@ -179,7 +181,6 @@ namespace FESL {
 		return true;
 	}
 	bool Peer::m_fsys_memcheck_handler(OS::KVReader kv_list) {
-		printf("got memcheck\n");
 		//send_memcheck(0);
 		return true;
 	}
