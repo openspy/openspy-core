@@ -48,9 +48,9 @@ class AuthService(BaseService):
         except Profile.DoesNotExist:
             return None
 
-    def get_profile_by_nick_email(self, nick, email, partnercode):
+    def get_profile_by_nick_email(self, nick, namespaceid, email, partnercode):
         try:
-            return Profile.select().join(User).where((Profile.nick == nick) & (User.partnercode == partnercode) & (User.email == email) & (User.deleted == False) & (Profile.deleted == False)).get()
+            return Profile.select().join(User).where((Profile.nick == nick) & (Profile.namespaceid == namespaceid) & (User.email == email) & (User.deleted == False) & (Profile.deleted == False)).get()
         except Profile.DoesNotExist:
             return None
 
@@ -68,10 +68,31 @@ class AuthService(BaseService):
         except User.DoesNotExist:
             auth_success = False
         return auth_success
+    def test_gp_uniquenick_by_profile(self, profile, client_challenge, server_challenge, client_response):
+        md5_pw = hashlib.md5(str(profile.user.password).encode('utf-8')).hexdigest()
+        if profile.user.partnercode != self.PARTNERID_GAMESPY:
+            crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.uniquenick, client_challenge, server_challenge, md5_pw)
+        else:
+            crypt_buf = "{}{}{}{}{}{}".format(md5_pw, "                                                ",profile.uniquenick, client_challenge, server_challenge, md5_pw)
 
+        true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
+
+        if profile.user.partnercode != self.PARTNERID_GAMESPY:
+            proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.uniquenick, server_challenge, client_challenge, md5_pw)
+        else:
+            proof = "{}{}{}{}{}{}".format(md5_pw, "                                                ",profile.uniquenick, server_challenge, client_challenge, md5_pw)
+        proof = hashlib.md5(str(proof).encode('utf-8')).hexdigest()
+
+        if true_resp == client_response:
+            return proof
+        return None
     def test_gp_nick_email_by_profile(self, profile, client_challenge, server_challenge, client_response):
         md5_pw = hashlib.md5(str(profile.user.password).encode('utf-8')).hexdigest()
-        crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email,client_challenge, server_challenge, md5_pw)
+        if profile.user.partnercode != self.PARTNERID_GAMESPY:
+            crypt_buf = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, client_challenge, server_challenge, md5_pw)
+        else:
+            crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, client_challenge, server_challenge, md5_pw)
+
         true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
 
         if profile.user.partnercode != self.PARTNERID_GAMESPY:
@@ -79,6 +100,7 @@ class AuthService(BaseService):
         else:
             proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
         proof = hashlib.md5(str(proof).encode('utf-8')).hexdigest()
+
         if true_resp == client_response:
             return proof
         return None
@@ -380,7 +402,7 @@ class AuthService(BaseService):
             if profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_INVALID_PROFILE
         elif 'nick' in profile_body and 'email' in user_body:
-            profile = self.get_profile_by_nick_email(profile_body['nick'], user_body['email'], user_body['partnercode'])
+            profile = self.get_profile_by_nick_email(profile_body['nick'], profile_body['namespaceid'], user_body['email'], user_body['partnercode'])
             if profile == None:
                 response['reason'] = self.LOGIN_RESPONSE_INVALID_PROFILE
         elif "email" in user_body:
@@ -399,7 +421,6 @@ class AuthService(BaseService):
                 response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
         elif "id" in profile_body:
             profile = self.get_profile_by_id(profile_body["id"])
-
         auth_success = False
         if hash_type == 'plain' and profile != None:
             auth_success = self.test_pass_plain_by_userid(profile.user.id, user_body['password'])
@@ -407,6 +428,11 @@ class AuthService(BaseService):
             auth_success = self.test_pass_plain_by_userid(user.id, user_body['password'])
         elif hash_type == 'gp_nick_email' and profile != None:
             proof = self.test_gp_nick_email_by_profile(profile, request_body['client_challenge'], request_body['server_challenge'], request_body['client_response'])
+            if proof != None:
+                auth_success = True
+                response['server_response'] = proof
+        elif hash_type == 'gp_uniquenick' and profile != None:
+            proof = self.test_gp_uniquenick_by_profile(profile, request_body['client_challenge'], request_body['server_challenge'], request_body['client_response'])
             if proof != None:
                 auth_success = True
                 response['server_response'] = proof
