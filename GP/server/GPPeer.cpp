@@ -318,6 +318,9 @@ namespace GP {
 		else if (data_parser.HasKey("authtoken")) {
 			type = 2;
 		}
+		else if (data_parser.HasKey("uniquenick")) {
+			type = 3;
+		}
 		else {
 			send_error(GPShared::GP_LOGIN_CONNECTION_FAILED);
 			return;
@@ -331,11 +334,15 @@ namespace GP {
 		std::string response = data_parser.GetValue("response");
 
 		if(type == 1) {
-			perform_nick_email_auth(user.c_str(), partnercode, m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
+			perform_nick_email_auth(user.c_str(), partnercode, namespaceid, m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
 		}
 		else if (type == 2) {
 			std::string authtoken = data_parser.GetValue("authtoken");
 			perform_preauth_auth(authtoken.c_str(), m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
+		}
+		else if (type == 2) {
+			std::string uniquenick = data_parser.GetValue("uniquenick");
+			perform_uniquenick_auth(uniquenick.c_str(), partnercode, namespaceid, m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
 		}
 	}
 	void Peer::handle_pinvite(const char *data, int len) {
@@ -394,7 +401,7 @@ namespace GP {
 			mp_mutex->unlock();
 			send_error(GP_ADDBUDDY_ALREADY_BUDDY);
 			return;
-		} else if(std::find(m_blocks.begin(),m_blocks.end(), newprofileid) == m_blocks.end()) {
+		} else if(std::find(m_blocks.begin(),m_blocks.end(), newprofileid) != m_blocks.end()) {
 			mp_mutex->unlock();
 			send_error(GP_ADDBUDDY_IS_ON_BLOCKLIST);
 			return;
@@ -740,7 +747,10 @@ namespace GP {
 			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
 		}
 	}
-	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
+	void Peer::perform_uniquenick_auth(const char *uniquenick, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
+		OS::AuthTask::TryAuthUniqueNick_GPHash(uniquenick, partnercode, namespaceid, server_challenge, client_challenge, response, m_auth_cb, this, operation_id, peer);
+	}
+	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
 		const char *email = NULL;
 		char nick[31 + 1];
 		const char *first_at = strchr(nick_email, '@');
@@ -752,12 +762,12 @@ namespace GP {
 			}
 			email = first_at+1;
 		}
- 		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, server_challenge, client_challenge, response, m_nick_email_auth_cb, this, operation_id, this);
+ 		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, namespaceid, server_challenge, client_challenge, response, m_auth_cb, this, operation_id, this);
 	}
 	void Peer::perform_preauth_auth(const char *auth_token, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
-		OS::AuthTask::TryAuthTicket(auth_token, server_challenge, client_challenge, response, m_nick_email_auth_cb, operation_id, this);
+		OS::AuthTask::TryAuthTicket(auth_token, server_challenge, client_challenge, response, m_auth_cb, operation_id, this);
 	}
-	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
 		if(!((GP::Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())
 			((GP::Peer *)peer)->m_backend_session_key = auth_data.session_key;
 

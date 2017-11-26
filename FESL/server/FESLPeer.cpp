@@ -11,11 +11,6 @@
 
 #include <sstream>
 
-/*
-bool m_acct_add_account(OS::KVReader kv_list) {
-bool m_acct_update_account(OS::KVReader kv_list)
-*/
-
 namespace FESL {
 	CommandHandler Peer::m_commands[] = {
 		{ FESL_TYPE_FSYS, "Hello", &Peer::m_fsys_hello_handler },
@@ -191,13 +186,6 @@ namespace FESL {
 		return true;
 	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
-		/*TXN=Login
-			returnEncryptedInfo=1
-			name=hertc
-			password=123321
-			machineId=
-			macAddr=$1c872c771a76
-			*/
 		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), OS_EA_PARTNER_CODE, 0, kv_list.GetValue("password"), m_email_pass_auth_cb, NULL, 0, this);
 		return true;
 	}

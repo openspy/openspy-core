@@ -37,6 +37,7 @@ namespace OS {
 	enum EAuthType {
 		EAuthType_NickEmail_GPHash,
 		EAuthType_User_EmailPassword,
+		EAuthType_Uniquenick_GPHash,
 		EAuthType_Uniquenick_Password,
 		EAuthType_PreAuth_Token,
 		EAuthType_MakeAuthTicket,
@@ -73,8 +74,8 @@ namespace OS {
 		public:
 			AuthTask(int thread_index);
 			~AuthTask();
-			static void TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
-			static void TryAuthUniqueNick_GPHash(std::string nick, std::string email, int partnercode, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
+			static void TryAuthNickEmail_GPHash(std::string nick, std::string email, int partnercode, int namespaceid, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
+			static void TryAuthUniqueNick_GPHash(std::string uniquenick, int partnercode, int namespaceid, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthUniqueNick_Plain(std::string uniquenick, int partnercode, int namespaceid, std::string password, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
@@ -91,6 +92,7 @@ namespace OS {
 			void PerformAuth_CreateUser_OrProfile(AuthRequest request);
 			void PerformAuth_PID_GSStats_SessKey(AuthRequest request);
 			void PerformAuth_EmailPass(AuthRequest request);
+			void PerformAuth_Uniquenick_GPHash(AuthRequest request);
 			void PerformAuth_Uniquenick_Password(AuthRequest request);
 			void PerformAuth_MakeAuthTicket(AuthRequest request);
 			void PerformAuth_PreAuth_Token(AuthRequest request);

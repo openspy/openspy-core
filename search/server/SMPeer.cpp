@@ -83,6 +83,7 @@ namespace SM {
 			m_delete_flag = true;
 			return;
 		}
+		printf("Handle: %s\n", data);
 		if(!strcmp("search", command)) {
 			handle_search(data, len);
 		} else if(!strcmp("others", command)) {
