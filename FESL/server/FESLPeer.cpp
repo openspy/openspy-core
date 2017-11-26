@@ -133,7 +133,7 @@ namespace FESL {
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > FESL_PING_TIME) {
 			gettimeofday(&m_last_ping, NULL);
-			SendPacket(FESL_TYPE_ACCOUNT, "TXN=Ping\n");
+			send_memcheck(0);
 		}
 	}
 	void Peer::SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence) {
