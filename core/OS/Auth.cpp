@@ -986,7 +986,7 @@ namespace OS {
 	}
 	void AuthTask::TryAuthUniqueNick_GPHash(std::string uniquenick, int partnercode, int namespaceid, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
-		request.type = EAuthType_Uniquenick_Password;
+		request.type = EAuthType_Uniquenick_GPHash;
 		request.profile.uniquenick = uniquenick;
 		request.user.partnercode = partnercode;
 		request.server_challenge = server_chal;

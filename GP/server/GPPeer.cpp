@@ -340,7 +340,7 @@ namespace GP {
 			std::string authtoken = data_parser.GetValue("authtoken");
 			perform_preauth_auth(authtoken.c_str(), m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
 		}
-		else if (type == 2) {
+		else if (type == 3) {
 			std::string uniquenick = data_parser.GetValue("uniquenick");
 			perform_uniquenick_auth(uniquenick.c_str(), partnercode, namespaceid, m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
 		}
