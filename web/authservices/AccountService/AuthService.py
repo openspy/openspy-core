@@ -317,8 +317,6 @@ class AuthService(BaseService):
                 elif profile["error"] == "UNIQUENICK_IN_USE":
                     reason = self.CREATE_RESPONSE_UNIQUENICK_IN_USE
                 return {'reason' : reason}
-            else:
-                response['profile'] = profile
         return profile
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
