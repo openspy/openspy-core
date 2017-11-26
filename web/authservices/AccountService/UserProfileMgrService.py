@@ -238,7 +238,7 @@ class UserProfileMgrService(BaseService):
         resp = self.redis_presence_ctx.hscan(revoke_list_key)
         for item in resp:
             if isinstance(item, dict):
-                for pid, time in item.iteritems():
+                for pid, time in item.iter():
                     publish_data = "\\type\\del_buddy\\from_profileid\\{}\\to_profileid\\{}".format(pid, profile.id)
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
         self.redis_presence_ctx.delete(revoke_list_key)
@@ -249,7 +249,7 @@ class UserProfileMgrService(BaseService):
         resp = self.redis_presence_ctx.hscan(add_req_key)
         for item in resp:
             if isinstance(item, dict):
-                for pid, reason in item.iteritems():
+                for pid, reason in item.iter():
                     publish_data = "\\type\\add_request\\from_profileid\\{}\\to_profileid\\{}\\reason\\{}".format(pid, profile.id, reason)
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
 
