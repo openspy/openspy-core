@@ -84,6 +84,7 @@ int SelectNetEventManager::setup_fdset() {
 			FD_SET(sd, &m_fdset);
 			it++;
 		}
+		mp_mutex->unlock();
 		return m_hsock;
 	}
 }

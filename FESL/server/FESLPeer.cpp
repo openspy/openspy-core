@@ -62,8 +62,8 @@ namespace FESL {
 		char buf[FESL_READ_SIZE + 1];
 		socklen_t slen = sizeof(struct sockaddr_in);
 		int len = 0, piece_len = 0;
+		if (m_delete_flag) return;
 		if (packet_waiting) {
-
 			if (!m_openssl_accepted) {
 				if (SSL_accept(m_ssl_ctx) < 0) {
 					OS::LogText(OS::ELogLevel_Info, "[%s] SSL accept failed", OS::Address(m_address_info).ToString().c_str());
@@ -93,6 +93,7 @@ namespace FESL {
 				return;
 			}
 			if (len <= 0) {
+				m_delete_flag = true;
 				goto end;
 			}
 			gettimeofday(&m_last_recv, NULL);

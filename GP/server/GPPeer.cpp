@@ -56,6 +56,7 @@ namespace GP {
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];
 		int len = 0, piece_len = 0;
+		if (m_delete_flag) return;
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
 			if (OS::wouldBlock()) {
