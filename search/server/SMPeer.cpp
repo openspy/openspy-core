@@ -212,13 +212,15 @@ namespace SM {
 		if(find_param("firstname", (char*)buf, (char*)&temp, GP_FIRSTNAME_LEN)) {
 			request.profile_search_details.firstname = temp;
 		}
-		if(find_param("lastname", (char*)buf, (char*)&temp, GP_LASTNAME_LEN)) {
+		if (find_param("lastname", (char*)buf, (char*)&temp, GP_LASTNAME_LEN)) {
 			request.profile_search_details.lastname = temp;
 		}
 		temp_int = find_paramint("namespaceid", (char*)buf);
-		if(temp_int != 0) {
+		if (temp_int != 0) {
 			request.namespaceids.push_back(temp_int);
 		}
+
+		request.user_search_details.partnercode = find_paramint("partnerid", (char*)buf);
 		/*
 		if(find_param("namespaceids", (char*)buf, (char*)&temp, GP_REASON_LEN)) {
 			//TODO: namesiaceids\1,2,3,4,5
@@ -251,7 +253,6 @@ namespace SM {
 			it++;
 		}
 		s << "\\bsrdone\\";
-
 		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
 		((Peer *)peer)->m_delete_flag = true;

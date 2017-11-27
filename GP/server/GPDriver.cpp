@@ -84,6 +84,7 @@ namespace GP {
 		}
 	}
 	void Driver::think(bool listen_waiting) {
+		mp_mutex->lock();
 		if (listen_waiting) {
 			socklen_t psz = sizeof(struct sockaddr_in);
 			struct sockaddr_in address;
@@ -95,34 +96,8 @@ namespace GP {
 			m_connections.push_back(peer);
 			m_server->RegisterSocket(peer);
 		}
-		else {
-			std::vector<Peer *>::iterator it = m_connections.begin();
-			while (it != m_connections.end()) {
-				Peer *peer = *it;
-				if (peer->ShouldDelete() && std::find(m_peers_to_delete.begin(), m_peers_to_delete.end(), peer) == m_peers_to_delete.end()) {
-					//marked for delection, dec reference and delete when zero
-					it = m_connections.erase(it);
-					peer->DecRef();
-					m_server->UnregisterSocket(peer);
-					m_peers_to_delete.push_back(peer);
-					continue;
-				}
-				it++;
-			}
-
-			it = m_peers_to_delete.begin();
-			while (it != m_peers_to_delete.end()) {
-				GP::Peer *p = *it;
-				if (p->GetRefCount() == 0) {
-					delete p;
-					it = m_peers_to_delete.erase(it);
-					continue;
-				}
-				it++;
-			}
-		}
-
 		TickConnections();
+		mp_mutex->unlock();
 	}
 	Peer *Driver::find_client(struct sockaddr_in *address) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
