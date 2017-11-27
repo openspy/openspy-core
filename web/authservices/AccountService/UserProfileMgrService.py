@@ -300,7 +300,7 @@ class UserProfileMgrService(BaseService):
     #Get the buddies for a profile.
     def handle_buddies_search(self, request_data):
         profile_data = request_data["profile"]
-        if "profileid" not in request_data:
+        if "id" not in profile_data:
             return False
 
         profile = Profile.get(Profile.id == profile_data["id"])
@@ -344,10 +344,8 @@ class UserProfileMgrService(BaseService):
     #Get a list of profiles that have the specified profiles as buddies.
     def handle_reverse_buddies_search(self, request_data):
         ret = []
-        profile_data = request_data["profile"]
         try:
-            profile = Profile.get((Profile.id == profile_data["profileid"]) & (Profile.deleted == False))
-            buddies = Buddy.select().where((Buddy.to_profile << profile_data["target_profileids"])).execute()
+            buddies = Buddy.select().where((Buddy.from_profile << request_data["target_profileids"])).execute()
             for buddy in buddies:
                 model = model_to_dict(buddy)
                 to_profile = model['to_profile']
