@@ -84,6 +84,7 @@ namespace GP {
 		}
 	}
 	void Driver::think(bool listen_waiting) {
+		mp_mutex->lock();
 		if (listen_waiting) {
 			socklen_t psz = sizeof(struct sockaddr_in);
 			struct sockaddr_in address;
@@ -96,6 +97,7 @@ namespace GP {
 			m_server->RegisterSocket(peer);
 		}
 		TickConnections();
+		mp_mutex->unlock();
 	}
 	Peer *Driver::find_client(struct sockaddr_in *address) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
