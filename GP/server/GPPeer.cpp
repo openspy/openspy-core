@@ -114,6 +114,7 @@ namespace GP {
 			return;
 		} else if(!command.compare("ka")) {
 			handle_keepalive(data, len);
+			return;
 		}
 		if(m_backend_session_key.length() > 0) {
 			if(command.compare("status") == 0) {
@@ -441,6 +442,13 @@ namespace GP {
 			str = str.substr(0, str.size()-1);
 			((GP::Peer *)peer)->SendPacket((const uint8_t *)str.c_str(),str.length());
 		}
+
+		GPBackend::GPBackendRedisRequest req;
+		req.extra = (void *)peer;
+		req.peer = (GP::Peer *)peer;
+		peer->IncRef();
+		req.type = GPBackend::EGPRedisRequestType_SendGPBuddyStatus;
+		GPBackend::m_task_pool->AddRequest(req);
 		((GP::Peer *)peer)->mp_mutex->unlock();
 	}
 	void Peer::m_block_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
@@ -827,14 +835,13 @@ namespace GP {
 	}
 	void Peer::inform_status_update(int profileid, GPStatus status, bool no_update) {
 		std::ostringstream ss;
-		if(!no_update)
-			mp_mutex->lock();
+		mp_mutex->lock();
 		if(m_buddies.find(profileid) != m_buddies.end()) {
 
 			if(!no_update)
 				m_buddies[profileid] = status;
 
-			if(std::find(m_blocked_by.begin(), m_blocked_by.end(), profileid) != m_blocked_by.end()) {
+			if(status.status == GPShared::GP_OFFLINE || std::find(m_blocked_by.begin(), m_blocked_by.end(), profileid) != m_blocked_by.end()) {
 				status = GPShared::gp_default_status;
 			}
 
@@ -861,10 +868,10 @@ namespace GP {
 			}
 			SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 		}
-		if(!no_update)
-			mp_mutex->unlock();
+		mp_mutex->unlock();
 	}
 	void Peer::send_backend_auth_event() {
+
 		GPBackend::GPBackendRedisTask::SendLoginEvent(this);
 	}
 	void Peer::send_error(GPErrorCode code) {

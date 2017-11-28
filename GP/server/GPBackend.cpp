@@ -40,7 +40,7 @@ namespace GPBackend {
 		size_t realsize = size * nmemb;                             /* calculate buffer size */
 		curl_data *data = (curl_data *)userp;
 		const char *p = (const char *)contents;
-		data->buffer += *p;
+		data->buffer += p;
 		return realsize;
 	}
 
@@ -374,10 +374,6 @@ namespace GPBackend {
 		req.peer = peer;
 		peer->IncRef();
 		m_task_pool->AddRequest(req);
-		peer->IncRef();
-
-		req.type = EGPRedisRequestType_SendGPBuddyStatus;
-		m_task_pool->AddRequest(req);
 
 	}
 	void GPBackendRedisTask::Perform_SendLoginEvent(GPBackendRedisRequest request) {
@@ -603,7 +599,12 @@ namespace GPBackend {
 		if(!json_obj)
 			return;
 
-		status.status = (GPShared::GPEnum)json_integer_value(json_obj);
+		if (json_is_null(json_obj)) {
+			status.status = (GPShared::GPEnum)GPShared::GP_OFFLINE;
+		}
+		else {
+			status.status = (GPShared::GPEnum)json_integer_value(json_obj);
+		}
 
 		json_obj = json_object_get(json, "status_string");
 		if(!json_obj)
