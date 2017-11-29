@@ -102,13 +102,13 @@ namespace GP {
 	void Peer::handle_packet(char *data, int len) {
 		printf("GP Handle(%d): %s\n", len,data);
 		OS::KVReader data_parser = OS::KVReader(std::string(data));
+		gettimeofday(&m_last_recv, NULL);
 		if (data_parser.Size() < 1) {
-			send_error(GPShared::GP_PARSE);
+			//send_error(GPShared::GP_PARSE);
 			return;
 		}
 		std::string command = data_parser.GetKeyByIdx(0);
 
-		gettimeofday(&m_last_recv, NULL);
 		if(!command.compare("login")) {
 			handle_login(data, len);
 			return;
