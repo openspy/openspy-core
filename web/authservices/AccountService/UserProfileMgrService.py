@@ -199,16 +199,16 @@ class UserProfileMgrService(BaseService):
 
     def handle_authorize_buddy_add(self, request_data):
         success = False
-        redis_key = "add_req_{}".format(request_data["to_profileid"])
+        redis_key = "add_req_{}".format(request_data["from_profileid"])
         if self.redis_presence_ctx.exists(redis_key):
-            if self.redis_presence_ctx.hexists(redis_key, request_data["from_profileid"]):
-                if self.redis_presence_ctx.hdel(redis_key, request_data["from_profileid"]):
+            if self.redis_presence_ctx.hexists(redis_key, request_data["to_profileid"]):
+                if self.redis_presence_ctx.hdel(redis_key, request_data["to_profileid"]):
                     success = True
                     publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["from_profileid"], request_data["to_profileid"])
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
                     to_profile_model = Profile.get((Profile.id == request_data["to_profileid"]))
                     from_profile_model = Profile.get((Profile.id == request_data["from_profileid"]))
-                    Buddy.insert(to_profile=to_profile_model,from_profile=from_profile_model).execute()
+                    Buddy.insert(from_profile=to_profile_model,to_profile=from_profile_model).execute()
         return success
 
     def handle_del_buddy(self, request_data):
@@ -238,7 +238,7 @@ class UserProfileMgrService(BaseService):
         resp = self.redis_presence_ctx.hscan(revoke_list_key)
         for item in resp:
             if isinstance(item, dict):
-                for pid, time in item.iter():
+                for pid, time in item.items():
                     publish_data = "\\type\\del_buddy\\from_profileid\\{}\\to_profileid\\{}".format(pid, profile.id)
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
         self.redis_presence_ctx.delete(revoke_list_key)
@@ -249,8 +249,8 @@ class UserProfileMgrService(BaseService):
         resp = self.redis_presence_ctx.hscan(add_req_key)
         for item in resp:
             if isinstance(item, dict):
-                for pid, reason in item.iter():
-                    publish_data = "\\type\\add_request\\from_profileid\\{}\\to_profileid\\{}\\reason\\{}".format(pid, profile.id, reason)
+                for pid, reason in item.items():
+                    publish_data = "\\type\\add_request\\from_profileid\\{}\\to_profileid\\{}\\reason\\{}".format(int(pid.decode("utf-8")), profile.id, reason.decode("utf-8"))
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
 
         #send pending msgs
@@ -260,10 +260,10 @@ class UserProfileMgrService(BaseService):
             if isinstance(item, list):
                 for key in item:
                     msg_key = key
-                    message = self.redis_presence_ctx.hget(msg_key, "message")
-                    timestamp = self.redis_presence_ctx.hget(msg_key, "timestamp")
-                    msg_type = self.redis_presence_ctx.hget(msg_key, "type")
-                    msg_from = self.redis_presence_ctx.hget(msg_key, "from")
+                    message = self.redis_presence_ctx.hget(msg_key, "message").decode("utf-8")
+                    timestamp = int(self.redis_presence_ctx.hget(msg_key, "timestamp").decode("utf-8"))
+                    msg_type = int(self.redis_presence_ctx.hget(msg_key, "type").decode("utf-8"))
+                    msg_from = int(self.redis_presence_ctx.hget(msg_key, "from").decode("utf-8"))
                     self.redis_presence_ctx.delete(msg_key)
                     publish_data = "\\type\\buddy_message\\from_profileid\\{}\\to_profileid\\{}\\msg_type\\{}\\message\\{}".format(msg_from, profile.id, msg_type, message)
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
@@ -274,12 +274,15 @@ class UserProfileMgrService(BaseService):
         status_keys = ["status", "status_string", "location_string", "quiet_flags", "ip", "port"]
         int_fields = ["status", "quiet_flags", "port"]
         ret = {}
-        for key in status_keys:
-            ret[key] = self.redis_presence_ctx.hget(redis_key, key)
-            if key in int_fields and key != None:
-                if key in ret and ret[key] != None:
-                    ret[key] = int(ret[key])
-
+        if self.redis_presence_ctx.exists(redis_key):
+            for key in status_keys:
+                ret[key] = self.redis_presence_ctx.hget(redis_key, key)
+                if key in int_fields and key != None:
+                    if key in ret and ret[key] != None:
+                        ret[key] = int(ret[key])
+        else:
+            for key in status_keys:
+                ret[key] = None
 
         return ret
     def handle_get_buddies_status(self, request_data):
@@ -373,7 +376,7 @@ class UserProfileMgrService(BaseService):
                 self.redis_presence_ctx.hset(redis_key, "message", request_data["message"])
                 self.redis_presence_ctx.hset(redis_key, "timestamp", int(time.time()))
                 self.redis_presence_ctx.hset(redis_key, "type", request_data["type"])
-                self.redis_presence_ctx.hset(redis_key, "from", request_data["type"])
+                self.redis_presence_ctx.hset(redis_key, "from", from_profile.id)
         except Profile.DoesNotExist:
             return False
         return True
