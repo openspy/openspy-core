@@ -41,28 +41,28 @@ class AuthService(BaseService):
     def get_profile_by_uniquenick(self, uniquenick, namespaceid, partnercode):
         try:
             if namespaceid == 0:
-                the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (User.partnercode == partnercode) & (User.deleted == False) & (Profile.deleted == False)).get()
+                the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (User.partnercode == partnercode) & (User.deleted == 0) & (Profile.deleted == 0)).get()
             else:
-                the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (Profile.namespaceid == namespaceid) & (User.partnercode == partnercode) & (User.deleted == False) & (Profile.deleted == False)).get()
+                the_uniquenick = Profile.select().join(User).where((Profile.uniquenick == uniquenick) & (Profile.namespaceid == namespaceid) & (User.partnercode == partnercode) & (User.deleted == 0) & (Profile.deleted == 0)).get()
             return the_uniquenick
         except Profile.DoesNotExist:
             return None
 
     def get_profile_by_nick_email(self, nick, namespaceid, email, partnercode):
         try:
-            return Profile.select().join(User).where((Profile.nick == nick) & (Profile.namespaceid == namespaceid) & (User.email == email) & (User.deleted == False) & (Profile.deleted == False)).get()
+            return Profile.select().join(User).where((Profile.nick == nick) & (Profile.namespaceid == namespaceid) & (User.email == email) & (User.deleted == 0) & (Profile.deleted == 0)).get()
         except Profile.DoesNotExist:
             return None
 
     def get_profile_by_id(self, profileid):
         try:
-            return Profile.select().join(User).where((Profile.id == profileid) & (User.deleted == False) & (Profile.deleted == False)).get()
+            return Profile.select().join(User).where((Profile.id == profileid) & (User.deleted == 0) & (Profile.deleted == 0)).get()
         except Profile.DoesNotExist:
             return None
     def test_pass_plain_by_userid(self, userid, password):
         auth_success = False
         try:
-            matched_user = User.select().where((User.id == userid) & (User.password == password) & (User.deleted == False)).get()
+            matched_user = User.select().where((User.id == userid) & (User.password == password) & (User.deleted == 0)).get()
             if matched_user:
                 auth_success = True
         except User.DoesNotExist:
@@ -168,13 +168,13 @@ class AuthService(BaseService):
 
     def get_user_by_email(self, email, partnercode):
         try:
-            return User.select().where((User.email == email) & (User.partnercode == partnercode) & (User.deleted == False)).get()
+            return User.select().where((User.email == email) & (User.partnercode == partnercode) & (User.deleted == 0)).get()
         except User.DoesNotExist:
             return None
 
     def get_user_by_userid(self, userid):
         try:
-            return User.select().where((User.id == userid) & (User.deleted == False)).get()
+            return User.select().where((User.id == userid) & (User.deleted == 0)).get()
         except User.DoesNotExist:
             return None
 
@@ -425,6 +425,7 @@ class AuthService(BaseService):
         if hash_type == 'plain' and profile != None:
             auth_success = self.test_pass_plain_by_userid(profile.user.id, user_body['password'])
         elif hash_type == 'plain' and user != None:
+            
             auth_success = self.test_pass_plain_by_userid(user.id, user_body['password'])
         elif hash_type == 'gp_nick_email' and profile != None:
             proof = self.test_gp_nick_email_by_profile(profile, request_body['client_challenge'], request_body['server_challenge'], request_body['client_response'])
