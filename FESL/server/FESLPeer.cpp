@@ -19,6 +19,7 @@ namespace FESL {
 		{ FESL_TYPE_SUBS, "GetEntitlementByBundle", &Peer::m_subs_get_entitlement_by_bundle },
 		{ FESL_TYPE_DOBJ, "GetObjectInventory", &Peer::m_dobj_get_object_inventory },
 		{ FESL_TYPE_ACCOUNT, "Login", &Peer::m_acct_login_handler },
+		{ FESL_TYPE_ACCOUNT, "NuLogin", &Peer::m_acct_nulogin_handler },
 		{ FESL_TYPE_ACCOUNT, "RegisterGame", &Peer::m_acct_register_game_handler },
 		{ FESL_TYPE_ACCOUNT, "GetCountryList", &Peer::m_acct_get_country_list },
 		{ FESL_TYPE_ACCOUNT, "GetTos", &Peer::m_acct_gettos_handler },
@@ -186,11 +187,41 @@ namespace FESL {
 		SendPacket(FESL_TYPE_ACCOUNT, kv_str);
 		return true;
 	}
-	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
-		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), OS_EA_PARTNER_CODE, 0, kv_list.GetValue("password"), m_email_pass_auth_cb, NULL, 0, this);
+	bool Peer::m_acct_nulogin_handler(OS::KVReader kv_list) {
+		OS::AuthTask::TryAuthEmailPassword(kv_list.GetValue("nuid"), OS_EA_PARTNER_CODE, kv_list.GetValue("password"), m_nulogin_auth_cb, NULL, 0, this);
 		return true;
 	}
-	void Peer::m_email_pass_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
+		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), OS_EA_PARTNER_CODE, 0, kv_list.GetValue("password"), m_login_auth_cb, NULL, 0, this);
+		return true;
+	}
+	void Peer::m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+		std::ostringstream s;
+		if (success) {
+			s << "TXN=NuLogin\n";
+			s << "lkey=" << auth_data.session_key << "\n";
+			((Peer *)peer)->m_session_key = auth_data.session_key;
+			s << "displayName=" << profile.uniquenick << "\n";
+			s << "userId=" << user.id << "\n";
+			s << "profileId=" << profile.id << "\n";
+			((Peer *)peer)->m_logged_in = true;
+			((Peer *)peer)->m_user = user;
+			((Peer *)peer)->m_profile = profile;
+			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
+
+			OS::ProfileSearchRequest request;
+			request.type = OS::EProfileSearch_Profiles;
+			request.user_search_details.id = user.id;
+			request.peer = peer;
+			peer->IncRef();
+			request.callback = Peer::m_search_callback;
+			OS::m_profile_search_task_pool->AddRequest(request);
+		}
+		else {
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "NuLogin");
+		}
+	}
+	void Peer::m_login_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
 		std::ostringstream s;
 		if (success) {
 			s << "TXN=Login\n";
