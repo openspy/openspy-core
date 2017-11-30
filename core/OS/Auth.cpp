@@ -726,6 +726,7 @@ namespace OS {
 		json_t *send_obj = json_object(), *user_obj = json_object();
 
 		json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
+		json_object_set_new(user_obj, "partnercode", json_integer(request.user.partnercode));
 
 		if (request.user.password.length())
 			json_object_set_new(user_obj, "password", json_string(request.user.password.c_str()));
