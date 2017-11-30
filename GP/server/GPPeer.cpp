@@ -51,7 +51,7 @@ namespace GP {
 		send_login_challenge(1);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d",OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
 	}
 	void Peer::Delete() {
