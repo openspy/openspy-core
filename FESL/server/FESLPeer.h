@@ -139,10 +139,12 @@ namespace FESL {
 		bool m_acct_gettos_handler(OS::KVReader kv_list);
 		bool m_fsys_goodbye_handler(OS::KVReader kv_list);
 		bool m_acct_nulogin_handler(OS::KVReader kv_list);
+		bool m_acct_login_persona(OS::KVReader kv_list);
 		bool m_acct_login_handler(OS::KVReader kv_list);
 		bool m_acct_get_account(OS::KVReader kv_list);
 		bool m_acct_gamespy_preauth(OS::KVReader kv_list);
 		bool m_subs_get_entitlement_by_bundle(OS::KVReader kv_list);
+		bool m_acct_get_personas(OS::KVReader kv_list);
 		bool m_acct_get_sub_accounts(OS::KVReader kv_list);
 		bool m_acct_login_sub_account(OS::KVReader kv_list);
 		bool m_dobj_get_object_inventory(OS::KVReader kv_list);

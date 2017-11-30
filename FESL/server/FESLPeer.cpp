@@ -20,6 +20,8 @@ namespace FESL {
 		{ FESL_TYPE_DOBJ, "GetObjectInventory", &Peer::m_dobj_get_object_inventory },
 		{ FESL_TYPE_ACCOUNT, "Login", &Peer::m_acct_login_handler },
 		{ FESL_TYPE_ACCOUNT, "NuLogin", &Peer::m_acct_nulogin_handler },
+		{ FESL_TYPE_ACCOUNT, "NuGetPersonas", &Peer::m_acct_get_personas},
+		{ FESL_TYPE_ACCOUNT, "NuLoginPersona",  &Peer::m_acct_login_persona },
 		{ FESL_TYPE_ACCOUNT, "RegisterGame", &Peer::m_acct_register_game_handler },
 		{ FESL_TYPE_ACCOUNT, "GetCountryList", &Peer::m_acct_get_country_list },
 		{ FESL_TYPE_ACCOUNT, "GetTos", &Peer::m_acct_gettos_handler },
@@ -330,6 +332,17 @@ namespace FESL {
 		}
 		mp_mutex->unlock();
 	}
+	
+	bool Peer::m_acct_get_personas(OS::KVReader kv_list) {
+		std::ostringstream s;
+		mp_mutex->lock();
+		s << "TXN=NuGetPersonas\n";
+		s << "personas.[]=" << 1 << "\n";
+		s << "personas.0=\"CHC\"\n";
+		mp_mutex->unlock();
+		SendPacket(FESL_TYPE_ACCOUNT, s.str());
+		return true;
+	}
 	bool Peer::m_acct_get_sub_accounts(OS::KVReader kv_list) {
 		if (!m_got_profiles) {
 			m_pending_subaccounts = true;
@@ -426,7 +439,18 @@ namespace FESL {
 		else {
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)FESL_ERROR_SYSTEM_ERROR, "DisableSubAccount");
 		}
-	}	
+	}
+	bool Peer::m_acct_login_persona(OS::KVReader kv_list) {
+		std::ostringstream s;
+		s << "TXN=NuLoginPersona\n";
+		s << "lkey=" << 555<< "\n";
+		s << "profileId=" << 10083 << "\n";
+		s << "userId=" << 10029 << "\n";
+		m_profile.id = 10083;
+		m_user.id = 10029;
+		SendPacket(FESL_TYPE_ACCOUNT, s.str());
+		return true;
+	}
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {
 		loginToSubAccount(kv_list.GetValue("name"));
 		return true;
