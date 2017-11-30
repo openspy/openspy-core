@@ -248,8 +248,8 @@ namespace GPBackend {
 		int profileid = request.peer->GetProfileID();
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", GP_BACKEND_REDIS_DB);
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d status %d", profileid, request.StatusInfo.status);
-		Redis::Command(mp_redis_connection, 0, "HSET status_%d status_string %s", profileid, request.StatusInfo.status_str.c_str());
-		Redis::Command(mp_redis_connection, 0, "HSET status_%d location_string %s", profileid, request.StatusInfo.location_str.c_str());
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d status_string \"%s\"", profileid, request.StatusInfo.status_str.c_str());
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d location_string \"%s\"", profileid, request.StatusInfo.location_str.c_str());
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d quiet_flags %d", profileid, request.StatusInfo.quiet_flags);
 
 		std::string ipinput = request.StatusInfo.address.ToString(true).c_str();
@@ -257,7 +257,7 @@ namespace GPBackend {
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d port %d", profileid, request.StatusInfo.address.GetPort());
 		Redis::Command(mp_redis_connection, 0, "EXPIRE status_%d %d", profileid, GP_STATUS_EXPIRE_TIME);
 
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\type\\status_update\\profileid\\%d\\status_string\\%s\\status\\%d\\location_string\\%s\\quiet_flags\\%d\\ip\\%s\\port\\%d",
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\type\\status_update\\profileid\\%d\\status_string\\%s\\status\\%d\\location_string\\%s\\quiet_flags\\%d\\ip\\%s\\port\\%d'",
 		 gp_buddies_channel, profileid, request.StatusInfo.status_str.c_str(), request.StatusInfo.status, request.StatusInfo.location_str.c_str(),
 			request.StatusInfo.quiet_flags,ipinput.c_str(),request.StatusInfo.address.GetPort()); //TODO: escape this
 	}
@@ -266,7 +266,7 @@ namespace GPBackend {
 		Redis::Command(mp_redis_connection, 0, "HSET add_req_%d %d %s", request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.reason);
 		Redis::Command(mp_redis_connection, 0, "EXPIRE add_req_%d %d", request.uReqData.BuddyRequest.to_profileid, BUDDY_ADDREQ_EXPIRETIME);
 
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\type\\add_request\\from_profileid\\%d\\to_profileid\\%d\\reason\\%s", gp_buddies_channel, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.reason); //TODO: escape this
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\type\\add_request\\from_profileid\\%d\\to_profileid\\%d\\reason\\%s'", gp_buddies_channel, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.reason); //TODO: escape this
 	}
 	void GPBackendRedisTask::Perform_AuthorizeAdd(GPBackendRedisRequest request) {
 		curl_data recv_data;

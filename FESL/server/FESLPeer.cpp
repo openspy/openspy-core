@@ -97,6 +97,7 @@ namespace FESL {
 			if (subtype & 0x80000000 > m_sequence_id) {
 				m_sequence_id = subtype & 0x0FFFFFFF;
 			}*/
+			printf("got %s\n",buf);
 			OS::KVReader kv_data(buf, '=', '\n');
 			char *type;
 			for (int i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {

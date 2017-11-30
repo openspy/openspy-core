@@ -453,7 +453,7 @@ namespace MM {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		if (publish) {
 			Redis::Command(mp_redis_connection, 0, "ZADD %s %d \"%s\"", server.m_game.gamename, pk_id, server_key.c_str());
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\new\\%s", sb_mm_channel, server_key.c_str());
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\new\\%s'", sb_mm_channel, server_key.c_str());
 		}
 
 		return id;
@@ -464,7 +464,7 @@ namespace MM {
 		DeleteServer(server, false);
 		PushServer(server, false, server.id);
 
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\update\\%s:%d:%d:", sb_mm_channel, server.m_game.gamename, server.groupid, server.id);
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, server.m_game.gamename, server.groupid, server.id);
 	}
 	void MMPushTask::DeleteServer(ServerInfo server, bool publish) {
 		int groupid = server.groupid;
@@ -474,7 +474,7 @@ namespace MM {
 		if (publish) {
 			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server.m_game.gamename, server.groupid, server.id);
 			Redis::Command(mp_redis_connection, 0, "EXPIRE %s:%d:%d: %d", server.m_game.gamename, server.groupid, server.id, MM_PUSH_EXPIRE_TIME);
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\del\\%s:%d:%d:", sb_mm_channel, server.m_game.gamename, groupid, id);
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\del\\%s:%d:%d:'", sb_mm_channel, server.m_game.gamename, groupid, id);
 		}
 		else {
 			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:", server.m_game.gamename, server.groupid, server.id);
