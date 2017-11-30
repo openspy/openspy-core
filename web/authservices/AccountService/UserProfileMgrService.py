@@ -300,6 +300,22 @@ class UserProfileMgrService(BaseService):
             return []
 
         return ret
+
+    def handle_get_blocks_status(self, request_data):
+        ret = []
+        try:
+            profile = Profile.get(Profile.id == request_data["profileid"])
+            blocks = Block.select().where((Block.from_profile == profile))
+            for block in blocks:
+                status_data = self.get_gp_status(block.to_profile.id)
+                status_data['profileid'] = block.to_profile.id
+                ret.append(status_data)
+        except Block.DoesNotExist:
+            return []
+        except Profile.DoesNotExist:
+            return []
+
+        return ret
     #Get the buddies for a profile.
     def handle_buddies_search(self, request_data):
         profile_data = request_data["profile"]
@@ -488,6 +504,10 @@ class UserProfileMgrService(BaseService):
             success = self.handle_del_block_buddy(request_body)
         elif request_body["mode"] == "get_buddies_status":
             statuses = self.handle_get_buddies_status(request_body)
+            response['statuses'] = statuses
+            success = True
+        elif request_body["mode"] == "get_blocks_status":
+            statuses = self.handle_get_blocks_status(request_body)
             response['statuses'] = statuses
             success = True
 
