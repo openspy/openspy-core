@@ -53,6 +53,17 @@ namespace GP {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed",OS::Address(m_address_info).ToString().c_str());
 		delete mp_mutex;
 	}
+	void Peer::Delete() {
+		GPBackend::GPBackendRedisRequest req;
+		req.type = GPBackend::EGPRedisRequestType_UpdateStatus;
+		req.peer = this;
+		req.peer->IncRef();
+		req.StatusInfo = GPShared::gp_default_status;
+		req.extra = (void *)req.peer;
+		GPBackend::m_task_pool->AddRequest(req);
+
+		m_delete_flag = true;
+	}
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];
 		int len = 0, piece_len = 0;
@@ -93,10 +104,10 @@ namespace GP {
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
-			m_delete_flag = true;
 			m_timeout_flag = true;
+			Delete();
 		} else if(len == 0 && packet_waiting) {
-			m_delete_flag = true;
+			Delete();
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
@@ -104,6 +115,9 @@ namespace GP {
 		OS::KVReader data_parser = OS::KVReader(std::string(data));
 		gettimeofday(&m_last_recv, NULL);
 		if (data_parser.Size() < 1) {
+			//often called with keep alives
+			if(m_profile.id)
+				GPBackend::GPBackendRedisTask::SetPresenceStatus(m_profile.id, m_status, this);
 			//send_error(GPShared::GP_PARSE);
 			return;
 		}
@@ -149,7 +163,7 @@ namespace GP {
 				handle_updatepro(data, len);
 			}
 			else if (command.compare("logout") == 0) {
-				m_delete_flag = true;
+				Delete();
 			}
 		}
 	}
@@ -441,14 +455,9 @@ namespace GP {
 			str = s.str();
 			str = str.substr(0, str.size()-1);
 			((GP::Peer *)peer)->SendPacket((const uint8_t *)str.c_str(),str.length());
-		}
 
-		GPBackend::GPBackendRedisRequest req;
-		req.extra = (void *)peer;
-		req.peer = (GP::Peer *)peer;
-		peer->IncRef();
-		req.type = GPBackend::EGPRedisRequestType_SendGPBuddyStatus;
-		GPBackend::m_task_pool->AddRequest(req);
+			((GP::Peer *)peer)->refresh_buddy_list();
+		}
 		((GP::Peer *)peer)->mp_mutex->unlock();
 	}
 	void Peer::m_block_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
@@ -468,6 +477,14 @@ namespace GP {
 			str = s.str();
 			str = str.substr(0, str.size()-1);
 			((GP::Peer *)peer)->SendPacket((const uint8_t *)str.c_str(),str.length());
+
+			GPBackend::GPBackendRedisRequest req;
+			req.extra = (void *)peer;
+			req.peer = (GP::Peer *)peer;
+			peer->IncRef();
+			req.type = GPBackend::EGPRedisRequestType_SendGPBlockStatus;
+			GPBackend::m_task_pool->AddRequest(req);
+
 		}
 		((GP::Peer *)peer)->mp_mutex->unlock();
 	}
@@ -525,6 +542,14 @@ namespace GP {
 		
 		
 	}
+	void Peer::refresh_buddy_list() {
+		GPBackend::GPBackendRedisRequest req;
+		req.extra = (void *)this;
+		req.peer = (GP::Peer *)this;
+		IncRef();
+		req.type = GPBackend::EGPRedisRequestType_SendGPBuddyStatus;
+		GPBackend::m_task_pool->AddRequest(req);
+	}
 	void Peer::send_authorize_add(int profileid) {
 		std::ostringstream s;
 		s << "\\addbuddyresponse\\" << GPI_BM_REQUEST; //the addbuddy response might be implemented wrong
@@ -538,6 +563,10 @@ namespace GP {
 		s << "\\msg\\" << "I have authorized your request to add me to your list";
 		s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+
+		refresh_buddy_list();
+
+
 	}
 	void Peer::send_revoke_message(int from_profileid, int date_unix_timestamp) {
 		std::ostringstream s;
@@ -548,6 +577,8 @@ namespace GP {
 		if(date_unix_timestamp != 0)
 			s << "\\date\\" << date_unix_timestamp;
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+
+		refresh_buddy_list();
 	}
 	void Peer::send_buddy_message(char type, int from_profileid, int timestamp, const char *msg) {
 		std::ostringstream s;
@@ -741,7 +772,7 @@ namespace GP {
 		OS::LogText(OS::ELogLevel_Info, "Sending: %s", out_buff);
 		int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
 		if(c < 0) {
-			m_delete_flag = true;
+			Delete();
 		}
 	}
 	void Peer::send_ping() {
@@ -836,10 +867,15 @@ namespace GP {
 	void Peer::inform_status_update(int profileid, GPStatus status, bool no_update) {
 		std::ostringstream ss;
 		mp_mutex->lock();
-		if(m_buddies.find(profileid) != m_buddies.end()) {
+		bool is_blocked = std::find(m_blocks.begin() ,m_blocks.end(), profileid) != m_blocks.end();
+		if(m_buddies.find(profileid) != m_buddies.end() || is_blocked) {
 
 			if(!no_update)
 				m_buddies[profileid] = status;
+
+			if (is_blocked) {
+				m_blocks.push_back(profileid);
+			}
 
 			if(status.status == GPShared::GP_OFFLINE || std::find(m_blocked_by.begin(), m_blocked_by.end(), profileid) != m_blocked_by.end()) {
 				status = GPShared::gp_default_status;
@@ -860,7 +896,7 @@ namespace GP {
 
 			if(status.address.ip != 0) {
 				ss << "|ip|" << status.address.ip;
-				ss << "|p|" << status.address.port;
+				ss << "|p|" << status.address.GetPort();
 			}
 
 			if(status.quiet_flags != GP_SILENCE_NONE) {
@@ -877,7 +913,7 @@ namespace GP {
 	void Peer::send_error(GPErrorCode code) {
 		GPShared::GPErrorData error_data = GPShared::getErrorDataByCode(code);
 		if(error_data.msg == NULL) {
-			m_delete_flag = true;
+			Delete();
 			return;
 		}
 		std::ostringstream ss;
@@ -886,7 +922,7 @@ namespace GP {
 		ss << "\\errmsg\\" << error_data.msg;
 		if(error_data.die) {
 			ss << "\\fatal\\" << error_data.die;
-			m_delete_flag = true;
+			Delete();
 		}
 		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 	}

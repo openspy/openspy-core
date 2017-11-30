@@ -76,7 +76,7 @@ namespace GPBackend {
 						}
 					} else if (msg_type.compare("status_update") == 0) {
 						GPShared::GPStatus status;
-						from_profileid = reader.GetValueInt("from_profileid");
+						from_profileid = reader.GetValueInt("profileid");
 						status.status = (GPShared::GPEnum)reader.GetValueInt("status");
 
 						status.status_str = reader.GetValue("status_string");
@@ -232,6 +232,7 @@ namespace GPBackend {
 					case EGPRedisRequestType_DelBlock:
 						task->Perform_DelBuddyBlock(task_params);
 						break;
+					case EGPRedisRequestType_SendGPBlockStatus:
 					case EGPRedisRequestType_SendGPBuddyStatus:
 						task->Perform_SendGPBuddyStatus(task_params);
 						break;
@@ -256,17 +257,14 @@ namespace GPBackend {
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d location_string %s", profileid, request.StatusInfo.location_str.c_str());
 		Redis::Command(mp_redis_connection, 0, "HSET status_%d quiet_flags %d", profileid, request.StatusInfo.quiet_flags);
 
-		struct sockaddr_in addr;
-		addr.sin_port = htons(request.StatusInfo.address.port);
-		addr.sin_addr.s_addr = (request.StatusInfo.address.ip);
-		const char *ipinput = request.StatusInfo.address.ToString(true).c_str();
-		Redis::Command(mp_redis_connection, 0, "HSET status_%d ip %s", profileid, ipinput);
-		Redis::Command(mp_redis_connection, 0, "HSET status_%d port %d", profileid, addr.sin_port);
+		std::string ipinput = request.StatusInfo.address.ToString(true).c_str();
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d ip %s", profileid, ipinput.c_str());
+		Redis::Command(mp_redis_connection, 0, "HSET status_%d port %d", profileid, request.StatusInfo.address.GetPort());
 		Redis::Command(mp_redis_connection, 0, "EXPIRE status_%d %d", profileid, GP_STATUS_EXPIRE_TIME);
 
 		Redis::Command(mp_redis_connection, 0, "PUBLISH %s \\type\\status_update\\profileid\\%d\\status_string\\%s\\status\\%d\\location_string\\%s\\quiet_flags\\%d\\ip\\%s\\port\\%d",
 		 gp_buddies_channel, profileid, request.StatusInfo.status_str.c_str(), request.StatusInfo.status, request.StatusInfo.location_str.c_str(),
-			request.StatusInfo.quiet_flags,ipinput,addr.sin_port); //TODO: escape this
+			request.StatusInfo.quiet_flags,ipinput.c_str(),request.StatusInfo.address.GetPort()); //TODO: escape this
 	}
 	void GPBackendRedisTask::Perform_BuddyRequest(GPBackendRedisRequest request) {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", GP_BACKEND_REDIS_DB);
@@ -659,7 +657,7 @@ namespace GPBackend {
 	void GPBackendRedisTask::Perform_SendGPBuddyStatus(GPBackendRedisRequest request) {
 		curl_data recv_data;
 		json_t *send_obj = json_object();
-		json_object_set_new(send_obj, "mode", json_string("get_buddies_status"));
+		json_object_set_new(send_obj, "mode", request.type == EGPRedisRequestType_SendGPBuddyStatus ? json_string("get_buddies_status") : json_string("get_blocks_status"));
 		json_object_set_new(send_obj, "profileid", json_integer(request.peer->GetProfileID()));
 
 

@@ -34,6 +34,7 @@ namespace GP {
 	public:
 		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
 		~Peer();
+		void Delete();
 		
 		void think(bool packet_waiting);
 		void handle_packet(char *data, int len);
@@ -68,6 +69,7 @@ namespace GP {
 		OS::MetricInstance GetMetrics();
 		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 	private:
+		void refresh_buddy_list();
 		//packet handlers
 		void handle_login(const char *data, int len);
 		void handle_auth(const char *data, int len); //possibly for unexpected loss of connection to retain existing session

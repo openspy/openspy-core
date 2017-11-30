@@ -22,6 +22,7 @@ namespace GPBackend {
 		EGPRedisRequestType_AddBlock,
 		EGPRedisRequestType_DelBlock,
 		EGPRedisRequestType_SendGPBuddyStatus,
+		EGPRedisRequestType_SendGPBlockStatus
 	};
 
 	
