@@ -251,39 +251,41 @@ namespace MM {
 			server->wan_address.ip = inet_addr((v.value._str).c_str());
 
 		if(all_keys) {
-			reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
-			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
-				goto error_cleanup;
+			do {
+				reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
+				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+					goto error_cleanup;
 
-			v = reply.values[0].arr_value.values[0].second;
-			arr = reply.values[0].arr_value.values[1].second;
+				v = reply.values[0].arr_value.values[0].second;
+				arr = reply.values[0].arr_value.values[1].second;
 
-			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-				if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					cursor = atoi(v.value._str.c_str());
-				} else if(v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.arr_value.values[0].second.value._int;
+				if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+					if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+						cursor = atoi(v.value._str.c_str());
+					} else if(v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+						cursor = v.arr_value.values[0].second.value._int;
+					}
+
+					for(int i=0;i<arr.arr_value.values.size();i+=2) {
+
+						if(arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
+							continue;
+
+						std::string key = arr.arr_value.values[i].second.value._str;
+						if (arr.arr_value.values[i+1].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
+							server->kvFields[key] = (arr.arr_value.values[i + 1].second.value._str);
+						}
+						else if(arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+							server->kvFields[key] = arr.arr_value.values[i + 1].second.value._int;
+						}
+
+						if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), arr.arr_value.values[i + 1].second.value._str) == ret->captured_basic_fields.end()) {
+							ret->captured_basic_fields.push_back(arr.arr_value.values[i].second.value._str);
+						}
+					}
 				}
-
-				for(int i=0;i<arr.arr_value.values.size();i+=2) {
-
-					if(arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
-						continue;
-
-					std::string key = arr.arr_value.values[i].second.value._str;
-					if (arr.arr_value.values[i+1].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-						server->kvFields[key] = (arr.arr_value.values[i + 1].second.value._str);
-					}
-					else if(arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-						server->kvFields[key] = arr.arr_value.values[i + 1].second.value._int;
-					}
-
-					if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), arr.arr_value.values[i + 1].second.value._str) == ret->captured_basic_fields.end()) {
-						ret->captured_basic_fields.push_back(arr.arr_value.values[i].second.value._str);
-					}
-				}
-			}
-
+			} while (cursor != 0);
+			cursor = 0;
 			do {
 				s << entry_name << "custkeys_player_" << idx;
 				key = s.str();
