@@ -57,6 +57,7 @@ namespace FESL {
 		m_logged_in = false;
 		m_pending_subaccounts = false;
 		m_got_profiles = false;
+		m_pending_nuget_personas = true;
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
@@ -125,6 +126,7 @@ namespace FESL {
 					}
 				}
 			}
+			header.type = htonl(header.type);
 			type = (char *)&header.type;
 			OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", OS::Address(m_address_info).ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
 		}
@@ -201,6 +203,15 @@ namespace FESL {
 		SendPacket(FESL_TYPE_ACCOUNT, kv_str);
 		return true;
 	}
+	bool Peer::m_acct_get_personas(OS::KVReader kv_list) {
+		if (!m_got_profiles) {
+			m_pending_nuget_personas= true;
+		}
+		else {
+			send_personas();
+		}
+		return true;
+	}
 	bool Peer::m_acct_nulogin_handler(OS::KVReader kv_list) {
 		OS::AuthTask::TryAuthEmailPassword(kv_list.GetValue("nuid"), OS_EA_PARTNER_CODE, kv_list.GetValue("password"), m_nulogin_auth_cb, NULL, 0, this);
 		return true;
@@ -269,7 +280,12 @@ namespace FESL {
 		if (((Peer *)peer)->m_pending_subaccounts) {
 			((Peer *)peer)->m_pending_subaccounts = false;
 			((Peer *)peer)->send_subaccounts();
-		}		
+		}
+
+		if (((Peer *)peer)->m_pending_nuget_personas) {
+			((Peer *)peer)->m_pending_nuget_personas = false;
+			((Peer *)peer)->send_subaccounts();
+		}
 	}
 	bool Peer::m_acct_get_account(OS::KVReader kv_list) {
 		std::ostringstream s;
@@ -297,6 +313,21 @@ namespace FESL {
 		SendPacket(FESL_TYPE_SUBS, kv_str);
 		return true;
 	}
+	void Peer::send_personas() {
+		std::ostringstream s;
+		mp_mutex->lock();
+		std::vector<OS::Profile>::iterator it = m_profiles.begin();
+		s << "TXN=NuGetPersonas\n";
+		s << "personas.[]=" << m_profiles.size() << "\n";
+		int i = 0;
+		while (it != m_profiles.end()) {
+			OS::Profile profile = *it;
+			s << "personas." << i++ << "=\"" << profile.uniquenick << "\"\n";
+			it++;
+		}
+		mp_mutex->unlock();
+		SendPacket(FESL_TYPE_ACCOUNT, s.str());
+	}
 	void Peer::send_subaccounts() {
 		std::ostringstream s;
 		mp_mutex->lock();
@@ -312,6 +343,25 @@ namespace FESL {
 		
 		mp_mutex->unlock();
 		SendPacket(FESL_TYPE_ACCOUNT, s.str());
+	}
+	void Peer::loginToPersona(std::string uniquenick) {
+		std::ostringstream s;
+		mp_mutex->lock();
+		std::vector<OS::Profile>::iterator it = m_profiles.begin();
+		while (it != m_profiles.end()) {
+			OS::Profile profile = *it;
+			if (profile.uniquenick.compare(uniquenick) == 0) {
+				m_profile = profile;
+				s << "TXN=LoginPersona\n";
+				s << "lkey=" << m_session_key << "\n";
+				s << "profileId=" << m_profile.id << "\n";
+				s << "userId=" << m_user.id << "\n";
+				SendPacket(FESL_TYPE_ACCOUNT, s.str());
+				break;
+			}
+			it++;
+		}
+		mp_mutex->unlock();
 	}
 	void Peer::loginToSubAccount(std::string uniquenick) {
 		std::ostringstream s;
@@ -331,17 +381,6 @@ namespace FESL {
 			it++;
 		}
 		mp_mutex->unlock();
-	}
-	
-	bool Peer::m_acct_get_personas(OS::KVReader kv_list) {
-		std::ostringstream s;
-		mp_mutex->lock();
-		s << "TXN=NuGetPersonas\n";
-		s << "personas.[]=" << 1 << "\n";
-		s << "personas.0=\"CHC\"\n";
-		mp_mutex->unlock();
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-		return true;
 	}
 	bool Peer::m_acct_get_sub_accounts(OS::KVReader kv_list) {
 		if (!m_got_profiles) {
@@ -449,6 +488,8 @@ namespace FESL {
 		m_profile.id = 10083;
 		m_user.id = 10029;
 		SendPacket(FESL_TYPE_ACCOUNT, s.str());
+
+		loginToPersona(kv_list.GetValue("name"));
 		return true;
 	}
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {

@@ -131,6 +131,7 @@ namespace FESL {
 		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 
 		void loginToSubAccount(std::string uniquenick);
+		void loginToPersona(std::string uniquenick);
 
 		void SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN);
 	private:
@@ -163,6 +164,7 @@ namespace FESL {
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 		void send_memcheck(int type, int salt = 0);
 		void send_subaccounts();
+		void send_personas();
 		bool m_openssl_accepted;
 		SSL *m_ssl_ctx;
 		int m_sequence_id;
@@ -171,6 +173,7 @@ namespace FESL {
 		OS::Profile m_profile;
 		bool m_logged_in;
 		bool m_pending_subaccounts;
+		bool m_pending_nuget_personas;
 		bool m_got_profiles;
 		std::vector<OS::Profile> m_profiles;
 		std::string m_session_key;
