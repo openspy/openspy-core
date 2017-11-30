@@ -69,7 +69,6 @@ namespace OS {
 
 			//user parameters
 			if (request.user_search_details.email.length()) {
-				json_object_set_new(profile_obj, "email", json_string(request.user_search_details.email.c_str()));
 				json_object_set_new(user_obj, "email", json_string(request.user_search_details.email.c_str()));
 			}			
 

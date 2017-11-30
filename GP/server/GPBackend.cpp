@@ -70,9 +70,9 @@ namespace GPBackend {
 					} else if (msg_type.compare("authorize_add") == 0) {
 						to_profileid = reader.GetValueInt("to_profileid");
 						from_profileid = reader.GetValueInt("from_profileid");
-						peer = (GP::Peer *)server->findPeerByProfile(from_profileid);
+						peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 						if (peer) {
-							peer->send_authorize_add(to_profileid);
+							peer->send_authorize_add(from_profileid);
 						}
 					} else if (msg_type.compare("status_update") == 0) {
 						GPShared::GPStatus status;
