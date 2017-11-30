@@ -1122,6 +1122,8 @@ namespace OS {
 				case EAuthType_Uniquenick_Password:
 					task->PerformAuth_Uniquenick_Password(task_params);
 					break;
+				case EAuthType_User_EmailPassword:
+					task->PerformAuth_EmailPass(task_params);
 				case EAuthType_NickEmail:
 					task->PerformAuth_NickEMail(task_params);
 					break;
