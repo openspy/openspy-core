@@ -954,6 +954,7 @@ namespace OS {
 		AuthRequest request;
 		request.type = EAuthType_User_EmailPassword;
 		request.user.email = email;
+		request.user.password = password;
 		request.user.partnercode = partnercode;
 		request.extra = extra;
 		request.callback = cb;
