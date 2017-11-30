@@ -39,10 +39,17 @@ namespace FESL {
 		mp_mutex = OS::CreateMutex();
 		ResetMetrics();
 		gettimeofday(&m_last_ping, NULL);
-		m_ssl_ctx = SSL_new(driver->getSSLCtx());
-		SSL_set_fd(m_ssl_ctx, sd);
+		if (driver->getSSLCtx() != NULL) {
+			m_ssl_ctx = SSL_new(driver->getSSLCtx());
+			SSL_set_fd(m_ssl_ctx, sd);
+		}
+		else {
+			m_ssl_ctx = NULL;
+		}
+
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", OS::Address(m_address_info).ToString().c_str());
 		m_sequence_id = 1;
+		m_ssl_num_fails = 0;
 		m_openssl_accepted = false;
 		m_logged_in = false;
 		m_pending_subaccounts = false;
@@ -59,9 +66,14 @@ namespace FESL {
 		int len = 0, piece_len = 0;
 		if (m_delete_flag) return;
 		if (packet_waiting) {
-			if (!m_openssl_accepted) {
+			if (!m_openssl_accepted && m_ssl_ctx) {
 				if (SSL_accept(m_ssl_ctx) < 0) {
+					m_ssl_num_fails++;
 					OS::LogText(OS::ELogLevel_Info, "[%s] SSL accept failed", OS::Address(m_address_info).ToString().c_str());
+
+					if (++m_ssl_num_fails > MAX_SSL_FAILS) {
+						m_delete_flag = true;
+					}
 					return;
 				}
 				OS::LogText(OS::ELogLevel_Info, "[%s] SSL accepted", OS::Address(m_address_info).ToString().c_str());

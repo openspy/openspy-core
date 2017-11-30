@@ -11,7 +11,7 @@
 
 #define FESL_READ_SIZE                  (16 * 1024)
 
-
+#define MAX_SSL_FAILS 5
 #define FESL_PING_TIME 120
 
 typedef struct _FESL_HEADER {
@@ -172,6 +172,7 @@ namespace FESL {
 		std::vector<OS::Profile> m_profiles;
 		std::string m_session_key;
 		void send_ping();
+		int m_ssl_num_fails;
 
 		static CommandHandler m_commands[];
 
