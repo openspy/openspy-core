@@ -129,7 +129,7 @@ namespace GP {
 		OS::GameData m_game;
 		Driver *mp_driver;
 
-		struct timeval m_last_recv, m_last_ping;
+		struct timeval m_last_recv, m_last_ping, m_status_refresh;
 
 		bool m_delete_flag;
 		bool m_timeout_flag;

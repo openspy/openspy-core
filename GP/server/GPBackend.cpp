@@ -18,11 +18,6 @@
 #include <curl/curl.h>
 #include <jansson.h>
 
-#define GP_BACKEND_REDIS_DB 5
-#define BUDDY_ADDREQ_EXPIRETIME 604800
-#define GP_STATUS_EXPIRE_TIME 3600
-
-
 namespace GPBackend {
 	struct curl_data {
 		std::string buffer;

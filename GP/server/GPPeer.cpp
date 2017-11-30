@@ -35,6 +35,7 @@ namespace GP {
 		mp_mutex = OS::CreateMutex();
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
+		gettimeofday(&m_status_refresh, NULL);
 
 		m_status.status = GP_OFFLINE;
 		m_status.status_str[0] = 0;
@@ -115,9 +116,14 @@ namespace GP {
 		OS::KVReader data_parser = OS::KVReader(std::string(data));
 		gettimeofday(&m_last_recv, NULL);
 		if (data_parser.Size() < 1) {
-			//often called with keep alives
-			if(m_profile.id)
-				GPBackend::GPBackendRedisTask::SetPresenceStatus(m_profile.id, m_status, this);
+			struct timeval current_time;
+			gettimeofday(&current_time, NULL);
+			if (current_time.tv_sec - m_status_refresh.tv_sec > (GP_STATUS_EXPIRE_TIME/2)) {
+				gettimeofday(&m_status_refresh, NULL);
+				//often called with keep alives
+				if (m_profile.id)
+					GPBackend::GPBackendRedisTask::SetPresenceStatus(m_profile.id, m_status, this);
+			}
 			//send_error(GPShared::GP_PARSE);
 			return;
 		}
@@ -822,7 +828,7 @@ namespace GP {
 			ss << "\\userid\\" << user.id;
 
 			ss << "\\profileid\\" << profile.id;
-
+			
 			if(profile.uniquenick.length()) {
 				ss << "\\uniquenick\\" << profile.uniquenick;
 			}
