@@ -85,6 +85,9 @@ namespace OS {
 			/* set maximum allowed redirects */
 			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
 
+			/* Close socket after one use */
+			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
+
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
 
