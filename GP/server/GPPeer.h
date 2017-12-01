@@ -92,6 +92,9 @@ namespace GP {
 		void handle_registernick(const char *data, int len);
 		void handle_registercdkey(const char *data, int len);
 
+		void handle_newuser(const char *data, int len);
+		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
+
 		int m_search_operation_id;
 		static void m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 

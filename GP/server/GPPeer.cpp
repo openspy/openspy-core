@@ -135,8 +135,12 @@ namespace GP {
 		} else if(!command.compare("ka")) {
 			handle_keepalive(data, len);
 			return;
-		} if (command.compare("logout") == 0) {
+		} else if (command.compare("logout") == 0) {
 			Delete();
+			return;
+		}
+		else if (command.compare("newuser") == 0) {
+			handle_newuser(data, len);
 			return;
 		}
 		if(m_backend_session_key.length() > 0) {
@@ -172,6 +176,74 @@ namespace GP {
 				handle_updatepro(data, len);
 			}
 		}
+	}
+	void Peer::handle_newuser(const char *buf, int len) {
+		char nick[GP_NICK_LEN + 1];
+		char uniquenick[GP_UNIQUENICK_LEN + 1];
+		char email[GP_EMAIL_LEN + 1];
+		char passenc[45 + 1];
+		std::string password;
+		int partnercode = find_paramint("partnerid", (char *)buf);
+		int namespaceid = find_paramint("namespaceid", (char *)buf);
+		if (!find_param("email", (char*)buf, (char*)&email, GP_EMAIL_LEN)) {
+			return;
+		}
+		if (!find_param("nick", (char*)buf, (char*)&nick, GP_NICK_LEN)) {
+			return;
+		}
+		if (!find_param("uniquenick", (char*)buf, (char*)&uniquenick, GP_UNIQUENICK_LEN)) {
+			uniquenick[0] = 0;
+		}
+
+		if (find_param("passenc", (char*)buf, (char*)&passenc, sizeof(passenc) - 1)) {
+			return;
+			int passlen = strlen(passenc);
+			char *dpass = (char *)base64_decode((uint8_t *)passenc, &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+			password = dpass;
+			if (dpass)
+				free((void *)dpass);
+		}
+		else if (find_param("password", (char*)buf, (char*)&passenc, sizeof(passenc) - 1)) {
+			password = passenc;
+		}
+		else {
+			return;
+		}
+
+		
+
+		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, 0, this);
+
+	}
+	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+		int err_code = 1;
+		if (auth_data.response_code != -1) {
+			switch (auth_data.response_code) {
+			case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+				err_code = GP_NEWUSER_UNIQUENICK_INUSE;
+				break;
+			case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
+				err_code = GP_NEWUSER_BAD_PASSWORD;
+				break;
+			case OS::CREATE_RESPONSE_INVALID_NICK:
+				err_code = GP_NEWUSER_BAD_NICK;
+				break;
+			case OS::CREATE_RESPONSE_INVALID_UNIQUENICK:
+				err_code = GP_NEWUSER_UNIQUENICK_INVALID;
+				break;
+			}
+		}
+		std::ostringstream s;
+		s << "\\nur\\" << err_code;
+		s << "\\userid\\" << user.id;
+		s << "\\profileid\\" << profile.id;
+
+		//s.str("");
+		//s << "\\error\\\\err\\513\\fatal\\\\errmsg\\A\ profile with that nick already exists.\\pid\ "<< profile.id << "\\id\\1\\final\\";
+		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
+
+		((Peer *)peer)->m_delete_flag = true;
 	}
 	void Peer::m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 	}
