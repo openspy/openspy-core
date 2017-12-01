@@ -58,7 +58,7 @@ namespace FESL {
 		m_logged_in = false;
 		m_pending_subaccounts = false;
 		m_got_profiles = false;
-		m_pending_nuget_personas = true;
+		m_pending_nuget_personas = false;
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
@@ -173,6 +173,7 @@ namespace FESL {
 			send(m_sd, (const char *)&header, sizeof(header), MSG_NOSIGNAL);
 			send(m_sd, data.c_str(), data.length() + 1, MSG_NOSIGNAL);
 		}
+		printf("Send: %s\n", data.c_str());
 	}
 	bool Peer::m_fsys_hello_handler(OS::KVReader kv_list) {
 		/*
@@ -294,7 +295,7 @@ namespace FESL {
 
 		if (((Peer *)peer)->m_pending_nuget_personas) {
 			((Peer *)peer)->m_pending_nuget_personas = false;
-			((Peer *)peer)->send_subaccounts();
+			((Peer *)peer)->send_personas();
 		}
 	}
 	bool Peer::m_acct_get_account(OS::KVReader kv_list) {
