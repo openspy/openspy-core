@@ -69,7 +69,6 @@ namespace SB {
 					goto end;
 				}
 				buf[len] = 0;
-				if(len == 0) goto end;
 
 				m_peer_stats.packets_in++;
 				m_peer_stats.bytes_in += len;
@@ -99,7 +98,7 @@ namespace SB {
 			if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
 				m_delete_flag = true;
 				m_timeout_flag = true;
-			} else if(len == 0 && packet_waiting) {
+			} else if(len <= 0 && packet_waiting) {
 				m_delete_flag = true;
 			}
 		}

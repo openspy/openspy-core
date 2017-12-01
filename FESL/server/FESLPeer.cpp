@@ -105,7 +105,6 @@ namespace FESL {
 				return;
 			}
 			if (len <= 0) {
-				m_delete_flag = true;
 				goto end;
 			}
 			gettimeofday(&m_last_recv, NULL);
@@ -140,7 +139,7 @@ namespace FESL {
 		if(current_time.tv_sec - m_last_recv.tv_sec > FESL_PING_TIME*2) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
-		} else if(len == 0 && packet_waiting) {
+		} else if(len <= 0 && packet_waiting) {
 			m_delete_flag = true;
 		}
 	}

@@ -107,7 +107,7 @@ namespace GP {
 		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
 			m_timeout_flag = true;
 			Delete();
-		} else if(len == 0 && packet_waiting) {
+		} else if(len <= 0 && packet_waiting) {
 			Delete();
 		}
 	}

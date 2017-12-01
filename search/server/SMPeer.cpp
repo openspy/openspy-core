@@ -41,8 +41,7 @@ namespace SM {
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
 			if (len <= 0) {
-				m_delete_flag = true;
-				return;
+				goto end;
 			}
 			buf[len] = 0;
 			//if(len == 0) goto end;
@@ -66,14 +65,14 @@ namespace SM {
 			}
 		}
 
-		//end:
+		end:
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > SM_PING_TIME*2) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
-		} else if(len == 0 && packet_waiting) {
+		} else if(len <= 0 && packet_waiting) {
 			m_delete_flag = true;
 		}
 	}

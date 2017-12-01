@@ -16,7 +16,7 @@
 
 #include <OS/GPShared.h>
 
-#define GP_PING_TIME (120)
+#define GP_PING_TIME (600)
 #define DRIVER_THREAD_TIME 1000
 namespace GP {
 	class Peer;

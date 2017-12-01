@@ -588,7 +588,7 @@ namespace SB {
 		if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
-		} else if(len == 0 && waiting_packet) {
+		} else if(len <= 0 && waiting_packet) {
 			m_delete_flag = true;
 		}
 	}
