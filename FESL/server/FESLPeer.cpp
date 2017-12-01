@@ -22,6 +22,7 @@ namespace FESL {
 		{ FESL_TYPE_ACCOUNT, "NuLogin", &Peer::m_acct_nulogin_handler },
 		{ FESL_TYPE_ACCOUNT, "NuGetPersonas", &Peer::m_acct_get_personas},
 		{ FESL_TYPE_ACCOUNT, "NuLoginPersona",  &Peer::m_acct_login_persona },
+		{ FESL_TYPE_ACCOUNT, "GetTelemetryToken",  &Peer::m_acct_get_telemetry_token},
 		{ FESL_TYPE_ACCOUNT, "RegisterGame", &Peer::m_acct_register_game_handler },
 		{ FESL_TYPE_ACCOUNT, "GetCountryList", &Peer::m_acct_get_country_list },
 		{ FESL_TYPE_ACCOUNT, "GetTos", &Peer::m_acct_gettos_handler },
@@ -218,6 +219,15 @@ namespace FESL {
 	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
 		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), OS_EA_PARTNER_CODE, 0, kv_list.GetValue("password"), m_login_auth_cb, NULL, 0, this);
+		return true;
+	}
+	bool Peer::m_acct_get_telemetry_token(OS::KVReader kv_list) {
+		std::ostringstream s;
+		s << "TXN=GetTelemetryToken\n";
+		s << "telemetryToken=\"teleToken\"\n";
+		s << "enabled=0\n";
+		s << "disabled=1\n";
+		SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		return true;
 	}
 	void Peer::m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {

@@ -140,6 +140,7 @@ namespace FESL {
 		bool m_acct_gettos_handler(OS::KVReader kv_list);
 		bool m_fsys_goodbye_handler(OS::KVReader kv_list);
 		bool m_acct_nulogin_handler(OS::KVReader kv_list);
+		bool m_acct_get_telemetry_token(OS::KVReader kv_list);
 		bool m_acct_login_persona(OS::KVReader kv_list);
 		bool m_acct_login_handler(OS::KVReader kv_list);
 		bool m_acct_get_account(OS::KVReader kv_list);
