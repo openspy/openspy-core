@@ -123,25 +123,21 @@ namespace OS {
 
 	void *UserSearchTask::TaskThread(CThread *thread) {
 		UserSearchTask *task = (UserSearchTask *)thread->getParams();
-		while (task->mp_thread_poller->wait()) {
+		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
-			if (task->m_request_list.empty()) {
-				task->mp_mutex->unlock();
-				break;
-			}
 			while (!task->m_request_list.empty()) {
 				UserSearchRequest task_params = task->m_request_list.front();
 				task->mp_mutex->unlock();
-					
 				switch(task_params.type) {
 					case EUserRequestType_Update:
 					case EUserRequestType_Search:
 						PerformRequest(task_params);
 					break;	
 				}
-				task->mp_mutex->lock();
 				if (task_params.peer)
 					task_params.peer->DecRef();
+
+				task->mp_mutex->lock();
 				task->m_request_list.pop();
 			}
 			task->mp_mutex->unlock();

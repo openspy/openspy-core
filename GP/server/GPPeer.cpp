@@ -135,6 +135,9 @@ namespace GP {
 		} else if(!command.compare("ka")) {
 			handle_keepalive(data, len);
 			return;
+		} if (command.compare("logout") == 0) {
+			Delete();
+			return;
 		}
 		if(m_backend_session_key.length() > 0) {
 			if(command.compare("status") == 0) {
@@ -167,9 +170,6 @@ namespace GP {
 				handle_registercdkey(data, len);
 			} else if(command.compare("updatepro") == 0) {
 				handle_updatepro(data, len);
-			}
-			else if (command.compare("logout") == 0) {
-				Delete();
 			}
 		}
 	}

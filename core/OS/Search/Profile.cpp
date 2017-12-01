@@ -235,24 +235,20 @@ namespace OS {
 	}
 	void *ProfileSearchTask::TaskThread(CThread *thread) {
 		ProfileSearchTask *task = (ProfileSearchTask *)thread->getParams();
-		while (task->mp_thread_poller->wait()) {
+		
+		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
-			if (task->m_request_list.empty()) {
-				task->mp_mutex->unlock();
-				break;
-			}
 			while (!task->m_request_list.empty()) {
 				ProfileSearchRequest task_params = task->m_request_list.front();
 				task->mp_mutex->unlock();
-
 				PerformSearch(task_params);
 
-				task->mp_mutex->lock();
 				if (task_params.peer)
 					task_params.peer->DecRef();
+
+				task->mp_mutex->lock();
 				task->m_request_list.pop();
 			}
-
 			task->mp_mutex->unlock();
 		}
 		return NULL;

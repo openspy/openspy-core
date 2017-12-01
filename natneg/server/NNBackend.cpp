@@ -17,11 +17,12 @@ namespace NN {
 
 	void *NNQueryTask::TaskThread(OS::CThread *thread) {
 		NNQueryTask *task = (NNQueryTask *)thread->getParams();
-		while(task->mp_thread_poller->wait()) {
+		while(!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
 			task->m_thread_awake = true;
 			while (!task->m_request_list.empty()) {
 				NNBackendRequest task_params = task->m_request_list.front();
+				task->mp_mutex->unlock();
 				task->mp_timer->start();
 				switch (task_params.type) {
 					case ENNQueryRequestType_SubmitClient:
@@ -36,6 +37,7 @@ namespace NN {
 					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", OS::Address(task_params.peer->getAddress()).ToString().c_str(), task_params.type, task->mp_timer->time_elapsed() / 1000000.0);
 				}
 				task_params.peer->DecRef();
+				task->mp_mutex->lock();
 				task->m_request_list.pop();
 			}
 			task->m_thread_awake = false;

@@ -192,12 +192,8 @@ namespace GPBackend {
 		GPBackendRedisTask *task = (GPBackendRedisTask *)thread->getParams();
 		for (;;) {
 
-			while (task->mp_thread_poller->wait()) {
+			while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
 				task->mp_mutex->lock();
-				if (task->m_request_list.empty()) {
-					task->mp_mutex->unlock();
-					continue;
-				}
 				while (!task->m_request_list.empty()) {
 					GPBackendRedisRequest task_params = task->m_request_list.front();
 					task->mp_mutex->unlock();

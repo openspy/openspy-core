@@ -861,11 +861,12 @@ namespace MM {
 	}
 	void *MMQueryTask::TaskThread(OS::CThread *thread) {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
-		while(task->mp_thread_poller->wait()) {
+		while(!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
 			task->mp_mutex->lock();
 			task->m_thread_awake = true;
 			while (!task->m_request_list.empty()) {
 				MMQueryRequest task_params = task->m_request_list.front();
+				task->mp_mutex->unlock();
 				task->mp_timer->start();
 				switch (task_params.type) {
 				case EMMQueryRequestType_GetServers:
@@ -896,6 +897,7 @@ namespace MM {
 				}
 				
 				task_params.peer->DecRef();
+				task->mp_mutex->lock();
 				task->m_request_list.pop();
 			}
 			m_game_cache->timeoutMap(task->m_thread_index);
