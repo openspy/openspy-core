@@ -53,7 +53,7 @@ namespace FESL {
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", OS::Address(m_address_info).ToString().c_str());
 		m_sequence_id = 1;
-		m_ssl_num_fails = -10;
+		m_ssl_num_fails = 0;
 		m_openssl_accepted = false;
 		m_logged_in = false;
 		m_pending_subaccounts = false;
