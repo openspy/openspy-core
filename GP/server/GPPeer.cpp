@@ -212,36 +212,42 @@ namespace GP {
 		}
 
 		
+		int id = find_paramint("id", (char *)buf);
 
-		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, 0, this);
+		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, id, this);
 
 	}
 	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
 		int err_code = 1;
+		std::ostringstream s;
 		if (auth_data.response_code != -1) {
 			switch (auth_data.response_code) {
-			case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
-				err_code = GP_NEWUSER_UNIQUENICK_INUSE;
-				break;
-			case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
-				err_code = GP_NEWUSER_BAD_PASSWORD;
-				break;
-			case OS::CREATE_RESPONSE_INVALID_NICK:
-				err_code = GP_NEWUSER_BAD_NICK;
-				break;
-			case OS::CREATE_RESPONSE_INVALID_UNIQUENICK:
-				err_code = GP_NEWUSER_UNIQUENICK_INVALID;
-				break;
+				case OS::CREATE_RESPONE_NICK_IN_USE:
+				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+					err_code = GP_NEWUSER_BAD_NICK;
+					break;
+				case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
+					err_code = GP_NEWUSER_BAD_PASSWORD;
+					break;
+				case OS::CREATE_RESPONSE_INVALID_NICK:
+					err_code = GP_NEWUSER_BAD_NICK;
+					break;
+				case OS::CREATE_RESPONSE_INVALID_UNIQUENICK:
+					err_code = GP_NEWUSER_UNIQUENICK_INVALID;
+					break;
 			}
+			if (profile.id != 0)
+				s << "\\pid\\" << profile.id;
+			s << "\\id\\" << operation_id;
+			((Peer *)peer)->send_error((GPShared::GPErrorCode) err_code, s.str());
+			return;
 		}
-		std::ostringstream s;
+
 		s << "\\nur\\" << err_code;
 		s << "\\userid\\" << user.id;
 		s << "\\profileid\\" << profile.id;
 
-		//s.str("");
-		//s << "\\error\\\\err\\513\\fatal\\\\errmsg\\A\ profile with that nick already exists.\\pid\ "<< profile.id << "\\id\\1\\final\\";
-		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
+		((Peer *)peer)->SendPacket((const uint8_t*)s.str().c_str(), s.str().length());
 
 		((Peer *)peer)->m_delete_flag = true;
 	}
@@ -988,7 +994,7 @@ namespace GP {
 
 		GPBackend::GPBackendRedisTask::SendLoginEvent(this);
 	}
-	void Peer::send_error(GPErrorCode code) {
+	void Peer::send_error(GPErrorCode code, std::string addon_data) {
 		GPShared::GPErrorData error_data = GPShared::getErrorDataByCode(code);
 		if(error_data.msg == NULL) {
 			Delete();
@@ -998,6 +1004,8 @@ namespace GP {
 		ss << "\\error\\";
 		ss << "\\err\\" << error_data.error;
 		ss << "\\errmsg\\" << error_data.msg;
+		if(addon_data.length())
+			ss << addon_data;
 		if(error_data.die) {
 			ss << "\\fatal\\" << error_data.die;
 			Delete();

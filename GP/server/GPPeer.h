@@ -124,7 +124,7 @@ namespace GP {
 
 		void send_buddies();
 		void send_blocks();
-		void send_error(GPShared::GPErrorCode code);
+		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
 		void send_backend_auth_event();
 
 		void ResetMetrics();
