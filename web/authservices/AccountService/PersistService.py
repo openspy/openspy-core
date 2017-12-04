@@ -21,7 +21,7 @@ class PersistService(BaseService):
             return True
         return False
     def handle_get_data(self, request):
-        return {'data': base64.b64encode("test")}
+        return {'data': base64.b64encode("".encode('utf-8'))}
 
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
@@ -37,7 +37,7 @@ class PersistService(BaseService):
         # When the method is POST the variable will be sent
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
-        request_body = json.loads(env['wsgi.input'].read(request_body_size))
+        request_body = json.loads(env['wsgi.input'].read(request_body_size).decode('utf-8'))
 
         start_response('200 OK', [('Content-Type','application/json')])
 
@@ -57,7 +57,7 @@ class PersistService(BaseService):
             elif request_body["type"] == "get_persist_data":
                 update_game_data = self.handle_get_data(request_body)
                 response['success'] = True
-                response["data"] = update_game_data
+                response["data"] = update_game_data["data"]
 
 
         return response
