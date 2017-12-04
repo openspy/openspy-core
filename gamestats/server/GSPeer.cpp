@@ -342,8 +342,6 @@ namespace GS {
 	}
 	void Peer::handle_authp(OS::KVReader data_parser) {
 		// TODO: CD KEY AUTH
-		char response[64];
-		memset(&response,0,sizeof(response));
 		int pid = data_parser.GetValueInt("pid");
 
 		int operation_id = data_parser.GetValueInt("lid");
@@ -357,7 +355,7 @@ namespace GS {
 		resp = data_parser.GetValue("resp");
 
 		if(pid != 0) {
-			perform_pid_auth(pid, response, operation_id);
+			perform_pid_auth(pid, resp.c_str(), operation_id);
 		} else {
 			send_error(GPShared::GP_PARSE);
 		}
