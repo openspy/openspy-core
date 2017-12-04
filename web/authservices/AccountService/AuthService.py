@@ -276,7 +276,6 @@ class AuthService(BaseService):
     def auth_or_create_profile(self, request_body):
         #{u'profilenick': u'sctest01', u'save_session': True, u'set_context': u'profile', u'hash_type': u'auth_or_create_profile', u'namespaceid': 1,
         #u'uniquenick': u'', u'partnercode': 0, u'password': u'gspy', u'email': u'sctest@gamespy.com'}
-        print("auth or create: {}\n".format(request_body))
         user_where = (User.deleted == False)
         user_data = request_body["user"]
         if "email" in user_data:
@@ -287,8 +286,7 @@ class AuthService(BaseService):
         else:
             partnercode = 0
 
-        user_where = (user_where) & (User.partnercode == partnercode)
-
+        user_where = ((user_where) & (User.partnercode == partnercode))
         try:
             user = User.get(user_where)
             user = model_to_dict(user)
@@ -299,10 +297,11 @@ class AuthService(BaseService):
             user = register_svc.try_register_user(user_data)
 
 
-
         profile_data = request_body["profile"] #create data
         profile_where = (Profile.deleted == False)
+        force_unique = False
         if "uniquenick" in profile_data:
+            force_unique = True
             profile_where = (profile_where) & (Profile.uniquenick == profile_data["uniquenick"])
 
         if "nick" in profile_data:
@@ -317,19 +316,25 @@ class AuthService(BaseService):
 
         profile_where = (profile_where) & (Profile.namespaceid == namespaceid)
 
-
+        ret = {}
         try:
+            if not force_unique:
+                profile_where = (profile_where) & (Profile.userid == user["id"])
             profile = Profile.get(profile_where)
             profile = model_to_dict(profile)
             del profile['user']['password']
 
+            ret["new_profile"] = False
+
             if user["id"] != profile["user"]["id"]:
-                return {'reason': self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK}
+                print("{} != {}\n".format(user["id"], profile["user"]["id"]))
+                return {'reason': self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK, "profile": profile}
         except Profile.DoesNotExist:
             user_profile_srv = UserProfileMgrService()
-
+            print("Profile 3...")
             profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'user': user})
             print("Create profile: {}\n".format(profile))
+            ret["new_profile"] = True
             if "error" in profile:
                 reason = 0
                 if profile["error"] == "INVALID_UNIQUENICK":
@@ -338,8 +343,14 @@ class AuthService(BaseService):
                     reason = self.LOGIN_CREATE_RESPONSE_INVALID_NICK
                 elif profile["error"] == "UNIQUENICK_IN_USE":
                     reason = self.CREATE_RESPONSE_UNIQUENICK_IN_USE
-                return {'reason' : reason}
-        return profile
+                ret = {'reason' : reason}
+                if "profile" in profile:
+                    ret["profile"] = profile["profile"]
+
+                ret["new_profile"] = False
+                return ret
+        ret["profile"] = profile
+        return ret
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -355,7 +366,8 @@ class AuthService(BaseService):
         # When the method is POST the variable will be sent
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
-        request_body = json.loads(env['wsgi.input'].read(request_body_size))
+        input_str = env['wsgi.input'].read(request_body_size).decode('utf-8')
+        request_body = json.loads(input_str)
         print("AuthService obj: {}".format(request_body))
         if 'mode' in request_body:
             if request_body['mode'] == 'test_session':
@@ -441,10 +453,14 @@ class AuthService(BaseService):
             auth_success = self.test_nick_email_by_profile(profile, user_body['password'])
         elif hash_type == 'auth_or_create_profile':
             auth_resp = self.auth_or_create_profile(request_body)
+            print("Auth resp: {}\n".format(auth_resp))
+            if "new_profile" in auth_resp:
+                response['new_profile'] = auth_resp['new_profile']
+            if "profile" in auth_resp:
+                response["profile"] = auth_resp["profile"]
             if "reason" in auth_resp:
                 response['reason'] = auth_resp['reason']
             elif isinstance(auth_resp, dict):
-                response['profile'] = auth_resp
                 response['success'] = True
 
                 if 'reason' in response:
@@ -452,6 +468,7 @@ class AuthService(BaseService):
                 if "reason" in auth_resp:
                     response['success'] = False
                     response['reason'] = auth_resp['reason']
+
                 auth_success = True
                 #retrieve profile for save_session
                 profile = Profile.get((Profile.id == response['profile']['id']))

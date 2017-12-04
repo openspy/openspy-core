@@ -46,7 +46,7 @@ class UserProfileMgrService(BaseService):
         if "uniquenick" in data['profile']:
             if not self.is_name_valid(data['profile']['uniquenick']):
                 return {'error': 'UNIQUENICK_INVALID'}
-            if data['profile']['uniquenick'] != data["profile"]["uniquenick"] and not self.check_uniquenick_available(data['profile']['uniquenick'], namespaceid):
+            if data['profile']['uniquenick'] != data["profile"]["uniquenick"] and not self.check_uniquenick_available(data['profile']['uniquenick'], namespaceid)["exists"]:
                 return {'error': 'UNIQUENICK_INUSE'}
         for key in data['profile']:
             if key != "id":
@@ -93,9 +93,12 @@ class UserProfileMgrService(BaseService):
                 profile = Profile.get((Profile.uniquenick == uniquenick) & (Profile.namespaceid == namespaceid) & (Profile.deleted == False))
             else:
                 profile = Profile.get((Profile.uniquenick == uniquenick) & (Profile.deleted == False))
-            return False
+
+                profile = model_to_dict(profile)
+                del profile["user"]["password"]
+            return {"exists": True, "profile": profile}
         except Profile.DoesNotExist:
-            return True
+            return {"exists": False}
     def handle_create_profile(self, data):
         print("CreateUser: {}\n".format(data))
         profile_data = data["profile"]
@@ -110,8 +113,8 @@ class UserProfileMgrService(BaseService):
             if not self.is_name_valid(profile_data["uniquenick"]):
                 return {'error': 'INVALID_UNIQUENICK'}
             nick_available = self.check_uniquenick_available(profile_data["uniquenick"], namespaceid)
-            if not nick_available:
-                return {'error': 'UNIQUENICK_IN_USE'}
+            if nick_available["exists"]:
+                return {'error': 'UNIQUENICK_IN_USE', "profile": nick_available["profile"]}
         user = User.get((User.id == user_data["id"]))
         if "nick" in profile_data:
             if not self.is_name_valid(profile_data["nick"]):
@@ -462,6 +465,8 @@ class UserProfileMgrService(BaseService):
             profile = self.handle_create_profile(request_body)
             if "error" in profile:
                 response['error'] = profile['error']
+                if "profile" in profile:
+                    response["profile"] = profile["profile"]
             elif profile != None:
                 success = True
                 response['profile'] = profile
