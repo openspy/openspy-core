@@ -16,7 +16,8 @@
 
 #include <OS/GPShared.h>
 
-#define GP_PING_TIME (120)
+#define GP_PING_TIME (600)
+#define DRIVER_THREAD_TIME 1000
 
 namespace GS {
 	class Peer;
@@ -41,11 +42,12 @@ namespace GS {
 		int GetNumConnections();
 
 		const std::vector<int> getSockets();
-		const std::vector<INetPeer *> getPeers();
-
+		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
+		OS::MetricInstance GetMetrics();
 	private:
-
 		void TickConnections();
+
+		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		int m_sd;
 
@@ -55,7 +57,10 @@ namespace GS {
 
 		struct timeval m_server_start;
 
+		static void *TaskThread(OS::CThread *thread);
 		std::vector<GS::Peer *> m_peers_to_delete;
+		OS::CMutex *mp_mutex;
+		OS::CThread *mp_thread;
 
 	};
 }

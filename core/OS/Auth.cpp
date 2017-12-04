@@ -536,7 +536,9 @@ namespace OS {
 						json_t *user_json = json_object_get(profile_json, "user");
 						user = LoadUserFromJson(user_json);
 						profile = LoadProfileFromJson(profile_json);
-						success = true;
+						
+						user_json = json_object_get(json_data, "new_profile"); //new account created or not
+						success = json_boolean_value(user_json);
 					}
 					json_decref(json_data);
 				} else {

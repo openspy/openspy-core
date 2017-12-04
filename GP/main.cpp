@@ -28,8 +28,6 @@ int main() {
        exit(EXIT_FAILURE);
     }
 
-	OS::Init("GP", 8, "chc");
-
 	#ifndef _WIN32
 		signal(SIGINT, sig_handler);
 		signal(SIGTERM, sig_handler);
@@ -37,6 +35,8 @@ int main() {
 		WSADATA wsdata;
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
+
+	OS::Init("GP", 8, "chc");
 
 	g_gameserver = new GP::Server();
     g_driver = new GP::Driver(g_gameserver, "0.0.0.0", GP_SERVER_PORT);

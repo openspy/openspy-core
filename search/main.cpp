@@ -21,8 +21,6 @@ void sig_handler(int signo)
 }
 
 int main() {
-    OS::Init("search", 8, "chc");
-
 	#ifndef _WIN32
 		signal(SIGINT, sig_handler);
 		signal(SIGTERM, sig_handler);
@@ -31,7 +29,8 @@ int main() {
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
-
+    OS::Init("search", 8, "chc");
+	
 	g_gameserver = new SM::Server();
     g_driver = new SM::Driver(g_gameserver, "0.0.0.0", SM_SERVER_PORT);
 	g_gameserver->addNetworkDriver(g_driver);

@@ -40,6 +40,9 @@ namespace SM {
 		if (m_delete_flag) return;
 		if (packet_waiting) {
 			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
+			if (OS::wouldBlock()) {
+				return;
+			}
 			if (len <= 0) {
 				goto end;
 			}
@@ -64,7 +67,7 @@ namespace SM {
 				this->handle_packet(x, piece_len);
 			}
 		}
-
+		
 		end:
 		//check for timeout
 		struct timeval current_time;
@@ -83,22 +86,24 @@ namespace SM {
 			return;
 		}
 		printf("Handle: %s\n", data);
+
+		OS::KVReader data_parser = OS::KVReader(data);
 		if(!strcmp("search", command)) {
-			handle_search(data, len);
+			handle_search(data_parser);
 		} else if(!strcmp("others", command)) {
-			handle_others(data, len);
+			handle_others(data_parser);
 		} else if(!strcmp("otherslist", command)) {
-			handle_otherslist(data, len);
+			handle_otherslist(data_parser);
 		} else if(!strcmp("valid", command)) {
-			handle_valid(data, len);
+			handle_valid(data_parser);
 		} else if(!strcmp("nicks", command)) {
 
 		} else if(!strcmp("pmatch", command)) {
 
 		} else if(!strcmp("check", command)) {
-			handle_check(data, len);
+			handle_check(data_parser);
 		} else if(!strcmp("newuser", command)) {
-			handle_newuser(data, len);
+			handle_newuser(data_parser);
 		} else if(!strcmp("uniquesearch", command)) {
 			
 		} else if(!strcmp("profilelist", command)) {
@@ -133,27 +138,29 @@ namespace SM {
 
 		((Peer *)peer)->m_delete_flag = true;
 	}
-	void Peer::handle_newuser(const char *buf, int len) {
-		char nick[GP_NICK_LEN + 1];
-		char uniquenick[GP_UNIQUENICK_LEN + 1];
-		char email[GP_EMAIL_LEN + 1];
-		char passenc[45 + 1];
-		int partnercode = find_paramint("partnerid", (char *)buf);
-		int namespaceid = find_paramint("namespaceid", (char *)buf);
-		if(!find_param("email", (char*)buf, (char*)&email, GP_EMAIL_LEN)) {
+	void Peer::handle_newuser(OS::KVReader data_parser) {
+		std::string nick;
+		std::string uniquenick;
+		std::string email;
+		std::string passenc;
+		int partnercode = data_parser.GetValueInt("partnerid");
+		int namespaceid = data_parser.GetValueInt("namespaceid");
+
+		if (!data_parser.HasKey("email") || !data_parser.HasKey("nick") || !data_parser.HasKey("passenc")) {
 			return;
 		}
-		if(!find_param("nick", (char*)buf, (char*)&nick, GP_NICK_LEN)) {
-			return;
+
+		email = data_parser.GetValue("email");
+		nick = data_parser.GetValue("nick");
+		passenc = data_parser.GetValue("passenc");
+
+
+		if (data_parser.HasKey("uniquenick")) {
+			uniquenick = data_parser.GetValue("uniquenick");
 		}
-		if(!find_param("uniquenick", (char*)buf, (char*)&uniquenick, GP_UNIQUENICK_LEN)) {
-			uniquenick[0] = 0;
-		}
-		if(!find_param("passenc", (char*)buf, (char*)&passenc, sizeof(passenc) - 1)) {
-			return;
-		}
-		int passlen = strlen(passenc);
-		char *dpass = (char *)base64_decode((uint8_t *)passenc, &passlen);
+
+		int passlen = passenc.length();
+		char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
 		passlen = gspassenc((uint8_t *)dpass);
 
 		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, dpass, false, m_newuser_cb, this, 0, this);
@@ -170,23 +177,30 @@ namespace SM {
 
 		((Peer *)peer)->m_delete_flag = true;
 	}
-	void Peer::handle_check(const char *buf, int len) {
+	void Peer::handle_check(OS::KVReader data_parser) {
 
-		char nick[GP_NICK_LEN + 1];
-		char email[GP_EMAIL_LEN + 1];
-		char passenc[45 + 1];
-		int partnercode = find_paramint("partnerid", (char *)buf);
-		if(!find_param("email", (char*)buf, (char*)&email, GP_EMAIL_LEN)) {
+		std::string nick;
+		std::string uniquenick;
+		std::string email;
+		std::string passenc;
+		int partnercode = data_parser.GetValueInt("partnerid");
+		int namespaceid = data_parser.GetValueInt("namespaceid");
+
+		if (!data_parser.HasKey("email") || !data_parser.HasKey("nick") || !data_parser.HasKey("passenc")) {
 			return;
 		}
-		if(!find_param("nick", (char*)buf, (char*)&nick, GP_NICK_LEN)) {
-			return;
+
+		email = data_parser.GetValue("email");
+		nick = data_parser.GetValue("nick");
+		passenc = data_parser.GetValue("passenc");
+
+
+		if (data_parser.HasKey("uniquenick")) {
+			uniquenick = data_parser.GetValue("uniquenick");
 		}
-		if(!find_param("passenc", (char*)buf, (char*)&passenc, sizeof(passenc) - 1)) {
-			return;
-		}
-		int passlen = strlen(passenc);
-		char *dpass = (char *)base64_decode((uint8_t *)passenc, &passlen);
+
+		int passlen = passenc.length();
+		char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
 		passlen = gspassenc((uint8_t *)dpass);
 	
 		OS::AuthTask::TryAuthNickEmail(nick, email, partnercode, dpass, false, m_nick_email_auth_cb, this, 0, this);
@@ -194,32 +208,32 @@ namespace SM {
 		if(dpass)
 			free((void *)dpass);
 	}
-	void Peer::handle_search(const char *buf, int len) {
+	void Peer::handle_search(OS::KVReader data_parser) {
 		OS::ProfileSearchRequest request;
 		char temp[GP_REASON_LEN + 1];
 		int temp_int;
 		request.profile_search_details.id = 0;
-		if(find_param("email", (char*)buf, (char*)&temp, GP_EMAIL_LEN)) {
-			request.user_search_details.email = temp;
+		if(data_parser.HasKey("email")) {
+			request.user_search_details.email = data_parser.GetValue("email");
 		}
-		if(find_param("nick", (char*)buf, (char*)&temp, GP_NICK_LEN)) {
-			request.profile_search_details.nick = temp;
+		if(data_parser.HasKey("nick")) {
+			request.profile_search_details.nick = data_parser.GetValue("nick");
 		}
-		if(find_param("uniquenick", (char*)buf, (char*)&temp, GP_UNIQUENICK_LEN)) {
-			request.profile_search_details.uniquenick = temp;
+		if(data_parser.HasKey("uniquenick")) {
+			request.profile_search_details.uniquenick = data_parser.GetValue("uniquenick");
 		}
-		if(find_param("firstname", (char*)buf, (char*)&temp, GP_FIRSTNAME_LEN)) {
-			request.profile_search_details.firstname = temp;
+		if(data_parser.HasKey("firstname")) {
+			request.profile_search_details.firstname = data_parser.GetValue("firstname");
 		}
-		if (find_param("lastname", (char*)buf, (char*)&temp, GP_LASTNAME_LEN)) {
-			request.profile_search_details.lastname = temp;
+		if (data_parser.HasKey("lastname")) {
+			request.profile_search_details.lastname = data_parser.GetValue("lastname");
 		}
-		temp_int = find_paramint("namespaceid", (char*)buf);
+		temp_int = data_parser.GetValueInt("namespaceid");
 		if (temp_int != 0) {
 			request.namespaceids.push_back(temp_int);
 		}
 
-		request.user_search_details.partnercode = find_paramint("partnerid", (char*)buf);
+		request.user_search_details.partnercode = data_parser.GetValueInt("partnerid");
 		/*
 		if(find_param("namespaceids", (char*)buf, (char*)&temp, GP_REASON_LEN)) {
 			//TODO: namesiaceids\1,2,3,4,5
@@ -282,10 +296,10 @@ namespace SM {
 
 		((Peer *)peer)->m_delete_flag = true;
 	}
-	void Peer::handle_others(const char *buf, int len) {
+	void Peer::handle_others(OS::KVReader data_parser) {
 		OS::ProfileSearchRequest request;
-		int profileid = find_paramint("profileid", (char *)buf);
-		int namespaceid = find_paramint("namespaceid", (char *)buf);
+		int profileid = data_parser.GetValueInt("profileid");
+		int namespaceid = data_parser.GetValueInt("namespaceid");
 
 		request.profile_search_details.id = profileid;
 		request.namespaceids.push_back(namespaceid);
@@ -326,23 +340,26 @@ namespace SM {
 
 		((Peer *)peer)->m_delete_flag = true;
 	}
-	void Peer::handle_otherslist(const char *buf, int len) {
-		char pid_buffer[256 + 1];
+	void Peer::handle_otherslist(OS::KVReader data_parser) {
+		std::string pid_buffer;
 		OS::ProfileSearchRequest request;
 
-		int profileid = find_paramint("profileid", (char *)buf);
-		int namespaceid = find_paramint("namespaceid", (char *)buf);
+		int profileid = data_parser.GetValueInt("profileid");
+		int namespaceid = data_parser.GetValueInt("namespaceid");
 
 		request.profile_search_details.id = profileid;
 		request.namespaceids.push_back(namespaceid);
 
-		if(find_param("opids", (char*)buf, (char*)&pid_buffer, sizeof(pid_buffer)-1)) {
+		if(data_parser.HasKey("opids")) {
+			char *pid_buffer = strdup(data_parser.GetValue("opids").c_str());
 			char *token;
 			token = strtok(pid_buffer, "|");
 			while(token != NULL) {
 				request.target_profileids.push_back(atoi(token));
 				token = strtok(NULL, "|");
 			}
+
+			free((void *)pid_buffer);
 		}
 
 		request.type = OS::EProfileSearch_Buddies_Reverse;
@@ -361,14 +378,13 @@ namespace SM {
 
 		((Peer *)peer)->m_delete_flag = true;
 	}
-	void Peer::handle_valid(const char *buf, int len) {
+	void Peer::handle_valid(OS::KVReader data_parser) {
 		OS::UserSearchRequest request;
-		char email_buffer[GP_EMAIL_LEN + 1];
 		request.type = OS::EUserRequestType_Search;
-		request.search_params.id = find_paramint("userid", (char *)buf);
-		request.search_params.partnercode = find_paramint("partnercode", (char *)buf);
-		if(find_param("email", (char*)buf, (char*)&email_buffer, sizeof(email_buffer)-1)) {
-			request.search_params.email = email_buffer;
+		request.search_params.id = data_parser.GetValueInt("userid");
+		request.search_params.partnercode = data_parser.GetValueInt("partnercode");
+		if(data_parser.HasKey("email")) {
+			request.search_params.email = data_parser.GetValue("email");
 		}
 		request.extra = this;
 		request.peer = this;

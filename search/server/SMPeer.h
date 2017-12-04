@@ -6,6 +6,7 @@
 #include <OS/Profile.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
+#include <OS/KVReader.h>
 
 #define GPI_READ_SIZE                  (16 * 1024)
 
@@ -87,23 +88,23 @@ namespace SM {
 		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 	private:
 
-		void handle_search(const char *buf, int len);
+		void handle_search(OS::KVReader data_parser);
 		static void m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 		static void m_search_buddies_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
-		void handle_others(const char *buf, int len);
+		void handle_others(OS::KVReader data_parser);
 
 		static void m_search_buddies_reverse_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
-		void handle_otherslist(const char *buf, int len);
+		void handle_otherslist(OS::KVReader data_parser);
 
 		static void m_search_valid_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer);
-		void handle_valid(const char *buf, int len);
+		void handle_valid(OS::KVReader data_parser);
 
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
-		void handle_check(const char *buf, int len);
+		void handle_check(OS::KVReader data_parser);
 
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
-		void handle_newuser(const char *buf, int len);
+		void handle_newuser(OS::KVReader data_parser);
 
 		PeerStats m_peer_stats;
 

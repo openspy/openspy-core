@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include <OS/socketlib/socketlib.h>
 #include "server/GSServer.h"
 #include "server/GSDriver.h"
 #include "server/GSBackend.h"
@@ -28,14 +27,16 @@ int main() {
        fprintf(stderr, "cannot set exit function\n");
        exit(EXIT_FAILURE);
     }
-    
-    OS::Init("gamestats", 4);
-    Socket::Init();
-
+	
 	#ifndef _WIN32
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
+		signal(SIGINT, sig_handler);
+		signal(SIGTERM, sig_handler);
+	#else
+		WSADATA wsdata;
+		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
+    
+    OS::Init("gamestats", 4, "chc");
 
 	g_gameserver = new GS::Server();
     g_driver = new GS::Driver(g_gameserver, "0.0.0.0", STATS_SERVER_PORT);

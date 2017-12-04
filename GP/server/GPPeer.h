@@ -12,7 +12,7 @@
 #include <OS/GPShared.h>
 
 #include <OS/Net/NetPeer.h>
-
+#include <OS/KVReader.h>
 namespace GP {
 	class Driver;
 	typedef struct _PeerStats {
@@ -71,42 +71,42 @@ namespace GP {
 	private:
 		void refresh_buddy_list();
 		//packet handlers
-		void handle_login(const char *data, int len);
-		void handle_auth(const char *data, int len); //possibly for unexpected loss of connection to retain existing session
+		void handle_login(OS::KVReader data_parser);
+		void handle_auth(OS::KVReader data_parser); //possibly for unexpected loss of connection to retain existing session
 
-		void handle_status(const char *data, int len);
-		void handle_statusinfo(const char *data, int len);
+		void handle_status(OS::KVReader data_parser);
+		void handle_statusinfo(OS::KVReader data_parser);
 
-		void handle_addbuddy(const char *data, int len);
-		void handle_delbuddy(const char *data, int len);
-		void handle_revoke(const char *data, int len);
-		void handle_authadd(const char *data, int len);
+		void handle_addbuddy(OS::KVReader data_parser);
+		void handle_delbuddy(OS::KVReader data_parser);
+		void handle_revoke(OS::KVReader data_parser);
+		void handle_authadd(OS::KVReader data_parser);
 
-		void handle_pinvite(const char *data, int len);
+		void handle_pinvite(OS::KVReader data_parser);
 
-		void handle_getprofile(const char *data, int len);
+		void handle_getprofile(OS::KVReader data_parser);
 
-		void handle_newprofile(const char *data, int len);
-		void handle_delprofile(const char *data, int len);
+		void handle_newprofile(OS::KVReader data_parser);
+		void handle_delprofile(OS::KVReader data_parser);
 
-		void handle_registernick(const char *data, int len);
-		void handle_registercdkey(const char *data, int len);
+		void handle_registernick(OS::KVReader data_parser);
+		void handle_registercdkey(OS::KVReader data_parser);
 
-		void handle_newuser(const char *data, int len);
+		void handle_newuser(OS::KVReader data_parser);
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 
 		int m_search_operation_id;
 		static void m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
-		void handle_bm(const char *data, int len);
+		void handle_bm(OS::KVReader data_parser);
 
-		void handle_addblock(const char *data, int len);
-		void handle_removeblock(const char *data, int len);
+		void handle_addblock(OS::KVReader data_parser);
+		void handle_removeblock(OS::KVReader data_parser);
 
-		void handle_updatepro(const char *data, int len);
-		void handle_updateui(const char *data, int len);
+		void handle_updatepro(OS::KVReader data_parser);
+		void handle_updateui(OS::KVReader data_parser);
 
-		void handle_keepalive(const char *data, int len);
+		void handle_keepalive(OS::KVReader data_parser);
 		//
 
 		//login

@@ -30,11 +30,11 @@ namespace GPShared {
 		{GP_LOGIN_EXPIRED_LOGIN_TICKET, "The login ticket had expired and could not be used.", false},
 
 		// Error codes that can occur while creating a new user.
-		{GP_NEWUSER, "There was an error creating a new user.", false},
-		{GP_NEWUSER_BAD_NICK, "A profile with that nick already exists.", false},
-		{GP_NEWUSER_BAD_PASSWORD, "The password does not match the email address.", false},
-		{GP_NEWUSER_UNIQUENICK_INVALID, "The uniquenick is invalid.", false},
-		{GP_NEWUSER_UNIQUENICK_INUSE, "The uniquenick is already in use.", false},
+		{GP_NEWUSER, "There was an error creating a new user.", true },
+		{GP_NEWUSER_BAD_NICK, "A profile with that nick already exists.", true },
+		{GP_NEWUSER_BAD_PASSWORD, "The password does not match the email address.", true },
+		{GP_NEWUSER_UNIQUENICK_INVALID, "The uniquenick is invalid.", true},
+		{GP_NEWUSER_UNIQUENICK_INUSE, "The uniquenick is already in use.", true},
 
 		// Error codes that can occur while updating user information.
 		{GP_UPDATEUI, "There was an error updating the user information.", false},

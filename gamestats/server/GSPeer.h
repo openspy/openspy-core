@@ -18,12 +18,28 @@
 
 #include "GSBackend.h"
 
+#include <OS/KVReader.h>
 
 namespace GS {
 	typedef struct {
 		int profileid;
 		int operation_id;
 	} GPPersistRequestData;
+	typedef struct _PeerStats {
+		int total_requests;
+		int version;
+
+		long long bytes_in;
+		long long bytes_out;
+
+		int packets_in;
+		int packets_out;
+
+		OS::Address m_address;
+		OS::GameData from_game;
+
+		bool disconnected;
+	} PeerStats;
 	class Driver;
 
 	class Peer : public INetPeer {
@@ -48,27 +64,32 @@ namespace GS {
 		void send_login_challenge(int type);
 		void SendPacket(const uint8_t *buff, int len, bool attach_final = true);
 
+		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
+		OS::MetricInstance GetMetrics();
+		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
+
+		void ResetMetrics();
 	private:
 		//packet handlers
 		static void newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
-		void handle_newgame(const char *data, int len);
+		void handle_newgame(OS::KVReader data_parser);
 
 		static void updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
-		void handle_updgame(const char *data, int len);
+		void handle_updgame(OS::KVReader data_parser);
 
-		void handle_authp(const char *data, int len);
-		void handle_auth(const char *data, int len);
-		void handle_getpid(const char *data, int len);
+		void handle_authp(OS::KVReader data_parser);
+		void handle_auth(OS::KVReader data_parser);
+		void handle_getpid(OS::KVReader data_parser);
 
 		static void getPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
-		void handle_getpd(const char *data, int len);
+		void handle_getpd(OS::KVReader data_parser);
 
 		static void setPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
-		void handle_setpd(const char *data, int len);
+		void handle_setpd(OS::KVReader data_parser);
 
 		//login
 		void perform_pid_auth(int profileid, const char *response, int operation_id);
-		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id);
+		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 
 
 		void send_error(GPShared::GPErrorCode code);
@@ -105,6 +126,7 @@ namespace GS {
 		uint16_t m_game_port;
 
 		std::string m_current_game_identifier;
+		PeerStats m_peer_stats;
 	};
 }
 #endif //_GPPEER_H

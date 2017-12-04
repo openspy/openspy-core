@@ -6,8 +6,6 @@
 #include "GSServer.h"
 #include <stdlib.h>
 #include <string.h>
-#include <OS/socketlib/socketlib.h>
-
 
 
 #include <OS/OpenSpy.h>
@@ -21,7 +19,6 @@
 #include <OS/Search/Profile.h>
 #include <curl/curl.h>
 #include <jansson.h>
-#include <jwt/jwt.h>
 
 #define GP_BACKEND_REDIS_DB 5
 #define BUDDY_ADDREQ_EXPIRETIME 604800
@@ -51,7 +48,8 @@ namespace GSBackend {
 	    return realsize;
 	}
 
-	PersistBackendTask::PersistBackendTask() {
+	PersistBackendTask::PersistBackendTask(int thread_index) {
+		m_thread_index = thread_index;
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(PersistBackendTask::TaskThread, this, true);
 	}
@@ -90,31 +88,10 @@ namespace GSBackend {
 
 		char *json_data = json_dumps(send_json, 0);
 
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
+		OS::HTTPResponse resp =	client.Post(json_data);
 
-		OS::HTTPResponse resp =	client.Post(jwt_encoded);
 
-		jwt_free(jwt);
-		free((void *)jwt_encoded);
-		free(json_data);
-		json_decref(send_json);
-
-		//build jwt
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)GP_PERSIST_BACKEND_CRYPTKEY, strlen(GP_PERSIST_BACKEND_CRYPTKEY));
-
-		//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
-		jwt_decode(&jwt, resp.buffer.c_str(), NULL, 0);
-
-		char *json = jwt_get_grants_json(jwt, NULL);
-
-		send_json = json_loads(json, 0, NULL);
+		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
 
 		json_t *success_obj = json_object_get(send_json, "success");
@@ -130,7 +107,7 @@ namespace GSBackend {
 
 			req.callback(success, resp_data, req.mp_peer, req.mp_extra);
 		}
-
+		free((void *)json_data);
 		json_decref(send_json);
 
 
@@ -156,31 +133,12 @@ namespace GSBackend {
 
 		char *json_data = json_dumps(send_json, 0);
 
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
 
-		OS::HTTPResponse resp =	client.Post(jwt_encoded);
-
-		jwt_free(jwt);
-		free((void *)jwt_encoded);
+		OS::HTTPResponse resp =	client.Post(json_data);
+		
 		free(json_data);
-		json_decref(send_json);
 
-		//build jwt
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)GP_PERSIST_BACKEND_CRYPTKEY, strlen(GP_PERSIST_BACKEND_CRYPTKEY));
-
-		//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
-		jwt_decode(&jwt, resp.buffer.c_str(), NULL, 0);
-
-		char *json = jwt_get_grants_json(jwt, NULL);
-
-		send_json = json_loads(json, 0, NULL);
+		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
 
 		json_t *success_obj = json_object_get(send_json, "success");
@@ -235,31 +193,13 @@ namespace GSBackend {
 
 		char *json_data = json_dumps(send_json, 0);
 
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
 
-		OS::HTTPResponse resp =	client.Post(jwt_encoded);
+		OS::HTTPResponse resp =	client.Post(json_data);
 
-		jwt_free(jwt);
-		free((void *)jwt_encoded);
 		free(json_data);
 		json_decref(send_json);
-
-		//build jwt
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)GP_PERSIST_BACKEND_CRYPTKEY, strlen(GP_PERSIST_BACKEND_CRYPTKEY));
-
-		//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
-		jwt_decode(&jwt, resp.buffer.c_str(), NULL, 0);
-
-		char *json = jwt_get_grants_json(jwt, NULL);
-
-		send_json = json_loads(json, 0, NULL);
+		
+		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
 
 		json_t *success_obj = json_object_get(send_json, "success");
@@ -294,31 +234,12 @@ namespace GSBackend {
 
 		char *json_data = json_dumps(send_json, 0);
 
-		//build jwt
-		jwt_t *jwt;
-		jwt_new(&jwt);
-		const char *server_response = NULL;
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)OPENSPY_AUTH_KEY, strlen(OPENSPY_AUTH_KEY));
-		jwt_add_grants_json(jwt, json_data);
-		char *jwt_encoded = jwt_encode_str(jwt);
+		OS::HTTPResponse resp =	client.Post(json_data);
 
-		OS::HTTPResponse resp =	client.Post(jwt_encoded);
-
-		jwt_free(jwt);
-		free((void *)jwt_encoded);
 		free(json_data);
 		json_decref(send_json);
 
-		//build jwt
-		jwt_new(&jwt);
-		jwt_set_alg(jwt, JWT_ALG_HS256, (const unsigned char *)GP_PERSIST_BACKEND_CRYPTKEY, strlen(GP_PERSIST_BACKEND_CRYPTKEY));
-
-		//int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,int key_len);
-		jwt_decode(&jwt, resp.buffer.c_str(), NULL, 0);
-
-		char *json = jwt_get_grants_json(jwt, NULL);
-
-		send_json = json_loads(json, 0, NULL);
+		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
 
 		json_t *success_obj = json_object_get(send_json, "success");
@@ -331,10 +252,7 @@ namespace GSBackend {
 		resp_data.type = EPersistBackendRespType_GetUserData;
 
 		if(data_obj) {
-			json_t *persist_obj = json_object_get(data_obj, "data");
-			if(persist_obj) {
-				resp_data.game_instance_identifier = json_string_value(persist_obj);
-			}
+			resp_data.game_instance_identifier = json_string_value(data_obj);
 		}
 		req.callback(success, resp_data, req.mp_peer, req.mp_extra);
 

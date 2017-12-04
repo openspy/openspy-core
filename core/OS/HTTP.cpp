@@ -12,12 +12,7 @@ namespace OS {
 	    size_t realsize = size * nmemb;                             /* calculate buffer size */
 	    curl_data *data = (curl_data *)userp;
 		const char *p = (const char *)contents;
-		while(*p) {
-			if(isalnum(*p) || *p == '.')
-				data->buffer += *(p);
-			else break;
-			p++;
-		}
+		data->buffer += (p);
 
 	    return realsize;
 	}

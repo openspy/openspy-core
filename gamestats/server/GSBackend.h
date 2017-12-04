@@ -69,7 +69,7 @@ namespace GSBackend {
 
 	class PersistBackendTask : public OS::Task<PersistBackendRequest> {
 		public:
-			PersistBackendTask();
+			PersistBackendTask(int thread_index);
 			~PersistBackendTask();
 			static void SubmitNewGameSession(GS::Peer *peer, void* extra, PersistBackendCallback cb);
 			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb);
@@ -89,7 +89,7 @@ namespace GSBackend {
 			void PerformGetPersistData(PersistBackendRequest req);
 
 			std::vector<GS::Driver *> m_drivers;
-
+			int m_thread_index;
 	};
 	#define NUM_STATS_THREADS 8
 	extern OS::TaskPool<PersistBackendTask, PersistBackendRequest> *m_task_pool;
