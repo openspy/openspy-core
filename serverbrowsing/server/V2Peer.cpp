@@ -2,8 +2,7 @@
 #include "SBDriver.h"
 #include "V2Peer.h"
 #include <OS/OpenSpy.h>
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/buffwriter.h>
+#include <OS/Buffer.h>
 #include <limits.h>
 #include <sstream>
 #include <algorithm>
@@ -34,32 +33,29 @@ namespace SB {
 		if(len == 0)
 			return;
 
-		uint8_t *buffer = (uint8_t *)data;
+		/*uint8_t *buffer = (uint8_t *)data;
 		void *end = (void *)((char *)data + len);
-		int pos = len;
+		int pos = len;*/
+
+		OS::Buffer buffer(data, len);
 
 		uint8_t request_type = 0;
 
 		bool break_flag = false;
 
 		int idx = 0;
-		while((buffer - (uint8_t*)data) < len) {
-			uint32_t buff_len = htons(BufferReadShort(&buffer, &pos)); //length
+		while(buffer.remaining()) {
+			uint16_t buff_len = htons(buffer.ReadShort()); //length
 
-			buff_len -= sizeof(uint16_t);
+			request_type = buffer.ReadByte();
 
-			bool improper_length = false;
-			if(((char *)buffer + buff_len) > end) {
-				improper_length = true;
-			}
-
-			request_type = BufferReadByte(&buffer, &pos);
-
+			/*
 			if(improper_length && request_type != SEND_MESSAGE_REQUEST) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got improper length packet, type: %d", OS::Address(m_address_info).ToString().c_str(), request_type);
 				m_delete_flag = true;
 				break;
 			}
+			*/
 
 			gettimeofday(&m_last_recv, NULL);
 
@@ -71,13 +67,13 @@ namespace SB {
 			//TODO: get expected lengths for each packet type and test, prior to execution
 			switch (request_type) {
 				case SERVER_LIST_REQUEST:
-					buffer = ProcessListRequest(buffer, pos);
+					ProcessListRequest(buffer);
 					break;
 				case KEEPALIVE_MESSAGE:
-					buffer++; len--;
+					
 					break;
 				case SEND_MESSAGE_REQUEST:
-					buffer = ProcessSendMessage(buffer, pos);
+					ProcessSendMessage(buffer);
 					break_flag = true;
 				break;
 				case MAPLOOP_REQUEST:
@@ -89,68 +85,48 @@ namespace SB {
 					break_flag = true;
 				break;
 				case SERVER_INFO_REQUEST:
-					buffer = ProcessInfoRequest(buffer, pos);
+					ProcessInfoRequest(buffer);
 				break;
 				default:
 					OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d", OS::Address(m_address_info).ToString().c_str(), request_type);
 					break_flag = true;
 					break;
 			}
-			pos = buffer - (uint8_t*)data;
-			if(pos >= len || break_flag) {
-				break;
-			}
 		}
 
 	}
-	MM::sServerListReq V2Peer::ParseListRequest(uint8_t **buffer, int remain) {
+	MM::sServerListReq V2Peer::ParseListRequest(OS::Buffer &buffer) {
 		uint32_t options;
-		int buf_remain = remain;
-
-		const char *from_gamename, *for_gamename, *filter, *field_list;
+		std::string key_list;
 
 		MM::sServerListReq req;
 
-		req.protocol_version = BufferReadByte(buffer, &buf_remain);
-		req.encoding_version = BufferReadByte(buffer, &buf_remain);
+		req.protocol_version = buffer.ReadByte();
+		req.encoding_version = buffer.ReadByte();
 
-		req.game_version = BufferReadInt(buffer, &buf_remain);
+		req.game_version = buffer.ReadInt();
+
+		req.m_for_gamename = buffer.ReadNTS();
+		req.m_from_gamename = buffer.ReadNTS();
 
 
-		for_gamename = (const char *)BufferReadNTS(buffer, &buf_remain);
-		from_gamename = (const char *)BufferReadNTS(buffer, &buf_remain);
-
-		if (!from_gamename) {
+		if (!req.m_from_gamename.length()) {
 			send_error(true, "No from gamename");
-			if(for_gamename)
-				free((void *)for_gamename);
 			return req;
 		}
 
-		if (!for_gamename) {
+		if (!req.m_for_gamename.length()) {
 			send_error(true, "No for gamename");
 
-			if (from_gamename)
-				free((void *)from_gamename);
-
 			return req;
 		}
 
-		BufferReadData(buffer, &buf_remain, (uint8_t*)&m_challenge, LIST_CHALLENGE_LEN);
+		buffer.ReadBuffer((void *)&m_challenge, LIST_CHALLENGE_LEN);
+		req.filter = buffer.ReadNTS();
+		key_list = buffer.ReadNTS();
+		req.field_list = OS::KeyStringToVector(key_list);
 
-		filter = (const char *)BufferReadNTS(buffer, &buf_remain);
-		
-		if(filter) {
-			req.filter = filter;
-		}
-		field_list = (const char *)BufferReadNTS(buffer, &buf_remain);
-
-		if (field_list) {
-			req.field_list = OS::KeyStringToVector(field_list);
-		}
-
-
-		options = htonl(BufferReadInt(buffer, &buf_remain));
+		options = htonl(buffer.ReadInt());
 
 		req.send_groups = options & SEND_GROUPS;
 		
@@ -161,13 +137,13 @@ namespace SB {
 		
 
 		if (options & ALTERNATE_SOURCE_IP) {
-			req.source_ip = BufferReadInt(buffer, &buf_remain);
+			req.source_ip = buffer.ReadInt();
 		}
 		else {
 			req.source_ip = 0;
 		}
 		if (options & LIMIT_RESULT_COUNT) {
-			req.max_results = BufferReadInt(buffer, &buf_remain);
+			req.max_results = buffer.ReadInt();
 		}
 		else {
 			req.max_results = 0;
@@ -183,34 +159,19 @@ namespace SB {
 		}
 
 
-		req.m_for_gamename = for_gamename;
-		req.m_from_gamename = from_gamename;
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: (%d %d %d), gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s, fields4all: %d, no_srv_list: %d, no_list_cache: %d, updates: %d, options: %d", OS::Address(m_address_info).ToString().c_str(), req.protocol_version, req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), field_list, filter, req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str(), req.send_fields_for_all, req.no_server_list, req.no_list_cache, req.push_updates, options);
-
-
-		if(filter)
-			free((void *)filter);
-		if(field_list)
-			free((void *)field_list);
-
-		free((void *)for_gamename);
-		free((void *)from_gamename);
+		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: (%d %d %d), gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s, fields4all: %d, no_srv_list: %d, no_list_cache: %d, updates: %d, options: %d", OS::Address(m_address_info).ToString().c_str(), req.protocol_version, req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), key_list.c_str(), req.filter.c_str(), req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str(), req.send_fields_for_all, req.no_server_list, req.no_list_cache, req.push_updates, options);
 		return req;
 
 	}
-	uint8_t *V2Peer::ProcessSendMessage(uint8_t *buffer, int remain) {
-		uint8_t *p = buffer;
-		int len = remain;
-
-		m_send_msg_to.sin_addr.s_addr = (BufferReadInt(&p, &len));
-		m_send_msg_to.sin_port = BufferReadShort(&p, &len);
+	void V2Peer::ProcessSendMessage(OS::Buffer &buffer) {
+		m_send_msg_to.sin_addr.s_addr = (buffer.ReadInt());
+		m_send_msg_to.sin_port = buffer.ReadShort();
 
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", OS::Address(m_address_info).ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
-		if (len > 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", OS::Address(m_address_info).ToString().c_str(), len);
-			const char *base64 = OS::BinToBase64Str((uint8_t *)p, len);
+		if (buffer.remaining() > 0) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", OS::Address(m_address_info).ToString().c_str(), buffer.remaining());
+			const char *base64 = OS::BinToBase64Str((uint8_t *)buffer.GetCursor(), buffer.remaining());
 			MM::MMQueryRequest req;
 			req.type = MM::EMMQueryRequestType_SubmitData;
 			req.SubmitData.from = m_address_info;
@@ -225,15 +186,12 @@ namespace SB {
 			m_next_packet_send_msg = true;
 		}
 
-		return p;
-
 	}
 	/*		
 		TODO: save this with game data and load it from that
 	*/
-	uint8_t *V2Peer::WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, uint8_t *buff, int *len, std::map<std::string, int> &field_types) {
+	void V2Peer::WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, OS::Buffer &buffer, std::map<std::string, int> &field_types) {
 		
-		uint8_t *out = buff;
 		uint8_t var = KEYTYPE_STRING;
 		std::vector<MM::Server *>::iterator it = servers.list.begin();
 		int highest_value = 0;
@@ -272,77 +230,69 @@ namespace SB {
 				}
 			}
 		}
-		BufferWriteByte(&out, len, var); //key type, 0 = str, 1 = uint8, 2 = uint16 TODO: determine type
-		BufferWriteNTS(&out, len, (uint8_t *)field_name.c_str());
+		buffer.WriteByte(var); //key type, 0 = str, 1 = uint8, 2 = uint16 TODO: determine type
+		buffer.WriteNTS(field_name);
 
 		field_types[field_name] = var;
-
-		return out;
 	}
 	void V2Peer::SendListQueryResp(struct MM::ServerListQuery servers, const MM::sServerListReq list_req, bool usepopularlist, bool send_fullkeys) {
 		/*
 		TODO: make support split packets
 		*/
-
-		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
-		uint8_t *p = (uint8_t *)&buff;
-		int len = 0;
+		OS::Buffer buffer;
 
 		if (list_req.source_ip != 0) {
-			BufferWriteInt(&p, &len, list_req.source_ip);
+			buffer.WriteInt(list_req.source_ip);
 		}
 		else {
-			
-			BufferWriteInt(&p, &len, m_address_info.sin_addr.s_addr);
+			buffer.WriteInt(m_address_info.sin_addr.s_addr);
 		}
 		
-		BufferWriteShort(&p, &len, htons(list_req.m_from_game.queryport));
+		buffer.WriteShort(htons(list_req.m_from_game.queryport));
 
 		bool send_push_keys = false;
 		bool no_keys = list_req.m_from_game.compatibility_flags & OS_COMPATIBILITY_FLAG_SBV2_FROMGAME_LIST_NOKEYS;
 
 		if(!list_req.no_server_list) {
-			BufferWriteByte(&p, &len, list_req.field_list.size());
+			buffer.WriteByte(list_req.field_list.size());
 
 			//send fields
 			std::map<std::string, int> field_types;
 			std::vector<std::string>::const_iterator field_it = list_req.field_list.begin();
 			while (field_it != list_req.field_list.end()) {
 				const std::string str = *field_it;
-				p = WriteOptimizedField(servers, str, p, &len, field_types);
+				WriteOptimizedField(servers, str, buffer, field_types);
 				field_it++;
 			}
 
 			//send popular string values list
 			if (usepopularlist) {
-				BufferWriteByte(&p, &len, list_req.m_for_game.popular_values.size());
+				buffer.WriteByte(list_req.m_for_game.popular_values.size());
 				std::vector<std::string>::const_iterator it_v = list_req.m_for_game.popular_values.begin();
 				while (it_v != list_req.m_for_game.popular_values.end()) {
 					const std::string v = *it_v;
-					BufferWriteNTS(&p, &len, (const uint8_t*)v.c_str());
+					buffer.WriteNTS(v);
 					it_v++;
 				}
 			}
 			else {
-				BufferWriteByte(&p, &len, 0);
+				buffer.WriteByte(0);
 			}
 
 			std::vector<MM::Server *>::iterator it = servers.list.begin();
 			while (it != servers.list.end()) {
 				MM::Server *server = *it;
-					sendServerData(server, usepopularlist, false, servers.first_set ? &p : NULL, servers.first_set ? &len : NULL, false, &field_types, no_keys);
+				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, no_keys, servers.first_set);
 				it++;
 			}
 
 			if (!servers.first_set) {
-				p = (uint8_t *)&buff;
-				len = 0;
+				buffer.reset();
 			}
-
 			if (servers.list.empty() || servers.last_set) {
 				//terminator
-				BufferWriteByte((uint8_t **)&p, &len, 0x00);
-				BufferWriteInt((uint8_t **)&p, &len, -1);
+				buffer.WriteByte(0);
+				buffer.WriteInt(-1);
 				if (!list_req.send_groups) {
 					send_push_keys = true;
 				}				
@@ -352,8 +302,8 @@ namespace SB {
 
 		gettimeofday(&m_last_recv, NULL); //prevent timeout during long lists
 
-		if (len > 0) {
-			SendPacket((uint8_t *)&buff, len, false);
+		if (buffer.size() > 0) {
+			SendPacket((uint8_t *)buffer.GetHead(), buffer.size(), false);
 		}
 
 		if (!m_sent_push_keys && send_push_keys) {
@@ -365,8 +315,9 @@ namespace SB {
 			m_in_message = false;
 		}
 	}
-	void V2Peer::setupCryptHeader(uint8_t **dst, int *len) {
+	int V2Peer::setupCryptHeader(OS::Buffer &buffer) {
 		//	memset(&options->cryptkey,0,sizeof(options->cryptkey));
+		int start_len = buffer.remaining();
 		srand(time(NULL));
 		uint32_t cryptlen = CRYPTCHAL_LEN;
 		uint8_t cryptchal[CRYPTCHAL_LEN];
@@ -381,10 +332,10 @@ namespace SB {
 			servchal[i] = (uint8_t)rand();
 		}
 
-		BufferWriteByte(dst, len, cryptlen ^ 0xEC);
-		BufferWriteData(dst, len, (uint8_t *)&cryptchal, cryptlen);
-		BufferWriteByte(dst, len, servchallen ^ 0xEA);
-		BufferWriteData(dst, len, (uint8_t *)&servchal, servchallen);
+		buffer.WriteByte(cryptlen ^ 0xEC);
+		buffer.WriteBuffer((uint8_t *)&cryptchal, cryptlen);
+		buffer.WriteByte(servchallen ^ 0xEA);
+		buffer.WriteBuffer((uint8_t *)&servchal, servchallen);
 
 		//combine our secret key, our challenge, and the server's challenge into a crypt key
 		int seckeylen = (int)strlen(m_game.secretkey);
@@ -394,43 +345,44 @@ namespace SB {
 			m_challenge[(i *  seckey[i % seckeylen]) % LIST_CHALLENGE_LEN] ^= (char)((m_challenge[i % LIST_CHALLENGE_LEN] ^ servchal[i]) & 0xFF);
 		}
 		GOACryptInit(&(m_crypt_state), (unsigned char *)(&m_challenge), LIST_CHALLENGE_LEN);
+		return start_len - buffer.remaining();
 	}
 	void V2Peer::SendPacket(uint8_t *buff, int len, bool prepend_length) {
 		if (m_delete_flag) {
 			return;
 		}
-		uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
-		uint8_t *p = (uint8_t*)&out_buff;
-		int out_len = 0;
+		OS::Buffer buffer;
 		int header_len = 0;
 
 		if (!m_sent_crypt_header && m_game.secretkey[0] != 0) {
 			//this is actually part of the main key list, not to be sent on each packet
-			setupCryptHeader(&p, &out_len);
- 			header_len = out_len;
+			header_len = setupCryptHeader(buffer);
 			m_sent_crypt_header = true;
 		}
 		if(prepend_length) {
-			BufferWriteShort(&p, &out_len, htons(len + sizeof(uint16_t)));
+			buffer.WriteShort(htons(len + sizeof(uint16_t)));
 		}
-		BufferWriteData(&p, &out_len, buff, len);
+		buffer.WriteBuffer(buff, len);
 		
-		GOAEncrypt(&m_crypt_state, ((unsigned char *)&out_buff) + header_len, out_len - header_len);
+		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.size() - header_len);
 
-		m_peer_stats.bytes_out += out_len;
 		m_peer_stats.packets_out++;
 
 		int c = 0;
-		if((c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL)) < 0) {
+		if((c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL)) < 0) {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d", OS::Address(m_address_info).ToString().c_str(),c);
 			m_delete_flag = true;
 		}
+		else {
+			m_peer_stats.bytes_out += c;
+		}
 	}
-	uint8_t *V2Peer::ProcessListRequest(uint8_t *buffer, int remain) {
+	void V2Peer::ProcessListRequest(OS::Buffer &buffer) {
 		MM::MMQueryRequest req;
 		req.extra = this;
 
-		req.req = this->ParseListRequest(&buffer, remain);
+		req.req = this->ParseListRequest(buffer);
+		printf("Buf len: %d\n", buffer.remaining());
 
 		OS::GameData old_gamedata[2];
 		req.req.m_from_game = m_last_list_req.m_from_game;
@@ -447,8 +399,6 @@ namespace SB {
 		else {
 			this->OnRecievedGameInfoPair(m_game, m_last_list_req.m_for_game, NULL);
 		}
-
-		return buffer;
 	}
 	void V2Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {
 		m_in_message = false;
@@ -498,12 +448,11 @@ namespace SB {
 
 		FlushPendingRequests();
 	}
-	uint8_t *V2Peer::ProcessInfoRequest(uint8_t *buffer, int remain) {
-		uint8_t *p = (uint8_t *)buffer;
-		int len = remain;
+	void V2Peer::ProcessInfoRequest(OS::Buffer &buffer) {
+		int len = buffer.remaining();
 		OS::Address address;
-		address.ip = BufferReadInt(&p, &len);
-		address.port = BufferReadShort(&p, &len);
+		address.ip = buffer.ReadInt();
+		address.port = buffer.ReadShort();;
 
 		sServerCache cache = FindServerByIP(address);
 
@@ -524,24 +473,20 @@ namespace SB {
 		req.req.m_for_game = m_game;
 		req.SubmitData.game = m_game;
 		AddRequest(req);
-		return p;
 	}
 	void V2Peer::send_ping() {
 		//check for timeout
 		struct timeval current_time;
 
-		uint8_t buff[10];
-		uint8_t *p = (uint8_t *)&buff;
-		int len = 0;
-
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
+			OS::Buffer buffer;
 			gettimeofday(&m_last_ping, NULL);
-			BufferWriteByte(&p, &len, KEEPALIVE_MESSAGE);
+			buffer.WriteByte(KEEPALIVE_MESSAGE);
 
 			//embed response into reply, as SB client just sends same data back
-			BufferWriteByte(&p, &len, KEEPALIVE_REPLY);
-			SendPacket((uint8_t *)&buff, len, true);
+			buffer.WriteByte(KEEPALIVE_REPLY);
+			SendPacket((uint8_t *)buffer.GetHead(), buffer.remaining(), true);
 		}
 
 	}
@@ -592,16 +537,13 @@ namespace SB {
 			m_delete_flag = true;
 		}
 	}
-	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys, const std::map<std::string, int> *optimized_fields, bool no_keys) {
-		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
-		uint8_t *p = (uint8_t *)&buf;
-
+	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, OS::Buffer *sendBuffer, bool full_keys, const std::map<std::string, int> *optimized_fields, bool no_keys, bool first_set) {
+		OS::Buffer *buffer = sendBuffer;
+		if (!buffer) {
+			buffer = new OS::Buffer();
+		}
 		cacheServer(server);
 
-		if(out) {
-			p = *out;
-		}
-		int len = 0;
 		uint8_t flags = 0;
 		int private_ip = 0;
 		int private_port = 0;
@@ -647,27 +589,27 @@ namespace SB {
 		}
 		
 		if(push) {
-			BufferWriteByte(&p, &len, PUSH_SERVER_MESSAGE);
+			buffer->WriteByte(PUSH_SERVER_MESSAGE);
 		}
 
 		
 
 		if (server->wan_address.GetIP() == -1) {
-			return;
+			goto end;
 		}
 
-		BufferWriteByte(&p, &len, flags); //flags
-		BufferWriteInt(&p, &len, server->wan_address.ip); //ip
+		buffer->WriteByte(flags); //flags
+		buffer->WriteInt(server->wan_address.ip); //ip
 
 		if (flags & NONSTANDARD_PORT_FLAG) {
-			BufferWriteShort(&p, &len, server->wan_address.port);
+			buffer->WriteShort(server->wan_address.port);
 		}
 
 		if (flags & PRIVATE_IP_FLAG) {
-			BufferWriteInt(&p, &len, /*Socket::htonl*/(private_ip));
+			buffer->WriteInt(/*Socket::htonl*/(private_ip));
 		}
 		if (flags & NONSTANDARD_PRIVATE_PORT_FLAG) {
-			BufferWriteShort(&p, &len, htons(private_port));
+			buffer->WriteShort(htons(private_port));
 		}
 
 		if(flags & HAS_KEYS_FLAG) {
@@ -694,29 +636,29 @@ namespace SB {
 							This optimziation works on HAS_KEY_FLAG only
 						*/
 						if(type == KEYTYPE_STRING)
-							BufferWriteByte(&p, &len, 0xFF); //string index, -1 = no index
+							buffer->WriteByte(0xFF); //string index, -1 = no index
 						if (value.length() > 0) {
 
 							switch(type) {
 								case KEYTYPE_BYTE:
-									BufferWriteByte(&p, &len, (atoi(value.c_str())));
+									buffer->WriteByte((atoi(value.c_str())));
 									break;
 								case KEYTYPE_SHORT:
-									BufferWriteShort(&p, &len, htons(atoi(value.c_str())));
+									buffer->WriteShort(htons(atoi(value.c_str())));
 									break;
 								case KEYTYPE_STRING:
-									BufferWriteNTS(&p, &len, (uint8_t*)value.c_str());
+									buffer->WriteNTS(value);
 									break;
 								break;
 							}
 
 						}
 						else {
-							BufferWriteByte(&p, &len, 0);
+							buffer->WriteByte(0);
 						}
 					}
 					else { //write popular string index
-						BufferWriteByte(&p, &len, std::distance(server->game.popular_values.begin(), push_it));
+						buffer->WriteByte(std::distance(server->game.popular_values.begin(), push_it));
 					}
 				}
 				tok_it++;
@@ -736,8 +678,8 @@ namespace SB {
 			std::map<std::string, std::string>::iterator field_it = server->kvFields.begin();
 			while(field_it != server->kvFields.end()) {
 				std::pair<std::string, std::string> pair = *field_it;
-				BufferWriteNTS(&p, &len, (const uint8_t *)pair.first.c_str());
-				BufferWriteNTS(&p, &len, (const uint8_t *)pair.second.c_str());
+				buffer->WriteNTS(pair.first);
+				buffer->WriteNTS(pair.second);
 				field_it++;
 			}
 
@@ -749,8 +691,8 @@ namespace SB {
 				while(it2 != index_mappair.second.end()) {
 					kvp = *it2;
 					s << kvp.first << index_mappair.first;
-					BufferWriteNTS(&p, &len, (const uint8_t *)s.str().c_str());
-					BufferWriteNTS(&p, &len, (const uint8_t *)kvp.second.c_str());
+					buffer->WriteNTS(s.str());
+					buffer->WriteNTS(kvp.second);
 					s.str("");
 					it2++;
 				}
@@ -764,8 +706,8 @@ namespace SB {
 				while(it2 != index_mappair.second.end()) {
 					kvp = *it2;
 					s << kvp.first << index_mappair.first;
-					BufferWriteNTS(&p, &len, (const uint8_t *)s.str().c_str());
-					BufferWriteNTS(&p, &len, (const uint8_t *)kvp.second.c_str());
+					buffer->WriteNTS(s.str());
+					buffer->WriteNTS(kvp.second);
 					s.str("");
 					it2++;
 				}
@@ -773,14 +715,17 @@ namespace SB {
 			}
 		}
 
-		if(out) {
-			*out = p;
-			*out_len += len;
-		} else {
-			SendPacket((uint8_t *)&buf, len, push);
+		if (!first_set) {
+			SendPacket((uint8_t *)buffer->GetHead(), buffer->size(), push);
+			buffer->reset();
+		}
+		end:
+		if (!sendBuffer) {
+			delete buffer;
 		}
 	}
 	void V2Peer::informDeleteServers(MM::Server *server) {
+		OS::Buffer buffer;
 		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
 		uint8_t *p = (uint8_t *)&buf;
 		int len = 0;
@@ -790,9 +735,9 @@ namespace SB {
 
 		DeleteServerFromCacheByKey(server->key);
 
-		BufferWriteByte(&p, &len, DELETE_SERVER_MESSAGE);
-		BufferWriteInt(&p, &len, server->wan_address.ip);
-		BufferWriteShort(&p, &len, server->wan_address.port);
+		buffer.WriteByte(DELETE_SERVER_MESSAGE);
+		buffer.WriteInt(server->wan_address.ip);
+		buffer.WriteShort(server->wan_address.port);
 		SendPacket((uint8_t *)&buf, len, true);
 	}
 	void V2Peer::informNewServers(MM::Server *server) {
@@ -801,7 +746,7 @@ namespace SB {
 		if(server) {
 			if(serverMatchesLastReq(server)) {
 				cacheServer(server);
-				sendServerData(server, false, true, NULL, NULL, true);
+				sendServerData(server, false, true, NULL, true, NULL, false, true);
 			}
 		}
 	}
@@ -814,24 +759,22 @@ namespace SB {
 			cacheServer(server);
 		}
 		if(server && serverMatchesLastReq(server)) {
-			sendServerData(server, false, true, NULL, NULL, true);
+			sendServerData(server, false, true, NULL, true, NULL, false, true);
 		}
 	}
 
 	void V2Peer::SendPushKeys() {
-		uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
-		uint8_t *p = (uint8_t *)&buff;
-		int len = 0;
+		OS::Buffer buffer;
 		std::map<std::string, uint8_t>::iterator it = m_last_list_req.m_from_game.push_keys.begin();
 
-		BufferWriteByte(&p, &len, m_last_list_req.m_from_game.push_keys.size());
+		buffer.WriteByte(m_last_list_req.m_from_game.push_keys.size());
 		while(it != m_last_list_req.m_from_game.push_keys.end()) {
 			std::pair<std::string, uint8_t> pair = *it;
-			BufferWriteByte(&p, &len, pair.second);
-			BufferWriteNTS(&p, &len, (const uint8_t*)pair.first.c_str());
+			buffer.WriteByte(pair.second);
+			buffer.WriteNTS(pair.first);
 			it++;
 		}
-		SendPacket((uint8_t *)&buff, len, true);
+		SendPacket((uint8_t *)buffer.GetHead(), buffer.remaining(), true);
 	}
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
 		if (m_delete_flag) {
@@ -869,7 +812,7 @@ namespace SB {
 		if (results.list.size() == 0) return;
 		MM::Server *server = results.list.front();
 		if (server) {
-			sendServerData(server, false, true, NULL, NULL, true);
+			sendServerData(server, false, true, NULL, true, NULL, false, true);
 			cacheServer(server, true);
 		}
 	}

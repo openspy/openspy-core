@@ -7,6 +7,7 @@
 #include <string>
 
 #include <OS/Mutex.h>
+#include <OS/Buffer.h>
 
 //message types for outgoing requests
 #define SERVER_LIST_REQUEST		0
@@ -68,23 +69,24 @@ namespace SB {
 				void SendPacket(uint8_t *buff, int len, bool prepend_length);
 				void send_ping();
 				void handle_packet(char *data, int len);
-				void setupCryptHeader(uint8_t **dst, int *len);
+				int setupCryptHeader(OS::Buffer &buffer);
 
 				//request type handles
-				uint8_t *ProcessListRequest(uint8_t *buffer, int remain);
-				uint8_t *ProcessSendMessage(uint8_t *buffer, int remain);
-				uint8_t *ProcessInfoRequest(uint8_t *buffer, int remain);
+				void	ProcessListRequest(OS::Buffer &buffer);
+				void	ProcessSendMessage(OS::Buffer &buffer);
+				void	ProcessInfoRequest(OS::Buffer &buffer);
 
 				//request processors
-				MM::sServerListReq ParseListRequest(uint8_t **buffer, int remain);
+				MM::sServerListReq ParseListRequest(OS::Buffer &buffer);
 
 				void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
 				void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
 				void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
 
 				void SendListQueryResp(struct MM::ServerListQuery servers, const MM::sServerListReq list_req, bool usepopularlist = true, bool send_fullkeys = false);
-				void sendServerData(MM::Server *server, bool usepopularlist, bool push, uint8_t **out, int *out_len, bool full_keys = false, const std::map<std::string, int> *optimized_fields = NULL, bool no_keys = false);
-				uint8_t *WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, uint8_t *buff, int *len, std::map<std::string, int> &field_types);
+				
+				void sendServerData(MM::Server *server, bool usepopularlist, bool push, OS::Buffer *sendBuffer, bool full_keys = false, const std::map<std::string, int> *optimized_fields = NULL, bool no_keys = false, bool first_set = false);
+				void WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, OS::Buffer &buffer, std::map<std::string, int> &field_types);
 				void SendPushKeys();
 				void send_error(bool die, const char *fmt, ...);
 
