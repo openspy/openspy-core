@@ -174,114 +174,6 @@ namespace FESL {
 		}
 		printf("Send: %s\n", data.c_str());
 	}
-	bool Peer::m_fsys_hello_handler(OS::KVReader kv_list) {
-		/*
-		TXN = Hello
-		domainPartition.domain = eagames
-		messengerIp = messaging.ea.com
-		messengerPort = 13505
-		domainPartition.subDomain = bf2142
-		activityTimeoutSecs = 0
-		curTime = "Nov-18-  17 02%3a19%3a07 UTC"
-		theaterIp = bf2142 - pc.theater.ea.com
-		theaterPort = 18305
-		*/
-		std::string kv_str = "TXN=Hello\ndomainPartition.domain=eagames\nmessengerIp=messaging.ea.com\nmessengerPort=13505\ndomainPartition.subDomain=bf2142\nactivityTimeoutSecs=0\ncurTime=\"Nov-18-  17 02%3a19%3a07 UTC\"\ntheaterIp=bf2142-pc.theater.ea.com\ntheaterPort=18305\n";
-		SendPacket(FESL_TYPE_FSYS, kv_str);
-		return true;
-	}
-	bool Peer::m_fsys_goodbye_handler(OS::KVReader kv_list) {
-		m_delete_flag = true;
-		return true;
-	}
-	bool Peer::m_fsys_memcheck_handler(OS::KVReader kv_list) {
-		//send_memcheck(0);
-		return true;
-	}
-	
-	bool Peer::m_acct_register_game_handler(OS::KVReader kv_list) {
-		std::string kv_str = "TXN=RegisterGame\n";
-		SendPacket(FESL_TYPE_ACCOUNT, kv_str);
-		return true;
-	}
-	bool Peer::m_acct_get_personas(OS::KVReader kv_list) {
-		if (!m_got_profiles) {
-			m_pending_nuget_personas= true;
-		}
-		else {
-			send_personas();
-		}
-		return true;
-	}
-	bool Peer::m_acct_nulogin_handler(OS::KVReader kv_list) {
-		OS::AuthTask::TryAuthEmailPassword(kv_list.GetValue("nuid"), OS_EA_PARTNER_CODE, kv_list.GetValue("password"), m_nulogin_auth_cb, NULL, 0, this);
-		return true;
-	}
-	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
-		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), OS_EA_PARTNER_CODE, 0, kv_list.GetValue("password"), m_login_auth_cb, NULL, 0, this);
-		return true;
-	}
-	bool Peer::m_acct_get_telemetry_token(OS::KVReader kv_list) {
-		std::ostringstream s;
-		s << "TXN=GetTelemetryToken\n";
-		s << "telemetryToken=\"teleToken\"\n";
-		s << "enabled=0\n";
-		s << "disabled=1\n";
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-		return true;
-	}
-	void Peer::m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
-		std::ostringstream s;
-		if (success) {
-			s << "TXN=NuLogin\n";
-			s << "lkey=" << auth_data.session_key << "\n";
-			((Peer *)peer)->m_session_key = auth_data.session_key;
-			s << "displayName=" << profile.uniquenick << "\n";
-			s << "userId=" << user.id << "\n";
-			s << "profileId=" << profile.id << "\n";
-			((Peer *)peer)->m_logged_in = true;
-			((Peer *)peer)->m_user = user;
-			((Peer *)peer)->m_profile = profile;
-			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
-
-			OS::ProfileSearchRequest request;
-			request.type = OS::EProfileSearch_Profiles;
-			request.user_search_details.id = user.id;
-			request.peer = peer;
-			peer->IncRef();
-			request.callback = Peer::m_search_callback;
-			OS::m_profile_search_task_pool->AddRequest(request);
-		}
-		else {
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "NuLogin");
-		}
-	}
-	void Peer::m_login_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
-		std::ostringstream s;
-		if (success) {
-			s << "TXN=Login\n";
-			s << "lkey=" << auth_data.session_key << "\n";
-			((Peer *)peer)->m_session_key = auth_data.session_key;
-			s << "displayName=" << profile.uniquenick << "\n";
-			s << "userId=" << user.id << "\n";
-			s << "profileId=" << profile.id << "\n";
-			((Peer *)peer)->m_logged_in = true;
-			((Peer *)peer)->m_user = user;
-			((Peer *)peer)->m_profile = profile;
-			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
-
-			OS::ProfileSearchRequest request;
-			request.type = OS::EProfileSearch_Profiles;
-			request.user_search_details.id = user.id;
-			request.peer = peer;
-			peer->IncRef();
-			request.callback = Peer::m_search_callback;
-			OS::m_profile_search_task_pool->AddRequest(request);
-		}
-		else {
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "Login");
-		}
-	}
 	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		((Peer *)peer)->mp_mutex->lock();
 		((Peer *)peer)->m_profiles = results;
@@ -323,21 +215,6 @@ namespace FESL {
 		SendPacket(FESL_TYPE_SUBS, kv_str);
 		return true;
 	}
-	void Peer::send_personas() {
-		std::ostringstream s;
-		mp_mutex->lock();
-		std::vector<OS::Profile>::iterator it = m_profiles.begin();
-		s << "TXN=NuGetPersonas\n";
-		s << "personas.[]=" << m_profiles.size() << "\n";
-		int i = 0;
-		while (it != m_profiles.end()) {
-			OS::Profile profile = *it;
-			s << "personas." << i++ << "=\"" << profile.uniquenick << "\"\n";
-			it++;
-		}
-		mp_mutex->unlock();
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-	}
 	void Peer::send_subaccounts() {
 		std::ostringstream s;
 		mp_mutex->lock();
@@ -353,25 +230,6 @@ namespace FESL {
 		
 		mp_mutex->unlock();
 		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-	}
-	void Peer::loginToPersona(std::string uniquenick) {
-		std::ostringstream s;
-		mp_mutex->lock();
-		std::vector<OS::Profile>::iterator it = m_profiles.begin();
-		while (it != m_profiles.end()) {
-			OS::Profile profile = *it;
-			if (profile.uniquenick.compare(uniquenick) == 0) {
-				m_profile = profile;
-				s << "TXN=LoginPersona\n";
-				s << "lkey=" << m_session_key << "\n";
-				s << "profileId=" << m_profile.id << "\n";
-				s << "userId=" << m_user.id << "\n";
-				SendPacket(FESL_TYPE_ACCOUNT, s.str());
-				break;
-			}
-			it++;
-		}
-		mp_mutex->unlock();
 	}
 	void Peer::loginToSubAccount(std::string uniquenick) {
 		std::ostringstream s;
@@ -488,33 +346,6 @@ namespace FESL {
 		else {
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)FESL_ERROR_SYSTEM_ERROR, "DisableSubAccount");
 		}
-	}
-	bool Peer::m_acct_login_persona(OS::KVReader kv_list) {
-		std::ostringstream s;
-		s << "TXN=NuLoginPersona\n";
-		s << "lkey=" << 555<< "\n";
-		s << "profileId=" << 10083 << "\n";
-		s << "userId=" << 10029 << "\n";
-		m_profile.id = 10083;
-		m_user.id = 10029;
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-
-		loginToPersona(kv_list.GetValue("name"));
-		return true;
-	}
-	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {
-		loginToSubAccount(kv_list.GetValue("name"));
-		return true;
-	}
-	bool Peer::m_acct_gamespy_preauth(OS::KVReader kv_list) {
-		OS::AuthTask::TryMakeAuthTicket(m_profile.id, m_create_auth_ticket, NULL, 0, this);
-		return true;
-	}
-	bool Peer::m_acct_send_account_name(OS::KVReader kv_list) {
-		return true;
-	}
-	bool Peer::m_acct_send_account_password(OS::KVReader kv_list) {
-		return true;
 	}
 	void Peer::m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
 		std::ostringstream s;

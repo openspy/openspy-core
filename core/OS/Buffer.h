@@ -2,7 +2,20 @@
 #define _OS_BUFFER_H
 #include <stdint.h>
 #include <string>
+#include <OS/OpenSpy.h>
+#include <OS/Ref.h>
 namespace OS {
+	class BufferCtx : public OS::Ref {
+	private:
+		BufferCtx(int alloc_size);
+		BufferCtx(void *addr, int len);
+		~BufferCtx();
+		void *_head;
+		void *_cursor;
+		int alloc_size;
+		bool pointer_owner;
+		friend class Buffer;
+	};
 	class Buffer {
 		public:
 			Buffer(Buffer &cpy);
@@ -31,11 +44,9 @@ namespace OS {
 			void reset();
 			int size();
 		private:
+			void realloc_buffer(int new_size);
 			void IncCursor(int len);
-			void *_head;
-			void *_cursor;
-			int alloc_size;
-			bool pointer_owner;
+			BufferCtx *mp_ctx;
 	};
 }
 #endif //_OS_BUFFER_H
