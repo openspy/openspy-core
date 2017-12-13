@@ -2,9 +2,6 @@
 #include "FESLDriver.h"
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
-#include <OS/legacy/helpers.h>
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/buffwriter.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
 #include <OS/Auth.h>
