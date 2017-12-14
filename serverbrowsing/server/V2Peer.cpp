@@ -486,7 +486,7 @@ namespace SB {
 
 			//embed response into reply, as SB client just sends same data back
 			buffer.WriteByte(KEEPALIVE_REPLY);
-			SendPacket((uint8_t *)buffer.GetHead(), buffer.remaining(), true);
+			SendPacket((uint8_t *)buffer.GetHead(), buffer.size(), true);
 		}
 
 	}
@@ -774,7 +774,7 @@ namespace SB {
 			buffer.WriteNTS(pair.first);
 			it++;
 		}
-		SendPacket((uint8_t *)buffer.GetHead(), buffer.remaining(), true);
+		SendPacket((uint8_t *)buffer.GetHead(), buffer.size(), true);
 	}
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
 		if (m_delete_flag) {
