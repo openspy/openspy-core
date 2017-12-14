@@ -149,6 +149,7 @@ namespace OS {
 			return size;
 		}
 		void Buffer::realloc_buffer(int new_size) {
+			if (!mp_ctx->pointer_owner) return;
 			int offset = remaining();
 			mp_ctx->_head = realloc(mp_ctx->_head, size() + new_size);
 			reset();
