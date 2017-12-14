@@ -45,7 +45,7 @@ namespace OS {
 			int size();
 		private:
 			void realloc_buffer(int new_size);
-			void IncCursor(int len);
+			void IncCursor(int len, bool write_operation = false);
 			BufferCtx *mp_ctx;
 	};
 }

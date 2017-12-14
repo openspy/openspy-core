@@ -82,23 +82,23 @@ namespace OS {
 		}
 		void Buffer::WriteByte(uint8_t byte) {
 			*(uint8_t *)mp_ctx->_cursor = byte;
-			IncCursor(sizeof(uint8_t));
+			IncCursor(sizeof(uint8_t), true);
 		}
 		void Buffer::WriteShort(uint16_t byte) {
 			*(uint16_t *)mp_ctx->_cursor = byte;
-			IncCursor(sizeof(uint16_t));
+			IncCursor(sizeof(uint16_t), true);
 		}
 		void Buffer::WriteInt(uint32_t byte) {
 			*(uint32_t *)mp_ctx->_cursor = byte;
-			IncCursor(sizeof(uint32_t));
+			IncCursor(sizeof(uint32_t), true);
 		}
 		void Buffer::WriteFloat(float f) {
 			*(float *)mp_ctx->_cursor = f;
-			IncCursor(sizeof(float));
+			IncCursor(sizeof(float), true);
 		}
 		void Buffer::WriteDouble(double d) {
 			*(double *)mp_ctx->_cursor = d;
-			IncCursor(sizeof(double));
+			IncCursor(sizeof(double), true);
 		}
 		void Buffer::WriteNTS(std::string str) {
 			if (str.length() > remaining()) {
@@ -108,7 +108,7 @@ namespace OS {
 				int len = str.length();
 				const char *c_str = str.c_str();
 				memcpy(mp_ctx->_cursor, c_str, len + 1);
-				IncCursor(len + 1);
+				IncCursor(len + 1, true);
 			}
 			else {
 				WriteByte(0);
@@ -119,14 +119,14 @@ namespace OS {
 				realloc_buffer(len + REALLOC_ADD_SIZE);
 			}
 			memcpy(mp_ctx->_cursor, buf, len);
-			IncCursor(len);
+			IncCursor(len, true);
 		}
-		void Buffer::IncCursor(int len) {
+		void Buffer::IncCursor(int len, bool write_operation) {
 			char *cursor = (char *)mp_ctx->_cursor;
 			cursor += len;
 			mp_ctx->_cursor = cursor;
 
-			if (remaining() < BUFFER_SAFE_SIZE) {
+			if (write_operation && remaining() < BUFFER_SAFE_SIZE) {
 				realloc_buffer(REALLOC_ADD_SIZE);
 			}
 		}

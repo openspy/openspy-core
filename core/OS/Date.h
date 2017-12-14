@@ -1,6 +1,7 @@
 #ifndef _N_DATE_H
 #define _N_DATE_H
-#include <jansson.h>	
+#include <stdint.h>
+#include <jansson.h>
 namespace OS {
 	class Date {
 	public:
