@@ -382,7 +382,6 @@ namespace SB {
 		req.extra = this;
 
 		req.req = this->ParseListRequest(buffer);
-		printf("Buf len: %d\n", buffer.remaining());
 
 		OS::GameData old_gamedata[2];
 		req.req.m_from_game = m_last_list_req.m_from_game;
