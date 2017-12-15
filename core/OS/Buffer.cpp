@@ -42,26 +42,31 @@ namespace OS {
 			}
 		}	
 		uint8_t Buffer::ReadByte() {
+			if (remaining() < sizeof(uint8_t)) return 0;
 			uint8_t val = *(uint8_t *)mp_ctx->_cursor;
 			IncCursor(sizeof(uint8_t));
 			return val;
 		}
 		uint16_t Buffer::ReadShort() {
+			if (remaining() < sizeof(uint16_t)) return 0;
 			uint16_t val = *(uint16_t *)mp_ctx->_cursor;
 			IncCursor(sizeof(uint16_t));
 			return val;
 		}
 		uint32_t Buffer::ReadInt() {
+			if (remaining() < sizeof(uint32_t)) return 0;
 			uint32_t val = *(uint32_t *)mp_ctx->_cursor;
 			IncCursor(sizeof(uint32_t));
 			return val;
 		}
 		float Buffer::ReadFloat() {
+			if (remaining() < sizeof(float)) return 0;
 			float val = *(float *)mp_ctx->_cursor;
 			IncCursor(sizeof(float));
 			return val;
 		}
 		double Buffer::ReadDouble() {
+			if (remaining() < sizeof(double)) return 0;
 			double val = *(double *)mp_ctx->_cursor;
 			IncCursor(sizeof(double));
 			return val;
@@ -69,7 +74,7 @@ namespace OS {
 		std::string Buffer::ReadNTS() {
 			std::string ret;
 			char *p = (char *)mp_ctx->_cursor;
-			while (*p) {
+			while (*p && remaining() > 0) {
 				ret += *p;
 				p++;
 			}
@@ -77,6 +82,7 @@ namespace OS {
 			return ret;
 		}
 		void Buffer::ReadBuffer(void *out, int len) {
+			if (remaining() < len) return;
 			memcpy(out, mp_ctx->_cursor, len);
 			IncCursor(len);
 		}

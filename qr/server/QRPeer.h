@@ -64,8 +64,6 @@ namespace QR {
 
 		Driver *mp_driver;
 
-		struct sockaddr_in m_address_info;
-
 		struct timeval m_last_recv, m_last_ping, m_last_heartbeat;
 
 		bool m_delete_flag;
