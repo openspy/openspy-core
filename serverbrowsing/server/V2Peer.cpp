@@ -812,7 +812,7 @@ namespace SB {
 		if (results.list.size() == 0) return;
 		MM::Server *server = results.list.front();
 		if (server) {
-			sendServerData(server, false, true, NULL, true, NULL, false, true);
+			sendServerData(server, false, true, NULL, true, NULL, false, false);
 			cacheServer(server, true);
 		}
 	}
