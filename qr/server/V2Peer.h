@@ -5,6 +5,8 @@
 #include "QRDriver.h"
 #include "QRPeer.h"
 
+#include <OS/Buffer.h>
+
 #include <OS/legacy/gsmsalg.h>
 
 #include "MMPush.h"
@@ -28,12 +30,12 @@ namespace QR {
 		void OnGetGameInfo(OS::GameData game_info, void *extra);
 		void OnRegisteredServer(int pk_id, void *extra);
 	private:
-		void handle_heartbeat(char *buff, int len);
-		void handle_challenge(char *buff, int len);
-		void handle_keepalive(char *buff, int len);
-		void handle_available(char *buff, int len);
+		void handle_heartbeat(OS::Buffer &buffer);
+		void handle_challenge(OS::Buffer &buffer);
+		void handle_keepalive(OS::Buffer &buffer);
+		void handle_available(OS::Buffer &buffer);
 
-		void SendPacket(const uint8_t *buff, int len);
+		void SendPacket(OS::Buffer &buffer);
 		void send_ping();
 		void send_challenge();
 

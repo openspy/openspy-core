@@ -8,9 +8,6 @@
 #include "QRDriver.h"
 #include "V1Peer.h"
 
-#include <OS/legacy/buffwriter.h>
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/enctypex_decoder.h>
 #include <OS/legacy/helpers.h>
 
 #include <sstream>
@@ -94,7 +91,7 @@ namespace QR {
 
 
 		s << "\\error\\" << fmt << "\\fatal\\" << m_delete_flag;
-		SendPacket((const uint8_t*)s.str().c_str(), s.str().length(), true);
+		SendPacket(s.str(), true);
 	}
 	void V1Peer::SendClientMessage(uint8_t *data, int data_len) {
 
@@ -217,7 +214,7 @@ namespace QR {
 
 		gen_random((char *)&m_challenge, 6); //make new challenge
 		s << "\\echo\\ " << m_challenge;
-		SendPacket((const uint8_t*)s.str().c_str(), s.str().length(), false);
+		SendPacket(s.str(), false);
 	}
 	void V1Peer::handle_validate(char *recvbuf, int len) {
 		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
@@ -230,7 +227,7 @@ namespace QR {
 			m_query_state = EV1_CQS_Basic;
 			std::stringstream s;
 			s << "\\basic\\\\echo\\" << m_challenge;
-			SendPacket((uint8_t*)s.str().c_str(), s.str().length(), true);
+			SendPacket(s.str(), true);
 
 			gettimeofday(&m_last_recv, NULL); //validated, update ping
 		}
@@ -287,7 +284,7 @@ namespace QR {
 			s << "\\secure\\" << m_challenge;
 		}
 		if (s.str().length() > 0)
-			SendPacket((const uint8_t*)s.str().c_str(), s.str().length(), false);
+			SendPacket(s.str(), false);
 	}
 	void V1Peer::handle_echo(char *recvbuf, int len) {
 		std::string validation;
@@ -309,7 +306,7 @@ namespace QR {
 				m_query_state = EV1_CQS_Basic;
 				s << "\\basic\\";
 				if (s.str().length() > 0)
-					SendPacket((const uint8_t*)s.str().c_str(), s.str().length(), false);
+					SendPacket(s.str(), false);
 			}
 		}
 		else {
@@ -327,24 +324,19 @@ namespace QR {
 		if (current_time.tv_sec - m_last_ping.tv_sec > QR1_PING_TIME) {
 			gen_random((char *)&m_ping_challenge, 6);
 			s << "\\echo\\" << m_ping_challenge;
-			SendPacket((const uint8_t*)s.str().c_str(), s.str().length(), false);
+			SendPacket(s.str(), false);
 		}
 	}
-	void V1Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
-		uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
-		uint8_t *p = (uint8_t*)&out_buff;
-		int out_len = 0;
-		BufferWriteData(&p, &out_len, buff, len);
+	void V1Peer::SendPacket(std::string str, bool attach_final) {
+		std::string send_str = str;
 		if (attach_final) {
-			BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
+			send_str += "\\final\\";
 		}
 
-		out_buff[out_len] = 0;
-
 		m_peer_stats.packets_out++;
-		m_peer_stats.bytes_out += out_len;
+		m_peer_stats.bytes_out += send_str.length()+1;
 
-		int c = sendto(m_sd, (char *)&out_buff, out_len, 0, (struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
+		int c = sendto(m_sd, send_str.c_str(), send_str.length()+1, 0, (struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
 		if (c < 0) {
 			Delete();
 		}

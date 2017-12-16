@@ -8,8 +8,6 @@
 #include "QRDriver.h"
 #include "V2Peer.h"
 
-#include <OS/legacy/buffwriter.h>
-#include <OS/legacy/buffreader.h>
 #include <OS/legacy/enctypex_decoder.h>
 #include <OS/legacy/helpers.h>
 
@@ -49,31 +47,24 @@ namespace QR {
 	V2Peer::~V2Peer() {
 	}
 
-	void V2Peer::SendPacket(const uint8_t *buff, int len) {
-		char sendbuf[MAX_DATA_SIZE + 1];
-		uint8_t *p = (uint8_t *)&sendbuf;
-		int blen = 0;
-		BufferWriteByte((uint8_t**)&p,&blen,QR_MAGIC_1);
-		BufferWriteByte((uint8_t**)&p,&blen,QR_MAGIC_2);
-		BufferWriteData((uint8_t**)&p,&blen,buff, len);
+	void V2Peer::SendPacket(OS::Buffer &buffer) {
 
 		m_peer_stats.packets_out++;
-		m_peer_stats.bytes_out += blen;
+		m_peer_stats.bytes_out += buffer.size();
 
-		sendto(m_sd,(char *)&sendbuf,blen,0,(struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
+		sendto(m_sd,(const char *)buffer.GetHead(),buffer.size(),0,(struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
 	}
 	void V2Peer::handle_packet(char *recvbuf, int len) {
-		uint8_t *buff = (uint8_t *)recvbuf;
-		int buflen = len;
+		OS::Buffer buffer(recvbuf, len);
 
 		m_peer_stats.packets_in++;
 		m_peer_stats.bytes_in += len;
 
-		uint8_t type = BufferReadByte((uint8_t**)&buff,&buflen);
+		uint8_t type = buffer.ReadByte();
 
 		if(m_recv_instance_key) {
 			uint8_t instance_key[REQUEST_KEY_LEN];
-			BufferReadData((uint8_t **)&buff, (int *)&len, (uint8_t *)&instance_key, sizeof(instance_key));
+			buffer.ReadBuffer(&instance_key, REQUEST_KEY_LEN);
 			if(memcmp((uint8_t *)&instance_key, (uint8_t *)&m_instance_key, sizeof(instance_key)) != 0) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet", OS::Address(m_address_info).ToString().c_str());
 				return;
@@ -85,23 +76,23 @@ namespace QR {
 
 		switch(type) {
 			case PACKET_AVAILABLE:
-				handle_available((char *)buff, buflen);
+				handle_available(buffer);
 				break;
 			case PACKET_HEARTBEAT:
-				handle_heartbeat((char *)buff, buflen);
+				handle_heartbeat(buffer);
 			break;
 			case PACKET_CHALLENGE:
-				handle_challenge((char *)buff, buflen);
+				handle_challenge(buffer);
 			break;
 			case PACKET_KEEPALIVE:
-				handle_keepalive((char *)buff, buflen);
+				handle_keepalive(buffer);
 			break;
 			case PACKET_CLIENT_MESSAGE_ACK:
 				OS::LogText(OS::ELogLevel_Info, "[%s] Client Message ACK", OS::Address(m_address_info).ToString().c_str());
 			break;
 		}
 	}
-	void V2Peer::handle_challenge(char *buff, int len) {
+	void V2Peer::handle_challenge(OS::Buffer &buffer) {
 		char challenge_resp[90] = { 0 };
 		int outlen = 0;
 		uint8_t *p = (uint8_t *)challenge_resp;
@@ -110,7 +101,7 @@ namespace QR {
 			return;
 		}
 		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (unsigned char *)&m_server_info.m_game.secretkey, 0);
-		if(strcmp(buff,challenge_resp) == 0) { //matching challenge
+		if(strcmp(buffer.ReadNTS().c_str(),challenge_resp) == 0) { //matching challenge
 			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", OS::Address(m_address_info).ToString().c_str(), m_server_info.m_game.gamename);
 			if(m_sent_challenge) {
 				MM::MMPushRequest req;
@@ -129,16 +120,17 @@ namespace QR {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Incorrect challenge for gamename: %s", OS::Address(m_address_info).ToString().c_str(), m_server_info.m_game.gamename);
 		}
 	}
-	void V2Peer::handle_keepalive(char *buff, int len) {
-		uint32_t *key = (uint32_t *)buff;
-		if(*key == *(uint32_t *)&m_instance_key)
-			SendPacket((uint8_t*)buff, len);
+	void V2Peer::handle_keepalive(OS::Buffer &buffer) {
+		uint32_t key = buffer.ReadInt();
+		if (key == *(uint32_t *)&m_instance_key) {
+			buffer.WriteByte(QR_MAGIC_1);
+			buffer.WriteByte(QR_MAGIC_2);
+			buffer.WriteInt(key);
+			SendPacket(buffer);
+		}
 	}
-	void V2Peer::handle_heartbeat(char *buff, int len) {
+	void V2Peer::handle_heartbeat(OS::Buffer &buffer) {
 		unsigned int i = 0;
-		uint8_t *x;
-
-
 
 		MM::ServerInfo server_info, old_server_info = m_server_info;
 		server_info.m_game = m_server_info.m_game;
@@ -149,20 +141,19 @@ namespace QR {
 		std::string key, value;
 
 		if(!m_recv_instance_key) {
-			BufferReadData((uint8_t **)&buff, (int *)&len, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
+			buffer.ReadBuffer(&m_instance_key, sizeof(m_instance_key));
 			m_recv_instance_key = true;
 		}
 
 		std::stringstream ss;
 
-		while((buff[0] != 0 && len > 0) || (i%2 != 0)) {
-
-			x = BufferReadNTS((uint8_t **)&buff,&len);
+		while(true) {
 
 			if(i%2 == 0) {
-				key = std::string((char *)x);
+				key = buffer.ReadNTS();
+				if (key.length() == 0) break;
 			} else {
-				value = std::string((char *)x);
+				value = buffer.ReadNTS();
 				ss << "(" << key << "," << value << ") ";
 			}
 
@@ -170,7 +161,6 @@ namespace QR {
 				server_info.m_keys[key] = value;
 				value = std::string();
 			}
-			free((void *)x);
 			i++;
 		}
 
@@ -179,45 +169,42 @@ namespace QR {
 
 
 		uint16_t num_values = 0;
-		BufferReadByte((uint8_t**)&buff,&len); //skip null byte(seperator)
-		while((num_values = BufferReadShortRE((uint8_t**)&buff,&len))) {
+
+		while((num_values = htons(buffer.ReadShort()))) {
 			std::vector<std::string> nameValueList;
-			if(len <= 3) {
+			if(buffer.remaining() <= 3) {
 				break;
 			}
 			uint32_t num_keys = 0;
-			while(buff[0] != 0 && len > 0) {
-				x = BufferReadNTS((uint8_t **)&buff,&len);
-				nameValueList.push_back(std::string((const char *)x));
-				free((void *)x);
+			std::string x;
+			while(buffer.remaining() && (x = buffer.ReadNTS()).length() > 0) {
+				nameValueList.push_back(x);
 				num_keys++;
-				if(buff[0] == 0) break;
 			}
 			unsigned int player=0,num_keys_t = num_keys,num_values_t = num_values*num_keys;
 			i = 0;
-			BufferReadByte((uint8_t**)&buff,&len);
+
 			while(num_values_t--) {
 				std::string name = nameValueList.at(i);
 
-				x = BufferReadNTS((uint8_t **)&buff,&len);
+				x = buffer.ReadNTS();
 
 				if(isTeamString(name.c_str())) {
 					if(server_info.m_team_keys[name].size() <= player) {
-						server_info.m_team_keys[name].push_back(std::string((const char *)x));
+						server_info.m_team_keys[name].push_back(x);
 					}
 					else {
-						server_info.m_team_keys[name][player] = std::string((const char *)x);
+						server_info.m_team_keys[name][player] = x;
 					}
 					ss << "T(" << player << ") (" << name.c_str() << "," << x << ") ";
 				} else {
 					if(server_info.m_player_keys[name].size() <= player) {
-						server_info.m_player_keys[name].push_back(std::string((const char *)x));
+						server_info.m_player_keys[name].push_back(x);
 					} else {
-						server_info.m_player_keys[name][player] = std::string((const char *)x);
+						server_info.m_player_keys[name][player] = x;
 					}
 					ss << "P(" << player << ") (" << name.c_str() << "," << x << " ) ";
 				}
-				free((void *)x);
 				i++;
 				if(i >= num_keys) {
 					player++;
@@ -271,20 +258,14 @@ namespace QR {
 			MM::m_task_pool->AddRequest(req);
 		}
 	}
-	void V2Peer::handle_available(char *buff, int len) {
+	void V2Peer::handle_available(OS::Buffer &buffer) {
 		MM::MMPushRequest req;
 		req.peer = this;
 		req.peer->IncRef();
 		req.extra = (void *)2;
 
-		uint8_t *p= (uint8_t *)(buff + sizeof(m_instance_key));
-		int buflen = len - sizeof(m_instance_key);
-		char *str = (char *)BufferReadNTS((uint8_t **)&p, &buflen);
+		req.gamename = buffer.ReadNTS();
 
-		if (str) {
-			req.gamename = str;
-			free((void *)str);
-		}
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got available request: %s", OS::Address(m_address_info).ToString().c_str(), req.gamename.c_str());
 		req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
 		m_peer_stats.pending_requests++;
@@ -328,24 +309,25 @@ namespace QR {
 			}
 		}
 		else if(extra == (void *)2) {
-			char sendbuf[90] = { 0 };
-			int outlen = 0;
-
 			if (game_info.secretkey[0] == 0) {
 				game_info.disabled_services = OS::QR2_GAME_UNAVAILABLE;
 			}
+			OS::Buffer buffer;
+			buffer.WriteByte(QR_MAGIC_1);
+			buffer.WriteByte(QR_MAGIC_2);
 
-			uint8_t *p = (uint8_t *)&sendbuf;
-			BufferWriteByte((uint8_t**)&p, &outlen, PACKET_AVAILABLE);
-			BufferWriteIntRE((uint8_t**)&p, &outlen, game_info.disabled_services);
-			SendPacket((uint8_t *)&sendbuf, outlen);
+			buffer.WriteByte(PACKET_AVAILABLE);
+			buffer.WriteInt(htonl(game_info.disabled_services));
+			SendPacket(buffer);
 			Delete();
 		}
 	}
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
 
 		//XXX: make all these support const vars
-		SendPacket((uint8_t*)fmt, strlen(fmt));
+		OS::Buffer buffer;
+		buffer.WriteNTS(fmt);
+		SendPacket(buffer);
 		if(die) {
 			m_timeout_flag = false;
 			Delete();
@@ -360,16 +342,16 @@ namespace QR {
 
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > QR2_PING_TIME) {
-
-			char data[sizeof(m_instance_key) + 1];
-			uint8_t *p = (uint8_t *)&data;
-			int len = 0;
+			OS::Buffer buffer;
 
 			gettimeofday(&m_last_ping, NULL);
 
-			BufferWriteByte(&p, &len, PACKET_KEEPALIVE);
-			BufferWriteData(&p, &len, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
-			SendPacket((uint8_t *)&data, len);
+			buffer.WriteByte(QR_MAGIC_1);
+			buffer.WriteByte(QR_MAGIC_2);
+
+			buffer.WriteByte(PACKET_KEEPALIVE);
+			buffer.WriteBuffer((uint8_t *)&m_instance_key, sizeof(m_instance_key));
+			SendPacket(buffer);
 		}
 
 	}
@@ -388,9 +370,7 @@ namespace QR {
 	}
 
 	void V2Peer::send_challenge() {
-		char buff[100];
-		uint8_t *p = (uint8_t *)buff;
-		int blen = 0;
+		OS::Buffer buffer;
 
 		memset(&m_challenge, 0, sizeof(m_challenge));
 		gen_random((char *)&m_challenge,sizeof(m_challenge)-1);
@@ -399,27 +379,30 @@ namespace QR {
 		*backend_flags &= ~QR2_OPTION_USE_QUERY_CHALLENGE;
 
 
-		BufferWriteByte((uint8_t**)&p,&blen,PACKET_CHALLENGE);
-		BufferWriteData((uint8_t **)&p, &blen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
+		buffer.WriteByte(QR_MAGIC_1);
+		buffer.WriteByte(QR_MAGIC_2);
 
-		BufferWriteNTS((uint8_t**)&p,&blen,(uint8_t *)&m_challenge);
+		buffer.WriteByte(PACKET_CHALLENGE);
+		buffer.WriteBuffer((void *)&m_instance_key, sizeof(m_instance_key));
+		buffer.WriteNTS(m_challenge);
 
+		SendPacket(buffer);
 
-		SendPacket((uint8_t *)&buff, blen);
 		m_sent_challenge = true;
 	}
 	void V2Peer::SendClientMessage(uint8_t *data, int data_len) {
-		char buff[MAX_DATA_SIZE];
-		uint8_t *p = (uint8_t *)buff;
-		int blen = 0;
+		OS::Buffer buffer;
 		uint32_t key = rand() % 100000 + 1;
 
-		BufferWriteByte(&p, &blen, PACKET_CLIENT_MESSAGE);
-		BufferWriteData((uint8_t **)&p, &blen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
+		buffer.WriteByte(QR_MAGIC_1);
+		buffer.WriteByte(QR_MAGIC_2);
 
-		BufferWriteInt(&p, &blen, key);
-		BufferWriteData(&p, &blen, data, data_len);
-		SendPacket((uint8_t *)&buff, blen);
+		buffer.WriteByte(PACKET_CLIENT_MESSAGE);
+		buffer.WriteBuffer((void *)&m_instance_key, sizeof(m_instance_key));
+
+		buffer.WriteInt(key);
+		buffer.WriteBuffer(data, data_len);
+		SendPacket(buffer);
 	}
 	void V2Peer::Delete() {
 		if (m_server_pushed) {
@@ -434,13 +417,15 @@ namespace QR {
 		m_delete_flag = true;
 	}
 	void V2Peer::OnRegisteredServer(int pk_id, void *extra) {
-		char buff[10];
-		char *p = (char *)&buff;
-		int outlen = 0;
+		OS::Buffer buffer;
 		m_server_info.id = pk_id;
-		BufferWriteByte((uint8_t**)&p, &outlen, PACKET_CLIENT_REGISTERED);
-		BufferWriteData((uint8_t **)&p, &outlen, (uint8_t *)&m_instance_key, sizeof(m_instance_key));
-		SendPacket((uint8_t *)&buff, outlen);
+
+		buffer.WriteByte(QR_MAGIC_1);
+		buffer.WriteByte(QR_MAGIC_2);
+
+		buffer.WriteByte(PACKET_CLIENT_REGISTERED);
+		buffer.WriteBuffer((void *)&m_instance_key, sizeof(m_instance_key));
+		SendPacket(buffer);
 		
 	}
 }
