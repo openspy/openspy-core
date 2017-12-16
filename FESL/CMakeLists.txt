@@ -23,7 +23,7 @@ source_group("Headers\\Server" FILES ${SERVER_HDRS})
 add_executable (FESL ${ALL_SRCS})
 
 IF(WIN32)	
-	target_link_libraries(FESL ws2_32.lib hiredis.lib Win32_Interop.lib openspy.lib)
+	target_link_libraries(FESL ws2_32.lib openspy.lib)
 ELSE() #unix
-	target_link_libraries(FESL hiredis event pthread openspy)
+	target_link_libraries(FESL pthread openspy)
 ENDIF()

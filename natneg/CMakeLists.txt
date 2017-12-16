@@ -26,7 +26,7 @@ add_executable (natneg ${ALL_SRCS})
 target_compile_features(natneg PRIVATE cxx_unrestricted_unions)
 
 IF(WIN32)	
-	target_link_libraries(natneg ws2_32.lib hiredis.lib Win32_Interop.lib openspy.lib)
+	target_link_libraries(natneg ws2_32.lib openspy.lib)
 ELSE() #unix
-	target_link_libraries(natneg hiredis event pthread openspy)
+	target_link_libraries(natneg pthread openspy)
 ENDIF()

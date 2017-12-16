@@ -27,7 +27,7 @@ source_group("Headers\\Filter" FILES ${FILTER_HDRS})
 add_executable (serverbrowsing ${ALL_SRCS})
 
 IF(WIN32)	
-	target_link_libraries(serverbrowsing ws2_32.lib hiredis.lib Win32_Interop.lib openspy.lib)
+	target_link_libraries(serverbrowsing ws2_32.lib openspy.lib)
 ELSE() #unix
-	target_link_libraries(serverbrowsing hiredis event pthread openspy)
+	target_link_libraries(serverbrowsing pthread openspy)
 ENDIF()

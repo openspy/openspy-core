@@ -23,7 +23,7 @@ source_group("Headers\\Server" FILES ${SERVER_HDRS})
 add_executable (gstats ${ALL_SRCS})
 
 IF(WIN32)	
-	target_link_libraries(gstats ws2_32.lib hiredis.lib Win32_Interop.lib openspy.lib)
+	target_link_libraries(gstats ws2_32.lib openspy.lib)
 ELSE() #unix
-	target_link_libraries(gstats hiredis event pthread openspy)
+	target_link_libraries(gstats pthread openspy)
 ENDIF()
