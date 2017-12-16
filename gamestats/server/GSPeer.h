@@ -10,6 +10,7 @@
 #include <OS/Profile.h>
 #include <OS/Mutex.h>
 
+#include <OS/Buffer.h>
 #include <OS/Search/Profile.h>
 #include <OS/Search/User.h>
 
@@ -62,7 +63,8 @@ namespace GS {
 		void send_ping();
 
 		void send_login_challenge(int type);
-		void SendPacket(const uint8_t *buff, int len, bool attach_final = true);
+		void SendPacket(std::string str, bool attach_final = true);
+		void SendPacket(OS::Buffer &buffer, bool attach_final = true);
 
 		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
 		OS::MetricInstance GetMetrics();

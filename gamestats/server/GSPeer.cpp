@@ -1,9 +1,9 @@
 #include "GSPeer.h"
 #include "GSDriver.h"
 #include <OS/OpenSpy.h>
+#include <OS/Buffer.h>
 #include <OS/Search/Profile.h>
 #include <OS/legacy/helpers.h>
-#include <OS/legacy/buffwriter.h>
 
 #include <OS/Search/User.h>
 
@@ -58,7 +58,7 @@ namespace GS {
 				break;
 			}
 		}
-		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		SendPacket(s.str());
 	}
 	void Peer::think(bool packet_waiting) {
 		char buf[GPI_READ_SIZE + 1];
@@ -152,7 +152,7 @@ namespace GS {
 		int pid = data_parser.GetValueInt("pid");
 		std::ostringstream ss;
 		ss << "\\getpidr\\-1\\lid\\" << operation_id;
-		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+		SendPacket(ss.str());
 	}
 	void Peer::getPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		//// \\getpdr\\1\\lid\\1\\length\\5\\data\\mydata\\final
@@ -167,15 +167,11 @@ namespace GS {
 		ss << "\\getpdr\\" << 1 << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\length\\" << data_len << "\\data\\";
 
 		//SendPacket
-		uint8_t out_buff[GPI_READ_SIZE + 1];
-		memset(&out_buff, 0, sizeof(out_buff));
-		int out_len = 0;
-		uint8_t *p = (uint8_t *)(&out_buff);
-		BufferWriteData(&p, &out_len, (uint8_t *)ss.str().c_str(), ss.str().length());
+		OS::Buffer buffer;
+		buffer.WriteNTS(ss.str());
+		buffer.WriteBuffer(data, data_len);
 
-		BufferWriteData(&p, &out_len, (uint8_t *)data, data_len);
-
-		peer->SendPacket((const uint8_t *)&out_buff,out_len);
+		peer->SendPacket(buffer);
 
 		free((void *)data);
 		free((void *)persist_request_data);
@@ -235,7 +231,7 @@ namespace GS {
 
 		std::ostringstream ss;
 		ss << "\\setpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid;
-		peer->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+		peer->SendPacket(ss.str());
 
 		free((void *)persist_request_data);
 	}
@@ -306,7 +302,7 @@ namespace GS {
 		}
 
 		ss << "\\lc\\2\\sesskey\\" << m_session_key << "\\proof\\0\\id\\" << local_id;
-		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+		SendPacket(ss.str());
 	}
 	void Peer::newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 
@@ -382,7 +378,7 @@ namespace GS {
 			((Peer *)peer)->m_profile = profile;
 			((Peer *)peer)->m_user = user;
 
-			((Peer *)peer)->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+			((Peer *)peer)->SendPacket(ss.str());
 
 		} else {
 			ss << "\\pauthr\\-1\\errmsg\\";
@@ -416,23 +412,21 @@ namespace GS {
 			ss << error_data.msg;
 
 			ss << "\\lid\\" << operation_id;
-			((Peer *)peer)->SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+			((Peer *)peer)->SendPacket(ss.str());
 		}
 	}
 
-
-	void Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
-		uint8_t out_buff[GPI_READ_SIZE + 1];
-		uint8_t *p = (uint8_t*)&out_buff;
-		int out_len = 0;
-		BufferWriteData(&p, &out_len, buff, len);
-
-		printf("Sending: %s \n", buff);
+	void Peer::SendPacket(std::string str, bool attach_final) {
+		OS::Buffer buffer;
+		buffer.WriteBuffer((void *)str.c_str(), str.length());
+		SendPacket(buffer, attach_final);
+	}
+	void Peer::SendPacket(OS::Buffer &buffer, bool attach_final) {
 		if(attach_final) {
-			BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
+			buffer.WriteBuffer((uint8_t*)"\\final\\", 7);
 		}
-		gamespy3dxor((char *)&out_buff, out_len);
-		int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
+		gamespy3dxor((char *)buffer.GetHead(), buffer.size());
+		int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
 
 		if(c < 0) {
 			m_delete_flag = true;
@@ -465,7 +459,7 @@ namespace GS {
 			m_delete_flag = true;
 		}
 		printf("Send error: %s\n", error_data.msg);
-		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+		SendPacket(ss.str());
 	}
 
 	void Peer::gamespy3dxor(char *data, int len) {

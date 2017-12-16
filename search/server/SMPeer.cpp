@@ -1,10 +1,9 @@
 #include "SMPeer.h"
 #include "SMDriver.h"
 #include <OS/OpenSpy.h>
+#include <OS/Buffer.h>
 #include <OS/Search/Profile.h>
 #include <OS/legacy/helpers.h>
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/buffwriter.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
 #include <OS/Auth.h>
@@ -393,15 +392,14 @@ namespace SM {
 		OS::m_user_search_task_pool->AddRequest(request);
 	}
 	void Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
-		uint8_t out_buff[GPI_READ_SIZE + 1];
-		uint8_t *p = (uint8_t*)&out_buff;
-		int out_len = 0;
-		BufferWriteData(&p, &out_len, buff, len);
-		if(attach_final) {
-			BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
+		OS::Buffer buffer;
+		buffer.WriteBuffer((void *)buff, len);
+		if (attach_final) {
+			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
-		int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
-		if(c < 0) {
+		//OS::LogText(OS::ELogLevel_Info, "Sending: %s", out_buff);
+		int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
+		if (c < 0) {
 			m_delete_flag = true;
 		}
 	}

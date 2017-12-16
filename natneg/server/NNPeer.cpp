@@ -1,8 +1,5 @@
 #include "NNPeer.h"
 #include "NNDriver.h"
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/buffwriter.h>
-#include <OS/legacy/enctypex_decoder.h>
 #include <OS/legacy/helpers.h>
 
 #include "structs.h"
