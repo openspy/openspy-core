@@ -490,7 +490,7 @@ namespace SB {
 
 	}
 	void V2Peer::think(bool waiting_packet) {
-		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
+		char buf[READ_BUFFER_SIZE];
 		int len = 0;
 		if (m_delete_flag) return;
 		if (waiting_packet) {
@@ -725,11 +725,8 @@ namespace SB {
 	}
 	void V2Peer::informDeleteServers(MM::Server *server) {
 		OS::Buffer buffer;
-		char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
-		uint8_t *p = (uint8_t *)&buf;
-		int len = 0;
-
 		sServerCache cache = FindServerByKey(server->key);
+
 		if(cache.key[0] == 0 || !m_last_list_req.push_updates || m_in_message) return;
 
 		DeleteServerFromCacheByKey(server->key);
@@ -737,7 +734,7 @@ namespace SB {
 		buffer.WriteByte(DELETE_SERVER_MESSAGE);
 		buffer.WriteInt(server->wan_address.ip);
 		buffer.WriteShort(server->wan_address.port);
-		SendPacket((uint8_t *)&buf, len, true);
+		SendPacket((uint8_t *)buffer.GetHead(), buffer.size(), true);
 	}
 	void V2Peer::informNewServers(MM::Server *server) {
 		sServerCache cache = FindServerByKey(server->key);
