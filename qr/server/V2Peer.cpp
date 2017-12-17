@@ -62,9 +62,11 @@ namespace QR {
 
 		uint8_t type = buffer.ReadByte();
 
-		if(m_recv_instance_key) {
-			uint8_t instance_key[REQUEST_KEY_LEN];
+		uint8_t instance_key[REQUEST_KEY_LEN];
+		if(m_recv_instance_key || type == PACKET_AVAILABLE)
 			buffer.ReadBuffer(&instance_key, REQUEST_KEY_LEN);
+
+		if(m_recv_instance_key) {
 			if(memcmp((uint8_t *)&instance_key, (uint8_t *)&m_instance_key, sizeof(instance_key)) != 0) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet", OS::Address(m_address_info).ToString().c_str());
 				return;
@@ -310,7 +312,7 @@ namespace QR {
 		}
 		else if(extra == (void *)2) {
 			if (game_info.secretkey[0] == 0) {
-				game_info.disabled_services = OS::QR2_GAME_UNAVAILABLE;
+				game_info.disabled_services = OS::QR2_GAME_AVAILABLE;
 			}
 			OS::Buffer buffer;
 			buffer.WriteByte(QR_MAGIC_1);
