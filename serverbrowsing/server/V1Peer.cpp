@@ -13,9 +13,7 @@
 #include <vector>
 #include <algorithm>
 
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/buffwriter.h>
-
+#include <OS/Buffer.h>
 
 #include <OS/legacy/helpers.h> //gen_random
 #include <OS/KVReader.h>
@@ -49,7 +47,7 @@ namespace SB {
 			}
 		}
 		void V1Peer::think(bool packet_waiting) {
-			char buf[MAX_OUTGOING_REQUEST_SIZE + 1];
+			char buf[READ_BUFFER_SIZE];
 			int len;
 			if (m_delete_flag) return;
 			if (m_waiting_gamedata == 2) {
@@ -61,7 +59,7 @@ namespace SB {
 				}
 			}
 			if (packet_waiting) {
-				len = recv(m_sd, (char *)&buf, MAX_OUTGOING_REQUEST_SIZE, 0);
+				len = recv(m_sd, (char *)&buf, READ_BUFFER_SIZE, 0);
 				if (OS::wouldBlock()) {
 					return;
 				}
@@ -315,9 +313,7 @@ namespace SB {
 				//m_delete_flag = true;
 		}
 		void V1Peer::SendGroups(MM::ServerListQuery results) {
-			uint8_t buff[MAX_OUTGOING_REQUEST_SIZE * 2];
-			uint8_t *p = (uint8_t *)&buff;
-			int len = 0;
+			OS::Buffer buffer;
 
 			std::ostringstream resp;
 			std::vector<std::string> group_fields;
@@ -340,7 +336,7 @@ namespace SB {
 				it++;
 			}
 
-			BufferWriteData(&p, &len, (const uint8_t *)resp.str().c_str(), resp.str().length());
+			buffer.WriteBuffer((void *)resp.str().c_str(), resp.str().length());
 
 			std::vector<MM::Server *>::iterator it2 = results.list.begin();
 			while(it2 != results.list.end()) {
@@ -352,67 +348,63 @@ namespace SB {
 						std::map<std::string, std::string>::iterator it3 = serv->kvFields.begin();
 						std::ostringstream field_data_ss;
 						std::string field_data;
-						BufferWriteByte(&p, &len, '\\');
+						buffer.WriteByte('\\');
 						while(it3 != serv->kvFields.end()) {
 							std::pair<std::string, std::string> kv_pair = *it3;
 							if(std::find(group_fields.begin(), group_fields.end(), kv_pair.first) == group_fields.end()) {
-								BufferWriteByte(&p, &len, 0x01);
-								BufferWriteData(&p, &len, (const uint8_t*)field_cleanup(kv_pair.first).c_str(), kv_pair.first.length());
-								BufferWriteByte(&p, &len, 0x01);
-								BufferWriteData(&p, &len, (const uint8_t*)field_cleanup(kv_pair.second).c_str(), kv_pair.second.length());
+								buffer.WriteByte(0x01);
+								buffer.WriteBuffer((void *)field_cleanup(kv_pair.first).c_str(), kv_pair.first.length());
+								buffer.WriteByte(0x01);
+								buffer.WriteBuffer((void*)field_cleanup(kv_pair.second).c_str(), kv_pair.second.length());
 							}
 							it3++;
 						}
-						BufferWriteByte(&p, &len, '\\');
+						buffer.WriteByte('\\');
 					} else {
-						BufferWriteByte(&p, &len, '\\');
-						BufferWriteData(&p, &len, (const uint8_t *)field_cleanup(serv->kvFields[*it]).c_str(), serv->kvFields[*it].length());
+						buffer.WriteByte('\\');
+						buffer.WriteBuffer((void*)field_cleanup(serv->kvFields[*it]).c_str(), serv->kvFields[*it].length());
 					}
 					it++;
 				}
 				it2++;
 			}
-			SendPacket((const uint8_t *)buff, len, results.last_set);
+			SendPacket((const uint8_t *)buffer.GetHead(), buffer.size(), results.last_set);
 		}
 		void V1Peer::SendServers(MM::ServerListQuery results) {
-			uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE + 1];
-			uint8_t *p = (uint8_t*)&out_buff;
-			int len = 0;
+			OS::Buffer buffer;
 
 
 			//std::vector<Server *> list;
 			std::vector<MM::Server *>::iterator it = results.list.begin();
 			while(it != results.list.end()) {
 				MM::Server *serv = *it;
-				BufferWriteInt((uint8_t **)&p,&len,serv->wan_address.ip);
-				BufferWriteShort((uint8_t **)&p,&len,serv->wan_address.port);
+				buffer.WriteInt(serv->wan_address.ip);
+				buffer.WriteShort(serv->wan_address.port);
 				it++;
 			}
 			if (results.last_set) {
 				m_delete_flag = true;
 			}
-			SendPacket((const uint8_t *)&out_buff, len, results.last_set);
+			SendPacket((const uint8_t *)buffer.GetHead(), buffer.size(), results.last_set);
 		}
 		void V1Peer::SendPacket(const uint8_t *buff, int len, bool attach_final, bool skip_encryption) {
-			uint8_t out_buff[MAX_OUTGOING_REQUEST_SIZE * 2];
-			uint8_t *p = (uint8_t*)&out_buff;
-			int out_len = 0;
-			BufferWriteData(&p, &out_len, buff, len);
+			OS::Buffer buffer;
+			buffer.WriteBuffer((void *)buff, len);
 			if(attach_final) {
-				BufferWriteData(&p, &out_len, (uint8_t*)"\\final\\", 7);
+				buffer.WriteBuffer("\\final\\", 7);
 			}
 			if (!skip_encryption) {
 				switch (m_enctype) {
 				case 2:
-					m_keyptr = encshare1((unsigned int *)&m_cryptkey_enctype2, (unsigned char *)&out_buff, out_len, m_keyptr);
+					m_keyptr = encshare1((unsigned int *)&m_cryptkey_enctype2, (unsigned char *)buffer.GetHead(), buffer.size(), m_keyptr);
 					break;
 				}
 			}
 
-			m_peer_stats.bytes_out += out_len;
+			m_peer_stats.bytes_out += buffer.size();
 			m_peer_stats.packets_out++;
 
-			int c = send(m_sd, (const char *)&out_buff, out_len, MSG_NOSIGNAL);
+			int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
 			if(c < 0) {
 				m_delete_flag = true;
 			}
@@ -447,7 +439,6 @@ namespace SB {
 			}
 			return r;
 		}
-
 
 		void V1Peer::OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) {
 		}
