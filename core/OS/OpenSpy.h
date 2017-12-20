@@ -53,17 +53,19 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <OS/Redis.h>
 
 #include <OS/Logger.h>
+#include <OS/config.h>
 
-#define OPENSPY_WEBSERVICES_URL "http://os-auth.us-east-1.elasticbeanstalk.com"
-#define OS_REDIS_SERV "opensly-redis.u95v0m.0001.use1.cache.amazonaws.com"
-#define OS_REDIS_PORT 6379
-#define OS_REDIS_ADDR "opensly-redis.u95v0m.0001.use1.cache.amazonaws.com:6379"
+#define OPENSPY_WEBSERVICES_URL "http://10.1.1.141:8000"
 
+class Config;
 namespace OS {
+	extern Config *g_config;
 	class Logger;
 	extern Logger *g_logger;
 	extern const char *g_appName;
 	extern const char *g_hostName;
+	extern const char *g_redisAddress;
+	extern const char *g_webServicesURL;
 	void LogText(ELogLevel level, const char *fmt, ...);
 	///////////////////////
 	/// XXX: put in os/geo/region.h
@@ -141,7 +143,7 @@ namespace OS {
 	void split(const std::string &s, char delim, Out result);
 	std::vector<std::string> split(const std::string &s, char delim);
 
-	void Init(const char *appName, int num_async_tasks, const char *hostName);
+	void Init(const char *appName, const char *configPath);
 	void Shutdown();
 	std::map<std::string, std::string> KeyStringToMap(std::string input);
 	std::vector<std::string> KeyStringToVector(std::string input);

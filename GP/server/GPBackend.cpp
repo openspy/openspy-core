@@ -124,7 +124,7 @@ namespace GPBackend {
 
 		m_thread_index = thread_index;
 
-		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(GPBackendRedisTask::TaskThread, this, true);
@@ -715,7 +715,7 @@ namespace GPBackend {
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 60;
-		mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		mp_redis_async_connection = Redis::Connect(OS::g_redisAddress, t);
 		
 		Redis::LoopingCommand(mp_redis_async_connection, 60, GPBackendRedisTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s", gp_buddies_channel);
 		return NULL;

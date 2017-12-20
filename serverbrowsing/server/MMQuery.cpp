@@ -28,7 +28,7 @@ namespace MM {
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 60;
-		mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		mp_redis_async_connection = Redis::Connect(OS::g_redisAddress, t);
 
 		mp_async_lookup_task = new MMQueryTask(NUM_MM_QUERY_THREADS);
 
@@ -46,7 +46,7 @@ namespace MM {
 		gameCacheTimeout.max_keys = 50;
 		gameCacheTimeout.timeout_time_secs = 7200;
 
-		mp_redis_async_retrival_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		mp_redis_async_retrival_connection = Redis::Connect(OS::g_redisAddress, t);
 		mp_async_thread = OS::CreateThread(setup_redis_async, NULL, true);
 		OS::Sleep(200);
 
@@ -118,7 +118,7 @@ namespace MM {
 		t.tv_usec = 0;
 		t.tv_sec = m_redis_timeout;
 
-		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
 
 		mp_timer = OS::HiResTimer::makeTimer();
 		mp_mutex = OS::CreateMutex();

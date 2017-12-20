@@ -64,7 +64,7 @@ namespace MM {
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 1;
-		mp_redis_async_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		mp_redis_async_connection = Redis::Connect(OS::g_redisAddress, t);
 		mp_async_lookup_task = new MMPushTask(NUM_MM_PUSH_THREADS+1);
 		Redis::LoopingCommand(mp_redis_async_connection, 0, onRedisMessage, thread->getParams(), "SUBSCRIBE %s", sb_mm_channel);
 	    return NULL;
@@ -80,7 +80,7 @@ namespace MM {
 		mp_timer = OS::HiResTimer::makeTimer();
 		m_thread_awake = false;
 
-		mp_redis_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(MMPushTask::TaskThread, this, true);
@@ -540,7 +540,7 @@ namespace MM {
 		t.tv_usec = 0;
 		t.tv_sec = 60;
 
-		mp_redis_async_retrival_connection = Redis::Connect(OS_REDIS_ADDR, t);
+		mp_redis_async_retrival_connection = Redis::Connect(OS::g_redisAddress, t);
 		mp_async_thread = OS::CreateThread(setup_redis_async, server, true);
 
 		m_task_pool = new OS::TaskPool<MMPushTask, MMPushRequest>(NUM_MM_PUSH_THREADS);

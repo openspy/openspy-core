@@ -7,7 +7,6 @@
 #include "server/SBDriver.h"
 #include "server/MMQuery.h"
 INetServer *g_gameserver = NULL;
-SB::Driver *g_legacyms_driver, *g_ms_driver;
 bool g_running = true;
 void shutdown();
 
@@ -44,16 +43,23 @@ int main() {
 		WSADATA wsdata;
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
-
-	OS::Init("serverbrowsing", 0, "chc");
+	OS::Init("serverbrowsing", "openspy.cfg");
     
-
 	g_gameserver = new SBServer();
-    g_legacyms_driver = new SB::Driver(g_gameserver, "0.0.0.0", 28900, 1);
-    g_ms_driver = new SB::Driver(g_gameserver, "0.0.0.0", 28910, 2);
-
-    g_gameserver->addNetworkDriver(g_legacyms_driver);
-	g_gameserver->addNetworkDriver(g_ms_driver);
+	configVar *sb_struct = OS::g_config->getRootArray("serverbrowsing");
+	configVar *driver_struct = OS::g_config->getArrayArray(sb_struct, "drivers");
+	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
+	std::list<configVar *>::iterator it = drivers.begin();
+	while (it != drivers.end()) {
+		configVar *driver_arr = *it;
+		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
+		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
+		int version = OS::g_config->getArrayInt(driver_arr, "version");
+		SB::Driver *driver = new SB::Driver(g_gameserver, bind_ip, bind_port, version);
+		OS::LogText(OS::ELogLevel_Info, "Adding SB Driver: %s:%d Version: (%d)\n", bind_ip, bind_port, version);
+		g_gameserver->addNetworkDriver(driver);
+		it++;
+	}
 
 	g_gameserver->init();
 	while(g_running) {
@@ -63,8 +69,6 @@ int main() {
     printf("Shutting down!\n");
 
     delete g_gameserver;
-    delete g_legacyms_driver;
-    delete g_ms_driver;
 
     MM::MMQueryTask::Shutdown();
     OS::Shutdown();
@@ -78,28 +82,3 @@ void shutdown() {
         g_running = false;
     }
 }
-
-#ifdef _WIN32
-
-int gettimeofday(struct timeval * tp, struct timezone * tzp)
-{
-    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
-    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
-
-    SYSTEMTIME  system_time;
-    FILETIME    file_time;
-    uint64_t    time;
-
-    GetSystemTime( &system_time );
-    SystemTimeToFileTime( &system_time, &file_time );
-    time =  ((uint64_t)file_time.dwLowDateTime )      ;
-    time += ((uint64_t)file_time.dwHighDateTime) << 32;
-
-    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
-    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
-    return 0;
-}
-
-
-#endif
-

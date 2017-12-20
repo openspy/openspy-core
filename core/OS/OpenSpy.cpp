@@ -21,20 +21,35 @@
 
 namespace OS {
 	Logger *g_logger = NULL;
+	Config *g_config = NULL;
 	struct timeval redis_timeout;
 	Redis::Connection *redis_internal_connection = NULL;
 	const char *g_appName = NULL;
 	const char *g_hostName = NULL;
+	const char *g_redisAddress = NULL;
+	const char *g_webServicesURL = NULL;
 
-	void Init(const char *appName, int num_async_tasks, const char *hostName) {
+	void Init(const char *appName, const char *configPath) {
+
+		OS::g_config = new Config("openspy.cfg");
+
+		configVar *config_struct = OS::g_config->getRootArray(appName);
+		int num_async = OS::g_config->getArrayInt(config_struct, "num_async_tasks");
+		const char *hostname = OS::g_config->getArrayString(config_struct, "hostname");
+		const char *redis_address = OS::g_config->getArrayString(config_struct, "redis_address");
+		const char *webservices_url = OS::g_config->getArrayString(config_struct, "webservices_url");
+
+
 		g_appName = appName;
-		g_hostName = hostName;
+		g_hostName = hostname;
+		g_webServicesURL = webservices_url;
+		g_redisAddress = redis_address;
 		curl_global_init(CURL_GLOBAL_SSL);
 
 		redis_timeout.tv_usec = 0;
 		redis_timeout.tv_sec = 30;
 
-		redis_internal_connection = Redis::Connect(OS_REDIS_ADDR, redis_timeout);
+		redis_internal_connection = Redis::Connect(g_redisAddress, redis_timeout);
 
 		#ifndef _WIN32
 			g_logger = new UnixLogger(appName);
@@ -42,9 +57,11 @@ namespace OS {
 			g_logger = new Win32Logger(appName);
 		#endif
 
-		OS::SetupAuthTaskPool(num_async_tasks);
-		OS::SetupUserSearchTaskPool(num_async_tasks);
-		OS::SetupProfileTaskPool(num_async_tasks);
+		OS::SetupAuthTaskPool(num_async);
+		OS::SetupUserSearchTaskPool(num_async);
+		OS::SetupProfileTaskPool(num_async);
+		
+		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, webservices: %s)\n", appName, num_async, hostname, redis_address, webservices_url);
 	}
 	void Shutdown() {
 		OS::ShutdownAuthTaskPool();
@@ -52,6 +69,8 @@ namespace OS {
 		OS::ShutdownProfileTaskPool();
 
 		Redis::Disconnect(redis_internal_connection);
+
+		delete OS::g_config;
 		curl_global_cleanup();
 	}
 	OS::GameData GetGameByRedisKey(const char *key, Redis::Connection *redis_ctx = NULL) {
