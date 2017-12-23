@@ -3,6 +3,7 @@ Description=Regular background program processing daemon
 Documentation=man:cron(8)
 
 [Service]
+WorkingDirectory=/etc/
 EnvironmentFile=-/etc/default/OS_PROJ_NAME
 ExecStart=/var/openspy/bin/OS_PROJ_NAME -f $EXTRA_OPTS
 IgnoreSIGPIPE=false

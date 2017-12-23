@@ -164,7 +164,10 @@ namespace MM {
 		std::string name;
 		int idx = 0;
 		bool force_delete = false;
+		bool change_occured = false;
 		ServerInfo modified_server;
+
+		modified_server.groupid = 0;
 
 		while (it != request.old_server.m_keys.end()) {
 			std::pair<std::string, std::string> p = *it;
@@ -290,6 +293,7 @@ namespace MM {
 			if(std::find(missing_keys.begin(), missing_keys.end(), p.first) == missing_keys.end()) {
 				if(request.server.m_keys[p.first].compare(request.old_server.m_keys[p.first]) != 0) {
 					modified_server.m_keys[p.first] = request.server.m_keys[p.first];
+					change_occured = true;
 				} 
 			}
 			it++;
@@ -306,6 +310,7 @@ namespace MM {
 						modified_server.m_player_keys[p.first].push_back(std::string());
 					} else {
 						modified_server.m_player_keys[p.first].push_back(request.server.m_player_keys[p.first][idx]);
+						change_occured = true;
 					}
 					idx++;
 					it3++;
@@ -325,6 +330,7 @@ namespace MM {
 						modified_server.m_team_keys[p.first].push_back(std::string());
 					} else {
 						modified_server.m_team_keys[p.first].push_back(request.server.m_team_keys[p.first][idx]);
+						change_occured = true;
 					}
 					idx++;
 					it3++;
@@ -332,7 +338,10 @@ namespace MM {
 			}
 			it2++;
 		}
-		PushServer(modified_server, false, request.server.id);
+		PushServer(modified_server, false, request.server.id); //push to prevent expire
+
+		if(change_occured)
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, modified_server.m_game.gamename, modified_server.groupid, modified_server.id);
 	}
 	void MMPushTask::PerformUpdateServer(MMPushRequest request) {
 		DeleteServer(request.server, false);

@@ -201,7 +201,6 @@ namespace OS {
 		 	} else if(v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 		 		cursor = v.value._int;
 		 	}
-			if (cursor == 0) break;
 			arr = reply.values[0].arr_value.values[1].second;
 			for(int i=0;i<arr.arr_value.values.size();i++) {
 				ret = GetGameByRedisKey(arr.arr_value.values[i].second.value._str.c_str(), redis_ctx);
