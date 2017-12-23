@@ -253,7 +253,7 @@ namespace MM {
 		if(all_keys) {
 			do {
 				reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
-				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
 					goto error_cleanup;
 
 				v = reply.values[0].arr_value.values[0].second;
@@ -307,6 +307,11 @@ namespace MM {
 				cursor = 0;
 				do {
 					reply = Redis::Command(redis_ctx, 0, "HSCAN %s %d MATCH *", key.c_str(), cursor);
+
+					if (reply.values[0].arr_value.values.size() < 2) {
+						goto error_cleanup;
+					}
+
 					v = reply.values[0].arr_value.values[0].second;
 					arr = reply.values[0].arr_value.values[1].second;
 					if (arr.arr_value.values.size() < 2)
@@ -358,7 +363,7 @@ namespace MM {
 				cursor = 0;
 				do {
 					reply = Redis::Command(redis_ctx, 0, "HSCAN %s %d MATCH *", key.c_str(), cursor);
-					if (reply.values.size() < 2|| reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+					if (reply.values.size() < 2|| reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
 						break;
 
 					v = reply.values[0];
@@ -396,7 +401,7 @@ namespace MM {
 		} else {
 			do {
 				reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);
-				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
 					goto error_cleanup;
 
 				v = reply.values[0].arr_value.values[0].second;
@@ -566,7 +571,7 @@ namespace MM {
 	
 			do {
 				reply = Redis::Command(redis_ctx, 0, "HSCAN %scustkeys %d match *", entry_name);
-				if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+				if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
 					goto error_cleanup;
 
 					v = reply.values[0].arr_value.values[0].second;
@@ -639,7 +644,9 @@ namespace MM {
 			} else {
 				streamed_ret.first_set = false;
 			}
-
+			if (reply.values[0].arr_value.values.size() < 2) {
+				goto error_cleanup;
+			}
 			v = reply.values[0].arr_value.values[0].second;
 			arr = reply.values[0].arr_value.values[1].second;
 
@@ -714,6 +721,10 @@ namespace MM {
 			}
 			else {
 				streamed_ret.first_set = false;
+			}
+
+			if (reply.values[0].arr_value.values.size() < 2) {
+				goto error_cleanup;
 			}
 
 			v = reply.values[0].arr_value.values[0].second;
