@@ -19,6 +19,7 @@ typedef int socklen_t;
 
 #include <OS/OpenSpy.h>
 #define REDIS_BUFFSZ 1000000
+#define RECONNECT_SLEEP_TIME 2000
 namespace Redis {
 	uint32_t resolv(const char *host) {
 		struct  hostent *hp;
@@ -54,23 +55,38 @@ namespace Redis {
 		uint16_t port;
 		get_server_address_port(constr, address, port);
 
-		uint32_t ip = resolv(address);
+		ret->connect_address = std::string(constr);
 
-		ret->sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		performAddressConnect(ret, address, port);
+
+		return ret;
+	}
+	void Reconnect(Connection *connection) {
+		char address[64];
+		uint16_t port;
+		get_server_address_port(connection->connect_address.c_str(), address, port);
+
+		close(connection->sd);
+		OS::Sleep(RECONNECT_SLEEP_TIME);
+		performAddressConnect(connection, address, port);
+	}
+	void performAddressConnect(Connection *connection, const char *address, uint16_t port) {
+		connection->sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		//setsockopt(ret->sd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+		uint32_t ip = resolv(address);
 
 		sockaddr_in addr;
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(port);
 		addr.sin_addr.s_addr = ip;
-		int r = connect(ret->sd, (sockaddr *)&addr, sizeof(addr));
+		int r = connect(connection->sd, (sockaddr *)&addr, sizeof(addr));
 		if (r < 0) {
+			OS::LogText(OS::ELogLevel_Critical, "redis connect error");
 			//error
 		}
-		ret->read_buff_alloc_sz = REDIS_BUFFSZ;
-		ret->read_buff = (char *)malloc(REDIS_BUFFSZ);
-		return ret;
+		connection->read_buff_alloc_sz = REDIS_BUFFSZ;
+		connection->read_buff = (char *)malloc(REDIS_BUFFSZ);
 	}
 	std::string read_line(std::string str) {
 		std::string r;
@@ -194,7 +210,8 @@ namespace Redis {
 		if (sleepMS != 0)
 			OS::Sleep(sleepMS);
 		int len = recv(conn->sd, conn->read_buff, conn->read_buff_alloc_sz - 1, 0);
-		if (len == -1) {
+		if (len <= 0) {
+			Reconnect(conn);
 			return resp;
 		}
 		conn->read_buff[len] = 0;
@@ -222,7 +239,9 @@ namespace Redis {
 
 		while (true) {
 			int len = recv(conn->sd, conn->read_buff, conn->read_buff_alloc_sz - 1, 0);
-			if (len == -1) {
+			if (len <= 0) {
+				OS::Sleep(5000); //Sleep even longer due to async... more likely to be in a CPU consuming loop
+				Reconnect(conn);
 				continue;
 			}
 			conn->read_buff[len] = 0;

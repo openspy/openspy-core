@@ -36,6 +36,8 @@ namespace Redis {
 		int sd;
 		char *read_buff;
 		int read_buff_alloc_sz;
+
+		std::string connect_address;
 	} Connection;
 
 	typedef struct {
@@ -52,5 +54,7 @@ namespace Redis {
 	void Disconnect(Connection *connection);
 	void parse_response(std::string resp_str, int &diff, Redis::Response *resp, Redis::ArrayValue *arr_val);
 	bool CheckError(Response r);
+	void Reconnect(Connection *connection);
+	void performAddressConnect(Connection *connection, const char *address, uint16_t port);
 }
 #endif //_OS_REDIS_H
