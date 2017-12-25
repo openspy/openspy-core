@@ -68,6 +68,7 @@ def application(env, start_response):
 		return [b'Bad Request']
 
 	resp = json.dumps(service.run(env, start_response))
+
 	if(type(resp)) != bytes:
 		return [str.encode(resp)]
 	else:

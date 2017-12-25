@@ -2,7 +2,6 @@ from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
 from collections import OrderedDict
-import jwt
 
 from BaseService import BaseService
 
@@ -26,15 +25,13 @@ class OS_RegisterSvc(BaseService):
         	if param in register_options:
         		user_data[param] = register_options[param]
 
-        params = jwt.encode(user_data, self.SECRET_REGISTER_KEY, algorithm='HS256')
-        #params = urllib.urlencode(params)
+        params = json.dumps(user_data)
 
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
         conn = http.client.HTTPConnection(self.REGISTER_SERVER)
 
         conn.request("POST", self.REGISTER_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_REGISTER_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
 
         #perform profile creation
         if response["success"]:
@@ -48,15 +45,15 @@ class OS_RegisterSvc(BaseService):
 
 	        request_data = {'userid': user['id'], 'mode': 'create_profile', 'profile': profile}
 
-	        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+	        params = json.dumps(request_data)
 
 	        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
 	        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
 	        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
-	        response = conn.getresponse().read()
-	        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+	        response = json.loads(conn.getresponse().read())
+
 	        response["user"] = user
 
 	        #create auth session
@@ -68,15 +65,13 @@ class OS_RegisterSvc(BaseService):
 	        login_data["partnercode"] = register_options["partnercode"]
 
 
-	        params = jwt.encode(login_data, self.SECRET_AUTH_KEY, algorithm='HS256')
-	        #params = urllib.urlencode(params)
+	        params = json.dumps(login_data)
 
 	        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 	        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
 	        conn.request("POST", self.LOGIN_SCRIPT, params, headers)
-	        response = conn.getresponse().read()
-	        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+	        response = json.loads(conn.getresponse().read())
 
         return response
     def check_user_conflicts(self, request):
@@ -89,12 +84,11 @@ class OS_RegisterSvc(BaseService):
         params['partnercode'] = request['partnercode']
         params['mode'] = 'get_user'
 
-        params = jwt.encode(params, self.SECRET_USERMGR_KEY, algorithm='HS256')
+        params = json.dumps(params)
 
         conn.request("POST", self.USER_MGR_SCRIPT, params, headers)
-        response = conn.getresponse().read()
+        response = json.loads(conn.getresponse().read())
 
-        response = jwt.decode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
         return "user" in response
     def check_profile_conflicts(self, request):
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
@@ -107,11 +101,10 @@ class OS_RegisterSvc(BaseService):
             params['namespaceid'] = request['namespaceid']
         params['mode'] = 'get_profile'
 
-        params = jwt.encode(params, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        params = json.dumps(params)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
         return "profile" in response and response["profile"] != None
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
@@ -154,4 +147,4 @@ class OS_RegisterSvc(BaseService):
 
         response = self.try_register(request_body)
 
-        return json.dumps(response)
+        return response

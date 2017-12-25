@@ -2,7 +2,7 @@ from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
 from collections import OrderedDict
-import jwt
+import http.client
 
 from BaseService import BaseService
 
@@ -21,14 +21,13 @@ class OS_WebUserMgr(BaseService):
 
     def test_user_session(self, session_key, userid):
         send_data = {'session_key': session_key, 'userid': userid, 'mode': 'test_session'}
-        params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
+        params = json.dumps(send_data)
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
 
         return response['valid']
     def process_request(self, login_options):
@@ -58,16 +57,14 @@ class OS_WebUserMgr(BaseService):
         if not self.test_user_session(send_data['session_key'], user_data['id']):
             return {'error': 'INVALID_SESSION'}
         
-        params = jwt.encode(send_data, self.SECRET_USERMGR_KEY, algorithm='HS256')
-        
+        params = json.dumps(send_data)        
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
         conn = http.client.HTTPConnection(self.USER_MGR_SERVER)
 
         conn.request("POST", self.USER_MGR_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_USERMGR_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
 
         return response
     def run(self, env, start_response):

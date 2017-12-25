@@ -2,7 +2,6 @@ from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
 from collections import OrderedDict
-import jwt
 
 from BaseService import BaseService
 
@@ -22,26 +21,24 @@ class OS_WebProfileMgr(BaseService):
 
     def test_profile_ownership(self, session_key, profileid):
         send_data = {'session_key': session_key, 'profileid': profileid, 'mode': 'test_session_profileid'}
-        params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
+        params = json.dumps(send_data)
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
         return response['valid']
 
     def test_user_session(self, session_key, userid):
         send_data = {'session_key': session_key, 'userid': userid, 'mode': 'test_session'}
-        params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
+        send_data = json.dumps(send_data)
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
-        conn.request("POST", self.LOGIN_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        conn.request("POST", self.LOGIN_SCRIPT, send_data, headers)
+        response = json.loads(conn.getresponse().read())
         return response['valid']
 
     def handle_update_profile(self, data):
@@ -54,17 +51,15 @@ class OS_WebProfileMgr(BaseService):
             if key in data["profile"]:
                 profile[key] = data["profile"][key]
         send_data = {'mode': 'update_profile', 'profile': profile, 'session_key': data['session_key']}
-
-        params = jwt.encode(send_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        send_data = json.dumps(send_data)
         
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
         conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
-        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        conn.request("POST", self.PROFILE_MGR_SCRIPT, send_data, headers)
+        response = json.loads(conn.getresponse().read())
 
 
         return response
@@ -74,16 +69,14 @@ class OS_WebProfileMgr(BaseService):
             return False
         request_data = {'session_key': data['session_key'], 'userid': data['userid'], 'mode': 'get_profiles'}
 
-        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
-        
-        
+        params = json.dumps(request_data)
+                
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
         conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
 
         return response
 
@@ -99,16 +92,14 @@ class OS_WebProfileMgr(BaseService):
 
         request_data = {'session_key': data['session_key'], 'userid': data['userid'], 'mode': 'create_profile', 'profile': profile}
 
-        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
-        
+        params = json.dumps(request_data)        
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
         conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
 
         return response
 
@@ -116,15 +107,14 @@ class OS_WebProfileMgr(BaseService):
 
         request_data = {'session_key': data['session_key'], 'userid': data['userid'], 'mode': 'delete_profile', 'profileid': data["profile"]["id"]}
 
-        params = jwt.encode(request_data, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')        
+        params = json.dumps(request_data)
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
 
         conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_PROFILEMGR_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
         return response
 
     def process_request(self, data):
@@ -174,7 +164,7 @@ class OS_WebProfileMgr(BaseService):
 
         
 
-        response = json.dumps(self.process_request(request_body))
+        response = self.process_request(request_body)
 
         if 'error' in response:
             start_response('400 BAD REQUEST', [('Content-Type','text/html')])

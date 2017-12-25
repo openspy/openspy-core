@@ -367,6 +367,7 @@ class AuthService(BaseService):
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
         input_str = env['wsgi.input'].read(request_body_size).decode('utf-8')
+        print("Input str: {}\n".format(input_str))
         request_body = json.loads(input_str)
         print("AuthService obj: {}".format(request_body))
         if 'mode' in request_body:
@@ -391,7 +392,6 @@ class AuthService(BaseService):
         hash_type = 'plain'
         if 'hash_type' in request_body:
             hash_type = request_body['hash_type']
-
 
         profile = None
         user = None
@@ -434,11 +434,13 @@ class AuthService(BaseService):
         elif "id" in profile_body:
             profile = self.get_profile_by_id(profile_body["id"])
         auth_success = False
+
+
         if hash_type == 'plain' and profile != None:
             auth_success = self.test_pass_plain_by_userid(profile.user.id, user_body['password'])
         elif hash_type == 'plain' and user != None:
-            
             auth_success = self.test_pass_plain_by_userid(user.id, user_body['password'])
+            
         elif hash_type == 'gp_nick_email' and profile != None:
             proof = self.test_gp_nick_email_by_profile(profile, request_body['client_challenge'], request_body['server_challenge'], request_body['client_response'])
             if proof != None:
@@ -453,7 +455,6 @@ class AuthService(BaseService):
             auth_success = self.test_nick_email_by_profile(profile, user_body['password'])
         elif hash_type == 'auth_or_create_profile':
             auth_resp = self.auth_or_create_profile(request_body)
-            print("Auth resp: {}\n".format(auth_resp))
             if "new_profile" in auth_resp:
                 response['new_profile'] = auth_resp['new_profile']
             if "profile" in auth_resp:

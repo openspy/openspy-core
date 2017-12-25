@@ -2,7 +2,6 @@ from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
 from collections import OrderedDict
-import jwt
 
 from BaseService import BaseService
 
@@ -30,23 +29,38 @@ class OS_WebAuth(BaseService):
     #   email nick namespaceid - profile login
     def try_login(self, login_options):
         login_data = {}
-        passthrough_params = ["email","partnercode","uniquenick","namespaceid", "nick", "password","mode", "session_key", "userid"]
+
+        user_params = ["email","partnercode", "password", "userid"]
+        profile_params = ["uniquenick","namespaceid", "nick"]
+        passthrough_params = ["mode", "session_key"]
+        user_obj = {}
+        profile_obj = {}
+        for n in user_params:
+            if n in login_options:
+                user_obj[n] = login_options[n]
+
+        for n in profile_params:
+            if n in login_options:
+                profile_params[n] = login_options[n]
+
         for n in passthrough_params:
             if n in login_options:
                 login_data[n] = login_options[n]
 
+        login_data["user"] = user_obj
+        login_data["profile"] = profile_obj
         login_data['save_session'] = True #force a session key to be returned
         login_data["mode"] = "auth"
 
-        params = jwt.encode(login_data, self.SECRET_AUTH_KEY, algorithm='HS256')
-        #params = urllib.urlencode(params)
+        print("LogniData: {}\n".format(login_data))
+
+        params = json.dumps(login_data)
         
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        headers = {"Content-type": "application/json","Accept": "text/plain"}
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
 
         if response["success"] == False:
             if "reason" in response:
@@ -61,22 +75,19 @@ class OS_WebAuth(BaseService):
         if "userid" not in login_options:
             return False
         if "session_key" not in login_options:
-            return False;
+            return False
 
         send_data = {}
         send_data["userid"] = login_options["userid"]
         send_data["session_key"] = login_options["session_key"]
 
-
-        params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
-        #params = urllib.urlencode(params)
+        params = json.dumps(send_data)
         
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        headers = {"Content-type": "application/json","Accept": "text/plain"}
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
 
         if "valid" in response:
             return response["valid"]
@@ -86,23 +97,20 @@ class OS_WebAuth(BaseService):
         if "userid" not in login_options:
             return False
         if "session_key" not in login_options:
-            return False;
+            return False
 
         send_data = {}
         send_data["userid"] = login_options["userid"]
         send_data["session_key"] = login_options["session_key"]
         send_data["mode"] = "del_session"
 
-
-        params = jwt.encode(send_data, self.SECRET_AUTH_KEY, algorithm='HS256')
-        #params = urllib.urlencode(params)
+        params = json.dumps(send_data)
         
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        headers = {"Content-type": "application/json","Accept": "text/plain"}
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        response = json.loads(conn.getresponse().read())
 
         if "valid" in response:
             return response["valid"]
@@ -131,5 +139,6 @@ class OS_WebAuth(BaseService):
             elif request_body["mode"] == "del_session":
                 resp = self.del_session(request_body)
         else:
-            resp = self.try_login(request_body);
-        return json.dumps(resp)
+            resp = self.try_login(request_body)
+
+        return resp
