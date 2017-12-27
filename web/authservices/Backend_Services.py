@@ -1,6 +1,7 @@
 from cgi import parse_qs, escape
 from BaseService import BaseService
 
+from GameService.GameService import GameService
 from AccountService.AuthService import AuthService
 from AccountService.UserAccountMgrService import UserAccountMgrService
 from AccountService.RegistrationService import RegistrationService
@@ -12,6 +13,7 @@ from public.OS_WebUserMgr import OS_WebUserMgr
 from public.OS_WebProfileMgr import OS_WebProfileMgr
 from public.OS_RegisterSvc import OS_RegisterSvc
 from public.OS_PWReset import OS_PWReset
+from public.OS_WebGameMgr import OS_WebGameMgr
 import re
 import simplejson as json
 from wsgiref.util import request_uri
@@ -40,6 +42,8 @@ def application(env, start_response):
 			service = UserProfileMgrService()
 		elif path_split[2] == "persist":
 			service = PersistService()
+		elif path_split[2] == "gameservice":
+			service = GameService()
 
 
 	#the paths containing "web" are the publically accessable interfaces which theoretically can be accessed by any user anonymously, however typically is as an interface via another web backend
@@ -57,6 +61,8 @@ def application(env, start_response):
 			service = OS_RegisterSvc()
 		elif path_split[2] == "pwreset":
 			service = OS_PWReset()
+		elif path_split[2] == "gameservice":
+			service = OS_WebGameMgr()
 
 	#GameSpy SDK files, publically accessable
 #	elif path_split[1] == "AuthService":

@@ -1,7 +1,7 @@
 from cgi import parse_qs, escape
 
 import base64
-import json;
+import json
 
 from BaseService import BaseService
 

@@ -10,7 +10,7 @@ import redis
 
 import simplejson as json
 
-class OS_WebUserMgr(BaseService):
+class OS_WebGameMgr(BaseService):
     def test_required_params(self, input, params):
         for param in params:
             if param not in input:
@@ -31,41 +31,18 @@ class OS_WebUserMgr(BaseService):
 
         return response['valid']
     def process_request(self, login_options):
-        required_params = ['mode', 'user', 'session_key']
-        required_user_params = ['email', 'id']
-
-
-        if not self.test_required_params(login_options, required_params):            
-            return {'error': 'MISSING_REQUIRED_PARAMS_1'}
-
-        if not self.test_required_params(login_options['user'], required_user_params):
-            return {'error': 'MISSING_REQUIRED_PARAMS_2'}
-
-
-        mode = login_options['mode']
-
-        valid_modes = ["update_user", 'get_user']
-
-        if mode not in valid_modes:
-            return {'error': 'INVALID_OPERATION_MODE'}
-
-        user_data = {'id': login_options['user']['id'], 'email': login_options['user']['email']}
-        if "password" in login_options['user']:
-            user_data['password'] = login_options['user']['password']
-        send_data = {'mode': mode, 'session_key': login_options['session_key'], 'user': user_data}
-
-        if not self.test_user_session(send_data['session_key'], user_data['id']):
+        required_params = ['userid', 'session_key']
+        if not self.test_required_params(login_options, required_params):
+                return {'error': 'INVALID_PARAMS'}
+        if not self.test_user_session(login_options["session_key"], login_options["userid"]):            
             return {'error': 'INVALID_SESSION'}
-        
-        params = json.dumps(send_data)
-        
+
+
         headers = {"Content-type": "application/json","Accept": "text/plain"}
+        conn = http.client.HTTPConnection(self.GAME_MGR_SERVER)
 
-        conn = http.client.HTTPConnection(self.USER_MGR_SERVER)
-
-        conn.request("POST", self.USER_MGR_SCRIPT, params, headers)
+        conn.request("POST", self.GAME_MGR_SCRIPT, json.dumps(login_options), headers)
         response = json.loads(conn.getresponse().read())
-
         return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
@@ -80,12 +57,10 @@ class OS_WebUserMgr(BaseService):
         request_body = json.loads(env['wsgi.input'].read(request_body_size))
        # d = parse_qs(request_body)
 
-        
-
-        response = json.dumps(self.process_request(request_body))
+        response = self.process_request(request_body)
 
         if 'error' in response:
-            start_response('400 BAD REQUEST', [('Content-Type','text/html')])
+            start_response('400 BAD REQUEST', [('Content-Type','application/json')])
         else:
             start_response('200 OK', [('Content-Type','application/json')])
 
