@@ -44,7 +44,7 @@ namespace SB {
 		bool break_flag = false;
 
 		int idx = 0;
-		while(buffer.remaining() > 0) {
+		while(buffer.remaining() > 0 && !break_flag) {
 			uint16_t buff_len = htons(buffer.ReadShort()); //length
 
 			request_type = buffer.ReadByte();

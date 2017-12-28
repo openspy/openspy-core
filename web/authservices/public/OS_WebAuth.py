@@ -52,8 +52,6 @@ class OS_WebAuth(BaseService):
         login_data['save_session'] = True #force a session key to be returned
         login_data["mode"] = "auth"
 
-        print("LogniData: {}\n".format(login_data))
-
         params = json.dumps(login_data)
         
         headers = {"Content-type": "application/json","Accept": "text/plain"}
@@ -139,5 +137,4 @@ class OS_WebAuth(BaseService):
                 resp = self.del_session(request_body)
         else:
             resp = self.try_login(request_body)
-        print("Resp: {}\n".format(resp))
         return resp

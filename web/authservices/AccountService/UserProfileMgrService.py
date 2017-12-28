@@ -237,29 +237,47 @@ class UserProfileMgrService(BaseService):
         profile = Profile.get((Profile.id == request_data["profileid"]) & (Profile.deleted == False))
         #send revokes
         revoke_list_key = "revokes_{}".format(profile.id)
-        resp = self.redis_presence_ctx.hscan(revoke_list_key)
-        for item in resp:
-            if isinstance(item, dict):
-                for pid, time in item.items():
+
+        cursor = 0
+        while True:
+            resp = self.redis_ctx.hscan("{}custkeys".format(server_key),cursor)
+            cursor = resp[0]
+            for key, val in resp[1].items():
+                custkeys[key.decode('utf8')] = val.decode('utf8')
+            if cursor == 0:
+                break
+
+
+        while True:
+            resp = self.redis_presence_ctx.hscan(revoke_list_key, cursor)
+            cursor = resp[0]
+            for pid, time in resp[1].items():
                     publish_data = "\\type\\del_buddy\\from_profileid\\{}\\to_profileid\\{}".format(pid, profile.id)
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
-        self.redis_presence_ctx.delete(revoke_list_key)
+            self.redis_presence_ctx.delete(revoke_list_key)
+            if cursor == 0:
+                break
 
 
         #send add requests
         add_req_key = "add_req_{}".format(profile.id)
-        resp = self.redis_presence_ctx.hscan(add_req_key)
-        for item in resp:
-            if isinstance(item, dict):
-                for pid, reason in item.items():
-                    publish_data = "\\type\\add_request\\from_profileid\\{}\\to_profileid\\{}\\reason\\{}".format(int(pid.decode("utf-8")), profile.id, reason.decode("utf-8"))
-                    self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+        cursor = 0
+        while True:
+            resp = self.redis_presence_ctx.hscan(add_req_key, cursor)
+            cursor = resp[0]
+            for pid, reason in resp[1].items():
+                publish_data = "\\type\\add_request\\from_profileid\\{}\\to_profileid\\{}\\reason\\{}".format(int(pid.decode("utf-8")), profile.id, reason.decode("utf-8"))
+                self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+            if cursor == 0:
+                break
 
         #send pending msgs
         msg_scan_key = "msg_{}_*".format(profile.id)
-        resp = self.redis_presence_ctx.scan(0, msg_scan_key)
-        for item in resp:
-            if isinstance(item, list):
+        cursor = 0
+        while True:
+            resp = self.redis_presence_ctx.scan(cursor, msg_scan_key)
+            cursor = resp[0]
+            for item in resp[1]:
                 for key in item:
                     msg_key = key
                     message = self.redis_presence_ctx.hget(msg_key, "message").decode("utf-8")
@@ -269,6 +287,8 @@ class UserProfileMgrService(BaseService):
                     self.redis_presence_ctx.delete(msg_key)
                     publish_data = "\\type\\buddy_message\\from_profileid\\{}\\to_profileid\\{}\\msg_type\\{}\\message\\{}".format(msg_from, profile.id, msg_type, message)
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+            if cursor == 0:
+                break
         return True
 
     def get_gp_status(self, profileid):

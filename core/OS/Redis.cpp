@@ -57,6 +57,9 @@ namespace Redis {
 
 		ret->connect_address = std::string(constr);
 
+		ret->read_buff_alloc_sz = REDIS_BUFFSZ;
+		ret->read_buff = (char *)malloc(REDIS_BUFFSZ);
+
 		performAddressConnect(ret, address, port);
 
 		return ret;
@@ -82,11 +85,9 @@ namespace Redis {
 		addr.sin_addr.s_addr = ip;
 		int r = connect(connection->sd, (sockaddr *)&addr, sizeof(addr));
 		if (r < 0) {
-			OS::LogText(OS::ELogLevel_Critical, "redis connect error");
+			OS::LogText(OS::ELogLevel_Critical, "redis connect error (%s:%d) (IP: %lu) ret: %d", address, port, ip, r);
 			//error
 		}
-		connection->read_buff_alloc_sz = REDIS_BUFFSZ;
-		connection->read_buff = (char *)malloc(REDIS_BUFFSZ);
 	}
 	std::string read_line(std::string str) {
 		std::string r;
@@ -211,6 +212,7 @@ namespace Redis {
 			OS::Sleep(sleepMS);
 		int len = recv(conn->sd, conn->read_buff, conn->read_buff_alloc_sz - 1, 0);
 		if (len <= 0) {
+			OS::LogText(OS::ELogLevel_Critical, "redis recv error: %d", len);
 			Reconnect(conn);
 			return resp;
 		}

@@ -41,6 +41,7 @@ create table profiles (
 	userid int not null,
 	namespaceid int not null default 0,
 	deleted boolean not null default false,
+	admin boolean not null default false,
 	foreign key fk_user(userid)
 	references users(id)
 );

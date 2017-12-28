@@ -38,6 +38,8 @@ class AuthService(BaseService):
         self.PARTNERID_IGN = 10
         self.PARTNERID_EA = 20
 
+        self.AUTH_EXPIRE_TIME = 86400
+
     def get_profile_by_uniquenick(self, uniquenick, namespaceid, partnercode):
         try:
             if namespaceid == 0:
@@ -159,6 +161,7 @@ class AuthService(BaseService):
             self.redis_ctx.hset(redis_key, 'profileid', profile.id)
 
         self.redis_ctx.hset(redis_key, 'auth_token', session_key)
+        self.redis_ctx.expire(redis_key, self.AUTH_EXPIRE_TIME)
         return {'redis_key': redis_key, 'session_key': session_key}
     def set_auth_context(self, key, profile):
         if profile == None:
@@ -184,6 +187,7 @@ class AuthService(BaseService):
         cursor = 0
         servers = []
         key = None
+        
         while True:
             msg_scan_key = "*:{}".format(params["session_key"])
             resp = self.redis_ctx.scan(cursor, msg_scan_key)
