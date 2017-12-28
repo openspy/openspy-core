@@ -240,15 +240,6 @@ class UserProfileMgrService(BaseService):
 
         cursor = 0
         while True:
-            resp = self.redis_ctx.hscan("{}custkeys".format(server_key),cursor)
-            cursor = resp[0]
-            for key, val in resp[1].items():
-                custkeys[key.decode('utf8')] = val.decode('utf8')
-            if cursor == 0:
-                break
-
-
-        while True:
             resp = self.redis_presence_ctx.hscan(revoke_list_key, cursor)
             cursor = resp[0]
             for pid, time in resp[1].items():
@@ -277,16 +268,15 @@ class UserProfileMgrService(BaseService):
         while True:
             resp = self.redis_presence_ctx.scan(cursor, msg_scan_key)
             cursor = resp[0]
-            for item in resp[1]:
-                for key in item:
-                    msg_key = key
-                    message = self.redis_presence_ctx.hget(msg_key, "message").decode("utf-8")
-                    timestamp = int(self.redis_presence_ctx.hget(msg_key, "timestamp").decode("utf-8"))
-                    msg_type = int(self.redis_presence_ctx.hget(msg_key, "type").decode("utf-8"))
-                    msg_from = int(self.redis_presence_ctx.hget(msg_key, "from").decode("utf-8"))
-                    self.redis_presence_ctx.delete(msg_key)
-                    publish_data = "\\type\\buddy_message\\from_profileid\\{}\\to_profileid\\{}\\msg_type\\{}\\message\\{}".format(msg_from, profile.id, msg_type, message)
-                    self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+            for key in resp[1]:
+                msg_key = key
+                message = self.redis_presence_ctx.hget(msg_key, "message").decode("utf-8")
+                timestamp = int(self.redis_presence_ctx.hget(msg_key, "timestamp").decode("utf-8"))
+                msg_type = int(self.redis_presence_ctx.hget(msg_key, "type").decode("utf-8"))
+                msg_from = int(self.redis_presence_ctx.hget(msg_key, "from").decode("utf-8"))
+                self.redis_presence_ctx.delete(msg_key)
+                publish_data = "\\type\\buddy_message\\from_profileid\\{}\\to_profileid\\{}\\msg_type\\{}\\message\\{}".format(msg_from, profile.id, msg_type, message)
+                self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
             if cursor == 0:
                 break
         return True

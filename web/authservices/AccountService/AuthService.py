@@ -84,7 +84,6 @@ class AuthService(BaseService):
         else:
             proof = "{}{}{}{}{}{}".format(md5_pw, "                                                ",profile.uniquenick, server_challenge, client_challenge, md5_pw)
         proof = hashlib.md5(str(proof).encode('utf-8')).hexdigest()
-
         if true_resp == client_response:
             return proof
         return None
