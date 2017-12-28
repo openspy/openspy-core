@@ -10,7 +10,7 @@
 
 #define MAX_FIELD_LIST_LEN 256
 
-#define READ_BUFFER_SIZE 256
+#define READ_BUFFER_SIZE 4096
 
 
 namespace SB {
