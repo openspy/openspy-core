@@ -33,17 +33,18 @@ class UserAccountMgrService(BaseService):
 
     def handle_get_user(self, data):
         user = None
-        print("GetUser got: {}\n".format(data))
+        user_data = data["user"]
         try:
-            if "userid" in data:
-                user = User.get((User.id == data["userid"]))
-            elif "email" in data:
-                user = User.get((User.email == data["email"]) & (User.partnercode == data["partnercode"]))
+            if "userid" in user_data:
+                user = User.get((User.id == user_data["userid"]))
+            elif "email" in user_data:
+                user = User.get((User.email == user_data["email"]) & (User.partnercode == user_data["partnercode"]))
+            if user:
+                user = model_to_dict(user)
+                del user['password']
         except User.DoesNotExist:
             return None
 
-        user = model_to_dict(user)
-        del user['password']
         return user
 
     def run(self, env, start_response):
@@ -59,7 +60,8 @@ class UserAccountMgrService(BaseService):
         # When the method is POST the variable will be sent
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
-        request_body = json.loads(env['wsgi.input'].read(request_body_size))
+        input_data = env['wsgi.input'].read(request_body_size).decode('utf8')
+        request_body = json.loads(input_data)
 
         response = {}
 
@@ -80,5 +82,4 @@ class UserAccountMgrService(BaseService):
         response['success'] = success
 
         start_response('200 OK', [('Content-Type','application/json')])
-        print("Got Resp: {}\n".format(response))
         return response

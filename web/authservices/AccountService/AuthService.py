@@ -180,11 +180,32 @@ class AuthService(BaseService):
 
     def test_session(self, params):
         if "userid" not in params or "session_key" not in params:
-            return {"valid": False}
-        if self.redis_ctx.exists("{}:{}".format(int(params["userid"]), params["session_key"])):
-            return {"valid": True}
-        else:
-            return {"valid": False}
+            return {"valid": False, "admin": False}
+        cursor = 0
+        servers = []
+        key = None
+        while True:
+            msg_scan_key = "*:{}".format(params["session_key"])
+            resp = self.redis_ctx.scan(cursor, msg_scan_key)
+            cursor = resp[0]
+            for item in resp[1]:
+                key = item.decode('utf8')
+                break
+            if cursor == 0:
+                break
+        if key == None:
+            return {"valid": False, "admin": False}
+
+        session_user_id = self.redis_ctx.hget(key, "userid")
+        if session_user_id:
+            session_user_id = session_user_id.decode('utf8')
+
+        session_user = self.get_user_by_userid(int(session_user_id))
+        if session_user:
+            is_admin = session_user.is_admin()
+            if session_user.id == session_user_id or is_admin:
+                return {"valid": True, "admin": is_admin, 'session_user': model_to_dict(session_user)}
+        return {"valid": False, "admin": False}
 
     def test_session_by_profileid(self, params):
         if "profileid" not in params or "session_key" not in params:
@@ -327,13 +348,10 @@ class AuthService(BaseService):
             ret["new_profile"] = False
 
             if user["id"] != profile["user"]["id"]:
-                print("{} != {}\n".format(user["id"], profile["user"]["id"]))
                 return {'reason': self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK, "profile": profile}
         except Profile.DoesNotExist:
             user_profile_srv = UserProfileMgrService()
-            print("Profile 3...")
             profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'user': user})
-            print("Create profile: {}\n".format(profile))
             ret["new_profile"] = True
             if "error" in profile:
                 reason = 0
@@ -367,9 +385,8 @@ class AuthService(BaseService):
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
         input_str = env['wsgi.input'].read(request_body_size).decode('utf-8')
-        print("Input str: {}\n".format(input_str))
         request_body = json.loads(input_str)
-        print("AuthService obj: {}".format(request_body))
+
         if 'mode' in request_body:
             if request_body['mode'] == 'test_session':
                 return self.test_session(request_body)

@@ -100,7 +100,6 @@ class UserProfileMgrService(BaseService):
         except Profile.DoesNotExist:
             return {"exists": False}
     def handle_create_profile(self, data):
-        print("CreateUser: {}\n".format(data))
         profile_data = data["profile"]
         user_data = None
         if "user" in data:
@@ -445,8 +444,6 @@ class UserProfileMgrService(BaseService):
             response['error'] = "INVALID_MODE"
             return response
 
-        print("UserProfileMgrService Decoded: {}".format(request_body))
-
         if request_body["mode"] == "update_profile":
             resp = self.handle_update_profile(request_body)
             if "error" in resp:
@@ -518,5 +515,4 @@ class UserProfileMgrService(BaseService):
 
         response['success'] = success
         start_response('200 OK', [('Content-Type','application/json')])
-        print("Resp: {}\n".format(response))
         return response

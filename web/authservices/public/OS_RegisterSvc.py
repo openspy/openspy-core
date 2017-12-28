@@ -130,7 +130,7 @@ class OS_RegisterSvc(BaseService):
             if key not in request_body:
                 response['success'] = False
                 response['error'] = "MISSING_PARAMS"
-                return json.dumps(response)
+                return response
 
         if self.check_user_conflicts(request_body):
             response['success'] = False
@@ -141,7 +141,7 @@ class OS_RegisterSvc(BaseService):
 
 
         if 'success' in response:
-            return json.dumps(response)
+            return response
 
 
 

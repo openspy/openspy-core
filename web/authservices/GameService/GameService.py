@@ -204,7 +204,6 @@ class GameService(BaseService):
     def handle_update_server(self, request):
         return True
     def handle_delete_server(self, request):
-        print("Delete server: {}\n".format(request))
         if "key" in request:
             self.redis_servers_ctx.hset(request["key"],"deleted", "1")
         return {"success": True}
@@ -223,8 +222,6 @@ class GameService(BaseService):
         # in the HTTP request body which is passed by the WSGI server
         # in the file like wsgi.input environment variable.
         request_body = json.loads(env['wsgi.input'].read(request_body_size).decode('utf-8'))
-
-        print("GameService: {}\n".format(request_body))
 
         start_response('200 OK', [('Content-Type','application/json')])
 

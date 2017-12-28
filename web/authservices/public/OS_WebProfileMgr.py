@@ -39,7 +39,7 @@ class OS_WebProfileMgr(BaseService):
 
         conn.request("POST", self.LOGIN_SCRIPT, send_data, headers)
         response = json.loads(conn.getresponse().read())
-        return response['valid']
+        return response
 
     def handle_update_profile(self, data):
 
@@ -127,12 +127,14 @@ class OS_WebProfileMgr(BaseService):
         profile_ownership_modes = ["update_profile", "delete_profile"]
         user_ownership_modes = ["create_profile", "get_profiles"]
 
+        session_data = self.test_user_session(data["session_key"], data["userid"])
+
         if data["mode"] in profile_ownership_modes:
             if "session_key" in data and "profile" in data:
-                has_ownership = self.test_profile_ownership(data["session_key"], data["profile"]["id"])
+                has_ownership = self.test_profile_ownership(data["session_key"], data["profile"]["id"]) or session_data['admin']
         elif data["mode"] in user_ownership_modes:
             if "session_key" in data and "userid" in data:
-                has_ownership = self.test_user_session(data["session_key"], data["userid"])
+                has_ownership = session_data['valid'] or session_data['admin']
 
         if not has_ownership:
             return {'error': 'INVALID_SESSION'}
@@ -167,7 +169,7 @@ class OS_WebProfileMgr(BaseService):
         response = self.process_request(request_body)
 
         if 'error' in response:
-            start_response('400 BAD REQUEST', [('Content-Type','text/html')])
+            start_response('400 BAD REQUEST', [('Content-Type','application/json')])
         else:
             start_response('200 OK', [('Content-Type','application/json')])
 

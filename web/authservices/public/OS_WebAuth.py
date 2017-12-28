@@ -130,7 +130,6 @@ class OS_WebAuth(BaseService):
 
         start_response('200 OK', [('Content-Type','application/json')])
 
-        print("Req: {}\n".format(request_body))
         if "mode" in request_body:
             if request_body["mode"] == "test_session":
                 resp = self.test_session(request_body)
@@ -140,5 +139,5 @@ class OS_WebAuth(BaseService):
                 resp = self.del_session(request_body)
         else:
             resp = self.try_login(request_body)
-
+        print("Resp: {}\n".format(resp))
         return resp

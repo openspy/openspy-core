@@ -18,3 +18,7 @@ class User(BaseModel):
 	publicmask = IntegerField()
 	partnercode = IntegerField()
 	deleted = BooleanField()
+	admin = BooleanField()
+
+	def is_admin(self):
+		return self.admin

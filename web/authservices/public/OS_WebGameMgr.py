@@ -29,7 +29,7 @@ class OS_WebGameMgr(BaseService):
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = json.loads(conn.getresponse().read())
 
-        return response['valid']
+        return response['valid'] and "is_admin" in response and response['is_admin']
     def process_request(self, login_options):
         required_params = ['userid', 'session_key']
         if not self.test_required_params(login_options, required_params):
