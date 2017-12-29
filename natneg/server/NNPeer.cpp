@@ -19,6 +19,7 @@ namespace NN {
 		m_gamename = "";
 		m_found_partner = false;
 		m_got_natify_request = false;
+		m_got_init = false;
 		m_got_preinit = false;
 		m_sent_connect = false;
 		memset(&m_ert_test_time, 0, sizeof(m_ert_test_time));
@@ -40,7 +41,12 @@ namespace NN {
 			m_timeout_flag = true;
 			return;
 		}
-
+		if (!m_got_init) {
+			if (time_now.tv_sec - m_init_time.tv_sec > NN_INIT_WAIT_TIME && m_init_time.tv_sec != 0) {
+				sendPeerInitTimeout();
+				m_delete_flag = true;
+			}
+		}
 		if(!m_found_partner) {
 			if(time_now.tv_sec - m_init_time.tv_sec > NN_DEADBEAT_TIME && m_init_time.tv_sec != 0) {
 				sendPeerIsDeadbeat();
@@ -87,9 +93,12 @@ namespace NN {
 		}
 		switch(packet->packettype) {
 			case NN_PREINIT:
+				m_sent_connect = false;
 				handlePreInitPacket(packet);
 			break;
 			case NN_INIT:
+				m_sent_connect = false;
+				m_got_init = true;
 				handleInitPacket(packet);
 			break;
 			case NN_ADDRESS_CHECK:
@@ -101,9 +110,13 @@ namespace NN {
 			case NN_CONNECT_PING:
 			break;
 			case NN_CONNECT_ACK:
+				if (m_client_version <= 2) {
+					m_delete_flag = true;
+				}
 			break;
 			case NN_REPORT:
 				handleReportPacket(packet);
+				m_delete_flag = true;
 			break;
 			default:
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d, version: %d", OS::Address(m_address_info).ToString().c_str(), packet->packettype, packet->version);
@@ -264,6 +277,16 @@ namespace NN {
 		p.Packet.Connect.finished = FINISHED_ERROR_DEADBEAT_PARTNER;
 		sendPacket(&p);
 		OS::LogText(OS::ELogLevel_Info, "[%s] Sending deadbeat", OS::Address(m_address_info).ToString().c_str());
+		m_delete_flag = true;
+	}
+	void Peer::sendPeerInitTimeout() {
+		NatNegPacket p;
+		p.version = m_client_version;
+		p.packettype = NN_CONNECT;
+		p.Packet.Connect.finished = FINISHED_ERROR_INIT_PACKETS_TIMEDOUT;
+		sendPacket(&p);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", OS::Address(m_address_info).ToString().c_str());
+		m_delete_flag = true;
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
 		if (!m_sent_connect) {

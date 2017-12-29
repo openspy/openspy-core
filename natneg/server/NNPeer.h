@@ -8,6 +8,7 @@
 
 #define NN_DEADBEAT_TIME 60 //number of seconds for the natneg peer to wait before declaring the other party a no-show
 #define NN_TIMEOUT_TIME 120 //time in seconds to d/c when haven't recieved any msg
+#define NN_INIT_WAIT_TIME 30 //time in seconds to wait before d/cing when no init packet recieved
 #define NN_NATIFY_WAIT_TIME 10 //wait 10 seconds for NN SDK to detect NAT type
 namespace NN {
 
@@ -59,6 +60,7 @@ namespace NN {
 		void SendConnectPacket(OS::Address address);
 		void SendPreInitPacket(uint8_t state);
 		void sendPeerIsDeadbeat();
+		void sendPeerInitTimeout();
 
 		void handlePreInitPacket(NatNegPacket *packet);
 		void handleInitPacket(NatNegPacket *packet);
@@ -73,6 +75,7 @@ namespace NN {
 
 		bool m_delete_flag;
 		bool m_timeout_flag;
+		bool m_got_init;
 
 		int m_sd;
 

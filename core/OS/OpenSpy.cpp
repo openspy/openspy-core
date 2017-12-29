@@ -454,7 +454,7 @@ namespace OS {
 		const char *seperator = strrchr(str, ':');
 		unsigned int len = strlen(str);
 		if(seperator) {
-			port = atoi(seperator+1);
+			port = htons(atoi(seperator+1));
 			len = seperator - str;
 		}
 		if(len < sizeof(address)) {
