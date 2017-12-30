@@ -1,11 +1,12 @@
 #include "NNPeer.h"
 #include "NNBackend.h"
 #include <algorithm>
-#include <OS/legacy/helpers.h>
 
 #include <OS/TaskPool.h>
 #include <OS/Redis.h>
-#define NATNEG_COOKIE_TIME 300 
+
+#include <sstream>
+#define NATNEG_COOKIE_TIME 30 
 namespace NN {
 	OS::TaskPool<NNQueryTask, NNBackendRequest> *m_task_pool = NULL;
 	Redis::Connection *mp_redis_async_retrival_connection;
@@ -50,29 +51,20 @@ namespace NN {
 		Redis::Value v = reply.values.front();
 		NN::Server *server = (NN::Server *)privdata;
 
-		char type[32];
-		char ip_str[32];
-
-
-		char msg_type[16], server_key[64];
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
 			if (v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
 				if (strcmp(v.arr_value.values[1].second.value._str.c_str(), nn_channel) == 0) {
-					char *temp_str = strdup(v.arr_value.values[2].second.value._str.c_str());
-					find_param(0, temp_str, (char *)&type, sizeof(type) - 1);
-					if (!strcmp(type, "natneg_init")) {
-						find_param("ipstr", temp_str, (char *)&ip_str, sizeof(ip_str) - 1);
-						NNCookieType cookie = (NNCookieType)find_paramint("natneg_init", temp_str);
-						int client_idx = find_paramint("index", temp_str);
-						OS::Address addr((const char *)&ip_str);
-
-						find_param("privateip", temp_str, (char *)&ip_str, sizeof(ip_str) - 1);
-						OS::Address private_addr((const char *)&ip_str);
-
+					std::map<std::string, std::string> kv_data = OS::KeyStringToMap(v.arr_value.values[2].second.value._str.c_str());
+					if(kv_data.find("natneg_init") != kv_data.end()) {
+						//if (kv_data["type"].compare("") == 0) {
+						NNCookieType cookie = (NNCookieType)atoi(kv_data["natneg_init"].c_str());
+						int client_idx = atoi(kv_data["index"].c_str());
+						OS::Address addr(kv_data["ipstr"].c_str());
+						OS::Address private_addr(kv_data["privateip"].c_str());
 						server->OnGotCookie(cookie, client_idx, addr, private_addr);
 					}
 				end_exit:
-					free((void *)temp_str);
+					return;
 				}
 			}
 		}
@@ -126,13 +118,36 @@ namespace NN {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
 
 		OS::Address address = task_params.peer->getAddress();
+		int client_index = task_params.peer->GetClientIndex();
+		int search_index = client_index == 1 ? 0 : 1;
 
-		Redis::Command(mp_redis_connection, 0, "HSET nn_cookie_%d %d %s", task_params.peer->GetCookie(),task_params.peer->GetClientIndex(), address.ToString().c_str());
-		Redis::Command(mp_redis_connection, 0, "EXPIRE nn_cookie_%d %d", task_params.peer->GetCookie(), NATNEG_COOKIE_TIME);
+		std::string nn_key;
+		std::ostringstream nn_key_ss;
+		nn_key_ss << "nn_cookie_" << task_params.peer->GetCookie();
+		nn_key = nn_key_ss.str();
+
+		//Check for existing natneg cookies, and send if already sent by client
+		Redis::Response reply = Redis::Command(mp_redis_connection, 0, "EXISTS %s", nn_key.c_str());
+		if (!(reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)) { 
+			std::string connect_address;
+			reply = Redis::Command(mp_redis_connection, 0, "HGET %s %d", nn_key.c_str(), search_index);
+			if (reply.values.size() > 0 && reply.values.front().type != Redis::REDIS_RESPONSE_TYPE_ERROR) {
+				Redis::Value v = reply.values.front();
+				std::vector<std::string> ip_list = OS::KeyStringToVector(v.value._str);
+				if (ip_list.size() == 2) {
+					OS::Address peer_address(ip_list.at(0).c_str()), private_peer_address(ip_list.at(1).c_str());
+					task_params.peer->OnGotPeerAddress(peer_address, private_peer_address);
+				}
+			}
+			//Redis::Command(mp_redis_connection, 0, "HDEL %s %d", nn_key.c_str(), search_index); //delete cookie to prevent re-sends when invalid
+		}
+			
+
+		Redis::Command(mp_redis_connection, 0, "HSET %s %d '\\%s\\%s'", nn_key.c_str(), client_index, address.ToString().c_str(), task_params.peer->getPrivateAddress().ToString().c_str());
+		Redis::Command(mp_redis_connection, 0, "EXPIRE %s %d", nn_key.c_str(), NATNEG_COOKIE_TIME);
 		switch (task_params.type) {
 			case NN::ENNQueryRequestType_SubmitClient:
 				Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\natneg_init\\%d\\index\\%d\\ipstr\\%s\\gamename\\%s\\privateip\\%s'", nn_channel, task_params.peer->GetCookie(), task_params.peer->GetClientIndex(), address.ToString().c_str(), task_params.peer->getGamename().c_str(), task_params.peer->getPrivateAddress().ToString().c_str());
-				
 				break;
 		}
 
