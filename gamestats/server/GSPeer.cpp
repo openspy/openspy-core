@@ -333,7 +333,10 @@ namespace GS {
 	}
 
 	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {
- 		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, this, operation_id);
+		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, this, operation_id);
+	}
+	void Peer::perform_preauth_auth(std::string auth_token, const char *response, int operation_id) {
+		//OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, this, operation_id);
 	}
 	void Peer::handle_authp(OS::KVReader data_parser) {
 		// TODO: CD KEY AUTH
@@ -352,6 +355,10 @@ namespace GS {
 		if(pid != 0) {
 			perform_pid_auth(pid, resp.c_str(), operation_id);
 		} else {
+			if (data_parser.HasKey("authtoken")) {
+				std::string auth_token = data_parser.GetValue("authtoken");
+				return;
+			}
 			send_error(GPShared::GP_PARSE);
 		}
 

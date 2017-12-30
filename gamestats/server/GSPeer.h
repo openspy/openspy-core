@@ -90,6 +90,7 @@ namespace GS {
 		void handle_setpd(OS::KVReader data_parser);
 
 		//login
+		void perform_preauth_auth(std::string auth_token, const char *response, int operation_id);
 		void perform_pid_auth(int profileid, const char *response, int operation_id);
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 
