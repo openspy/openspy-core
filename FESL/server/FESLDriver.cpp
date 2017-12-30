@@ -98,7 +98,7 @@ static const uint8_t SSL_CERT_RSA[] =    // rsa –in input.key –inform PEM –out o
 
 
 namespace FESL {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port, bool use_ssl) : INetDriver(server) {
 		uint32_t bind_ip = INADDR_ANY;
 		
 		if ((m_sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
@@ -129,18 +129,22 @@ namespace FESL {
 
 		makeNonBlocking(m_sd);
 
+		if (use_ssl) {
+			m_ssl_ctx = SSL_CTX_new(SSLv3_method());
 
-		m_ssl_ctx = SSL_CTX_new(SSLv3_method());
+			SSL_CTX_set_cipher_list(m_ssl_ctx, "ALL");
+			SSL_CTX_set_options(m_ssl_ctx, SSL_OP_ALL);
 
-		SSL_CTX_set_cipher_list(m_ssl_ctx, "ALL");
-		SSL_CTX_set_options(m_ssl_ctx, SSL_OP_ALL);
-
-		if (!SSL_CTX_use_certificate_ASN1(m_ssl_ctx, sizeof(SSL_CERT_X509) - 1, SSL_CERT_X509) ||
-			!SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_RSA, m_ssl_ctx, SSL_CERT_RSA, sizeof(SSL_CERT_RSA) - 1)) {
-			fprintf(stderr, "\nError: problems with the loading of the certificate in memory\n");
-			exit(1);
+			if (!SSL_CTX_use_certificate_ASN1(m_ssl_ctx, sizeof(SSL_CERT_X509) - 1, SSL_CERT_X509) ||
+				!SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_RSA, m_ssl_ctx, SSL_CERT_RSA, sizeof(SSL_CERT_RSA) - 1)) {
+				fprintf(stderr, "\nError: problems with the loading of the certificate in memory\n");
+				exit(1);
+			}
+			SSL_CTX_set_verify_depth(m_ssl_ctx, 1);
 		}
-		SSL_CTX_set_verify_depth(m_ssl_ctx, 1);
+		else {
+			m_ssl_ctx = NULL;
+		}
 	}
 	Driver::~Driver() {
 		std::vector<Peer *>::iterator it = m_connections.begin();
@@ -151,7 +155,8 @@ namespace FESL {
 		}
 		delete mp_mutex;
 		delete mp_thread;
-		SSL_CTX_free(m_ssl_ctx);
+		if(m_ssl_ctx)
+			SSL_CTX_free(m_ssl_ctx);
 	}
 	void *Driver::TaskThread(OS::CThread *thread) {
 		Driver *driver = (Driver *)thread->getParams();

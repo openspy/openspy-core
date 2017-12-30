@@ -20,7 +20,7 @@ namespace FESL {
 
 	class Driver : public INetDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port);
+		Driver(INetServer *server, const char *host, uint16_t port, bool use_ssl = true);
 		~Driver();
 		void think(bool listener_waiting);
 		int getListenerSocket();
