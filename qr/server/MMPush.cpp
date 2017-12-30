@@ -480,9 +480,23 @@ namespace MM {
 	void MMPushTask::DeleteServer(ServerInfo server, bool publish) {
 		int groupid = server.groupid;
 		int id = server.id;
+
+		std::ostringstream ss;
+		ss << server.m_game.gamename << ":" << server.groupid << ":" << server.id;
+		std::string entry_name = ss.str();
+
+
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		Redis::Command(mp_redis_connection, 0, "ZREM %s \"%s:%d:%d:\"", server.m_game.gamename, server.m_game.gamename, server.groupid, server.id);
 		if (publish) {
+			Redis::Response reply = Redis::Command(mp_redis_connection, 0, "HGET %s deleted", entry_name.c_str());
+			Redis::Value v = reply.values[0];
+			if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) {
+				return;
+			}
+			else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0) {
+				return;
+			}
 			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server.m_game.gamename, server.groupid, server.id);
 			Redis::Command(mp_redis_connection, 0, "EXPIRE %s:%d:%d: %d", server.m_game.gamename, server.groupid, server.id, MM_PUSH_EXPIRE_TIME);
 			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\del\\%s:%d:%d:'", sb_mm_channel, server.m_game.gamename, groupid, id);
