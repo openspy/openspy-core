@@ -36,22 +36,22 @@ int main() {
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
-		OS::Init("GP", "openspy.cfg");
+	OS::Init("GP", "openspy.cfg");
 
-		g_gameserver = new GP::Server();
-		configVar *sb_struct = OS::g_config->getRootArray("GP");
-		configVar *driver_struct = OS::g_config->getArrayArray(sb_struct, "drivers");
-		std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
-		std::list<configVar *>::iterator it = drivers.begin();
-		while (it != drivers.end()) {
-			configVar *driver_arr = *it;
-			const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
-			int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
-			GP::Driver *driver = new GP::Driver(g_gameserver, bind_ip, bind_port);
-			OS::LogText(OS::ELogLevel_Info, "Adding GP Driver: %s:%d\n", bind_ip, bind_port);
-			g_gameserver->addNetworkDriver(driver);
-			it++;
-		}
+	g_gameserver = new GP::Server();
+	configVar *gp_struct = OS::g_config->getRootArray("GP");
+	configVar *driver_struct = OS::g_config->getArrayArray(gp_struct, "drivers");
+	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
+	std::list<configVar *>::iterator it = drivers.begin();
+	while (it != drivers.end()) {
+		configVar *driver_arr = *it;
+		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
+		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
+		GP::Driver *driver = new GP::Driver(g_gameserver, bind_ip, bind_port);
+		OS::LogText(OS::ELogLevel_Info, "Adding GP Driver: %s:%d\n", bind_ip, bind_port);
+		g_gameserver->addNetworkDriver(driver);
+		it++;
+	}
 
 	g_gameserver->init();
 	while(g_running) {

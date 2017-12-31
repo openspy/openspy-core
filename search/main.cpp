@@ -29,11 +29,28 @@ int main() {
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
-    OS::Init("search", 8, "chc");
+    /*OS::Init("search", 8, "chc");
 	
 	g_gameserver = new SM::Server();
     g_driver = new SM::Driver(g_gameserver, "0.0.0.0", SM_SERVER_PORT);
-	g_gameserver->addNetworkDriver(g_driver);
+	g_gameserver->addNetworkDriver(g_driver);*/
+	OS::Init("GP", "openspy.cfg");
+
+	g_gameserver = new SM::Server();
+	configVar *sm_struct = OS::g_config->getRootArray("SM");
+	configVar *driver_struct = OS::g_config->getArrayArray(sm_struct, "drivers");
+	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
+	std::list<configVar *>::iterator it = drivers.begin();
+	while (it != drivers.end()) {
+		configVar *driver_arr = *it;
+		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
+		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
+		SM::Driver *driver = new SM::Driver(g_gameserver, bind_ip, bind_port);
+		OS::LogText(OS::ELogLevel_Info, "Adding SM Driver: %s:%d\n", bind_ip, bind_port);
+		g_gameserver->addNetworkDriver(driver);
+		it++;
+	}
+
 	g_gameserver->init();
 	while(g_running) {
 		g_gameserver->tick();
