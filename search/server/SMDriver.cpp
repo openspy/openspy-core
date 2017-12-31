@@ -1,7 +1,7 @@
 #include "SMDriver.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <algorithm>
 #include "SMServer.h"
 #include "SMPeer.h"
 

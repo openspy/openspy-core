@@ -34,7 +34,7 @@ int main() {
 	g_gameserver = new SM::Server();
     g_driver = new SM::Driver(g_gameserver, "0.0.0.0", SM_SERVER_PORT);
 	g_gameserver->addNetworkDriver(g_driver);*/
-	OS::Init("GP", "openspy.cfg");
+	OS::Init("SM", "openspy.cfg");
 
 	g_gameserver = new SM::Server();
 	configVar *sm_struct = OS::g_config->getRootArray("SM");

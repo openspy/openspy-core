@@ -36,11 +36,22 @@ int main() {
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
     
-    OS::Init("gamestats", 4, "chc");
+	OS::Init("GS", "openspy.cfg");
 
 	g_gameserver = new GS::Server();
-    g_driver = new GS::Driver(g_gameserver, "0.0.0.0", STATS_SERVER_PORT);
-	g_gameserver->addNetworkDriver(g_driver);
+	configVar *gs_struct = OS::g_config->getRootArray("GS");
+	configVar *driver_struct = OS::g_config->getArrayArray(gs_struct, "drivers");
+	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
+	std::list<configVar *>::iterator it = drivers.begin();
+	while (it != drivers.end()) {
+		configVar *driver_arr = *it;
+		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
+		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
+		GS::Driver *driver = new GS::Driver(g_gameserver, bind_ip, bind_port);
+		OS::LogText(OS::ELogLevel_Info, "Adding GS Driver: %s:%d\n", bind_ip, bind_port);
+		g_gameserver->addNetworkDriver(driver);
+		it++;
+	}
 	g_gameserver->init();
 	while(g_running) {
 		g_gameserver->tick();
