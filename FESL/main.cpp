@@ -31,7 +31,7 @@ int main() {
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
-	OS::Init("GP", "openspy.cfg");
+	OS::Init("FESL", "openspy.cfg");
 
 	g_gameserver = new FESL::Server();
 	configVar *gp_struct = OS::g_config->getRootArray("FESL");

@@ -69,6 +69,7 @@ namespace FESL {
 		if (m_delete_flag) return;
 		if (packet_waiting) {
 			if (!m_openssl_accepted && m_ssl_ctx) {
+				gettimeofday(&m_last_recv, NULL);
 				if (SSL_accept(m_ssl_ctx) < 0) {
 					m_ssl_num_fails++;
 					OS::LogText(OS::ELogLevel_Info, "[%s] SSL accept failed", OS::Address(m_address_info).ToString().c_str());
@@ -106,11 +107,7 @@ namespace FESL {
 			}
 			gettimeofday(&m_last_recv, NULL);
 			buf[len] = 0;
-			/*uint32_t subtype = htonl(header.subtype);
-			if (subtype & 0x80000000 > m_sequence_id) {
-				m_sequence_id = subtype & 0x0FFFFFFF;
-			}*/
-			printf("got %s\n",buf);
+
 			OS::KVReader kv_data(buf, '=', '\n');
 			char *type;
 			for (int i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
@@ -169,7 +166,6 @@ namespace FESL {
 			send(m_sd, (const char *)&header, sizeof(header), MSG_NOSIGNAL);
 			send(m_sd, data.c_str(), data.length() + 1, MSG_NOSIGNAL);
 		}
-		printf("Send: %s\n", data.c_str());
 	}
 	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		((Peer *)peer)->mp_mutex->lock();

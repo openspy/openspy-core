@@ -55,7 +55,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <OS/Logger.h>
 #include <OS/config.h>
 
-#define OPENSPY_WEBSERVICES_URL "http://10.1.1.141:8000"
+#define OPENSPY_WEBSERVICES_URL "http://os-auth.us-east-1.elasticbeanstalk.com"
 
 class Config;
 namespace OS {

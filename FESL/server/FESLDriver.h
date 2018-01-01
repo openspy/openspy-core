@@ -13,7 +13,7 @@
 #else
 #include <sys/time.h>
 #endif
-#include <openssl\ssl.h>
+#include <openssl/ssl.h>
 #define DRIVER_THREAD_TIME 1000
 namespace FESL {
 	class Peer;

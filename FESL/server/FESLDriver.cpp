@@ -1,6 +1,7 @@
 #include "FESLDriver.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>
 
 #include "FESLServer.h"
 #include "FESLPeer.h"
