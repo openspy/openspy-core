@@ -35,35 +35,36 @@ namespace OS {
 			break;
 		}
 
-
+		json_t *user_obj = json_object();
 
 		if(request.search_params.id != 0) {
-			json_object_set_new(send_obj, "id", json_integer(request.search_params.id));
+			json_object_set_new(user_obj, "id", json_integer(request.search_params.id));
 		}
 
 		//user parameters
 		if(request.search_params.email.length())
-			json_object_set_new(send_obj, "email", json_string(request.search_params.email.c_str()));
+			json_object_set_new(user_obj, "email", json_string(request.search_params.email.c_str()));
 
 
 		if(request.type == EUserRequestType_Update) {
 			if(request.search_params.password.length())
-				json_object_set_new(send_obj, "password", json_string(request.search_params.password.c_str()));
+				json_object_set_new(user_obj, "password", json_string(request.search_params.password.c_str()));
 
-			json_object_set_new(send_obj, "videocard1ram", json_integer(request.search_params.videocard_ram[0]));
-			json_object_set_new(send_obj, "videocard2ram", json_integer(request.search_params.videocard_ram[1]));
+			json_object_set_new(user_obj, "videocard1ram", json_integer(request.search_params.videocard_ram[0]));
+			json_object_set_new(user_obj, "videocard2ram", json_integer(request.search_params.videocard_ram[1]));
 
-			json_object_set_new(send_obj, "cpuspeed", json_integer(request.search_params.cpu_speed));
-			json_object_set_new(send_obj, "cpubrandid", json_integer(request.search_params.cpu_brandid));
-			json_object_set_new(send_obj, "connectionspeed", json_integer(request.search_params.connectionspeed));
-			json_object_set_new(send_obj, "hasnetwork", request.search_params.hasnetwork ? json_true() : json_false());
-			json_object_set_new(send_obj, "publicmask", json_integer(request.search_params.publicmask));
+			json_object_set_new(user_obj, "cpuspeed", json_integer(request.search_params.cpu_speed));
+			json_object_set_new(user_obj, "cpubrandid", json_integer(request.search_params.cpu_brandid));
+			json_object_set_new(user_obj, "connectionspeed", json_integer(request.search_params.connectionspeed));
+			json_object_set_new(user_obj, "hasnetwork", request.search_params.hasnetwork ? json_true() : json_false());
+			json_object_set_new(user_obj, "publicmask", json_integer(request.search_params.publicmask));
 		}		
-		json_object_set_new(send_obj, "partnercode", json_integer(request.search_params.partnercode));
+		json_object_set_new(user_obj, "partnercode", json_integer(request.search_params.partnercode));
+
+		json_object_set_new(send_obj, "user", user_obj);
 
 
 		char *json_data = json_dumps(send_obj, 0);
-
 
 		CURL *curl = curl_easy_init();
 		CURLcode res;

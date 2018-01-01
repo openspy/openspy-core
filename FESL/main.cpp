@@ -22,7 +22,6 @@ void sig_handler(int signo)
 }
 
 int main() {
-    OS::Init("search", 8, "chc");
 	SSL_library_init();
 	#ifndef _WIN32
 		signal(SIGINT, sig_handler);
@@ -32,10 +31,24 @@ int main() {
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
+	OS::Init("GP", "openspy.cfg");
 
 	g_gameserver = new FESL::Server();
-    g_driver = new FESL::Driver(g_gameserver, "0.0.0.0", FESL_SERVER_PORT);
-	g_gameserver->addNetworkDriver(g_driver);
+	configVar *gp_struct = OS::g_config->getRootArray("FESL");
+	configVar *driver_struct = OS::g_config->getArrayArray(gp_struct, "drivers");
+	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
+	std::list<configVar *>::iterator it = drivers.begin();
+	while (it != drivers.end()) {
+		configVar *driver_arr = *it;
+		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
+		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
+		bool ssl = OS::g_config->getArrayInt(driver_arr, "ssl");
+		FESL::Driver *driver = new FESL::Driver(g_gameserver, bind_ip, bind_port, ssl);
+		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s:%d (ssl: %d)\n", bind_ip, bind_port, ssl);
+		g_gameserver->addNetworkDriver(driver);
+		it++;
+	}
+
 	g_gameserver->init();
 	while(g_running) {
 		g_gameserver->tick();

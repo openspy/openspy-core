@@ -380,8 +380,17 @@ namespace SM {
 	void Peer::handle_valid(OS::KVReader data_parser) {
 		OS::UserSearchRequest request;
 		request.type = OS::EUserRequestType_Search;
-		request.search_params.id = data_parser.GetValueInt("userid");
-		request.search_params.partnercode = data_parser.GetValueInt("partnercode");
+		if (data_parser.HasKey("userid")) {
+			request.search_params.id = data_parser.GetValueInt("userid");
+		}
+		
+		if (data_parser.HasKey("partnercode")) {
+			request.search_params.partnercode = data_parser.GetValueInt("partnercode");
+		}
+		else if(data_parser.HasKey("partnerid")) {
+			request.search_params.partnercode = data_parser.GetValueInt("partnerid");
+		}
+
 		if(data_parser.HasKey("email")) {
 			request.search_params.email = data_parser.GetValue("email");
 		}
