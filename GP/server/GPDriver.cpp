@@ -32,6 +32,8 @@ namespace GP {
 			//signal error
 		}
 
+		makeNonBlocking(m_sd);
+
 		gettimeofday(&m_server_start, NULL);
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
@@ -84,20 +86,24 @@ namespace GP {
 		}
 	}
 	void Driver::think(bool listen_waiting) {
-		mp_mutex->lock();
 		if (listen_waiting) {
-			socklen_t psz = sizeof(struct sockaddr_in);
-			struct sockaddr_in address;
-			int sda = accept(m_sd, (struct sockaddr *)&address, &psz);
-			if (sda <= 0) return;
-			Peer *peer = new Peer(this, &address, sda);
+			while (true) {
+				socklen_t psz = sizeof(struct sockaddr_in);
+				struct sockaddr_in peer;
+				int sda = accept(m_sd, (struct sockaddr *)&peer, &psz);
+				if (sda <= 0) return;
+				Peer *mp_peer = NULL;
+				mp_peer = new Peer(this, &peer, sda);
 
-			makeNonBlocking(sda);
-			m_connections.push_back(peer);
-			m_server->RegisterSocket(peer);
+				makeNonBlocking(mp_peer);
+
+				mp_mutex->lock();
+				m_connections.push_back(mp_peer);
+				m_server->RegisterSocket(mp_peer);
+				mp_mutex->unlock();
+				//mp_peer->think(true);
+			}
 		}
-		TickConnections();
-		mp_mutex->unlock();
 	}
 	Peer *Driver::find_client(struct sockaddr_in *address) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
