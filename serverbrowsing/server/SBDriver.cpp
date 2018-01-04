@@ -158,17 +158,6 @@ namespace SB {
 		}
 		return NULL;
 	}
-	bool Driver::HasPeer(SB::Peer * peer) {
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			if (*it == peer) {
-				return true;
-			}
-			it++;
-		}
-		return false;
-	}
-
 
 	int Driver::getListenerSocket() {
 		return m_sd;

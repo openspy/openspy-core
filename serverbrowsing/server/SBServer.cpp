@@ -28,7 +28,6 @@ void SBServer::tick() {
 	NetworkTick();
 }
 void SBServer::shutdown() {
-
 }
 void SBServer::SetTaskPool(OS::TaskPool<MM::MMQueryTask, MM::MMQueryRequest> *pool) {
 	mp_task_pool = pool;

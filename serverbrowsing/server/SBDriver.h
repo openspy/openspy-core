@@ -43,7 +43,6 @@ namespace SB {
 
 		int GetNumConnections();
 
-		bool HasPeer(SB::Peer * peer);
 
 		void AddDeleteServer(MM::Server serv);
 		void AddNewServer(MM::Server serv);
