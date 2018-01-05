@@ -341,18 +341,6 @@ namespace QR {
 			Delete();
 		}
 	}
-	void V1Peer::Delete() {
-		if (m_server_pushed) {
-			MM::MMPushRequest req;
-			req.peer = this;
-			req.server = m_server_info;
-			req.peer->IncRef();
-			req.type = MM::EMMPushRequestType_DeleteServer;
-			m_peer_stats.pending_requests++;
-			MM::m_task_pool->AddRequest(req);
-		}
-		m_delete_flag = true;
-	}
 	void V1Peer::OnRegisteredServer(int pk_id, void *extra) {
 		m_server_info.id = pk_id;
 		m_dirty_server_info = m_server_info;

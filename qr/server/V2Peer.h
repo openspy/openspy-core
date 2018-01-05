@@ -39,8 +39,6 @@ namespace QR {
 		void send_ping();
 		void send_challenge();
 
-		void Delete();
-
 		bool m_recv_instance_key;
 		uint8_t m_instance_key[REQUEST_KEY_LEN];
 		char m_challenge[CHALLENGE_LEN + 1];

@@ -41,7 +41,8 @@ namespace QR {
 		const struct sockaddr_in *getAddress() { return &m_address_info; }
 		bool ShouldDelete() { return m_delete_flag; };
 		void SetDelete(bool del) { m_delete_flag = del; };
-		bool IsTimeout() { return m_timeout_flag; }
+		bool IsTimeout() { return m_timeout_flag; };
+		void Delete();
 
 		virtual void send_error(bool die, const char *fmt, ...) = 0;
 		virtual void SendClientMessage(uint8_t *data, int data_len) = 0;

@@ -406,18 +406,6 @@ namespace QR {
 		buffer.WriteBuffer(data, data_len);
 		SendPacket(buffer);
 	}
-	void V2Peer::Delete() {
-		if (m_server_pushed) {
-			MM::MMPushRequest req;
-			req.peer = this;
-			req.server = m_server_info;
-			req.peer->IncRef();
-			req.type = MM::EMMPushRequestType_DeleteServer;
-			m_peer_stats.pending_requests++;
-			MM::m_task_pool->AddRequest(req);
-		}
-		m_delete_flag = true;
-	}
 	void V2Peer::OnRegisteredServer(int pk_id, void *extra) {
 		OS::Buffer buffer;
 		m_server_info.id = pk_id;

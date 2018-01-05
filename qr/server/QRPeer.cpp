@@ -36,6 +36,7 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version: %d",OS::Address(m_address_info).ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
+		Delete();
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d",OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
 	}
 	bool Peer::isTeamString(const char *string) {
@@ -129,5 +130,18 @@ namespace QR {
 			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
 		}
+	}
+	void Peer::Delete() {
+		if (m_server_pushed) {
+			MM::MMPushRequest req;
+			req.peer = this;
+			req.server = m_server_info;
+			req.peer->IncRef();
+			req.type = MM::EMMPushRequestType_DeleteServer;
+			m_peer_stats.pending_requests++;
+			MM::m_task_pool->AddRequest(req);
+		}
+		m_server_pushed = false;
+		m_delete_flag = true;
 	}
 }
