@@ -37,6 +37,8 @@ namespace GS {
 
 		gettimeofday(&m_server_start, NULL);
 
+		makeNonBlocking(m_sd);
+
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
 
