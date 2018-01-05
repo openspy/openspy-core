@@ -214,7 +214,19 @@ namespace Redis {
 		if (len <= 0) {
 			OS::LogText(OS::ELogLevel_Critical, "redis recv error: %d", len);
 			Reconnect(conn);
+			if (conn->command_recursion_depth < REDIS_MAX_RECONNECT_RECURSION_DEPTH) {
+				conn->command_recursion_depth++;
+				resp = Command(conn, sleepMS, "%s", cmd.c_str());
+				conn->command_recursion_depth = 0;
+				return resp;
+			}
+			else {
+				conn->command_recursion_depth = 0;
+			}
 			return resp;
+		}
+		else {
+			conn->command_recursion_depth = 0;
 		}
 		conn->read_buff[len] = 0;
 		int diff = 0;

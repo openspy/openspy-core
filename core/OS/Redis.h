@@ -5,6 +5,8 @@
 #include <string>
 #include <time.h>
 
+#define REDIS_MAX_RECONNECT_RECURSION_DEPTH 5
+
 namespace Redis {
 
 	enum REDIS_RESPONSE_TYPE {
@@ -36,7 +38,7 @@ namespace Redis {
 		int sd;
 		char *read_buff;
 		int read_buff_alloc_sz;
-
+		int command_recursion_depth;
 		std::string connect_address;
 	} Connection;
 
