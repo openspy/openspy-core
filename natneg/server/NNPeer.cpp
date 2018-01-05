@@ -43,13 +43,13 @@ namespace NN {
 		}
 		if (!m_got_init) {
 			if (time_now.tv_sec - m_init_time.tv_sec > NN_INIT_WAIT_TIME && m_init_time.tv_sec != 0) {
-				sendPeerInitTimeout();
+				sendPeerInitError(FINISHED_ERROR_INIT_PACKETS_TIMEDOUT);
 				m_delete_flag = true;
 			}
 		}
 		if(!m_found_partner) {
 			if(time_now.tv_sec - m_init_time.tv_sec > NN_DEADBEAT_TIME && m_init_time.tv_sec != 0) {
-				sendPeerIsDeadbeat();
+				sendPeerInitError(FINISHED_ERROR_DEADBEAT_PARTNER);
 				m_delete_flag = true;
 			}
 		}
@@ -270,20 +270,11 @@ namespace NN {
 
 		SubmitClient(); //resubmit for other client
 	}
-	void Peer::sendPeerIsDeadbeat() {
+	void Peer::sendPeerInitError(uint8_t error) {
 		NatNegPacket p;
 		p.version = m_client_version;
 		p.packettype = NN_CONNECT;
-		p.Packet.Connect.finished = FINISHED_ERROR_DEADBEAT_PARTNER;
-		sendPacket(&p);
-		OS::LogText(OS::ELogLevel_Info, "[%s] Sending deadbeat", OS::Address(m_address_info).ToString().c_str());
-		m_delete_flag = true;
-	}
-	void Peer::sendPeerInitTimeout() {
-		NatNegPacket p;
-		p.version = m_client_version;
-		p.packettype = NN_CONNECT;
-		p.Packet.Connect.finished = FINISHED_ERROR_INIT_PACKETS_TIMEDOUT;
+		p.Packet.Connect.finished = error;
 		sendPacket(&p);
 		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", OS::Address(m_address_info).ToString().c_str());
 		m_delete_flag = true;

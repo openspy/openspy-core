@@ -59,8 +59,7 @@ namespace NN {
 
 		void SendConnectPacket(OS::Address address);
 		void SendPreInitPacket(uint8_t state);
-		void sendPeerIsDeadbeat();
-		void sendPeerInitTimeout();
+		void sendPeerInitError(uint8_t error);
 
 		void handlePreInitPacket(NatNegPacket *packet);
 		void handleInitPacket(NatNegPacket *packet);
