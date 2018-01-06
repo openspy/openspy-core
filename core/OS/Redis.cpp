@@ -123,6 +123,9 @@ namespace Redis {
 		int line_len = ENDLINE_STR_COUNT + info_line.length();
 		//printf("Info Line: %s\n", info_line.c_str());
 		diff += line_len;
+		if (str.length() < line_len) {
+			line_len = str.length();
+		}
 		std::string info = str.substr(line_len);
 		std::string data_str;
 		switch (info_line[0]) {
