@@ -32,27 +32,29 @@ typedef struct {
 	union {
 		float fval;
 		long ival;
-		void *ptr;
 	};
 	std::string sval;
 	ETokenType token;
 } TokenOperand;
 class CToken {
 public:
-	CToken() : m_extra(NULL), m_type(EToken_None) {}
-	CToken(ETokenType type, void *extra, bool no_free = false) :  m_extra (extra), m_type(type) {}
-	CToken(std::string extra) : m_str(extra), m_type(EToken_String), m_extra(NULL) {}
-	CToken(ETokenType type, std::string extra) :  m_str (extra), m_type(type), m_extra(NULL) {}
+	CToken() : m_type(EToken_None) {}
+	CToken(int int_val) : m_type(EToken_Integer), m_int(int_val) {};
+	CToken(float f_val) : m_type(EToken_Float), m_float(f_val) {};
+	CToken(std::string extra) : m_str(extra), m_type(EToken_String) {}
+	CToken(ETokenType type, std::string extra) :  m_str (extra), m_type(type) {}
+	CToken(ETokenType type) : m_type(type) {}
 	~CToken();
 	ETokenType getType() { return m_type; }
-	void *getExtra() { return m_extra; }
 	std::string getString() { return m_str; }
+	float getFloat() { return m_float; }
+	int getInt() { return m_int; }
 	static std::vector<CToken> filterToTokenList(const char *filter);
 	static std::vector<CToken> convertToRPN(std::vector<CToken> token_list);
 private:
-	bool no_free;
 	ETokenType m_type;
-	void *m_extra; //ptr to int, null terminated string, etc if variable
+	int m_int; //ptr to int, null terminated string, etc if variable
+	float m_float;
 	std::string m_str;
 };
 TokenOperand resolve_variable(CToken token, std::map<std::string, std::string>& kvList);
