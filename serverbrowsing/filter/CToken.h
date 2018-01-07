@@ -31,7 +31,7 @@ enum ETokenType {
 typedef struct {
 	union {
 		float fval;
-		long ival;
+		int ival;
 	};
 	std::string sval;
 	ETokenType token;

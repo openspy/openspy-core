@@ -269,7 +269,7 @@ std::string tokenToString(CToken *token) {
 		t1 = stack.top(); \
 		stack.pop(); \
 		if (t1.getType() == EToken_Integer && t2.getType() == EToken_Integer) { \
-			long i1, i2; \
+			int i1, i2; \
 			i1 = t1.getInt(); \
 			i2 = t2.getInt(); \
 			val = i1 _operator i2; \
@@ -290,10 +290,10 @@ std::string tokenToString(CToken *token) {
 		stack.pop(); \
 		t1 = stack.top(); \
 		stack.pop(); \
-		long i1, i2; \
+		int i1, i2; \
 		if (t1.getType() == EToken_Integer && t2.getType() == EToken_Integer) { \
-			i1 = (long)t1.getInt(); \
-			i2 = (long)t2.getInt(); \
+			i1 = t1.getInt(); \
+			i2 = t2.getInt(); \
 			val = (i1 _operator i2); \
 		}\
 	} \
@@ -310,7 +310,7 @@ DEFINE_BOOLEAN_OPERATION_NOSTR(evaland, &&)
 DEFINE_BOOLEAN_OPERATION_NOSTR(evalor, || )
 
 CToken divide(std::stack<CToken> &stack) {
-	long isum = 0;
+	int isum = 0;
 	float fsum = 0.0f;
 	ETokenType type;
 	CToken ret;
@@ -335,7 +335,7 @@ CToken divide(std::stack<CToken> &stack) {
 	return ret;
 }
 CToken multiply(std::stack<CToken> &stack) {
-	long isum = 0;
+	int isum = 0;
 	float fsum = 0.0f;
 	ETokenType type;
 	CToken ret;
@@ -361,7 +361,7 @@ CToken multiply(std::stack<CToken> &stack) {
 
 
 CToken addition(std::stack<CToken> &stack) {
-	long isum = 0;
+	int isum = 0;
 	float fsum = 0.0f;
 	ETokenType type;
 	CToken ret;
@@ -386,7 +386,7 @@ CToken addition(std::stack<CToken> &stack) {
 }
 
 CToken subtraction(std::stack<CToken> &stack) {
-	long isum = 0;
+	int isum = 0;
 	float fsum = 0.0f;
 	ETokenType type;
 	CToken ret;
