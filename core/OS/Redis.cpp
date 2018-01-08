@@ -56,6 +56,7 @@ namespace Redis {
 		get_server_address_port(constr, address, port);
 
 		ret->connect_address = std::string(constr);
+		ret->command_recursion_depth = 0;
 
 		ret->read_buff_alloc_sz = REDIS_BUFFSZ;
 		ret->read_buff = (char *)malloc(REDIS_BUFFSZ);
@@ -107,6 +108,9 @@ namespace Redis {
 		std::string len_line = Redis::read_line(str).substr(1);
 		int num_elements = atoi(len_line.c_str());
 		diff += len_line.length() + ENDLINE_STR_COUNT + 1;
+		if (diff < str.length()) {
+			diff = str.length();
+		}
 		str = str.substr(diff);
 		for (int i = 0; i < num_elements; i++) {
 			int tdiff = 0;
