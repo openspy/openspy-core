@@ -161,8 +161,6 @@ namespace MM {
 			void PerformGetGameInfoPairByGameName(MMQueryRequest request);
 			void PerformGetGameInfoByGameName(MMQueryRequest request);
 			
-			static bool serverMatchesRequest(sServerListReq req, MM::Server *server);
-
 			std::vector<SB::Driver *> m_drivers;
 			Redis::Connection *mp_redis_connection;
 			time_t m_redis_timeout;
