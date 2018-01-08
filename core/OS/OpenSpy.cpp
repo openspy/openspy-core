@@ -82,7 +82,7 @@ namespace OS {
 			redis_ctx = OS::redis_internal_connection;
 		}
 
-		Redis::Command(redis_ctx, 50, "SELECT %d", ERedisDB_Game);
+		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s gameid", key);
 		if (Redis::CheckError(reply)) {
@@ -218,7 +218,7 @@ namespace OS {
 		if(redis_ctx == NULL) {
 			redis_ctx = OS::redis_internal_connection;
 		}
-		Redis::Command(redis_ctx, 5, "SELECT %d", ERedisDB_Game);
+		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
 
 		int cursor = 0;
 		do {

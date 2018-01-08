@@ -39,6 +39,7 @@ namespace Redis {
 		char *read_buff;
 		int read_buff_alloc_sz;
 		int command_recursion_depth;
+		int reconnect_recursion_depth;
 		std::string connect_address;
 	} Connection;
 

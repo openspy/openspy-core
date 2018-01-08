@@ -57,6 +57,7 @@ namespace Redis {
 
 		ret->connect_address = std::string(constr);
 		ret->command_recursion_depth = 0;
+		ret->reconnect_recursion_depth = 0;
 
 		ret->read_buff_alloc_sz = REDIS_BUFFSZ;
 		ret->read_buff = (char *)malloc(REDIS_BUFFSZ);
@@ -73,6 +74,7 @@ namespace Redis {
 		close(connection->sd);
 		OS::Sleep(RECONNECT_SLEEP_TIME);
 		performAddressConnect(connection, address, port);
+		connection->reconnect_recursion_depth = 0;
 	}
 	void performAddressConnect(Connection *connection, const char *address, uint16_t port) {
 		connection->sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -88,6 +90,11 @@ namespace Redis {
 		if (r < 0) {
 			OS::LogText(OS::ELogLevel_Critical, "redis connect error (%s:%d) (IP: %lu) ret: %d", address, port, ip, r);
 			//error
+			if(++connection->reconnect_recursion_depth > REDIS_MAX_RECONNECT_RECURSION_DEPTH) {
+				return;
+			}
+			close(connection->sd);
+			performAddressConnect(connection, address, port);
 		}
 	}
 	std::string read_line(std::string str) {
