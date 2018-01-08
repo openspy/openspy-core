@@ -22,6 +22,7 @@ namespace OS {
 				while (it != mergedMap.end()) {
 					std::pair<GameCacheKey, std::pair<GameData, struct timeval> > p = *it;
 					if (p.first.id = id) {
+						found = true;
 						val = p.second.first;
 						break;
 					}
