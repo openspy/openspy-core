@@ -166,20 +166,7 @@ namespace MM {
 
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
 
-		/*
-		reply = (redisReply *)redisCommand(redis_ctx, "HGET %s deleted", entry_name.c_str());
-		if(reply) {
-			if(reply->type != REDIS_REPLY_NIL && !include_deleted) {
-				freeReplyObject(reply);
-				return;
-			}
-			freeReplyObject(reply);
-			reply = (redisReply *)NULL;
-		} else {
-			return;
-		}
-		*/
-
+		//skip deleted servers
 		if (!include_deleted) {
 			reply = Redis::Command(redis_ctx, 0, "HGET %s deleted", entry_name.c_str());
 			v = reply.values[0];
@@ -218,7 +205,7 @@ namespace MM {
 
 		server->key = entry_name;
 
-		Redis::Command(mp_redis_connection, 0, "ZINCRBY %s -1 \"%s\"", server->game.gamename, entry_name.c_str());
+		Redis::Command(redis_ctx, 0, "ZINCRBY %s -1 \"%s\"", server->game.gamename, entry_name.c_str());
 
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s id", entry_name.c_str());
