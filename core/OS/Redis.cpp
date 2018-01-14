@@ -114,8 +114,8 @@ namespace Redis {
 		Redis::ArrayValue arr;
 		std::string len_line = Redis::read_line(str).substr(1);
 		int num_elements = atoi(len_line.c_str());
-		diff += len_line.length() + ENDLINE_STR_COUNT + 1;
-		if (diff < str.length()) {
+		diff += len_line.length() + ENDLINE_STR_COUNT + 1; // +1 for the operator
+		if (diff > str.length()) {
 			diff = str.length();
 		}
 		str = str.substr(diff);
@@ -134,9 +134,7 @@ namespace Redis {
 		int line_len = ENDLINE_STR_COUNT + info_line.length();
 		//printf("Info Line: %s\n", info_line.c_str());
 		diff += line_len;
-		if (str.length() < line_len) {
-			line_len = str.length();
-		}
+
 		std::string info = str.substr(line_len);
 		std::string data_str;
 		switch (info_line[0]) {
@@ -211,6 +209,73 @@ namespace Redis {
 		diff = real_diff;
 
 	}
+	int Recv(Connection *conn) {
+		enum EReadState {
+			READ_STATE_READ_OPERATOR,
+			READ_STATE_READ_TO_NEWLINE,
+		};
+		struct {
+			bool has_read_operator;
+			int num_read_lines;
+
+			bool recv_loop;
+
+			EReadState state;
+			char last_operator;
+
+			int read_array_count_start_idx;
+		} sReadLineData;
+
+		sReadLineData.has_read_operator = false;
+		sReadLineData.num_read_lines = 1;
+		sReadLineData.state = READ_STATE_READ_OPERATOR;
+		sReadLineData.recv_loop = true;
+		int total_len = 0, len;
+		while (sReadLineData.num_read_lines--) {
+			while(sReadLineData.recv_loop) {
+				len = recv(conn->sd, &conn->read_buff[total_len], 1, 0);
+				if (len <= 0) { return len; }
+
+				switch (sReadLineData.state) {
+				case READ_STATE_READ_OPERATOR:
+					sReadLineData.state = READ_STATE_READ_TO_NEWLINE;
+					sReadLineData.last_operator = conn->read_buff[total_len];
+					switch (conn->read_buff[total_len]) {
+						case '+':
+							break;
+						case '$':
+							sReadLineData.num_read_lines++; //read string content
+							//intentional fall-through
+						case '*':
+							sReadLineData.read_array_count_start_idx = total_len;
+						}
+					break;
+				case READ_STATE_READ_TO_NEWLINE:
+					if (conn->read_buff[total_len] == '\n') {
+						sReadLineData.state = READ_STATE_READ_OPERATOR;
+						sReadLineData.recv_loop = false;
+						switch (sReadLineData.last_operator) {
+						case '$':
+							if (atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]) == -1) {
+								sReadLineData.num_read_lines--;
+							}
+							break;
+						case '*':
+							sReadLineData.num_read_lines += atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]);
+						}
+						break;
+					}
+				}
+
+				total_len += len;
+			}
+			sReadLineData.recv_loop = true;
+
+
+		}
+		conn->read_buff[total_len] = 0;
+		return total_len;
+	}
 	Response Command(Connection *conn, time_t sleepMS, const char *fmt, ...) {
 		Response resp;
 		va_list args;
@@ -224,7 +289,7 @@ namespace Redis {
 
 		if (sleepMS != 0)
 			OS::Sleep(sleepMS);
-		int len = recv(conn->sd, conn->read_buff, conn->read_buff_alloc_sz - 1, 0);
+		int len = Recv(conn);
 		if (len <= 0) {
 			OS::LogText(OS::ELogLevel_Critical, "redis recv error: %d", len);
 			Reconnect(conn);
@@ -242,9 +307,8 @@ namespace Redis {
 		else {
 			conn->command_recursion_depth = 0;
 		}
-		conn->read_buff[len] = 0;
-		int diff = 0;
 
+		int diff = 0;
 		parse_response(conn->read_buff, diff, &resp, NULL);
 		return resp;
 	}
@@ -266,13 +330,11 @@ namespace Redis {
 		}
 
 		while (true) {
-			int len = recv(conn->sd, conn->read_buff, conn->read_buff_alloc_sz - 1, 0);
-			if (len <= 0) {
+			if (Recv(conn) <= 0) {
 				OS::Sleep(5000); //Sleep even longer due to async... more likely to be in a CPU consuming loop
 				Reconnect(conn);
 				continue;
 			}
-			conn->read_buff[len] = 0;
 			parse_response(conn->read_buff, diff, &resp, NULL);
 			mpFunc(conn, resp, extra);
 			diff = 0;
