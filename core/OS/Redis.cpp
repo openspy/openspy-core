@@ -231,24 +231,23 @@ namespace Redis {
 		sReadLineData.state = READ_STATE_READ_OPERATOR;
 		sReadLineData.recv_loop = true;
 		int total_len = 0, len;
-		while (sReadLineData.num_read_lines--) {
-			while(sReadLineData.recv_loop) {
-				len = recv(conn->sd, &conn->read_buff[total_len], 1, 0);
-				if (len <= 0) { return len; }
-
+		while(sReadLineData.recv_loop) {
+			len = recv(conn->sd, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len, 0);
+			if (len <= 0) { return len; }
+			while (len--) {
 				switch (sReadLineData.state) {
 				case READ_STATE_READ_OPERATOR:
 					sReadLineData.state = READ_STATE_READ_TO_NEWLINE;
 					sReadLineData.last_operator = conn->read_buff[total_len];
 					switch (conn->read_buff[total_len]) {
-						case '+':
-							break;
-						case '$':
-							sReadLineData.num_read_lines++; //read string content
-							//intentional fall-through
-						case '*':
-							sReadLineData.read_array_count_start_idx = total_len;
-						}
+					case '+':
+						break;
+					case '$':
+						sReadLineData.num_read_lines++; //read string content
+														//intentional fall-through
+					case '*':
+						sReadLineData.read_array_count_start_idx = total_len;
+					}
 					break;
 				case READ_STATE_READ_TO_NEWLINE:
 					if (conn->read_buff[total_len] == '\n') {
@@ -259,19 +258,21 @@ namespace Redis {
 							if (atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]) == -1) {
 								sReadLineData.num_read_lines--;
 							}
+							else {
+								sReadLineData.state = READ_STATE_READ_TO_NEWLINE;
+								sReadLineData.last_operator = 0;
+							}
 							break;
 						case '*':
 							sReadLineData.num_read_lines += atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]);
+							break;
 						}
-						break;
+						sReadLineData.num_read_lines--;
 					}
 				}
-
-				total_len += len;
+				total_len++;
 			}
-			sReadLineData.recv_loop = true;
-
-
+			sReadLineData.recv_loop = sReadLineData.num_read_lines > 0;
 		}
 		conn->read_buff[total_len] = 0;
 		return total_len;
