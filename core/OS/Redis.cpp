@@ -224,6 +224,8 @@ namespace Redis {
 			char last_operator;
 
 			int read_array_count_start_idx;
+			int read_string_length;
+			int read_string_start;
 		} sReadLineData;
 
 		sReadLineData.has_read_operator = false;
@@ -237,6 +239,7 @@ namespace Redis {
 			while (len--) {
 				switch (sReadLineData.state) {
 				case READ_STATE_READ_OPERATOR:
+					sReadLineData.read_string_start = 0;
 					sReadLineData.state = READ_STATE_READ_TO_NEWLINE;
 					sReadLineData.last_operator = conn->read_buff[total_len];
 					switch (conn->read_buff[total_len]) {
@@ -249,22 +252,26 @@ namespace Redis {
 					break;
 				case READ_STATE_READ_TO_NEWLINE:
 					if (conn->read_buff[total_len] == '\n') {
-						sReadLineData.state = READ_STATE_READ_OPERATOR;
-						switch (sReadLineData.last_operator) {
-						case '$':
-							if (atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]) == -1) {
-								sReadLineData.num_read_lines--;
+						if (sReadLineData.read_string_start == 0 || total_len - sReadLineData.read_string_start >= sReadLineData.read_string_length) {
+							sReadLineData.state = READ_STATE_READ_OPERATOR;
+							switch (sReadLineData.last_operator) {
+							case '$':
+								if (atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]) == -1) {
+									sReadLineData.num_read_lines--;
+								}
+								else {
+									sReadLineData.read_string_start = total_len;
+									sReadLineData.read_string_length = atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]);
+									sReadLineData.state = READ_STATE_READ_TO_NEWLINE;
+									sReadLineData.last_operator = 0;
+								}
+								break;
+							case '*':
+								sReadLineData.num_read_lines += atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]);
+								break;
 							}
-							else {
-								sReadLineData.state = READ_STATE_READ_TO_NEWLINE;
-								sReadLineData.last_operator = 0;
-							}
-							break;
-						case '*':
-							sReadLineData.num_read_lines += atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]);
-							break;
+							sReadLineData.num_read_lines--;
 						}
-						sReadLineData.num_read_lines--;
 					}
 				}
 				total_len++;
