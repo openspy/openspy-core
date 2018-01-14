@@ -240,8 +240,6 @@ namespace Redis {
 					sReadLineData.state = READ_STATE_READ_TO_NEWLINE;
 					sReadLineData.last_operator = conn->read_buff[total_len];
 					switch (conn->read_buff[total_len]) {
-					case '+':
-						break;
 					case '$':
 						sReadLineData.num_read_lines++; //read string content
 														//intentional fall-through
