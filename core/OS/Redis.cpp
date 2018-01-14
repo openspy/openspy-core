@@ -232,7 +232,7 @@ namespace Redis {
 		sReadLineData.recv_loop = true;
 		int total_len = 0, len;
 		while(sReadLineData.recv_loop) {
-			len = recv(conn->sd, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len, 0);
+			len = recv(conn->sd, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len, 0); //TODO: check if exeeds max len.. currently set to 1 MB so shouldn't...
 			if (len <= 0) { return len; }
 			while (len--) {
 				switch (sReadLineData.state) {
