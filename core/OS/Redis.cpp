@@ -252,7 +252,6 @@ namespace Redis {
 				case READ_STATE_READ_TO_NEWLINE:
 					if (conn->read_buff[total_len] == '\n') {
 						sReadLineData.state = READ_STATE_READ_OPERATOR;
-						sReadLineData.recv_loop = false;
 						switch (sReadLineData.last_operator) {
 						case '$':
 							if (atoi(&conn->read_buff[sReadLineData.read_array_count_start_idx + 1]) == -1) {
