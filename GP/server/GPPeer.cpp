@@ -594,10 +594,12 @@ namespace GP {
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::handle_delbuddy(OS::KVReader data_parser) {
-		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("delprofileid")) {
 			int delprofileid = data_parser.GetValueInt("delprofileid");
-			GPBackend::GPBackendRedisTask::MakeDelBuddyRequest(this, delprofileid);
+			if (m_buddies.find(delprofileid) != m_buddies.end()) {
+				GPBackend::GPBackendRedisTask::MakeDelBuddyRequest(this, delprofileid);
+				m_buddies.erase(delprofileid);
+			}
 		}
 		else {
 			send_error(GPShared::GP_PARSE);
@@ -605,7 +607,6 @@ namespace GP {
 		}
 	}
 	void Peer::handle_revoke(OS::KVReader data_parser) {
-		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("profileid")) {
 			int delprofileid = data_parser.GetValueInt("profileid");
 			GPBackend::GPBackendRedisTask::MakeRevokeAuthRequest(this, delprofileid);
@@ -616,7 +617,6 @@ namespace GP {
 
 	}
 	void Peer::handle_authadd(OS::KVReader data_parser) {
-		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("fromprofileid")) {
 			int fromprofileid = data_parser.GetValueInt("fromprofileid");
 			GPBackend::GPBackendRedisTask::MakeAuthorizeBuddyRequest(this, fromprofileid);
