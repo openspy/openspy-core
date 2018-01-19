@@ -262,8 +262,6 @@ namespace GPBackend {
 		Redis::Command(mp_redis_connection, 0, "HSET add_req_%d %d %s", request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.reason);
 		Redis::Command(mp_redis_connection, 0, "EXPIRE add_req_%d %d", request.uReqData.BuddyRequest.to_profileid, BUDDY_ADDREQ_EXPIRETIME);
 
-		printf("PUBLISH %s '\\type\\add_request\\from_profileid\\%d\\to_profileid\\%d\\reason\\%s'", gp_buddies_channel, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.reason); //TODO: escape this
-
 		if(request.uReqData.BuddyRequest.reason[0] != 0)
 			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\type\\add_request\\from_profileid\\%d\\to_profileid\\%d\\reason\\%s'", gp_buddies_channel, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.reason); //TODO: escape this
 		else 
