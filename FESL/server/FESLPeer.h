@@ -78,6 +78,7 @@ field error names:
 12 = exists
 */
 enum FESL_ERROR {
+	FESL_ERROR_CUSTOM = 21,
 	FESL_ERROR_AUTH_FAILURE = 122,
 	FESL_ERROR_ACCOUNT_NOT_FOUND = 102,
 	FESL_ERROR_ACCOUNT_EXISTS = 160,
@@ -132,7 +133,7 @@ namespace FESL {
 
 		void loginToSubAccount(std::string uniquenick);
 		void loginToPersona(std::string uniquenick);
-
+		void SendCustomError(FESL_COMMAND_TYPE type, std::string TXN, std::string fieldName, std::string fieldError);
 		void SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN);
 	private:
 		bool m_fsys_hello_handler(OS::KVReader kv_list);
