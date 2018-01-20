@@ -226,7 +226,7 @@ namespace GP {
 		std::ostringstream s;
 		if (auth_data.response_code != -1 || !success) {
 			switch (auth_data.response_code) {
-				case OS::CREATE_RESPONE_NICK_IN_USE:
+				//case OS::CREATE_RESPONE_NICK_IN_USE:
 				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
 					err_code = GP_NEWUSER_BAD_NICK;
 					break;
