@@ -573,7 +573,7 @@ namespace SB {
 		if(server->kvFields.find("localport") != server->kvFields.end()) {
 			int localport = atoi(server->kvFields["localport"].c_str());
 			if(server->game.queryport != localport) {
-				flags |= NONSTANDARD_PORT_FLAG;
+				flags |= NONSTANDARD_PRIVATE_PORT_FLAG;
 				private_port = localport;
 			}
 		}
