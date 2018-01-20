@@ -355,6 +355,16 @@ namespace FESL {
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "GameSpyPreAuth");
 		}
 	}
+
+	void Peer::SendCustomError(FESL_COMMAND_TYPE type, std::string TXN, std::string fieldName, std::string fieldError) {
+		std::ostringstream s;
+		s << "TXN=" << TXN << "\n";
+		s << "errorContainer=[]\n";
+		s << "errorCode=" << FESL_ERROR_CUSTOM << "\n";
+		s << "errorContainer.0.fieldName=" << fieldName << "\n";
+		s << "errorContainer.0.fieldError=" << fieldError << "\n";
+		SendPacket(type, s.str());
+	}
 	void Peer::SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN) {
 		std::ostringstream s;
 		s << "TXN=" << TXN << "\n";
@@ -474,6 +484,9 @@ namespace FESL {
 			case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
 				err_code = FESL_ERROR_ACCOUNT_EXISTS;
 				break;
+			case OS::CREATE_RESPONSE_INVALID_EMAIL:
+				((Peer *)peer)->SendCustomError(FESL_TYPE_ACCOUNT, "AddAccount", "Account.EmailAddress", "The specified email was invalid. Please change it and try again.");
+				return;
 			default:
 				err_code = FESL_ERROR_SYSTEM_ERROR;
 				break;
