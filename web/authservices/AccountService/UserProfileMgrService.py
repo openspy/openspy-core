@@ -208,9 +208,14 @@ class UserProfileMgrService(BaseService):
                     success = True
                     publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["from_profileid"], request_data["to_profileid"])
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+
+                    publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["to_profileid"], request_data["from_profileid"])
+                    self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+                    
                     to_profile_model = Profile.get((Profile.id == request_data["to_profileid"]))
                     from_profile_model = Profile.get((Profile.id == request_data["from_profileid"]))
                     Buddy.insert(from_profile=to_profile_model,to_profile=from_profile_model).execute()
+                    Buddy.insert(to_profile=to_profile_model,from_profile=from_profile_model).execute()
         return success
 
     def handle_del_buddy(self, request_data):
