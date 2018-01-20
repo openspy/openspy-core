@@ -260,40 +260,32 @@ namespace GSBackend {
 	}
 	void *PersistBackendTask::TaskThread(OS::CThread *thread) {
 		PersistBackendTask *task = (PersistBackendTask *)thread->getParams();
-		for (;;) {
-
-			while (task->mp_thread_poller->wait()) {
-				task->mp_mutex->lock();
-				if (task->m_request_list.empty()) {
-					task->mp_mutex->unlock();
-					continue;
-				}
-				while (!task->m_request_list.empty()) {
-					PersistBackendRequest task_params = task->m_request_list.front();
-					task->mp_mutex->unlock();
-
-					switch (task_params.type) {
-						case EPersistRequestType_NewGame:
-							task->PerformNewGameSession(task_params);
-							break;
-						case EPersistRequestType_UpdateGame:
-							task->PerformUpdateGameSession(task_params);
-							break;
-						case EPersistRequestType_SetUserData:
-							task->PerformSetPersistData(task_params);
-							break;
-						case EPersistRequestType_GetUserData:
-							task->PerformGetPersistData(task_params);
-							break;
-					}
-
-					task->mp_mutex->lock();
-					task_params.mp_peer->DecRef();
-					task->m_request_list.pop();
-				}
-
+		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
+			task->mp_mutex->lock();
+			while (!task->m_request_list.empty()) {
+				PersistBackendRequest task_params = task->m_request_list.front();
 				task->mp_mutex->unlock();
+
+				switch (task_params.type) {
+					case EPersistRequestType_NewGame:
+						task->PerformNewGameSession(task_params);
+						break;
+					case EPersistRequestType_UpdateGame:
+						task->PerformUpdateGameSession(task_params);
+						break;
+					case EPersistRequestType_SetUserData:
+						task->PerformSetPersistData(task_params);
+						break;
+					case EPersistRequestType_GetUserData:
+						task->PerformGetPersistData(task_params);
+						break;
+				}
+
+				task->mp_mutex->lock();
+				task_params.mp_peer->DecRef();
+				task->m_request_list.pop();
 			}
+			task->mp_mutex->unlock();
 		}
 		return NULL;
 	}
