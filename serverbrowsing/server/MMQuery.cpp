@@ -225,7 +225,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type== Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->wan_address.port = htons(atoi((v.value._str).c_str()));
+			server->wan_address.port = atoi((v.value._str).c_str());
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s wan_ip", entry_name.c_str());
 

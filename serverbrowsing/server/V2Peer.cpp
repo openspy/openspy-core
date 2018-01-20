@@ -544,8 +544,8 @@ namespace SB {
 		cacheServer(server);
 
 		uint8_t flags = 0;
-		int private_ip = 0;
-		int private_port = 0;
+		uint32_t private_ip = 0;
+		uint16_t private_port = 0;
 
 		if (server->wan_address.port != server->game.queryport) {
 			flags |= NONSTANDARD_PORT_FLAG;
@@ -601,7 +601,7 @@ namespace SB {
 		buffer->WriteInt(server->wan_address.ip); //ip
 
 		if (flags & NONSTANDARD_PORT_FLAG) {
-			buffer->WriteShort(server->wan_address.port);
+			buffer->WriteShort(htons(server->wan_address.port));
 		}
 
 		if (flags & PRIVATE_IP_FLAG) {
