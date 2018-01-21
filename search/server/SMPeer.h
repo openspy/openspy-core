@@ -106,6 +106,9 @@ namespace SM {
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 		void handle_newuser(OS::KVReader data_parser);
 
+		void handle_nicks(OS::KVReader data_parser);
+		static void m_nicks_cb(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+
 		PeerStats m_peer_stats;
 
 		

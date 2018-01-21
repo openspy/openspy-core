@@ -96,7 +96,7 @@ namespace SM {
 		} else if(!strcmp("valid", command)) {
 			handle_valid(data_parser);
 		} else if(!strcmp("nicks", command)) {
-
+			handle_nicks(data_parser);
 		} else if(!strcmp("pmatch", command)) {
 
 		} else if(!strcmp("check", command)) {
@@ -399,6 +399,71 @@ namespace SM {
 		IncRef();
 		request.callback = Peer::m_search_valid_callback;
 		OS::m_user_search_task_pool->AddRequest(request);
+	}
+
+	void Peer::handle_nicks(OS::KVReader data_parser) {
+		OS::ProfileSearchRequest request;
+		request.type = OS::EProfileSearch_Profiles;
+		if (data_parser.HasKey("userid")) {
+			request.user_search_details.id = data_parser.GetValueInt("userid");
+		}
+
+		if (data_parser.HasKey("partnercode")) {
+			request.user_search_details.partnercode = data_parser.GetValueInt("partnercode");
+		}
+		else if (data_parser.HasKey("partnerid")) {
+			request.user_search_details.partnercode = data_parser.GetValueInt("partnerid");
+		}
+
+		if (data_parser.HasKey("email")) {
+			request.user_search_details.email = data_parser.GetValue("email");
+		}
+
+		if (data_parser.HasKey("namespaceid")) {
+			request.profile_search_details.namespaceid = data_parser.GetValueInt("namespaceid");
+		}
+
+		if (!data_parser.HasKey("passenc")) {
+			m_delete_flag = true;
+			return;
+		}
+
+		std::string passenc = data_parser.GetValue("passenc");
+
+		int passlen = passenc.length();
+		char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
+		passlen = gspassenc((uint8_t *)dpass);
+
+		request.user_search_details.password = dpass;
+
+		if (dpass)
+			free((void *)dpass);
+
+		request.extra = this;
+		request.peer = this;
+		IncRef();
+		request.callback = Peer::m_nicks_cb;
+		OS::m_profile_search_task_pool->AddRequest(request);
+	}
+	void Peer::m_nicks_cb(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		std::ostringstream s;
+
+		s << "\\nr\\" << results.size();
+
+		std::vector<OS::Profile>::iterator it = results.begin();
+		while (it != results.end()) {
+			OS::Profile p = *it;
+			if(p.nick.length())
+				s << "\\nick\\" << p.nick;
+
+			if(p.uniquenick.length())
+				s << "\\uniquenick\\" << p.uniquenick;
+			it++;
+		}
+
+		s << "\\ndone\\";
+
+		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
 	}
 	void Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
 		OS::Buffer buffer;
