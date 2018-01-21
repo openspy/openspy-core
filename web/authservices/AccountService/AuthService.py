@@ -1,5 +1,6 @@
 from cgi import parse_qs, escape
 
+import re
 import uuid
 import json
 
@@ -33,6 +34,7 @@ class AuthService(BaseService):
         self.CREATE_RESPONSE_UNIQUENICK_IN_USE = 8
         self.LOGIN_CREATE_RESPONSE_INVALID_NICK = 9
         self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK = 10
+        self.LOGIN_RESPONSE_INVALID_EMAIL = 11
 
         self.PARTNERID_GAMESPY = 0
         self.PARTNERID_IGN = 10
@@ -303,6 +305,8 @@ class AuthService(BaseService):
         user_where = (User.deleted == False)
         user_data = request_body["user"]
         if "email" in user_data:
+            if re.match('^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', user_data["email"]) == None:
+                return {'reason': self.LOGIN_RESPONSE_INVALID_EMAIL}
             user_where = (user_where) & (User.email == user_data["email"])
         if "partnercode" in user_data:
             user_data['partnercode'] = user_data["partnercode"]

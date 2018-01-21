@@ -55,7 +55,7 @@ namespace GP {
 
 		//event messages
 		void send_add_buddy_request(int from_profileid, const char *reason);
-		void send_authorize_add(int profileid);
+		void send_authorize_add(int profileid, bool silent = false);
 
 		void inform_status_update(int profileid, GPShared::GPStatus status, bool no_update = false);
 		void send_revoke_message(int from_profileid, int date_unix_timestamp);

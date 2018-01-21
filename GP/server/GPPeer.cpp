@@ -111,7 +111,7 @@ namespace GP {
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
-		//printf("GP Handle(%d): %s\n", len,data);
+		printf("GP Handle(%d): %s\n", len,data);
 		OS::KVReader data_parser = OS::KVReader(std::string(data));
 		gettimeofday(&m_last_recv, NULL);
 		if (data_parser.Size() < 1) {
@@ -226,7 +226,7 @@ namespace GP {
 		std::ostringstream s;
 		if (auth_data.response_code != -1 || !success) {
 			switch (auth_data.response_code) {
-				case OS::CREATE_RESPONE_NICK_IN_USE:
+				//case OS::CREATE_RESPONE_NICK_IN_USE:
 				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
 					err_code = GP_NEWUSER_BAD_NICK;
 					break;
@@ -594,10 +594,12 @@ namespace GP {
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::handle_delbuddy(OS::KVReader data_parser) {
-		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("delprofileid")) {
 			int delprofileid = data_parser.GetValueInt("delprofileid");
-			GPBackend::GPBackendRedisTask::MakeDelBuddyRequest(this, delprofileid);
+			if (m_buddies.find(delprofileid) != m_buddies.end()) {
+				GPBackend::GPBackendRedisTask::MakeDelBuddyRequest(this, delprofileid);
+				m_buddies.erase(delprofileid);
+			}
 		}
 		else {
 			send_error(GPShared::GP_PARSE);
@@ -605,7 +607,6 @@ namespace GP {
 		}
 	}
 	void Peer::handle_revoke(OS::KVReader data_parser) {
-		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("profileid")) {
 			int delprofileid = data_parser.GetValueInt("profileid");
 			GPBackend::GPBackendRedisTask::MakeRevokeAuthRequest(this, delprofileid);
@@ -616,7 +617,6 @@ namespace GP {
 
 	}
 	void Peer::handle_authadd(OS::KVReader data_parser) {
-		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("fromprofileid")) {
 			int fromprofileid = data_parser.GetValueInt("fromprofileid");
 			GPBackend::GPBackendRedisTask::MakeAuthorizeBuddyRequest(this, fromprofileid);
@@ -635,19 +635,23 @@ namespace GP {
 		req.type = GPBackend::EGPRedisRequestType_SendGPBuddyStatus;
 		GPBackend::m_task_pool->AddRequest(req);
 	}
-	void Peer::send_authorize_add(int profileid) {
-		std::ostringstream s;
-		s << "\\addbuddyresponse\\" << GPI_BM_REQUEST; //the addbuddy response might be implemented wrong
-		s << "\\newprofileid\\" << profileid;
-		s << "\\confirmation\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
-		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+	void Peer::send_authorize_add(int profileid, bool silent) {
+		if (!silent) {
+			std::ostringstream s;
+			s << "\\addbuddyresponse\\" << GPI_BM_REQUEST; //the addbuddy response might be implemented wrong
+			s << "\\newprofileid\\" << profileid;
+			s << "\\confirmation\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+			SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
 
-		s.str("");
-		s << "\\bm\\" << GPI_BM_AUTH;
-		s << "\\f\\" << profileid;
-		s << "\\msg\\" << "I have authorized your request to add me to your list";
-		s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
-		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+			s.str("");
+			s << "\\bm\\" << GPI_BM_AUTH;
+			s << "\\f\\" << profileid;
+			s << "\\msg\\" << "I have authorized your request to add me to your list";
+			s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+			SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
+		}
+
+		m_buddies[profileid] = GPShared::gp_default_status;
 
 		refresh_buddy_list();
 
@@ -850,7 +854,7 @@ namespace GP {
 		if(attach_final) {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
-		//OS::LogText(OS::ELogLevel_Info, "Sending: %s", out_buff);
+		OS::LogText(OS::ELogLevel_Info, "Sending: %s", buff);
 		int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
 		if(c < 0) {
 			Delete();

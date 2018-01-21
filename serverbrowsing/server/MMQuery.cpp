@@ -191,7 +191,7 @@ namespace MM {
 			std::string gameid_reply = (v.value._str).c_str();
 			int gameid = atoi(gameid_reply.c_str());
 			if (req) {
-				server->game = req->m_from_game;
+				server->game = req->m_for_game;
 			}
 			else {				
 				if (!m_game_cache->LookupGameByID(gameid, server->game)) {
@@ -225,7 +225,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type== Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->wan_address.port = htons(atoi((v.value._str).c_str()));
+			server->wan_address.port = atoi((v.value._str).c_str());
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s wan_ip", entry_name.c_str());
 

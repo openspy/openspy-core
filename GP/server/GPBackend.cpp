@@ -67,7 +67,7 @@ namespace GPBackend {
 						from_profileid = reader.GetValueInt("from_profileid");
 						peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 						if (peer) {
-							peer->send_authorize_add(from_profileid);
+							peer->send_authorize_add(from_profileid, reader.GetValueInt("silent"));
 						}
 					} else if (msg_type.compare("status_update") == 0) {
 						GPShared::GPStatus status;
@@ -190,53 +190,50 @@ namespace GPBackend {
 	}
 	void *GPBackendRedisTask::TaskThread(OS::CThread *thread) {
 		GPBackendRedisTask *task = (GPBackendRedisTask *)thread->getParams();
-		for (;;) {
-
-			while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
-				task->mp_mutex->lock();
-				while (!task->m_request_list.empty()) {
-					GPBackendRedisRequest task_params = task->m_request_list.front();
-					task->mp_mutex->unlock();
-					switch (task_params.type) {
-					case EGPRedisRequestType_BuddyRequest:
-						task->Perform_BuddyRequest(task_params);
-						break;
-					case EGPRedisRequestType_AuthorizeAdd:
-						task->Perform_AuthorizeAdd(task_params);
-						break;
-					case EGPRedisRequestType_UpdateStatus:
-						task->Perform_SetPresenceStatus(task_params);
-						break;
-					case EGPRedisRequestType_RevokeAuth:
-					case EGPRedisRequestType_DelBuddy:
-						task->Perform_DelBuddy(task_params);
-						break;
-					case EGPRedisRequestType_SendLoginEvent:
-						task->Perform_SendLoginEvent(task_params);
-						break;
-					case EGPRedisRequestType_BuddyMessage:
-						task->Perform_SendBuddyMessage(task_params);
-						break;
-					case EGPRedisRequestType_AddBlock:
-						task->Perform_BlockBuddy(task_params);
-						break;
-					case EGPRedisRequestType_DelBlock:
-						task->Perform_DelBuddyBlock(task_params);
-						break;
-					case EGPRedisRequestType_SendGPBlockStatus:
-					case EGPRedisRequestType_SendGPBuddyStatus:
-						task->Perform_SendGPBuddyStatus(task_params);
-						break;
-					}
-
-					task->mp_mutex->lock();
-					if(task_params.peer)
-						task_params.peer->DecRef();
-					task->m_request_list.pop();
+		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
+			task->mp_mutex->lock();
+			while (!task->m_request_list.empty()) {
+				GPBackendRedisRequest task_params = task->m_request_list.front();
+				task->mp_mutex->unlock();
+				switch (task_params.type) {
+				case EGPRedisRequestType_BuddyRequest:
+					task->Perform_BuddyRequest(task_params);
+					break;
+				case EGPRedisRequestType_AuthorizeAdd:
+					task->Perform_AuthorizeAdd(task_params);
+					break;
+				case EGPRedisRequestType_UpdateStatus:
+					task->Perform_SetPresenceStatus(task_params);
+					break;
+				case EGPRedisRequestType_RevokeAuth:
+				case EGPRedisRequestType_DelBuddy:
+					task->Perform_DelBuddy(task_params);
+					break;
+				case EGPRedisRequestType_SendLoginEvent:
+					task->Perform_SendLoginEvent(task_params);
+					break;
+				case EGPRedisRequestType_BuddyMessage:
+					task->Perform_SendBuddyMessage(task_params);
+					break;
+				case EGPRedisRequestType_AddBlock:
+					task->Perform_BlockBuddy(task_params);
+					break;
+				case EGPRedisRequestType_DelBlock:
+					task->Perform_DelBuddyBlock(task_params);
+					break;
+				case EGPRedisRequestType_SendGPBlockStatus:
+				case EGPRedisRequestType_SendGPBuddyStatus:
+					task->Perform_SendGPBuddyStatus(task_params);
+					break;
 				}
 
-				task->mp_mutex->unlock();
+				task->mp_mutex->lock();
+				if(task_params.peer)
+					task_params.peer->DecRef();
+				task->m_request_list.pop();
 			}
+
+			task->mp_mutex->unlock();
 		}
 		return NULL;
 	}
@@ -262,7 +259,10 @@ namespace GPBackend {
 		Redis::Command(mp_redis_connection, 0, "HSET add_req_%d %d %s", request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.reason);
 		Redis::Command(mp_redis_connection, 0, "EXPIRE add_req_%d %d", request.uReqData.BuddyRequest.to_profileid, BUDDY_ADDREQ_EXPIRETIME);
 
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\type\\add_request\\from_profileid\\%d\\to_profileid\\%d\\reason\\%s'", gp_buddies_channel, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.reason); //TODO: escape this
+		if(request.uReqData.BuddyRequest.reason[0] != 0)
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\type\\add_request\\from_profileid\\%d\\to_profileid\\%d\\reason\\%s'", gp_buddies_channel, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.reason); //TODO: escape this
+		else 
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\type\\add_request\\from_profileid\\%d\\to_profileid\\%d'", gp_buddies_channel, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.to_profileid); //TODO: escape this
 	}
 	void GPBackendRedisTask::Perform_AuthorizeAdd(GPBackendRedisRequest request) {
 		curl_data recv_data;
