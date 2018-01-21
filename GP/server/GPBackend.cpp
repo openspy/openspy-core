@@ -67,7 +67,7 @@ namespace GPBackend {
 						from_profileid = reader.GetValueInt("from_profileid");
 						peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 						if (peer) {
-							peer->send_authorize_add(from_profileid);
+							peer->send_authorize_add(from_profileid, reader.GetValueInt("silent"));
 						}
 					} else if (msg_type.compare("status_update") == 0) {
 						GPShared::GPStatus status;
