@@ -193,7 +193,7 @@ namespace GP {
 			nick = data_parser.GetValue("nick");
 		}
 		if (data_parser.HasKey("uniquenick")) {
-			data_parser.GetValue("uniquenick");
+			uniquenick = data_parser.GetValue("uniquenick");
 		}
 
 		if (data_parser.HasKey("passenc")) {
@@ -257,7 +257,7 @@ namespace GP {
 
 		((Peer *)peer)->SendPacket((const uint8_t*)s.str().c_str(), s.str().length());
 
-		((Peer *)peer)->m_delete_flag = true;
+		//((Peer *)peer)->m_delete_flag = true;
 	}
 	void Peer::m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 	}

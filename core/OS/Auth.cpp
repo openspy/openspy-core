@@ -990,7 +990,7 @@ namespace OS {
 		request.callback = cb;
 		request.create_session = true;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -1008,7 +1008,7 @@ namespace OS {
 		request.callback = cb;
 		request.create_session = true;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -1065,7 +1065,7 @@ namespace OS {
 		request.user.password = pass;
 		request.create_session = make_session;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -1081,7 +1081,7 @@ namespace OS {
 		request.callback = cb;
 		request.create_session = create_session;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -1101,7 +1101,6 @@ namespace OS {
 		request.user.password = password;
 		request.create_session = create_session;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -1120,7 +1119,7 @@ namespace OS {
 		request.operation_id = operation_id;
 		request.callback = cb;
 		request.create_session = true;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		request.user.partnercode = 0;
 		if (peer) {
 			peer->IncRef();
