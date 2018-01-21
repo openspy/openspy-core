@@ -187,20 +187,26 @@ namespace GP {
 		int partnercode = data_parser.GetValueInt("partnerid");
 		int namespaceid = data_parser.GetValueInt("namespaceid");
 		if (data_parser.HasKey("email")) {
-			return;
+			email = data_parser.GetValue("email");
 		}
-		/*if (!find_param("nick", (char*)buf, (char*)&nick, GP_NICK_LEN)) {
-			return;
-		}*/
-		if (!data_parser.HasKey("uniquenick")) {
-			uniquenick[0] = 0;
+		if (data_parser.HasKey("nick")) {
+			nick = data_parser.GetValue("nick");
 		}
-		else {
+		if (data_parser.HasKey("uniquenick")) {
 			data_parser.GetValue("uniquenick");
 		}
 
 		if (data_parser.HasKey("passenc")) {
 			passenc = data_parser.GetValue("passenc");
+			int passlen = passenc.length();
+			char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+			password = dpass;
+			if (dpass)
+				free((void *)dpass);
+		}
+		else if (data_parser.HasKey("passwordenc")) {
+			passenc = data_parser.GetValue("passwordenc");
 			int passlen = passenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
 			passlen = gspassenc((uint8_t *)dpass);
@@ -214,12 +220,10 @@ namespace GP {
 		else {
 			return;
 		}
-
-		
+				
 		int id = data_parser.GetValueInt("id");
 
 		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, id, this);
-
 	}
 	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
 		int err_code = (int)GP_NEWUSER_BAD_NICK;
