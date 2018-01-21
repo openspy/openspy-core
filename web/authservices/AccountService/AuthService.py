@@ -335,13 +335,6 @@ class AuthService(BaseService):
         if "nick" in profile_data:
             profile_where = (profile_where) & (Profile.nick == profile_data['nick'])
 
-        if "namespaceid" in request_body:
-            namespaceid = request_body["namespaceid"]
-        else:
-            namespaceid = 0
-
-        profile_data['namespaceid'] = namespaceid
-
         profile_where = (profile_where) & (Profile.namespaceid == namespaceid)
 
         ret = {}
