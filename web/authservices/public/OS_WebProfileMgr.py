@@ -127,6 +127,8 @@ class OS_WebProfileMgr(BaseService):
         profile_ownership_modes = ["update_profile", "delete_profile"]
         user_ownership_modes = ["create_profile", "get_profiles"]
 
+        print("got request: {}\n".format(data))
+
         session_data = self.test_user_session(data["session_key"], data["userid"])
 
         if data["mode"] in profile_ownership_modes:

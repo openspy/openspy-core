@@ -14,7 +14,6 @@ class OS_WebGameMgr(BaseService):
     def test_required_params(self, input, params):
         for param in params:
             if param not in input:
-                print("{} not in {}".format(param, input))
                 return False
 
         return True
@@ -29,7 +28,7 @@ class OS_WebGameMgr(BaseService):
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = json.loads(conn.getresponse().read())
 
-        return response['valid'] and "is_admin" in response and response['is_admin']
+        return response['valid'] and "admin" in response and response['admin']
     def process_request(self, login_options):
         required_params = ['userid', 'session_key']
         if not self.test_required_params(login_options, required_params):

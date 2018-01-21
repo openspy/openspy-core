@@ -396,7 +396,8 @@ class AuthService(BaseService):
 
         if 'mode' in request_body:
             if request_body['mode'] == 'test_session':
-                return self.test_session(request_body)
+                ret = self.test_session(request_body)
+                return ret
             elif request_body['mode'] == 'test_session_profileid':
                 return self.test_session_by_profileid(request_body)
             elif request_body['mode'] == "pwreset":

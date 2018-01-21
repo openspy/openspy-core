@@ -43,7 +43,6 @@ class OS_WebUserMgr(BaseService):
         if not self.test_required_params(login_options['user'], required_user_params, False):
             return {'error': 'MISSING_REQUIRED_PARAMS_2'}
 
-
         mode = login_options['mode']
 
         valid_modes = ["update_user", 'get_user']
@@ -64,9 +63,9 @@ class OS_WebUserMgr(BaseService):
 
         if "password" in login_options['user']:
             user_data['password'] = login_options['user']['password']
-        send_data = {'mode': mode, 'session_key': login_options['session_key'], 'user': user_data}
+        send_data = {'mode': mode, 'session_key': login_options['session_key'], 'user': user_data, 'userid': login_options['userid']}
 
-        session_data = self.test_user_session(send_data['session_key'], user_data['userid'])
+        session_data = self.test_user_session(send_data['session_key'], send_data['userid'])
         if not session_data["valid"]:
             return {'error': 'INVALID_SESSION'}
 
