@@ -24,6 +24,7 @@ namespace OS {
 	Config *g_config = NULL;
 	struct timeval redis_timeout;
 	Redis::Connection *redis_internal_connection = NULL;
+	OS::CMutex *mp_redis_internal_connection_mutex = NULL;
 	const char *g_appName = NULL;
 	const char *g_hostName = NULL;
 	const char *g_redisAddress = NULL;
@@ -57,6 +58,7 @@ namespace OS {
 			g_logger = new Win32Logger(appName);
 		#endif
 
+		mp_redis_internal_connection_mutex = OS::CreateMutex();
 		OS::SetupAuthTaskPool(num_async);
 		OS::SetupUserSearchTaskPool(num_async);
 		OS::SetupProfileTaskPool(num_async);
@@ -70,6 +72,7 @@ namespace OS {
 
 		Redis::Disconnect(redis_internal_connection);
 
+		delete mp_redis_internal_connection_mutex;
 		delete OS::g_config;
 		curl_global_cleanup();
 	}
@@ -78,8 +81,11 @@ namespace OS {
 		Redis::Response reply;
 		Redis::Value v;
 
-		if(redis_ctx == NULL) {
+		bool must_unlock = false;
+		if (redis_ctx == NULL) {
+			must_unlock = true;
 			redis_ctx = OS::redis_internal_connection;
+			mp_redis_internal_connection_mutex->lock();
 		}
 
 		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
@@ -171,7 +177,10 @@ namespace OS {
 		game.push_keys["password"] = KEYTYPE_BYTE;
 		*/
 
-		end_error:
+	end_error:
+			if (must_unlock) {
+				mp_redis_internal_connection_mutex->unlock();
+			}
 			return game;
 
 	}
@@ -183,9 +192,11 @@ namespace OS {
 		ret.gameid = 0;
 		ret.gamename[0] = 0;
 		ret.secretkey[0] = 0;
-
+		bool must_unlock = false;
 		if(redis_ctx == NULL) {
+			must_unlock = true;
 			redis_ctx = OS::redis_internal_connection;
+			mp_redis_internal_connection_mutex->lock();
 		}
 		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
 		//memset(&ret, 0, sizeof(ret));
@@ -207,16 +218,23 @@ namespace OS {
 				break;
 			}
 		} while(cursor != 0);
-		end_error:
-			return ret;
+
+	end_error:
+		if (must_unlock) {
+			mp_redis_internal_connection_mutex->unlock();
+		}
+		return ret;
 	}
 	OS::GameData GetGameByID(int gameid, Redis::Connection *redis_ctx) {
 		Redis::Response reply;
 		Redis::Value v, arr;
 
 		OS::GameData ret;
-		if(redis_ctx == NULL) {
+		bool must_unlock = false;
+		if (redis_ctx == NULL) {
+			must_unlock = true;
 			redis_ctx = OS::redis_internal_connection;
+			mp_redis_internal_connection_mutex->lock();
 		}
 		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
 
@@ -242,7 +260,10 @@ namespace OS {
 			}
 		} while(cursor != 0);
 
-		end_error:
+	end_error:
+			if (must_unlock) {
+				mp_redis_internal_connection_mutex->unlock();
+			}
 			return ret;
 	}
 	std::map<std::string, std::string> KeyStringToMap(std::string input) {
