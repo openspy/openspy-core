@@ -4,3 +4,4 @@ peewee
 PyJWT
 redis
 PyMySQL
+rsa

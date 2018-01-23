@@ -7,7 +7,7 @@ from AccountService.UserAccountMgrService import UserAccountMgrService
 from AccountService.RegistrationService import RegistrationService
 from AccountService.UserProfileMgrService import UserProfileMgrService
 from AccountService.PersistService import PersistService
-#from public.GS_AuthService import GS_AuthService
+from public.GS_AuthService import GS_AuthService
 from public.OS_WebAuth import OS_WebAuth
 from public.OS_WebUserMgr import OS_WebUserMgr
 from public.OS_WebProfileMgr import OS_WebProfileMgr
@@ -65,9 +65,10 @@ def application(env, start_response):
 			service = OS_WebGameMgr()
 
 	#GameSpy SDK files, publically accessable
-#	elif path_split[1] == "AuthService":
-#		if path_split[2] == "AuthService.asmx":
-#			service = GS_AuthService()
+	elif path_split[1] == "AuthService":
+		if path_split[2] == "AuthService.asmx":
+			service = GS_AuthService()
+			return [service.run(env, start_response)]
 
 	if service == None:
 		start_response('400 BAD REQUEST', [('Content-Type','text/html')])

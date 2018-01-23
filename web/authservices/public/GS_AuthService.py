@@ -2,14 +2,16 @@ from cgi import parse_qs, escape
 import xml.etree.ElementTree as ET
 
 import binascii
-from M2Crypto import RSA, BIO
-import md5, struct, os
+import hashlib
 
 from collections import OrderedDict
-import jwt
+
+import simplejson as json
+import http.client
+import struct, os
+import rsa
 
 from BaseService import BaseService
-import httplib, urllib
 
 class GS_AuthService(BaseService):
     LOGIN_RESPONSE_SUCCESS = 0
@@ -24,7 +26,7 @@ class GS_AuthService(BaseService):
 
     def generate_signature(self, rsa, length, version, auth_user_dir, peerkey, server_data, use_md5):
         if use_md5:
-            validity_sig = md5.new()
+            validity_sig = hashlib.new()
             validity_sig.update(struct.pack("I", length))
             validity_sig.update(struct.pack("I", version))
             validity_sig.update(struct.pack("I", int(auth_user_dir['partnercode'])))
@@ -48,18 +50,20 @@ class GS_AuthService(BaseService):
         return str(reason)
 
     def try_authenticate(self, login_data):
+        return {"reason": 0}
         login_data["user_login"] = False
         login_data["profile_login"] = False
-        params = jwt.encode(login_data, self.SECRET_AUTH_KEY, algorithm='HS256')
+        #params = jwt.encode(login_data, self.SECRET_AUTH_KEY, algorithm='HS256')
+        params = login_data
         #params = urllib.urlencode(params)
         
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-        conn = httplib.HTTPConnection(self.LOGIN_SERVER)
+        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = conn.getresponse().read()
-        #print("Resp: {}\n".format(response))
-        response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
+        print("Resp: {}\n".format(response))
+        #response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
 
         
 
@@ -95,7 +99,7 @@ class GS_AuthService(BaseService):
         response_code_node.text = str(self.LOGIN_RESPONSE_SERVERINITFAILED)
         return resp_xml
 
-    def handle_profile_login(self, xml_tree, rsa):
+    def handle_profile_login(self, xml_tree, privkey):
         resp_xml = ET.Element('SOAP-ENV:Envelope')
         body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
         login_result = ET.SubElement(body, 'ns1:LoginProfileResult')
@@ -132,7 +136,10 @@ class GS_AuthService(BaseService):
 
         #decrypt pw
         encrypted_pass = xml_tree.find('{http://gamespy.net/AuthService/}password').find('{http://gamespy.net/AuthService/}Value')
-        password = rsa.private_decrypt(binascii.unhexlify(encrypted_pass.text), RSA.pkcs1_padding) 
+        #password = "password"#rsa.private_decrypt(binascii.unhexlify(encrypted_pass.text), RSA.pkcs1_padding) 
+        password = rsa.decrypt(binascii.unhexlify(encrypted_pass.text),privkey)
+
+        print("Pass; {}\n".format(password))
 
         #try auth
         auth_user_dir = self.try_authenticate({'email': email, 'profilenick': profilenick, 'password': password, 'namespaceid': int(namespaceid), 'partnercode': int(partnercode), 'hash_type': 'plain'})
@@ -148,30 +155,31 @@ class GS_AuthService(BaseService):
 
         #encrypted server data
         peerkeymodulus_node = ET.SubElement(certificate_node, 'ns1:peerkeymodulus')
-        rsa_modulus = binascii.hexlify(rsa.n)
+
+        rsa_modulus = str(privkey.n)
         peerkeymodulus_node.text = rsa_modulus[-128:].upper()
 
         peerkeyexponent_node = ET.SubElement(certificate_node, 'ns1:peerkeyexponent')
-        rsa_exponent = binascii.hexlify(rsa.e)
+        rsa_exponent = str(privkey.e)
         peerkeyexponent_node.text = rsa_exponent[-6:]
 
         serverdata_node = ET.SubElement(certificate_node, 'ns1:serverdata')
 
         server_data = os.urandom(128)
-        serverdata_node.text = binascii.hexlify(server_data)
+        serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
 
         signature_node = ET.SubElement(certificate_node, 'ns1:signature')
 
         peerkey = {}
-        peerkey['exponent'] = peerkeyexponent_node.text
-        peerkey['modulus'] = peerkeymodulus_node.text
-        signature_node.text = self.generate_signature(rsa, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
+        #peerkey['exponent'] = peerkeyexponent_node.text
+        #peerkey['modulus'] = peerkeymodulus_node.text
+        #signature_node.text = self.generate_signature(rsa, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
 
 
         return resp_xml
 
 
-    def handle_unique_login(self, xml_tree, rsa):
+    def handle_unique_login(self, xml_tree, privkey):
         resp_xml = ET.Element('SOAP-ENV:Envelope')
         body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
         login_result = ET.SubElement(body, 'ns1:LoginUniqueNickResult')
@@ -205,7 +213,7 @@ class GS_AuthService(BaseService):
 
         #decrypt pw
         encrypted_pass = xml_tree.find('{http://gamespy.net/AuthService/}password').find('{http://gamespy.net/AuthService/}Value')
-        password = rsa.private_decrypt(binascii.unhexlify(encrypted_pass.text), RSA.pkcs1_padding) 
+        password = rsa.decrypt(binascii.unhexlify(encrypted_pass.text),privkey)
 
         #try auth
         auth_user_dir = self.try_authenticate({'uniquenick': uniquenick, 'password': password, 'namespaceid': int(namespaceid), 'partnercode': int(partnercode), 'hash_type': 'plain'})
@@ -217,21 +225,21 @@ class GS_AuthService(BaseService):
                 node = ET.SubElement(certificate_node, 'ns1:{}'.format(k))
                 node.text = str(v)
         else: #send error data
-            response_code_node.text = convert_reason_code(auth_user_dir['reason'])
+            response_code_node.text = self.convert_reason_code(auth_user_dir['reason'])
 
         #encrypted server data
         peerkeymodulus_node = ET.SubElement(certificate_node, 'ns1:peerkeymodulus')
-        rsa_modulus = binascii.hexlify(rsa.n)
+        rsa_modulus = str(privkey.n)
         peerkeymodulus_node.text = rsa_modulus[-128:].upper()
 
         peerkeyexponent_node = ET.SubElement(certificate_node, 'ns1:peerkeyexponent')
-        rsa_exponent = binascii.hexlify(rsa.e)
+        rsa_exponent = str(privkey.e)
         peerkeyexponent_node.text = rsa_exponent[-6:]
 
         serverdata_node = ET.SubElement(certificate_node, 'ns1:serverdata')
 
         server_data = os.urandom(128)
-        serverdata_node.text = binascii.hexlify(server_data)
+        serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
 
         signature_node = ET.SubElement(certificate_node, 'ns1:signature')
 
@@ -243,7 +251,7 @@ class GS_AuthService(BaseService):
         return resp_xml
 
 
-    def get_pass(*args):
+    def get_pass(self, *args):
             return str('123321')
 
     def run(self, env, start_response):
@@ -258,14 +266,18 @@ class GS_AuthService(BaseService):
         # in the file like wsgi.input environment variable.
         request_body = env['wsgi.input'].read(request_body_size)
        # d = parse_qs(request_body)
-
+        print("Got: {}\n".format(request_body))
         start_response('200 OK', [('Content-Type','text/html')])
 
-        private_key_file = open("openspy_webservices_private.pem","r")
+        #print("privkey: {}\n".format(rsa.newkeys(512)))
+        private_key_file = open("/home/andy/openspy-core-v2/web/authservices/openspy_webservices_private.pem","r")
+        keydata = private_key_file.read()
+        privkey = rsa.PrivateKey.load_pkcs1(keydata)
 
-        bio = BIO.MemoryBuffer(private_key_file.read())
+        #bio = BIO.MemoryBuffer(private_key_file.read())
         
-        rsa = RSA.load_key_bio(bio, self.get_pass)
+        #rsa = RSA.load_key_bio(bio, self.get_pass)
+        #rsa = None
         
         tree = ET.ElementTree(ET.fromstring(request_body))
 
@@ -277,13 +289,14 @@ class GS_AuthService(BaseService):
 
         resp = None
         if login_uniquenick_tree != None:
-            resp = self.handle_unique_login(login_uniquenick_tree, rsa)
+            resp = self.handle_unique_login(login_uniquenick_tree, privkey)
         elif login_profile_tree != None:
-            resp = self.handle_profile_login(login_profile_tree, rsa)
+            resp = self.handle_profile_login(login_profile_tree, privkey)
         elif login_remoteauth_tree != None:
-            resp = self.handle_remoteauth_login(login_remoteauth_tree, rsa)
+            resp = self.handle_remoteauth_login(login_remoteauth_tree, privkey)
 
         if resp != None:
+            print("RET: {}\n".format(ET.tostring(resp, encoding='utf8', method='xml')))
             return ET.tostring(resp, encoding='utf8', method='xml')
         else:
             return 'Fatal error'
