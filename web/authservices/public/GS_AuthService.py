@@ -28,7 +28,7 @@ class GS_AuthService(BaseService):
         buffer = struct.pack("I", length)
         buffer += struct.pack("I", version)
 
-        buffer +=  struct.pack("I", int(auth_user_dir['partnercode']))
+        buffer += struct.pack("I", int(auth_user_dir['partnercode']))
         buffer += struct.pack("I", int(auth_user_dir['namespaceid']))
         buffer += struct.pack("I", int(auth_user_dir['userid']))
         buffer += struct.pack("I", int(auth_user_dir['profileid']))
@@ -311,10 +311,6 @@ class GS_AuthService(BaseService):
 
         return resp_xml
 
-
-    def get_pass(self, *args):
-            return str('123321')
-
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -327,19 +323,12 @@ class GS_AuthService(BaseService):
         # in the file like wsgi.input environment variable.
         request_body = env['wsgi.input'].read(request_body_size)
        # d = parse_qs(request_body)
-        print("Got: {}\n".format(request_body))
         start_response('200 OK', [('Content-Type','text/html')])
 
-        #print("privkey: {}\n".format(rsa.newkeys(512)))
         private_key_file = open("/home/andy/openspy-core-v2/web/authservices/openspy_webservices_private.pem","r")
         keydata = private_key_file.read()
         privkey = rsa.PrivateKey.load_pkcs1(keydata)
 
-        #bio = BIO.MemoryBuffer(private_key_file.read())
-        
-        #rsa = RSA.load_key_bio(bio, self.get_pass)
-        #rsa = None
-        
         tree = ET.ElementTree(ET.fromstring(request_body))
 
         login_profile_tree = tree.find('.//{http://gamespy.net/AuthService/}LoginProfile')
@@ -357,7 +346,6 @@ class GS_AuthService(BaseService):
             resp = self.handle_remoteauth_login(login_remoteauth_tree, privkey)
 
         if resp != None:
-            print("RET: {}\n".format(ET.tostring(resp, encoding='utf8', method='xml')))
             return ET.tostring(resp, encoding='utf8', method='xml')
         else:
             return 'Fatal error'
