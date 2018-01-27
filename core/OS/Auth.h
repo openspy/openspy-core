@@ -32,6 +32,7 @@ namespace OS {
 	typedef struct {
 		std::string session_key;
 		std::string hash_proof;
+		OS::GameData gamedata;
 		AuthResponseCode response_code;
 	} AuthData;
 	typedef void (*AuthCallback)(bool success, User user, Profile profile, AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
@@ -70,6 +71,7 @@ namespace OS {
 		int operation_id;
 
 		INetPeer *peer;
+		std::string gamename;
 	} AuthRequest;
 
 	class AuthTask : public Task<AuthRequest> {
@@ -80,7 +82,7 @@ namespace OS {
 			static void TryAuthUniqueNick_GPHash(std::string uniquenick, int partnercode, int namespaceid, std::string server_chal, std::string client_chal, std::string client_response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthUniqueNick_Plain(std::string uniquenick, int partnercode, int namespaceid, std::string password, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthNickEmail(std::string nick, std::string email, int partnercode, std::string pass, bool make_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
-			static void TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
+			static void TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL, std::string gamename = "");
 			static void TryCreateUser_OrProfile(OS::User user, OS::Profile profile, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthPID_GStatsSessKey(int profileid, int session_key, std::string response, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthEmailPassword(std::string email, int partnercode, std::string password, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);

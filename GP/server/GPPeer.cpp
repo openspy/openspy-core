@@ -43,6 +43,9 @@ namespace GP {
 		m_status.address.ip = address_info->sin_addr.s_addr;
 		m_status.address.port = address_info->sin_port;
 
+		m_game.gameid = 0;
+		m_game.compatibility_flags = 0;
+
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",OS::Address(m_address_info).ToString().c_str());
 
 		gen_random(m_challenge, CHALLENGE_LEN);
@@ -111,7 +114,7 @@ namespace GP {
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
-		printf("GP Handle(%d): %s\n", len,data);
+		//printf("GP Handle(%d): %s\n", len,data);
 		OS::KVReader data_parser = OS::KVReader(std::string(data));
 		gettimeofday(&m_last_recv, NULL);
 		if (data_parser.Size() < 1) {
@@ -184,23 +187,33 @@ namespace GP {
 		std::string email;
 		std::string passenc;
 		std::string password;
+		std::string gamename;
 		int partnercode = data_parser.GetValueInt("partnerid");
 		int namespaceid = data_parser.GetValueInt("namespaceid");
 		if (data_parser.HasKey("email")) {
-			return;
+			email = data_parser.GetValue("email");
 		}
-		/*if (!find_param("nick", (char*)buf, (char*)&nick, GP_NICK_LEN)) {
-			return;
-		}*/
-		if (!data_parser.HasKey("uniquenick")) {
-			uniquenick[0] = 0;
+		if (data_parser.HasKey("nick")) {
+			nick = data_parser.GetValue("nick");
 		}
-		else {
-			data_parser.GetValue("uniquenick");
+		if (data_parser.HasKey("uniquenick")) {
+			uniquenick = data_parser.GetValue("uniquenick");
+		}
+		if (data_parser.HasKey("gamename")) {
+			gamename = data_parser.GetValue("gamename");
 		}
 
 		if (data_parser.HasKey("passenc")) {
 			passenc = data_parser.GetValue("passenc");
+			int passlen = passenc.length();
+			char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+			password = dpass;
+			if (dpass)
+				free((void *)dpass);
+		}
+		else if (data_parser.HasKey("passwordenc")) {
+			passenc = data_parser.GetValue("passwordenc");
 			int passlen = passenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
 			passlen = gspassenc((uint8_t *)dpass);
@@ -214,12 +227,10 @@ namespace GP {
 		else {
 			return;
 		}
-
-		
+				
 		int id = data_parser.GetValueInt("id");
 
-		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, id, this);
-
+		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, id, this, gamename);
 	}
 	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
 		int err_code = (int)GP_NEWUSER_BAD_NICK;
@@ -253,7 +264,14 @@ namespace GP {
 
 		((Peer *)peer)->SendPacket((const uint8_t*)s.str().c_str(), s.str().length());
 
-		((Peer *)peer)->m_delete_flag = true;
+		if (auth_data.gamedata.gameid != 0) {
+			((Peer *)peer)->m_game = auth_data.gamedata;
+		}
+
+		if (((Peer *)peer)->m_game.compatibility_flags & OS_COMPATIBILITY_FLAG_GP_DISCONNECT_ON_NEWUSER) {
+			((Peer *)peer)->m_delete_flag = true;
+		}
+	
 	}
 	void Peer::m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 	}
@@ -854,7 +872,7 @@ namespace GP {
 		if(attach_final) {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
-		OS::LogText(OS::ELogLevel_Info, "Sending: %s", buff);
+		//OS::LogText(OS::ELogLevel_Info, "Sending: %s", buff);
 		int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
 		if(c < 0) {
 			Delete();

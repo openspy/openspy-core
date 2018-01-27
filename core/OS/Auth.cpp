@@ -3,10 +3,11 @@
 #include <curl/curl.h>
 #include <jansson.h>
 #include <string>
-
+#include <OS/Cache/GameCache.h>
 
 namespace OS {
 	OS::TaskPool<AuthTask, AuthRequest> *m_auth_task_pool = NULL;
+	OS::GameCache *m_game_cache;
 	struct curl_data {
 	    std::string buffer;
 	};
@@ -488,6 +489,7 @@ namespace OS {
 		json_object_set(send_obj, "profile", profile_obj);
 
 
+
 		char *json_data = json_dumps(send_obj, 0);
 
 		CURL *curl = curl_easy_init();
@@ -497,6 +499,10 @@ namespace OS {
 		user.id = 0;
 		profile.id = 0;
 		OS::AuthData auth_data;
+
+		if (request.gamename.length() > 0) {
+			auth_data.gamedata = OS::GetGameByName(request.gamename.c_str());
+		}
 
 		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
@@ -523,7 +529,13 @@ namespace OS {
 
 			res = curl_easy_perform(curl);
 
+			if (request.gamename.length() > 0) {
+				auth_data.gamedata = OS::GetGameByName(request.gamename.c_str());
+			}
+
 			bool success = false;
+
+			auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 
 			if(res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
@@ -541,12 +553,9 @@ namespace OS {
 						success = json_boolean_value(user_json);
 					}
 					json_decref(json_data);
-				} else {
-					success = false;
-					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
+			request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			curl_easy_cleanup(curl);
 		}
 		
@@ -990,7 +999,7 @@ namespace OS {
 		request.callback = cb;
 		request.create_session = true;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -1008,7 +1017,7 @@ namespace OS {
 		request.callback = cb;
 		request.create_session = true;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -1065,7 +1074,7 @@ namespace OS {
 		request.user.password = pass;
 		request.create_session = make_session;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -1081,14 +1090,14 @@ namespace OS {
 		request.callback = cb;
 		request.create_session = create_session;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		if (peer) {
 			peer->IncRef();
 		}
 		request.peer = peer;
 		m_auth_task_pool->AddRequest(request);
 	}
-	void AuthTask::TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
+	void AuthTask::TryCreateUser_OrProfile(std::string nick, std::string uniquenick, int namespaceid, std::string email, int partnercode, std::string password, bool create_session, AuthCallback cb, void *extra, int operation_id, INetPeer *peer, std::string gamename) {
 		AuthRequest request;
 		request.type = EAuthType_CreateUser_OrProfile;
 		request.user.email = email;
@@ -1101,7 +1110,7 @@ namespace OS {
 		request.user.password = password;
 		request.create_session = create_session;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = 0;
+		request.gamename = gamename;
 		if (peer) {
 			peer->IncRef();
 		}
@@ -1120,7 +1129,7 @@ namespace OS {
 		request.operation_id = operation_id;
 		request.callback = cb;
 		request.create_session = true;
-		request.profile.namespaceid = 0;
+		request.profile.namespaceid = -1;
 		request.user.partnercode = 0;
 		if (peer) {
 			peer->IncRef();
@@ -1183,9 +1192,15 @@ namespace OS {
 		return NULL;
 	}
 	void SetupAuthTaskPool(int num_tasks) {
+		OS::DataCacheTimeout gameCacheTimeout;
+		gameCacheTimeout.max_keys = 50;
+		gameCacheTimeout.timeout_time_secs = 7200;
+		m_game_cache = new OS::GameCache(num_tasks + 1, gameCacheTimeout);
+
 		m_auth_task_pool = new OS::TaskPool<AuthTask, AuthRequest>(num_tasks);
 	}
 	void ShutdownAuthTaskPool() {
 		delete m_auth_task_pool;
+		delete m_game_cache;
 	}
 }
