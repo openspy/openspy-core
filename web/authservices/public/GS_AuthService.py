@@ -24,25 +24,32 @@ class GS_AuthService(BaseService):
     LOGIN_RESPONSE_SERVER_ERROR = 7
 
 
-    def generate_signature(self, rsa, length, version, auth_user_dir, peerkey, server_data, use_md5):
-        if use_md5:
-            validity_sig = hashlib.new()
-            validity_sig.update(struct.pack("I", length))
-            validity_sig.update(struct.pack("I", version))
-            validity_sig.update(struct.pack("I", int(auth_user_dir['partnercode'])))
-            validity_sig.update(struct.pack("I", int(auth_user_dir['namespaceid'])))
-            validity_sig.update(struct.pack("I", int(auth_user_dir['userid'])))
-            validity_sig.update(struct.pack("I", int(auth_user_dir['profileid'])))
-            validity_sig.update(struct.pack("I", int(auth_user_dir['expiretime'])))
-            validity_sig.update(auth_user_dir['profilenick'])
-            validity_sig.update(auth_user_dir['uniquenick'])
-            validity_sig.update(auth_user_dir['cdkeyhash'])
-            validity_sig.update(binascii.unhexlify(peerkey['modulus']))
-            validity_sig.update(binascii.unhexlify(peerkey['exponent']))
-            validity_sig.update(server_data)
-            md5_data = validity_sig.digest()
-            return binascii.hexlify(rsa.sign(md5_data, 'md5')).upper()    
-        return None
+    def generate_signature(self, privkey, length, version, auth_user_dir, peerkey, server_data, use_md5):
+        buffer = struct.pack("I", length)
+        buffer += struct.pack("I", version)
+
+        buffer +=  struct.pack("I", int(auth_user_dir['partnercode']))
+        buffer += struct.pack("I", int(auth_user_dir['namespaceid']))
+        buffer += struct.pack("I", int(auth_user_dir['userid']))
+        buffer += struct.pack("I", int(auth_user_dir['profileid']))
+        buffer += struct.pack("I", int(auth_user_dir['expiretime']))
+        buffer += auth_user_dir['profilenick'].encode('utf8')
+        buffer += auth_user_dir['uniquenick'].encode('utf8')
+        buffer += auth_user_dir['cdkeyhash'].encode('utf8')
+
+        buffer += binascii.unhexlify(peerkey['modulus'])
+
+        buffer += binascii.unhexlify("0{}".format(peerkey['exponent']))
+        buffer += server_data
+
+        hash_algo = 'MD5'
+        if not use_md5:
+            hash_algo = 'SHA-1'
+        sig_key = rsa.sign(buffer, privkey, hash_algo)
+        key = sig_key.upper()
+        key = binascii.hexlify(sig_key).decode('utf8').upper()    
+
+        return key
 
 
     #will be used if LOGIN_RESPONE_* differs from backend auth
@@ -50,29 +57,22 @@ class GS_AuthService(BaseService):
         return str(reason)
 
     def try_authenticate(self, login_data):
-        return {"reason": 0}
+        
         login_data["user_login"] = False
         login_data["profile_login"] = False
-        #params = jwt.encode(login_data, self.SECRET_AUTH_KEY, algorithm='HS256')
-        params = login_data
-        #params = urllib.urlencode(params)
-        
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+
+        params = json.dumps(login_data)
+      
+        headers = {"Content-type": "application/json","Accept": "text/plain"}
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
-        response = conn.getresponse().read()
-        print("Resp: {}\n".format(response))
-        #response = jwt.decode(response, self.SECRET_AUTH_KEY, algorithm='HS256')
-
-        
-
-        
-
+        response = json.loads(conn.getresponse().read())
+   
         if "success" in response and response["success"] == True:
             profile = response['profile']
             response['profile'] = OrderedDict()
-            #stupid copy for XML reader of web services C SDK(bug where reading out of order = invalid cert)
+            
             response['profile']['partnercode'] = profile['user']['partnercode']
             response['profile']['namespaceid'] = profile['namespaceid']
             response['profile']['userid'] = profile['user']['id']
@@ -93,7 +93,7 @@ class GS_AuthService(BaseService):
     def handle_remoteauth_login(self, xml_tree, rsa):
         resp_xml = ET.Element('SOAP-ENV:Envelope')
         body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:LoginUniqueNickResult')
+        login_result = ET.SubElement(body, 'ns1:LoginRemoteAuthResult')
 
         response_code_node = ET.SubElement(login_result, 'ns1:responseCode')
         response_code_node.text = str(self.LOGIN_RESPONSE_SERVERINITFAILED)
@@ -106,8 +106,6 @@ class GS_AuthService(BaseService):
 
         response_code_node = ET.SubElement(login_result, 'ns1:responseCode')
         
-
-
         #auth stuff
 
         certificate_node = ET.SubElement(login_result, 'ns1:certificate')
@@ -131,18 +129,19 @@ class GS_AuthService(BaseService):
         partnercode_node = xml_tree.find('{http://gamespy.net/AuthService/}partnercode')
         partnercode = partnercode_node.text
 
-        namespaceid_node = xml_tree.find('{http://gamespy.net/AuthService/}partnercode')
+        namespaceid_node = xml_tree.find('{http://gamespy.net/AuthService/}namespaceid')
         namespaceid = namespaceid_node.text
 
         #decrypt pw
         encrypted_pass = xml_tree.find('{http://gamespy.net/AuthService/}password').find('{http://gamespy.net/AuthService/}Value')
-        #password = "password"#rsa.private_decrypt(binascii.unhexlify(encrypted_pass.text), RSA.pkcs1_padding) 
-        password = rsa.decrypt(binascii.unhexlify(encrypted_pass.text),privkey)
+        password = rsa.decrypt(binascii.unhexlify(encrypted_pass.text),privkey).decode('utf8')
 
-        print("Pass; {}\n".format(password))
+        params = {"hash_type": "plain"}
+        params["user"] = {'email': email, 'password': password, 'partnercode': int(partnercode)}
+        params["profile"] = {"nick": profilenick, "namespaceid": int(namespaceid)}
 
-        #try auth
-        auth_user_dir = self.try_authenticate({'email': email, 'profilenick': profilenick, 'password': password, 'namespaceid': int(namespaceid), 'partnercode': int(partnercode), 'hash_type': 'plain'})
+        auth_user_dir = self.try_authenticate(params)
+
         if 'profile' in auth_user_dir:
             response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
             #populate user info
@@ -160,8 +159,8 @@ class GS_AuthService(BaseService):
         peerkeymodulus_node.text = rsa_modulus[-128:].upper()
 
         peerkeyexponent_node = ET.SubElement(certificate_node, 'ns1:peerkeyexponent')
-        rsa_exponent = str(privkey.e)
-        peerkeyexponent_node.text = rsa_exponent[-6:]
+        rsa_exponent = hex(privkey.e)
+        peerkeyexponent_node.text = rsa_exponent[2:]
 
         serverdata_node = ET.SubElement(certificate_node, 'ns1:serverdata')
 
@@ -171,10 +170,10 @@ class GS_AuthService(BaseService):
         signature_node = ET.SubElement(certificate_node, 'ns1:signature')
 
         peerkey = {}
-        #peerkey['exponent'] = peerkeyexponent_node.text
-        #peerkey['modulus'] = peerkeymodulus_node.text
-        #signature_node.text = self.generate_signature(rsa, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
+        peerkey['exponent'] = peerkeyexponent_node.text
+        peerkey['modulus'] = peerkeymodulus_node.text
 
+        signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
 
         return resp_xml
 
@@ -215,8 +214,15 @@ class GS_AuthService(BaseService):
         encrypted_pass = xml_tree.find('{http://gamespy.net/AuthService/}password').find('{http://gamespy.net/AuthService/}Value')
         password = rsa.decrypt(binascii.unhexlify(encrypted_pass.text),privkey)
 
+        params = {"hash_type": "plain"}
+        params["user"] = {'password': password, 'partnercode': int(partnercode)}
+        params["profile"] = {"uniquenick": uniquenick, "namespaceid": int(namespaceid)}
+
         #try auth
-        auth_user_dir = self.try_authenticate({'uniquenick': uniquenick, 'password': password, 'namespaceid': int(namespaceid), 'partnercode': int(partnercode), 'hash_type': 'plain'})
+        auth_user_dir = self.try_authenticate(params)
+
+        print("Unique: {}\n{}\n".format(auth_user_dir, params))
+        
 
         if 'profile' in auth_user_dir:
             response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
@@ -246,7 +252,8 @@ class GS_AuthService(BaseService):
         peerkey = {}
         peerkey['exponent'] = peerkeyexponent_node.text
         peerkey['modulus'] = peerkeymodulus_node.text
-        signature_node.text = self.generate_signature(rsa, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
+        signature_node.text = (self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True))
+
 
         return resp_xml
 
