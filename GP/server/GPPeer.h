@@ -13,6 +13,24 @@
 
 #include <OS/Net/NetPeer.h>
 #include <OS/KVReader.h>
+
+// Extended message support
+#define GPI_NEW_AUTH_NOTIFICATION	(1<<0)
+#define GPI_NEW_REVOKE_NOTIFICATION (1<<1)
+
+// New Status Info support
+#define GPI_NEW_STATUS_NOTIFICATION (1<<2)
+
+// Buddy List + Block List retrieval on login
+#define GPI_NEW_LIST_RETRIEVAL_ON_LOGIN (1<<3)
+
+// Remote Auth logins now return namespaceid/partnerid on login
+// so the input to gpInitialize is ignored
+#define GPI_REMOTEAUTH_IDS_NOTIFICATION (1<<4)
+
+// New CD Key registration style as opposed to using product ids
+#define GPI_NEW_CDKEY_REGISTRATION (1<<5)
+
 namespace GP {
 	class Driver;
 	typedef struct _PeerStats {
