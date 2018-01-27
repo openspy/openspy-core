@@ -23,6 +23,7 @@ class AuthService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
         self.redis_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 3)
+        self.PREAUTH_EXPIRE_TIME = 3600
         self.LOGIN_RESPONSE_SUCCESS = 0
         self.LOGIN_RESPONSE_SERVERINITFAILED = 1
         self.LOGIN_RESPONSE_USER_NOT_FOUND = 2
@@ -124,7 +125,27 @@ class AuthService(BaseService):
         pw_hashed = hashlib.md5(pw_hashed).hexdigest()
 
         return pw_hashed == client_response
+    def test_preauth_ticket(self, request_body):
+        if "auth_token" not in request_body:
+            return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
+        token = request_body['auth_token']
 
+        response = {}
+
+        auth_key = "auth_token_{}".format(token)
+        if not self.redis_ctx.exists(auth_key) or "challenge" not in request_body:
+            return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
+        profileid = int(self.redis_ctx.hget(auth_key, 'profileid'))
+        profile = self.get_profile_by_id(profileid)
+        real_challenge = self.redis_ctx.hget(auth_key, 'challenge').decode('utf-8')
+
+        if real_challenge != request_body['challenge']:
+            return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
+
+        response['profile'] = model_to_dict(profile)
+        response["success"] = True
+        response['expiretime'] = self.PREAUTH_EXPIRE_TIME
+        return response
     def test_gp_preauth_by_ticket(self, request_body):
         
         response = {}
@@ -232,10 +253,10 @@ class AuthService(BaseService):
 
         self.redis_ctx.hset("auth_token_{}".format(token), 'profileid', params['profileid'])
         self.redis_ctx.hset("auth_token_{}".format(token), 'challenge', challenge)
-        self.redis_ctx.expire("auth_token_{}".format(token), 300)
+        self.redis_ctx.expire("auth_token_{}".format(token), self.PREAUTH_EXPIRE_TIME)
 
 
-        return {"ticket": token, "challenge": challenge, "server_response": "servresp", "success": True}
+        return {"ticket": token, "challenge": challenge, "success": True}
     def handle_delete_session(self, params):
         userid = None
         session_key = None
@@ -406,6 +427,8 @@ class AuthService(BaseService):
                 return self.handle_delete_session(request_body)
             elif request_body['mode'] == 'make_auth_ticket':
                 return self.handle_make_auth_ticket(request_body)
+            elif request_body["mode"] == 'test_preauth':
+                return self.test_preauth_ticket(request_body)
         #mode == "auth"
         if 'namespaceid' not in request_body:
             request_body['namespaceid'] = 0
@@ -523,7 +546,7 @@ class AuthService(BaseService):
             else:
                 response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND
 
-            response['expiretime'] = 10000 #TODO: figure out what this is used for, should make unix timestamp of expire time
+            response['expiretime'] = self.AUTH_EXPIRE_TIME #TODO: figure out what this is used for, should make unix timestamp of expire time
 
         if "save_session" in request_body and request_body["save_session"] == True and response['success'] == True:
             if profile != None:

@@ -90,13 +90,67 @@ class GS_AuthService(BaseService):
         return response
 
 
-    def handle_remoteauth_login(self, xml_tree, rsa):
+    def handle_remoteauth_login(self, xml_tree, privkey):
         resp_xml = ET.Element('SOAP-ENV:Envelope')
         body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
         login_result = ET.SubElement(body, 'ns1:LoginRemoteAuthResult')
 
         response_code_node = ET.SubElement(login_result, 'ns1:responseCode')
-        response_code_node.text = str(self.LOGIN_RESPONSE_SERVERINITFAILED)
+        
+        #auth stuff
+
+        certificate_node = ET.SubElement(login_result, 'ns1:certificate')
+
+        peerkeyprivate_node = ET.SubElement(login_result, 'ns1:peerkeyprivate')
+        peerkeyprivate_node.text = '0'
+
+        length_node = ET.SubElement(certificate_node, 'ns1:length') #???
+        length_node.text = '111'
+
+        version_node = ET.SubElement(certificate_node, 'ns1:version')
+        version_node.text = '1'
+
+        authtoken_node = xml_tree.find('{http://gamespy.net/AuthService/}authtoken')
+        authtoken = authtoken_node.text
+
+        challenge_node = xml_tree.find('{http://gamespy.net/AuthService/}challenge')
+        challenge = challenge_node.text
+        
+        params = {"mode": "test_preauth", "challenge": challenge, "auth_token": authtoken}
+        auth_user_dir = self.try_authenticate(params)
+
+        if 'profile' in auth_user_dir:
+            response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
+            #populate user info
+            for k,v in auth_user_dir['profile'].items():
+                node = ET.SubElement(certificate_node, 'ns1:{}'.format(k))
+                node.text = str(v)
+        else: #send error data
+            response_code_node.text = self.convert_reason_code(auth_user_dir['reason'])
+
+
+        #encrypted server data
+        peerkeymodulus_node = ET.SubElement(certificate_node, 'ns1:peerkeymodulus')
+
+        rsa_modulus = str(privkey.n)
+        peerkeymodulus_node.text = rsa_modulus[-128:].upper()
+
+        peerkeyexponent_node = ET.SubElement(certificate_node, 'ns1:peerkeyexponent')
+        rsa_exponent = hex(privkey.e)
+        peerkeyexponent_node.text = rsa_exponent[2:]
+
+        serverdata_node = ET.SubElement(certificate_node, 'ns1:serverdata')
+
+        server_data = os.urandom(128)
+        serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
+
+        signature_node = ET.SubElement(certificate_node, 'ns1:signature')
+
+        peerkey = {}
+        peerkey['exponent'] = peerkeyexponent_node.text
+        peerkey['modulus'] = peerkeymodulus_node.text
+
+        signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
         return resp_xml
 
     def handle_profile_login(self, xml_tree, privkey):
