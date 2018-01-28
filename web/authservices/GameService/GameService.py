@@ -159,7 +159,6 @@ class GameService(BaseService):
             player_index = player_index + 1
         server_info['player_custkeys'] = player_keys
 
-
         cursor = 0
         team_index = 0
         team_keys = []
