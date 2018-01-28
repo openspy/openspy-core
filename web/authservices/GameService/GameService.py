@@ -134,9 +134,8 @@ class GameService(BaseService):
         while True:
             resp = self.redis_ctx.hscan("{}custkeys".format(server_key),cursor)
             cursor = resp[0]
-            print("Get server: {} {}\n".format(server_key,resp))
             for key, val in resp[1].items():
-                custkeys[key] = val
+                custkeys[key.decode('utf8')] = val.decode('utf8')
             if cursor == 0:
                 break
         server_info['custkeys'] = custkeys
@@ -152,7 +151,7 @@ class GameService(BaseService):
                 resp = self.redis_ctx.hscan(player_key,cursor)
                 cursor = resp[0]
                 for key, val in resp[1].items():
-                    player_key_set[key] = val
+                    player_key_set[key.decode('utf8')] = val.decode('utf8')
                 if cursor == 0:
                     break
             player_keys.append(player_key_set)
@@ -173,7 +172,7 @@ class GameService(BaseService):
                 resp = self.redis_ctx.hscan(team_key,cursor)
                 cursor = resp[0]
                 for key, val in resp[1].items():
-                    team_key_set[key] = val
+                    team_key_set[key.decode('utf8')] = val.decode('utf8')
                 if cursor == 0:
                     break
             team_keys.append(team_key_set)
@@ -201,7 +200,7 @@ class GameService(BaseService):
             cursor = resp[0]
             for item in resp[1]:
                 key = item
-                servers.append(self.get_server_by_key(key.decode('utf-8')))
+                servers.append(self.get_server_by_key(key.decode('utf8')))
             if cursor == 0:
                 break
         return {"servers": servers}
