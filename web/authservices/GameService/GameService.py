@@ -20,32 +20,32 @@ class GameService(BaseService):
         self.REDIS_GAMESERVERS_DB = 0
         self.REDIS_GAME_DB = 2
         self.REDIS_GAMEGROUP_DB = 1
-        self.redis_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 2)
+        self.redis_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = self.REDIS_GAMESERVERS_DB)
+        self.redis_game_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = self.REDIS_GAME_DB)
+        self.redis_group_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = self.REDIS_GAMEGROUP_DB)
 
     def sync_game_to_redis(self, new_data, old_data):
-        self.redis_ctx.select(self.REDIS_GAME_DB)
-        self.redis_ctx.delete("{}:{}".format(old_data["gamename"],old_data["id"]))
+        self.redis_game_ctx.delete("{}:{}".format(old_data["gamename"],old_data["id"]))
 
-        self.redis_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "gameid", new_data["id"])
-        self.redis_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "gamename", new_data["gamename"])
-        self.redis_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "secretkey", new_data["secretkey"])
-        self.redis_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "description", new_data["description"])
-        self.redis_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "queryport", new_data["queryport"])
-        self.redis_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "disabled_services", new_data["disabledservices"])
+        self.redis_game_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "gameid", new_data["id"])
+        self.redis_game_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "gamename", new_data["gamename"])
+        self.redis_game_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "secretkey", new_data["secretkey"])
+        self.redis_game_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "description", new_data["description"])
+        self.redis_game_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "queryport", new_data["queryport"])
+        self.redis_game_ctx.hset("{}:{}".format(new_data["gamename"],new_data["id"]), "disabled_services", new_data["disabledservices"])
 
     def sync_group_to_redis(self, new_data, old_data):
         new_game = Game.select().where(Game.id == new_data["gameid"]).get()
         old_game = Game.select().where(Game.id == old_data["gameid"]).get()
-        self.redis_ctx.select(self.REDIS_GAMEGROUP_DB)
-        self.redis_ctx.delete("{}:{}:".format(old_game.gamename,old_data["groupid"]))
-        self.redis_ctx.delete("{}:{}:custkeys".format(old_game.gamename,old_data["groupid"]))
+        self.redis_group_ctx.delete("{}:{}:".format(old_game.gamename,old_data["groupid"]))
+        self.redis_group_ctx.delete("{}:{}:custkeys".format(old_game.gamename,old_data["groupid"]))
 
         redis_key = "{}:{}:".format(new_game.gamename,new_data["groupid"])
-        self.redis_ctx.hset(redis_key,"gameid",new_data["gameid"])
-        self.redis_ctx.hset(redis_key,"groupid",new_data["groupid"])
-        self.redis_ctx.hset(redis_key,"maxwaiting",new_data["maxwaiting"])
-        self.redis_ctx.hset(redis_key,"password",0)
-        self.redis_ctx.hset(redis_key,"numwaiting",0)
+        self.redis_group_ctx.hset(redis_key,"gameid",new_data["gameid"])
+        self.redis_group_ctx.hset(redis_key,"groupid",new_data["groupid"])
+        self.redis_group_ctx.hset(redis_key,"maxwaiting",new_data["maxwaiting"])
+        self.redis_group_ctx.hset(redis_key,"password",0)
+        self.redis_group_ctx.hset(redis_key,"numwaiting",0)
 
         other_str = new_data["other"]
         other_data = other_str.split("\\")[1::]
@@ -54,7 +54,7 @@ class GameService(BaseService):
         for x in it:
             key = x
             val = next(it)
-            self.redis_ctx.hset("{}custkeys".format(redis_key),key,val)
+            self.redis_group_ctx.hset("{}custkeys".format(redis_key),key,val)
     def handle_get_games(self, request):
         ret = []
         where_statement = 1==1
@@ -125,7 +125,6 @@ class GameService(BaseService):
         self.redis_ctx.delete("{}:{}:custkeys".format(game.gamename,group_data["groupid"]))
         return {"success": True, "count": count}
     def get_server_by_key(self, server_key):
-        self.redis_ctx.select(self.REDIS_GAMESERVERS_DB)
         server_info = {}
         main_keys = ["gameid", "id", "wan_port", "wan_ip", "deleted"]
         for key in main_keys:
