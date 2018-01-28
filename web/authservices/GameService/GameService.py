@@ -182,7 +182,6 @@ class GameService(BaseService):
         server_info['team_custkeys'] = team_keys
         return server_info
     def handle_get_servers(self, request):
-        self.redis_ctx.select(self.REDIS_GAMESERVERS_DB)
         where_params = {}
         msg_scan_key = "*:*:*:"
         if "where" in request:
