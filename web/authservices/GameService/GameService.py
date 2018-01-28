@@ -172,7 +172,7 @@ class GameService(BaseService):
                 resp = self.redis_ctx.hscan(team_key,cursor)
                 cursor = resp[0]
                 for key, val in resp[1].items():
-                    team_key_set[key.decode('utf8')] = val.decode('utf8')
+                    team_key_set[key.decode('cp1251').encode('utf8')] = val.decode('cp1251').encode('utf8')
                 if cursor == 0:
                     break
             team_keys.append(team_key_set)
