@@ -201,7 +201,7 @@ class GameService(BaseService):
             cursor = resp[0]
             for item in resp[1]:
                 key = item
-                servers.append(self.get_server_by_key(key.decode('utf8')))
+                servers.append(self.get_server_by_key(key.decode('utf-8')))
             if cursor == 0:
                 break
         return {"servers": servers}
