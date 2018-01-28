@@ -126,7 +126,7 @@ class GameService(BaseService):
         server_info = {}
         main_keys = ["gameid", "id", "wan_port", "wan_ip", "deleted"]
         for key in main_keys:
-            server_info[key] = self.redis_ctx.hget(server_key, key).decode('utf8')
+            server_info[key] = self.redis_ctx.hget(server_key, key)
         custkeys = {}
         server_info['key'] = server_key
         cursor = 0
