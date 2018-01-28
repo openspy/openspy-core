@@ -113,16 +113,14 @@ class GameService(BaseService):
             if key != "id":
                 setattr(game, key, game_data[key])
         game.save()
-        self.redis_ctx.select(self.REDIS_GAME_DB)
         self.sync_game_to_redis(model_to_dict(game), old_data)
         return {"success": True}
     def handle_delete_group(self, request):
         group_data = request["group"]
         game = Game.select().where(Game.id == group_data["gameid"]).get()
         count = GameGroup.delete().where(GameGroup.groupid == group_data["groupid"]).execute()
-        self.redis_ctx.select(self.REDIS_GROUP_DB)
-        self.redis_ctx.delete("{}:{}:".format(game.gamename,group_data["groupid"]))
-        self.redis_ctx.delete("{}:{}:custkeys".format(game.gamename,group_data["groupid"]))
+        self.redis_group_ctx.delete("{}:{}:".format(game.gamename,group_data["groupid"]))
+        self.redis_group_ctx.delete("{}:{}:custkeys".format(game.gamename,group_data["groupid"]))
         return {"success": True, "count": count}
     def get_server_by_key(self, server_key):
         server_info = {}
@@ -208,7 +206,6 @@ class GameService(BaseService):
     def handle_update_server(self, request):
         return True
     def handle_delete_server(self, request):
-        self.redis_ctx.select(self.REDIS_GAMESERVERS_DB)
         if "key" in request:
             self.redis_ctx.hset(request["key"],"deleted", "1")
         return {"success": True}
