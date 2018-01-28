@@ -135,7 +135,7 @@ class GameService(BaseService):
             resp = self.redis_ctx.hscan("{}custkeys".format(server_key),cursor)
             cursor = resp[0]
             for key, val in resp[1].items():
-                custkeys[key.decode('utf8')] = val.decode('utf8')
+                custkeys[key.decode('utf8')] = val.decode('cp1251').encode('utf8')
             if cursor == 0:
                 break
         server_info['custkeys'] = custkeys
@@ -151,7 +151,7 @@ class GameService(BaseService):
                 resp = self.redis_ctx.hscan(player_key,cursor)
                 cursor = resp[0]
                 for key, val in resp[1].items():
-                    player_key_set[key.decode('utf8')] = val.decode('utf8')
+                    player_key_set[key.decode('cp1251').encode('utf8')] = val.decode('cp1251').encode('utf8')
                 if cursor == 0:
                     break
             player_keys.append(player_key_set)
