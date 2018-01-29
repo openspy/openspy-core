@@ -12,7 +12,7 @@ from playhouse.shortcuts import model_to_dict, dict_to_model
 
 from BaseService import BaseService
 
-
+from lib.Exceptions import BaseException
 
 class GameService(BaseService):
     def __init__(self):
@@ -227,35 +227,28 @@ class GameService(BaseService):
 
         start_response('200 OK', [('Content-Type','application/json')])
 
-        if "type" in request_body:
-            if request_body["type"] == "get_games":
-                game_data = self.handle_get_games(request_body)
-                response['success'] = True
-                response["data"] = game_data
-            elif request_body["type"] == "get_groups":
-                group_data = self.handle_get_groups(request_body)
-                response['success'] = True
-                response["data"] = group_data
-            elif request_body["type"] == "update_game":
-                self.handle_update_game(request_body)
-                response['success'] = True
-            elif request_body["type"] == "update_group":
-                self.handle_update_group(request_body, False)
-                response['success'] = True
-            elif request_body["type"] == "delete_group":
-                self.handle_delete_group(request_body)
-                response['success'] = True
-            elif request_body["type"] == "create_group":
-                self.handle_update_group(request_body, True)
-                response['success'] = True
-            elif request_body["type"] == "get_servers":
-                response = self.handle_get_servers(request_body)
-                response['success'] = True
-            elif request_body["type"] == "update_server":
-                response = self.handle_update_server(request_body)
-                response['success'] = True
-            elif request_body["type"] == "delete_server":
-                response = self.handle_delete_server(request_body)
-                response['success'] = True
+        type_table = [
+            "get_games": self.handle_get_games,
+            "get_groups": self.handle_get_groups,
+            "update_game": self.handle_update_game,
+            "update_group": self.handle_update_group,
+            "delete_group": self.handle_delete_group,
+            "create_group": self.handle_update_group,
+            "get_servers": self.handle_get_servers,
+            "update_server": self.handle_update_server,
+            "delete_server": self.handle_delete_server
+        ]
 
+        try:
+
+            if "type" in request_body:
+                req_type = request_body["type"]
+                if req_type in type_table:
+                    response = type_table[req_type][1](request_body)
+                else:
+                    raise BaseException("throw exception\n")
+            except BaseException as error:
+                response = error.to_json()
+            except Exception as error:
+                response = error
         return response
