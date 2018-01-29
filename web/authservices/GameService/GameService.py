@@ -248,7 +248,7 @@ class GameService(BaseService):
                 else:
                     raise OS_BaseException("Invalid Mode")
         except OS_BaseException as e:
-            response = e.to_json()
+            response = e.to_dict()
             #response = error.to_json()
         except Exception as error:
             response = {"error": repr(error)}

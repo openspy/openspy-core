@@ -3,5 +3,5 @@ class OS_BaseException(Exception):
         print("BaseException: {}\n".format(message))
         self.message = message
         super(OS_BaseException, self).__init__(message)
-    def to_json(self):
+    def to_dict(self):
         return {"message": self.message}
