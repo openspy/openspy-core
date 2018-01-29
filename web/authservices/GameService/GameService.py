@@ -12,7 +12,7 @@ from playhouse.shortcuts import model_to_dict, dict_to_model
 
 from BaseService import BaseService
 
-from lib.Exceptions import BaseException
+from lib.Exceptions.OS_BaseException import OS_BaseException
 
 class GameService(BaseService):
     def __init__(self):
@@ -227,7 +227,7 @@ class GameService(BaseService):
 
         start_response('200 OK', [('Content-Type','application/json')])
 
-        type_table = [
+        type_table = {
             "get_games": self.handle_get_games,
             "get_groups": self.handle_get_groups,
             "update_game": self.handle_update_game,
@@ -237,18 +237,19 @@ class GameService(BaseService):
             "get_servers": self.handle_get_servers,
             "update_server": self.handle_update_server,
             "delete_server": self.handle_delete_server
-        ]
+        }
 
         try:
 
             if "type" in request_body:
                 req_type = request_body["type"]
                 if req_type in type_table:
-                    response = type_table[req_type][1](request_body)
+                    response = type_table[req_type](request_body)
                 else:
-                    raise BaseException("throw exception\n")
-            except BaseException as error:
-                response = error.to_json()
-            except Exception as error:
-                response = error
+                    raise OS_BaseException("Invalid Mode")
+        except OS_BaseException as e:
+            response = e.to_json()
+            #response = error.to_json()
+        except Exception as error:
+            response = {"error": repr(error)}
         return response
