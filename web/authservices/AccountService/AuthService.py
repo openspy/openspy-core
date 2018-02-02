@@ -19,6 +19,10 @@ import os
 
 from AccountService.RegistrationService import RegistrationService
 from AccountService.UserProfileMgrService import UserProfileMgrService
+
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class AuthService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
@@ -64,10 +68,11 @@ class AuthService(BaseService):
             return Profile.select().join(User).where((Profile.id == profileid) & (User.deleted == 0) & (Profile.deleted == 0)).get()
         except Profile.DoesNotExist:
             return None
-    def test_pass_plain_by_userid(self, userid, password):
+    def test_pass_plain_by_userid(self, request_body, account_data):
         auth_success = False
+        password = request_body["user"]["password"]
         try:
-            matched_user = User.select().where((User.id == userid) & (User.password == password) & (User.deleted == 0)).get()
+            matched_user = User.select().where((User.id == account_data["user"].id) & (User.password == password) & (User.deleted == 0)).get()
             if matched_user:
                 auth_success = True
         except User.DoesNotExist:
@@ -127,20 +132,20 @@ class AuthService(BaseService):
         return pw_hashed == client_response
     def test_preauth_ticket(self, request_body):
         if "auth_token" not in request_body:
-            return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
+            raise OS_Auth_InvalidCredentials()
         token = request_body['auth_token']
 
         response = {}
 
         auth_key = "auth_token_{}".format(token)
         if not self.redis_ctx.exists(auth_key) or "challenge" not in request_body:
-            return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
+            raise OS_Auth_InvalidCredentials()
         profileid = int(self.redis_ctx.hget(auth_key, 'profileid'))
         profile = self.get_profile_by_id(profileid)
         real_challenge = self.redis_ctx.hget(auth_key, 'challenge').decode('utf-8')
 
         if real_challenge != request_body['challenge']:
-            return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
+            raise OS_Auth_InvalidCredentials()
 
         response['profile'] = model_to_dict(profile)
         response["success"] = True
@@ -153,7 +158,7 @@ class AuthService(BaseService):
         token = request_body['auth_token']
 
         if not self.redis_ctx.exists("auth_token_{}".format(token)):
-            return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
+            raise OS_Auth_InvalidCredentials()
 
         profileid = int(self.redis_ctx.hget("auth_token_{}".format(token), 'profileid'))
         profile = self.get_profile_by_id(profileid)
@@ -327,7 +332,7 @@ class AuthService(BaseService):
         user_data = request_body["user"]
         if "email" in user_data:
             if re.match('^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', user_data["email"]) == None:
-                return {'reason': self.LOGIN_RESPONSE_INVALID_EMAIL}
+                raise OS_InvalidParam("email")
             user_where = (user_where) & (User.email == user_data["email"])
         if "partnercode" in user_data:
             user_data['partnercode'] = user_data["partnercode"]
@@ -340,7 +345,7 @@ class AuthService(BaseService):
             user = User.get(user_where)
             user = model_to_dict(user)
             if user['password'] != user_data["password"]:
-                return {'reason': self.LOGIN_RESPONSE_INVALID_PASSWORD}
+                raise OS_InvalidParam("password")
         except User.DoesNotExist:
             register_svc = RegistrationService()
             user = register_svc.try_register_user(user_data)
@@ -374,7 +379,7 @@ class AuthService(BaseService):
             ret["new_profile"] = False
 
             if user["id"] != profile["user"]["id"]:
-                return {'reason': self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK, "profile": profile}
+                raise OS_InvalidParam("uniquenick")
         except Profile.DoesNotExist:
             user_profile_srv = UserProfileMgrService()
             profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'user': user})
@@ -382,11 +387,11 @@ class AuthService(BaseService):
             if "error" in profile:
                 reason = 0
                 if profile["error"] == "INVALID_UNIQUENICK":
-                    reason = self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK
+                    raise OS_InvalidParam(profile_data["uniquenick"])
                 elif profile["error"] == "INVALID_NICK":
-                    reason = self.LOGIN_CREATE_RESPONSE_INVALID_NICK
+                    raise OS_InvalidParam(profile_data["nick"])
                 elif profile["error"] == "UNIQUENICK_IN_USE":
-                    reason = self.CREATE_RESPONSE_UNIQUENICK_IN_USE
+                    raise OS_UniqueNickInUse(profile_data["uniquenick"])
                 ret = {'reason' : reason}
                 if "profile" in profile:
                     ret["profile"] = profile["profile"]
@@ -395,6 +400,86 @@ class AuthService(BaseService):
                 return ret
         ret["profile"] = profile
         return ret
+
+
+    ## auth
+    def handle_auth_find_user_and_profile(self, request_body):
+        resp = {}
+        if "user" in request_body:
+            user_body = request_body["user"]
+        else:
+            user_body = {}
+        if "profile" in request_body:
+            profile_body = request_body["profile"]
+        else:
+            profile_body = {}
+
+        if 'password' not in user_body and hash_type == 'plain':
+            raise OS_Auth_InvalidCredentials()
+
+        if 'uniquenick' in profile_body:
+            resp["profile"] = self.get_profile_by_uniquenick(profile_body['uniquenick'], profile_body['namespaceid'], user_body['partnercode'])
+            if resp["profile"] == None:
+                raise OS_Auth_InvalidCredentials()
+            resp["user"] = resp["profile"].user
+        elif 'nick' in profile_body and 'email' in user_body:
+            resp["profile"] = self.get_profile_by_nick_email(profile_body['nick'], profile_body['namespaceid'], user_body['email'], user_body['partnercode'])
+            if resp["profile"] == None:
+                raise OS_Auth_InvalidCredentials()
+        elif "email" in user_body:
+            resp["user"] = self.get_user_by_email(user_body['email'], user_body['partnercode'])
+            if resp["user"] == None:
+                raise OS_Auth_InvalidCredentials()
+        elif "userid" in request_body:
+            resp["user"] = self.get_user_by_userid(request_body["userid"])
+            if resp["user"] == None:
+                raise OS_Auth_InvalidCredentials()
+        elif "profileid" in request_body:
+            resp["profile"] = self.get_profile_by_id(request_body["profileid"])
+        elif "id" in user_body:
+            resp["user"] = self.get_user_by_userid(user_body["id"])
+            if resp["user"] == None:
+                raise OS_Auth_InvalidCredentials()
+        elif "id" in profile_body:
+            resp["profile"] = self.get_profile_by_id(profile_body["id"])
+
+        return resp
+
+    def handle_auth(self, request_body):
+        hash_type = 'plain'
+        if 'hash_type' in request_body:
+            hash_type = request_body['hash_type']
+
+        account_data = self.handle_auth_find_user_and_profile(request_body)
+
+        auth_success = False
+
+        hash_type_handlers = {
+            "plain": self.test_pass_plain_by_userid,
+            "gp_nick_email": self.test_gp_nick_email_by_profile,
+            "gp_uniquenick": self.test_gp_uniquenick_by_profile,
+            "nick_email": self.test_nick_email_by_profile,
+            "auth_or_create_profile": self.auth_or_create_profile,
+            "gstats_pid_sesskey": self.test_gstats_sessionkey_response_by_profileid,
+            "gp_preauth": self.test_gp_preauth_by_ticket
+        }
+
+        req_type = request_body["mode"]
+        response = {}
+        print("Mode: {}\n".format(hash_type))
+        auth_success = False
+        if hash_type in hash_type_handlers:
+            auth_success = hash_type_handlers[hash_type](request_body, account_data)
+
+        if auth_success:
+            if "user" in account_data:
+                response["user"] = model_to_dict(account_data["user"])
+                del response["user"]["password"]
+            if "profile" in account_data:
+                response["profile"] = model_to_dict(account_data["profile"])
+        else:
+            raise OS_Auth_InvalidCredentials()
+        return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -413,150 +498,28 @@ class AuthService(BaseService):
         input_str = env['wsgi.input'].read(request_body_size).decode('utf-8')
         request_body = json.loads(input_str)
 
-        if 'mode' in request_body:
-            if request_body['mode'] == 'test_session':
-                ret = self.test_session(request_body)
-                return ret
-            elif request_body['mode'] == 'test_session_profileid':
-                return self.test_session_by_profileid(request_body)
-            elif request_body['mode'] == "pwreset":
-                return self.handle_pw_reset(request_body)
-            elif request_body['mode'] == "perform_pwreset":
-                return self.handle_perform_pw_reset(request_body)
-            elif request_body['mode'] == "del_session":
-                return self.handle_delete_session(request_body)
-            elif request_body['mode'] == 'make_auth_ticket':
-                return self.handle_make_auth_ticket(request_body)
-            elif request_body["mode"] == 'test_preauth':
-                return self.test_preauth_ticket(request_body)
-        #mode == "auth"
-        if 'namespaceid' not in request_body:
-            request_body['namespaceid'] = 0
-        if 'partnercode' not in request_body:
-            request_body['partnercode'] = 0
-
-        hash_type = 'plain'
-        if 'hash_type' in request_body:
-            hash_type = request_body['hash_type']
-
-        profile = None
-        user = None
-
-        if "user" in request_body:
-            user_body = request_body["user"]
-        else:
-            user_body = {}
-        if "profile" in request_body:
-            profile_body = request_body["profile"]
-        else:
-            profile_body = {}
-
-        if 'password' not in user_body and hash_type == 'plain':
-            response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
-            return response
-
-        if 'uniquenick' in profile_body:
-            profile = self.get_profile_by_uniquenick(profile_body['uniquenick'], profile_body['namespaceid'], user_body['partnercode'])
-            if profile == None:
-                response['reason'] = self.LOGIN_RESPONSE_INVALID_PROFILE
-        elif 'nick' in profile_body and 'email' in user_body:
-            profile = self.get_profile_by_nick_email(profile_body['nick'], profile_body['namespaceid'], user_body['email'], user_body['partnercode'])
-            if profile == None:
-                response['reason'] = self.LOGIN_RESPONSE_INVALID_PROFILE
-        elif "email" in user_body:
-            user = self.get_user_by_email(user_body['email'], user_body['partnercode'])
-            if user == None:
-                response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
-        elif "userid" in request_body:
-            user = self.get_user_by_userid(request_body["userid"])
-            if user == None:
-                response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
-        elif "profileid" in request_body:
-            profile = self.get_profile_by_id(request_body["profileid"])
-        elif "id" in user_body:
-            user = self.get_user_by_userid(user_body["id"])
-            if user == None:
-                response['reason'] = self.LOGIN_RESPONSE_SERVER_ERROR
-        elif "id" in profile_body:
-            profile = self.get_profile_by_id(profile_body["id"])
-        auth_success = False
-
-
-        if hash_type == 'plain' and profile != None:
-            auth_success = self.test_pass_plain_by_userid(profile.user.id, user_body['password'])
-        elif hash_type == 'plain' and user != None:
-            auth_success = self.test_pass_plain_by_userid(user.id, user_body['password'])
-            
-        elif hash_type == 'gp_nick_email' and profile != None:
-            proof = self.test_gp_nick_email_by_profile(profile, request_body['client_challenge'], request_body['server_challenge'], request_body['client_response'])
-            if proof != None:
-                auth_success = True
-                response['server_response'] = proof
-        elif hash_type == 'gp_uniquenick' and profile != None:
-            proof = self.test_gp_uniquenick_by_profile(profile, request_body['client_challenge'], request_body['server_challenge'], request_body['client_response'])
-            if proof != None:
-                auth_success = True
-                response['server_response'] = proof
-        elif hash_type == 'nick_email' and profile != None:
-            auth_success = self.test_nick_email_by_profile(profile, user_body['password'])
-        elif hash_type == 'auth_or_create_profile':
-            auth_resp = self.auth_or_create_profile(request_body)
-            if "new_profile" in auth_resp:
-                response['new_profile'] = auth_resp['new_profile']
-            if "profile" in auth_resp:
-                response["profile"] = auth_resp["profile"]
-            if "reason" in auth_resp:
-                response['reason'] = auth_resp['reason']
-            elif isinstance(auth_resp, dict):
-                response['success'] = True
-
-                if 'reason' in response:
-                    del response['reason']
-                if "reason" in auth_resp:
-                    response['success'] = False
-                    response['reason'] = auth_resp['reason']
-
-                auth_success = True
-                #retrieve profile for save_session
-                profile = Profile.get((Profile.id == response['profile']['id']))
-                user = profile.user
-        elif hash_type == "gstats_pid_sesskey":
-            auth_success = self.test_gstats_sessionkey_response_by_profileid(profile, request_body["session_key"], request_body["client_response"])
-        elif hash_type == "gp_preauth":
-            response = self.test_gp_preauth_by_ticket(request_body)
-            if "reason" not in response:
-                auth_success = True
-                profile = Profile.get((Profile.id == response['profile']['id']))
-                user = profile.user
-            else:
-                response["success"] = False
-        if not auth_success and "reason" not in response:
-            if user == None or profile == None:
-                response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND
-            else:
-                response['reason'] = self.LOGIN_RESPONSE_INVALID_PASSWORD
-        elif "reason" not in response:
-            response['success'] = True
-            if profile != None:
-                response['profile'] = model_to_dict(profile)
-                del response['profile']['user']['password']
-            elif user != None:
-                response['user'] = model_to_dict(user)
-                del response['user']['password']
-            else:
-                response['reason'] = self.LOGIN_RESPONSE_USER_NOT_FOUND
-
-            response['expiretime'] = self.AUTH_EXPIRE_TIME #TODO: figure out what this is used for, should make unix timestamp of expire time
-
-        if "save_session" in request_body and request_body["save_session"] == True and response['success'] == True:
-            if profile != None:
-                session_data = self.create_auth_session(profile, profile.user)
-            elif user != None:
-                session_data = self.create_auth_session(False, user)
-            response['session_key'] = session_data['session_key']
-
-        if "set_context" in request_body and "session_key" in response:
-            if request_body["set_context"] == "profile":
-                self.set_auth_context(response["session_key"], profile)
+        type_table = {
+            "test_session": self.test_session,
+            "test_session_profileid": self.test_session_by_profileid,
+            "pwreset": self.handle_pw_reset,
+            "perform_pwreset": self.handle_perform_pw_reset,
+            "del_session": self.handle_delete_session,
+            "make_auth_ticket": self.handle_make_auth_ticket,
+            "test_preauth": self.test_preauth_ticket,
+            "auth": self.handle_auth
+        }
+        try:
+            if 'mode' not in request_body:
+                request_body["mode"] = "auth"
+            if 'mode' in request_body:
+                req_type = request_body["mode"]
+                if req_type in type_table:
+                    response = type_table[req_type](request_body)
+                else:
+                    raise OS_InvalidMode()
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
 
         return response
