@@ -114,7 +114,7 @@ namespace GP {
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
-		//printf("GP Handle(%d): %s\n", len,data);
+		printf("GP Handle(%d): %s\n", len,data);
 		OS::KVReader data_parser = OS::KVReader(std::string(data));
 		gettimeofday(&m_last_recv, NULL);
 		if (data_parser.Size() < 1) {
@@ -872,7 +872,7 @@ namespace GP {
 		if(attach_final) {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
-		//OS::LogText(OS::ELogLevel_Info, "Sending: %s", buff);
+		OS::LogText(OS::ELogLevel_Info, "Sending: %s", buff);
 		int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
 		if(c < 0) {
 			Delete();

@@ -53,43 +53,26 @@ namespace OS {
 		User user;
 		user.id = 0;
 		profile.id = 0;
+		bool success = false;
 		OS::AuthData auth_data;
+		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 
-		auth_data.response_code = (AuthResponseCode)-1;
 		if (curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data_str);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_data_str, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
 
-			bool success = false;
-
 			if (res == CURLE_OK) {
-
 
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 
 				if (json_data) {
+					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if (success_obj == json_true()) {
+					if (error_obj) {
+						Handle_AuthWebError(auth_data, error_obj);
+					}
+					else if (success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
 						if (profile_json) {
 							profile = LoadProfileFromJson(profile_json);
@@ -109,21 +92,13 @@ namespace OS {
 						}
 
 					}
-					json_t *reason_json = json_object_get(json_data, "reason");
-					if (reason_json) {
-						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
-					}
 					json_decref(json_data);
 				}
-				else {
-					success = false;
-					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
-				}
-
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
+
+		request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 
 		if (json_data_str)
 			free((void *)json_data_str);
@@ -170,43 +145,25 @@ namespace OS {
 		User user;
 		user.id = 0;
 		profile.id = 0;
+		bool success = false;
 		OS::AuthData auth_data;
+		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 
-		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data_str);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+			AuthReq_InitCurl(curl, json_data_str, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
 
-			bool success = false;			
-
 			if(res == CURLE_OK) {
-				
-
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 
 				if(json_data) {
+					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if(success_obj == json_true()) {
+					if (error_obj) {
+						Handle_AuthWebError(auth_data, error_obj);
+					}
+					else if(success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
 						if(profile_json) {
 							profile = LoadProfileFromJson(profile_json);
@@ -231,16 +188,12 @@ namespace OS {
 						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					}
 					json_decref(json_data);
-				} else {
-					success = false;
-					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
-
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
 
+		request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 		if(json_data_str)
 			free((void *)json_data_str);
 
@@ -282,33 +235,13 @@ namespace OS {
 		user.id = 0;
 		profile.id = 0;
 		OS::AuthData auth_data;
+		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
+		bool success = false;
 
-		auth_data.response_code = (AuthResponseCode)-1;
 		if (curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_data, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
-
-			bool success = false;
 
 			if (res == CURLE_OK) {
 
@@ -316,8 +249,12 @@ namespace OS {
 
 
 				if (json_data) {
+					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if (success_obj == json_true()) {
+					if (error_obj) {
+						Handle_AuthWebError(auth_data, error_obj);
+					}
+					else if (success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
 						if (profile_json) {
 							profile = LoadProfileFromJson(profile_json);
@@ -335,24 +272,13 @@ namespace OS {
 						if (server_response_json) {
 							auth_data.hash_proof = json_string_value(server_response_json);
 						}
-
-					}
-					else {
-					}
-					json_t *reason_json = json_object_get(json_data, "reason");
-					if (reason_json) {
-						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					}
 					json_decref(json_data);
 				}
-				else {
-					success = false;
-					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
-				}
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
+		request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 		json_decref(send_obj);
 	}
 	void AuthTask::PerformAuth_NickEMail(AuthRequest request) {
@@ -391,33 +317,13 @@ namespace OS {
 		user.id = 0;
 		profile.id = 0;
 		OS::AuthData auth_data;
-
-		auth_data.response_code = (AuthResponseCode)-1;
+		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
+		bool success = false;
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+			AuthReq_InitCurl(curl, json_data, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
-
-			bool success = false;
 
 			if(res == CURLE_OK) {
 
@@ -425,8 +331,12 @@ namespace OS {
 
 
 				if(json_data) {
+					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if(success_obj == json_true()) {
+					if (error_obj) {
+						Handle_AuthWebError(auth_data, error_obj);
+					}
+					else if(success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
 						if(profile_json) {
 							profile = LoadProfileFromJson(profile_json);
@@ -440,21 +350,13 @@ namespace OS {
 						if(server_response_json) {
 							auth_data.session_key = json_string_value(server_response_json);
 						}
-					} else {
-					}
-					json_t *reason_json = json_object_get(json_data, "reason");
-					if(reason_json) {
-						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					}
 					json_decref(json_data);
-				} else {
-					success = false;
-					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
+		request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 		json_decref(send_obj);
 	}
 	void AuthTask::PerformAuth_CreateUser_OrProfile(AuthRequest request) {
@@ -499,33 +401,15 @@ namespace OS {
 		user.id = 0;
 		profile.id = 0;
 		OS::AuthData auth_data;
+		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
+		bool success = false;
 
 		if (request.gamename.length() > 0) {
 			auth_data.gamedata = OS::GetGameByName(request.gamename.c_str());
 		}
 
-		auth_data.response_code = (AuthResponseCode)-1;
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+			AuthReq_InitCurl(curl, json_data, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
 
@@ -533,17 +417,15 @@ namespace OS {
 				auth_data.gamedata = OS::GetGameByName(request.gamename.c_str());
 			}
 
-			bool success = false;
-
-			auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
-
 			if(res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if(json_data) {
-					json_t *reason_json = json_object_get(json_data, "reason");
-					if(reason_json) {
-						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
-					} else {
+					json_t *error_obj = json_object_get(json_data, "error");
+					json_t *success_obj = json_object_get(json_data, "success");
+					if (error_obj) {
+						Handle_AuthWebError(auth_data, error_obj);
+					}
+					else if (success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
 						json_t *user_json = json_object_get(profile_json, "user");
 						user = LoadUserFromJson(user_json);
@@ -555,10 +437,10 @@ namespace OS {
 					json_decref(json_data);
 				}
 			}
-			request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			curl_easy_cleanup(curl);
 		}
 		
+		request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 		if(json_data)
 			free(json_data);
 		json_decref(send_obj);
@@ -589,41 +471,24 @@ namespace OS {
 		profile.id = 0;
 		OS::AuthData auth_data;
 
-		auth_data.response_code = (AuthResponseCode)-1;
-
+		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
+		bool success = false;
 
 		if (curl) {
 
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_dump);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
-
-			bool success = false;
 
 			if (res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if (json_data) {
+					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if (success_obj == json_true()) {
+					if (error_obj) {
+						Handle_AuthWebError(auth_data, error_obj);
+					}
+					else if (success_obj == json_true()) {
 						success = true;
 						json_t *session_key_json = json_object_get(json_data, "ticket");
 						if (session_key_json) {
@@ -635,22 +500,12 @@ namespace OS {
 							auth_data.hash_proof = json_string_value(session_key_json);
 						}
 					}
-					else {
-					}
-					json_t *reason_json = json_object_get(json_data, "reason");
-					if (reason_json) {
-						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
-					}
 					json_decref(json_data);
 				}
-				else {
-					success = false;
-					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
-				}
-				request.callback(success, OS::User(), OS::Profile(), auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
+		request.callback(success, OS::User(), OS::Profile(), auth_data, request.extra, request.operation_id, request.peer);
 		if (json_dump) {
 			free((void *)json_dump);
 		}
@@ -681,42 +536,25 @@ namespace OS {
 		user.id = 0;
 		profile.id = 0;
 		OS::AuthData auth_data;
+		bool success = false;
 
-		auth_data.response_code = (AuthResponseCode)-1;
+		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 
 
 		if(curl) {
-
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_dump);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
-
-			bool success = false;
 
 			if(res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if(json_data) {
+					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if(success_obj == json_true()) {
+					if (error_obj) {
+						Handle_AuthWebError(auth_data, error_obj);
+					}
+					else if (success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
 						if(profile_json) {
 							profile = LoadProfileFromJson(profile_json);
@@ -738,15 +576,11 @@ namespace OS {
 						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					}
 					json_decref(json_data);
-				} else {
-					success = false;
-					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
-
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
+		request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 		if (json_dump) {
 			free((void *)json_dump);
 		}
@@ -781,41 +615,25 @@ namespace OS {
 		profile.id = 0;
 		OS::AuthData auth_data;
 
-		auth_data.response_code = (AuthResponseCode)-1;
+		bool success = false;
+		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 
 
 		if (curl) {
 
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_dump);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
-
-			bool success = false;
 
 			if (res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if (json_data) {
+					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if (success_obj == json_true()) {
+					if (error_obj) {
+						Handle_AuthWebError(auth_data, error_obj);
+					}
+					else if (success_obj == json_true()) {
 						json_t *user_json = json_object_get(json_data, "user");
 						if (user_json) {
 							user = LoadUserFromJson(user_json);
@@ -826,23 +644,12 @@ namespace OS {
 							auth_data.session_key = json_string_value(session_key_json);
 						}
 					}
-					else {
-					}
-					json_t *reason_json = json_object_get(json_data, "reason");
-					if (reason_json) {
-						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
-					}
 					json_decref(json_data);
 				}
-				else {
-					success = false;
-					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
-				}
-
-				request.callback(success, user, OS::Profile(), auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
+		request.callback(success, user, OS::Profile(), auth_data, request.extra, request.operation_id, request.peer);
 		if (json_dump) {
 			free((void *)json_dump);
 		}
@@ -883,42 +690,25 @@ namespace OS {
 		user.id = 0;
 		profile.id = 0;
 		OS::AuthData auth_data;
+		bool success = false;
 
-		auth_data.response_code = (AuthResponseCode)-1;
+		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 
 
 		if (curl) {
-
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_dump);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
-
-			bool success = false;
 
 			if (res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if (json_data) {
+					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if (success_obj == json_true()) {
+					if (error_obj) {
+						Handle_AuthWebError(auth_data, error_obj);
+					}
+					else if (success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
 						if (profile_json) {
 							profile = LoadProfileFromJson(profile_json);
@@ -934,27 +724,64 @@ namespace OS {
 						}
 
 					}
-					else {
-					}
-					json_t *reason_json = json_object_get(json_data, "reason");
-					if (reason_json) {
-						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
-					}
 					json_decref(json_data);
-				} else {
-					success = false;
-					auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 				}
-
-				request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 			}
 			curl_easy_cleanup(curl);
 		}
-
+		request.callback(success, user, profile, auth_data, request.extra, request.operation_id, request.peer);
 		if (json_dump) {
 			free((void *)json_dump);
 		}
 		json_decref(send_obj);
+	}
+	void AuthTask::AuthReq_InitCurl(void *curl, char *post_data, void *write_data) {
+		curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
+
+		/* set default user agent */
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCoreAuth");
+
+		/* set timeout */
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+
+		/* enable location redirects */
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+		/* set maximum allowed redirects */
+		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+
+		/* Close socket after one use */
+		curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
+
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, write_data);
+	}
+	void AuthTask::Handle_AuthWebError(AuthData &data, json_t *error_obj) {
+		std::string error_class, error_name;
+		json_t *item = json_object_get(error_obj, "class");
+		error_class = json_string_value(item);
+
+		item = json_object_get(error_obj, "name");
+		error_name = json_string_value(item);
+
+		if (error_class.compare("common") == 0) {
+			if (error_name.compare("InvalidParam") == 0 || error_name.compare("MissingParam") == 0 || error_name.compare("InvalidMode") == 0) {
+				data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
+			}
+		}
+		else if (error_class.compare("auth") == 0) {
+			if (error_name.compare("InvalidCredentials") == 0) {
+				data.response_code = LOGIN_RESPONSE_INVALID_PASSWORD;
+			} else if (error_name.compare("NoSuchUser") == 0) {
+				data.response_code = LOGIN_RESPONSE_USER_NOT_FOUND;
+			}
+		}
+		else if (error_class.compare("profile") == 0) {
+			if (error_name.compare("UniqueNickInUse") == 0) {
+				data.response_code = LOGIN_RESPONSE_INVALID_PROFILE;
+			}
+		}
 	}
 	void AuthTask::TryMakeAuthTicket(int profileid, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;

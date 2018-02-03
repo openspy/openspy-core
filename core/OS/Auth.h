@@ -100,6 +100,9 @@ namespace OS {
 			void PerformAuth_Uniquenick_Password(AuthRequest request);
 			void PerformAuth_MakeAuthTicket(AuthRequest request);
 			void PerformAuth_PreAuth_Token(AuthRequest request);
+
+			void Handle_AuthWebError(AuthData &data, json_t *error_obj);
+			void AuthReq_InitCurl(void *curl, char *post_data, void *write_data);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 	};
 	extern OS::TaskPool<AuthTask, AuthRequest> *m_auth_task_pool;
