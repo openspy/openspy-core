@@ -42,6 +42,6 @@ class OS_Auth_NoSuchUser(OS_BaseException):
     def __init__(self):
         self.data = {}
         self.data["class"] = "auth"
-        self.data["name"] = "InvalidCredentials"
+        self.data["name"] = "NoSuchUser"
         self.data["message"] = "Invalid Credentials"
         super(OS_BaseException, self).__init__(self.data["message"])

@@ -3,4 +3,4 @@ class OS_BaseException(Exception):
         print("BaseException: {}\n".format(message))
         super(OS_BaseException, self).__init__(self.data["message"])
     def to_dict(self):
-        return self.data
+        return {"error": self.data}

@@ -78,41 +78,62 @@ class AuthService(BaseService):
         except User.DoesNotExist:
             auth_success = False
         return auth_success
-    def test_gp_uniquenick_by_profile(self, profile, client_challenge, server_challenge, client_response):
-        md5_pw = hashlib.md5(str(profile.user.password).encode('utf-8')).hexdigest()
-        if profile.user.partnercode != self.PARTNERID_GAMESPY:
+
+    def test_gp_uniquenick_by_profile(self, request_body, account_data):
+        response = {}
+        user = account_data["user"]
+        profile = account_data["profile"]
+        password = user.password
+
+        client_challenge = request_body["client_challenge"]
+        server_challenge = request_body["server_challenge"]
+        client_response = request_body["client_response"]
+
+        md5_pw = hashlib.md5(str(password).encode('utf-8')).hexdigest()
+        if user.partnercode != self.PARTNERID_GAMESPY:
             crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.uniquenick, client_challenge, server_challenge, md5_pw)
         else:
             crypt_buf = "{}{}{}{}{}{}".format(md5_pw, "                                                ",profile.uniquenick, client_challenge, server_challenge, md5_pw)
 
         true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
 
-        if profile.user.partnercode != self.PARTNERID_GAMESPY:
+        if user.partnercode != self.PARTNERID_GAMESPY:
             proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.uniquenick, server_challenge, client_challenge, md5_pw)
         else:
             proof = "{}{}{}{}{}{}".format(md5_pw, "                                                ",profile.uniquenick, server_challenge, client_challenge, md5_pw)
         proof = hashlib.md5(str(proof).encode('utf-8')).hexdigest()
         if true_resp == client_response:
-            return proof
-        return None
-    def test_gp_nick_email_by_profile(self, profile, client_challenge, server_challenge, client_response):
-        md5_pw = hashlib.md5(str(profile.user.password).encode('utf-8')).hexdigest()
-        if profile.user.partnercode != self.PARTNERID_GAMESPY:
+            response["server_response"] = proof
+            response["success"] = True
+        return response
+    def test_gp_nick_email_by_profile(self, request_body, account_data):
+        response = {}
+        user = account_data["user"]
+        profile = account_data["profile"]
+        password = user.password
+
+        client_challenge = request_body["client_challenge"]
+        server_challenge = request_body["server_challenge"]
+        client_response = request_body["client_response"]
+
+        md5_pw = hashlib.md5(str(password).encode('utf-8')).hexdigest()
+        if user.partnercode != self.PARTNERID_GAMESPY:
             crypt_buf = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, client_challenge, server_challenge, md5_pw)
         else:
             crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, client_challenge, server_challenge, md5_pw)
 
         true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
 
-        if profile.user.partnercode != self.PARTNERID_GAMESPY:
+        if user.partnercode != self.PARTNERID_GAMESPY:
             proof = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
         else:
             proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
         proof = hashlib.md5(str(proof).encode('utf-8')).hexdigest()
 
         if true_resp == client_response:
-            return proof
-        return None
+            response["server_response"] = proof
+            response["success"] = True
+        return response
 
     def gs_sesskey(self, sesskey):
         str = "%.8x" % (sesskey ^ 0x38f371e6)
@@ -122,14 +143,19 @@ class AuthService(BaseService):
             ret += chr(ord(n) + i)
             i = i+1
         return ret
-    def test_gstats_sessionkey_response_by_profileid(self, profile, session_key, client_response):
-        if profile == None:
-            return False
+    def test_gstats_sessionkey_response_by_profileid(self, request_body, account_data):
+        #, profile, session_key, client_response
+        if "profile" not in account_data:
+            raise OS_InvalidParam("profile")
+        response = {}
+        profile = account_data["profile"]
         sess_key = self.gs_sesskey(session_key)
         pw_hashed = "{}{}".format(profile.user.password,sess_key).encode('utf-8')
         pw_hashed = hashlib.md5(pw_hashed).hexdigest()
 
-        return pw_hashed == client_response
+        response["success"] = pw_hashed == client_response
+
+        return response
     def test_preauth_ticket(self, request_body):
         if "auth_token" not in request_body:
             raise OS_Auth_InvalidCredentials()
@@ -138,8 +164,10 @@ class AuthService(BaseService):
         response = {}
 
         auth_key = "auth_token_{}".format(token)
-        if not self.redis_ctx.exists(auth_key) or "challenge" not in request_body:
-            raise OS_Auth_InvalidCredentials()
+        if "challenge" not in request_body:
+            raise OS_InvalidParam("challenge")
+        if not self.redis_ctx.exists(auth_key):
+            raise OS_InvalidParam("auth_token")
         profileid = int(self.redis_ctx.hget(auth_key, 'profileid'))
         profile = self.get_profile_by_id(profileid)
         real_challenge = self.redis_ctx.hget(auth_key, 'challenge').decode('utf-8')
@@ -151,7 +179,7 @@ class AuthService(BaseService):
         response["success"] = True
         response['expiretime'] = self.PREAUTH_EXPIRE_TIME
         return response
-    def test_gp_preauth_by_ticket(self, request_body):
+    def test_gp_preauth_by_ticket(self, request_body, account_data):
         
         response = {}
 
@@ -174,8 +202,14 @@ class AuthService(BaseService):
 
         self.redis_ctx.delete("auth_token_{}".format(token))
         return response
-    def test_nick_email_by_profile(self, profile, password):
-        return profile.user.password == password
+    def test_nick_email_by_profile(self, request_body, account_data):
+        response = {}
+        if "profile" not in account_data:
+            raise OS_InvalidParam("profile")
+
+        if "user" in account_data:
+            response["success"] = account_data["user"].password == request_body["user"]["password"]
+        return response
     def create_auth_session(self, profile, user):
         session_key = hashlib.sha1(str(uuid.uuid1()).encode('utf-8'))
         session_key.update(str(uuid.uuid4()).encode('utf-8'))
@@ -325,7 +359,7 @@ class AuthService(BaseService):
         except User.DoesNotExist:
             return {'success': False}
 
-    def auth_or_create_profile(self, request_body):
+    def auth_or_create_profile(self, request_body, account_data):
         #{u'profilenick': u'sctest01', u'save_session': True, u'set_context': u'profile', u'hash_type': u'auth_or_create_profile', u'namespaceid': 1,
         #u'uniquenick': u'', u'partnercode': 0, u'password': u'gspy', u'email': u'sctest@gamespy.com'}
         user_where = (User.deleted == False)
@@ -349,7 +383,6 @@ class AuthService(BaseService):
         except User.DoesNotExist:
             register_svc = RegistrationService()
             user = register_svc.try_register_user(user_data)
-
 
         profile_data = request_body["profile"] #create data
         profile_where = (Profile.deleted == False)
@@ -403,7 +436,7 @@ class AuthService(BaseService):
 
 
     ## auth
-    def handle_auth_find_user_and_profile(self, request_body):
+    def handle_auth_find_user_and_profile(self, request_body, hash_type):
         resp = {}
         if "user" in request_body:
             user_body = request_body["user"]
@@ -420,29 +453,31 @@ class AuthService(BaseService):
         if 'uniquenick' in profile_body:
             resp["profile"] = self.get_profile_by_uniquenick(profile_body['uniquenick'], profile_body['namespaceid'], user_body['partnercode'])
             if resp["profile"] == None:
-                raise OS_Auth_InvalidCredentials()
+                raise OS_Auth_NoSuchUser()
             resp["user"] = resp["profile"].user
         elif 'nick' in profile_body and 'email' in user_body:
             resp["profile"] = self.get_profile_by_nick_email(profile_body['nick'], profile_body['namespaceid'], user_body['email'], user_body['partnercode'])
             if resp["profile"] == None:
-                raise OS_Auth_InvalidCredentials()
+                raise OS_Auth_NoSuchUser()
         elif "email" in user_body:
             resp["user"] = self.get_user_by_email(user_body['email'], user_body['partnercode'])
             if resp["user"] == None:
-                raise OS_Auth_InvalidCredentials()
+                raise OS_Auth_NoSuchUser()
         elif "userid" in request_body:
             resp["user"] = self.get_user_by_userid(request_body["userid"])
             if resp["user"] == None:
-                raise OS_Auth_InvalidCredentials()
+                raise OS_Auth_NoSuchUser()
         elif "profileid" in request_body:
             resp["profile"] = self.get_profile_by_id(request_body["profileid"])
         elif "id" in user_body:
             resp["user"] = self.get_user_by_userid(user_body["id"])
             if resp["user"] == None:
-                raise OS_Auth_InvalidCredentials()
+                raise OS_Auth_NoSuchUser()
         elif "id" in profile_body:
             resp["profile"] = self.get_profile_by_id(profile_body["id"])
 
+        if "profile" in resp and "user" not in resp:
+            resp["user"] = resp["profile"].user
         return resp
 
     def handle_auth(self, request_body):
@@ -450,7 +485,7 @@ class AuthService(BaseService):
         if 'hash_type' in request_body:
             hash_type = request_body['hash_type']
 
-        account_data = self.handle_auth_find_user_and_profile(request_body)
+        account_data = self.handle_auth_find_user_and_profile(request_body, hash_type)
 
         auth_success = False
 
@@ -466,17 +501,18 @@ class AuthService(BaseService):
 
         req_type = request_body["mode"]
         response = {}
-        print("Mode: {}\n".format(hash_type))
-        auth_success = False
-        if hash_type in hash_type_handlers:
-            auth_success = hash_type_handlers[hash_type](request_body, account_data)
 
-        if auth_success:
+        auth_response = {}
+        if hash_type in hash_type_handlers:
+            auth_response = hash_type_handlers[hash_type](request_body, account_data)
+
+        if "success" in auth_response and auth_response["success"]:
             if "user" in account_data:
                 response["user"] = model_to_dict(account_data["user"])
                 del response["user"]["password"]
             if "profile" in account_data:
                 response["profile"] = model_to_dict(account_data["profile"])
+            response = {**auth_response, **response}
         else:
             raise OS_Auth_InvalidCredentials()
         return response
@@ -521,5 +557,11 @@ class AuthService(BaseService):
             response = e.to_dict()
         except Exception as error:
             response = {"error": repr(error)}
+
+        if "user" in response and "password" in response["user"]:
+            del response["user"]["password"]
+        if "profile" in response and "user" in response["profile"]:
+            if "password" in response["profile"]["user"]:
+                del response["profile"]["user"]["password"]
 
         return response
