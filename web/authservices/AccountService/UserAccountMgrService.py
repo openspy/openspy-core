@@ -10,9 +10,13 @@ from BaseService import BaseService
 import json
 import uuid
 
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class UserAccountMgrService(BaseService):
 
     def handle_update_user(self, data):
+        response = {"success": False}
         if "user" not in data:
             data = {'user': data}
         user_model = User.get((User.id == data['user']['id']))
@@ -29,11 +33,15 @@ class UserAccountMgrService(BaseService):
                 setattr(user_model, key, data['user'][key])
 
         user_model.save()
-        return True
+        response["success"] = True
+        return response
 
     def handle_get_user(self, data):
         user = None
+        if "user" not in data:
+            raise OS_MissingParam("user")
         user_data = data["user"]
+        response = {"success": False}
         try:
             if "userid" in user_data:
                 user = User.get((User.id == user_data["userid"]))
@@ -42,10 +50,12 @@ class UserAccountMgrService(BaseService):
             if user:
                 user = model_to_dict(user)
                 del user['password']
+                response["user"] = user
+                response["success"] = True
         except User.DoesNotExist:
             return None
 
-        return user
+        return response
 
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
@@ -65,21 +75,22 @@ class UserAccountMgrService(BaseService):
 
         response = {}
 
-        print("Run: {}\n".format(request_body))
-
-        success = False
-        if "mode" not in request_body:
-            response['error'] = "INVALID_MODE"
-
-        if request_body["mode"] == "update_user":
-            success = self.handle_update_user(request_body)
-        elif request_body['mode'] == 'get_user':
-            user = self.handle_get_user(request_body)
-            if user != None:
-                success = True
-                response['user'] = user
-
-        response['success'] = success
+        mode_table = {
+            "update_user": self.handle_update_user,
+            "get_user": self.handle_get_user
+        }
 
         start_response('200 OK', [('Content-Type','application/json')])
+
+        try:
+            if "mode" in request_body:
+                req_type = request_body["mode"]
+                if req_type in mode_table:
+                    response = mode_table[req_type](request_body)
+                else:
+                    raise OS_InvalidMode()
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
         return response

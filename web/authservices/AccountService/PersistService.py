@@ -5,23 +5,31 @@ import json
 
 from BaseService import BaseService
 
-
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
 
 class PersistService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
 
-    def handle_new_game(self, request):
-        return {'game_identifier': "NOT_IMPLEMENTED"}
-    def handle_update_game(self, request):
+    def handle_new_game(self, request_body):
+        response = {}
+        data = {'game_identifier': "NOT_IMPLEMENTED"}
+        response['success'] = True
+        response["data"] = data
+        return response
+    def handle_update_game(self, request_body):
+        response = {}
+        response['success'] = True
+        response["data"] = {}
+        return response
+    def handle_set_data(self, request_body):
+        if "data" in request_body:
+            data = base64.b64decode(request_body["data"])
         return {}
-    def handle_set_data(self, request):
-        if "data" in request:
-            data = base64.b64decode(request["data"])
-            return True
-        return False
-    def handle_get_data(self, request):
-        return {'data': base64.b64encode("".encode('utf-8'))}
+    def handle_get_data(self, request_body):
+        response = {'data': base64.b64encode("".encode('utf-8')), "success": True}
+        return response
 
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
@@ -41,23 +49,22 @@ class PersistService(BaseService):
 
         start_response('200 OK', [('Content-Type','application/json')])
 
-        if "type" in request_body:
-            if request_body["type"] == "newgame":
-                new_game_data = self.handle_new_game(request_body)
-                response['success'] = True
-                response["data"] = new_game_data
-            elif request_body["type"] == "updategame":
-                update_game_data = self.handle_update_game(request_body)
-                response['success'] = True
-                response["data"] = update_game_data
-            elif request_body["type"] == "set_persist_data":
-                update_game_data = self.handle_set_data(request_body)
-                response['success'] = True
-                response["data"] = update_game_data
-            elif request_body["type"] == "get_persist_data":
-                update_game_data = self.handle_get_data(request_body)
-                response['success'] = True
-                response["data"] = update_game_data["data"]
-
+        type_table = {
+            "newgame": self.handle_new_game,
+            "updategame": self.handle_update_game,
+            "set_persist_data": self.handle_set_data,
+            "get_persist_data": self.handle_get_data
+        }
+        try:
+            if 'type' in request_body:
+                req_type = request_body["mode"]
+                if req_type in type_table:
+                    response = type_table[req_type](request_body)
+                else:
+                    raise OS_InvalidMode()
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
 
         return response

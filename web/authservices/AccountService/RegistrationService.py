@@ -14,6 +14,9 @@ import uuid
 import redis
 import os
 
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class RegistrationService(BaseService):
 
     REGISTRATION_ERROR_NO_PASS = 1
@@ -53,25 +56,35 @@ class RegistrationService(BaseService):
         self.sendEmail(email_data)
         return verification_key
 
-    def try_register_user(self, register_data):
-        print("Try register: {}\n".format(register_data))
+    def try_register_user(self, request_data):
+        required_params = ["email", "password", "partnercode"]
+        response = {"success": False}
+        for param in required_params:
+            if param not in request_data:
+                raise OS_MissingParam(param)
         try:
-            existing_user = User.select().where((User.email == register_data['email']) & (User.partnercode == int(register_data['partnercode']))).get()
+            existing_user = User.select().where((User.email == request_data['email']) & (User.partnercode == int(request_data['partnercode']))).get()
         except User.DoesNotExist:
-            user = User.create(email=register_data['email'], partnercode=register_data['partnercode'], password=register_data['password'])
+            user = User.create(email=request_data['email'], partnercode=request_data['partnercode'], password=request_data['password'])
             user = model_to_dict(user)
             self.send_verification_email(user)
             del user['password']
+            response["user"] = user
+            response["success"] = True
 
-            return user
-
-        return None
+        return response
 
     def handle_perform_verify_email(self, request_data):
         response = {}
         redis_key = "emailveri_{}".format(request_data['userid'])
         success = False
         user = None
+
+        required_params = ["userid", "verifykey"]
+        for param in required_params:
+            if param not in request_data:
+                raise OS_MissingParam(param)
+
         try:
             user = User.get((User.id == request_data['userid']))
             if self.redis_ctx.exists(redis_key):
@@ -96,6 +109,8 @@ class RegistrationService(BaseService):
             user_id = request_data["id"]
         elif "userid" in request_data:
             user_id = request_data["userid"]
+        else:
+            raise OS_MissingParam("userid")
 
         if user_id != False:
             redis_key = "emailveri_{}".format(user_id)
@@ -125,27 +140,26 @@ class RegistrationService(BaseService):
         # in the file like wsgi.input environment variable.
         request_body = json.loads(env['wsgi.input'].read(request_body_size))
 
-        if "mode" in request_body:
-            if request_body["mode"] == "perform_verify_email":
-                response = self.handle_perform_verify_email(request_body)
-            elif request_body["mode"] == "resend_verify_email":
-                response = self.handle_resend_verify_email(request_body)
-        else:
-            if 'partnercode' not in request_body:
-                response['reason'] = self.REGISTRATION_ERROR_NO_PARTNERCODE
-                return response
+        mode_table = {
+            "perform_verify_email": self.handle_perform_verify_email,
+            "resend_verify_email": self.handle_resend_verify_email,
+            "register": self.try_register_user,
+        }
 
-            if 'password' not in request_body:
-                response['reason'] = self.REGISTRATION_ERROR_NO_PASS
-                return response
-
-            user = self.try_register_user(request_body)
-            if user != None:
-                response['success'] = True
-                response['user'] = user
-            else:
-                response['reason'] = self.REGISTRATION_EMAIL_PARTNERCODE_EXISTS
+        if "mode" not in request_body:
+            request_body["mode"] = "register"
 
         start_response('200 OK', [('Content-Type','application/json')])
 
+        try:
+            if "mode" in request_body:
+                req_type = request_body["mode"]
+                if req_type in mode_table:
+                    response = mode_table[req_type](request_body)
+                else:
+                    raise OS_InvalidMode()
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
         return response
