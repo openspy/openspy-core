@@ -17,7 +17,6 @@ from public.OS_WebGameMgr import OS_WebGameMgr
 import re
 import simplejson as json
 from wsgiref.util import request_uri
-#import RegistrationService from RegistrationService
 
 from wsgiref.simple_server import make_server, WSGIServer
 from socketserver import ThreadingMixIn

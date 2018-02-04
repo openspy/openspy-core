@@ -18,6 +18,9 @@ import os
 
 import time
 
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class UserProfileMgrService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
@@ -59,20 +62,24 @@ class UserProfileMgrService(BaseService):
                 return False
         return True
     def handle_get_profiles(self, data):
+        response = {"success": False}
         profiles = []
         try:
             for profile in Profile.select().join(User).where((User.id == data["userid"]) & (Profile.deleted == False)):
                 profile_dict = model_to_dict(profile)
                 del profile_dict['user']
                 profiles.append(profile_dict)
-
+            response["success"] = True
         except Profile.DoesNotExist:
             return []
+
+        response["profiles"] = profiles
         return profiles
 
 
     def handle_get_profile(self, data):
         profile = None
+        response = {}
         try:
             if "profileid" in data:
                 profile = Profile.get((Profile.id == data["profileid"]))
@@ -82,9 +89,13 @@ class UserProfileMgrService(BaseService):
                 else:
                     profile = Profile.get((Profile.uniquenick == data["uniquenick"]) & (Profile.namespaceid == 0))
 
-                return model_to_dict(profile)
+                response["profile"] = model_to_dict(profile)
+                del response["profile"]['user']
+                response["success"] = True
         except Profile.DoesNotExist:
-            return None
+            return response #throw error
+
+        return response
 
 
     def check_uniquenick_available(self, uniquenick, namespaceid):
@@ -123,18 +134,20 @@ class UserProfileMgrService(BaseService):
         profile = Profile.get((Profile.id == profile_pk))
         profile = model_to_dict(profile)
         del profile["user"]
-        return profile
+        return {"profile": profile, "success": True}
     def handle_delete_profile(self, data):
         profile_data = data["profile"]
+        response = {"success": False}
         try:
             profile = Profile.get((Profile.id == profile_data["id"]))
             if profile.deleted:
-                return False
+                return response
             profile.deleted = True
             profile.save()
         except Profile.DoesNotExist:
-            return False
-        return True
+            return response
+        response["success"] = True
+        return response
 
     def handle_profile_search(self, search_data):
         response = []
@@ -197,7 +210,7 @@ class UserProfileMgrService(BaseService):
 
             ret_profiles.append(append_profile)
 
-        return ret_profiles
+        return {"profiles":ret_profiles, "success": True}
 
     def handle_authorize_buddy_add(self, request_data):
         success = False
@@ -217,16 +230,17 @@ class UserProfileMgrService(BaseService):
 
                     publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}\\silent\\1".format(request_data["to_profileid"], request_data["from_profileid"])
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
-        return success
+        return {"success": success}
 
     def handle_del_buddy(self, request_data):
+        response = {"success": False}
         success = False
         from_profile = Profile.get((Profile.id == request_data["from_profileid"]) & (Profile.deleted == False))
         to_profile = Profile.get((Profile.id == request_data["to_profileid"]) & (Profile.deleted == False))
         send_revoke = "send_revoke" in request_data and request_data["send_revoke"]
         count = Buddy.delete().where((Buddy.from_profile == from_profile) & (Buddy.to_profile == to_profile)).execute()
         if count > 0:
-            success = True
+            response["success"] = True
             if send_revoke:
                 status_key = "status_{}".format(to_profile)
                 if self.redis_presence_ctx.exists(status_key): #check if online
@@ -285,7 +299,7 @@ class UserProfileMgrService(BaseService):
                 self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
             if cursor == 0:
                 break
-        return True
+        return {"success": True}
 
     def get_gp_status(self, profileid):
         redis_key = "status_{}".format(profileid)
@@ -304,60 +318,60 @@ class UserProfileMgrService(BaseService):
 
         return ret
     def handle_get_buddies_status(self, request_data):
-        ret = []
+        response = {"profiles": []}
         try:
             profile = Profile.get(Profile.id == request_data["profileid"])
             buddies = Buddy.select().where((Buddy.from_profile == profile))
             for buddy in buddies:
                 status_data = self.get_gp_status(buddy.to_profile.id)
                 status_data['profileid'] = buddy.to_profile.id
-                ret.append(status_data)
+                response["profiles"].append(status_data)
         except Buddy.DoesNotExist:
-            return []
+            return response
         except Profile.DoesNotExist:
-            return []
-
-        return ret
+            return response
+        return response
 
     def handle_get_blocks_status(self, request_data):
-        ret = []
+        response = {"profiles": []}
         try:
             profile = Profile.get(Profile.id == request_data["profileid"])
             blocks = Block.select().where((Block.from_profile == profile))
             for block in blocks:
                 status_data = self.get_gp_status(block.to_profile.id)
                 status_data['profileid'] = block.to_profile.id
-                ret.append(status_data)
+                response["profiles"].append(status_data)
         except Block.DoesNotExist:
-            return []
+            return response
         except Profile.DoesNotExist:
-            return []
-
-        return ret
+            return response
+        return response
     #Get the buddies for a profile.
     def handle_buddies_search(self, request_data):
+        response = {"profiles": [], "success": False}
         profile_data = request_data["profile"]
         if "id" not in profile_data:
-            return False
+            return response
 
         profile = Profile.get(Profile.id == profile_data["id"])
 
         buddies = Buddy.select().where((Buddy.from_profile == profile))
-        ret = []
         try:
             for buddy in buddies:
                 model = model_to_dict(buddy)
                 to_profile = model['to_profile']
                 del to_profile['user']['password']
                 #to_profile['gp_status'] = self.get_gp_status(to_profile['id'])
-                ret.append(to_profile)
+                response["profiles"].append(to_profile)
         except Profile.DoesNotExist:
-            return []
+            return response
         except Buddy.DoesNotExist:
-            return []
-        return ret
+            return response
+        response["success"] = True
+        return response
 
     def handle_blocks_search(self, request_data):
+        response = {"profiles": [], "success": False}
         profile_data = request_data["profile"]
         if "id" not in profile_data:
             return False
@@ -365,37 +379,38 @@ class UserProfileMgrService(BaseService):
         profile = Profile.get(Profile.id == profile_data["id"])
 
         buddies = Block.select().where((Block.from_profile == profile))
-        ret = []
         try:
             for buddy in buddies:
                 model = model_to_dict(buddy)
                 to_profile = model['to_profile']
                 del to_profile['user']['password']
-                ret.append(to_profile)
+                response["profiles"].append(to_profile)
         except Profile.DoesNotExist:
-            return []
+            return response
         except Buddy.DoesNotExist:
-            return []
-        return ret
+            return response
+        response["success"] = True
+        return response
 
     #Get a list of profiles that have the specified profiles as buddies.
     def handle_reverse_buddies_search(self, request_data):
-        ret = []
+        response = {"profiles": [], "success": False}
         try:
             buddies = Buddy.select().where((Buddy.from_profile << request_data["target_profileids"])).execute()
             for buddy in buddies:
                 model = model_to_dict(buddy)
                 to_profile = model['to_profile']
                 del to_profile['user']['password']
-                ret.append(to_profile)
-
+                response["profiles"].append(to_profile)
         except Profile.DoesNotExist:
-            return []
+            return response
         except Buddy.DoesNotExist:
-            return []
-        return ret
+            return response
+        response["success"] = True
+        return response
 
     def send_buddy_message(self, request_data):
+        response = {"success": False}
         try:
             from_profile = Profile.get((Profile.id == request_data["from_profileid"]) & (Profile.deleted == False))
             to_profile = Profile.get((Profile.id == request_data["to_profileid"]) & (Profile.deleted == False))
@@ -411,10 +426,12 @@ class UserProfileMgrService(BaseService):
                 self.redis_presence_ctx.hset(redis_key, "timestamp", int(time.time()))
                 self.redis_presence_ctx.hset(redis_key, "type", request_data["type"])
                 self.redis_presence_ctx.hset(redis_key, "from", from_profile.id)
+            response["success"] = True
         except Profile.DoesNotExist:
-            return False
-        return True
+            return response
+        return response
     def handle_block_buddy(self, request_data):
+        response = {"success": False}
         try:
             to_profile_model = Profile.get((Profile.id == request_data["to_profileid"]))
             from_profile_model = Profile.get((Profile.id == request_data["from_profileid"]))
@@ -423,9 +440,12 @@ class UserProfileMgrService(BaseService):
             if success:
                 publish_data = "\\type\\block_buddy\\from_profileid\\{}\\to_profileid\\{}\\".format(from_profile_model.id, to_profile_model.id)
                 self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+            response["success"] = True
         except Profile.DoesNotExist:
-            return False
+            return response
+        return response
     def handle_del_block_buddy(self, request_data):
+        response = {"success": False}
         try:
             to_profile_model = Profile.get((Profile.id == request_data["to_profileid"]))
             from_profile_model = Profile.get((Profile.id == request_data["from_profileid"]))
@@ -433,10 +453,10 @@ class UserProfileMgrService(BaseService):
             if count > 0:
                 publish_data = "\\type\\del_block_buddy\\from_profileid\\{}\\to_profileid\\{}\\".format(from_profile_model.id, to_profile_model.id)
                 self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
-                return True
+            response["success"] = True
         except Profile.DoesNotExist:
-            return False
-        return False
+            return response
+        return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -486,11 +506,9 @@ class UserProfileMgrService(BaseService):
         elif request_body["mode"] == "delete_profile":
             success = self.handle_delete_profile(request_body)
         elif request_body["mode"] == "profile_search":
-            profiles = self.handle_profile_search(request_body)
-            response['profiles'] = profiles
-            success = True
+            response = self.handle_profile_search(request_body)
         elif request_body["mode"] == "authorize_buddy_add":
-            success = self.handle_authorize_buddy_add(request_body)
+            response = self.handle_authorize_buddy_add(request_body)
         elif request_body["mode"] == "buddies_search":
             profiles = self.handle_buddies_search(request_body)
             response['profiles'] = profiles
@@ -531,4 +549,37 @@ class UserProfileMgrService(BaseService):
 
         response['success'] = success
         start_response('200 OK', [('Content-Type','application/json')])
+
+        mode_table = {
+            "update_profile": self.handle_update_profile,
+            "get_profile": self.handle_get_profile,
+            "get_profiles": self.handle_get_profiles,
+            "create_profile": self.handle_create_profile,
+            "delete_profile": self.handle_delete_profile,
+            "profile_search": self.handle_profile_search,
+            "authorize_buddy_add": self.handle_authorize_buddy_add,
+            "buddies_search": self.handle_buddies_search,
+            "buddies_reverse_search": self.handle_reverse_buddies_search,
+            "blocks_search": self.handle_blocks_search,
+            "del_buddy": self.handle_del_buddy,
+            "get_buddies_revokes": self.handle_get_buddy_revokes,
+            "send_presence_login_messages": self.handle_send_presence_login_messages,
+            "send_buddy_message": self.send_buddy_message,
+            "block_buddy": self.handle_block_buddy,
+            "del_block_buddy": self.handle_del_block_buddy,
+            "get_buddies_status": self.handle_get_buddies_status,
+            "get_blocks_status": self.handle_get_blocks_status
+        }
+
+        try:
+            if "mode" in request_body:
+                req_type = request_body["mode"]
+                if req_type in mode_table:
+                    response = mode_table[req_type](request_body)
+                else:
+                    raise OS_InvalidMode()
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
         return response
