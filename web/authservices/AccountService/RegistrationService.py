@@ -95,7 +95,7 @@ class RegistrationService(BaseService):
                     user.save()
                     self.redis_ctx.delete(redis_key)
         except User.DoesNotExist:
-            success = False
+            raise OS_Auth_NoSuchUser()
 
         response['success'] = success
         return response
@@ -121,7 +121,7 @@ class RegistrationService(BaseService):
                     self.send_verification_email(model_to_dict(user))
                     success = True
                 except User.DoesNotExist:
-                    success = False
+                    raise OS_Auth_NoSuchUser()
         response['success'] = success
         return response
 
