@@ -45,12 +45,13 @@ class UserProfileMgrService(BaseService):
             namespaceid = data['profile']['namespaceid']
         if "nick" in data['profile']:
             if not self.is_name_valid(data['profile']['nick']):
-                return {'error': 'NICK_INVALID'}
+                raise OS_Profile_NickInvalid()
         if "uniquenick" in data['profile']:
             if not self.is_name_valid(data['profile']['uniquenick']):
-                return {'error': 'UNIQUENICK_INVALID'}
-            if data['profile']['uniquenick'] != data["profile"]["uniquenick"] and not self.check_uniquenick_available(data['profile']['uniquenick'], namespaceid)["exists"]:
-                return {'error': 'UNIQUENICK_INUSE'}
+                raise OS_Profile_UniquenickInvalid()
+            nick_available = self.check_uniquenick_available(data['profile']['uniquenick'], namespaceid)
+            if nick_available["exists"]:
+                raise OS_Profile_UniquenickInUse(nick_available["profile"])
         for key in data['profile']:
             if key != "id":
                 setattr(profile_model, key, data['profile'][key])
@@ -71,7 +72,7 @@ class UserProfileMgrService(BaseService):
                 profiles.append(profile_dict)
             response["success"] = True
         except Profile.DoesNotExist:
-            return []
+            raise OS_Auth_NoSuchUser()
 
         response["profiles"] = profiles
         return profiles
@@ -93,7 +94,7 @@ class UserProfileMgrService(BaseService):
                 del response["profile"]['user']
                 response["success"] = True
         except Profile.DoesNotExist:
-            return response #throw error
+            pass
 
         return response
 
@@ -121,14 +122,14 @@ class UserProfileMgrService(BaseService):
             namespaceid = 0
         if "uniquenick" in profile_data:
             if not self.is_name_valid(profile_data["uniquenick"]):
-                return {'error': 'INVALID_UNIQUENICK'}
+                raise OS_Profile_UniquenickInvalid()
             nick_available = self.check_uniquenick_available(profile_data["uniquenick"], namespaceid)
             if nick_available["exists"]:
-                return {'error': 'UNIQUENICK_IN_USE', "profile": nick_available["profile"]}
+                raise OS_Profile_UniquenickInUse(nick_available["profile"])
         user = User.get((User.id == user_data["id"]))
         if "nick" in profile_data:
             if not self.is_name_valid(profile_data["nick"]):
-                return {'error': 'INVALID_NICK'}
+                raise OS_Profile_NickInvalid()
         profile_data["user"] = user
         profile_pk = Profile.insert(**profile_data).execute()
         profile = Profile.get((Profile.id == profile_pk))
@@ -144,13 +145,12 @@ class UserProfileMgrService(BaseService):
                 return response
             profile.deleted = True
             profile.save()
+            response["success"] = True
         except Profile.DoesNotExist:
-            return response
-        response["success"] = True
+            pass
         return response
 
     def handle_profile_search(self, search_data):
-        response = []
 
         #{u'chc': 0, u'ooc': 0, u'i1': 0, u'pic': 0, u'lon': 0.0, u'mar': 0, u'namespaceids': [1], u'lat': 0.0,
         #u'birthday': 0, u'mode': u'profile_search', u'partnercode': 0, u'ind': 0, u'sex': 0, u'email': u'sctest@gamespy.com'}
@@ -318,18 +318,18 @@ class UserProfileMgrService(BaseService):
 
         return ret
     def handle_get_buddies_status(self, request_data):
-        response = {"profiles": []}
+        response = {"statuses": [], "success": False}
         try:
             profile = Profile.get(Profile.id == request_data["profileid"])
             buddies = Buddy.select().where((Buddy.from_profile == profile))
             for buddy in buddies:
                 status_data = self.get_gp_status(buddy.to_profile.id)
                 status_data['profileid'] = buddy.to_profile.id
-                response["profiles"].append(status_data)
-        except Buddy.DoesNotExist:
-            return response
-        except Profile.DoesNotExist:
-            return response
+                response["statuses"].append(status_data)
+            response["success"] = True
+        except (Buddy.DoesNotExist, Profile.DoesNotExist) as e:
+            pass
+
         return response
 
     def handle_get_blocks_status(self, request_data):
@@ -341,10 +341,8 @@ class UserProfileMgrService(BaseService):
                 status_data = self.get_gp_status(block.to_profile.id)
                 status_data['profileid'] = block.to_profile.id
                 response["profiles"].append(status_data)
-        except Block.DoesNotExist:
-            return response
-        except Profile.DoesNotExist:
-            return response
+        except (Block.DoesNotExist, Profile.DoesNotExist) as e:
+            pass
         return response
     #Get the buddies for a profile.
     def handle_buddies_search(self, request_data):
@@ -363,11 +361,9 @@ class UserProfileMgrService(BaseService):
                 del to_profile['user']['password']
                 #to_profile['gp_status'] = self.get_gp_status(to_profile['id'])
                 response["profiles"].append(to_profile)
-        except Profile.DoesNotExist:
-            return response
-        except Buddy.DoesNotExist:
-            return response
-        response["success"] = True
+                response["success"] = True
+        except (Profile.DoesNotExist, Buddy.DoesNotExist) as e:
+            pass
         return response
 
     def handle_blocks_search(self, request_data):
@@ -385,11 +381,9 @@ class UserProfileMgrService(BaseService):
                 to_profile = model['to_profile']
                 del to_profile['user']['password']
                 response["profiles"].append(to_profile)
-        except Profile.DoesNotExist:
-            return response
-        except Buddy.DoesNotExist:
-            return response
-        response["success"] = True
+                response["success"] = True
+        except (Buddy.DoesNotExist, Profile.DoesNotExist) as e:
+            pass
         return response
 
     #Get a list of profiles that have the specified profiles as buddies.
@@ -402,11 +396,9 @@ class UserProfileMgrService(BaseService):
                 to_profile = model['to_profile']
                 del to_profile['user']['password']
                 response["profiles"].append(to_profile)
-        except Profile.DoesNotExist:
-            return response
-        except Buddy.DoesNotExist:
-            return response
-        response["success"] = True
+                response["success"] = True
+        except (Profile.DoesNotExist, Buddy.DoesNotExist) as e:
+            pass
         return response
 
     def send_buddy_message(self, request_data):
@@ -426,9 +418,9 @@ class UserProfileMgrService(BaseService):
                 self.redis_presence_ctx.hset(redis_key, "timestamp", int(time.time()))
                 self.redis_presence_ctx.hset(redis_key, "type", request_data["type"])
                 self.redis_presence_ctx.hset(redis_key, "from", from_profile.id)
-            response["success"] = True
+                response["success"] = True
         except Profile.DoesNotExist:
-            return response
+            pass
         return response
     def handle_block_buddy(self, request_data):
         response = {"success": False}
@@ -442,7 +434,7 @@ class UserProfileMgrService(BaseService):
                 self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
             response["success"] = True
         except Profile.DoesNotExist:
-            return response
+            pass
         return response
     def handle_del_block_buddy(self, request_data):
         response = {"success": False}
@@ -455,7 +447,7 @@ class UserProfileMgrService(BaseService):
                 self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
             response["success"] = True
         except Profile.DoesNotExist:
-            return response
+            pass
         return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
@@ -474,80 +466,6 @@ class UserProfileMgrService(BaseService):
 
         response = {}
 
-        success = False
-
-        if "mode" not in request_body:
-            response['error'] = "INVALID_MODE"
-            return response
-
-        if request_body["mode"] == "update_profile":
-            resp = self.handle_update_profile(request_body)
-            if "error" in resp:
-                response['error'] = resp["error"]
-            else:
-                success = True
-        elif request_body["mode"] == "get_profile":
-            profile = self.handle_get_profile(request_body)
-            success = profile != None
-            response['profile'] = profile
-        elif request_body["mode"] == "get_profiles":
-            profiles = self.handle_get_profiles(request_body)
-            success = True
-            response['profiles'] = profiles
-        elif request_body["mode"] == "create_profile":
-            profile = self.handle_create_profile(request_body)
-            if "error" in profile:
-                response['error'] = profile['error']
-                if "profile" in profile:
-                    response["profile"] = profile["profile"]
-            elif profile != None:
-                success = True
-                response['profile'] = profile
-        elif request_body["mode"] == "delete_profile":
-            success = self.handle_delete_profile(request_body)
-        elif request_body["mode"] == "profile_search":
-            response = self.handle_profile_search(request_body)
-        elif request_body["mode"] == "authorize_buddy_add":
-            response = self.handle_authorize_buddy_add(request_body)
-        elif request_body["mode"] == "buddies_search":
-            profiles = self.handle_buddies_search(request_body)
-            response['profiles'] = profiles
-            success = True
-        elif request_body["mode"] == "buddies_reverse_search": #get who has who on given profileid
-            profiles = self.handle_reverse_buddies_search(request_body)
-            response['profiles'] = profiles
-            success = True
-        elif request_body["mode"] == "blocks_search":
-            profiles = self.handle_blocks_search(request_body)
-            response['profiles'] = profiles
-            success = True
-        elif request_body["mode"] == "del_buddy":
-            success = self.handle_del_buddy(request_body)
-        elif request_body["mode"] == "get_buddies_revokes":
-            revokes = self.handle_get_buddy_revokes(request_body)
-            response['revokes'] = revokes
-            success = True
-        elif request_body["mode"] == "send_presence_login_messages":
-            self.handle_send_presence_login_messages(request_body)
-            success = True
-        elif request_body["mode"] == "send_buddy_message":
-            revokes = self.send_buddy_message(request_body)
-            response['revokes'] = revokes
-            success = True
-        elif request_body["mode"] == "block_buddy":
-            success = self.handle_block_buddy(request_body)
-        elif request_body["mode"] == "del_block_buddy":
-            success = self.handle_del_block_buddy(request_body)
-        elif request_body["mode"] == "get_buddies_status":
-            statuses = self.handle_get_buddies_status(request_body)
-            response['statuses'] = statuses
-            success = True
-        elif request_body["mode"] == "get_blocks_status":
-            statuses = self.handle_get_blocks_status(request_body)
-            response['statuses'] = statuses
-            success = True
-
-        response['success'] = success
         start_response('200 OK', [('Content-Type','application/json')])
 
         mode_table = {
@@ -562,7 +480,7 @@ class UserProfileMgrService(BaseService):
             "buddies_reverse_search": self.handle_reverse_buddies_search,
             "blocks_search": self.handle_blocks_search,
             "del_buddy": self.handle_del_buddy,
-            "get_buddies_revokes": self.handle_get_buddy_revokes,
+            #"get_buddies_revokes": self.handle_get_buddy_revokes,
             "send_presence_login_messages": self.handle_send_presence_login_messages,
             "send_buddy_message": self.send_buddy_message,
             "block_buddy": self.handle_block_buddy,

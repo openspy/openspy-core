@@ -21,7 +21,6 @@ class OS_InvalidParam(OS_BaseException):
         self.data["message"] = "Invalid parameter ({})".format(param_name)
         super(OS_BaseException, self).__init__(self.data["message"])
 
-
 class OS_UniqueNickInUse(OS_BaseException):
     def __init__(self, param_name):
         self.data = {}
@@ -38,10 +37,35 @@ class OS_Auth_InvalidCredentials(OS_BaseException):
         self.data["message"] = "Invalid Credentials"
         super(OS_BaseException, self).__init__(self.data["message"])
 
-class OS_Auth_NoSuchUser(OS_BaseException):
+class OS_Auth_NoSuchUser(OS_BaseException): #used with UserProfileMgrService as well
     def __init__(self):
         self.data = {}
         self.data["class"] = "auth"
         self.data["name"] = "NoSuchUser"
-        self.data["message"] = "Invalid Credentials"
+        self.data["message"] = "No such user"
+        super(OS_BaseException, self).__init__(self.data["message"])
+
+class OS_Profile_NickInvalid(OS_BaseException):
+    def __init__(self):
+        self.data = {}
+        self.data["class"] = "profile"
+        self.data["name"] = "NickInvalid"
+        self.data["message"] = "Invalid Nickname"
+        super(OS_BaseException, self).__init__(self.data["message"])
+
+class OS_Profile_UniquenickInvalid(OS_BaseException):
+    def __init__(self):
+        self.data = {}
+        self.data["class"] = "profile"
+        self.data["name"] = "UniqueNickInvalid"
+        self.data["message"] = "Invalid Unique Nick"
+        super(OS_BaseException, self).__init__(self.data["message"])
+
+class OS_Profile_UniquenickInUse(OS_BaseException):
+    def __init__(self, profile):
+        self.data = {}
+        self.data["class"] = "profile"
+        self.data["name"] = "UniqueNickInUse"
+        self.data["message"] = "Unique nick in use"
+        self.data["profile"] = profile
         super(OS_BaseException, self).__init__(self.data["message"])
