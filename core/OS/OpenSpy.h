@@ -66,6 +66,7 @@ namespace OS {
 	extern const char *g_hostName;
 	extern const char *g_redisAddress;
 	extern const char *g_webServicesURL;
+	extern const char *g_webServicesAPIKey;
 	void LogText(ELogLevel level, const char *fmt, ...);
 	///////////////////////
 	/// XXX: put in os/geo/region.h

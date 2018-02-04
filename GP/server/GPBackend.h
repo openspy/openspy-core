@@ -113,6 +113,7 @@ namespace GPBackend {
 			void Perform_SendGPBuddyStatus(GPBackendRedisRequest request);
 
 			void load_and_send_gpstatus(GP::Peer *peer, json_t *json);
+			void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data);
 
 			Redis::Connection *mp_redis_connection;
 			std::vector<GP::Driver *> m_drivers;

@@ -67,7 +67,7 @@ namespace FESL {
 		socklen_t slen = sizeof(struct sockaddr_in);
 		int len = 0, piece_len = 0;
 		if (m_delete_flag) return;
-		if (packet_waiting) {
+		if (packet_waiting || (!m_openssl_accepted && m_ssl_ctx)) {
 			if (!m_openssl_accepted && m_ssl_ctx) {
 				gettimeofday(&m_last_recv, NULL);
 				if (SSL_accept(m_ssl_ctx) < 0) {

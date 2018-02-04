@@ -736,6 +736,12 @@ namespace OS {
 		json_decref(send_obj);
 	}
 	void AuthTask::AuthReq_InitCurl(void *curl, char *post_data, void *write_data) {
+		struct curl_slist *chunk = NULL;
+		std::string apiKey = "APIKey: " + std::string(g_webServicesAPIKey);
+		chunk = curl_slist_append(chunk, apiKey.c_str());
+		chunk = curl_slist_append(chunk, "Content-Type: application/json");
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+
 		curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
 
@@ -756,6 +762,7 @@ namespace OS {
 
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, write_data);
+
 	}
 	void AuthTask::Handle_AuthWebError(AuthData &data, json_t *error_obj) {
 		std::string error_class, error_name;

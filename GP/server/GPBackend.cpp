@@ -283,24 +283,7 @@ namespace GPBackend {
 
 
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
-
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
 			res = curl_easy_perform(curl);
 		}
 
@@ -328,24 +311,7 @@ namespace GPBackend {
 
 
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
-
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
 			res = curl_easy_perform(curl);
 		}
 
@@ -380,24 +346,7 @@ namespace GPBackend {
 
 
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
-
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
 			res = curl_easy_perform(curl);
 		}
 		if(json_data)
@@ -444,24 +393,7 @@ namespace GPBackend {
 
 
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
-
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
 			res = curl_easy_perform(curl);
 		}
 
@@ -505,24 +437,7 @@ namespace GPBackend {
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
-
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
 			res = curl_easy_perform(curl);
 		}
 
@@ -547,24 +462,7 @@ namespace GPBackend {
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
-
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
 			res = curl_easy_perform(curl);
 		}
 
@@ -659,23 +557,7 @@ namespace GPBackend {
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
-			curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
-
-			/* set default user agent */
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
-
-			/* set timeout */
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
-
-			/* enable location redirects */
-			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
-
-			/* set maximum allowed redirects */
-			curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
-
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
 
 			res = curl_easy_perform(curl);
 
@@ -699,6 +581,31 @@ namespace GPBackend {
 
 		if(send_obj)
 			json_decref(send_obj);
+	}
+	void GPBackendRedisTask::ProfileReq_InitCurl(void *curl, char *post_data, void *write_data) {
+		struct curl_slist *chunk = NULL;
+		std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
+		chunk = curl_slist_append(chunk, apiKey.c_str());
+		chunk = curl_slist_append(chunk, "Content-Type: application/json");
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+
+		curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
+
+		/* set default user agent */
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
+
+		/* set timeout */
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+
+		/* enable location redirects */
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+		/* set maximum allowed redirects */
+		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, write_data);
 	}
 	void GPBackendRedisTask::AddDriver(GP::Driver *driver) {
 		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {

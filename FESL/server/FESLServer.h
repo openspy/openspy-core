@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <OS/Net/NetServer.h>
 #define FESL_SERVER_PORT 18300
+
 namespace FESL {
 	class Server : public INetServer {
 	public:

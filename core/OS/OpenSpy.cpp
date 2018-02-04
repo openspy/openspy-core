@@ -29,6 +29,7 @@ namespace OS {
 	const char *g_hostName = NULL;
 	const char *g_redisAddress = NULL;
 	const char *g_webServicesURL = NULL;
+	const char *g_webServicesAPIKey = NULL;
 
 	void Init(const char *appName, const char *configPath) {
 
@@ -40,11 +41,14 @@ namespace OS {
 		const char *redis_address = OS::g_config->getArrayString(config_struct, "redis_address");
 		const char *webservices_url = OS::g_config->getArrayString(config_struct, "webservices_url");
 
+		const char *apikey = OS::g_config->getArrayString(config_struct, "webservices_apikey");
 
 		g_appName = appName;
 		g_hostName = hostname;
 		g_webServicesURL = webservices_url;
 		g_redisAddress = redis_address;
+		g_webServicesAPIKey = apikey;
+
 		curl_global_init(CURL_GLOBAL_SSL);
 
 		redis_timeout.tv_usec = 0;

@@ -21,6 +21,28 @@ void sig_handler(int signo)
     shutdown();
 }
 
+FESL::EFESLSSL_Type getSSLVersion(configVar *driver_arr) {
+	std::string ssl_version = OS::g_config->getArrayString(driver_arr, "ssl_version");
+
+	if (ssl_version.compare("SSLv2") == 0) {
+		return FESL::EFESLSSL_SSLv2;
+	}
+	if (ssl_version.compare("SSLv23") == 0) {
+		return FESL::EFESLSSL_SSLv23;
+	}
+	if (ssl_version.compare("SSLv3") == 0) {
+		return FESL::EFESLSSL_SSLv3;
+	}
+	if (ssl_version.compare("TLS1.0") == 0) {
+		return FESL::EFESLSSL_TLS10;
+	}
+	if (ssl_version.compare("TLS1.1") == 0) {
+		return FESL::EFESLSSL_TLS11;
+	}
+	if (ssl_version.compare("TLS1.2") == 0) {
+		return FESL::EFESLSSL_TLS12;
+	}
+}
 int main() {
 	SSL_library_init();
 	#ifndef _WIN32
@@ -39,11 +61,21 @@ int main() {
 	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
 	std::list<configVar *>::iterator it = drivers.begin();
 	while (it != drivers.end()) {
+		
 		configVar *driver_arr = *it;
 		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
 		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
 		bool ssl = OS::g_config->getArrayInt(driver_arr, "ssl");
-		FESL::Driver *driver = new FESL::Driver(g_gameserver, bind_ip, bind_port, ssl);
+		FESL::EFESLSSL_Type ssl_version = getSSLVersion(driver_arr);
+
+		const char *x509_path = NULL, *rsa_path = NULL;
+
+		if (ssl) {
+			x509_path = OS::g_config->getArrayString(driver_arr, "x509");
+			rsa_path = OS::g_config->getArrayString(driver_arr, "privkey");
+		}
+
+		FESL::Driver *driver = new FESL::Driver(g_gameserver, bind_ip, bind_port, ssl, x509_path, rsa_path, ssl_version);
 		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s:%d (ssl: %d)\n", bind_ip, bind_port, ssl);
 		g_gameserver->addNetworkDriver(driver);
 		it++;
