@@ -25,19 +25,21 @@ from socketserver import ThreadingMixIn
 
 import os
 
-Valid_APIKeys = ["b9d573fc-0377-495f-b031-aa0c51c09938"]
+Valid_APIKeys = {"b9d573fc-0377-495f-b031-aa0c51c09938": ["auth", "register", "useraccount", "userprofile", "persist", "gameservice"]}
 
-def check_apikey(env):
+def check_apikey(env, path_info):
 	if "HTTP_APIKEY" in env:
-		if env["HTTP_APIKEY"] in Valid_APIKeys:
-			return True
+		key = env["HTTP_APIKEY"]
+		if key in Valid_APIKeys:
+			if path_info[2] in Valid_APIKeys[key]:
+				return True
 	return False
 
 def application(env, start_response):
 	path_split = re.split('/', env['PATH_INFO'])
 	service = None
 	if path_split[1] == "backend":
-		if not check_apikey(env):
+		if not check_apikey(env, path_split):
 			start_response('401 UNAUTHORIZED', [('Content-Type','text/html')])
 			return [b'Invalid APIKey']
 		#TODO: backend security check
