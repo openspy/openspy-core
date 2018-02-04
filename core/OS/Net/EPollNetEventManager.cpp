@@ -32,7 +32,10 @@
 			EPollDataInfo *data = (EPollDataInfo *)m_events[i].data.ptr;
 			if(data->is_peer) {
 				INetPeer *peer = (INetPeer *)data->ptr;
-				peer->think(true);
+				std::map<void *, EPollDataInfo *>::iterator it = m_datainfo_map.find(peer);
+				if(it != m_datainfo_map.end()) {
+					peer->think(true);
+				}
 			} else {
 				INetDriver *driver = (INetDriver *)data->ptr;
 				driver->think(true);
@@ -68,12 +71,14 @@
 	}
 	void EPollNetEventManager::UnregisterSocket(INetPeer *peer) {
 		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {
-			if(m_datainfo_map.find(peer) != m_datainfo_map.end()) {
+			std::map<void *, EPollDataInfo *>::iterator it = m_datainfo_map.find(peer);
+			if(it != m_datainfo_map.end()) {
 				struct epoll_event ev;
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.ptr = peer;
 				epoll_ctl(m_epollfd, EPOLL_CTL_DEL, peer->GetSocket(), &ev);
 				free((void *)m_datainfo_map[peer]);
+				m_datainfo_map.erase(it, m_datainfo_map.end());
 			}
 		}
 	}
