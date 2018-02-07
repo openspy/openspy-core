@@ -25,7 +25,12 @@ from socketserver import ThreadingMixIn
 
 import os
 
-Valid_APIKeys = {"b9d573fc-0377-495f-b031-aa0c51c09938": ["auth", "register", "useraccount", "userprofile", "persist", "gameservice"]}
+Valid_APIKeys = {
+				"b9d573fc-0377-495f-b031-aa0c51c09938": 
+					["auth", "register", "useraccount", "userprofile", "persist", "gameservice"],
+				 "d8ba81d9-f3b2-448b-a36e-f6116338fa5f": #web api
+				 	["auth", "register", "useraccount", "userprofile", "persist", "gameservice"]
+				}
 
 def check_apikey(env, path_info):
 	if "HTTP_APIKEY" in env:

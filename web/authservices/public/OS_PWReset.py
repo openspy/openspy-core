@@ -22,7 +22,11 @@ class OS_PWReset(BaseService):
         reset_data["mode"] = "pwreset"
         params = json.dumps(reset_data)
 
-        headers = {"Content-type": "application/json","Accept": "text/plain"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
@@ -40,7 +44,11 @@ class OS_PWReset(BaseService):
         reset_data["mode"] = "perform_pwreset"
         params = json.dumps(reset_data)
 
-        headers = {"Content-type": "application/json","Accept": "text/plain"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
@@ -57,7 +65,11 @@ class OS_PWReset(BaseService):
 
             params = json.dumps(login_data)
 
-            headers = {"Content-type": "application/json","Accept": "text/plain"}
+            headers = {
+                "Content-type": "application/json",
+                "Accept": "text/plain",
+                "APIKey": self.BACKEND_PRIVATE_APIKEY
+            }
             conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
             conn.request("POST", self.LOGIN_SCRIPT, params, headers)
@@ -78,7 +90,11 @@ class OS_PWReset(BaseService):
         reset_data["mode"] = "perform_verify_email"
         params = json.dumps(reset_data)
 
-        headers = {"Content-type": "application/json","Accept": "text/plain"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.REGISTER_SERVER)
 
         conn.request("POST", self.REGISTER_SCRIPT, params, headers)
@@ -96,7 +112,11 @@ class OS_PWReset(BaseService):
         reset_data["mode"] = "resend_verify_email"
         params = json.dumps(reset_data)
 
-        headers = {"Content-type": "application/json","Accept": "text/plain"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.REGISTER_SERVER)
 
         conn.request("POST", self.REGISTER_SCRIPT, params, headers)

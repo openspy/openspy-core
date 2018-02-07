@@ -25,7 +25,11 @@ class OS_WebUserMgr(BaseService):
         send_data = {'session_key': session_key, 'userid': userid, 'mode': 'test_session'}
         params = json.dumps(send_data)
         
-        headers = {"Content-type": "application/json","Accept": "text/plain"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
@@ -77,8 +81,12 @@ class OS_WebUserMgr(BaseService):
         
         params = json.dumps(send_data)
         
-        headers = {"Content-type": "application/json","Accept": "text/plain"}
-
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
+        
         conn = http.client.HTTPConnection(self.USER_MGR_SERVER)
 
         conn.request("POST", self.USER_MGR_SCRIPT, params, headers)

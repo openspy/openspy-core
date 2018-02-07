@@ -27,7 +27,11 @@ class OS_RegisterSvc(BaseService):
 
         params = json.dumps(user_data)
 
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.REGISTER_SERVER)
 
         conn.request("POST", self.REGISTER_SCRIPT, params, headers)
@@ -47,8 +51,11 @@ class OS_RegisterSvc(BaseService):
 
 	        params = json.dumps(request_data)
 
-	        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-
+            headers = {
+                "Content-type": "application/json",
+                "Accept": "text/plain",
+                "APIKey": self.BACKEND_PRIVATE_APIKEY
+            }
 	        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
 	        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
@@ -67,7 +74,11 @@ class OS_RegisterSvc(BaseService):
 
 	        params = json.dumps(login_data)
 
-	        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+	        headers = {
+                "Content-type": "application/json",
+                "Accept": "text/plain",
+                "APIKey": self.BACKEND_PRIVATE_APIKEY
+            }
 	        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
 	        conn.request("POST", self.LOGIN_SCRIPT, params, headers)
@@ -75,8 +86,11 @@ class OS_RegisterSvc(BaseService):
 
         return response
     def check_user_conflicts(self, request):
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.USER_MGR_SERVER)
 
         params = {}
@@ -91,8 +105,11 @@ class OS_RegisterSvc(BaseService):
 
         return "user" in response
     def check_profile_conflicts(self, request):
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         params = {}
@@ -142,8 +159,6 @@ class OS_RegisterSvc(BaseService):
 
         if 'success' in response:
             return response
-
-
 
         response = self.try_register(request_body)
 

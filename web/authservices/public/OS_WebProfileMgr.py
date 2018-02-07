@@ -23,7 +23,11 @@ class OS_WebProfileMgr(BaseService):
         send_data = {'session_key': session_key, 'profileid': profileid, 'mode': 'test_session_profileid'}
         params = json.dumps(send_data)
         
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
@@ -34,7 +38,11 @@ class OS_WebProfileMgr(BaseService):
         send_data = {'session_key': session_key, 'userid': userid, 'mode': 'test_session'}
         send_data = json.dumps(send_data)
         
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, send_data, headers)
@@ -54,8 +62,11 @@ class OS_WebProfileMgr(BaseService):
         send_data = json.dumps(send_data)
         
         
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, send_data, headers)
@@ -71,8 +82,11 @@ class OS_WebProfileMgr(BaseService):
 
         params = json.dumps(request_data)
                 
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
@@ -94,8 +108,11 @@ class OS_WebProfileMgr(BaseService):
 
         params = json.dumps(request_data)        
         
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
@@ -109,8 +126,11 @@ class OS_WebProfileMgr(BaseService):
 
         params = json.dumps(request_data)
         
-        headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
         conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
