@@ -10,13 +10,16 @@ import redis
 
 import simplejson as json
 
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class OS_WebUserMgr(BaseService):
     def test_required_params(self, input, params, all_required):
         found_one = False
         for param in params:
             if param not in input:
                 if all_required:
-                    return False
+                    raise OS_MissingParam(param)
             else:
                 found_one = True
         return all_required and found_one or not all_required

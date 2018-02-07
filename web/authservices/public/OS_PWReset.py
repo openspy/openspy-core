@@ -141,14 +141,22 @@ class OS_PWReset(BaseService):
 
         response = {}
 
-        if "mode" in request_body:
-            if request_body["mode"] == "init":
-                response = self.process_initiate_pw_reset(request_body)
-            elif request_body["mode"] == "perform":
-                response = self.process_perform_pw_reset(request_body)
-            elif request_body["mode"] == "verify_email":
-                response = self.process_perform_verify_email(request_body)
-            elif request_body["mode"] == "resend_verify_email":
-                response = self.process_resend_verify_email(request_body)
+        mode_table = {
+            "init": self.process_initiate_pw_reset,
+            "perform": self.process_perform_pw_reset,
+            "verify_email": self.process_perform_verify_email,
+            "resend_verify_email": self.process_resend_verify_email,
+        }
 
+        try:
+            if "mode" in request_body:
+                req_type = request_body["mode"]
+                if req_type in mode_table:
+                    response = mode_table[req_type](request_body)
+                else:
+                    raise OS_InvalidMode()
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
         return response

@@ -10,6 +10,9 @@ import redis
 import simplejson as json
 import http.client
 
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class OS_RegisterSvc(BaseService):
     # expects following vars:
     #   partnercode - 0
@@ -142,24 +145,20 @@ class OS_RegisterSvc(BaseService):
         #Register: {u'uniquenick': u'sctest01', u'namespaceid': u'0', u'nick': u'sctest01', u'mode': u'create_account', u'partnercode': u'0', u'password': u'gspy', u'email': u'sctest@gamespy.com'}
 
         response = {}
-        required_params = ["email", "partnercode", "password", "uniquenick", "nick", "namespaceid"]
-        for key in required_params:
-            if key not in request_body:
-                response['success'] = False
-                response['error'] = "MISSING_PARAMS"
-                return response
+        try:
+            required_params = ["email", "partnercode", "password", "uniquenick", "nick", "namespaceid"]
+            for key in required_params:
+                if key not in request_body:
+                    raise OS_MissingParam(key)
 
-        if self.check_user_conflicts(request_body):
-            response['success'] = False
-            response['error'] = "USER_EXISTS"
-        elif self.check_profile_conflicts(request_body):
-            response['success'] = False
-            response['error'] = "UNIQUENICK_EXISTS"
+            if self.check_user_conflicts(request_body):
+                raise OS_UserExists()
+            elif self.check_profile_conflicts(request_body):
+                raise OS_UniqueNickInUse()
 
-
-        if 'success' in response:
-            return response
-
-        response = self.try_register(request_body)
-
+            response = self.try_register(request_body)
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
         return response

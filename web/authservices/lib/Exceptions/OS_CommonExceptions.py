@@ -29,6 +29,14 @@ class OS_UniqueNickInUse(OS_BaseException):
         self.data["message"] = "Unique nick in use ({})".format(param_name)
         super(OS_BaseException, self).__init__(self.data["message"])
 
+class OS_UserExists(OS_BaseException):
+    def __init__(self):
+        self.data = {}
+        self.data["class"] = "common"
+        self.data["name"] = "UserExists"
+        self.data["message"] = "User already exists"
+        super(OS_BaseException, self).__init__(self.data["message"])
+
 class OS_Auth_InvalidCredentials(OS_BaseException):
     def __init__(self):
         self.data = {}

@@ -10,11 +10,14 @@ import redis
 
 import simplejson as json
 
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class OS_WebGameMgr(BaseService):
     def test_required_params(self, input, params):
         for param in params:
             if param not in input:
-                return False
+                raise OS_MissingParam("param")
 
         return True
 

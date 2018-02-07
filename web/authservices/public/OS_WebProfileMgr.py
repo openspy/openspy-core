@@ -11,11 +11,14 @@ import simplejson as json
 
 import http.client
 
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class OS_WebProfileMgr(BaseService):
     def test_required_params(self, input, params):
         for param in params:
             if param not in input:
-                return False
+                raise OS_MissingParam(param)
 
         return True
 
@@ -159,16 +162,25 @@ class OS_WebProfileMgr(BaseService):
         if not has_ownership:
             raise OS_Auth_InvalidCredentials()
 
-        if data["mode"] == "update_profile":
-            return self.handle_update_profile(data)
-        elif data["mode"] == "get_profiles":
-            return self.handle_get_profiles(data)
-        elif data["mode"] == "create_profile":
-            return self.handle_create_profile(data)
-        elif data["mode"] == "delete_profile":
-            return self.handle_delete_profile(data)
-        else:
-            raise OS_InvalidParam("mode")
+        mode_table = {
+            "update_profile": self.handle_update_profile,
+            "get_profiles": self.handle_get_profiles,
+            "create_profile":  self.handle_create_profile,
+            "delete_profile": self.handle_delete_profile
+        }
+
+        try:
+            if "mode" in request_body:
+                req_type = request_body["mode"]
+                if req_type in mode_table:
+                    response = mode_table[req_type](request_body)
+                else:
+                    raise OS_InvalidMode()
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
+        return response
         
         
     def run(self, env, start_response):
@@ -186,8 +198,8 @@ class OS_WebProfileMgr(BaseService):
 
         response = self.process_request(request_body)
 
-        if 'error' in response:
-            start_response('400 BAD REQUEST', [('Content-Type','application/json')])
-        else:
-            start_response('200 OK', [('Content-Type','application/json')])
+        #if 'error' in response:
+        #   start_response('400 BAD REQUEST', [('Content-Type','application/json')])
+        # else:
+        start_response('200 OK', [('Content-Type','application/json')])
         return response

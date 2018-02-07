@@ -11,17 +11,13 @@ import simplejson as json
 
 import http.client
 
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class OS_WebAuth(BaseService):
     def __init__(self):
         BaseService.__init__(self)
-        self.LOGIN_RESPONSE_SUCCESS = 0
-        self.LOGIN_RESPONSE_SERVERINITFAILED = 1
-        self.LOGIN_RESPONSE_USER_NOT_FOUND = 2
-        self.LOGIN_RESPONSE_INVALID_PASSWORD = 3
-        self.LOGIN_RESPONSE_INVALID_PROFILE = 4
-        self.LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED = 5
-        self.LOGIN_RESPONSE_DB_ERROR = 6
-        self.LOGIN_RESPONSE_SERVER_ERROR = 7
+
     # expects following vars:
     #   partnercode - 0
     #   email - if only email provided its a userid login
@@ -60,20 +56,13 @@ class OS_WebAuth(BaseService):
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = json.loads(conn.getresponse().read())
 
-        if response["success"] == False:
-            if "reason" in response:
-                if response["reason"] == 3:
-                    response["reason"] = "INVALID_PASS"
-                elif response["reason"] == 2:
-                    response["reason"] = "USER_NOT_FOUND"
-                elif response["reason"] == 4:
-                    response["reason"] = "INVALID_PROFILE"
         return response
     def test_session(self, login_options):
+        response = {"success": False}
         if "userid" not in login_options:
-            return False
+            raise OS_MissingParam("userid")
         if "session_key" not in login_options:
-            return False
+            raise OS_MissingParam("session_key")
 
         send_data = {}
         send_data["userid"] = login_options["userid"]
@@ -91,15 +80,16 @@ class OS_WebAuth(BaseService):
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = json.loads(conn.getresponse().read())
 
-        if "valid" in response:
-            return response["valid"]
+        if "valid" in response and response["valid"]:
+            response["success"] = True
 
-        return False
+        return response
     def del_session(self, login_options):
+        response = {"success": False}
         if "userid" not in login_options:
-            return False
+            raise OS_MissingParam("userid")
         if "session_key" not in login_options:
-            return False
+            raise OS_MissingParam("session_key")
 
         send_data = {}
         send_data["userid"] = login_options["userid"]
@@ -118,9 +108,9 @@ class OS_WebAuth(BaseService):
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
         response = json.loads(conn.getresponse().read())
 
-        if "valid" in response:
-            return response["valid"]
-        return False
+        if "valid" in response and response["valid"]:
+            response["success"] = True
+        return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
         try:
@@ -136,13 +126,25 @@ class OS_WebAuth(BaseService):
 
         start_response('200 OK', [('Content-Type','application/json')])
 
-        if "mode" in request_body:
-            if request_body["mode"] == "test_session":
-                resp = self.test_session(request_body)
-            elif request_body["mode"] == "auth":
-                resp = self.try_login(request_body)
-            elif request_body["mode"] == "del_session":
-                resp = self.del_session(request_body)
-        else:
-            resp = self.try_login(request_body)
-        return resp
+        if "mode" not in request_body:
+            request_body["mode"] = "login"
+
+        mode_table = {
+            "test_session": self.test_session,
+            "auth": self.try_login,
+            "del_session":  self.del_session,
+            "login": self.try_login
+        }
+
+        try:
+            if "mode" in request_body:
+                req_type = request_body["mode"]
+                if req_type in mode_table:
+                    response = mode_table[req_type](request_body)
+                else:
+                    raise OS_InvalidMode()
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
+        return response

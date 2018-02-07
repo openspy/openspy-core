@@ -130,7 +130,7 @@ class GS_AuthService(BaseService):
                 node = ET.SubElement(certificate_node, 'ns1:{}'.format(k))
                 node.text = str(v)
         else: #send error data
-            response_code_node.text = self.convert_reason_code(auth_user_dir['reason'])
+            response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
 
 
         #encrypted server data
@@ -278,9 +278,6 @@ class GS_AuthService(BaseService):
 
         #try auth
         auth_user_dir = self.try_authenticate(params)
-
-        print("Unique: {}\n{}\n".format(auth_user_dir, params))
-        
 
         if 'profile' in auth_user_dir:
             response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
