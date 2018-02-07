@@ -54,11 +54,6 @@ class OS_RegisterSvc(BaseService):
 
 	        params = json.dumps(request_data)
 
-            headers = {
-                "Content-type": "application/json",
-                "Accept": "text/plain",
-                "APIKey": self.BACKEND_PRIVATE_APIKEY
-            }
 	        conn = http.client.HTTPConnection(self.PROFILE_MGR_SERVER)
 
 	        conn.request("POST", self.PROFILE_MGR_SCRIPT, params, headers)
@@ -77,11 +72,6 @@ class OS_RegisterSvc(BaseService):
 
 	        params = json.dumps(login_data)
 
-	        headers = {
-                "Content-type": "application/json",
-                "Accept": "text/plain",
-                "APIKey": self.BACKEND_PRIVATE_APIKEY
-            }
 	        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
 	        conn.request("POST", self.LOGIN_SCRIPT, params, headers)
