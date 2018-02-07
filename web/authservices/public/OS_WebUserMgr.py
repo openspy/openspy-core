@@ -42,17 +42,17 @@ class OS_WebUserMgr(BaseService):
 
 
         if not self.test_required_params(login_options, required_params, True):
-            return {'error': 'MISSING_REQUIRED_PARAMS_1'}
+            raise OS_MissingParam("required params")
 
         if not self.test_required_params(login_options['user'], required_user_params, False):
-            return {'error': 'MISSING_REQUIRED_PARAMS_2'}
+            raise OS_MissingParam("required user params")
 
         mode = login_options['mode']
 
         valid_modes = ["update_user", 'get_user']
 
         if mode not in valid_modes:
-            return {'error': 'INVALID_OPERATION_MODE'}
+            raise OS_MissingParam("mode")
         user_id = None
         if "id" in login_options['user']:
             user_id = login_options['user']['id']
@@ -71,13 +71,13 @@ class OS_WebUserMgr(BaseService):
 
         session_data = self.test_user_session(send_data['session_key'], send_data['userid'])
         if not session_data["valid"]:
-            return {'error': 'INVALID_SESSION'}
+            raise OS_Auth_InvalidCredentials()
 
         if not session_data["admin"]:
             if "email" in user_data and user_data["email"] != session_data["session_user"]["email"]:
-                return {'error': 'INVALID_SESSION'}
+                raise OS_Auth_InvalidCredentials()
             if "userid" in user_data and user_data["userid"] != session_data["session_user"]["id"]:
-                return {'error': 'INVALID_SESSION'}
+                raise OS_Auth_InvalidCredentials()}
         
         params = json.dumps(send_data)
         

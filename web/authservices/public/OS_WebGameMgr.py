@@ -36,9 +36,9 @@ class OS_WebGameMgr(BaseService):
     def process_request(self, login_options):
         required_params = ['userid', 'session_key']
         if not self.test_required_params(login_options, required_params):
-                return {'error': 'INVALID_PARAMS'}
+            raise OS_MissingParam("required params")
         if not self.test_user_session(login_options["session_key"], login_options["userid"]):            
-            return {'error': 'INVALID_SESSION'}
+            raise OS_Auth_InvalidCredentials()
 
 
         headers = {

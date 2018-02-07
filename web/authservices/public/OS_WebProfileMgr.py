@@ -77,7 +77,7 @@ class OS_WebProfileMgr(BaseService):
     def handle_get_profiles(self, data):
 
         if "userid" not in data:
-            return False
+            raise OS_MissingParam("userid")
         request_data = {'session_key': data['session_key'], 'userid': data['userid'], 'mode': 'get_profiles'}
 
         params = json.dumps(request_data)
@@ -140,14 +140,12 @@ class OS_WebProfileMgr(BaseService):
     def process_request(self, data):
 
         if "mode" not in data:
-            return {'error': 'INVALID_MODE'}
+            raise OS_MissingParam("mode")
 
         has_ownership = False
 
         profile_ownership_modes = ["update_profile", "delete_profile"]
         user_ownership_modes = ["create_profile", "get_profiles"]
-
-        print("got request: {}\n".format(data))
 
         session_data = self.test_user_session(data["session_key"], data["userid"])
 
@@ -159,7 +157,7 @@ class OS_WebProfileMgr(BaseService):
                 has_ownership = session_data['valid'] or session_data['admin']
 
         if not has_ownership:
-            return {'error': 'INVALID_SESSION'}
+            raise OS_Auth_InvalidCredentials()
 
         if data["mode"] == "update_profile":
             return self.handle_update_profile(data)
@@ -170,7 +168,7 @@ class OS_WebProfileMgr(BaseService):
         elif data["mode"] == "delete_profile":
             return self.handle_delete_profile(data)
         else:
-            return {'error': 'INVALID_MODE'}
+            raise OS_InvalidParam("mode")
         
         
     def run(self, env, start_response):
@@ -186,14 +184,10 @@ class OS_WebProfileMgr(BaseService):
         request_body = json.loads(env['wsgi.input'].read(request_body_size))
         # d = parse_qs(request_body)
 
-        
-
         response = self.process_request(request_body)
 
         if 'error' in response:
             start_response('400 BAD REQUEST', [('Content-Type','application/json')])
         else:
             start_response('200 OK', [('Content-Type','application/json')])
-
-
         return response

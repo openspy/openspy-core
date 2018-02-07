@@ -10,6 +10,9 @@ import redis
 import simplejson as json
 import http.client
 
+from lib.Exceptions.OS_BaseException import OS_BaseException
+from lib.Exceptions.OS_CommonExceptions import *
+
 class OS_PWReset(BaseService):
     def process_initiate_pw_reset(self, request_data):
         response = {}
@@ -61,7 +64,6 @@ class OS_PWReset(BaseService):
             login_data["save_session"] = True
             login_data["userid"] = request_data["userid"]
             login_data["password"] = request_data["password"]
-
 
             params = json.dumps(login_data)
 
