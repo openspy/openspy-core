@@ -28,18 +28,6 @@ class AuthService(BaseService):
         BaseService.__init__(self)
         self.redis_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 3)
         self.PREAUTH_EXPIRE_TIME = 3600
-        self.LOGIN_RESPONSE_SUCCESS = 0
-        self.LOGIN_RESPONSE_SERVERINITFAILED = 1
-        self.LOGIN_RESPONSE_USER_NOT_FOUND = 2
-        self.LOGIN_RESPONSE_INVALID_PASSWORD = 3
-        self.LOGIN_RESPONSE_INVALID_PROFILE = 4
-        self.LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED = 5
-        self.LOGIN_RESPONSE_DB_ERROR = 6
-        self.LOGIN_RESPONSE_SERVER_ERROR = 7
-        self.CREATE_RESPONSE_UNIQUENICK_IN_USE = 8
-        self.LOGIN_CREATE_RESPONSE_INVALID_NICK = 9
-        self.LOGIN_CREATE_RESPONSE_INVALID_UNIQUENICK = 10
-        self.LOGIN_RESPONSE_INVALID_EMAIL = 11
 
         self.PARTNERID_GAMESPY = 0
         self.PARTNERID_IGN = 10
@@ -149,11 +137,11 @@ class AuthService(BaseService):
             raise OS_InvalidParam("profile")
         response = {}
         profile = account_data["profile"]
-        sess_key = self.gs_sesskey(session_key)
+        sess_key = self.gs_sesskey(request_body["session_key"])
         pw_hashed = "{}{}".format(profile.user.password,sess_key).encode('utf-8')
         pw_hashed = hashlib.md5(pw_hashed).hexdigest()
 
-        response["success"] = pw_hashed == client_response
+        response["success"] = pw_hashed == request_body["client_response"]
 
         return response
     def test_preauth_ticket(self, request_body):
@@ -215,11 +203,11 @@ class AuthService(BaseService):
         session_key.update(str(uuid.uuid4()).encode('utf-8'))
 
         session_key = session_key.hexdigest()
-        redis_key = '{}:{}'.format(user.id,session_key)
+        redis_key = '{}:{}'.format(user["id"],session_key)
 
-        self.redis_ctx.hset(redis_key, 'userid', user.id)
+        self.redis_ctx.hset(redis_key, 'userid', user["id"])
         if profile:
-            self.redis_ctx.hset(redis_key, 'profileid', profile.id)
+            self.redis_ctx.hset(redis_key, 'profileid', profile["id"])
 
         self.redis_ctx.hset(redis_key, 'auth_token', session_key)
         self.redis_ctx.expire(redis_key, self.AUTH_EXPIRE_TIME)
@@ -228,7 +216,7 @@ class AuthService(BaseService):
         if profile == None:
             self.redis_ctx.hdel(key, 'profileid')
         else:
-            self.redis_ctx.hset(key, 'profileid', profile.id)
+            self.redis_ctx.hset(key, 'profileid', profile["id"])
 
     def get_user_by_email(self, email, partnercode):
         try:
@@ -487,8 +475,6 @@ class AuthService(BaseService):
 
         account_data = self.handle_auth_find_user_and_profile(request_body, hash_type)
 
-        auth_success = False
-
         hash_type_handlers = {
             "plain": self.test_pass_plain_by_userid,
             "gp_nick_email": self.test_gp_nick_email_by_profile,
@@ -499,7 +485,6 @@ class AuthService(BaseService):
             "gp_preauth": self.test_gp_preauth_by_ticket
         }
 
-        req_type = request_body["mode"]
         response = {}
 
         auth_response = {}
@@ -515,6 +500,17 @@ class AuthService(BaseService):
             response = {**auth_response, **response}
         else:
             raise OS_Auth_InvalidCredentials()
+
+        if "save_session" in request_body and request_body["save_session"] == True and response['success'] == True:
+            if "profile" in response:
+                session_data = self.create_auth_session(response["profile"], response["user"])
+            elif "user" in response:
+                session_data = self.create_auth_session(False, response["user"])
+            response['session_key'] = session_data['session_key']
+
+        if "set_context" in request_body and "session_key" in response:
+            if request_body["set_context"] == "profile":
+                self.set_auth_context(response["session_key"], response["profile"])
         return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
