@@ -302,7 +302,7 @@ class AuthService(BaseService):
                 return {'deleted': True}
         return {'deleted': False}
     def do_password_reset(self, user):
-        reset_key = sha(str(uuid.uuid1()))
+        reset_key = hashlib.sha1(str(uuid.uuid1()))
         reset_key.update(str(uuid.uuid4()))
         reset_key = reset_key.hexdigest()
 
