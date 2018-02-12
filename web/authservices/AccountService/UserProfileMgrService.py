@@ -66,16 +66,15 @@ class UserProfileMgrService(BaseService):
         response = {"success": False}
         profiles = []
         try:
-            for profile in Profile.select().join(User).where((User.id == data["userid"]) & (Profile.deleted == False)):
+            for profile in Profile.select().where((Profile.userid == data["userid"]) & (Profile.deleted == False)):
                 profile_dict = model_to_dict(profile)
-                del profile_dict['user']
                 profiles.append(profile_dict)
             response["success"] = True
         except Profile.DoesNotExist:
             raise OS_Auth_NoSuchUser()
 
         response["profiles"] = profiles
-        return profiles
+        return response
 
 
     def handle_get_profile(self, data):
@@ -89,9 +88,8 @@ class UserProfileMgrService(BaseService):
                     profile = Profile.get((Profile.uniquenick == data["uniquenick"]) & (Profile.namespaceid == data["namespaceid"]))
                 else:
                     profile = Profile.get((Profile.uniquenick == data["uniquenick"]) & (Profile.namespaceid == 0))
-
+            if profile:
                 response["profile"] = model_to_dict(profile)
-                del response["profile"]['user']
                 response["success"] = True
         except Profile.DoesNotExist:
             pass

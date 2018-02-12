@@ -49,12 +49,19 @@ class OS_WebAuth(BaseService):
         login_data["mode"] = "auth"
 
         params = json.dumps(login_data)
+
+        print("Dumped params: {}\n".format(params))
         
-        headers = {"Content-type": "application/json","Accept": "text/plain"}
+        headers = { "Content-type": "application/json",
+                    "Accept": "text/plain", 
+                    "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
-        response = json.loads(conn.getresponse().read())
+        response = conn.getresponse().read()
+
+        response = json.loads(response)
 
         return response
     def test_session(self, login_options):
@@ -103,6 +110,7 @@ class OS_WebAuth(BaseService):
             "Accept": "text/plain",
             "APIKey": self.BACKEND_PRIVATE_APIKEY
         }
+
         conn = http.client.HTTPConnection(self.LOGIN_SERVER)
 
         conn.request("POST", self.LOGIN_SCRIPT, params, headers)
@@ -147,4 +155,6 @@ class OS_WebAuth(BaseService):
             response = e.to_dict()
         except Exception as error:
             response = {"error": repr(error)}
+
+        print("Auth: {}\n{}\n".format(request_body, response))
         return response

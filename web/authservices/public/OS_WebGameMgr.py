@@ -67,12 +67,16 @@ class OS_WebGameMgr(BaseService):
         request_body = json.loads(env['wsgi.input'].read(request_body_size))
        # d = parse_qs(request_body)
 
-        response = self.process_request(request_body)
+        try:
+            response = self.process_request(request_body)
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
 
-        if 'error' in response:
-            start_response('400 BAD REQUEST', [('Content-Type','application/json')])
-        else:
-            start_response('200 OK', [('Content-Type','application/json')])
-
+        #if 'error' in response:
+        #   start_response('400 BAD REQUEST', [('Content-Type','application/json')])
+        # else:
+        start_response('200 OK', [('Content-Type','application/json')])
 
         return response

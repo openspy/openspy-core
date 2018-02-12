@@ -111,12 +111,17 @@ class OS_WebUserMgr(BaseService):
 
         
 
-        response = self.process_request(request_body)
+        try:
+            response = self.process_request(request_body)
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
 
-        if 'error' in response:
-            start_response('400 BAD REQUEST', [('Content-Type','application/json')])
-        else:
-            start_response('200 OK', [('Content-Type','application/json')])
+        #if 'error' in response:
+        #    start_response('400 BAD REQUEST', [('Content-Type','application/json')])
+        #else:
+        start_response('200 OK', [('Content-Type','application/json')])
 
 
         return response

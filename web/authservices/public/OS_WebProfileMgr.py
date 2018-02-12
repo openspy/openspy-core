@@ -54,7 +54,7 @@ class OS_WebProfileMgr(BaseService):
 
     def handle_update_profile(self, data):
 
-        passthrough_params = ["session_key"]
+        #passthrough_params = ["session_key"]
         passthrough_profile_params = ["uniquenick", "nick", "id", "firstname", "lastname", "icquin", "sex", "homepage", "zipcode"]
 
         profile = {}
@@ -151,7 +151,6 @@ class OS_WebProfileMgr(BaseService):
         user_ownership_modes = ["create_profile", "get_profiles"]
 
         session_data = self.test_user_session(data["session_key"], data["userid"])
-        print("SESSION: {}\n".format(session_data))
 
         if data["mode"] in profile_ownership_modes:
             if "session_key" in data and "profile" in data:

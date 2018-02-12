@@ -144,7 +144,7 @@ class OS_RegisterSvc(BaseService):
             if self.check_user_conflicts(request_body):
                 raise OS_UserExists()
             elif self.check_profile_conflicts(request_body):
-                raise OS_UniqueNickInUse()
+                raise OS_UniqueNickInUse(request_body['uniquenick'])
 
             response = self.try_register(request_body)
         except OS_BaseException as e:
