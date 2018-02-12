@@ -80,7 +80,7 @@ class OS_WebUserMgr(BaseService):
             if "email" in user_data and user_data["email"] != session_data["session_user"]["email"]:
                 raise OS_Auth_InvalidCredentials()
             if "userid" in user_data and user_data["userid"] != session_data["session_user"]["id"]:
-                raise OS_Auth_InvalidCredentials()}
+                raise OS_Auth_InvalidCredentials()
         
         params = json.dumps(send_data)
         

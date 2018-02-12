@@ -151,6 +151,7 @@ class OS_WebProfileMgr(BaseService):
         user_ownership_modes = ["create_profile", "get_profiles"]
 
         session_data = self.test_user_session(data["session_key"], data["userid"])
+        print("SESSION: {}\n".format(session_data))
 
         if data["mode"] in profile_ownership_modes:
             if "session_key" in data and "profile" in data:
@@ -169,17 +170,11 @@ class OS_WebProfileMgr(BaseService):
             "delete_profile": self.handle_delete_profile
         }
 
-        try:
-            if "mode" in request_body:
-                req_type = request_body["mode"]
-                if req_type in mode_table:
-                    response = mode_table[req_type](request_body)
-                else:
-                    raise OS_InvalidMode()
-        except OS_BaseException as e:
-            response = e.to_dict()
-        except Exception as error:
-            response = {"error": repr(error)}
+        req_type = data["mode"]
+        if req_type in mode_table:
+            response = mode_table[req_type](data)
+        else:
+            raise OS_InvalidMode()
         return response
         
         
@@ -196,7 +191,12 @@ class OS_WebProfileMgr(BaseService):
         request_body = json.loads(env['wsgi.input'].read(request_body_size))
         # d = parse_qs(request_body)
 
-        response = self.process_request(request_body)
+        try:
+            response = self.process_request(request_body)
+        except OS_BaseException as e:
+            response = e.to_dict()
+        except Exception as error:
+            response = {"error": repr(error)}
 
         #if 'error' in response:
         #   start_response('400 BAD REQUEST', [('Content-Type','application/json')])
