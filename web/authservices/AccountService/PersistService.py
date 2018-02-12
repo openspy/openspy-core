@@ -1,6 +1,8 @@
 from cgi import parse_qs, escape
 
 import base64
+import calendar
+from datetime import datetime
 import json
 
 from BaseService import BaseService
@@ -24,11 +26,27 @@ class PersistService(BaseService):
         response["data"] = {}
         return response
     def handle_set_data(self, request_body):
+        response = {}
         if "data" in request_body:
             data = base64.b64decode(request_body["data"])
-        return {}
+
+        response['success'] = True
+
+        print("Setting: {}\n{}\n".format(request_body, data))
+
+        d = datetime.utcnow()
+        response["modified_time"] = calendar.timegm(d.utctimetuple())
+        return response
     def handle_get_data(self, request_body):
-        response = {'data': base64.b64encode("".encode('utf-8')), "success": True}
+        print("Get data: {}\n".format(request_body))
+        if "keyList" in request_body:
+            
+            response = {'keyList': {"THUG2HighScore": "11111", "THUG2HighCombo": "22222"}, "success": True}
+        else:
+            response = {'data': base64.b64encode("testDATA".encode('utf-8')), "success": True}
+
+        d = datetime.utcnow()
+        response["modified_time"] = calendar.timegm(d.utctimetuple())
         return response
 
     def run(self, env, start_response):
@@ -56,12 +74,14 @@ class PersistService(BaseService):
             "get_persist_data": self.handle_get_data
         }
         try:
-            if 'type' in request_body:
+            if 'mode' in request_body:
                 req_type = request_body["mode"]
                 if req_type in type_table:
                     response = type_table[req_type](request_body)
                 else:
                     raise OS_InvalidMode()
+            else:
+                raise OS_InvalidMode()
         except OS_BaseException as e:
             response = e.to_dict()
         except Exception as error:

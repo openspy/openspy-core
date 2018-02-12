@@ -57,15 +57,16 @@ class AuthService(BaseService):
         except Profile.DoesNotExist:
             return None
     def test_pass_plain_by_userid(self, request_body, account_data):
+        response = {"success": False}
         auth_success = False
         password = request_body["user"]["password"]
         try:
             matched_user = User.select().where((User.id == account_data["user"].id) & (User.password == password) & (User.deleted == 0)).get()
             if matched_user:
-                auth_success = True
+                response["success"] = True
         except User.DoesNotExist:
-            auth_success = False
-        return auth_success
+            pass
+        return response
 
     def test_gp_uniquenick_by_profile(self, request_body, account_data):
         response = {}
