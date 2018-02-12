@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <math.h>
 namespace OS {
+	KVReader::KVReader() {
+
+	}
 	KVReader::KVReader(std::string kv_pair, char delim, char line_delim) {
 		std::string token, key, value, line;
 		int i = 0;

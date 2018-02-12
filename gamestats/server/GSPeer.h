@@ -71,6 +71,8 @@ namespace GS {
 		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 
 		void ResetMetrics();
+
+		OS::GameData GetGame() { return m_game; };
 	private:
 		//packet handlers
 		static void newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);

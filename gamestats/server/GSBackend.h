@@ -1,7 +1,7 @@
 #ifndef _GP_BACKEND_H
 #define _GP_BACKEND_H
 #include <OS/TaskPool.h>
-
+#include <OS/KVReader.h>
 #include <OS/GPShared.h>
 
 
@@ -42,7 +42,10 @@ namespace GSBackend {
 
 	typedef struct {
 		std::string game_instance_identifier;
+		uint32_t mod_time;
 		EPersistBackendRespType type;
+
+		OS::KVReader kv_data;
 	} PersistBackendResponse;
 
 	typedef void (*PersistBackendCallback)(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra);
@@ -64,6 +67,8 @@ namespace GSBackend {
 		persisttype_t data_type;
 		int data_index;
 		bool data_kv_set;
+
+		OS::KVReader kv_set_data;
 	} PersistBackendRequest;
 
 
@@ -73,7 +78,7 @@ namespace GSBackend {
 			~PersistBackendTask();
 			static void SubmitNewGameSession(GS::Peer *peer, void* extra, PersistBackendCallback cb);
 			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb);
-			static void SubmitSetPersistData(int profileid, GS::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set);
+			static void SubmitSetPersistData(int profileid, GS::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set, OS::KVReader kv_set_data);
 			static void SubmitGetPersistData(int profileid, GS::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList);
 
 			void AddDriver(GS::Driver *driver);

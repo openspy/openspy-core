@@ -82,7 +82,8 @@ namespace GSBackend {
 		json_t *send_json = json_object();
 
 		json_object_set_new(send_json, "profileid", json_integer(req.mp_peer->GetProfileID()));
-		json_object_set_new(send_json, "type", json_string("newgame"));
+		json_object_set_new(send_json, "mode", json_string("newgame"));
+		json_object_set_new(send_json, "game_id", json_integer(req.mp_peer->GetGame().gameid));
 
 		OS::HTTPClient client(GP_PERSIST_BACKEND_URL);
 
@@ -116,8 +117,9 @@ namespace GSBackend {
 		json_t *send_json = json_object();
 
 		json_object_set_new(send_json, "profileid", json_integer(req.mp_peer->GetProfileID()));
-		json_object_set_new(send_json, "type", json_string("updategame"));
+		json_object_set_new(send_json, "mode", json_string("updategame"));
 		json_object_set_new(send_json, "game_identifier", json_string(req.game_instance_identifier.c_str()));
+		json_object_set_new(send_json, "game_id", json_integer(req.mp_peer->GetGame().gameid));
 
 		json_t *data_obj = json_object();
 		std::map<std::string, std::string>::iterator it = req.kvMap.begin();
@@ -151,7 +153,7 @@ namespace GSBackend {
 		json_decref(send_json);
 
 	}
-	void PersistBackendTask::SubmitSetPersistData(int profileid, GS::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set) {
+	void PersistBackendTask::SubmitSetPersistData(int profileid, GS::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set, OS::KVReader kv_set_data) {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
@@ -162,6 +164,7 @@ namespace GSBackend {
 		req.data_index = index;
 		req.data_kv_set = kv_set;
 		req.profileid = profileid;
+		req.kv_set_data = kv_set_data;
 		peer->IncRef();
 		m_task_pool->AddRequest(req);
 	}
@@ -182,12 +185,30 @@ namespace GSBackend {
 		json_t *send_json = json_object();
 
 		json_object_set_new(send_json, "profileid", json_integer(req.profileid));
-		json_object_set_new(send_json, "type", json_string("set_persist_data"));
+		json_object_set_new(send_json, "mode", json_string("set_persist_data"));
 
 
 		json_object_set_new(send_json, "data", json_string(req.game_instance_identifier.c_str()));
 		json_object_set_new(send_json, "data_index", json_integer(req.data_index));
 		json_object_set_new(send_json, "data_type", json_integer(req.data_type));
+		json_object_set_new(send_json, "game_id", json_integer(req.mp_peer->GetGame().gameid));
+
+		json_object_set_new(send_json, "kv_set", req.data_kv_set ? json_true() : json_false());
+
+		if (req.data_kv_set) {
+			json_t *key_obj = json_object();
+			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it = req.kv_set_data.GetHead();
+			bool found_end = false;
+			std::ostringstream ss;
+			while (it.first != it.second) {
+				std::pair< std::string, std::string> item = *it.first;
+
+				json_object_set_new(key_obj, item.first.c_str(), json_string(item.second.c_str()));
+				it.first++;
+			}
+
+			json_object_set_new(send_json, "keyList", key_obj);
+		}
 
 		OS::HTTPClient client(GP_PERSIST_BACKEND_URL);
 
@@ -207,6 +228,14 @@ namespace GSBackend {
 
 		PersistBackendResponse resp_data;
 		resp_data.type = EPersistBackendRespType_SetUserData;
+
+		success_obj = json_object_get(send_json, "modified_time");
+		if (success_obj) {
+			resp_data.mod_time = json_integer_value(success_obj);
+		}
+		else {
+			resp_data.mod_time = 0;
+		}
 		req.callback(success, resp_data, req.mp_peer, req.mp_extra);
 
 		json_decref(send_json);
@@ -215,11 +244,12 @@ namespace GSBackend {
 		json_t *send_json = json_object();
 
 		json_object_set_new(send_json, "profileid", json_integer(req.profileid));
-		json_object_set_new(send_json, "type", json_string("get_persist_data"));
+		json_object_set_new(send_json, "mode", json_string("get_persist_data"));
 
 
 		json_object_set_new(send_json, "data_index", json_integer(req.data_index));
 		json_object_set_new(send_json, "data_type", json_integer(req.data_type));
+		json_object_set_new(send_json, "game_id", json_integer(req.mp_peer->GetGame().gameid));
 
 		std::vector<std::string>::iterator it = req.keyList.begin();
 
@@ -254,6 +284,28 @@ namespace GSBackend {
 		if(data_obj) {
 			resp_data.game_instance_identifier = json_string_value(data_obj);
 		}
+
+		data_obj = json_object_get(send_json, "keyList");
+
+		const char *key;
+		json_t *value;
+
+		if (data_obj) {
+			std::ostringstream ss;
+			json_object_foreach(data_obj, key, value) {
+				ss << "\\" << key << "\\" << json_string_value(value);				
+			}
+			resp_data.kv_data = ss.str();
+		}
+
+		success_obj = json_object_get(send_json, "modified_time");
+		if (success_obj) {
+			resp_data.mod_time = json_integer_value(success_obj);
+		}
+		else {
+			resp_data.mod_time = 0;
+		}
+		
 		req.callback(success, resp_data, req.mp_peer, req.mp_extra);
 
 		json_decref(send_json);

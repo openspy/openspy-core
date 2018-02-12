@@ -157,23 +157,55 @@ namespace GS {
 	void Peer::getPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		//// \\getpdr\\1\\lid\\1\\length\\5\\data\\mydata\\final
 		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
-		printf("Got persist data: %s\n", response_data.game_instance_identifier.c_str());
 
 		std::ostringstream ss;
-		//void Base64StrToBin(const char *str, uint8_t **out, int &len);
-		uint8_t *data;
-		int data_len = 0;
-		OS::Base64StrToBin(response_data.game_instance_identifier.c_str(), &data, data_len);
-		ss << "\\getpdr\\" << 1 << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\length\\" << data_len << "\\data\\";
 
-		//SendPacket
+		uint8_t *data = NULL;
+		int data_len = 0;
+		
+		ss << "\\getpdr\\" << 1 << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\mod\\" << response_data.mod_time;// << "\\length\\" << data_len << "\\data\\";
+
 		OS::Buffer buffer;
-		buffer.WriteNTS(ss.str());
-		buffer.WriteBuffer(data, data_len);
+		buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
+		if (response_data.game_instance_identifier.length() > 0) {
+
+			OS::Base64StrToBin(response_data.game_instance_identifier.c_str(), &data, data_len);
+			ss.str("");
+			ss << "\\length\\" << data_len << "\\data\\";
+			buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
+			buffer.WriteBuffer(data, data_len);
+		}
+		else {
+			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it = response_data.kv_data.GetHead();
+			std::ostringstream kv_ss;
+			while (it.first != it.second) {
+				std::pair< std::string, std::string> item = *it.first;
+				kv_ss << "\\" << item.first << "\\" << item.second;
+				it.first++;
+			}
+			data_len = kv_ss.str().length();
+
+			ss.str("");
+			ss << "\\length\\" << data_len << "\\data\\";
+			buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
+
+			std::string kv_str = kv_ss.str();
+			for (int i = 0; i < kv_str.length(); i++) {
+				if (kv_str[i] == '\\') {
+					buffer.WriteByte(1);
+				}
+				else {
+					buffer.WriteByte(kv_str[i]);
+				}
+				
+			}
+			
+		}
 
 		peer->SendPacket(buffer);
 
-		free((void *)data);
+		if(data)
+			free((void *)data);
 		free((void *)persist_request_data);
 	}
 	void Peer::handle_getpd(OS::KVReader data_parser) {
@@ -230,7 +262,7 @@ namespace GS {
 		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
 
 		std::ostringstream ss;
-		ss << "\\setpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid;
+		ss << "\\setpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\mod\\" << response_data.mod_time;
 		peer->SendPacket(ss.str());
 
 		free((void *)persist_request_data);
@@ -244,7 +276,7 @@ namespace GS {
 		persisttype_t persist_type = (persisttype_t)data_parser.GetValueInt("ptype");
 
 
-		if(pid != m_profile.id) {
+		if(pid != m_profile.id || persist_type == pd_public_ro || persist_type == pd_private_ro) {
 			send_error(GPShared::GP_NOT_LOGGED_IN);
 			return;
 		}
@@ -253,7 +285,31 @@ namespace GS {
 
 		std::string data = data_parser.GetValue("data");
 		int client_data_len = data_parser.GetValueInt("length");
-		if(!data.length() || client_data_len != data.length()) {
+
+		OS::KVReader save_data;
+
+		if (kv_set) {
+			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it = data_parser.GetHead();
+			bool found_end = false;
+			std::ostringstream ss;
+			while (it.first != it.second) {
+				std::pair< std::string, std::string> item = *it.first;
+				
+				if (found_end) {
+					ss << "\\" << item.first << "\\" << item.second;
+				}
+				if (item.first.compare("data") == 0) {
+					found_end = true;
+				}
+				it.first++;
+			}
+
+			data = ss.str();
+			save_data = data;
+			client_data_len--;
+		}
+
+		if (!data.length() || client_data_len != data.length()) {
 			send_error(GPShared::GP_PARSE);
 			return;
 		}
@@ -264,7 +320,8 @@ namespace GS {
 		persist_request_data->profileid = pid;
 		persist_request_data->operation_id = operation_id;
 
-		GSBackend::PersistBackendTask::SubmitSetPersistData(m_profile.id, this, (void *)persist_request_data, setPersistDataCallback, b64_str, persist_type, data_index, kv_set);
+
+		GSBackend::PersistBackendTask::SubmitSetPersistData(m_profile.id, this, (void *)persist_request_data, setPersistDataCallback, b64_str, persist_type, data_index, kv_set, save_data);
 
 		free((void *)b64_str);
 	}
@@ -333,7 +390,7 @@ namespace GS {
 	}
 
 	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {
-		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, this, operation_id);
+		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, NULL, operation_id, this);
 	}
 	void Peer::perform_preauth_auth(std::string auth_token, const char *response, int operation_id) {
 		//OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, this, operation_id);
@@ -345,7 +402,7 @@ namespace GS {
 		int operation_id = data_parser.GetValueInt("lid");
 
 		std::string resp;
-		if (data_parser.HasKey("resp")) {
+		if (!data_parser.HasKey("resp")) {
 			send_error(GPShared::GP_PARSE);
 			return;
 		}
@@ -432,6 +489,7 @@ namespace GS {
 		if(attach_final) {
 			buffer.WriteBuffer((uint8_t*)"\\final\\", 7);
 		}
+
 		gamespy3dxor((char *)buffer.GetHead(), buffer.size());
 		int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
 
