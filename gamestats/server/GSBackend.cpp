@@ -229,7 +229,7 @@ namespace GSBackend {
 		PersistBackendResponse resp_data;
 		resp_data.type = EPersistBackendRespType_SetUserData;
 
-		success_obj = json_object_get(send_json, "modified_time");
+		success_obj = json_object_get(send_json, "modified");
 		if (success_obj) {
 			resp_data.mod_time = json_integer_value(success_obj);
 		}
@@ -298,7 +298,7 @@ namespace GSBackend {
 			resp_data.kv_data = ss.str();
 		}
 
-		success_obj = json_object_get(send_json, "modified_time");
+		success_obj = json_object_get(send_json, "modified");
 		if (success_obj) {
 			resp_data.mod_time = json_integer_value(success_obj);
 		}
