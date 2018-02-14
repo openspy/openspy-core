@@ -404,21 +404,11 @@ class AuthService(BaseService):
                 raise OS_InvalidParam("uniquenick")
         except Profile.DoesNotExist:
             user_profile_srv = UserProfileMgrService()
+            #this should raise an exception instead of return an error object...
             profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'user': user})
             ret["new_profile"] = True
             if "error" in profile:
-                reason = 0
-                if profile["error"] == "INVALID_UNIQUENICK":
-                    raise OS_InvalidParam(profile_data["uniquenick"])
-                elif profile["error"] == "INVALID_NICK":
-                    raise OS_InvalidParam(profile_data["nick"])
-                elif profile["error"] == "UNIQUENICK_IN_USE":
-                    raise OS_UniqueNickInUse(profile_data["uniquenick"])
-                ret = {'reason' : reason}
-                if "profile" in profile:
-                    ret["profile"] = profile["profile"]
-
-                ret["new_profile"] = False
+                ret["error"] = profile["error"]
                 return ret
         ret["profile"] = profile
         return ret

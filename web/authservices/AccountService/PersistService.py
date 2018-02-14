@@ -156,9 +156,10 @@ class PersistService(BaseService):
             for key in request_body["keyList"]:
                 
                 result = self.get_keyed_data(persist_req_data, key)
-                kv_results[result["key_name"]] = result["key_value"].decode('utf8')
-                if result["modified"] > highest_modified:
-                    highest_modified = result["modified"]
+                if result:
+                    kv_results[result["key_name"]] = result["key_value"].decode('utf8')
+                    if result["modified"] > highest_modified:
+                        highest_modified = result["modified"]
             response["modified"] = highest_modified
             response["keyList"] = kv_results
             response["success"] = True
