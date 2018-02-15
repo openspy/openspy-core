@@ -573,8 +573,8 @@ class AuthService(BaseService):
                     raise OS_InvalidMode()
         except OS_BaseException as e:
             response = e.to_dict()
-        #except Exception as error:
-        #    response = {"error": repr(error)}
+        except Exception as error:
+            response = {"error": repr(error)}
 
         if "user" in response and "password" in response["user"]:
             del response["user"]["password"]
