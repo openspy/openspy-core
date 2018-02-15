@@ -122,6 +122,7 @@ class AuthService(BaseService):
         if true_resp == client_response:
             response["server_response"] = proof
             response["success"] = True
+
         return response
 
     def gs_sesskey(self, sesskey):
@@ -368,10 +369,12 @@ class AuthService(BaseService):
             user = User.get(user_where)
             user = model_to_dict(user)
             if user['password'] != user_data["password"]:
-                raise OS_InvalidParam("password")
+                raise OS_Auth_InvalidCredentials()
+                #raise OS_InvalidParam("password")
         except User.DoesNotExist:
             register_svc = RegistrationService()
             user = register_svc.try_register_user(user_data)
+            user = user["user"]
 
         profile_data = request_body["profile"] #create data
         profile_where = (Profile.deleted == False)
@@ -399,6 +402,7 @@ class AuthService(BaseService):
             del profile['user']['password']
 
             ret["new_profile"] = False
+            ret["success"] = True
 
             if user["id"] != profile["user"]["id"]:
                 raise OS_InvalidParam("uniquenick")
@@ -407,15 +411,21 @@ class AuthService(BaseService):
             #this should raise an exception instead of return an error object...
             profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'user': user})
             ret["new_profile"] = True
+            ret["success"] = True
+            
+            ret = {**ret, **profile}
+
             if "error" in profile:
                 ret["error"] = profile["error"]
-                return ret
+            return ret
+        
         ret["profile"] = profile
+        ret["user"] = user
         return ret
 
 
     ## auth
-    def handle_auth_find_user_and_profile(self, request_body, hash_type):
+    def handle_auth_find_user_and_profile(self, request_body, hash_type, no_exception):
         resp = {}
         if "user" in request_body:
             user_body = request_body["user"]
@@ -431,31 +441,31 @@ class AuthService(BaseService):
 
         if 'uniquenick' in profile_body:
             resp["profile"] = self.get_profile_by_uniquenick(profile_body['uniquenick'], profile_body['namespaceid'], user_body['partnercode'])
-            if resp["profile"] == None:
+            if resp["profile"] == None and not no_exception:
                 raise OS_Auth_NoSuchUser()
             resp["user"] = resp["profile"].user
         elif 'nick' in profile_body and 'email' in user_body:
             resp["profile"] = self.get_profile_by_nick_email(profile_body['nick'], profile_body['namespaceid'], user_body['email'], user_body['partnercode'])
-            if resp["profile"] == None:
+            if resp["profile"] == None and not no_exception:
                 raise OS_Auth_NoSuchUser()
         elif "email" in user_body:
             resp["user"] = self.get_user_by_email(user_body['email'], user_body['partnercode'])
-            if resp["user"] == None:
+            if resp["user"] == None and not no_exception:
                 raise OS_Auth_NoSuchUser()
         elif "userid" in request_body:
             resp["user"] = self.get_user_by_userid(request_body["userid"])
-            if resp["user"] == None:
+            if resp["user"] == None and not no_exception:
                 raise OS_Auth_NoSuchUser()
         elif "profileid" in request_body:
             resp["profile"] = self.get_profile_by_id(request_body["profileid"])
         elif "id" in user_body:
             resp["user"] = self.get_user_by_userid(user_body["id"])
-            if resp["user"] == None:
+            if resp["user"] == None and not no_exception:
                 raise OS_Auth_NoSuchUser()
         elif "id" in profile_body:
             resp["profile"] = self.get_profile_by_id(profile_body["id"])
 
-        if "profile" in resp and "user" not in resp:
+        if "profile" in resp and "user" not in resp and resp["profile"] != None:
             resp["user"] = resp["profile"].user
         return resp
 
@@ -464,7 +474,7 @@ class AuthService(BaseService):
         if 'hash_type' in request_body:
             hash_type = request_body['hash_type']
 
-        account_data = self.handle_auth_find_user_and_profile(request_body, hash_type)
+        account_data = self.handle_auth_find_user_and_profile(request_body, hash_type,hash_type == "auth_or_create_profile")
 
         hash_type_handlers = {
             "plain": self.test_pass_plain_by_userid,
@@ -483,16 +493,36 @@ class AuthService(BaseService):
             auth_response = hash_type_handlers[hash_type](request_body, account_data)
 
         if "success" in auth_response and auth_response["success"]:
-            if "user" in account_data:
-                response["user"] = model_to_dict(account_data["user"])
+            user_source = {}
+            response["success"] = True
+            if "user" in auth_response:
+                user_source["user"] = auth_response["user"]
+                del auth_response["user"]
+            elif "user" in account_data:
+                user_source["user"] = account_data["user"]
+
+            if "profile" in auth_response:
+                user_source["profile"] = auth_response["profile"]
+                del auth_response["profile"]
+            elif "profile" in account_data:
+                user_source["profile"] = account_data["profile"]
+
+            if "user" in user_source:
+                if not isinstance(user_source["user"], dict):
+                    user_source["user"] = model_to_dict(user_source["user"])
+
+                response["user"] = user_source["user"]
                 del response["user"]["password"]
-            if "profile" in account_data:
-                response["profile"] = model_to_dict(account_data["profile"])
-            response = {**auth_response, **response}
+            if "profile" in user_source:
+                if not isinstance(user_source["profile"], dict):
+                    user_source["profile"] = model_to_dict(user_source["profile"])
+                response["profile"] = user_source["profile"]
+            response = {**user_source, **response, **auth_response}
         else:
             raise OS_Auth_InvalidCredentials()
 
         if "save_session" in request_body and request_body["save_session"] == True and response['success'] == True:
+            session_data = None
             if "profile" in response:
                 session_data = self.create_auth_session(response["profile"], response["user"])
             elif "user" in response:
@@ -502,6 +532,7 @@ class AuthService(BaseService):
         if "set_context" in request_body and "session_key" in response:
             if request_body["set_context"] == "profile":
                 self.set_auth_context(response["session_key"], response["profile"])
+
         return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing
@@ -542,13 +573,12 @@ class AuthService(BaseService):
                     raise OS_InvalidMode()
         except OS_BaseException as e:
             response = e.to_dict()
-        except Exception as error:
-            response = {"error": repr(error)}
+        #except Exception as error:
+        #    response = {"error": repr(error)}
 
         if "user" in response and "password" in response["user"]:
             del response["user"]["password"]
         if "profile" in response and "user" in response["profile"]:
             if "password" in response["profile"]["user"]:
                 del response["profile"]["user"]["password"]
-
         return response

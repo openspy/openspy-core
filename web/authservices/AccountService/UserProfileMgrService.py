@@ -133,7 +133,8 @@ class UserProfileMgrService(BaseService):
         profile = Profile.get((Profile.id == profile_pk))
         profile = model_to_dict(profile)
         del profile["user"]
-        return {"profile": profile, "success": True}
+        user = model_to_dict(user)
+        return {"user": user, "profile": profile, "success": True}
     def handle_delete_profile(self, data):
         profile_data = data["profile"]
         response = {"success": False}

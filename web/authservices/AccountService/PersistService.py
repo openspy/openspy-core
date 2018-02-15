@@ -23,11 +23,13 @@ class PersistService(BaseService):
 
     def handle_new_game(self, request_body):
         response = {}
+        print("NEW GAME: {}\n".format(request_body))
         data = {'game_identifier': "NOT_IMPLEMENTED"}
         response['success'] = True
         response["data"] = data
         return response
     def handle_update_game(self, request_body):
+        print("UPDATE GAME: {}\n".format(request_body))
         response = {}
         response['success'] = True
         response["data"] = {}
