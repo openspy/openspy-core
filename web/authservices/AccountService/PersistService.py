@@ -66,8 +66,10 @@ class PersistService(BaseService):
         except (PersistKeyedData.DoesNotExist, Profile.DoesNotExist) as e:
             pass
         try:
-
-            data_entry = PersistKeyedData.select().where((PersistKeyedData.key_name == key) & (PersistKeyedData.data_index == persist_data["data_index"]) & (PersistKeyedData.persist_type == persist_data["data_type"]) & (PersistKeyedData.profileid == profile.id) & (PersistKeyedData.gameid == game.id)).get()
+            where = (PersistKeyedData.key_name == key) & (PersistKeyedData.data_index == persist_data["data_index"]) & (PersistKeyedData.persist_type == persist_data["data_type"]) & (PersistKeyedData.profileid == profile.id) & (PersistKeyedData.gameid == game.id)
+            if "modified_since" in persist_data:
+                where = (where) & (PersistKeyedData.modified > persist_data["modified_since"])
+            data_entry = PersistKeyedData.select().where(where).get()
             ret = model_to_dict(data_entry)
             ret["modified"] = calendar.timegm(ret["modified"].utctimetuple())
             del ret["profile"]
@@ -118,7 +120,10 @@ class PersistService(BaseService):
             pass
         ret = None
         try:
-            data_entry = PersistData.select().where((PersistData.data_index == persist_data["data_index"]) & (PersistData.persist_type == persist_data["data_type"]) & (PersistData.profileid == profile.id) & (PersistData.gameid == game.id)).get()
+            where = (PersistData.data_index == persist_data["data_index"]) & (PersistData.persist_type == persist_data["data_type"]) & (PersistData.profileid == profile.id) & (PersistData.gameid == game.id)
+            if "modified_since" in persist_data:
+                where = (where) & (PersistData.modified > persist_data["modified_since"])
+            data_entry = PersistData.select().where(where).get()
             ret = model_to_dict(data_entry)
             ret["modified"] = calendar.timegm(ret["modified"].utctimetuple())
             del ret["profile"]
@@ -136,14 +141,17 @@ class PersistService(BaseService):
             save_data = {"keyList": request_body["keyList"], **search_params}
             self.set_persist_keyed_data(save_data)
             d = datetime.utcnow()
-            ret["modified"] = calendar.timegm(d.utctimetuple())
+            response["modified"] = calendar.timegm(d.utctimetuple())
 
         response['success'] = True
         return response
     def handle_get_data(self, request_body):
+        print("Get: {}\n".format(request_body))
         response = {"success": False}
         persist_req_data = {"data_index": request_body["data_index"], "data_type": request_body["data_type"], 
         "game_id": request_body["game_id"], "profileid": request_body["profileid"]}
+        if "modified_since" in request_body and request_body["modified_since"] != 0:
+            persist_req_data["modified_since"] = request_body["modified_since"]
         if "keyList" not in request_body:
             persist_data = self.get_persist_raw_data(persist_req_data)
             if persist_data != None:
