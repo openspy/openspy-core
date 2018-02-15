@@ -233,9 +233,10 @@ namespace GP {
 		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, id, this, gamename);
 	}
 	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
-		int err_code = (int)GP_NEWUSER_BAD_NICK;
+		int err_code = 0;
 		std::ostringstream s;
-		if (auth_data.response_code != -1 || !success) {
+		if (!success) {
+			err_code = (int)GP_NEWUSER_BAD_NICK;
 			switch (auth_data.response_code) {
 				//case OS::CREATE_RESPONE_NICK_IN_USE:
 				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
@@ -250,6 +251,8 @@ namespace GP {
 				case OS::CREATE_RESPONSE_INVALID_UNIQUENICK:
 					err_code = GP_NEWUSER_UNIQUENICK_INVALID;
 					break;
+				case OS::LOGIN_RESPONSE_SERVER_ERROR:
+					err_code = GP_DATABASE;
 			}
 			if (profile.id != 0)
 				s << "\\pid\\" << profile.id;
@@ -258,10 +261,11 @@ namespace GP {
 			return;
 		}
 
-		s << "\\nur\\" << err_code;
+		s << "\\nur\\";
 		s << "\\userid\\" << user.id;
 		s << "\\profileid\\" << profile.id;
-
+		s << "\\id\\" << operation_id;
+		
 		((Peer *)peer)->SendPacket((const uint8_t*)s.str().c_str(), s.str().length());
 
 		if (auth_data.gamedata.gameid != 0) {
