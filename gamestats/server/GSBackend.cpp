@@ -61,6 +61,7 @@ namespace GSBackend {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
+		req.profileid = peer->GetProfileID();
 		req.type = EPersistRequestType_NewGame;
 		req.callback = cb;
 		peer->IncRef();
@@ -70,6 +71,7 @@ namespace GSBackend {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
+		req.profileid = peer->GetProfileID();
 		req.type = EPersistRequestType_UpdateGame;
 		req.game_instance_identifier = game_instance_identifier;
 		req.callback = cb;

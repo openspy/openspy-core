@@ -432,7 +432,8 @@ namespace OS {
 						profile = LoadProfileFromJson(profile_json);
 						
 						user_json = json_object_get(json_data, "new_profile"); //new account created or not
-						success = json_boolean_value(user_json);
+						success = json_boolean_value(success_obj);
+						auth_data.response_code = LOGIN_RESPONSE_SUCCESS;
 					}
 					json_decref(json_data);
 				}
