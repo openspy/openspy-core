@@ -213,6 +213,8 @@ namespace GS {
 		int pid = data_parser.GetValueInt("pid");
 		int data_index = data_parser.GetValueInt("dindex");
 
+		int modified_since = data_parser.GetValueInt("mod");
+
 		persisttype_t persist_type = (persisttype_t)data_parser.GetValueInt("ptype");
 
 		if(persist_type == pd_private_ro || persist_type == pd_private_rw) {
@@ -255,7 +257,7 @@ namespace GS {
 		persist_request_data->profileid = pid;
 		persist_request_data->operation_id = operation_id;
 
-		GSBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList);
+		GSBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList, modified_since);
 	}
 
 	void Peer::setPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {

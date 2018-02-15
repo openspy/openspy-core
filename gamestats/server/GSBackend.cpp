@@ -168,7 +168,7 @@ namespace GSBackend {
 		peer->IncRef();
 		m_task_pool->AddRequest(req);
 	}
-	void PersistBackendTask::SubmitGetPersistData(int profileid, GS::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList) {
+	void PersistBackendTask::SubmitGetPersistData(int profileid, GS::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList, int modified_since) {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
@@ -178,6 +178,7 @@ namespace GSBackend {
 		req.data_type = type;
 		req.data_index = index;
 		req.keyList = keyList;
+		req.modified_since = modified_since;
 		peer->IncRef();
 		m_task_pool->AddRequest(req);
 	}
@@ -250,6 +251,7 @@ namespace GSBackend {
 		json_object_set_new(send_json, "data_index", json_integer(req.data_index));
 		json_object_set_new(send_json, "data_type", json_integer(req.data_type));
 		json_object_set_new(send_json, "game_id", json_integer(req.mp_peer->GetGame().gameid));
+		json_object_set_new(send_json, "modified_since", json_integer(req.modified_since));
 
 		std::vector<std::string>::iterator it = req.keyList.begin();
 

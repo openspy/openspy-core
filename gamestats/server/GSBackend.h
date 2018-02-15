@@ -63,6 +63,7 @@ namespace GSBackend {
 		std::vector<std::string> keyList;
 		std::string game_instance_identifier;
 		int profileid;
+		int modified_since;
 
 		persisttype_t data_type;
 		int data_index;
@@ -79,7 +80,7 @@ namespace GSBackend {
 			static void SubmitNewGameSession(GS::Peer *peer, void* extra, PersistBackendCallback cb);
 			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb);
 			static void SubmitSetPersistData(int profileid, GS::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set, OS::KVReader kv_set_data);
-			static void SubmitGetPersistData(int profileid, GS::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList);
+			static void SubmitGetPersistData(int profileid, GS::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList, int modified_since = 0);
 
 			void AddDriver(GS::Driver *driver);
 			void RemoveDriver(GS::Driver *driver);
