@@ -45,7 +45,7 @@ class PersistService(BaseService):
             raise OS_MissingParam("game_id")
 
         if request_body["game_id"] in self.snapshot_handlers:
-            module = self.snapshot_handlers[request_body["game_id"]]["module"]
+            module = self.snapshot_handlers[request_body["game_id"]]["module"]()
             return module.handle_update_game(request_body)
             
         return response
