@@ -24,28 +24,30 @@ class PersistService(BaseService):
         BaseService.__init__(self)
 
         self.snapshot_handlers = {
-            613: {"gamename": "mototrax", "module": THPS6PC_Handler}
+            1003 : {"gamename": "mototrax", "module": THPS6PC_Handler}
+            1324 : {"gamename": "stella", "module": None}
         }
-        print("snapshot handler: {} {}\n".format(self.snapshot_handlers))
 
     def handle_new_game(self, request_body):
+        response = {"success": False}
+
+        if "game_id" not in request_body:
+            raise OS_MissingParam("game_id")
+
+        if request_body["game_id"] in self.snapshot_handlers:
+            module = self.snapshot_handlers[request_body["game_id"]]["module"]()
+            return module.handle_new_game(request_body)
+
+        return response
+    def handle_update_game(self, request_body):
         response = {"success": False}
         if "game_id" not in request_body:
             raise OS_MissingParam("game_id")
 
         if request_body["game_id"] in self.snapshot_handlers:
             module = self.snapshot_handlers[request_body["game_id"]]["module"]
-            print("Run module: {}\n".format(module))
-        #print("NEW GAME: {}\n".format(request_body))
-        #data = {'game_identifier': "NOT_IMPLEMENTED"}
-        #response['success'] = True
-        #response["data"] = data
-        return response
-    def handle_update_game(self, request_body):
-        print("UPDATE GAME: {}\n".format(request_body))
-        #response = {}
-       # response['success'] = True
-        #response["data"] = {}
+            return module.handle_update_game(request_body)
+            
         return response
     def set_persist_raw_data(self, persist_data):
         profile = None
@@ -222,7 +224,7 @@ class PersistService(BaseService):
                 raise OS_InvalidMode()
         except OS_BaseException as e:
             response = e.to_dict()
-        except Exception as error:
-            response = {"error": repr(error)}
+        #except Exception as error:
+            #response = {"error": repr(error)}
 
         return response
