@@ -17,22 +17,35 @@ from Model.Game import Game
 from Model.PersistData import PersistData
 from Model.PersistKeyedData import PersistKeyedData
 
+from AccountService.SH.THPS6PC_Handler import THPS6PC_Handler
+
 class PersistService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
 
+        self.snapshot_handlers = {
+            613: {"gamename": "mototrax", "module": THPS6PC_Handler}
+        }
+        print("snapshot handler: {} {}\n".format(self.snapshot_handlers))
+
     def handle_new_game(self, request_body):
-        response = {}
-        print("NEW GAME: {}\n".format(request_body))
-        data = {'game_identifier': "NOT_IMPLEMENTED"}
-        response['success'] = True
-        response["data"] = data
+        response = {"success": False}
+        if "game_id" not in request_body:
+            raise OS_MissingParam("game_id")
+
+        if request_body["game_id"] in self.snapshot_handlers:
+            module = self.snapshot_handlers[request_body["game_id"]]["module"]
+            print("Run module: {}\n".format(module))
+        #print("NEW GAME: {}\n".format(request_body))
+        #data = {'game_identifier': "NOT_IMPLEMENTED"}
+        #response['success'] = True
+        #response["data"] = data
         return response
     def handle_update_game(self, request_body):
         print("UPDATE GAME: {}\n".format(request_body))
-        response = {}
-        response['success'] = True
-        response["data"] = {}
+        #response = {}
+       # response['success'] = True
+        #response["data"] = {}
         return response
     def set_persist_raw_data(self, persist_data):
         profile = None
@@ -148,7 +161,6 @@ class PersistService(BaseService):
         response['success'] = True
         return response
     def handle_get_data(self, request_body):
-        print("Get: {}\n".format(request_body))
         response = {"success": False}
         persist_req_data = {"data_index": request_body["data_index"], "data_type": request_body["data_type"], 
         "game_id": request_body["game_id"], "profileid": request_body["profileid"]}
