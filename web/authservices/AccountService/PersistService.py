@@ -24,7 +24,7 @@ class PersistService(BaseService):
         BaseService.__init__(self)
 
         self.snapshot_handlers = {
-            1003 : {"gamename": "mototrax", "module": THPS6PC_Handler}
+            1003 : {"gamename": "mototrax", "module": THPS6PC_Handler},
             1324 : {"gamename": "stella", "module": None}
         }
 
