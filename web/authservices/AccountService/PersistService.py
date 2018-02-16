@@ -210,7 +210,7 @@ class PersistService(BaseService):
                 raise OS_InvalidMode()
         except OS_BaseException as e:
             response = e.to_dict()
-        #except Exception as error:
-            #response = {"error": repr(error)}
+        except Exception as error:
+            response = {"error": repr(error)}
 
         return response
