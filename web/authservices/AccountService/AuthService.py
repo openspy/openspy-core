@@ -381,7 +381,11 @@ class AuthService(BaseService):
         profile_where = (Profile.deleted == False)
         force_unique = False
         if "uniquenick" in profile_data:
-            force_unique = True
+            if "namespaceid" in profile_data:
+                if profile_data["namespaceid"] > 0:
+                    force_unique = True
+            else:
+                force_unique = True
             profile_where = (profile_where) & (Profile.uniquenick == profile_data["uniquenick"])
 
         if "nick" in profile_data:
@@ -444,7 +448,6 @@ class AuthService(BaseService):
             resp["profile"] = self.get_profile_by_uniquenick(profile_body['uniquenick'], profile_body['namespaceid'], user_body['partnercode'])
             if resp["profile"] == None and not no_exception:
                 raise OS_Auth_NoSuchUser()
-            resp["user"] = resp["profile"].user
         elif 'nick' in profile_body and 'email' in user_body:
             resp["profile"] = self.get_profile_by_nick_email(profile_body['nick'], profile_body['namespaceid'], user_body['email'], user_body['partnercode'])
             if resp["profile"] == None and not no_exception:
