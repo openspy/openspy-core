@@ -192,7 +192,7 @@ namespace FESL {
 		s << "dobDay=" << (int)m_profile.birthday.GetDay() << "\n";
 		s << "dobMonth=" << (int)m_profile.birthday.GetMonth() << "\n";
 		s << "dobYear=" << (int)m_profile.birthday.GetYear() << "\n";
-		s << "name=Test\n";
+		s << "name=" << m_profile.nick << "\n";
 		s << "email=" << m_user.email << "\n";
 		s << "profileID=" << m_profile.id << "\n";
 		s << "userId=" << m_user.id<< "\n";
@@ -468,6 +468,7 @@ namespace FESL {
 		user.email = kv_list.GetValue("email");
 		user.password = kv_list.GetValue("password");
 		profile.uniquenick = kv_list.GetValue("name");
+		profile.nick = profile.uniquenick;
 
 		profile.birthday = OS::Date::Date(kv_list.GetValueInt("DOBYear"), kv_list.GetValueInt("DOBMonth"), kv_list.GetValueInt("DOBDay"));
 
