@@ -169,8 +169,7 @@ class AuthService(BaseService):
         response["success"] = True
         response['expiretime'] = self.PREAUTH_EXPIRE_TIME
         return response
-    def test_gp_preauth_by_ticket(self, request_body, account_data):
-        
+    def test_gp_preauth_by_ticket(self, request_body, account_data):  
         response = {}
 
         token = request_body['auth_token']
@@ -180,6 +179,7 @@ class AuthService(BaseService):
 
         profileid = int(self.redis_ctx.hget("auth_token_{}".format(token), 'profileid'))
         profile = self.get_profile_by_id(profileid)
+        user = self.get_user_by_userid(profile.userid)
         challenge = self.redis_ctx.hget("auth_token_{}".format(token), 'challenge').decode('utf-8')
         challenge = str(challenge).encode('utf-8')
 
@@ -187,6 +187,7 @@ class AuthService(BaseService):
         crypt_buf = "{}{}{}{}{}{}".format(md5_pw, "                                                ",token, request_body['server_challenge'], request_body['client_challenge'], md5_pw)
         true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
         response['profile'] = model_to_dict(profile)
+        response["user"] = model_to_dict(user)
         response["server_response"] = true_resp
         response["success"] = True
 
@@ -474,7 +475,7 @@ class AuthService(BaseService):
         if 'hash_type' in request_body:
             hash_type = request_body['hash_type']
 
-        account_data = self.handle_auth_find_user_and_profile(request_body, hash_type,hash_type == "auth_or_create_profile")
+        account_data = self.handle_auth_find_user_and_profile(request_body, hash_type,hash_type == "auth_or_create_profile" or hash_type == "gp_preauth")
 
         hash_type_handlers = {
             "plain": self.test_pass_plain_by_userid,
