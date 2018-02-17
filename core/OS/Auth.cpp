@@ -768,9 +768,11 @@ namespace OS {
 	void AuthTask::Handle_AuthWebError(AuthData &data, json_t *error_obj) {
 		std::string error_class, error_name;
 		json_t *item = json_object_get(error_obj, "class");
+		if (!item) goto end_error;
 		error_class = json_string_value(item);
 
 		item = json_object_get(error_obj, "name");
+		if (!item) goto end_error;
 		error_name = json_string_value(item);
 
 		if (error_class.compare("common") == 0) {
@@ -790,6 +792,10 @@ namespace OS {
 				data.response_code = LOGIN_RESPONSE_INVALID_PROFILE;
 			}
 		}
+		return;
+	end_error:
+		data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
+
 	}
 	void AuthTask::TryMakeAuthTicket(int profileid, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
 		AuthRequest request;
