@@ -293,7 +293,8 @@ namespace FESL {
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_NO_ERROR, "AddSubAccount");
 		}
 		else {
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_SYSTEM_ERROR, "AddSubAccount");
+			((Peer *)peer)->handle_profile_search_callback_error(response_reason, FESL_TYPE_ACCOUNT, "AddSubAccount");
+			//((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_SYSTEM_ERROR, "AddSubAccount");
 		}
 	}
 	bool Peer::m_acct_disable_sub_account(OS::KVReader kv_list) {

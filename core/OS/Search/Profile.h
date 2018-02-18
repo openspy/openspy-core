@@ -60,6 +60,7 @@ namespace OS {
 			ProfileSearchTask(int thread_index);
 			~ProfileSearchTask();
 		private:
+			static EProfileResponseType Handle_ProfileWebError(ProfileSearchRequest req, json_t *error_obj);
 			static void PerformSearch(ProfileSearchRequest request);
 			static void *TaskThread(CThread *thread);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);

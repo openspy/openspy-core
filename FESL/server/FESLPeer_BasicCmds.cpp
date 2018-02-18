@@ -58,6 +58,54 @@ namespace FESL {
 		OS::AuthTask::TryAuthUniqueNick_Plain(nick, OS_EA_PARTNER_CODE, 0, password, m_login_auth_cb, NULL, 0, this);
 		return true;
 	}
+	void Peer::handle_auth_callback_error(OS::AuthResponseCode response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
+		FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
+		switch (response_code) {
+		case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+			error = FESL_ERROR_ACCOUNT_EXISTS;
+			break;
+		case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
+			error = FESL_ERROR_ACCOUNT_NOT_FOUND;
+			break;
+		case OS::LOGIN_RESPONSE_INVALID_PROFILE:
+			error = FESL_ERROR_ACCOUNT_NOT_FOUND;
+			break;
+		default:
+		case OS::LOGIN_RESPONSE_SERVERINITFAILED:
+		case OS::LOGIN_RESPONSE_DB_ERROR:
+		case OS::LOGIN_RESPONSE_SERVER_ERROR:
+			break;
+		}
+		SendError(cmd_type, error, TXN);
+	}
+	void Peer::handle_profile_search_callback_error(OS::EProfileResponseType response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
+		/*
+		EProfileResponseType_Success,
+		EProfileResponseType_GenericError,
+		EProfileResponseType_BadNick,
+		EProfileResponseType_Bad_OldNick,
+		EProfileResponseType_UniqueNick_Invalid,
+		EProfileResponseType_UniqueNick_InUse,
+		*/
+		FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
+		switch (response_code) {
+			default:
+			case OS::EProfileResponseType_UniqueNick_Invalid:
+			case OS::EProfileResponseType_Bad_OldNick:
+			case OS::EProfileResponseType_BadNick:
+				SendCustomError(cmd_type, TXN, "Account.ScreenName", "The account name was invalid. Please change and try again.");
+				return;
+			case OS::EProfileResponseType_UniqueNick_InUse:
+				//SendCustomError(cmd_type, TXN, "Account.ScreenName", "The account name is in use. Please choose another name.");
+				error = FESL_ERROR_ACCOUNT_EXISTS;
+				break;
+			case OS::EProfileResponseType_GenericError:
+				error = FESL_ERROR_SYSTEM_ERROR;
+			break;
+		}
+		SendError(cmd_type, error, TXN);
+		
+	}
 	void Peer::m_login_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
 		std::ostringstream s;
 		if (success) {
@@ -85,25 +133,7 @@ namespace FESL {
 			OS::m_profile_search_task_pool->AddRequest(request);
 		}
 		else {
-			FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
-			switch (auth_data.response_code) {
-				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
-					error = FESL_ERROR_ACCOUNT_EXISTS;
-				break;
-				case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
-					error = FESL_ERROR_ACCOUNT_NOT_FOUND;
-				break;
-				case OS::LOGIN_RESPONSE_INVALID_PROFILE:
-					error = FESL_ERROR_ACCOUNT_NOT_FOUND;
-				break;
-				default:
-				case OS::LOGIN_RESPONSE_SERVERINITFAILED:
-				case OS::LOGIN_RESPONSE_DB_ERROR:
-				case OS::LOGIN_RESPONSE_SERVER_ERROR:
-					break;
-
-			}
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, error, "Login");
+			((Peer *)peer)->handle_auth_callback_error(auth_data.response_code, FESL_TYPE_ACCOUNT, "Login");
 		}
 	}
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {

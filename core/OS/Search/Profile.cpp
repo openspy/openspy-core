@@ -214,6 +214,44 @@ namespace OS {
 
 		request.callback(error, results, users_map, request.extra, request.peer);
 	}
+
+	EProfileResponseType ProfileSearchTask::Handle_ProfileWebError(ProfileSearchRequest req, json_t *error_obj) {
+		std::string error_class, error_name, param_name;
+		json_t *item = json_object_get(error_obj, "class");
+		if (!item) goto end_error;
+		error_class = json_string_value(item);
+
+		item = json_object_get(error_obj, "name");
+		if (!item) goto end_error;
+		error_name = json_string_value(item);
+
+		item = json_object_get(error_obj, "param");
+		if (item) {
+			param_name = json_string_value(item);
+		}
+
+		if (error_class.compare("common") == 0) {
+			if (error_name.compare("MissingParam") == 0 || error_name.compare("InvalidMode") == 0) {
+				return EProfileResponseType_GenericError;
+			}
+			else if (error_name.compare("InvalidParam") == 0) {
+				if (param_name.compare("UniqueNick") == 0) {
+					return EProfileResponseType_UniqueNick_Invalid;
+				}
+			}
+		}
+		else if (error_class.compare("auth") == 0) {
+			return EProfileResponseType_GenericError;
+		}
+		else if (error_class.compare("profile") == 0) {
+			if (error_name.compare("UniqueNickInUse") == 0) {
+				return EProfileResponseType_UniqueNick_InUse;
+			}
+		}
+		end_error:
+		return EProfileResponseType_GenericError;
+
+	}
 	void *ProfileSearchTask::TaskThread(CThread *thread) {
 		ProfileSearchTask *task = (ProfileSearchTask *)thread->getParams();
 		

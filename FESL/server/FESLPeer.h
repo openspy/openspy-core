@@ -167,6 +167,7 @@ namespace FESL {
 		static void m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_update_user_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer);
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
+
 		void send_memcheck(int type, int salt = 0);
 		void send_subaccounts();
 		void send_personas();
@@ -193,6 +194,9 @@ namespace FESL {
 		static void m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 		static void m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 		static void m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+
+		void handle_auth_callback_error(OS::AuthResponseCode response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN);
+		void handle_profile_search_callback_error(OS::EProfileResponseType response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN);
 
 		void ResetMetrics();
 
