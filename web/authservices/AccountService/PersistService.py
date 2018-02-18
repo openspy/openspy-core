@@ -24,8 +24,8 @@ class PersistService(BaseService):
         BaseService.__init__(self)
 
         self.snapshot_handlers = {
-            1003 : {"gamename": "mototrax", "module": THPS6PC_Handler},
-            1324 : {"gamename": "stella", "module": None}
+            1003 : {"gamename": "thps6pc", "module": THPS6PC_Handler},
+            #1324 : {"gamename": "stella", "module": None}
         }
 
     def handle_new_game(self, request_body):

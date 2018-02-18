@@ -78,6 +78,7 @@ namespace FESL {
 			OS::ProfileSearchRequest request;
 			request.type = OS::EProfileSearch_Profiles;
 			request.user_search_details.id = user.id;
+			request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
