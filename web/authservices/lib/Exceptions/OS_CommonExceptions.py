@@ -12,6 +12,7 @@ class OS_MissingParam(OS_BaseException):
         self.data["class"] = "common"
         self.data["name"] = "MissingParam"
         self.data["message"] = "Missing required parameter ({})".format(param_name)
+        self.data["param"] = param_name
         super(OS_BaseException, self).__init__(self.data["message"])
 class OS_InvalidParam(OS_BaseException):
     def __init__(self, param_name):
@@ -19,6 +20,7 @@ class OS_InvalidParam(OS_BaseException):
         self.data["class"] = "common"
         self.data["name"] = "InvalidParam"
         self.data["message"] = "Invalid parameter ({})".format(param_name)
+        self.data["param"] = param_name
         super(OS_BaseException, self).__init__(self.data["message"])
 
 #class OS_UniqueNickInUse(OS_BaseException):

@@ -766,7 +766,7 @@ namespace OS {
 
 	}
 	void AuthTask::Handle_AuthWebError(AuthData &data, json_t *error_obj) {
-		std::string error_class, error_name;
+		std::string error_class, error_name, param_name;
 		json_t *item = json_object_get(error_obj, "class");
 		if (!item) goto end_error;
 		error_class = json_string_value(item);
@@ -775,9 +775,22 @@ namespace OS {
 		if (!item) goto end_error;
 		error_name = json_string_value(item);
 
+		item = json_object_get(error_obj, "param");
+		if (item) {
+			param_name = json_string_value(item);
+		}
+
 		if (error_class.compare("common") == 0) {
-			if (error_name.compare("InvalidParam") == 0 || error_name.compare("MissingParam") == 0 || error_name.compare("InvalidMode") == 0) {
+			if (error_name.compare("MissingParam") == 0 || error_name.compare("InvalidMode") == 0) {
 				data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
+			}
+			if (error_name.compare("InvalidParam") == 0) {
+				if (param_name.compare("email") == 0) {
+					data.response_code = CREATE_RESPONSE_INVALID_EMAIL;
+				}
+				else if (param_name.compare("password") == 0) {
+					data.response_code = LOGIN_RESPONSE_INVALID_PASSWORD;
+				}
 			}
 		}
 		else if (error_class.compare("auth") == 0) {

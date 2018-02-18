@@ -49,6 +49,9 @@ namespace FESL {
 		OS::MetricInstance GetMetrics();
 
 		SSL_CTX *getSSLCtx() { return m_ssl_ctx;  };
+
+		std::string decryptString(std::string input);
+		std::string encryptString(std::string input);
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
@@ -69,6 +72,7 @@ namespace FESL {
 		OS::CThread *mp_thread;
 
 		SSL_CTX *m_ssl_ctx;
+		RSA *m_encrypted_login_info_key;
 
 		void *mp_x509_cert_data;
 		void *mp_rsa_key_data;

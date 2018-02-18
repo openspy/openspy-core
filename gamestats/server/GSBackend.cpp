@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <algorithm>
 #include <OS/OpenSpy.h>
+#include <OS/Cache/GameCache.h>
 #include "GSBackend.h"
 #include "GSDriver.h"
 #include "GSServer.h"
@@ -34,7 +35,7 @@ namespace GSBackend {
 	};
 
 	OS::TaskPool<PersistBackendTask, PersistBackendRequest> *m_task_pool = NULL;
-
+	OS::GameCache *m_game_cache = NULL;
 	/* callback for curl fetch */
 	size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
 		if(!contents) {
@@ -50,12 +51,19 @@ namespace GSBackend {
 
 	PersistBackendTask::PersistBackendTask(int thread_index) {
 		m_thread_index = thread_index;
+		struct timeval t;
+		t.tv_usec = 0;
+		t.tv_sec = 3;
+
+		mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(PersistBackendTask::TaskThread, this, true);
 	}
 	PersistBackendTask::~PersistBackendTask() {
 		delete mp_thread;
 		delete mp_mutex;
+
+		Redis::Disconnect(mp_redis_connection);
 	}
 	void PersistBackendTask::SubmitNewGameSession(GS::Peer *peer, void* extra, PersistBackendCallback cb) {
 		PersistBackendRequest req;
@@ -106,7 +114,6 @@ namespace GSBackend {
 			json_t *game_identifier_json = json_object_get(data_json, "game_identifier");
 
 			resp_data.game_instance_identifier = json_string_value(game_identifier_json);
-			resp_data.type = EPersistBackendRespType_NewGame;
 
 			req.callback(success, resp_data, req.mp_peer, req.mp_extra);
 		}
@@ -149,7 +156,6 @@ namespace GSBackend {
 		bool success = success_obj == json_true();
 
 		PersistBackendResponse resp_data;
-		resp_data.type = EPersistBackendRespType_UpdateGame;
 		req.callback(success, resp_data, req.mp_peer, req.mp_extra);
 
 		json_decref(send_json);
@@ -230,7 +236,6 @@ namespace GSBackend {
 		bool success = success_obj == json_true();
 
 		PersistBackendResponse resp_data;
-		resp_data.type = EPersistBackendRespType_SetUserData;
 
 		success_obj = json_object_get(send_json, "modified");
 		if (success_obj) {
@@ -283,7 +288,6 @@ namespace GSBackend {
 
 
 		PersistBackendResponse resp_data;
-		resp_data.type = EPersistBackendRespType_GetUserData;
 
 		if(data_obj) {
 			resp_data.game_instance_identifier = json_string_value(data_obj);
@@ -314,6 +318,30 @@ namespace GSBackend {
 
 		json_decref(send_json);
 	}
+	void PersistBackendTask::SubmitGetGameInfoByGameName(std::string gamename, GS::Peer *peer, void *extra, PersistBackendCallback cb) {
+		PersistBackendRequest req;
+		req.mp_peer = peer;
+		req.mp_extra = extra;
+		req.type = EPersistRequestType_GetGameInfoByGamename;
+		req.callback = cb;
+		req.game_instance_identifier = gamename;
+		peer->IncRef();
+		m_task_pool->AddRequest(req);
+	}
+	void PersistBackendTask::PerformGetGameInfoByGameName(PersistBackendRequest request) {
+		OS::GameData game;
+		OS::GameCacheKey key;
+		PersistBackendResponse resp_data;
+		if (!m_game_cache->LookupGameByName(request.game_instance_identifier, game)) {
+			game = OS::GetGameByName(request.game_instance_identifier.c_str(), this->mp_redis_connection);
+			key.gamename = request.game_instance_identifier;
+			key.id = game.gameid;
+			m_game_cache->AddItem(m_thread_index, key, game);
+		}
+		resp_data.gameData = game;
+		request.callback(game.secretkey[0] != 0, resp_data, request.mp_peer, request.mp_extra);
+	}
+
 	void *PersistBackendTask::TaskThread(OS::CThread *thread) {
 		PersistBackendTask *task = (PersistBackendTask *)thread->getParams();
 		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
@@ -334,6 +362,9 @@ namespace GSBackend {
 						break;
 					case EPersistRequestType_GetUserData:
 						task->PerformGetPersistData(task_params);
+						break;
+					case EPersistRequestType_GetGameInfoByGamename:
+						task->PerformGetGameInfoByGameName(task_params);
 						break;
 				}
 
@@ -358,6 +389,11 @@ namespace GSBackend {
 	}
 	void SetupTaskPool(GS::Server *server) {
 		OS::Sleep(200);
+
+		OS::DataCacheTimeout gameCacheTimeout;
+		gameCacheTimeout.max_keys = 50;
+		gameCacheTimeout.timeout_time_secs = 7200;
+		m_game_cache = new OS::GameCache(NUM_STATS_THREADS + 1, gameCacheTimeout);
 
 		m_task_pool = new OS::TaskPool<PersistBackendTask, PersistBackendRequest>(NUM_STATS_THREADS);
 		server->SetTaskPool(m_task_pool);

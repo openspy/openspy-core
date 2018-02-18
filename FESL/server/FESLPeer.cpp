@@ -273,6 +273,7 @@ namespace FESL {
 
 		request.user_search_details.id = m_user.id;
 		//request.profile_search_details.id = m_profile.id;
+		request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
 		request.profile_search_details.nick = nick;
 		request.profile_search_details.uniquenick = nick;
 		request.extra = this;
@@ -344,8 +345,6 @@ namespace FESL {
 		std::ostringstream s;
 		if (success) {
 			s << "TXN=GameSpyPreAuth\n";
-			/*s << "challenge=pass\n";  // this is the password used in gs_login_server
-			//s << "ticket=O%3d%3d%3d\n";   // base64 of "" */
 			if(auth_data.hash_proof.length())
 				s << "challenge=" << auth_data.hash_proof << "\n";
 			s << "ticket=" << auth_data.session_key << "\n";
@@ -472,7 +471,7 @@ namespace FESL {
 
 		profile.birthday = OS::Date::Date(kv_list.GetValueInt("DOBYear"), kv_list.GetValueInt("DOBMonth"), kv_list.GetValueInt("DOBDay"));
 
-		profile.namespaceid = 0;
+		profile.namespaceid = FESL_ACCOUNT_NAMESPACEID;
 		user.partnercode = OS_EA_PARTNER_CODE;
 		OS::AuthTask::TryCreateUser_OrProfile(user, profile, true, m_newuser_cb, NULL, 0, this);
 		

@@ -93,12 +93,14 @@ namespace FESL {
 			fread(mp_rsa_key_data, rsa_len, 1, fd);
 			fclose(fd);
 
-			if (!SSL_CTX_use_certificate_ASN1(m_ssl_ctx, x509_len, (const unsigned char *)mp_x509_cert_data) ||
-				!SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_RSA, m_ssl_ctx, (const unsigned char *)mp_rsa_key_data, rsa_len)) {
+			if (!SSL_CTX_use_certificate_ASN1(m_ssl_ctx, x509_len-1, (const unsigned char *)mp_x509_cert_data) ||
+				!SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_RSA, m_ssl_ctx, (const unsigned char *)mp_rsa_key_data, rsa_len-1)) {
 				fprintf(stderr, "\nError: problems with the loading of the certificate in memory\n");
 				exit(1);
 			}
 			SSL_CTX_set_verify_depth(m_ssl_ctx, 1);
+
+			m_encrypted_login_info_key = d2i_RSAPrivateKey(NULL, (const unsigned char **)&mp_rsa_key_data, rsa_len); //do this last, because it alters the rsa key data
 		}
 		else {
 			m_ssl_ctx = NULL;
@@ -123,6 +125,10 @@ namespace FESL {
 		}
 		if (mp_rsa_key_data) {
 			free(mp_rsa_key_data);
+		}
+
+		if (m_encrypted_login_info_key) {
+			RSA_free(m_encrypted_login_info_key);
 		}
 	}
 	void *Driver::TaskThread(OS::CThread *thread) {
@@ -308,5 +314,37 @@ namespace FESL {
 
 		mp_mutex->unlock();
 		return peer_metric;
+	}
+	std::string Driver::decryptString(std::string input) {
+		std::string ret;
+		uint8_t *b64_out;
+		int out_len = 0;
+
+		input.replace(input.find("%3d"), input.length(), "=");
+
+		int mem_len = RSA_size(m_encrypted_login_info_key);
+		unsigned char *buf = (unsigned char *)malloc(mem_len);
+
+		OS::Base64StrToBin(input.c_str(), &b64_out, out_len);
+		RSA_private_decrypt(out_len, b64_out,buf, m_encrypted_login_info_key, RSA_PKCS1_PADDING);
+		ret = std::string((char *)buf);
+		if (b64_out)
+			free((void *)b64_out);
+
+		if (buf) {
+			free((void *)buf);
+		}
+		return ret;
+	}
+	std::string Driver::encryptString(std::string input) {
+		std::string ret;
+		int mem_len = RSA_size(m_encrypted_login_info_key);
+		unsigned char *buf = (unsigned char *)malloc(mem_len);
+		RSA_public_encrypt(input.length()+1, (const unsigned char *)input.c_str(),buf, m_encrypted_login_info_key, RSA_PKCS1_PADDING);
+		const char *b64_str = OS::BinToBase64Str(buf, mem_len);
+		ret = std::string(b64_str);
+		free((void *)b64_str);
+		free((void *)buf);
+		return ret;
 	}
 }

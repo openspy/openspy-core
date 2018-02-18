@@ -87,6 +87,9 @@ enum FESL_ERROR {
 	FESL_ERROR_AGE_RESTRICTION = 4294967131,
 };
 
+//FESL uses 2 namespace ids, because EA had a master account with a username, but gamespy does not, by doing this, we are able to have a hidden profile that is the "master account"
+#define FESL_ACCOUNT_NAMESPACEID 1
+#define FESL_PROFILE_NAMESPACEID 0
 namespace FESL {
 	typedef struct _PeerStats {
 		int total_requests;
@@ -179,6 +182,7 @@ namespace FESL {
 		bool m_got_profiles;
 		std::vector<OS::Profile> m_profiles;
 		std::string m_session_key;
+		std::string m_encrypted_login_info;
 		void send_ping();
 		int m_ssl_num_fails;
 

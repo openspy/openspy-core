@@ -41,7 +41,21 @@ namespace FESL {
 		return true;
 	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
-		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), OS_EA_PARTNER_CODE, 0, kv_list.GetValue("password"), m_login_auth_cb, NULL, 0, this);
+		std::string nick, password;
+		if (kv_list.HasKey("encryptedInfo")) {
+			kv_list = ((FESL::Driver *)this->GetDriver())->decryptString(kv_list.GetValue("encryptedInfo"));			
+		}
+
+		nick = kv_list.GetValue("name");
+		password = kv_list.GetValue("password");
+
+		if (kv_list.GetValueInt("returnEncryptedInfo")) {
+			std::ostringstream s;
+			s << "\\name\\" << nick;
+			s << "\\password\\" << password;
+			m_encrypted_login_info = ((FESL::Driver *)this->GetDriver())->encryptString(s.str());
+		}
+		OS::AuthTask::TryAuthUniqueNick_Plain(nick, OS_EA_PARTNER_CODE, 0, password, m_login_auth_cb, NULL, 0, this);
 		return true;
 	}
 	void Peer::m_login_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
@@ -53,6 +67,9 @@ namespace FESL {
 			s << "displayName=" << profile.uniquenick << "\n";
 			s << "userId=" << user.id << "\n";
 			s << "profileId=" << profile.id << "\n";
+			if (((Peer *)peer)->m_encrypted_login_info.length()) {
+				s << "encryptedLoginInfo=" << ((Peer *)peer)->m_encrypted_login_info << "\n";
+			}
 			((Peer *)peer)->m_logged_in = true;
 			((Peer *)peer)->m_user = user;
 			((Peer *)peer)->m_profile = profile;
@@ -61,13 +78,32 @@ namespace FESL {
 			OS::ProfileSearchRequest request;
 			request.type = OS::EProfileSearch_Profiles;
 			request.user_search_details.id = user.id;
+			request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
 			OS::m_profile_search_task_pool->AddRequest(request);
 		}
 		else {
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "Login");
+			FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
+			switch (auth_data.response_code) {
+				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+					error = FESL_ERROR_ACCOUNT_EXISTS;
+				break;
+				case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
+					error = FESL_ERROR_ACCOUNT_NOT_FOUND;
+				break;
+				case OS::LOGIN_RESPONSE_INVALID_PROFILE:
+					error = FESL_ERROR_ACCOUNT_NOT_FOUND;
+				break;
+				default:
+				case OS::LOGIN_RESPONSE_SERVERINITFAILED:
+				case OS::LOGIN_RESPONSE_DB_ERROR:
+				case OS::LOGIN_RESPONSE_SERVER_ERROR:
+					break;
+
+			}
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, error, "Login");
 		}
 	}
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {

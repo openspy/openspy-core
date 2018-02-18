@@ -30,20 +30,14 @@ namespace GSBackend {
 		EPersistRequestType_GetUserData,
 		EPersistRequestType_NewGame,
 		EPersistRequestType_UpdateGame,
+		EPersistRequestType_GetGameInfoByGamename,
 	};
 
-	
-	enum EPersistBackendRespType {
-		EPersistBackendRespType_NewGame,
-		EPersistBackendRespType_UpdateGame,
-		EPersistBackendRespType_SetUserData,
-		EPersistBackendRespType_GetUserData,
-	};
 
 	typedef struct {
 		std::string game_instance_identifier;
 		uint32_t mod_time;
-		EPersistBackendRespType type;
+		OS::GameData gameData;
 
 		OS::KVReader kv_data;
 	} PersistBackendResponse;
@@ -81,6 +75,7 @@ namespace GSBackend {
 			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb);
 			static void SubmitSetPersistData(int profileid, GS::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set, OS::KVReader kv_set_data);
 			static void SubmitGetPersistData(int profileid, GS::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList, int modified_since = 0);
+			static void SubmitGetGameInfoByGameName(std::string gamename, GS::Peer *peer, void *extra, PersistBackendCallback cb);
 
 			void AddDriver(GS::Driver *driver);
 			void RemoveDriver(GS::Driver *driver);
@@ -93,9 +88,11 @@ namespace GSBackend {
 			void PerformUpdateGameSession(PersistBackendRequest req);
 			void PerformSetPersistData(PersistBackendRequest req);
 			void PerformGetPersistData(PersistBackendRequest req);
+			void PerformGetGameInfoByGameName(PersistBackendRequest request);
 
 			std::vector<GS::Driver *> m_drivers;
 			int m_thread_index;
+			Redis::Connection *mp_redis_connection;
 	};
 	#define NUM_STATS_THREADS 8
 	extern OS::TaskPool<PersistBackendTask, PersistBackendRequest> *m_task_pool;
