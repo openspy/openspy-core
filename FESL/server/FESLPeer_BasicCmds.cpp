@@ -84,7 +84,25 @@ namespace FESL {
 			OS::m_profile_search_task_pool->AddRequest(request);
 		}
 		else {
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "Login");
+			FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
+			switch (auth_data.response_code) {
+				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+					error = FESL_ERROR_ACCOUNT_EXISTS;
+				break;
+				case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
+					error = FESL_ERROR_ACCOUNT_NOT_FOUND;
+				break;
+				case OS::LOGIN_RESPONSE_INVALID_PROFILE:
+					error = FESL_ERROR_ACCOUNT_NOT_FOUND;
+				break;
+				default:
+				case OS::LOGIN_RESPONSE_SERVERINITFAILED:
+				case OS::LOGIN_RESPONSE_DB_ERROR:
+				case OS::LOGIN_RESPONSE_SERVER_ERROR:
+					break;
+
+			}
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, error, "Login");
 		}
 	}
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {
