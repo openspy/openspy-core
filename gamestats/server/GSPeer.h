@@ -81,6 +81,7 @@ namespace GS {
 		static void updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_updgame(OS::KVReader data_parser);
 
+		static void onGetGameDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_authp(OS::KVReader data_parser);
 		void handle_auth(OS::KVReader data_parser);
 		void handle_getpid(OS::KVReader data_parser);
@@ -131,6 +132,7 @@ namespace GS {
 		uint16_t m_game_port;
 
 		std::string m_current_game_identifier;
+		std::string m_response;
 		PeerStats m_peer_stats;
 	};
 }

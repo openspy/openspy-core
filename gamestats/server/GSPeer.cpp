@@ -334,8 +334,6 @@ namespace GS {
 		int local_id = data_parser.GetValueInt("id");
 		m_game_port = data_parser.GetValueInt("port");
 
-		std::ostringstream ss;
-
 		if (!data_parser.HasKey("gamename")) {
 			send_error(GPShared::GP_PARSE);
 			return;
@@ -346,22 +344,31 @@ namespace GS {
 			send_error(GPShared::GP_PARSE);
 			return;
 		}
-		response = data_parser.GetValue("response");
+		m_response = data_parser.GetValue("response");
 
-		m_game = OS::GetGameByName(gamename.c_str());
-		if(m_game.secretkey[0] == 0) {
-			send_error(GPShared::GP_CONNECTION_CLOSED);
+
+		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
+		persist_request_data->profileid = 0;
+		persist_request_data->operation_id = local_id;
+		GSBackend::PersistBackendTask::SubmitGetGameInfoByGameName(gamename, this, persist_request_data, onGetGameDataCallback);
+	}
+	void Peer::onGetGameDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
+		std::ostringstream ss;
+		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
+		peer->m_game = response_data.gameData;
+		if(peer->m_game.secretkey[0] == 0) {
+			peer->send_error(GPShared::GP_CONNECTION_CLOSED);
 			return;
 		}
 
-		if(!IsResponseValid(response.c_str())) {
-			send_error(GPShared::GP_CONNECTION_CLOSED);
-			m_delete_flag = true;
+		if(!peer->IsResponseValid(peer->m_response.c_str())) {
+			peer->send_error(GPShared::GP_CONNECTION_CLOSED);
+			peer->m_delete_flag = true;
 			return;
 		}
 
-		ss << "\\lc\\2\\sesskey\\" << m_session_key << "\\proof\\0\\id\\" << local_id;
-		SendPacket(ss.str());
+		ss << "\\lc\\2\\sesskey\\" << peer->m_session_key << "\\proof\\0\\id\\" << persist_request_data->operation_id;
+		peer->SendPacket(ss.str());
 	}
 	void Peer::newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 
@@ -372,7 +379,9 @@ namespace GS {
 		GSBackend::PersistBackendTask::SubmitNewGameSession(this, NULL, newGameCreateCallback);
 	}
 	void Peer::updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-
+		if (extra) {
+			free((void *)extra);
+		}
 	}
 	void Peer::handle_updgame(OS::KVReader data_parser) {
 		//\updgame\\sesskey\%d\done\%d\gamedata\%s
