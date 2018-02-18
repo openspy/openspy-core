@@ -55,7 +55,7 @@ namespace FESL {
 			s << "\\password\\" << password;
 			m_encrypted_login_info = ((FESL::Driver *)this->GetDriver())->encryptString(s.str());
 		}
-		OS::AuthTask::TryAuthUniqueNick_Plain(nick, OS_EA_PARTNER_CODE, 0, password, m_login_auth_cb, NULL, 0, this);
+		OS::AuthTask::TryAuthUniqueNick_Plain(nick, OS_EA_PARTNER_CODE, FESL_ACCOUNT_NAMESPACEID, password, m_login_auth_cb, NULL, 0, this);
 		return true;
 	}
 	void Peer::handle_auth_callback_error(OS::AuthResponseCode response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
