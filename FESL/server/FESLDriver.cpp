@@ -93,14 +93,14 @@ namespace FESL {
 			fread(mp_rsa_key_data, rsa_len, 1, fd);
 			fclose(fd);
 
-			m_encrypted_login_info_key = d2i_RSAPrivateKey(NULL, (const unsigned char **)&mp_rsa_key_data, rsa_len);
-
-			if (!SSL_CTX_use_certificate_ASN1(m_ssl_ctx, x509_len, (const unsigned char *)mp_x509_cert_data) ||
-				!SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_RSA, m_ssl_ctx, (const unsigned char *)mp_rsa_key_data, rsa_len)) {
+			if (!SSL_CTX_use_certificate_ASN1(m_ssl_ctx, x509_len-1, (const unsigned char *)mp_x509_cert_data) ||
+				!SSL_CTX_use_PrivateKey_ASN1(EVP_PKEY_RSA, m_ssl_ctx, (const unsigned char *)mp_rsa_key_data, rsa_len-1)) {
 				fprintf(stderr, "\nError: problems with the loading of the certificate in memory\n");
 				exit(1);
 			}
 			SSL_CTX_set_verify_depth(m_ssl_ctx, 1);
+
+			m_encrypted_login_info_key = d2i_RSAPrivateKey(NULL, (const unsigned char **)&mp_rsa_key_data, rsa_len); //do this last, because it alters the rsa key data
 		}
 		else {
 			m_ssl_ctx = NULL;
@@ -320,6 +320,7 @@ namespace FESL {
 		uint8_t *b64_out;
 		int out_len = 0;
 
+		input.replace(input.find("%3d"), input.length(), "=");
 
 		int mem_len = RSA_size(m_encrypted_login_info_key);
 		unsigned char *buf = (unsigned char *)malloc(mem_len);
