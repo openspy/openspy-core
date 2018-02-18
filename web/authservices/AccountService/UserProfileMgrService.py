@@ -101,12 +101,13 @@ class UserProfileMgrService(BaseService):
         try:
             if namespaceid != 0:
                 profile = Profile.get((Profile.uniquenick == uniquenick) & (Profile.namespaceid == namespaceid) & (Profile.deleted == False))
+                return {"exists": True, "profile": profile}
             else:
-                profile = Profile.get((Profile.uniquenick == uniquenick) & (Profile.deleted == False))
+                #profile = Profile.get((Profile.uniquenick == uniquenick) & (Profile.deleted == False))
 
-                profile = model_to_dict(profile)
-                del profile["user"]["password"]
-            return {"exists": True, "profile": profile}
+                #profile = model_to_dict(profile)
+                #del profile["user"]["password"]
+                return {"exists": False}
         except Profile.DoesNotExist:
             return {"exists": False}
     def handle_create_profile(self, data):
