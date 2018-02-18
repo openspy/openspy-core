@@ -226,5 +226,4 @@ class PersistService(BaseService):
             response = e.to_dict()
         except Exception as error:
             response = {"error": repr(error)}
-
         return response

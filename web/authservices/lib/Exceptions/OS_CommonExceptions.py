@@ -21,13 +21,13 @@ class OS_InvalidParam(OS_BaseException):
         self.data["message"] = "Invalid parameter ({})".format(param_name)
         super(OS_BaseException, self).__init__(self.data["message"])
 
-class OS_UniqueNickInUse(OS_BaseException):
-    def __init__(self, param_name):
-        self.data = {}
-        self.data["class"] = "profile"
-        self.data["name"] = "UniqueNickInUse"
-        self.data["message"] = "Unique nick in use ({})".format(param_name)
-        super(OS_BaseException, self).__init__(self.data["message"])
+#class OS_UniqueNickInUse(OS_BaseException):
+    #def __init__(self, param_name):
+        #self.data = {}
+        #self.data["class"] = "profile"
+        #self.data["name"] = "UniqueNickInUse"
+        #self.data["message"] = "Unique nick in use ({})".format(param_name)
+        #super(OS_BaseException, self).__init__(self.data["message"])
 
 class OS_UserExists(OS_BaseException):
     def __init__(self):
