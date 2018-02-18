@@ -80,6 +80,8 @@ namespace OS {
 
 			json_object_set_new(user_obj, "partnercode", json_integer(request.user_search_details.partnercode));
 
+			json_object_set_new(user_obj, "namespaceid", json_integer(request.profile_search_details.namespaceid));
+
 
 			//profile parameters
 			if (request.profile_search_details.nick.length())

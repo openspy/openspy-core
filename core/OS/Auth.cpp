@@ -944,7 +944,7 @@ namespace OS {
 		request.callback = cb;
 		request.create_session = create_session;
 		request.operation_id = operation_id;
-		request.profile.namespaceid = -1;
+		
 		if (peer) {
 			peer->IncRef();
 		}
