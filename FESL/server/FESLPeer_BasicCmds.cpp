@@ -41,7 +41,21 @@ namespace FESL {
 		return true;
 	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
-		OS::AuthTask::TryAuthUniqueNick_Plain(kv_list.GetValue("name"), OS_EA_PARTNER_CODE, 0, kv_list.GetValue("password"), m_login_auth_cb, NULL, 0, this);
+		std::string nick, password;
+		if (kv_list.HasKey("encryptedInfo")) {
+			kv_list = ((FESL::Driver *)this->GetDriver())->decryptString(kv_list.GetValue("encryptedInfo"));			
+		}
+
+		nick = kv_list.GetValue("name");
+		password = kv_list.GetValue("password");
+
+		if (kv_list.GetValueInt("returnEncryptedInfo")) {
+			std::ostringstream s;
+			s << "\\name\\" << nick;
+			s << "\\password\\" << password;
+			m_encrypted_login_info = ((FESL::Driver *)this->GetDriver())->encryptString(s.str());
+		}
+		OS::AuthTask::TryAuthUniqueNick_Plain(nick, OS_EA_PARTNER_CODE, 0, password, m_login_auth_cb, NULL, 0, this);
 		return true;
 	}
 	void Peer::m_login_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
@@ -53,6 +67,9 @@ namespace FESL {
 			s << "displayName=" << profile.uniquenick << "\n";
 			s << "userId=" << user.id << "\n";
 			s << "profileId=" << profile.id << "\n";
+			if (((Peer *)peer)->m_encrypted_login_info.length()) {
+				s << "encryptedLoginInfo=" << ((Peer *)peer)->m_encrypted_login_info << "\n";
+			}
 			((Peer *)peer)->m_logged_in = true;
 			((Peer *)peer)->m_user = user;
 			((Peer *)peer)->m_profile = profile;

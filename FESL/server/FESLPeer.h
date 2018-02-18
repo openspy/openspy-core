@@ -179,6 +179,7 @@ namespace FESL {
 		bool m_got_profiles;
 		std::vector<OS::Profile> m_profiles;
 		std::string m_session_key;
+		std::string m_encrypted_login_info;
 		void send_ping();
 		int m_ssl_num_fails;
 
