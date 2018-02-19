@@ -46,6 +46,7 @@ FESL::EFESLSSL_Type getSSLVersion(configVar *driver_arr) {
 int main() {
 	SSL_library_init();
 	#ifndef _WIN32
+		signal(SIGPIPE, SIG_IGN); // due to openssl SSL_write, we must block broken pipes here
 		signal(SIGINT, sig_handler);
 		signal(SIGTERM, sig_handler);
 	#else
