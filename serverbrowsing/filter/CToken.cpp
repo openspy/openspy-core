@@ -318,12 +318,12 @@ int string_compare_less_than_equals(std::string s1, std::string s2) {
 	return CToken(val); \
 }
 
-DEFINE_BOOLEAN_OPERATION(equals, ==, string_compare_equals, == 0 )
-DEFINE_BOOLEAN_OPERATION(nequals, !=, string_compare_equals, != 0 )
-DEFINE_BOOLEAN_OPERATION(gequals, >=, string_compare_greater_than_equals)
-DEFINE_BOOLEAN_OPERATION(lequals, <=, string_compare_less_than_equals)
-DEFINE_BOOLEAN_OPERATION_NOSTR(lessthan, <, string_compare_less_than_equals)
-DEFINE_BOOLEAN_OPERATION_NOSTR(greaterthan, >, string_compare_greater_than_equals)
+DEFINE_BOOLEAN_OPERATION(equals, == , string_compare_equals, == 0)
+DEFINE_BOOLEAN_OPERATION(nequals, != , string_compare_equals, != 0)
+DEFINE_BOOLEAN_OPERATION(gequals, >= , string_compare_greater_than_equals, ;)
+DEFINE_BOOLEAN_OPERATION(lequals, <= , string_compare_less_than_equals, ;)
+DEFINE_BOOLEAN_OPERATION_NOSTR(lessthan, <)
+DEFINE_BOOLEAN_OPERATION_NOSTR(greaterthan, >)
 DEFINE_BOOLEAN_OPERATION_NOSTR(evaland, &&)
 DEFINE_BOOLEAN_OPERATION_NOSTR(evalor, || )
 
