@@ -11,6 +11,7 @@
 namespace FESL {
 	CommandHandler Peer::m_commands[] = {
 		{ FESL_TYPE_FSYS, "Hello", &Peer::m_fsys_hello_handler },
+		{ FESL_TYPE_FSYS, "Ping", &Peer::m_fsys_ping_handler },
 		{ FESL_TYPE_FSYS, "MemCheck", &Peer::m_fsys_memcheck_handler },
 		{ FESL_TYPE_FSYS, "Goodbye", &Peer::m_fsys_goodbye_handler },
 		{ FESL_TYPE_SUBS, "GetEntitlementByBundle", &Peer::m_subs_get_entitlement_by_bundle },

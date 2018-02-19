@@ -140,6 +140,7 @@ namespace FESL {
 		void SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN);
 	private:
 		bool m_fsys_hello_handler(OS::KVReader kv_list);
+		bool m_fsys_ping_handler(OS::KVReader kv_list);
 		bool m_fsys_memcheck_handler(OS::KVReader kv_list);
 		bool m_acct_gettos_handler(OS::KVReader kv_list);
 		bool m_fsys_goodbye_handler(OS::KVReader kv_list);

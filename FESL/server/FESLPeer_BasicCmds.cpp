@@ -26,6 +26,9 @@ namespace FESL {
 		SendPacket(FESL_TYPE_FSYS, kv_str);
 		return true;
 	}
+	bool Peer::m_fsys_ping_handler(OS::KVReader kv_list) {
+		return true
+	}
 	bool Peer::m_fsys_goodbye_handler(OS::KVReader kv_list) {
 		m_delete_flag = true;
 		return true;
