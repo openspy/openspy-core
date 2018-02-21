@@ -8,7 +8,18 @@
 
 
 namespace FESL {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, bool use_ssl, const char *x509_path, const char *rsa_priv_path, EFESLSSL_Type ssl_version) : INetDriver(server) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, bool use_ssl, const char *x509_path, const char *rsa_priv_path, EFESLSSL_Type ssl_version) : INetDriver(server) {
+
+		//setup config vars
+		m_server_info.domainPartition = public_info.domainPartition;
+		m_server_info.subDomain = public_info.subDomain;
+		m_server_info.messagingHostname = public_info.messagingHostname;
+		m_server_info.messagingPort = public_info.messagingPort;
+		m_server_info.theaterHostname = public_info.theaterHostname;
+		m_server_info.theaterPort = public_info.theaterPort;
+
+
+		//setup networking
 		uint32_t bind_ip = INADDR_ANY;
 		
 		if ((m_sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){

@@ -11,19 +11,26 @@
 namespace FESL {
 	
 	bool Peer::m_fsys_hello_handler(OS::KVReader kv_list) {
-		/*
-		TXN = Hello
-		domainPartition.domain = eagames
-		messengerIp = messaging.ea.com
-		messengerPort = 13505
-		domainPartition.subDomain = bf2142
-		activityTimeoutSecs = 0
-		curTime = "Nov-18-  17 02%3a19%3a07 UTC"
-		theaterIp = bf2142 - pc.theater.ea.com
-		theaterPort = 18305
-		*/
-		std::string kv_str = "TXN=Hello\ndomainPartition.domain=eagames\nmessengerIp=messaging.ea.com\nmessengerPort=13505\ndomainPartition.subDomain=bf2142\nactivityTimeoutSecs=0\ncurTime=\"Nov-18-  17 02%3a19%3a07 UTC\"\ntheaterIp=bf2142-pc.theater.ea.com\ntheaterPort=18305\n";
-		SendPacket(FESL_TYPE_FSYS, kv_str);
+		std::ostringstream ss;
+	
+		struct tm *newtime;
+		time_t long_time;
+		tm *time_now = localtime(&long_time);
+
+		char timeBuff[128];
+		strftime(timeBuff, sizeof(timeBuff), "%h-%e-%g %T %Z", newtime);
+
+		PublicInfo public_info = ((FESL::Driver *)mp_driver)->GetServerInfo();
+		ss << "TXN=Hello\n";
+		ss << "domainPartition.domain=" << public_info.domainPartition << "\n";
+		ss << "messengerIp=" << public_info.messagingHostname << "\n";
+		ss << "messengerPort=" << public_info.messagingPort << "\n";
+		ss << "domationPartition.subDomain=" << public_info.subDomain << "\n";
+		ss << "activityTimeoutSecs=" << FESL_PING_TIME * 2 << "\n";
+		ss << "curTime\"" << timeBuff << "\"";
+		ss << "theaterIp=" << public_info.theaterHostname << "\n";
+		ss << "theaterPort=" << public_info.theaterPort << "\n";
+		SendPacket(FESL_TYPE_FSYS, ss.str());
 		return true;
 	}
 	bool Peer::m_fsys_ping_handler(OS::KVReader kv_list) {

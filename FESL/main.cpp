@@ -76,7 +76,18 @@ int main() {
 			rsa_path = OS::g_config->getArrayString(driver_arr, "privkey");
 		}
 
-		FESL::Driver *driver = new FESL::Driver(g_gameserver, bind_ip, bind_port, ssl, x509_path, rsa_path, ssl_version);
+		FESL::PublicInfo server_info;
+
+		server_info.domainPartition = OS::g_config->getArrayString(driver_arr, "domainPartition");
+		server_info.subDomain = OS::g_config->getArrayInt(driver_arr, "subDomain");
+
+		server_info.messagingHostname = OS::g_config->getArrayString(driver_arr, "messagingHostname");
+		server_info.messagingPort = OS::g_config->getArrayInt(driver_arr, "messagingPort");
+
+		server_info.theaterHostname = OS::g_config->getArrayString(driver_arr, "theaterHostname");
+		server_info.theaterPort = OS::g_config->getArrayInt(driver_arr, "theaterPort");
+
+		FESL::Driver *driver = new FESL::Driver(g_gameserver, bind_ip, bind_port, server_info, ssl, x509_path, rsa_path, ssl_version);
 		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s:%d (ssl: %d)\n", bind_ip, bind_port, ssl);
 		g_gameserver->addNetworkDriver(driver);
 		it++;
