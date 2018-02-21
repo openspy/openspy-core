@@ -12,12 +12,13 @@ namespace FESL {
 	
 	bool Peer::m_fsys_hello_handler(OS::KVReader kv_list) {
 		std::ostringstream ss;
-	
-		struct tm *newtime;
-		time_t long_time;
-		tm *time_now = localtime(&long_time);
 
 		char timeBuff[128];
+		struct tm *newtime;
+		time_t long_time;
+		time(&long_time);
+		newtime = localtime(&long_time);
+
 		strftime(timeBuff, sizeof(timeBuff), "%h-%e-%g %T %Z", newtime);
 
 		PublicInfo public_info = ((FESL::Driver *)mp_driver)->GetServerInfo();
@@ -27,7 +28,7 @@ namespace FESL {
 		ss << "messengerPort=" << public_info.messagingPort << "\n";
 		ss << "domationPartition.subDomain=" << public_info.subDomain << "\n";
 		ss << "activityTimeoutSecs=" << FESL_PING_TIME * 2 << "\n";
-		ss << "curTime\"" << timeBuff << "\"";
+		ss << "curTime\"" << timeBuff << "\"\n";
 		ss << "theaterIp=" << public_info.theaterHostname << "\n";
 		ss << "theaterPort=" << public_info.theaterPort << "\n";
 		SendPacket(FESL_TYPE_FSYS, ss.str());

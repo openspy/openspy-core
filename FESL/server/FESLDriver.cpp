@@ -331,7 +331,9 @@ namespace FESL {
 		uint8_t *b64_out;
 		int out_len = 0;
 
-		input.replace(input.find("%3d"), input.length(), "=");
+		size_t pos = input.find("%3d");
+		if(pos != std::string::npos)
+			input.replace(pos, input.length(), "=");
 
 		int mem_len = RSA_size(m_encrypted_login_info_key);
 		unsigned char *buf = (unsigned char *)malloc(mem_len);

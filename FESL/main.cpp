@@ -79,7 +79,7 @@ int main() {
 		FESL::PublicInfo server_info;
 
 		server_info.domainPartition = OS::g_config->getArrayString(driver_arr, "domainPartition");
-		server_info.subDomain = OS::g_config->getArrayInt(driver_arr, "subDomain");
+		server_info.subDomain = OS::g_config->getArrayString(driver_arr, "subDomain");
 
 		server_info.messagingHostname = OS::g_config->getArrayString(driver_arr, "messagingHostname");
 		server_info.messagingPort = OS::g_config->getArrayInt(driver_arr, "messagingPort");
