@@ -28,7 +28,7 @@ namespace FESL {
 		ss << "messengerPort=" << public_info.messagingPort << "\n";
 		ss << "domationPartition.subDomain=" << public_info.subDomain << "\n";
 		ss << "activityTimeoutSecs=" << FESL_PING_TIME * 2 << "\n";
-		ss << "curTime\"" << timeBuff << "\"\n";
+		ss << "curTime=\"" << timeBuff << "\"\n";
 		ss << "theaterIp=" << public_info.theaterHostname << "\n";
 		ss << "theaterPort=" << public_info.theaterPort << "\n";
 		SendPacket(FESL_TYPE_FSYS, ss.str());
