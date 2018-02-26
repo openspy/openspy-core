@@ -103,8 +103,6 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 		*token = CToken(EToken_Less);
 	} else if(strncmp(&filter[idx],">", 1) == 0) {
 		*token = CToken(EToken_Greater);
-	} else if(strncmp(&filter[idx],">", 1) == 0) {
-		*token = CToken(EToken_Greater);
 	} else if(strncmp(&filter[idx],"||", 2) == 0 || strncmp(&filter[idx],"OR", 2) == 0) {
 		*token = CToken(EToken_Or);
 		idx ++;
@@ -148,8 +146,13 @@ int getPrecedence(ETokenType token_type) {
 		return 3;
 	} else if(token_type == EToken_Add || token_type == EToken_Subtract) {
 		return 4;
-	} else if(token_type == EToken_Multiply || token_type == EToken_Divide) {
+	}
+	else if (token_type == EToken_Multiply || token_type == EToken_Divide) {
 		return 5;
+	}
+	else if (token_type == EToken_Greater ||
+		token_type == EToken_GreaterEquals || token_type == EToken_Less || token_type == EToken_LessEquals) {
+		return 3;
 	}
 	return 0;
 }
@@ -260,7 +263,22 @@ std::string tokenToString(CToken *token) {
 	return ss.str();
 }
 
-#define DEFINE_BOOLEAN_OPERATION(funcname, _operator) CToken funcname (std::stack<CToken> &stack) { \
+int string_compare_equals(std::string s1, std::string s2) {
+	return s1.compare(s2);
+}
+int string_compare_greater_than(std::string s1, std::string s2) {
+	return s1.length() > s2.length();
+}
+int string_compare_less_than(std::string s1, std::string s2) {
+	return s1.length() < s2.length();
+}
+int string_compare_greater_than_equals(std::string s1, std::string s2) {
+	return s1.length() >= s2.length();
+}
+int string_compare_less_than_equals(std::string s1, std::string s2) {
+	return s1.length() <= s2.length();
+}
+#define DEFINE_BOOLEAN_OPERATION(funcname, _operator, string_compare_func, string_compare_end) CToken funcname (std::stack<CToken> &stack) { \
 	bool val = true; \
 	if (stack.size() >= 2) { \
 		CToken t1, t2; \
@@ -276,7 +294,7 @@ std::string tokenToString(CToken *token) {
 		} else if(t1.getType() == EToken_String || t2.getType() == EToken_String) {\
 			std::string s1 = tokenToString(&t1); \
 			std::string s2 = tokenToString(&t2); \
-			val = s1 _operator s2;\
+			val = string_compare_func (s1, s2) string_compare_end;\
 		} \
 	} \
 	return CToken(val); \
@@ -300,10 +318,10 @@ std::string tokenToString(CToken *token) {
 	return CToken(val); \
 }
 
-DEFINE_BOOLEAN_OPERATION(equals, == )
-DEFINE_BOOLEAN_OPERATION(nequals, != )
-DEFINE_BOOLEAN_OPERATION(gequals, >= )
-DEFINE_BOOLEAN_OPERATION(lequals, <= )
+DEFINE_BOOLEAN_OPERATION(equals, == , string_compare_equals, == 0)
+DEFINE_BOOLEAN_OPERATION(nequals, != , string_compare_equals, != 0)
+DEFINE_BOOLEAN_OPERATION(gequals, >= , string_compare_greater_than_equals, ;)
+DEFINE_BOOLEAN_OPERATION(lequals, <= , string_compare_less_than_equals, ;)
 DEFINE_BOOLEAN_OPERATION_NOSTR(lessthan, <)
 DEFINE_BOOLEAN_OPERATION_NOSTR(greaterthan, >)
 DEFINE_BOOLEAN_OPERATION_NOSTR(evaland, &&)
@@ -532,7 +550,7 @@ TokenOperand resolve_variable(CToken *token, std::map<std::string, std::string>&
 TokenOperand resolve_variable(const char *name, std::map<std::string, std::string>& kvList) {
 	TokenOperand ret;
 	const char *var = kvList[name].c_str();
-	if(var != NULL && atoi(var) != 0 || (var != NULL && var[0] =='0' && var[1] ==0 )) {
+	if((var != NULL && atoi(var) != 0 || (var != NULL && var[0] =='0' && var[1] ==0 )) && (kvList[name].find('.') == std::string::npos)) {
 		ret.token = EToken_Integer;
 		ret.ival = atoi(var);
 	} else if(var != NULL) {

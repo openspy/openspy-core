@@ -17,7 +17,7 @@ namespace FESL {
 			OS::Profile profile = *it;
 			if (profile.uniquenick.compare(uniquenick) == 0) {
 				m_profile = profile;
-				s << "TXN=LoginPersona\n";
+				s << "TXN=NuLoginPersona\n";
 				s << "lkey=" << m_session_key << "\n";
 				s << "profileId=" << m_profile.id << "\n";
 				s << "userId=" << m_user.id << "\n";
@@ -30,14 +30,6 @@ namespace FESL {
 	}
 	bool Peer::m_acct_login_persona(OS::KVReader kv_list) {
 		std::ostringstream s;
-		s << "TXN=NuLoginPersona\n";
-		s << "lkey=" << 555<< "\n";
-		s << "profileId=" << 10083 << "\n";
-		s << "userId=" << 10029 << "\n";
-		m_profile.id = 10083;
-		m_user.id = 10029;
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-
 		loginToPersona(kv_list.GetValue("name"));
 		return true;
 	}
@@ -57,6 +49,20 @@ namespace FESL {
 		SendPacket(FESL_TYPE_ACCOUNT, s.str());
 	}
 	bool Peer::m_acct_nulogin_handler(OS::KVReader kv_list) {
+		std::string nuid, password;
+		if (kv_list.HasKey("encryptedInfo")) {
+			kv_list = ((FESL::Driver *)this->GetDriver())->decryptString(kv_list.GetValue("encryptedInfo"));
+		}
+
+		nuid = kv_list.GetValue("nuid");
+		password = kv_list.GetValue("password");
+
+		if (kv_list.GetValueInt("returnEncryptedInfo")) {
+			std::ostringstream s;
+			s << "\\nuid\\" << nuid;
+			s << "\\password\\" << password;
+			m_encrypted_login_info = ((FESL::Driver *)this->GetDriver())->encryptString(s.str());
+		}
 		OS::AuthTask::TryAuthEmailPassword(kv_list.GetValue("nuid"), OS_EA_PARTNER_CODE, kv_list.GetValue("password"), m_nulogin_auth_cb, NULL, 0, this);
 		return true;
 	}
@@ -78,6 +84,9 @@ namespace FESL {
 			s << "displayName=" << profile.uniquenick << "\n";
 			s << "userId=" << user.id << "\n";
 			s << "profileId=" << profile.id << "\n";
+			if (((Peer *)peer)->m_encrypted_login_info.length()) {
+				s << "encryptedLoginInfo=" << ((Peer *)peer)->m_encrypted_login_info << "\n";
+			}
 			((Peer *)peer)->m_logged_in = true;
 			((Peer *)peer)->m_user = user;
 			((Peer *)peer)->m_profile = profile;
@@ -86,13 +95,14 @@ namespace FESL {
 			OS::ProfileSearchRequest request;
 			request.type = OS::EProfileSearch_Profiles;
 			request.user_search_details.id = user.id;
+			request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
 			OS::m_profile_search_task_pool->AddRequest(request);
 		}
 		else {
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "NuLogin");
+			((Peer *)peer)->handle_auth_callback_error(auth_data.response_code, FESL_TYPE_ACCOUNT, "NuLogin");
 		}
 	}
 	bool Peer::m_acct_get_telemetry_token(OS::KVReader kv_list) {

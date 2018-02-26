@@ -25,11 +25,23 @@ namespace FESL {
 		EFESLSSL_TLS11,
 		EFESLSSL_TLS12,
 	};
+
+
+	typedef struct {
+		std::string domainPartition;
+		std::string subDomain;
+		std::string messagingHostname;
+		uint16_t  messagingPort;
+		std::string theaterHostname;
+		uint16_t  theaterPort;
+	} PublicInfo;
+
+
 	class Peer;
 
 	class Driver : public INetDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port, bool use_ssl = true, const char *x509_path = NULL, const char *rsa_priv_path = NULL, EFESLSSL_Type ssl_version = EFESLSSL_SSLv3);
+		Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, bool use_ssl = true, const char *x509_path = NULL, const char *rsa_priv_path = NULL, EFESLSSL_Type ssl_version = EFESLSSL_SSLv3);
 		~Driver();
 		void think(bool listener_waiting);
 		int getListenerSocket();
@@ -52,6 +64,8 @@ namespace FESL {
 
 		std::string decryptString(std::string input);
 		std::string encryptString(std::string input);
+
+		PublicInfo GetServerInfo() { return m_server_info; };
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
@@ -76,6 +90,8 @@ namespace FESL {
 
 		void *mp_x509_cert_data;
 		void *mp_rsa_key_data;
+
+		PublicInfo m_server_info;
 	};
 }
 #endif //_SBDRIVER_H

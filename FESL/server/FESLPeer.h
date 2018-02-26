@@ -80,7 +80,7 @@ field error names:
 enum FESL_ERROR {
 	FESL_ERROR_CUSTOM = 21,
 	FESL_ERROR_AUTH_FAILURE = 122,
-	FESL_ERROR_ACCOUNT_NOT_FOUND = 102,
+	FESL_ERROR_ACCOUNT_NOT_FOUND = 101,
 	FESL_ERROR_ACCOUNT_EXISTS = 160,
 	FESL_ERROR_NO_ERROR = 182,
 	FESL_ERROR_SYSTEM_ERROR = 99,
@@ -89,7 +89,7 @@ enum FESL_ERROR {
 
 //FESL uses 2 namespace ids, because EA had a master account with a username, but gamespy does not, by doing this, we are able to have a hidden profile that is the "master account"
 #define FESL_ACCOUNT_NAMESPACEID 1
-#define FESL_PROFILE_NAMESPACEID 0
+#define FESL_PROFILE_NAMESPACEID 2
 namespace FESL {
 	typedef struct _PeerStats {
 		int total_requests;
@@ -140,6 +140,7 @@ namespace FESL {
 		void SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN);
 	private:
 		bool m_fsys_hello_handler(OS::KVReader kv_list);
+		bool m_fsys_ping_handler(OS::KVReader kv_list);
 		bool m_fsys_memcheck_handler(OS::KVReader kv_list);
 		bool m_acct_gettos_handler(OS::KVReader kv_list);
 		bool m_fsys_goodbye_handler(OS::KVReader kv_list);

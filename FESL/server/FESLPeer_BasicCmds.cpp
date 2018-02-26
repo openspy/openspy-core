@@ -11,19 +11,30 @@
 namespace FESL {
 	
 	bool Peer::m_fsys_hello_handler(OS::KVReader kv_list) {
-		/*
-		TXN = Hello
-		domainPartition.domain = eagames
-		messengerIp = messaging.ea.com
-		messengerPort = 13505
-		domainPartition.subDomain = bf2142
-		activityTimeoutSecs = 0
-		curTime = "Nov-18-  17 02%3a19%3a07 UTC"
-		theaterIp = bf2142 - pc.theater.ea.com
-		theaterPort = 18305
-		*/
-		std::string kv_str = "TXN=Hello\ndomainPartition.domain=eagames\nmessengerIp=messaging.ea.com\nmessengerPort=13505\ndomainPartition.subDomain=bf2142\nactivityTimeoutSecs=0\ncurTime=\"Nov-18-  17 02%3a19%3a07 UTC\"\ntheaterIp=bf2142-pc.theater.ea.com\ntheaterPort=18305\n";
-		SendPacket(FESL_TYPE_FSYS, kv_str);
+		std::ostringstream ss;
+
+		char timeBuff[128];
+		struct tm *newtime;
+		time_t long_time;
+		time(&long_time);
+		newtime = localtime(&long_time);
+
+		strftime(timeBuff, sizeof(timeBuff), "%h-%e-%g %T %Z", newtime);
+
+		PublicInfo public_info = ((FESL::Driver *)mp_driver)->GetServerInfo();
+		ss << "TXN=Hello\n";
+		ss << "domainPartition.domain=" << public_info.domainPartition << "\n";
+		ss << "messengerIp=" << public_info.messagingHostname << "\n";
+		ss << "messengerPort=" << public_info.messagingPort << "\n";
+		ss << "domationPartition.subDomain=" << public_info.subDomain << "\n";
+		ss << "activityTimeoutSecs=" << FESL_PING_TIME * 2 << "\n";
+		ss << "curTime=\"" << timeBuff << "\"\n";
+		ss << "theaterIp=" << public_info.theaterHostname << "\n";
+		ss << "theaterPort=" << public_info.theaterPort << "\n";
+		SendPacket(FESL_TYPE_FSYS, ss.str());
+		return true;
+	}
+	bool Peer::m_fsys_ping_handler(OS::KVReader kv_list) {
 		return true;
 	}
 	bool Peer::m_fsys_goodbye_handler(OS::KVReader kv_list) {
@@ -55,7 +66,7 @@ namespace FESL {
 			s << "\\password\\" << password;
 			m_encrypted_login_info = ((FESL::Driver *)this->GetDriver())->encryptString(s.str());
 		}
-		OS::AuthTask::TryAuthUniqueNick_Plain(nick, OS_EA_PARTNER_CODE, 0, password, m_login_auth_cb, NULL, 0, this);
+		OS::AuthTask::TryAuthUniqueNick_Plain(nick, OS_EA_PARTNER_CODE, FESL_ACCOUNT_NAMESPACEID, password, m_login_auth_cb, NULL, 0, this);
 		return true;
 	}
 	void Peer::handle_auth_callback_error(OS::AuthResponseCode response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
@@ -127,6 +138,8 @@ namespace FESL {
 			request.type = OS::EProfileSearch_Profiles;
 			request.user_search_details.id = user.id;
 			request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
+			request.namespaceids.push_back(request.profile_search_details.namespaceid);
+
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;

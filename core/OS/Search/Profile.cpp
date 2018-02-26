@@ -81,6 +81,7 @@ namespace OS {
 			json_object_set_new(user_obj, "partnercode", json_integer(request.user_search_details.partnercode));
 
 
+
 			//profile parameters
 			if (request.profile_search_details.nick.length())
 				json_object_set_new(profile_obj, "nick", json_string(request.profile_search_details.nick.c_str()));
@@ -124,6 +125,10 @@ namespace OS {
 				json_object_set_new(profile_obj, "lon", json_real(request.profile_search_details.lon));
 			if(request.profile_search_details.lat)
 				json_object_set_new(profile_obj, "lat", json_real(request.profile_search_details.lat));
+
+
+			if(request.profile_search_details.namespaceid != -1)
+				json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile_search_details.namespaceid));
 
 
 			if (request.namespaceids.size()) {

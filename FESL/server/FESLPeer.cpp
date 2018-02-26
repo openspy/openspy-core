@@ -11,6 +11,7 @@
 namespace FESL {
 	CommandHandler Peer::m_commands[] = {
 		{ FESL_TYPE_FSYS, "Hello", &Peer::m_fsys_hello_handler },
+		{ FESL_TYPE_FSYS, "Ping", &Peer::m_fsys_ping_handler },
 		{ FESL_TYPE_FSYS, "MemCheck", &Peer::m_fsys_memcheck_handler },
 		{ FESL_TYPE_FSYS, "Goodbye", &Peer::m_fsys_goodbye_handler },
 		{ FESL_TYPE_SUBS, "GetEntitlementByBundle", &Peer::m_subs_get_entitlement_by_bundle },
@@ -143,7 +144,10 @@ namespace FESL {
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > FESL_PING_TIME) {
 			gettimeofday(&m_last_ping, NULL);
-			send_memcheck(0);
+			std::ostringstream s;
+			s << "TXN=Ping\n";
+			s << "TID=" << current_time.tv_sec << "\n";
+			SendPacket(FESL_TYPE_FSYS, s.str());
 		}
 	}
 	void Peer::SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence) {
@@ -291,10 +295,8 @@ namespace FESL {
 			((Peer *)peer)->m_profiles.push_back(results.front());
 			((Peer *)peer)->mp_mutex->unlock();
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_NO_ERROR, "AddSubAccount");
-		}
-		else {
+		} else {
 			((Peer *)peer)->handle_profile_search_callback_error(response_reason, FESL_TYPE_ACCOUNT, "AddSubAccount");
-			//((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_SYSTEM_ERROR, "AddSubAccount");
 		}
 	}
 	bool Peer::m_acct_disable_sub_account(OS::KVReader kv_list) {
