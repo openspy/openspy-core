@@ -14,6 +14,7 @@ from public.OS_WebProfileMgr import OS_WebProfileMgr
 from public.OS_RegisterSvc import OS_RegisterSvc
 from public.OS_PWReset import OS_PWReset
 from public.OS_WebGameMgr import OS_WebGameMgr
+from public.Sake.GS_SakeStorage import GS_SakeStorageSvc
 import re
 import simplejson as json
 from wsgiref.util import request_uri
@@ -84,6 +85,10 @@ def application(env, start_response):
 	elif path_split[1] == "AuthService":
 		if path_split[2] == "AuthService.asmx":
 			service = GS_AuthService()
+			return [service.run(env, start_response)]
+	elif path_split[1] == "SakeStorageServer":
+		if path_split[2] == "StorageServer.asmx":
+			service = GS_SakeStorageSvc()
 			return [service.run(env, start_response)]
 
 	if service == None:

@@ -349,4 +349,4 @@ class GS_AuthService(BaseService):
         if resp != None:
             return ET.tostring(resp, encoding='utf8', method='xml')
         else:
-            return 'Fatal error'
+            return b'Fatal error'
