@@ -24,84 +24,113 @@ class GS_SakeStorageSvc(BaseService):
                 tag = tag.split('}', 1)[1]  # strip all namespaces
             #print("Child: {}\n".format(tag))
     def handle_get_random_records(self, xml_tree):
-        resp_xml = ET.Element('SOAP-ENV:Envelope')
-        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:GetRandomRecordsResponse')
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope', self.namespaces)
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/sake}GetRandomRecordsResponse')
 
-        result_node = ET.SubElement(login_result, 'ns1:GetRandomRecordsResult')
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}GetRandomRecordsResult')
         result_node.text = 'Success'
 
-       
-        #auth stuff
+        values_node = ET.SubElement(login_result, '{http://gamespy.net/sake}values')
 
-        numratings_node = ET.SubElement(login_result, 'ns1:values')
-
-        #avgrating_node = ET.SubElement(numratings_node, 'ns1:ArrayOfRecordValue')
+        #avgrating_node = ET.SubElement(numratings_node, '{http://gamespy.net/sake}ArrayOfRecordValue')
         
 
         return resp_xml
     def handle_get_record_limit(self, xml_tree):
-        resp_xml = ET.Element('SOAP-ENV:Envelope')
-        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:GetRecordLimitResponse')
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/sake}GetRecordLimitResponse')
 
-        result_node = ET.SubElement(login_result, 'ns1:GetRecordLimitResult')
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}GetRecordLimitResult')
         result_node.text = 'Success'
        
         #auth stuff
 
-        numratings_node = ET.SubElement(login_result, 'ns1:limitPerOwner')
+        numratings_node = ET.SubElement(login_result, '{http://gamespy.net/sake}limitPerOwner')
         numratings_node.text = '0'
 
-        avgrating_node = ET.SubElement(login_result, 'ns1:numOwned')
+        avgrating_node = ET.SubElement(login_result, '{http://gamespy.net/sake}numOwned')
         avgrating_node.text = '0'        
 
         return resp_xml
     def handle_create_record(self, xml_tree):
-        resp_xml = ET.Element('SOAP-ENV:Envelope')
-        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:CreateRecordResponse')
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/sake}CreateRecordResponse')
 
-        result_node = ET.SubElement(login_result, 'ns1:CreateRecordResult')
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}CreateRecordResult')
         result_node.text = 'Success'
 
-       
-        #auth stuff
+        tableid_node = ET.SubElement(login_result, '{http://gamespy.net/sake}recordid')
+        tableid_node.text = '0'
 
-        recordid_node = ET.SubElement(login_result, 'ns1:recordid')
-        recordid_node.text = '0'
         return resp_xml
     def handle_update_record(self, xml_tree):
-        resp_xml = ET.Element('SOAP-ENV:Envelope')
-        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:UpdateRecordResponse')
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/sake}UpdateRecordResponse')
 
-        result_node = ET.SubElement(login_result, 'ns1:UpdateRecordResult')
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}UpdateRecordResult')
         result_node.text = 'Success'
 
-       
-        #auth stuff
-
-        recordid_node = ET.SubElement(login_result, 'ns1:recordid')
-        recordid_node.text = '0'
-    
-
+        tableid_node = ET.SubElement(login_result, '{http://gamespy.net/sake}recordid')
+        tableid_node.text = '0'
         return resp_xml
     def handle_delete_record(self, xml_tree):
-        resp_xml = ET.Element('SOAP-ENV:Envelope')
-        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:DeleteRecordResponse')
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/sake}DeleteRecordResponse')
 
-        result_node = ET.SubElement(login_result, 'ns1:DeleteRecordResult')
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}DeleteRecordResult')
         result_node.text = 'Success'
 
-       
-        #auth stuff
+        return resp_xml
+    def handle_get_specific_records(self, xml_tree):
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/sake}GetSpecificRecordsResponse')
 
-        recordid_node = ET.SubElement(login_result, 'ns1:recordid')
-        recordid_node.text = '0'
-    
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}GetSpecificRecordsResult')
+        result_node.text = 'Success'
 
+        values_node = ET.SubElement(login_result, '{http://gamespy.net/sake}values')
+
+        return resp_xml
+    def handle_rate_records(self, xml_tree):
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/sake}RateRecordResponse')
+
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}RateRecordResult')
+        result_node.text = 'Success'
+
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}numRatings')
+        result_node.text = '0'
+
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}averageRating')
+        result_node.text = '0'
+
+        return resp_xml
+    def handle_get_my_records(self, xml_tree):
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/sake}GetMyRecordsResponse')
+
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}GetMyRecordsResult')
+        result_node.text = 'Success'
+
+        values_node = ET.SubElement(login_result, '{http://gamespy.net/sake}values')
+        return resp_xml
+    def handle_search_for_records(self, xml_tree):
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/sake}SearchForRecordsResponse')
+
+        result_node = ET.SubElement(login_result, '{http://gamespy.net/sake}SearchForRecordsResult')
+        result_node.text = 'Success'
+
+        values_node = ET.SubElement(login_result, '{http://gamespy.net/sake}values')
         return resp_xml
     def validate_request(self, xml_tree):
         request_info = {"success": False}
@@ -135,18 +164,21 @@ class GS_SakeStorageSvc(BaseService):
        # d = parse_qs(request_body)
         start_response('200 OK', [('Content-Type','application/xml')])
 
-        namespaces = {"SOAP-ENV": "http://schemas.xmlsoap.org/soap/envelope/", "SOAP-ENC":"http://schemas.xmlsoap.org/soap/encoding/", "xsi": "http://www.w3.org/2001/XMLSchema-instance",
-        "xsd":"http://www.w3.org/2001/XMLSchema",
-        "ns1": "http://gamespy.net/sake"}
+        self.namespaces = {"SOAP-ENV": "http://schemas.xmlsoap.org/soap/envelope/", "SOAP-ENC":"http://schemas.xmlsoap.org/soap/encoding/", "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+        "xsd":"http://www.w3.org/2001/XMLSchema"}
+        self.custom_namespaces = {"ns1": "http://gamespy.net/sake"}
+
+        for key in self.namespaces:
+            ET.register_namespace(key,self.namespaces[key])
 
         tree = ET.ElementTree(ET.fromstring(request_body))
 
-        names = tree.findall('SOAP-ENV:Body', namespaces)
+        names = tree.findall('SOAP-ENV:Body', {**self.custom_namespaces, **self.namespaces})
         body = names[0]
 
         for request in body.getchildren():
             tag = request.tag
-            print("Tag: {}\n".format(tag))
+            #print("Tag: {}\n".format(tag))
             request_info = self.validate_request(request)
             #print("Info: {}\n".format(request_info))
             if not request_info["success"]:
@@ -154,7 +186,6 @@ class GS_SakeStorageSvc(BaseService):
             self.dump_xml_records(request)            
             if '}' in tag:
                 tag = tag.split('}', 1)[1]  # strip all namespaces
-            #if tag == "RateRecord":
             if tag == "GetRandomRecords":
                 resp = self.handle_get_random_records(request)
             elif tag == "GetRecordLimit":
@@ -165,18 +196,22 @@ class GS_SakeStorageSvc(BaseService):
                 resp = self.handle_update_record(request)
             elif tag == "DeleteRecord":
                 resp = self.handle_delete_record(request)
-            #if tag == "GetRecordLimit":
-            #if tag == "GetSpecificRecords":
-            #if tag == "GetMyRecords":
-            #if tag == "SearchForRecords":
-            #if tag == "UpdateRecord":
-            #if tag == "DeleteRecord":
-            #if tag == "CreateRecord":
+            elif tag == "GetSpecificRecords":
+                resp = self.handle_get_specific_records(request)
+            elif tag == "RateRecord":
+                resp = self.handle_rate_records(request)
+            elif tag == "GetMyRecords":
+                resp = self.handle_get_my_records(request)
+            elif tag == "SearchForRecords":
+                resp = self.handle_search_for_records(request)
+            else:
+                print("Unknown tag: {}\n".format(tag))
 
 
         if resp != None:
+            #print("Req: {}\n".format(request_body))
             ret_str = ET.tostring(resp, encoding='utf8', method='xml')
-            print("Ret: {}\n".format(ret_str))
+            #print("Ret: {}\n".format(ret_str))
             return ret_str
         else:
             return b'Fatal error'
