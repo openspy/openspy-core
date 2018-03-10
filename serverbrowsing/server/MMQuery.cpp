@@ -438,7 +438,9 @@ namespace MM {
 		}
 
 		if(!req || filterMatches(req->filter.c_str(), all_cust_keys)) {
-			ret->list.push_back(server);
+			if (!req || (ret->list.size() < req->max_results || req->max_results == 0)) {
+				ret->list.push_back(server);
+			}
 		}
 		else {
 			delete server;
@@ -597,8 +599,11 @@ namespace MM {
 		}
 
 		all_cust_keys = server->kvFields;
-		if(!request || filterMatches(request->req.filter.c_str(), all_cust_keys))
-			ret->list.push_back(server);
+		if (!request || filterMatches(request->req.filter.c_str(), all_cust_keys)) {
+			if (!request || (ret->list.size() < request->req.max_results || request->req.max_results == 0)) {
+				ret->list.push_back(server);
+			}
+		}			
 		return;
 
 	error_cleanup:
