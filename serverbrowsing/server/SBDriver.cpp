@@ -13,6 +13,9 @@
 #include "MMQuery.h"
 namespace SB {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version) : INetDriver(server) {
+		OS::Address bind_address(0, port);
+		mp_socket = server->getNetIOInterface()->BindTCP(bind_address);
+		/*
 		uint32_t bind_ip = INADDR_ANY;
 		
 		if ((m_sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
@@ -40,7 +43,7 @@ namespace SB {
 		if (listen(m_sd, SOMAXCONN)
 			< 0) {
 			//signal error
-		}
+		}*/
 
 		gettimeofday(&m_server_start, NULL);
 
@@ -49,7 +52,7 @@ namespace SB {
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
 
-		makeNonBlocking(m_sd);
+		//makeNonBlocking(m_sd);
 
 	}
 	Driver::~Driver() {
@@ -120,28 +123,27 @@ namespace SB {
 	}
 	void Driver::think(bool listen_waiting) {
 		if (listen_waiting) {
-			while(true) {
-				socklen_t psz = sizeof(struct sockaddr_in);
-				struct sockaddr_in peer;
-				int sda = accept(m_sd, (struct sockaddr *)&peer, &psz);
-				if (sda <= 0) return;
+			std::vector<INetIOSocket *> sockets = getServer()->getNetIOInterface()->TCPAccept(mp_socket);
+			std::vector<INetIOSocket *>::iterator it = sockets.begin();
+			while (it != sockets.end()) {
+				INetIOSocket *sda = *it;
+				if (sda == NULL) return;
 				Peer *mp_peer = NULL;
+
 				switch (m_version) {
 				case 1:
-					mp_peer = new V1Peer(this, &peer, sda);
+					mp_peer = new V1Peer(this, sda);
 					break;
 				case 2:
-					mp_peer = new V2Peer(this, &peer, sda);
+					mp_peer = new V2Peer(this, sda);
 					break;
 				}
-
-				makeNonBlocking(mp_peer);
 
 				mp_mutex->lock();
 				m_connections.push_back(mp_peer);
 				m_server->RegisterSocket(mp_peer);
 				mp_mutex->unlock();
-				//mp_peer->think(true);
+				it++;
 			}
 		}
 	}
@@ -150,8 +152,8 @@ namespace SB {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
-			const struct sockaddr_in *peer_address = peer->getAddress();
-			if (address->sin_port == peer_address->sin_port && address->sin_addr.s_addr == peer_address->sin_addr.s_addr) {
+			const struct sockaddr_in peer_address = peer->GetSocket()->address.GetInAddr();
+			if (address->sin_port == peer_address.sin_port && address->sin_addr.s_addr == peer_address.sin_addr.s_addr) {
 				return peer;
 			}
 			it++;
@@ -159,8 +161,8 @@ namespace SB {
 		return NULL;
 	}
 
-	int Driver::getListenerSocket() {
-		return m_sd;
+	INetIOSocket *Driver::getListenerSocket() {
+		return mp_socket;
 	}
 
 	uint32_t Driver::getBindIP() {
@@ -178,8 +180,8 @@ namespace SB {
 		return m_connections.size();
 	}
 
-	const std::vector<int> Driver::getSockets() {
-		std::vector<int> sockets;
+	const std::vector<INetIOSocket *> Driver::getSockets() {
+		std::vector<INetIOSocket *> sockets;
 		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
@@ -264,7 +266,7 @@ namespace SB {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			INetPeer * peer = (INetPeer *)*it;
-			OS::Address address = *peer->getAddress();
+			OS::Address address = peer->GetSocket()->address;
 			value = peer->GetMetrics().value;
 
 			value.key = address.ToString(false);
@@ -299,7 +301,7 @@ namespace SB {
 		int i = 0;
 		while (it != m_connections.end()) {
 			INetPeer * peer = (INetPeer *)*it;
-			OS::Address address = *peer->getAddress();
+			OS::Address address = peer->GetSocket()->address;
 			printf("[%s]\n",address.ToString(false).c_str());
 			i++;
 			it++;

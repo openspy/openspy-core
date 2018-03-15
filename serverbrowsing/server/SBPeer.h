@@ -42,12 +42,10 @@ namespace SB {
 
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version);
+		Peer(Driver *driver, INetIOSocket *sd, int version);
 		virtual ~Peer();
 		
 		virtual void think(bool packet_waiting) = 0;
-		const struct sockaddr_in *getAddress() { return &m_address_info; }
-
 
 
 		bool ShouldDelete() { return m_delete_flag; };
@@ -80,9 +78,8 @@ namespace SB {
 		int m_version;
 
 		OS::GameData m_game;
+		OS::Buffer m_recv_buffer;
 		Driver *mp_driver;
-
-		struct sockaddr_in m_address_info;
 
 		struct timeval m_last_recv, m_last_ping;
 

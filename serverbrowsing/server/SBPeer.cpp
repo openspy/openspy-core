@@ -5,20 +5,19 @@
 #include <OS/legacy/buffwriter.h>
 
 namespace SB {
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version) : INetPeer(driver, address_info, sd) {
+	Peer::Peer(Driver *driver, INetIOSocket *sd, int version) : INetPeer(driver, sd) {
 		mp_driver = driver;
-		m_address_info = *address_info;
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
 
 		m_version = version;
-		m_peer_stats.version = version;
-		m_peer_stats.m_address = *address_info;
+		
 		mp_mutex = OS::CreateMutex();
 
-		m_peer_stats.m_address = m_address_info;
+		m_peer_stats.version = version;
+		m_peer_stats.m_address = m_sd->address;
 		m_peer_stats.bytes_in = 0;
 		m_peer_stats.bytes_out = 0;
 		m_peer_stats.packets_in = 0;
@@ -28,10 +27,10 @@ namespace SB {
 		m_peer_stats.from_game.gameid = 0;
 		m_peer_stats.disconnected = false;
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version %d",OS::Address(m_address_info).ToString().c_str(), m_version);
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version %d",m_sd->address.ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d",OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
 	}
 

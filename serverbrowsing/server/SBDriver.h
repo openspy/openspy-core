@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "../main.h"
 #include <OS/Net/NetDriver.h>
+#include <OS/Net/NetIOInterface.h>
 
 #include "SBPeer.h"
 #include "V2Peer.h"
@@ -28,14 +29,14 @@ namespace SB {
 		Driver(INetServer *server, const char *host, uint16_t port, int version = 2);
 		~Driver();
 		void think(bool listen_waiting);
-		int getListenerSocket();
+		INetIOSocket *getListenerSocket();
 		uint16_t getPort();
 		uint32_t getBindIP();
 		uint32_t getDeltaTime();
 
 		Peer *find_client(struct sockaddr_in *address);
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
-		const std::vector<int> getSockets();
+		const std::vector<INetIOSocket *> getSockets();
 		void SendDeleteServer(MM::Server *server);
 	    void SendNewServer(MM::Server *server);
 	    void SendUpdateServer(MM::Server *server);
@@ -54,7 +55,6 @@ namespace SB {
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
 
-		int m_sd;
 		int m_version;
 
 		std::vector<Peer *> m_connections;
@@ -75,6 +75,8 @@ namespace SB {
 		
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;
+
+		INetIOSocket *mp_socket;
 
 	};
 

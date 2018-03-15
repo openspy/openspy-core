@@ -11,7 +11,7 @@ namespace SB {
 
 	class V1Peer : public Peer {
 	public:
-		V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		V1Peer(Driver *driver, INetIOSocket *sd);
 		~V1Peer();
 		
 		void send_ping();

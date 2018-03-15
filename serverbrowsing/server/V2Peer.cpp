@@ -6,13 +6,13 @@
 #include <limits.h>
 #include <sstream>
 #include <algorithm>
-
+#include <OS/Net/NetServer.h>
 #include <stdarg.h>
 
 #define CRYPTCHAL_LEN 10
 #define SERVCHAL_LEN 25
 namespace SB {
-	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd, 2) {
+	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : Peer(driver, sd, 2) {
 		m_next_packet_send_msg = false;
 		m_sent_crypt_header = false;
 		m_sent_push_keys = false;
@@ -49,20 +49,7 @@ namespace SB {
 
 			request_type = buffer.ReadByte();
 
-			/*
-			if(improper_length && request_type != SEND_MESSAGE_REQUEST) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got improper length packet, type: %d", OS::Address(m_address_info).ToString().c_str(), request_type);
-				m_delete_flag = true;
-				break;
-			}
-			*/
-
 			gettimeofday(&m_last_recv, NULL);
-
-			/*if (m_game.secretkey[0] == 0 && request_type != SERVER_LIST_REQUEST && request_type != SEND_MESSAGE_REQUEST) { //only list req can define the game, anything else will result in a crash
-				printf("No game key non req\n");
-				return;
-			}*/
 
 			//TODO: get expected lengths for each packet type and test, prior to execution
 			switch (request_type) {
@@ -77,18 +64,18 @@ namespace SB {
 					break_flag = true;
 				break;
 				case MAPLOOP_REQUEST:
-					OS::LogText(OS::ELogLevel_Info, "[%s] Got map request", OS::Address(m_address_info).ToString().c_str(), request_type);
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got map request", m_sd->address.ToString().c_str(), request_type);
 					break_flag = true;
 				break;
 				case PLAYERSEARCH_REQUEST:
-					OS::LogText(OS::ELogLevel_Info, "[%s] Got playersearch request", OS::Address(m_address_info).ToString().c_str(), request_type);
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got playersearch request", m_sd->address.ToString().c_str(), request_type);
 					break_flag = true;
 				break;
 				case SERVER_INFO_REQUEST:
 					ProcessInfoRequest(buffer);
 				break;
 				default:
-					OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d", OS::Address(m_address_info).ToString().c_str(), request_type);
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d", m_sd->address.ToString().c_str(), request_type);
 					break_flag = true;
 					break;
 			}
@@ -159,7 +146,7 @@ namespace SB {
 		}
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: (%d %d %d), gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s, fields4all: %d, no_srv_list: %d, no_list_cache: %d, updates: %d, options: %d", OS::Address(m_address_info).ToString().c_str(), req.protocol_version, req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), key_list.c_str(), req.filter.c_str(), req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str(), req.send_fields_for_all, req.no_server_list, req.no_list_cache, req.push_updates, options);
+		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: (%d %d %d), gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s, fields4all: %d, no_srv_list: %d, no_list_cache: %d, updates: %d, options: %d", m_sd->address.ToString().c_str(), req.protocol_version, req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), key_list.c_str(), req.filter.c_str(), req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str(), req.send_fields_for_all, req.no_server_list, req.no_list_cache, req.push_updates, options);
 		return req;
 
 	}
@@ -168,13 +155,13 @@ namespace SB {
 		m_send_msg_to.sin_port = buffer.ReadShort();
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", OS::Address(m_address_info).ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", m_sd->address.ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
 		if (buffer.remaining() > 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", OS::Address(m_address_info).ToString().c_str(), buffer.remaining());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), buffer.remaining());
 			const char *base64 = OS::BinToBase64Str((uint8_t *)buffer.GetCursor(), buffer.remaining());
 			MM::MMQueryRequest req;
 			req.type = MM::EMMQueryRequestType_SubmitData;
-			req.SubmitData.from = m_address_info;
+			req.SubmitData.from = m_sd->address;
 			req.SubmitData.to = m_send_msg_to;
 			req.SubmitData.base64 = base64;
 			req.SubmitData.game = m_game;
@@ -245,7 +232,7 @@ namespace SB {
 			buffer.WriteInt(list_req.source_ip);
 		}
 		else {
-			buffer.WriteInt(m_address_info.sin_addr.s_addr);
+			buffer.WriteInt(m_sd->address.GetInAddr().sin_addr.s_addr);
 		}
 		
 		buffer.WriteShort(htons(list_req.m_from_game.queryport));
@@ -369,8 +356,8 @@ namespace SB {
 		m_peer_stats.packets_out++;
 
 		int c = 0;
-		if((c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL)) < 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d", OS::Address(m_address_info).ToString().c_str(),c);
+		if((c = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer)) < 0) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d", m_sd->address.ToString().c_str(),c);
 			m_delete_flag = true;
 		}
 		else {
@@ -451,7 +438,7 @@ namespace SB {
 		int len = buffer.remaining();
 		OS::Address address;
 		address.ip = buffer.ReadInt();
-		address.port = buffer.ReadShort();;
+		address.port = buffer.ReadShort();
 
 		sServerCache cache = FindServerByIP(address);
 
@@ -461,12 +448,12 @@ namespace SB {
 		if(cache.key[0] != 0) {
 			req.type = MM::EMMQueryRequestType_GetServerByKey;
 			req.key = cache.key;
-			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, cached %s %s", OS::Address(m_address_info).ToString().c_str(),cache.wan_address.ToString().c_str(),cache.key.c_str()) ;
+			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, cached %s %s", m_sd->address.ToString().c_str(),cache.wan_address.ToString().c_str(),cache.key.c_str()) ;
 			cache.full_keys = true;
 		} else {
 			req.type = MM::EMMQueryRequestType_GetServerByIP;
 			req.address = address;
-			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", OS::Address(m_address_info).ToString().c_str(), req.address.ToString().c_str());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", m_sd->address.ToString().c_str(), req.address.ToString().c_str());
 		}
 
 		req.req.m_for_game = m_game;
@@ -490,14 +477,10 @@ namespace SB {
 
 	}
 	void V2Peer::think(bool waiting_packet) {
-		char buf[READ_BUFFER_SIZE];
 		int len = 0;
 		if (m_delete_flag) return;
 		if (waiting_packet) {
-			len = recv(m_sd, (char *)&buf, sizeof(buf), 0);
-			if (OS::wouldBlock()) {
-				return;
-			}
+			len = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 			if (len <= 0) {
 				goto end;
 			}
@@ -506,12 +489,12 @@ namespace SB {
 			m_peer_stats.bytes_in += len;
 
 			if(m_next_packet_send_msg) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", OS::Address(m_address_info).ToString().c_str(), len);
-				const char *base64 = OS::BinToBase64Str((uint8_t *)&buf, len);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), len);
+				const char *base64 = OS::BinToBase64Str((uint8_t *)m_recv_buffer.GetHead(), m_recv_buffer.size());
 
 				MM::MMQueryRequest req;
 				req.type = MM::EMMQueryRequestType_SubmitData;
-				req.SubmitData.from = m_address_info;
+				req.SubmitData.from = m_sd->address;
 				req.SubmitData.to = m_send_msg_to;
 				req.SubmitData.base64 = base64;
 				req.SubmitData.game = m_game;
@@ -519,7 +502,7 @@ namespace SB {
 				free((void *)base64);
 				m_next_packet_send_msg = false;
 			} else {
-				this->handle_packet(buf, len);
+				this->handle_packet((char *)m_recv_buffer.GetHead(), m_recv_buffer.size());
 			}
 		}
 
@@ -779,6 +762,7 @@ namespace SB {
 		if(die) {
 			m_delete_flag = true;
 		}
+		
 		va_list args;
 		va_start(args, fmt);
 
@@ -786,13 +770,14 @@ namespace SB {
 		int len = vsprintf(send_str, fmt, args);
 		send_str[len] = 0;
 
+		OS::Buffer buffer((void *)&send_str, len);
 
 		m_peer_stats.bytes_out += len+1;
 		m_peer_stats.packets_out++;
-		if (send(m_sd, (const char *)&send_str, len+1, MSG_NOSIGNAL) < 0)
+		if (this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer) < 0)
 			m_delete_flag = true;
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", OS::Address(m_address_info).ToString().c_str(), send_str, die);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", m_sd->address.ToString().c_str(), send_str, die);
 
 		va_end(args);
 	}

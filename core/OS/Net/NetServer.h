@@ -5,6 +5,7 @@
 #include <OS/Analytics/Metric.h>
 #include "NetDriver.h"
 #include "NetEventManager.h"
+#include "NetIOInterface.h"
 class INetServer {
 public:
 	INetServer();
@@ -22,10 +23,13 @@ public:
 	void UnregisterSocket(INetPeer *peer);
 
 	virtual OS::MetricInstance GetMetrics() = 0;
+
+	INetIOInterface *getNetIOInterface();
 protected:
 	void NetworkTick(); //fires the INetEventMgr
 //private:
 	INetEventManager *mp_net_event_mgr;
+	INetIOInterface *mp_net_io_interface;
 	std::vector<INetDriver *> m_net_drivers;
 };
 #endif //_IGAMESERVER_H

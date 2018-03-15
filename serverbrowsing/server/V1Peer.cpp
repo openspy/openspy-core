@@ -18,8 +18,10 @@
 #include <OS/legacy/helpers.h> //gen_random
 #include <OS/KVReader.h>
 
+#include <OS/Net/NetServer.h>
+
 namespace SB {
-		V1Peer::V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : SB::Peer(driver, address_info, sd, 1) {
+		V1Peer::V1Peer(Driver *driver, INetIOSocket *sd) : SB::Peer(driver, sd, 1) {
 			std::ostringstream s;
 
 			memset(&m_challenge,0,sizeof(m_challenge));
@@ -47,7 +49,6 @@ namespace SB {
 			}
 		}
 		void V1Peer::think(bool packet_waiting) {
-			char buf[READ_BUFFER_SIZE];
 			int len;
 			if (m_delete_flag) return;
 			if (m_waiting_gamedata == 2) {
@@ -59,20 +60,20 @@ namespace SB {
 				}
 			}
 			if (packet_waiting) {
-				len = recv(m_sd, (char *)&buf, READ_BUFFER_SIZE, 0);
-				if (OS::wouldBlock()) {
-					return;
-				}
+				len = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
+
 				if (len <= 0) {
 					goto end;
 				}
-				buf[len] = 0;
+				if (((char *)m_recv_buffer.GetHead() + m_recv_buffer.size())[0] != 0) {
+					goto end;
+				}
 
 				m_peer_stats.packets_in++;
 				m_peer_stats.bytes_in += len;
 
 				/* split by \\final\\  */
-				char *p = (char *)&buf;
+				char *p = (char *)m_recv_buffer.GetHead();
 				char *x;
 				while(true) {
 					x = p;
@@ -123,7 +124,7 @@ namespace SB {
 			}
 			resp << "\\error\\" << str;
 
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", OS::Address(m_address_info).ToString().c_str(), resp.str().c_str());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", m_sd->address.ToString().c_str(), resp.str().c_str());
 			SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), true);
 		}
 		void V1Peer::handle_gamename(const char *data, int len) {
@@ -179,7 +180,7 @@ namespace SB {
 			}
 			else {
 				//send_error(true, "Cannot handle request");
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", OS::Address(m_address_info).ToString().c_str(), data);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", m_sd->address.ToString().c_str(), data);
 			}
 		}
 		void V1Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
@@ -272,7 +273,7 @@ namespace SB {
 				return;
 			}
 
-			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", OS::Address(m_address_info).ToString().c_str(), req.req.m_from_game.gamename, req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
+			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", m_sd->address.ToString().c_str(), req.req.m_from_game.gamename, req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
 
 			req.extra = (void *)1;
 			m_last_list_req = req.req;
@@ -404,7 +405,7 @@ namespace SB {
 			m_peer_stats.bytes_out += buffer.size();
 			m_peer_stats.packets_out++;
 
-			int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
+			int c = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
 			if(c < 0) {
 				m_delete_flag = true;
 			}

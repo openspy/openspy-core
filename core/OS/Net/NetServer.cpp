@@ -8,7 +8,10 @@
 
 INetServer::INetServer() {
 	#ifdef EVTMGR_USE_SELECT
-	mp_net_event_mgr = new SelectNetEventManager();
+	SelectNetEventManager *event_mgr;
+	event_mgr = new SelectNetEventManager();
+	mp_net_event_mgr = event_mgr;
+	mp_net_io_interface = event_mgr;
 	#elif EVTMGR_USE_EPOLL
 	mp_net_event_mgr = new EPollNetEventManager();
 	#endif
@@ -34,4 +37,7 @@ void INetServer::RegisterSocket(INetPeer *peer) {
 }
 void INetServer::UnregisterSocket(INetPeer *peer) {
 	mp_net_event_mgr->UnregisterSocket(peer);
+}
+INetIOInterface *INetServer::getNetIOInterface() {
+	return mp_net_io_interface;
 }

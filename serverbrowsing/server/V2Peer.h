@@ -53,7 +53,7 @@
 namespace SB {
 		class V2Peer : public Peer {
 			public:
-				V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+				V2Peer(Driver *driver, INetIOSocket *sd);
 				~V2Peer();
 				void think(bool packet_waiting);
 				void informDeleteServers(MM::Server *server);

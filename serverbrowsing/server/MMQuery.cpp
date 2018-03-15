@@ -896,7 +896,7 @@ namespace MM {
 				}
 				task->mp_timer->stop();
 				if(task_params.peer) {
-					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", OS::Address(*task_params.peer->getAddress()).ToString().c_str(), task_params.type, task->mp_timer->time_elapsed()  / 1000000.0);	
+					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", task_params.peer->GetSocket()->address.ToString().c_str(), task_params.type, task->mp_timer->time_elapsed()  / 1000000.0);	
 				}
 				
 				task_params.peer->DecRef();

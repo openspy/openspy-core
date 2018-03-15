@@ -468,7 +468,7 @@ namespace OS {
 	}
 	Address::Address(uint32_t ip, uint16_t port) {
 		this->ip = ip;
-		this->port = port;
+		this->port = htons(port);
 	}
 	Address::Address(struct sockaddr_in addr) {
 		ip = addr.sin_addr.s_addr;
