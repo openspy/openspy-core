@@ -49,7 +49,7 @@ namespace SB {
 			}
 		}
 		void V1Peer::think(bool packet_waiting) {
-			int len;
+			int len = 0;
 			if (m_delete_flag) return;
 			if (m_waiting_gamedata == 2) {
 				m_waiting_gamedata = 0;
@@ -65,15 +65,14 @@ namespace SB {
 				if (len <= 0) {
 					goto end;
 				}
-				if (((char *)m_recv_buffer.GetHead() + m_recv_buffer.size())[0] != 0) {
-					goto end;
-				}
+
+				std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
 
 				m_peer_stats.packets_in++;
 				m_peer_stats.bytes_in += len;
 
 				/* split by \\final\\  */
-				char *p = (char *)m_recv_buffer.GetHead();
+				char *p = (char *)recv_buf.c_str();
 				char *x;
 				while(true) {
 					x = p;
