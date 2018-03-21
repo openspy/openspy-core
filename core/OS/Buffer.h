@@ -11,14 +11,13 @@ namespace OS {
 		BufferCtx(void *addr, int len);
 		~BufferCtx();
 		void *_head;
-		void *_cursor;
 		int alloc_size;
 		bool pointer_owner;
 		friend class Buffer;
 	};
 	class Buffer {
 		public:
-			Buffer(Buffer &cpy);
+			Buffer(const Buffer &cpy);
 			Buffer(void *addr, int len);
 			Buffer(int alloc_size);
 			Buffer();
@@ -43,10 +42,18 @@ namespace OS {
 			void *GetHead();
 			void reset();
 			int size();
+
+			Buffer &operator=(const Buffer& val) {
+				mp_ctx = val.mp_ctx;
+				_cursor = val._cursor;
+				mp_ctx->IncRef();
+				return *this;
+			}
 		private:
 			void realloc_buffer(int new_size);
 			void IncCursor(int len, bool write_operation = false);
 			BufferCtx *mp_ctx;
+			void *_cursor;
 	};
 }
 #endif //_OS_BUFFER_H

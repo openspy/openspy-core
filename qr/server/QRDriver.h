@@ -29,24 +29,20 @@ namespace QR {
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
 		void think(bool listener_waiting);
-		int getListenerSocket();
-		uint16_t getPort();
-		uint32_t getBindIP();
-		uint32_t getDeltaTime();
 
-		Peer *find_client(struct sockaddr_in *address);
-		Peer *find_or_create(struct sockaddr_in *address, int version = 2);
+		Peer *find_client(OS::Address address);
+		Peer *find_or_create(OS::Address address, INetIOSocket *socket, int version = 2);
 
-		const std::vector<int> getSockets();
 		int GetNumConnections();
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		OS::MetricInstance GetMetrics();
+
+		INetIOSocket *getListenerSocket() const;
+		const std::vector<INetIOSocket *> getSockets() const;
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
-
-		int m_sd;
 
 		std::vector<Peer *> m_connections;
 		std::vector<Peer *> m_peers_to_delete;
@@ -56,6 +52,8 @@ namespace QR {
 		struct timeval m_server_start;
 
 		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
+
+		INetIOSocket *mp_socket;
 
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;

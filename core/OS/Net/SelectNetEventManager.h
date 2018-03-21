@@ -20,12 +20,12 @@
 			//NET IO INTERFACE
 			INetIOSocket *BindTCP(OS::Address bind_address);
 			std::vector<INetIOSocket *> TCPAccept(INetIOSocket *socket);
-			int streamRecv(INetIOSocket *socket, OS::Buffer &buffer);
-			int streamSend(INetIOSocket *socket, OS::Buffer &buffer);
+			NetIOCommResp streamRecv(INetIOSocket *socket, OS::Buffer &buffer);
+			NetIOCommResp streamSend(INetIOSocket *socket, OS::Buffer &buffer);
 
 			INetIOSocket *BindUDP(OS::Address bind_address);
-			int datagramRecv(INetIOSocket *socket, OS::Buffer &buffer, OS::Address &data_source);
-			int datagramSend(INetIOSocket *socket, OS::Buffer &buffer, OS::Address &data_dest);
+			NetIOCommResp datagramRecv(INetIOSocket *socket, std::vector<INetIODatagram> &datagrams);
+			NetIOCommResp datagramSend(INetIOSocket *socket, OS::Buffer &buffer);
 			void closeSocket(INetIOSocket *socket);
 
 			void makeNonBlocking(int sd);

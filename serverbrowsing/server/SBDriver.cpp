@@ -15,35 +15,6 @@ namespace SB {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version) : INetDriver(server) {
 		OS::Address bind_address(0, port);
 		mp_socket = server->getNetIOInterface()->BindTCP(bind_address);
-		/*
-		uint32_t bind_ip = INADDR_ANY;
-		
-		if ((m_sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
-			//signal error
-		}
-		int on = 1;
-		if (setsockopt(m_sd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on))
-			< 0) {
-			//signal error
-		}
-		#if SO_REUSEPORT
-		if (setsockopt(m_sd, SOL_SOCKET, SO_REUSEPORT, (char *)&on, sizeof(on))
-			< 0) {
-			//signal error
-		}
-		#endif
-
-		m_local_addr.sin_port = htons(port);
-		m_local_addr.sin_addr.s_addr = htonl(bind_ip);
-		m_local_addr.sin_family = AF_INET;
-		int n = bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
-		if (n < 0) {
-			//signal error
-		}
-		if (listen(m_sd, SOMAXCONN)
-			< 0) {
-			//signal error
-		}*/
 
 		gettimeofday(&m_server_start, NULL);
 
@@ -51,8 +22,6 @@ namespace SB {
 
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
-
-		//makeNonBlocking(m_sd);
 
 	}
 	Driver::~Driver() {
@@ -293,6 +262,19 @@ namespace SB {
 		
 		mp_mutex->unlock();
 		return peer_metric;
+	}
+	INetIOSocket *Driver::getListenerSocket() const {
+		return mp_socket;
+	}
+	const std::vector<INetIOSocket *> Driver::getSockets() const {
+		std::vector<INetIOSocket *> ret;
+		std::vector<Peer *>::const_iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *peer = *it;
+			ret.push_back(peer->GetSocket());
+			it++;
+		}
+		return ret;
 	}
 	void Driver::debug_dump() {
 		printf("Driver: %p\n", this);

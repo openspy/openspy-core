@@ -49,7 +49,7 @@ namespace QR {
 			it++;
 		}
 	}
-	Peer *Server::find_client(struct sockaddr_in *address) {
+	Peer *Server::find_client(OS::Address address) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {
 			QR::Driver *driver = (QR::Driver *)*it;

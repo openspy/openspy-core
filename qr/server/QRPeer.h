@@ -32,13 +32,12 @@ namespace QR {
 
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, struct sockaddr_in *address_info, int sd, int version);
+		Peer(Driver *driver, INetIOSocket *sd, int version);
 		virtual ~Peer();
 		
 		virtual void think(bool listener_waiting) = 0;
-		virtual void handle_packet(char *recvbuf, int len) = 0;		
+		virtual void handle_packet(INetIODatagram packet) = 0;
 
-		const struct sockaddr_in *getAddress() { return &m_address_info; }
 		bool ShouldDelete() { return m_delete_flag; };
 		void SetDelete(bool del) { m_delete_flag = del; };
 		bool IsTimeout() { return m_timeout_flag; };

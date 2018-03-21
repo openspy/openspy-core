@@ -50,6 +50,7 @@ namespace SB {
 		}
 		void V1Peer::think(bool packet_waiting) {
 			int len = 0;
+			NetIOCommResp io_resp;
 			if (m_delete_flag) return;
 			if (m_waiting_gamedata == 2) {
 				m_waiting_gamedata = 0;
@@ -60,9 +61,9 @@ namespace SB {
 				}
 			}
 			if (packet_waiting) {
-				len = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
+				io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 
-				if (len <= 0) {
+				if (io_resp.disconnect_flag || io_resp.error_flag) {
 					goto end;
 				}
 
@@ -403,9 +404,9 @@ namespace SB {
 
 			m_peer_stats.bytes_out += buffer.size();
 			m_peer_stats.packets_out++;
-
-			int c = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
-			if(c < 0) {
+			NetIOCommResp io_resp;
+			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+			if(io_resp.disconnect_flag || io_resp.error_flag) {
 				m_delete_flag = true;
 			}
 		}

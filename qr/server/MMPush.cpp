@@ -44,7 +44,7 @@ namespace MM {
 						struct sockaddr_in address;
 						address.sin_port = htons(atoi(to_port));
 						address.sin_addr.s_addr = inet_addr((const char *)&to_ip);
-						QR::Peer *peer = server->find_client(&address);
+						QR::Peer *peer = server->find_client(address);
 						if (!peer) {
 							goto end_exit;
 							
@@ -135,7 +135,7 @@ namespace MM {
 				}
 				task->mp_timer->stop();
 				if (task_params.peer) {
-					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", OS::Address(*task_params.peer->getAddress()).ToString().c_str(), task_params.type, task->mp_timer->time_elapsed() / 1000000.0);
+					OS::LogText(OS::ELogLevel_Info, "[%s] Thread type %d - time: %f", OS::Address(task_params.peer->getAddress()).ToString().c_str(), task_params.type, task->mp_timer->time_elapsed() / 1000000.0);
 				}
 				task_params.peer->DecRef();
 				task->mp_mutex->lock();

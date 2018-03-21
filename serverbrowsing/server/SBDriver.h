@@ -51,6 +51,9 @@ namespace SB {
 
 		OS::MetricInstance GetMetrics();
 		void debug_dump();
+
+		INetIOSocket *getListenerSocket() const;
+		const std::vector<INetIOSocket *> getSockets() const;
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();

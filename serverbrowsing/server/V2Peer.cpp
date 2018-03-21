@@ -355,13 +355,13 @@ namespace SB {
 
 		m_peer_stats.packets_out++;
 
-		int c = 0;
-		if((c = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer)) < 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d", m_sd->address.ToString().c_str(),c);
+		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		if(io_resp.disconnect_flag || io_resp.error_flag) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d %d", m_sd->address.ToString().c_str(), io_resp.disconnect_flag, io_resp.error_flag);
 			m_delete_flag = true;
 		}
 		else {
-			m_peer_stats.bytes_out += c;
+			m_peer_stats.bytes_out += io_resp.comm_len;
 		}
 	}
 	void V2Peer::ProcessListRequest(OS::Buffer &buffer) {
@@ -477,11 +477,12 @@ namespace SB {
 
 	}
 	void V2Peer::think(bool waiting_packet) {
+		NetIOCommResp io_resp;
 		int len = 0;
 		if (m_delete_flag) return;
 		if (waiting_packet) {
-			len = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
-			if (len <= 0) {
+			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
+			if (io_resp.disconnect_flag || io_resp.error_flag) {
 				goto end;
 			}
 
@@ -515,7 +516,7 @@ namespace SB {
 		if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
 			m_delete_flag = true;
 			m_timeout_flag = true;
-		} else if(len <= 0 && waiting_packet) {
+		} else if((io_resp.disconnect_flag || io_resp.error_flag) && waiting_packet) {
 			m_delete_flag = true;
 		}
 	}
@@ -774,7 +775,8 @@ namespace SB {
 
 		m_peer_stats.bytes_out += len+1;
 		m_peer_stats.packets_out++;
-		if (this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer) < 0)
+		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		if (io_resp.disconnect_flag || io_resp.error_flag)
 			m_delete_flag = true;
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", m_sd->address.ToString().c_str(), send_str, die);

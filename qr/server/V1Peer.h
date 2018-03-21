@@ -6,6 +6,7 @@
 #include "QRPeer.h"
 
 #include <OS/legacy/gsmsalg.h>
+#include <OS/KVReader.h>
 
 #include "MMPush.h"
 
@@ -24,12 +25,12 @@ namespace QR {
 
 	class V1Peer : public Peer {
 	public:
-		V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		V1Peer(Driver *driver, INetIOSocket *socket);
 		~V1Peer();
 		
 		void think(bool listener_waiting);
 
-		void handle_packet(char *recvbuf, int len);
+		void handle_packet(INetIODatagram packet);
 
 		void send_error(bool die, const char *fmt, ...);
 		void SendClientMessage(uint8_t *data, int data_len);
@@ -38,12 +39,12 @@ namespace QR {
 	private:
 		void SendPacket(std::string str, bool attach_final);
 		void send_ping();
-		void handle_echo(char *recvbuf, int len);
-		void handle_heartbeat(char *recvbuf, int len);
-		void handle_validate(char *recvbuf, int len);
-		void handle_ready_query_state(char *recvbuf, int len);
-		void parse_rules(char *recvbuf, int len);
-		void parse_players(char *recvbuf, int len);
+		void handle_echo(OS::KVReader data_parser);
+		void handle_heartbeat(OS::KVReader data_parser);
+		void handle_validate(OS::KVReader data_parser);
+		void handle_ready_query_state(OS::KVReader data_parser);
+		void parse_rules(OS::KVReader data_parser);
+		void parse_players(OS::KVReader data_parser);
 
 		uint8_t m_challenge[7];
 		uint8_t m_ping_challenge[7];

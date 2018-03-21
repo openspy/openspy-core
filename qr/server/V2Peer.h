@@ -18,12 +18,12 @@ namespace QR {
 
 	class V2Peer : public Peer {
 	public:
-		V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		V2Peer(Driver *driver, INetIOSocket *sd);
 		~V2Peer();
 		
 		void think(bool listener_waiting);
 
-		void handle_packet(char *recvbuf, int len);
+		void handle_packet(INetIODatagram packet);
 
 		void send_error(bool die, const char *fmt, ...);
 		void SendClientMessage(uint8_t *data, int data_len);

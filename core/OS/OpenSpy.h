@@ -132,10 +132,14 @@ namespace OS {
 		Address(const char *str);
 		Address();
 		Address(uint32_t ip, uint16_t port);
-		uint32_t GetIP() { return ip; };
-		uint16_t GetPort();
+		uint32_t GetIP() const { return ip; };
+		uint16_t GetPort() const;
 		const struct sockaddr_in GetInAddr();
 		std::string ToString(bool ip_only = false);
+
+		bool operator==(const Address &addr) const {
+			return addr.GetIP() == this->GetIP() && addr.GetPort() == this->GetPort();
+		}
 	//private:
 		uint32_t ip;
 		uint16_t port;

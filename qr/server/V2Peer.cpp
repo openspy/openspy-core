@@ -30,7 +30,7 @@
 #define QR_MAGIC_2 0xFD
 
 namespace QR {
-	V2Peer::V2Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver,address_info,sd,2) {
+	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : Peer(driver,sd,2) {
 		m_recv_instance_key = false;
 
 		m_sent_challenge = false;
@@ -38,7 +38,7 @@ namespace QR {
 		memset(&m_instance_key, 0, sizeof(m_instance_key));
 		memset(&m_challenge, 0, sizeof(m_challenge));
 
-		m_server_info.m_address = m_address_info;
+		m_server_info.m_address = sd->address;
 
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
@@ -52,45 +52,52 @@ namespace QR {
 		m_peer_stats.packets_out++;
 		m_peer_stats.bytes_out += buffer.size();
 
-		sendto(m_sd,(const char *)buffer.GetHead(),buffer.size(),0,(struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
+		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
+		if (resp.disconnect_flag || resp.error_flag) {
+			Delete();
+		}
 	}
-	void V2Peer::handle_packet(char *recvbuf, int len) {
-		OS::Buffer buffer(recvbuf, len);
+	void V2Peer::handle_packet(INetIODatagram packet) {
 
 		m_peer_stats.packets_in++;
-		m_peer_stats.bytes_in += len;
+		m_peer_stats.bytes_in += packet.buffer.size();
 
-		uint8_t type = buffer.ReadByte();
+		uint8_t type = packet.buffer.ReadByte();
 
 		uint8_t instance_key[REQUEST_KEY_LEN];
 		if(m_recv_instance_key || type == PACKET_AVAILABLE)
-			buffer.ReadBuffer(&instance_key, REQUEST_KEY_LEN);
+			packet.buffer.ReadBuffer(&instance_key, REQUEST_KEY_LEN);
 
 		if(m_recv_instance_key) {
 			if(memcmp((uint8_t *)&instance_key, (uint8_t *)&m_instance_key, sizeof(instance_key)) != 0) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet", OS::Address(m_address_info).ToString().c_str());
+				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet", m_sd->address.ToString().c_str());
 				return;
 			}
 		}
+		else {
+			packet.buffer.ReadBuffer(&m_instance_key, sizeof(m_instance_key));
+			m_recv_instance_key = true;
+		}
+
 
 
 		gettimeofday(&m_last_recv, NULL);
 
 		switch(type) {
 			case PACKET_AVAILABLE:
-				handle_available(buffer);
+				handle_available(packet.buffer);
 				break;
 			case PACKET_HEARTBEAT:
-				handle_heartbeat(buffer);
+				handle_heartbeat(packet.buffer);
 			break;
 			case PACKET_CHALLENGE:
-				handle_challenge(buffer);
+				handle_challenge(packet.buffer);
 			break;
 			case PACKET_KEEPALIVE:
-				handle_keepalive(buffer);
+				handle_keepalive(packet.buffer);
 			break;
 			case PACKET_CLIENT_MESSAGE_ACK:
-				OS::LogText(OS::ELogLevel_Info, "[%s] Client Message ACK", OS::Address(m_address_info).ToString().c_str());
+				OS::LogText(OS::ELogLevel_Info, "[%s] Client Message ACK", m_sd->address.ToString().c_str());
 			break;
 		}
 	}
@@ -104,7 +111,7 @@ namespace QR {
 		}
 		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (unsigned char *)&m_server_info.m_game.secretkey, 0);
 		if(strcmp(buffer.ReadNTS().c_str(),challenge_resp) == 0) { //matching challenge
-			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", OS::Address(m_address_info).ToString().c_str(), m_server_info.m_game.gamename);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename);
 			if(m_sent_challenge) {
 				MM::MMPushRequest req;
 				req.peer = this;
@@ -119,7 +126,7 @@ namespace QR {
 			m_sent_challenge = true;
 		}
 		else {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Incorrect challenge for gamename: %s", OS::Address(m_address_info).ToString().c_str(), m_server_info.m_game.gamename);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Incorrect challenge for gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename);
 		}
 	}
 	void V2Peer::handle_keepalive(OS::Buffer &buffer) {
@@ -142,11 +149,6 @@ namespace QR {
 
 		std::string key, value;
 
-		if(!m_recv_instance_key) {
-			buffer.ReadBuffer(&m_instance_key, sizeof(m_instance_key));
-			m_recv_instance_key = true;
-		}
-
 		std::stringstream ss;
 
 		while(true) {
@@ -166,7 +168,7 @@ namespace QR {
 			i++;
 		}
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", m_sd->address.ToString().c_str(), ss.str().c_str());
 		ss.str("");
 
 
@@ -216,7 +218,7 @@ namespace QR {
 		}
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", m_sd->address.ToString().c_str(), ss.str().c_str());
 		ss.str("");
 
 		m_dirty_server_info = server_info;
@@ -268,7 +270,7 @@ namespace QR {
 
 		req.gamename = buffer.ReadNTS();
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got available request: %s", OS::Address(m_address_info).ToString().c_str(), req.gamename.c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got available request: %s", m_sd->address.ToString().c_str(), req.gamename.c_str());
 		req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
 		m_peer_stats.pending_requests++;
 		MM::m_task_pool->AddRequest(req);
@@ -335,7 +337,7 @@ namespace QR {
 			Delete();
 		}
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Error:", OS::Address(m_address_info).ToString().c_str(), fmt);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Error:", m_sd->address.ToString().c_str(), fmt);
 	}
 	void V2Peer::send_ping() {
 		//check for timeout

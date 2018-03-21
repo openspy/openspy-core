@@ -8,7 +8,7 @@
 class INetPeer : public OS::Ref {
 	public:
 		INetPeer(INetDriver *driver, INetIOSocket *sd) : OS::Ref() { mp_driver = driver; m_sd = sd; };
-		virtual ~INetPeer() { if (m_sd != mp_driver->getListenerSocket()) { GetDriver()->getServer()->getNetIOInterface()->closeSocket(m_sd); } }
+		virtual ~INetPeer() { GetDriver()->getServer()->getNetIOInterface()->closeSocket(m_sd); }
 
 		virtual void think(bool packet_waiting) = 0;
 
@@ -18,6 +18,8 @@ class INetPeer : public OS::Ref {
 		INetDriver *GetDriver() { return mp_driver; };
 
 		virtual OS::MetricInstance GetMetrics() = 0;
+
+		OS::Address getAddress() { return m_sd->address; };
 	protected:
 		INetIOSocket *m_sd;
 		INetDriver *mp_driver;

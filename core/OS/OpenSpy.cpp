@@ -492,7 +492,7 @@ namespace OS {
 		ip = 0;
 		port = 0;
 	}
-	uint16_t Address::GetPort()	{
+	uint16_t Address::GetPort() const {
 		return htons(port);
 	}
 	const struct sockaddr_in Address::GetInAddr() {

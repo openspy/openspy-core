@@ -11,10 +11,9 @@
 #include <OS/legacy/helpers.h>
 
 #include <sstream>
-#include <OS/KVReader.h>
 
 namespace QR {
-	V1Peer::V1Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : Peer(driver, address_info, sd, 1) {
+	V1Peer::V1Peer(Driver *driver, INetIOSocket *socket) : Peer(driver, socket, 1) {
 		memset(&m_challenge, 0, sizeof(m_challenge));
 		gen_random((char *)&m_challenge, 6);
 		m_sent_challenge = false;
@@ -25,7 +24,7 @@ namespace QR {
 
 
 		m_server_info.m_game.gameid = 0;
-		m_server_info.m_address = OS::Address(m_address_info);
+		m_server_info.m_address = socket->address;
 
 		gettimeofday(&m_last_recv, NULL);
 		gettimeofday(&m_last_ping, NULL);
@@ -47,19 +46,16 @@ namespace QR {
 		}
 	}
 
-	void V1Peer::handle_packet(char *recvbuf, int len) {
-		if (len < 0) {
+	void V1Peer::handle_packet(INetIODatagram packet) {
+		if (packet.error_flag) {
 			Delete();
-			return;
-		}
-		else if (len == 0) {
 			return;
 		}
 
 		m_peer_stats.packets_in++;
-		m_peer_stats.bytes_in += len;
+		m_peer_stats.bytes_in += packet.buffer.size();
 
-		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
+		OS::KVReader data_parser = OS::KVReader(std::string((const char *)packet.buffer.GetHead()));
 		if (data_parser.Size() < 1) {
 			Delete();
 			return;
@@ -69,17 +65,17 @@ namespace QR {
 		//gettimeofday(&m_last_recv, NULL); //not here due to spoofing
 
 		if (command.compare("heartbeat") == 0) {
-			handle_heartbeat(recvbuf, len);
+			handle_heartbeat(data_parser);
 		}
 		else if (command.compare("echo") == 0) {
-			handle_echo(recvbuf, len);
+			handle_echo(data_parser);
 		}
 		else if (command.compare("validate") == 0) {
-			handle_validate(recvbuf, len);
+			handle_validate(data_parser);
 		}
 		else {
 			if (m_query_state != EV1_CQS_Complete) {
-				handle_ready_query_state(recvbuf, len);
+				handle_ready_query_state(data_parser);
 			}
 		}
 	}
@@ -96,8 +92,8 @@ namespace QR {
 	void V1Peer::SendClientMessage(uint8_t *data, int data_len) {
 
 	}
-	void V1Peer::parse_rules(char *recvbuf, int len) {
-		m_dirty_server_info.m_keys = OS::KeyStringToMap(recvbuf);
+	void V1Peer::parse_rules(OS::KVReader data_parser) {
+		m_dirty_server_info.m_keys = data_parser.GetKVMap();
 
 		if(m_dirty_server_info.m_keys.find("echo") != m_dirty_server_info.m_keys.cend())
 			m_dirty_server_info.m_keys.erase(m_dirty_server_info.m_keys.find("echo"));
@@ -109,11 +105,10 @@ namespace QR {
 			ss << "(" << p.first << ", " << p.second << ") ";
 			it++;
 		}
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", m_sd->address.ToString().c_str(), ss.str().c_str());
 	}
-	void V1Peer::parse_players(char *recvbuf, int len) {
+	void V1Peer::parse_players(OS::KVReader data_parser) {
 		std::stringstream ss;
-		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
 
 		std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it_pair = data_parser.GetHead();
 		std::vector<std::pair< std::string, std::string> >::const_iterator it = it_pair.first;
@@ -137,13 +132,11 @@ namespace QR {
 		}
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", OS::Address(m_address_info).ToString().c_str(), ss.str().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", m_sd->address.ToString().c_str(), ss.str().c_str());
 	}
-	void V1Peer::handle_ready_query_state(char *recvbuf, int len) {
+	void V1Peer::handle_ready_query_state(OS::KVReader data_parser) {
 		std::ostringstream s;
 		std::string challenge;
-
-		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
 
 		if (!data_parser.HasKey("echo")) {
 			send_error(true, "Missing echo param in query response");
@@ -165,21 +158,21 @@ namespace QR {
 			m_dirty_server_info.m_keys.clear();
 			m_dirty_server_info.m_player_keys.clear();
 			s << "\\info\\";
-			parse_rules(recvbuf, len);
+			parse_rules(data_parser);
 			m_query_state = EV1_CQS_Info;
 			break;
 		case EV1_CQS_Info:
 			s << "\\rules\\";
-			parse_rules(recvbuf, len);
+			parse_rules(data_parser);
 			m_query_state = EV1_CQS_Rules;
 			break;
 		case EV1_CQS_Rules:
 			s << "\\players\\";
-			parse_players(recvbuf, len);
+			parse_players(data_parser);
 			m_query_state = EV1_CQS_Players;
 			break;
 		case EV1_CQS_Players:
-			parse_players(recvbuf, len);
+			parse_players(data_parser);
 			MM::MMPushRequest req;
 			if (!m_pushed_server) {
 				m_pushed_server = true;
@@ -216,8 +209,7 @@ namespace QR {
 		s << "\\echo\\ " << m_challenge;
 		SendPacket(s.str(), false);
 	}
-	void V1Peer::handle_validate(char *recvbuf, int len) {
-		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
+	void V1Peer::handle_validate(OS::KVReader data_parser) {
 		std::string validate = data_parser.GetValue("validate");
 
 		unsigned char *validation = gsseckey(NULL, (unsigned char *)m_challenge, (unsigned char *)m_server_info.m_game.secretkey, 0);
@@ -237,16 +229,14 @@ namespace QR {
 		}
 		free((void *)validation);
 	}
-	void V1Peer::handle_heartbeat(char *recvbuf, int len) {
-		
+	void V1Peer::handle_heartbeat(OS::KVReader data_parser) {
 		std::string gamename;
-		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
 		int query_port = data_parser.GetValueInt("heartbeat");
 		int state_changed = data_parser.GetValueInt("statechanged");
 
 		gamename = data_parser.GetValue("gamename");
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", OS::Address(m_address_info).ToString().c_str(), recvbuf);
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", m_sd->address.ToString().c_str(), data_parser.ToString());
 		//m_server_info.m_game = OS::GetGameByName(gamename.c_str());
 
 		if (m_server_info.m_game.gameid != 0) {
@@ -286,14 +276,13 @@ namespace QR {
 		if (s.str().length() > 0)
 			SendPacket(s.str(), false);
 	}
-	void V1Peer::handle_echo(char *recvbuf, int len) {
+	void V1Peer::handle_echo(OS::KVReader data_parser) {
 		std::string validation;
 		std::ostringstream s;
 
-		OS::KVReader data_parser = OS::KVReader(std::string(recvbuf));
 		validation = data_parser.GetValue("echo");
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Echo: %s", OS::Address(m_address_info).ToString().c_str(), recvbuf);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Echo: %s", m_sd->address.ToString().c_str(), data_parser.ToString().c_str());
 
 		if (memcmp(validation.c_str(), m_challenge, sizeof(m_challenge)) == 0) {
 			gettimeofday(&m_last_recv, NULL);
@@ -329,6 +318,7 @@ namespace QR {
 	}
 	void V1Peer::SendPacket(std::string str, bool attach_final) {
 		std::string send_str = str;
+		OS::Buffer buffer;
 		if (attach_final) {
 			send_str += "\\final\\";
 		}
@@ -336,8 +326,10 @@ namespace QR {
 		m_peer_stats.packets_out++;
 		m_peer_stats.bytes_out += send_str.length()+1;
 
-		int c = sendto(m_sd, send_str.c_str(), send_str.length()+1, 0, (struct sockaddr *)&m_address_info, sizeof(sockaddr_in));
-		if (c < 0) {
+		buffer.WriteNTS(send_str);
+
+		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
+		if (resp.disconnect_flag || resp.error_flag) {
 			Delete();
 		}
 	}
