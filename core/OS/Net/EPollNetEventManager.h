@@ -13,7 +13,7 @@
 			bool is_peer;
 			void *ptr;
 		} EPollDataInfo;
-		class EPollNetEventManager : public INetEventManager {
+		class EPollNetEventManager : public INetEventManager, public BSDNetIOInterface {
 		public:
 			EPollNetEventManager();
 			~EPollNetEventManager();

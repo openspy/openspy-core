@@ -34,7 +34,7 @@ namespace OS {
 			_cursor = cpy._cursor;
 		}
 		Buffer::Buffer() {
-			mp_ctx = new BufferCtx(256);
+			mp_ctx = new BufferCtx(1492);
 			reset();
 		}
 		Buffer::~Buffer() {

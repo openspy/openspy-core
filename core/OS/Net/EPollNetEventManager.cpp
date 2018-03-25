@@ -6,7 +6,7 @@
 	#include "NetPeer.h"
 	#include <algorithm>
 
-	EPollNetEventManager::EPollNetEventManager() {
+	EPollNetEventManager::EPollNetEventManager() : BSDNetIOInterface(), INetEventManager() {
 		m_exit_flag = false;
 
 		m_epollfd = epoll_create(MAX_EPOLL_EVENTS);
@@ -52,13 +52,14 @@
 				it++;
 			}
 		}
+		flushSendQueue();
 	}
 	void EPollNetEventManager::RegisterSocket(INetPeer *peer) {
 		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {
 			EPollDataInfo *data_info = (EPollDataInfo *)malloc(sizeof(EPollDataInfo));
 
 			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLET;
+			ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
 			ev.data.ptr = data_info;
 
 			data_info->ptr = peer;
@@ -74,7 +75,7 @@
 			std::map<void *, EPollDataInfo *>::iterator it = m_datainfo_map.find(peer);
 			if(it != m_datainfo_map.end()) {
 				struct epoll_event ev;
-				ev.events = EPOLLIN | EPOLLET;
+				ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
 				ev.data.ptr = peer;
 				epoll_ctl(m_epollfd, EPOLL_CTL_DEL, peer->GetSocket(), &ev);
 				free((void *)m_datainfo_map[peer]);
@@ -94,7 +95,7 @@
 			data_info->is_peer = false;
 
 			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLET;
+			ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
 			ev.data.ptr = data_info;
 
 			m_datainfo_map[driver] = data_info;

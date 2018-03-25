@@ -3,12 +3,12 @@
 		#define _SELECTNETEVENTMGR_H
 		#include <OS/OpenSpy.h>
 		#include "NetEventManager.h"
-		#include "NetIOInterface.h"
+		#include "BSDNetIOInterface.h"
 		#include <vector>
 
 		#define SELECT_TIMEOUT 5
 
-		class SelectNetEventManager : public INetEventManager, public INetIOInterface {
+		class SelectNetEventManager : public INetEventManager, public BSDNetIOInterface {
 		public:
 			SelectNetEventManager();
 			~SelectNetEventManager();
@@ -17,19 +17,6 @@
 			void UnregisterSocket(INetPeer *peer);
 			void run();
 
-			//NET IO INTERFACE
-			INetIOSocket *BindTCP(OS::Address bind_address);
-			std::vector<INetIOSocket *> TCPAccept(INetIOSocket *socket);
-			NetIOCommResp streamRecv(INetIOSocket *socket, OS::Buffer &buffer);
-			NetIOCommResp streamSend(INetIOSocket *socket, OS::Buffer &buffer);
-
-			INetIOSocket *BindUDP(OS::Address bind_address);
-			NetIOCommResp datagramRecv(INetIOSocket *socket, std::vector<INetIODatagram> &datagrams);
-			NetIOCommResp datagramSend(INetIOSocket *socket, OS::Buffer &buffer);
-			void closeSocket(INetIOSocket *socket);
-
-			void makeNonBlocking(int sd);
-			//
 		private:
 			int setup_fdset();
 			fd_set  m_fdset;
