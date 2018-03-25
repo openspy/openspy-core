@@ -67,7 +67,7 @@
 
 			m_datainfo_map[peer] = data_info;
 
-			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, peer->GetSocket(), &ev);
+			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, peer->GetSocket()->sd, &ev);
 		}
 	}
 	void EPollNetEventManager::UnregisterSocket(INetPeer *peer) {
@@ -77,7 +77,7 @@
 				struct epoll_event ev;
 				ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
 				ev.data.ptr = peer;
-				epoll_ctl(m_epollfd, EPOLL_CTL_DEL, peer->GetSocket(), &ev);
+				epoll_ctl(m_epollfd, EPOLL_CTL_DEL, peer->GetSocket()->sd, &ev);
 				free((void *)m_datainfo_map[peer]);
 				m_datainfo_map.erase(it, m_datainfo_map.end());
 			}
@@ -100,7 +100,7 @@
 
 			m_datainfo_map[driver] = data_info;
 
-			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, driver->getListenerSocket(), &ev);
+			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, driver->getListenerSocket()->sd, &ev);
 			it++;
 		}
 		m_added_drivers = true;
