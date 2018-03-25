@@ -10,11 +10,12 @@ INetServer::INetServer() {
 	#ifdef EVTMGR_USE_SELECT
 	SelectNetEventManager *event_mgr;
 	event_mgr = new SelectNetEventManager();
+	#elif EVTMGR_USE_EPOLL
+	EPollNetEventManager *event_mgr;
+	event_mgr = new EPollNetEventManager();
+	#endif
 	mp_net_event_mgr = event_mgr;
 	mp_net_io_interface = event_mgr;
-	#elif EVTMGR_USE_EPOLL
-	mp_net_event_mgr = new EPollNetEventManager();
-	#endif
 }
 INetServer::~INetServer() {
 	delete mp_net_event_mgr;

@@ -3,6 +3,7 @@
 #include <OS/OpenSpy.h>
 #include <sys/epoll.h>
 	#if EVTMGR_USE_EPOLL
+		#include "BSDNetIOInterface.h"
 		#include "NetEventManager.h"
 		#include <vector>
 		#include <map>

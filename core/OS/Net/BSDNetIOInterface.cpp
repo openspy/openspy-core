@@ -1,4 +1,5 @@
 #include <OS/OpenSpy.h>
+#include <algorithm>
 #include "BSDNetIOInterface.h"
 #include "NetIOInterface.h"
 #include "NetPeer.h"
@@ -101,7 +102,9 @@ NetIOCommResp BSDNetIOInterface::streamSend(INetIOSocket *socket, OS::Buffer &bu
 	if (ret.comm_len != buffer.size()) {
 		switch (errno) {
 		case EAGAIN:
+#if EWOULDBLOCK != EAGAIN
 		case EWOULDBLOCK:
+#endif
 			//queue data for resend
 			m_stream_send_queue[socket].push_back(buffer);
 			break;
@@ -190,7 +193,9 @@ NetIOCommResp BSDNetIOInterface::datagramSend(INetIOSocket *socket, OS::Buffer &
 	if (ret.comm_len != buffer.size()) {
 		switch (errno) {
 		case EAGAIN:
+#if EWOULDBLOCK != EAGAIN
 		case EWOULDBLOCK:
+#endif
 			//queue data for resend
 			m_datagram_send_queue[socket].push_back(buffer);
 			break;

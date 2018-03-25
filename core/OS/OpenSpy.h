@@ -26,6 +26,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <signal.h>
