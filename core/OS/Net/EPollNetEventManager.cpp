@@ -79,7 +79,7 @@
 				ev.data.ptr = peer;
 				epoll_ctl(m_epollfd, EPOLL_CTL_DEL, peer->GetSocket()->sd, &ev);
 				free((void *)m_datainfo_map[peer]);
-				m_datainfo_map.erase(it, m_datainfo_map.end());
+				m_datainfo_map.erase(it);
 			}
 		}
 	}
