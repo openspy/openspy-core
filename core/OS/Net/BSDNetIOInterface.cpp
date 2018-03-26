@@ -74,7 +74,7 @@ NetIOCommResp BSDNetIOInterface::streamRecv(INetIOSocket *socket, OS::Buffer &bu
 	char recvbuf[1492];
 	buffer.reset();
 	while (true) {
-		int len = recv(socket->sd, recvbuf, sizeof recvbuf, MSG_NOSIGNAL);
+		int len = recv(socket->sd, recvbuf, sizeof recvbuf, 0);
 		if (len <= 0) {
 			if (len == 0) {
 				ret.error_flag = true;
@@ -161,7 +161,7 @@ NetIOCommResp BSDNetIOInterface::datagramRecv(INetIOSocket *socket, std::vector<
 	while (true) {
 		INetIODatagram dgram;
 		socklen_t in_len = sizeof(in_addr);
-		int len = recvfrom(socket->sd, (char *)&recvbuf, sizeof(recvbuf), MSG_NOSIGNAL, (struct sockaddr *)&in_addr, &in_len);
+		int len = recvfrom(socket->sd, (char *)&recvbuf, sizeof(recvbuf), 0, (struct sockaddr *)&in_addr, &in_len);
 		if (len <= 0) {
 			break;
 		}
