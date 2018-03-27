@@ -478,7 +478,6 @@ namespace SB {
 	}
 	void V2Peer::think(bool waiting_packet) {
 		NetIOCommResp io_resp;
-		int len = 0;
 		if (m_delete_flag) return;
 		if (waiting_packet) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
@@ -487,10 +486,10 @@ namespace SB {
 			}
 
 			m_peer_stats.packets_in++;
-			m_peer_stats.bytes_in += len;
+			m_peer_stats.bytes_in += m_recv_buffer.size();
 
 			if(m_next_packet_send_msg) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), len);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), m_recv_buffer.size());
 				const char *base64 = OS::BinToBase64Str((uint8_t *)m_recv_buffer.GetHead(), m_recv_buffer.size());
 
 				MM::MMQueryRequest req;
