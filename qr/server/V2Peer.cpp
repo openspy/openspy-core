@@ -65,18 +65,19 @@ namespace QR {
 		uint8_t type = packet.buffer.ReadByte();
 
 		uint8_t instance_key[REQUEST_KEY_LEN];
-		if(m_recv_instance_key || type == PACKET_AVAILABLE)
-			packet.buffer.ReadBuffer(&instance_key, REQUEST_KEY_LEN);
+		packet.buffer.ReadBuffer(&instance_key, REQUEST_KEY_LEN);
+
+	
+		if (!m_recv_instance_key && type != PACKET_AVAILABLE) {
+			memcpy(&m_instance_key, &instance_key, REQUEST_KEY_LEN);
+			m_recv_instance_key = true;
+		}
 
 		if(m_recv_instance_key) {
 			if(memcmp((uint8_t *)&instance_key, (uint8_t *)&m_instance_key, sizeof(instance_key)) != 0) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet", m_sd->address.ToString().c_str());
 				return;
 			}
-		}
-		else if(type != PACKET_AVAILABLE) {
-			packet.buffer.ReadBuffer(&m_instance_key, sizeof(m_instance_key));
-			m_recv_instance_key = true;
 		}
 
 
