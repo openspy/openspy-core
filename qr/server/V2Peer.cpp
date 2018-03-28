@@ -74,7 +74,7 @@ namespace QR {
 				return;
 			}
 		}
-		else {
+		else if(type != PACKET_AVAILABLE) {
 			packet.buffer.ReadBuffer(&m_instance_key, sizeof(m_instance_key));
 			m_recv_instance_key = true;
 		}
