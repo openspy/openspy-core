@@ -19,7 +19,7 @@
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
 
-#include "Analytics\AnalyticsMgr.h"
+#include "Analytics/AnalyticsMgr.h"
 
 namespace OS {
 	Logger *g_logger = NULL;
