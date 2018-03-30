@@ -571,8 +571,6 @@ namespace MM {
 		server->SetTaskPool(m_task_pool);
 	}
 	void Shutdown() {
-		mp_redis_async_connection->runLoop = false;
-
 		Redis::CancelLooping(mp_redis_async_connection);
 
 		mp_async_thread->SignalExit(true);

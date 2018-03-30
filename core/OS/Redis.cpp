@@ -358,6 +358,7 @@ namespace Redis {
 		free((void *)connection);
 	}
 	void CancelLooping(Connection *connection) {
+		connection->runLoop = false;
 		shutdown(connection->sd, 2);
 		close(connection->sd);
 		connection->sd = 0;
