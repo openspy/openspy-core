@@ -44,6 +44,13 @@ namespace OS {
 			int size();
 
 			Buffer &operator=(const Buffer& val) {
+				if(mp_ctx) {
+					mp_ctx->DecRef();
+					if (mp_ctx->GetRefCount() == 0) {
+						delete mp_ctx;
+					}
+				}
+				
 				mp_ctx = val.mp_ctx;
 				_cursor = val._cursor;
 				mp_ctx->IncRef();
