@@ -56,6 +56,7 @@ namespace Redis {
 	Response Command(Connection *conn, time_t sleepMS, const char *fmt, ...);
 	void LoopingCommand(Connection *conn, time_t sleepMS, void(*mpFunc)(Connection *, Response, void *), void *extra, const char *fmt, ...); //for SUBSCRIBE/DEBUGGER, etc
 	void Disconnect(Connection *connection);
+	void CancelLooping(Connection *connection);
 	void parse_response(std::string resp_str, int &diff, Redis::Response *resp, Redis::ArrayValue *arr_val);
 	bool CheckError(Response r);
 	void Reconnect(Connection *connection);

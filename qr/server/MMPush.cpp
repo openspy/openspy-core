@@ -572,8 +572,8 @@ namespace MM {
 	}
 	void Shutdown() {
 		mp_redis_async_connection->runLoop = false;
-		close(mp_redis_async_connection->sd);
-		mp_redis_async_connection->sd = 0;
+
+		Redis::CancelLooping(mp_redis_async_connection);
 
 		mp_async_thread->SignalExit(true);
 		delete mp_async_thread;

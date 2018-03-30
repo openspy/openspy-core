@@ -357,6 +357,11 @@ namespace Redis {
 
 		free((void *)connection);
 	}
+	void CancelLooping(Connection *connection) {
+		shutdown(connection->sd, 2);
+		close(connection->sd);
+		connection->sd = 0;
+	}
 	bool CheckError(Response r) {
 		return r.values.size() == 0 || r.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR;
 	}
