@@ -176,8 +176,6 @@ namespace OS {
 
 	std::string FindBestMatch(std::vector<std::string> matches, std::string name);
 
-	bool wouldBlock();
-
 }
 
 #ifdef _WIN32

@@ -573,13 +573,4 @@ namespace OS {
 		}
 		return best_result;
 	}
-	bool wouldBlock() {
-		#ifdef _WIN32
-		return errno == EWOULDBLOCK;
-		#else
-		return 0;
-		#endif
-	}
-
-
 }
