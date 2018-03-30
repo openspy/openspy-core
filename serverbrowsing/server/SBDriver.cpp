@@ -26,19 +26,15 @@ namespace SB {
 	}
 	Driver::~Driver() {
 		//end all MMQuery tasks first, otherwise can crash here
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			m_server->UnregisterSocket(peer);
-			delete peer;
-			it++;
-		}
+		mp_thread->SignalExit(true);
 		delete mp_thread;
 		delete mp_mutex;
+
+		DeleteClients();
 	}
 	void *Driver::TaskThread(OS::CThread *thread) {
 		Driver *driver = (Driver *)thread->getParams();
-		for(;;) {
+		while(thread->isRunning()) {
 			driver->mp_mutex->lock();
 			std::vector<Peer *>::iterator it = driver->m_connections.begin();
 			while (it != driver->m_connections.end()) {
@@ -89,6 +85,7 @@ namespace SB {
 			driver->mp_mutex->unlock();
 			OS::Sleep(DRIVER_THREAD_TIME);
 		}
+		return NULL;
 	}
 	void Driver::think(bool listen_waiting) {
 		if (listen_waiting) {
@@ -289,5 +286,14 @@ namespace SB {
 			it++;
 		}
 		printf("Peer Count: %d\n", i);
+	}
+	void Driver::DeleteClients() {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *peer = *it;
+			m_server->UnregisterSocket(peer);
+			delete peer;
+			it++;
+		}
 	}
 }

@@ -21,7 +21,7 @@ namespace OS {
 			}
 
 			m_main_mutex = OS::CreateMutex();
-			threadTempCache = new std::map<K, std::pair<V, struct timeval> >[num_threads];
+			threadTempCache = new std::map<K, std::pair<V, struct timeval> >();
 
 		}
 
@@ -30,8 +30,8 @@ namespace OS {
 				delete m_thread_mutexes[i];
 			}
 			free((void *)m_thread_mutexes);
-			delete threadTempCache;
 			delete m_main_mutex;
+			delete threadTempCache;
 		}
 
 		void AddItem(int thread_index, K key, V item) {

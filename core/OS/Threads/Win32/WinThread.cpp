@@ -8,8 +8,8 @@ namespace OS {
 	DWORD CWin32Thread::cwin32thread_thread(void *thread) {
 		CWin32Thread *t = (CWin32Thread *)thread;
 		t->m_entry(t);
-		OS::Sleep(TASK_SLEEP_TIME);
-		delete t;
+		//OS::Sleep(TASK_SLEEP_TIME);
+		//delete t;
 		return 0;
 	}
 	CWin32Thread::CWin32Thread(OS::ThreadEntry *entry, void *param, bool auto_start) : OS::CThread(entry, param, auto_start) {
@@ -26,8 +26,8 @@ namespace OS {
 	}
 	void CWin32Thread::start() {
 		if(!m_running) {
-			m_handle = ::CreateThread(NULL, 0,(LPTHREAD_START_ROUTINE)cwin32thread_thread, this, 0, &m_threadid);
 			m_running = true;
+			m_handle = ::CreateThread(NULL, 0,(LPTHREAD_START_ROUTINE)cwin32thread_thread, this, 0, &m_threadid);			
 		}
 	}
 	void CWin32Thread::stop() {
@@ -35,5 +35,13 @@ namespace OS {
 			TerminateThread(m_handle, 0);
 			m_running = false;
 		}
+	}
+	void CWin32Thread::SignalExit(bool wait, CThreadPoller* poller) {
+		m_running = false;
+		if (poller) {
+			poller->signal();
+		}
+		if(wait)
+			WaitForSingleObject(m_handle, INFINITE);
 	}
 }

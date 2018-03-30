@@ -10,6 +10,7 @@ namespace OS {
 		~CWin32Thread();
 		void start();
 		void stop();
+		void SignalExit(bool wait = true, CThreadPoller *poller = NULL);
 	private:
 		static DWORD cwin32thread_thread(void *thread);
 		DWORD m_threadid;

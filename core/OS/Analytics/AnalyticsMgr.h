@@ -21,7 +21,7 @@ namespace OS {
 		AnalyticsManager();
 		~AnalyticsManager();
 
-		static AnalyticsManager *getSingleton();
+		static AnalyticsManager *getSingleton(bool noCreate = false);
 
 		void SubmitServer(INetServer *server);
 	private:

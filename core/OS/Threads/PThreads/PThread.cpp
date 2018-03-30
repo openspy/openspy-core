@@ -41,4 +41,12 @@ namespace OS {
 			m_running = false;
 		}
 	}
+	void CPThread::SignalExit(bool wait, CThreadPoller* poller) {
+		m_running = false;
+		if (poller) {
+			poller->signal();
+		}
+		if(wait)
+			pthread_join(m_thread, NULL);
+	}
 }

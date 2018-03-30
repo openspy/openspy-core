@@ -56,6 +56,22 @@ namespace MM {
 		server->SetTaskPool(m_task_pool);
 	}
 
+	void ShutdownTaskPool() {
+		mp_redis_async_connection->runLoop = false;
+		close(mp_redis_async_connection->sd);
+		mp_redis_async_connection->sd = 0;
+
+		mp_async_thread->SignalExit(true);
+		delete mp_async_thread;
+
+		Redis::Disconnect(mp_redis_async_connection);		
+		Redis::Disconnect(mp_redis_async_retrival_connection);		
+
+		delete mp_async_lookup_task;
+		delete m_task_pool;
+		delete m_game_cache;
+	}
+
 
 	void MMQueryTask::onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
 		MMQueryTask *task = (MMQueryTask *)mp_async_lookup_task;
@@ -127,14 +143,13 @@ namespace MM {
 	}
 
 	MMQueryTask::~MMQueryTask() {
+		mp_thread->SignalExit(true, mp_thread_poller);
+
 		delete mp_thread;
 		delete mp_mutex;
+		delete mp_timer;
 
 		Redis::Disconnect(mp_redis_connection);
-
-	}
-
-	void MMQueryTask::Shutdown() {
 
 	}
 
@@ -864,7 +879,7 @@ namespace MM {
 	}
 	void *MMQueryTask::TaskThread(OS::CThread *thread) {
 		MMQueryTask *task = (MMQueryTask *)thread->getParams();
-		while(!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
+		while(thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			task->m_thread_awake = true;
 			while (!task->m_request_list.empty()) {

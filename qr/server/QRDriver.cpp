@@ -20,6 +20,10 @@ namespace QR {
 
 	}
 	Driver::~Driver() {
+		mp_thread->SignalExit(true);
+		delete mp_thread;
+		delete mp_mutex;
+
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
@@ -27,12 +31,11 @@ namespace QR {
 			delete peer;
 			it++;
 		}
-		delete mp_thread;
-		delete mp_mutex;
+		getServer()->getNetIOInterface()->closeSocket(mp_socket);
 	}
 	void *Driver::TaskThread(OS::CThread *thread) {
 		Driver *driver = (Driver *)thread->getParams();
-		for(;;) {
+		while(thread->isRunning()) {
 			driver->mp_mutex->lock();
 			driver->TickConnections();
 			std::vector<Peer *>::iterator it = driver->m_connections.begin();
@@ -65,6 +68,7 @@ namespace QR {
 			driver->mp_mutex->unlock();
 			OS::Sleep(DRIVER_THREAD_TIME);
 		}
+		return NULL;
 	}
 	void Driver::think(bool listener_waiting) {
 		mp_mutex->lock();

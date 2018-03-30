@@ -124,7 +124,7 @@ namespace OS {
 
 	void *UserSearchTask::TaskThread(CThread *thread) {
 		UserSearchTask *task = (UserSearchTask *)thread->getParams();
-		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
+		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			while (!task->m_request_list.empty()) {
 				UserSearchRequest task_params = task->m_request_list.front();
@@ -151,6 +151,7 @@ namespace OS {
 
 	}
 	UserSearchTask::~UserSearchTask() {
+		mp_thread->SignalExit(true, mp_thread_poller);
 		delete mp_mutex;
 		delete mp_thread;
 	}

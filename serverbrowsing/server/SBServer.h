@@ -12,7 +12,6 @@ public:
 	~SBServer();
 	void init();
 	void tick();
-	void shutdown();
 	void SetTaskPool(OS::TaskPool<MM::MMQueryTask, MM::MMQueryRequest> *pool);
 	OS::MetricInstance GetMetrics();
 

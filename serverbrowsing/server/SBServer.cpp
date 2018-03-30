@@ -7,6 +7,13 @@ SBServer::SBServer() : INetServer() {
 	gettimeofday(&m_last_analytics_submit_time, NULL);
 }
 SBServer::~SBServer() {
+	MM::ShutdownTaskPool();
+	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
+	while (it != m_net_drivers.end()) {
+		INetDriver *driver = *it;
+		delete *it;
+		it++;
+	}
 }
 void SBServer::init() {
 	MM::SetupTaskPool(this);
@@ -26,8 +33,6 @@ void SBServer::tick() {
 		it++;
 	}
 	NetworkTick();
-}
-void SBServer::shutdown() {
 }
 void SBServer::SetTaskPool(OS::TaskPool<MM::MMQueryTask, MM::MMQueryRequest> *pool) {
 	mp_task_pool = pool;

@@ -7,11 +7,13 @@ namespace OS {
 		mp_thread = OS::CreateThread(AnalyticsManager::TaskThread, this, true);
 	}
 	AnalyticsManager::~AnalyticsManager() {
-		
+		mp_thread->SignalExit(true, mp_thread_poller);
+		delete mp_thread;
+		delete mp_mutex;
 	}
 
-	AnalyticsManager *AnalyticsManager::getSingleton() {
-		if(mp_singleton == NULL) {
+	AnalyticsManager *AnalyticsManager::getSingleton(bool noCreate) {
+		if(mp_singleton == NULL && !noCreate) {
 			mp_singleton = new AnalyticsManager();
 		}
 		return mp_singleton;
@@ -65,6 +67,9 @@ namespace OS {
 	void *AnalyticsManager::TaskThread(OS::CThread *thread) {
 		AnalyticsManager *task = (AnalyticsManager *)thread->getParams();
 		while(task->mp_thread_poller->wait()) {
+			if (!thread->isRunning()) {
+				break;
+			}
 			task->mp_mutex->lock();
 
 			std::vector<MetricInstance>::iterator it = task->m_metric_list.begin();

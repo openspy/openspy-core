@@ -57,6 +57,7 @@ namespace SB {
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
+		void DeleteClients();
 
 		int m_version;
 

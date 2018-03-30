@@ -6,12 +6,10 @@
 #include <stdio.h>
 #include "NetPeer.h"
 SelectNetEventManager::SelectNetEventManager() : BSDNetIOInterface(), INetEventManager() {
-	m_exit_flag = false;
 	m_dirty_fdset = true;
 	mp_mutex = OS::CreateMutex();
 }
 SelectNetEventManager::~SelectNetEventManager() {
-	m_exit_flag = true;
 	delete mp_mutex;
 }
 void SelectNetEventManager::run() {
@@ -26,9 +24,7 @@ void SelectNetEventManager::run() {
 	if (select(hsock, &m_fdset, NULL, NULL, &timeout) < 0) {
 		//return;
 	}
-	if (m_exit_flag) {
-		return;
-	}
+
 	mp_mutex->lock();
 
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

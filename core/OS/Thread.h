@@ -2,6 +2,7 @@
 #define _OS_CTHREAD_H
 namespace OS {
     class CThread;
+	class CThreadPoller;
     typedef void *(ThreadEntry)(CThread *);
     class CThread {
 
@@ -10,7 +11,9 @@ namespace OS {
         virtual ~CThread() { };
         virtual void start() = 0;
         virtual void stop() = 0;
+		virtual void SignalExit(bool wait = true, CThreadPoller *poller = NULL) = 0;
         void *getParams() {return m_params; };
+		bool isRunning() const { return m_running; };
     protected:
         ThreadEntry *m_entry;
         bool m_start_on_create;

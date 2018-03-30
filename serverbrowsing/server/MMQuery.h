@@ -126,7 +126,6 @@ namespace MM {
 		public:
 			MMQueryTask(int index);
 			~MMQueryTask();
-			static void Shutdown();
 
 			static void FreeServerListQuery(struct MM::ServerListQuery *query);
 
@@ -172,6 +171,7 @@ namespace MM {
 	#define NUM_MM_QUERY_THREADS 8
 	extern OS::TaskPool<MMQueryTask, MMQueryRequest> *m_task_pool;
 	void SetupTaskPool(SBServer *server);
+	void ShutdownTaskPool();
 	void *setup_redis_async(OS::CThread *thread);
 
 };

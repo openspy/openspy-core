@@ -19,6 +19,8 @@
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
 
+#include "Analytics\AnalyticsMgr.h"
+
 namespace OS {
 	Logger *g_logger = NULL;
 	Config *g_config = NULL;
@@ -76,7 +78,13 @@ namespace OS {
 
 		Redis::Disconnect(redis_internal_connection);
 
+		OS::AnalyticsManager* analytics_mgr = AnalyticsManager::getSingleton(true);
+		if (analytics_mgr) {
+			delete analytics_mgr;
+		}
+
 		delete mp_redis_internal_connection_mutex;
+		delete g_logger;
 		delete OS::g_config;
 		curl_global_cleanup();
 	}

@@ -62,6 +62,8 @@ namespace Redis {
 		ret->read_buff_alloc_sz = REDIS_BUFFSZ;
 		ret->read_buff = (char *)malloc(REDIS_BUFFSZ);
 
+		ret->runLoop = false;
+
 		performAddressConnect(ret, address, port);
 
 		return ret;
@@ -334,7 +336,8 @@ namespace Redis {
 			OS::Sleep(sleepMS);
 		}
 
-		while (true) {
+		conn->runLoop = true;
+		while (conn->runLoop) {
 			if (Recv(conn) <= 0) {
 				OS::Sleep(5000); //Sleep even longer due to async... more likely to be in a CPU consuming loop
 				Reconnect(conn);
@@ -349,7 +352,10 @@ namespace Redis {
 	void Disconnect(Connection *connection) {
 
 		free(connection->read_buff);
-		close(connection->sd);
+		if(connection->sd != 0)
+			close(connection->sd);
+
+		free((void *)connection);
 	}
 	bool CheckError(Response r) {
 		return r.values.size() == 0 || r.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR;

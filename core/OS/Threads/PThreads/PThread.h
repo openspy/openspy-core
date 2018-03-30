@@ -9,6 +9,7 @@ namespace OS {
 		~CPThread();
 		void start();
 		void stop();
+		void SignalExit(bool wait, CThreadPoller* poller);
 	private:
 		static void *cpthread_thread(void *thread);
 		pthread_t m_thread;

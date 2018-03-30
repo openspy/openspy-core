@@ -61,7 +61,7 @@ void Config::parseConfig() {
 	while(hasMoreBytes() && !parseError) {
 		skipWhiteSpaces();
 		if(!hasMoreBytes()) {
-			return;
+			break;
 		}
 		char firstChar = peekChar();
 		switch(firstChar) {
@@ -85,7 +85,7 @@ void Config::parseConfig() {
 
 				if(opChar != '=' && opChar != '{') {
 					parseError = true;
-					return;
+					break;
 				}
 				if(opChar == '{') {  //array
 					configVar *tvar = (configVar *)malloc(sizeof(configVar));
@@ -105,6 +105,7 @@ void Config::parseConfig() {
 			}
 		}
 	}
+	free((void *)filedata);
 }
 void Config::HandleDirective() {
 }

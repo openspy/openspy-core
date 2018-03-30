@@ -87,6 +87,7 @@ namespace MM {
 
 	}
 	MMPushTask::~MMPushTask() {
+		mp_thread->SignalExit(true, mp_thread_poller);
 		delete mp_thread;
 		delete mp_mutex;
 
@@ -109,7 +110,7 @@ namespace MM {
 	}
 	void *MMPushTask::TaskThread(OS::CThread *thread) {
 		MMPushTask *task = (MMPushTask *)thread->getParams();
-		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
+		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			task->m_thread_awake = true;
 			while (!task->m_request_list.empty()) {
@@ -570,7 +571,18 @@ namespace MM {
 		server->SetTaskPool(m_task_pool);
 	}
 	void Shutdown() {
+		mp_redis_async_connection->runLoop = false;
+		close(mp_redis_async_connection->sd);
+		mp_redis_async_connection->sd = 0;
 
+		mp_async_thread->SignalExit(true);
+		delete mp_async_thread;
+
+		Redis::Disconnect(mp_redis_async_connection);
+		Redis::Disconnect(mp_redis_async_retrival_connection);
+
+		delete mp_async_lookup_task;
+		delete m_task_pool;
 	}
 	int MMPushTask::TryFindServerID(ServerInfo server) {
 		std::string ip = server.m_address.ToString(true);

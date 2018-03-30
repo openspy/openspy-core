@@ -70,15 +70,12 @@ int main() {
 
     delete g_gameserver;
 
-    MM::MMQueryTask::Shutdown();
     OS::Shutdown();
-
     return 0;
 }
 
 void shutdown() {
     if(g_running) {
-        g_gameserver->flagExit();
         g_running = false;
     }
 }

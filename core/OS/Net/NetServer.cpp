@@ -30,9 +30,6 @@ void INetServer::tick() {
 void INetServer::NetworkTick() {
 	mp_net_event_mgr->run();
 }
-void INetServer::flagExit() {
-	mp_net_event_mgr->flagExit();	
-}
 void INetServer::RegisterSocket(INetPeer *peer) {
 	mp_net_event_mgr->RegisterSocket(peer);
 }

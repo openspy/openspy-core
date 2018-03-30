@@ -12,12 +12,10 @@ public:
 	virtual ~INetServer();
 	virtual void init() = 0;
 	virtual void tick();
-	virtual void shutdown() = 0;
 	/*
 		Currently the driver is aware of what type of NetServer its connected to.
 	*/
 	void addNetworkDriver(INetDriver *driver);
-	void flagExit();
 
 	void RegisterSocket(INetPeer *peer);
 	void UnregisterSocket(INetPeer *peer);
