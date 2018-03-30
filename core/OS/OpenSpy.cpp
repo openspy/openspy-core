@@ -471,7 +471,7 @@ namespace OS {
 		#ifdef _WIN32
 		::Sleep(time_ms);
 		#else
-		usleep(time_ms * 1000);
+		sleep(time_ms / 1000);
 		#endif
 	}
 	Address::Address(uint32_t ip, uint16_t port) {
