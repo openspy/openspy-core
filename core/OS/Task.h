@@ -10,7 +10,7 @@ namespace OS {
 			mp_thread_poller = OS::CreateThreadPoller();
 		}
 		~Task() {
-
+			delete mp_thread_poller;
 		}
 		void AddRequest(T data) {
 			mp_mutex->lock();

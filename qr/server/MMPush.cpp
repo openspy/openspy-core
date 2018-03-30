@@ -90,6 +90,7 @@ namespace MM {
 		mp_thread->SignalExit(true, mp_thread_poller);
 		delete mp_thread;
 		delete mp_mutex;
+		delete mp_timer;
 
 		Redis::Disconnect(mp_redis_connection);
 
