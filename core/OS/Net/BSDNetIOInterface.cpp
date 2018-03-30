@@ -15,17 +15,20 @@ INetIOSocket *BSDNetIOInterface::BindTCP(OS::Address bind_address) {
 
 	if ((net_socket->sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 		//signal error
+		perror("socket()");
 		goto end_error;
 	}
 	int on = 1;
 	if (setsockopt(net_socket->sd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on))
 		< 0) {
+		perror("setsockopt()");
 		//signal error
 		goto end_error;
 	}
 #if SO_REUSEPORT
 	if (setsockopt(net_socket->sd, SOL_SOCKET, SO_REUSEPORT, (char *)&on, sizeof(on))
 		< 0) {
+		perror("setsockopt()");
 		//signal error
 		goto end_error;
 	}
@@ -36,11 +39,13 @@ INetIOSocket *BSDNetIOInterface::BindTCP(OS::Address bind_address) {
 	addr.sin_family = AF_INET;
 	int n = bind(net_socket->sd, (struct sockaddr *)&addr, sizeof addr);
 	if (n < 0) {
+		perror("bind()");
 		//signal error
 		goto end_error;
 	}
 	if (listen(net_socket->sd, SOMAXCONN)
 		< 0) {
+		perror("listen()");
 		//signal error
 		goto end_error;
 	}
@@ -119,18 +124,21 @@ INetIOSocket *BSDNetIOInterface::BindUDP(OS::Address bind_address) {
 
 	if ((net_socket->sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
 		//signal error
+		perror("socket()");
 		goto end_error;
 	}
 	int on = 1;
 	if (setsockopt(net_socket->sd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on))
 		< 0) {
 		//signal error
+		perror("setsockopt()");
 		goto end_error;
 	}
 #if SO_REUSEPORT
 	if (setsockopt(net_socket->sd, SOL_SOCKET, SO_REUSEPORT, (char *)&on, sizeof(on))
 		< 0) {
 		//signal error
+		perror("setsockopt()");
 		goto end_error;
 	}
 #endif
@@ -140,6 +148,7 @@ INetIOSocket *BSDNetIOInterface::BindUDP(OS::Address bind_address) {
 	addr.sin_family = AF_INET;
 	int n = bind(net_socket->sd, (struct sockaddr *)&addr, sizeof addr);
 	if (n < 0) {
+		perror("bind()");
 		//signal error
 		goto end_error;
 	}
