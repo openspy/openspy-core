@@ -7,14 +7,11 @@
 	#include <algorithm>
 
 	EPollNetEventManager::EPollNetEventManager() : BSDNetIOInterface(), INetEventManager() {
-		m_exit_flag = false;
-
 		m_epollfd = epoll_create(MAX_EPOLL_EVENTS);
 
 		m_added_drivers = false;
 	}
 	EPollNetEventManager::~EPollNetEventManager() {
-		m_exit_flag = true;
 		std::map<void *, EPollDataInfo *>::iterator it =  m_datainfo_map.begin();
 		while(it != m_datainfo_map.end()) {
 			EPollDataInfo *data = (*it).second;
