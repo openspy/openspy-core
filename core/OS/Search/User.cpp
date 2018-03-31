@@ -105,6 +105,7 @@ namespace OS {
 			} else {
 				resp_type = EUserResponseType_GenericError;
 			}
+			curl_easy_cleanup(curl);
 		}
 		
 		if(root) {

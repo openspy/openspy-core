@@ -348,6 +348,7 @@ namespace GPBackend {
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
 			res = curl_easy_perform(curl);
+			curl_easy_cleanup(curl);
 		}
 		if(json_data)
 			free((void *)json_data);
@@ -439,6 +440,7 @@ namespace GPBackend {
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
 			res = curl_easy_perform(curl);
+			curl_easy_cleanup(curl);
 		}
 
 		if(json_data)
@@ -606,6 +608,9 @@ namespace GPBackend {
 
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, write_data);
+
+		/* Close socket after one use */
+		curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
 	}
 	void GPBackendRedisTask::AddDriver(GP::Driver *driver) {
 		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {

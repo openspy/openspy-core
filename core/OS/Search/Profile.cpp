@@ -208,6 +208,7 @@ namespace OS {
 					error = EProfileResponseType_GenericError;
 				}
 			}
+			curl_easy_cleanup(curl);
 		}
 
 		if (json_data) {
@@ -320,5 +321,8 @@ namespace OS {
 
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, write_data);
+
+		/* Close socket after one use */
+		curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
 	}
 }

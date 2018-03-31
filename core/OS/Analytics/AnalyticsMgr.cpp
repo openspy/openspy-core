@@ -114,6 +114,9 @@ namespace OS {
 
 			curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
+			/* Close socket after one use */
+			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
+
 			res = curl_easy_perform(curl);
 
 			curl_easy_cleanup(curl);
