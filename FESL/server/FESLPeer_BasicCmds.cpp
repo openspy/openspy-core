@@ -55,6 +55,7 @@ namespace FESL {
 		std::string nick, password;
 		if (kv_list.HasKey("encryptedInfo")) {
 			kv_list = ((FESL::Driver *)this->GetDriver())->decryptString(kv_list.GetValue("encryptedInfo"));			
+			m_encrypted_login_info = kv_list.GetValue("encryptedInfo");
 		}
 
 		nick = kv_list.GetValue("name");
