@@ -772,10 +772,9 @@ namespace SB {
 		m_peer_stats.bytes_out += len+1;
 		m_peer_stats.packets_out++;
 		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", m_sd->address.ToString().c_str(), send_str, die);
 		if (io_resp.disconnect_flag || io_resp.error_flag || die)
 			Delete();
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", m_sd->address.ToString().c_str(), send_str, die);
 	}
 
 
