@@ -358,7 +358,7 @@ namespace SB {
 		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
 		if(io_resp.disconnect_flag || io_resp.error_flag) {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d %d", m_sd->address.ToString().c_str(), io_resp.disconnect_flag, io_resp.error_flag);
-			m_delete_flag = true;
+			Delete();
 		}
 		else {
 			m_peer_stats.bytes_out += io_resp.comm_len;
@@ -513,10 +513,9 @@ namespace SB {
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
-			m_delete_flag = true;
-			m_timeout_flag = true;
+			Delete(true);
 		} else if((io_resp.disconnect_flag || io_resp.error_flag) && waiting_packet) {
-			m_delete_flag = true;
+			Delete();
 		}
 	}
 	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, OS::Buffer *sendBuffer, bool full_keys, const std::map<std::string, int> *optimized_fields, bool no_keys, bool first_set) {
@@ -759,9 +758,6 @@ namespace SB {
 		if (m_delete_flag) {
 			return;
 		}
-		if(die) {
-			m_delete_flag = true;
-		}
 		
 		va_list args;
 		va_start(args, fmt);
@@ -769,18 +765,17 @@ namespace SB {
 		char send_str[1092]; //mtu size
 		int len = vsprintf(send_str, fmt, args);
 		send_str[len] = 0;
+		va_end(args);
 
 		OS::Buffer buffer((void *)&send_str, len);
 
 		m_peer_stats.bytes_out += len+1;
 		m_peer_stats.packets_out++;
 		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
-		if (io_resp.disconnect_flag || io_resp.error_flag)
-			m_delete_flag = true;
+		if (io_resp.disconnect_flag || io_resp.error_flag || die)
+			Delete();
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", m_sd->address.ToString().c_str(), send_str, die);
-
-		va_end(args);
 	}
 
 

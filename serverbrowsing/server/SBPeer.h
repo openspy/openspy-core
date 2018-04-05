@@ -66,6 +66,8 @@ namespace SB {
 		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
 		OS::MetricInstance GetMetrics();
 		PeerStats GetPeerStats() { if(m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
+
+		void Delete(bool timeout = false);
 	protected:
 		void cacheServer(MM::Server *server, bool full_keys = false);
 		void DeleteServerFromCacheByIP(OS::Address address);

@@ -20,6 +20,8 @@ class INetPeer : public OS::Ref {
 		virtual OS::MetricInstance GetMetrics() = 0;
 
 		OS::Address getAddress() { return m_sd->address; };
+
+		virtual void Delete(bool timeout = false) = 0;
 	protected:
 		INetIOSocket *m_sd;
 		INetDriver *mp_driver;
@@ -27,8 +29,6 @@ class INetPeer : public OS::Ref {
 
 		bool m_delete_flag;
 		bool m_timeout_flag;
-
-		OS::CMutex *mp_mutex;
 	private:
 
 	};

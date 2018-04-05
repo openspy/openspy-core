@@ -80,8 +80,6 @@ namespace QR {
 			}
 		}
 
-
-
 		gettimeofday(&m_last_recv, NULL);
 
 		switch(type) {
@@ -330,15 +328,26 @@ namespace QR {
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
 
 		//XXX: make all these support const vars
+		char vsbuff[256];
+		va_list args;
+		va_start(args, fmt);
+		int len = vsnprintf(vsbuff, sizeof(vsbuff), fmt, args);
+		vsbuff[len] = 0;
+		va_end(args);
+
 		OS::Buffer buffer;
-		buffer.WriteNTS(fmt);
+		buffer.WriteByte(QR_MAGIC_1);
+		buffer.WriteByte(QR_MAGIC_2);
+
+		buffer.WriteByte(PACKET_ADDERROR);
+		buffer.WriteBuffer((uint8_t *)&m_instance_key, sizeof(m_instance_key));
+		buffer.WriteNTS(vsbuff);
+
 		SendPacket(buffer);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Error:", m_sd->address.ToString().c_str(), vsbuff);
 		if(die) {
-			m_timeout_flag = false;
 			Delete();
 		}
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] Error:", m_sd->address.ToString().c_str(), fmt);
 	}
 	void V2Peer::send_ping() {
 		//check for timeout
@@ -368,8 +377,7 @@ namespace QR {
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > QR2_PING_TIME) {
-			m_timeout_flag = true;
-			send_error(true, "Timeout");
+			Delete(true);
 			
 		}
 	}

@@ -95,10 +95,9 @@ namespace SB {
 			struct timeval current_time;
 			gettimeofday(&current_time, NULL);
 			if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
-				m_delete_flag = true;
-				m_timeout_flag = true;
+				Delete(true);
 			} else if(len <= 0 && packet_waiting) {
-				m_delete_flag = true;
+				Delete();
 			}
 		}
 
@@ -112,20 +111,24 @@ namespace SB {
 
 		}
 		void V1Peer::send_error(bool disconnect, const char *fmt, ...) {
-			char str[256];
+			char str[512];
 			std::ostringstream resp;
 			va_list args;
 			va_start(args, fmt);
-			vsprintf(str, fmt, args);
+			int len = vsnprintf(str, sizeof(str), fmt, args);
+			str[len] = 0;
 			va_end(args);
 			if(disconnect) {
 				resp << "\\fatal\\1";
-				m_delete_flag = true;
 			}
 			resp << "\\error\\" << str;
 
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", m_sd->address.ToString().c_str(), resp.str().c_str());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", m_sd->address.ToString().c_str(), str);
 			SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), true);
+
+			if (disconnect) {
+				Delete();
+			}
 		}
 		void V1Peer::handle_gamename(const char *data, int len) {
 			OS::KVReader data_parser = OS::KVReader(std::string(data));
@@ -149,7 +152,7 @@ namespace SB {
 		}
 		void V1Peer::handle_packet(const char *data, int len) {
 			if(len < 0) {
-				m_delete_flag = true;
+				Delete();
 				return;
 			} else if(len == 0) {
 				return;
@@ -161,7 +164,7 @@ namespace SB {
 			OS::KVReader kv_parser = OS::KVReader(std::string(data));
 
 			if (kv_parser.Size() < 1) {
-				m_delete_flag = true;
+				Delete();
 				return;
 			}
 
@@ -383,10 +386,10 @@ namespace SB {
 				buffer.WriteShort(serv->wan_address.port);
 				it++;
 			}
-			if (results.last_set) {
-				m_delete_flag = true;
-			}
 			SendPacket((const uint8_t *)buffer.GetHead(), buffer.size(), results.last_set);
+			if (results.last_set) {
+				Delete();
+			}
 		}
 		void V1Peer::SendPacket(const uint8_t *buff, int len, bool attach_final, bool skip_encryption) {
 			OS::Buffer buffer;
@@ -407,7 +410,7 @@ namespace SB {
 			NetIOCommResp io_resp;
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
 			if(io_resp.disconnect_flag || io_resp.error_flag) {
-				m_delete_flag = true;
+				Delete();
 			}
 		}
 		void V1Peer::send_crypt_header(int enctype) {

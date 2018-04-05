@@ -41,8 +41,7 @@ namespace QR {
 		gettimeofday(&current_time, NULL);
 
 		if (current_time.tv_sec - m_last_recv.tv_sec > QR1_PING_TIME * 2) {
-			Delete();
-			m_timeout_flag = true;
+			Delete(true);
 		}
 	}
 
@@ -82,12 +81,19 @@ namespace QR {
 
 	void V1Peer::send_error(bool die, const char *fmt, ...) {
 		std::ostringstream s;
+
+		va_list args;
+		va_start(args, fmt);
+		char send_str[512]; //mtu size
+		int len = vsnprintf(send_str, sizeof(send_str), fmt, args);
+		send_str[len] = 0;
+		va_end(args);
+
+		s << "\\error\\" << send_str << "\\fatal\\" << die;
+		SendPacket(s.str(), true);
+
 		if (die)
 			Delete();
-
-
-		s << "\\error\\" << fmt << "\\fatal\\" << m_delete_flag;
-		SendPacket(s.str(), true);
 	}
 	void V1Peer::SendClientMessage(uint8_t *data, int data_len) {
 

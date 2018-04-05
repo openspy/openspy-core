@@ -205,4 +205,8 @@ namespace SB {
 
 		return peer_metric;
 	}
+	void Peer::Delete(bool timeout) {
+		m_timeout_flag = timeout;
+		m_delete_flag = true;
+	}
 }
