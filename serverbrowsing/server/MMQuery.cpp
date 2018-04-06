@@ -219,7 +219,6 @@ namespace MM {
 		server->key = entry_name;
 
 		Redis::Command(redis_ctx, 0, "ZINCRBY %s -1 \"%s\"", server->game.gamename, entry_name.c_str());
-		OS::LogText(OS::ELogLevel_Debug, "ZINCRBY %s -1 \"%s\"", server->game.gamename, entry_name.c_str());
 
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s id", entry_name.c_str());

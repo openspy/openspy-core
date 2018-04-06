@@ -399,7 +399,6 @@ namespace MM {
 		}
 		else {
 			Redis::Command(mp_redis_connection, 0, "ZINCRBY %s 1 \"%s\"", server.m_game.gamename, server_key.c_str());
-			OS::LogText(OS::ELogLevel_Debug, "ZINCRBY %s 1 \"%s\"", server.m_game.gamename, server_key.c_str());
 		}
 
 		Redis::Command(mp_redis_connection, 0, "HINCRBY %s num_beats 1", server_key.c_str());
