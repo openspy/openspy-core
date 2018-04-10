@@ -111,7 +111,7 @@ namespace QR {
 		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (unsigned char *)&m_server_info.m_game.secretkey, 0);
 		if(strcmp(buffer.ReadNTS().c_str(),challenge_resp) == 0) { //matching challenge
 			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename);
-			if(m_sent_challenge) {
+			if(m_sent_challenge && !m_server_pushed) {
 				MM::MMPushRequest req;
 				req.peer = this;
 				req.server = m_dirty_server_info;
