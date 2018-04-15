@@ -4,7 +4,6 @@
 #include  <algorithm>
 
 #include "SBServer.h"
-#include <OS/legacy/buffwriter.h>
 
 #include "SBPeer.h"
 #include "V1Peer.h"

@@ -1,6 +1,4 @@
 #include <OS/OpenSpy.h>
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/buffwriter.h>
 #include <OS/legacy/enctypex_decoder.h>
 #include <OS/legacy/gsmsalg.h>
 #include <OS/legacy/enctype_shared.h>
@@ -414,6 +412,7 @@ namespace SB {
 			}
 		}
 		void V1Peer::send_crypt_header(int enctype) {
+			OS::Buffer buffer;
 			char buff[256];
 			char *p = (char *)(&buff);
 			int len = 0;
@@ -427,8 +426,8 @@ namespace SB {
 				for(int i=0;i< secretkeylen;i++) {
 					cryptkey[i] ^= m_game.secretkey[i];
 				}
-				BufferWriteByte((uint8_t **)&p,&len,sizeof(cryptkey)^0xEC);
-				BufferWriteData((uint8_t **)&p, &len, (uint8_t *)&cryptkey, sizeof(cryptkey));
+				buffer.WriteByte(sizeof(cryptkey) ^ 0xEC);
+				buffer.WriteBuffer((uint8_t *)&cryptkey, sizeof(cryptkey));
 				SendPacket((const uint8_t *)&buff, len, false, true);
 			}
 

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include  <algorithm>
 #include "QRServer.h"
-#include <OS/legacy/buffwriter.h>
 
 #include "QRPeer.h"
 #include "QRDriver.h"

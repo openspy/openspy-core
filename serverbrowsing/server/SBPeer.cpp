@@ -1,8 +1,6 @@
 #include "SBPeer.h"
 #include "SBDriver.h"
 #include <OS/OpenSpy.h>
-#include <OS/legacy/buffreader.h>
-#include <OS/legacy/buffwriter.h>
 
 namespace SB {
 	Peer::Peer(Driver *driver, INetIOSocket *sd, int version) : INetPeer(driver, sd) {

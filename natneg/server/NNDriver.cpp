@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <algorithm>
 #include "NNServer.h"
-#include <OS/legacy/buffwriter.h>
 
 #include "NNPeer.h"
 #include "NNBackend.h"
