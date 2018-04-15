@@ -50,17 +50,14 @@ namespace GP {
 	} PeerStats;
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		Peer(Driver *driver, INetIOSocket *sd);
 		~Peer();
-		void Delete();
+		void Delete(bool timeout = false);
 		
 		void think(bool packet_waiting);
 		void handle_packet(char *data, int len);
-		const struct sockaddr_in *getAddress() { return &m_address_info; }
 
 		int GetProfileID();
-
-		int GetSocket() { return m_sd; };
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
@@ -148,6 +145,7 @@ namespace GP {
 		void ResetMetrics();
 
 		OS::GameData m_game;
+		OS::Buffer m_recv_buffer;
 		Driver *mp_driver;
 
 		struct timeval m_last_recv, m_last_ping, m_status_refresh;
@@ -170,6 +168,8 @@ namespace GP {
 		OS::User m_user;
 		OS::Profile m_profile;
 		PeerStats m_peer_stats;
+
+		OS::CMutex *mp_mutex;
 	};
 }
 #endif //_GPPEER_H

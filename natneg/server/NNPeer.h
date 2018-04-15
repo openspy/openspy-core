@@ -32,17 +32,15 @@ namespace NN {
 
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		Peer(Driver *driver, INetIOSocket *sd);
 		~Peer();
 		
 		void think(bool waiting_packet);
-		void handle_packet(char *recvbuf, int len);		
+		void handle_packet(INetIODatagram packet);
 
-		int GetSocket() { return m_sd; };
-		OS::Address getAddress();
 		OS::Address getPrivateAddress() { return m_private_address; };
 		bool ShouldDelete() { return m_delete_flag; };
-		void SetDelete(bool set) { m_delete_flag = set; };
+		void Delete(bool timeout = false) { m_delete_flag = true; m_timeout_flag = timeout; };
 		bool IsTimeout() { return m_timeout_flag; }
 		NNCookieType GetCookie() { return m_cookie; }
 		uint8_t GetClientIndex() { return m_client_index; }
@@ -75,8 +73,6 @@ namespace NN {
 		bool m_delete_flag;
 		bool m_timeout_flag;
 		bool m_got_init;
-
-		int m_sd;
 
 		NNCookieType m_cookie;
 		uint8_t m_client_index;

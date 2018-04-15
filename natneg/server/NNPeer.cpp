@@ -7,11 +7,9 @@
 
 
 namespace NN {
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
+	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
-		m_sd = sd;
-		m_address_info = *address_info;
 
 		m_cookie = 0;
 		m_client_index = -1;
@@ -25,32 +23,31 @@ namespace NN {
 		memset(&m_ert_test_time, 0, sizeof(m_ert_test_time));
 		memset(&m_init_time, 0, sizeof(m_init_time));
 		ResetMetrics();
-		m_peer_stats.m_address = *address_info;
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",OS::Address(m_address_info).ToString().c_str());
+		m_peer_stats.m_address = sd->address;
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",sd->address.ToString().c_str());
 
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, connect sent: %d",OS::Address(m_address_info).ToString().c_str(), m_sent_connect);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
 	}
 	void Peer::think(bool waiting_packet) {
 		struct timeval time_now;
 		gettimeofday(&time_now, NULL);
 
 		if(time_now.tv_sec - m_last_recv.tv_sec > NN_TIMEOUT_TIME) {
-			m_delete_flag = true;
-			m_timeout_flag = true;
+			Delete(true);
 			return;
 		}
 		if (!m_got_init) {
 			if (time_now.tv_sec - m_init_time.tv_sec > NN_INIT_WAIT_TIME && m_init_time.tv_sec != 0) {
 				sendPeerInitError(FINISHED_ERROR_INIT_PACKETS_TIMEDOUT);
-				m_delete_flag = true;
+				Delete();
 			}
 		}
 		if(!m_found_partner) {
 			if(time_now.tv_sec - m_init_time.tv_sec > NN_DEADBEAT_TIME && m_init_time.tv_sec != 0) {
 				sendPeerInitError(FINISHED_ERROR_DEADBEAT_PARTNER);
-				m_delete_flag = true;
+				Delete();
 			}
 		}
 		else {
@@ -66,16 +63,13 @@ namespace NN {
 			}
 		}
 	}
-	void Peer::handle_packet(char *recvbuf, int len) {
-		if(len <= 0) {
-			return;
-		}
+	void Peer::handle_packet(INetIODatagram net_packet) {
 		m_peer_stats.packets_in++;
-		m_peer_stats.bytes_in += len;
-		NatNegPacket *packet = (NatNegPacket *)recvbuf;
+		m_peer_stats.bytes_in += net_packet.buffer.size();
+		NatNegPacket *packet = (NatNegPacket *)net_packet.buffer.GetHead();
 		unsigned char NNMagicData[] = {NN_MAGIC_0, NN_MAGIC_1, NN_MAGIC_2, NN_MAGIC_3, NN_MAGIC_4, NN_MAGIC_5};
 		if(memcmp(&NNMagicData,&packet->magic, NATNEG_MAGIC_LEN) != 0) {
-			m_delete_flag = true;
+			Delete();
 			return;
 		}
 
@@ -88,8 +82,10 @@ namespace NN {
 		m_client_version = packet->version;
 
 		int packetSize = packetSizeFromType(packet->packettype);
-		if (recvbuf[len] == 0 && m_gamename.length() == 0) {
-			m_gamename = (const char *)&recvbuf[packetSize];
+
+		int len = net_packet.buffer.size();
+		if (((char *)net_packet.buffer.GetHead())[len] == 0 && m_gamename.length() == 0) {
+			m_gamename = (const char *)&((char *)net_packet.buffer.GetHead())[packetSize];
 		}
 		switch(packet->packettype) {
 			case NN_PREINIT:
@@ -111,15 +107,15 @@ namespace NN {
 			break;
 			case NN_CONNECT_ACK:
 				if (m_client_version <= 2) {
-					m_delete_flag = true;
+					Delete();
 				}
 			break;
 			case NN_REPORT:
 				handleReportPacket(packet);
-				m_delete_flag = true;
+				Delete();
 			break;
 			default:
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d, version: %d", OS::Address(m_address_info).ToString().c_str(), packet->packettype, packet->version);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d, version: %d", m_sd->address.ToString().c_str(), packet->packettype, packet->version);
 			break;
 		}
 	}
@@ -137,7 +133,7 @@ namespace NN {
 		m_client_index = packet->Packet.Init.clientindex;
 		m_private_address = OS::Address(packet->Packet.Init.localip, packet->Packet.Init.localport);
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, game: %s", OS::Address(m_address_info).ToString().c_str(), packet->version, m_client_index, m_cookie, m_gamename.c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, game: %s", m_sd->address.ToString().c_str(), packet->version, m_client_index, m_cookie, m_gamename.c_str());
 
 		SubmitClient();
 
@@ -158,7 +154,7 @@ namespace NN {
 			gettimeofday(&m_ert_test_time, NULL);
 		}
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got ERTTest type %d", OS::Address(m_address_info).ToString().c_str(), packet->Packet.Init.porttype);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got ERTTest type %d", m_sd->address.ToString().c_str(), packet->Packet.Init.porttype);
 		switch (packet->Packet.Init.porttype) {
 			//case NN_PT_GP: //??
 			case NN_PT_NN1: //solicited ERT reply
@@ -182,15 +178,15 @@ namespace NN {
 		}
 	}
 	void Peer::handleReportPacket(NatNegPacket *packet) {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got report- client idx: %d, cookie: %d, game: %s, port type: %d, neg result: %d, neg type: %d, nat mapping scheme: %d", OS::Address(m_address_info).ToString().c_str(), m_client_index, m_cookie, packet->Packet.Report.gamename, packet->Packet.Report.porttype, packet->Packet.Report.negResult, packet->Packet.Report.natType, packet->Packet.Report.natMappingScheme);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got report- client idx: %d, cookie: %d, game: %s, port type: %d, neg result: %d, neg type: %d, nat mapping scheme: %d", m_sd->address.ToString().c_str(), m_client_index, m_cookie, packet->Packet.Report.gamename, packet->Packet.Report.porttype, packet->Packet.Report.negResult, packet->Packet.Report.natType, packet->Packet.Report.natMappingScheme);
 		packet->packettype = NN_REPORT_ACK;
 		sendPacket(packet);
 
 	}
 	void Peer::handleAddressCheckPacket(NatNegPacket *packet) {
 		packet->packettype = NN_ADDRESS_REPLY;
-		packet->Packet.Init.localip = m_address_info.sin_addr.s_addr;
-		packet->Packet.Init.localport = m_address_info.sin_port;
+		packet->Packet.Init.localip = m_sd->address.GetInAddr().sin_addr.s_addr;
+		packet->Packet.Init.localport = m_sd->address.GetInAddr().sin_port;
 		sendPacket(packet);
 	}
 	int Peer::packetSizeFromType(uint8_t type) {
@@ -229,10 +225,7 @@ namespace NN {
 
 		m_peer_stats.packets_out++;
 		m_peer_stats.bytes_out += size;
-		sendto(m_sd,(char *)packet,size,0,(struct sockaddr *)&m_address_info,sizeof(struct sockaddr));
-	}
-	OS::Address Peer::getAddress() {
-		return OS::Address(m_address_info);
+		//sendto(m_sd,(char *)packet,size,0,(struct sockaddr *)&m_address_info,sizeof(struct sockaddr));
 	}
 	void Peer::OnGotPeerAddress(OS::Address address, OS::Address private_address) {
 		if (m_found_partner) {
@@ -276,7 +269,7 @@ namespace NN {
 		p.packettype = NN_CONNECT;
 		p.Packet.Connect.finished = error;
 		sendPacket(&p);
-		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", m_sd->address.ToString().c_str());
 		m_delete_flag = true;
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
@@ -297,7 +290,7 @@ namespace NN {
 
 		sendPacket(&p);
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s)", OS::Address(m_address_info).ToString().c_str(), address.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s)", m_sd->address.ToString().c_str(), address.ToString().c_str());
 
 		//p.Packet.Connect.gotyourdata = 1;
 		//p.packettype = NN_CONNECT_PING;

@@ -30,9 +30,6 @@ namespace SB {
 		~Driver();
 		void think(bool listen_waiting);
 		INetIOSocket *getListenerSocket();
-		uint16_t getPort();
-		uint32_t getBindIP();
-		uint32_t getDeltaTime();
 
 		Peer *find_client(struct sockaddr_in *address);
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
@@ -40,10 +37,6 @@ namespace SB {
 		void SendDeleteServer(MM::Server *server);
 	    void SendNewServer(MM::Server *server);
 	    void SendUpdateServer(MM::Server *server);
-
-
-		int GetNumConnections();
-
 
 		void AddDeleteServer(MM::Server serv);
 		void AddNewServer(MM::Server serv);
@@ -62,8 +55,6 @@ namespace SB {
 		int m_version;
 
 		std::vector<Peer *> m_connections;
-		
-		struct sockaddr_in m_local_addr;
 
 		struct timeval m_server_start;
 

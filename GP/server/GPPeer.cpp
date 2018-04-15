@@ -27,7 +27,7 @@ using namespace GPShared;
 
 namespace GP {
 
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
+	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		ResetMetrics();
 		m_delete_flag = false;
 		m_timeout_flag = false;
@@ -40,23 +40,22 @@ namespace GP {
 		m_status.status_str[0] = 0;
 		m_status.location_str[0] = 0;
 		m_status.quiet_flags = GP_SILENCE_NONE;
-		m_status.address.ip = address_info->sin_addr.s_addr;
-		m_status.address.port = address_info->sin_port;
+		m_status.address = sd->address;
 
 		m_game.gameid = 0;
 		m_game.compatibility_flags = 0;
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
 
 		gen_random(m_challenge, CHALLENGE_LEN);
 
 		send_login_challenge(1);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d",OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
 	}
-	void Peer::Delete() {
+	void Peer::Delete(bool timeout) {
 		GPBackend::GPBackendRedisRequest req;
 		req.type = GPBackend::EGPRedisRequestType_UpdateStatus;
 		req.peer = this;
@@ -66,50 +65,51 @@ namespace GP {
 		GPBackend::m_task_pool->AddRequest(req);
 
 		m_delete_flag = true;
+		m_timeout_flag = timeout;
 	}
 	void Peer::think(bool packet_waiting) {
-		char buf[GPI_READ_SIZE + 1];
-		int len = 0, piece_len = 0;
+		int len = 0;
+		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
+
 		if (packet_waiting) {
-			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
-			if (OS::wouldBlock()) {
-				return;
-			}
-			if (len <= 0) {
+			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
+
+			if (io_resp.disconnect_flag || io_resp.error_flag) {
 				goto end;
 			}
-			buf[len] = 0;
+
+			len = m_recv_buffer.size();
+
+			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
+
+			m_peer_stats.packets_in++;
+			m_peer_stats.bytes_in += len;
 
 			/* split by \\final\\  */
-			char *p = (char *)&buf;
+			char *p = (char *)recv_buf.c_str();
 			char *x;
-			while(true) {
+			while (true) {
 				x = p;
-				p = strstr(p,"\\final\\");
-				if(p == NULL) { break; }
+				p = strstr(p, "\\final\\");
+				if (p == NULL) { break; }
 				*p = 0;
-				piece_len = strlen(x);
-				this->handle_packet(x, piece_len);
-				p+=7; //skip final
+				this->handle_packet(x, strlen(x));
+				p += 7;
 			}
-
-			piece_len = strlen(x);
-			if(piece_len > 0) {
-				this->handle_packet(x, piece_len);
-			}			
+			this->handle_packet(x, strlen(x));
 		}
 
-		end:
+	end:
 		send_ping();
 
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
-			m_timeout_flag = true;
-			Delete();
-		} else if(len <= 0 && packet_waiting) {
+		if (current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME * 2) {
+			Delete(true);
+		}
+		else if (len <= 0 && packet_waiting) {
 			Delete();
 		}
 	}
@@ -875,8 +875,11 @@ namespace GP {
 		if(attach_final) {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
-		int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
-		if(c < 0) {
+		m_peer_stats.bytes_out += buffer.size();
+		m_peer_stats.packets_out++;
+		NetIOCommResp io_resp;
+		io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		if (io_resp.disconnect_flag || io_resp.error_flag) {
 			Delete();
 		}
 	}

@@ -8,7 +8,6 @@
 #include "server/NNDriver.h"
 #include "server/NNBackend.h"
 INetServer *g_gameserver = NULL;
-INetDriver *g_driver = NULL;
 bool g_running = true;
 
 void shutdown();
@@ -61,15 +60,13 @@ int main() {
 	}
     
     delete g_gameserver;
-    delete g_driver;
-    OS::Shutdown();
     NN::NNQueryTask::Shutdown();
+	OS::Shutdown();
     return 0;
 }
 
 void shutdown() {
     if(g_running) {
-        g_gameserver->flagExit();
         g_running = false;
     }
 }

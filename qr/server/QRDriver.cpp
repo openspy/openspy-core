@@ -84,7 +84,7 @@ namespace QR {
 				if (dgram.error_flag) {
 					peer = find_client(dgram.address);
 					if (peer) {
-						peer->SetDelete(true);
+						peer->Delete();
 					}
 				}
 				else {
@@ -138,10 +138,6 @@ namespace QR {
 		m_server->RegisterSocket(ret);
 		m_connections.push_back(ret);
 		return ret;
-	}
-
-	int Driver::GetNumConnections() {
-		return m_connections.size();
 	}
 
 	void Driver::TickConnections() {
@@ -205,7 +201,7 @@ namespace QR {
 		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, peers));
 	
 
-		peer_metric.key = OS::Address(m_local_addr).ToString(false);
+		peer_metric.key = mp_socket->address.ToString(false);
 		arr_value2.key = peer_metric.key;
 		peer_metric.value = arr_value2;
 		

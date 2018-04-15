@@ -21,11 +21,10 @@ using namespace GPShared;
 
 namespace GS {
 
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
+	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		ResetMetrics();
 		m_sd = sd;
 		mp_driver = driver;
-		m_address_info = *address_info;
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		mp_mutex = OS::CreateMutex();
@@ -38,14 +37,13 @@ namespace GS {
 
 		gen_random(m_challenge, CHALLENGE_LEN);
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",m_sd->address.ToString().c_str());
 
 		send_login_challenge(1);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed",OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", m_sd->address.ToString().c_str());
 		delete mp_mutex;
-		close(m_sd);
 	}
 	void Peer::send_login_challenge(int type) {
 		std::ostringstream s;
@@ -61,38 +59,33 @@ namespace GS {
 		SendPacket(s.str());
 	}
 	void Peer::think(bool packet_waiting) {
-		char buf[GPI_READ_SIZE + 1];
-		socklen_t slen = sizeof(struct sockaddr_in);
-		int len, piece_len;
+		int len = 0;
+		NetIOCommResp io_resp;
+		if (m_delete_flag) return;
 		if (packet_waiting) {
-			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
-			if (OS::wouldBlock()) {
-				return;
-			}
-			if(len <= 0) goto end;
-			buf[len] = 0;
+			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 
-			gamespy3dxor((char *)&buf, len);
+			if (io_resp.disconnect_flag || io_resp.error_flag) {
+				goto end;
+			}
+			len = m_recv_buffer.size();
+			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
+
+			gamespy3dxor((char *)m_recv_buffer.GetHead(), len);
 
 			/* split by \\final\\  */
-			char *p = (char *)&buf;
+			char *p = (char *)recv_buf.c_str();
 			char *x;
-			while(true) {
+			while (true) {
 				x = p;
-				p = strstr(p,"\\final\\");
-				if(p == NULL) { break; }
+				p = strstr(p, "\\final\\");
+				if (p == NULL) { break; }
 				*p = 0;
-				piece_len = strlen(x);
-				this->handle_packet(x, piece_len);
-				p+=7; //skip final
+				this->handle_packet(x, strlen(x));
+				p += 7;
 			}
-
-			piece_len = strlen(x);
-			if(piece_len > 0) {
-				this->handle_packet(x, piece_len);
-			}			
+			this->handle_packet(x, strlen(x));
 		}
-
 		end:
 		send_ping();
 
@@ -100,11 +93,10 @@ namespace GS {
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
-			m_delete_flag = true;
-			m_timeout_flag = true;
+			Delete(true);
 		} 
 		if (len <= 0 && packet_waiting) {
-			m_delete_flag = true;
+			Delete();
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
@@ -114,7 +106,7 @@ namespace GS {
 		std::string command;
 		memset(&command,0,sizeof(command));
 		if(data_parser.Size() == 0) {
-			m_delete_flag = true;
+			Delete();
 			return;
 		}
 		if(len > 0)
@@ -502,10 +494,13 @@ namespace GS {
 		}
 
 		gamespy3dxor((char *)buffer.GetHead(), buffer.size());
-		int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
 
-		if(c < 0) {
-			m_delete_flag = true;
+		m_peer_stats.bytes_out += buffer.size();
+		m_peer_stats.packets_out++;
+		NetIOCommResp io_resp;
+		io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		if (io_resp.disconnect_flag || io_resp.error_flag) {
+			Delete();
 		}
 	}
 	void Peer::send_ping() {
@@ -656,5 +651,9 @@ namespace GS {
 		ResetMetrics();
 
 		return peer_metric;
+	}
+	void Peer::Delete(bool timeout) {
+		m_delete_flag = true;
+		m_timeout_flag = timeout;
 	}
 }

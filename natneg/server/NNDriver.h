@@ -24,18 +24,15 @@ namespace NN {
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
 		void think(bool packet_waiting);
-		int getListenerSocket();
-		uint16_t getPort();
-		uint32_t getBindIP();
-		uint32_t getDeltaTime();
 
-		Peer *find_client(struct sockaddr_in *address);
-		Peer *find_or_create(struct sockaddr_in *address);
+		Peer *find_client(OS::Address address);
+		Peer *find_or_create(OS::Address address, INetIOSocket *socket);
 
 		void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address);
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
-		const std::vector<int> getSockets();
+		INetIOSocket *getListenerSocket() const;
+		const std::vector<INetIOSocket *> getSockets() const;
 		OS::MetricInstance GetMetrics();
 	private:
 		static void *TaskThread(OS::CThread *thread);
@@ -46,14 +43,14 @@ namespace NN {
 		std::vector<Peer *> m_connections;
 		std::vector<Peer *> m_peers_to_delete;
 
-		struct sockaddr_in m_local_addr;
-
 		struct timeval m_server_start;
 
 		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;
+
+		INetIOSocket *mp_socket;
 	};
 }
 #endif //_NNDRIVER_H

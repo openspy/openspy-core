@@ -60,7 +60,6 @@ int main() {
 
 void shutdown() {
     if(g_running) {
-        g_gameserver->flagExit();
         g_running = false;
     }
 }

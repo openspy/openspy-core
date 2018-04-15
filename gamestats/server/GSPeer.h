@@ -45,21 +45,18 @@ namespace GS {
 
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		Peer(Driver *driver, INetIOSocket *sd);
 		~Peer();
 		
 		void think(bool packet_waiting);
 		void handle_packet(char *data, int len);
-		const struct sockaddr_in *getAddress() { return &m_address_info; }
+		void Delete(bool timeout = false);
 
 		int GetProfileID();
-
-		int GetSocket() { return m_sd; };
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 
-		int GetPing();
 		void send_ping();
 
 		void send_login_challenge(int type);
@@ -104,14 +101,9 @@ namespace GS {
 		void gs_sesskey(int sesskey, char *out);
 		bool IsResponseValid(const char *response);
 
-
-		int m_sd;
 		OS::GameData m_game;
 
-
 		Driver *mp_driver;
-
-		struct sockaddr_in m_address_info;
 
 		struct timeval m_last_recv, m_last_ping;
 
@@ -126,6 +118,7 @@ namespace GS {
 		std::string m_backend_session_key;
 		OS::User m_user;
 		OS::Profile m_profile;
+		OS::Buffer m_recv_buffer;
 
 		OS::CMutex *mp_mutex;
 

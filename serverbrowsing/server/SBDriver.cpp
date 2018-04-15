@@ -131,21 +131,6 @@ namespace SB {
 		return mp_socket;
 	}
 
-	uint32_t Driver::getBindIP() {
-		return htonl(m_local_addr.sin_addr.s_addr);
-	}
-	uint32_t Driver::getDeltaTime() {
-		struct timeval now;
-		gettimeofday(&now, NULL);
-		uint32_t t = (now.tv_usec / 1000.0) - (m_server_start.tv_usec / 1000.0);
-		return t;
-	}
-
-
-	int Driver::GetNumConnections() {
-		return m_connections.size();
-	}
-
 	const std::vector<INetIOSocket *> Driver::getSockets() {
 		std::vector<INetIOSocket *> sockets;
 		mp_mutex->lock();
@@ -253,7 +238,7 @@ namespace SB {
 		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, peers));
 	
 
-		peer_metric.key = OS::Address(m_local_addr).ToString(false);
+		peer_metric.key = mp_socket->address.ToString(false);
 		arr_value2.key = peer_metric.key;
 		peer_metric.value = arr_value2;
 		

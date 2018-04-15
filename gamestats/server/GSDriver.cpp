@@ -9,39 +9,14 @@
 #include <OS/GPShared.h>
 
 namespace GS {
-	Driver *g_gbl_gp_driver;
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
-		g_gbl_gp_driver = this;
-		uint32_t bind_ip = INADDR_ANY;
-		
-		if ((m_sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
-			//signal error
-		}
-		int on = 1;
-		if (setsockopt(m_sd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on))
-			< 0) {
-			//signal error
-		}
-
-		m_local_addr.sin_port = htons(port);
-		m_local_addr.sin_addr.s_addr = htonl(bind_ip);
-		m_local_addr.sin_family = AF_INET;
-		int n = bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
-		if (n < 0) {
-			//signal error
-		}
-		if (listen(m_sd, SOMAXCONN)
-			< 0) {
-			//signal error
-		}
+		OS::Address bind_address(0, port);
+		mp_socket = server->getNetIOInterface()->BindTCP(bind_address);
 
 		gettimeofday(&m_server_start, NULL);
 
-		makeNonBlocking(m_sd);
-
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
-
 	}
 	Driver::~Driver() {
 		std::vector<Peer *>::iterator it = m_connections.begin();
@@ -91,77 +66,39 @@ namespace GS {
 		}
 	}
 	void Driver::think(bool listen_waiting) {
-		mp_mutex->lock();
 		if (listen_waiting) {
-			socklen_t psz = sizeof(struct sockaddr_in);
-			struct sockaddr_in address;
-			int sda = accept(m_sd, (struct sockaddr *)&address, &psz);
-			if (sda <= 0) return;
-			Peer *peer = new Peer(this, &address, sda);
+			std::vector<INetIOSocket *> sockets = getServer()->getNetIOInterface()->TCPAccept(mp_socket);
+			std::vector<INetIOSocket *>::iterator it = sockets.begin();
+			while (it != sockets.end()) {
+				INetIOSocket *sda = *it;
+				if (sda == NULL) return;
+				Peer *mp_peer = new Peer(this, sda);
 
-			makeNonBlocking(sda);
-			m_connections.push_back(peer);
-			m_server->RegisterSocket(peer);
+				mp_mutex->lock();
+				m_connections.push_back(mp_peer);
+				m_server->RegisterSocket(mp_peer);
+				mp_mutex->unlock();
+				it++;
+			}
 		}
-		TickConnections();
+	}
+
+
+	INetIOSocket *Driver::getListenerSocket() const {
+		return mp_socket;
+	}
+	const std::vector<INetIOSocket *> Driver::getSockets() const {
+		std::vector<INetIOSocket *> sockets;
+		mp_mutex->lock();
+		std::vector<Peer *>::const_iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *p = *it;
+			sockets.push_back(p->GetSocket());
+			it++;
+		}
 		mp_mutex->unlock();
+		return sockets;
 	}
-	Peer *Driver::find_client(struct sockaddr_in *address) {
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			const struct sockaddr_in *peer_address = peer->getAddress();
-			if (address->sin_port == peer_address->sin_port && address->sin_addr.s_addr == peer_address->sin_addr.s_addr) {
-				return peer;
-			}
-			it++;
-		}
-		return NULL;
-	}
-	Peer *Driver::find_or_create(struct sockaddr_in *address) {
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			const struct sockaddr_in *peer_address = peer->getAddress();
-			if (address->sin_port == peer_address->sin_port && address->sin_addr.s_addr == peer_address->sin_addr.s_addr) {
-				return peer;
-			}
-			it++;
-		}
-		Peer *ret = new Peer(this, address, m_sd);
-		makeNonBlocking(ret);
-		m_connections.push_back(ret);
-		return ret;
-	}
-	bool Driver::HasPeer(Peer *peer) {
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			if((*it) == peer)
-				return true;
-			it++;
-		}
-		return false;
-	}
-
-	int Driver::getListenerSocket() {
-		return m_sd;
-	}
-
-	uint32_t Driver::getBindIP() {
-		return htonl(m_local_addr.sin_addr.s_addr);
-	}
-	uint32_t Driver::getDeltaTime() {
-		struct timeval now;
-		gettimeofday(&now, NULL);
-		uint32_t t = (now.tv_usec / 1000.0) - (m_server_start.tv_usec / 1000.0);
-		return t;
-	}
-
-
-	int Driver::GetNumConnections() {
-		return m_connections.size();
-	}
-
 
 	void Driver::TickConnections() {
 		std::vector<Peer *>::iterator it = m_connections.begin();
@@ -195,16 +132,6 @@ namespace GS {
 		}
 		return peers;
 	}
-	const std::vector<int> Driver::getSockets() {
-		std::vector<int> sockets;
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = *it;
-			sockets.push_back(p->GetSocket());
-			it++;
-		}
-		return sockets;
-	}
 	OS::MetricInstance Driver::GetMetrics() {
 		OS::MetricInstance peer_metric;
 		OS::MetricValue arr_value2, value, peers;
@@ -214,7 +141,7 @@ namespace GS {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			INetPeer * peer = (INetPeer *)*it;
-			OS::Address address = *peer->getAddress();
+			OS::Address address = peer->getAddress();
 			value = peer->GetMetrics().value;
 
 			value.key = address.ToString(false);
@@ -235,7 +162,7 @@ namespace GS {
 		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, peers));
 
 
-		peer_metric.key = OS::Address(m_local_addr).ToString(false);
+		peer_metric.key = mp_socket->address.ToString(false);
 		arr_value2.key = peer_metric.key;
 		peer_metric.value = arr_value2;
 

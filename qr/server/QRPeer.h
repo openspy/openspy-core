@@ -39,7 +39,6 @@ namespace QR {
 		virtual void handle_packet(INetIODatagram packet) = 0;
 
 		bool ShouldDelete() { return m_delete_flag; };
-		void SetDelete(bool del) { m_delete_flag = del; };
 		bool IsTimeout() { return m_timeout_flag; };
 		void Delete(bool timeout = false);
 

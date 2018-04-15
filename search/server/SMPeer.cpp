@@ -20,68 +20,68 @@ enum { //TODO: move into shared header
 
 namespace SM {
 	const char *Peer::mp_hidden_str = "[hidden]";
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
+	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		mp_mutex = OS::CreateMutex();
 		ResetMetrics();
 		gettimeofday(&m_last_ping, NULL);
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", OS::Address(m_address_info).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
 	}
 	void Peer::think(bool packet_waiting) {
-		char buf[GPI_READ_SIZE + 1];
-		socklen_t slen = sizeof(struct sockaddr_in);
-		int len, piece_len;
+		int len = 0;
+		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
+
 		if (packet_waiting) {
-			len = recv(m_sd, (char *)&buf, GPI_READ_SIZE, 0);
-			if (OS::wouldBlock()) {
-				return;
-			}
-			if (len <= 0) {
+			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
+
+			if (io_resp.disconnect_flag || io_resp.error_flag) {
 				goto end;
 			}
-			buf[len] = 0;
-			//if(len == 0) goto end;
+
+			len = m_recv_buffer.size();
+
+			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
+
+			m_peer_stats.packets_in++;
+			m_peer_stats.bytes_in += len;
 
 			/* split by \\final\\  */
-			char *p = (char *)&buf;
+			char *p = (char *)recv_buf.c_str();
 			char *x;
-			while(true) {
+			while (true) {
 				x = p;
-				p = strstr(p,"\\final\\");
-				if(p == NULL) { break; }
+				p = strstr(p, "\\final\\");
+				if (p == NULL) { break; }
 				*p = 0;
-				piece_len = strlen(x);
-				this->handle_packet(x, piece_len);
-				p+=7; //skip final
+				this->handle_packet(x, strlen(x));
+				p += 7;
 			}
-
-			piece_len = strlen(x);
-			if(piece_len > 0) {
-				this->handle_packet(x, piece_len);
-			}
+			this->handle_packet(x, strlen(x));
 		}
-		
-		end:
+
+	end:
+		//send_ping();
+
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_recv.tv_sec > SM_PING_TIME*2) {
-			m_delete_flag = true;
-			m_timeout_flag = true;
-		} else if(len <= 0 && packet_waiting) {
-			m_delete_flag = true;
+		if (current_time.tv_sec - m_last_recv.tv_sec > SM_PING_TIME * 2) {
+			Delete(true);
+		}
+		else if (len <= 0 && packet_waiting) {
+			Delete();
 		}
 	}
 	void Peer::handle_packet(char *data, int len) {
 		char command[32];
 		if(!find_param(0, data,(char *)&command, sizeof(command))) {
-			m_delete_flag = true;
+			Delete();
 			return;
 		}
 		printf("Handle: %s\n", data);
@@ -135,7 +135,7 @@ namespace SM {
 
 		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)peer)->m_delete_flag = true;
+		((Peer *)peer)->Delete();
 	}
 	void Peer::handle_newuser(OS::KVReader data_parser) {
 		std::string nick;
@@ -174,7 +174,7 @@ namespace SM {
 
 		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)peer)->m_delete_flag = true;
+		((Peer *)peer)->Delete();
 	}
 	void Peer::handle_check(OS::KVReader data_parser) {
 
@@ -267,7 +267,7 @@ namespace SM {
 		s << "\\bsrdone\\";
 		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)peer)->m_delete_flag = true;
+		((Peer *)peer)->Delete();
 	}
 	void Peer::m_search_buddies_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
@@ -293,7 +293,7 @@ namespace SM {
 
 		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)peer)->m_delete_flag = true;
+		((Peer *)peer)->Delete();
 	}
 	void Peer::handle_others(OS::KVReader data_parser) {
 		OS::ProfileSearchRequest request;
@@ -337,7 +337,7 @@ namespace SM {
 
 		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)peer)->m_delete_flag = true;
+		((Peer *)peer)->Delete();
 	}
 	void Peer::handle_otherslist(OS::KVReader data_parser) {
 		std::string pid_buffer;
@@ -375,7 +375,7 @@ namespace SM {
 
 		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		((Peer *)peer)->m_delete_flag = true;
+		((Peer *)peer)->Delete();
 	}
 	void Peer::handle_valid(OS::KVReader data_parser) {
 		OS::UserSearchRequest request;
@@ -424,7 +424,7 @@ namespace SM {
 		}
 
 		if (!data_parser.HasKey("passenc")) {
-			m_delete_flag = true;
+			Delete();
 			return;
 		}
 
@@ -471,10 +471,12 @@ namespace SM {
 		if (attach_final) {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
-		//OS::LogText(OS::ELogLevel_Info, "Sending: %s", out_buff);
-		int c = send(m_sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
-		if (c < 0) {
-			m_delete_flag = true;
+		m_peer_stats.bytes_out += buffer.size();
+		m_peer_stats.packets_out++;
+		NetIOCommResp io_resp;
+		io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		if (io_resp.disconnect_flag || io_resp.error_flag) {
+			Delete();
 		}
 	}
 	OS::MetricValue Peer::GetMetricItemFromStats(PeerStats stats) {
@@ -540,5 +542,9 @@ namespace SM {
 		ResetMetrics();
 
 		return peer_metric;
+	}
+	void Peer::Delete(bool timeout) {
+		m_timeout_flag = timeout;
+		m_delete_flag = true;
 	}
 }

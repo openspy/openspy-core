@@ -69,19 +69,18 @@ namespace SM {
 	class Driver;
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		Peer(Driver *driver, INetIOSocket *sd);
 		~Peer();
 		
 		void think(bool packet_waiting);
 		void handle_packet(char *data, int len);
-		const struct sockaddr_in *getAddress() { return &m_address_info; }
-
-		int GetSocket() { return m_sd; };
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 
 		void SendPacket(const uint8_t *buff, int len, bool attach_final = true);
+
+		void Delete(bool timeout = false);
 
 		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
 		OS::MetricInstance GetMetrics();
@@ -114,6 +113,9 @@ namespace SM {
 		
 		static const char *mp_hidden_str;
 		void ResetMetrics();
+
+		OS::CMutex *mp_mutex;
+		OS::Buffer m_recv_buffer;
 
 	};
 }

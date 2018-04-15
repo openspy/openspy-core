@@ -28,32 +28,20 @@ namespace GS {
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
 		void think(bool listener_waiting);
-		int getListenerSocket();
-		uint16_t getPort();
-		uint32_t getBindIP();
-		uint32_t getDeltaTime();
 
-		Peer *find_client(struct sockaddr_in *address);
-		Peer *find_or_create(struct sockaddr_in *address);
-
-		bool HasPeer(Peer *);
 		Peer *FindPeerByProfileID(int profileid);
 
-		int GetNumConnections();
-
-		const std::vector<int> getSockets();
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		OS::MetricInstance GetMetrics();
+
+		INetIOSocket *getListenerSocket() const;
+		const std::vector<INetIOSocket *> getSockets() const;
 	private:
 		void TickConnections();
 
 		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
-		int m_sd;
-
 		std::vector<Peer *> m_connections;
-		
-		struct sockaddr_in m_local_addr;
 
 		struct timeval m_server_start;
 
@@ -62,6 +50,7 @@ namespace GS {
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;
 
+		INetIOSocket *mp_socket;
 	};
 }
 #endif //_SBDRIVER_H

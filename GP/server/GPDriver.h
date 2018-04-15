@@ -26,31 +26,20 @@ namespace GP {
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
 		void think(bool packet_waiting);
-		int getListenerSocket();
-		uint16_t getPort();
-		uint32_t getBindIP();
-		uint32_t getDeltaTime();
-
-		Peer *find_client(struct sockaddr_in *address);
-		Peer *find_or_create(struct sockaddr_in *address);
 
 		Peer *FindPeerByProfileID(int profileid);
 
 		void InformStatusUpdate(int from_profileid, GPShared::GPStatus status);
 
-		int GetNumConnections();
-		const std::vector<int> getSockets();
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
+		INetIOSocket *getListenerSocket() const;
+		const std::vector<INetIOSocket *> getSockets() const;
 		OS::MetricInstance GetMetrics();
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
 
-		int m_sd;
-
 		std::vector<Peer *> m_connections;
-		
-		struct sockaddr_in m_local_addr;
 
 		struct timeval m_server_start;
 
@@ -59,6 +48,8 @@ namespace GP {
 		std::vector<GP::Peer *> m_peers_to_delete;
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;
+
+		INetIOSocket *mp_socket;
 	};
 }
 #endif //_SBDRIVER_H
