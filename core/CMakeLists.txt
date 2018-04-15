@@ -8,6 +8,12 @@ file (GLOB OS_SRCS "OS/*.cpp")
 file (GLOB OS_HDRS "OS/*.h")
 file (GLOB NET_SRCS "OS/Net/*.cpp")
 file (GLOB NET_HDRS "OS/Net/*.h")
+
+file (GLOB NET_EVENTMGR_SRCS "OS/Net/EventMgrs/*.cpp")
+file (GLOB NET_EVENTMGR_HDRS "OS/Net/EventMgrs/*.h")
+file (GLOB NET_IOIFACES_SRCS "OS/Net/IOIfaces/*.cpp")
+file (GLOB NET_IOIFACES_HDRS "OS/Net/IOIfaces/*.h")
+
 file (GLOB LEGACY_SRCS "OS/legacy/*.cpp" "OS/legacy/*.c")
 file (GLOB LEGACY_HDRS "OS/legacy/*.h")
 file (GLOB SEARCH_SRCS "OS/Search/*.cpp")
@@ -25,6 +31,8 @@ set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${OS_S
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 source_group("Sources\\OS\\Net" FILES ${NET_SRCS})
+source_group("Sources\\OS\\Net\\EventMgrs" FILES ${NET_EVENTMGR_SRCS})
+source_group("Sources\\OS\\Net\\IOFaces" FILES ${NET_IOIFACES_SRCS})
 source_group("Sources\\OS\\Legacy" FILES ${LEGACY_SRCS})
 source_group("Sources\\OS\\Search" FILES ${SEARCH_SRCS})
 source_group("Sources\\OS\\Logger" FILES ${LOGGER_SRCS})
@@ -32,6 +40,8 @@ source_group("Sources\\OS\\Logger" FILES ${LOGGER_SRCS})
 
 source_group("Headers\\OS\\Legacy" FILES ${LEGACY_HDRS})
 source_group("Headers\\OS\\Net" FILES ${NET_HDRS})
+source_group("Headers\\OS\\Net\\EventMgrs" FILES ${NET_EVENTMGR_HDRS})
+source_group("Headers\\OS\\Net\\IOFaces" FILES ${NET_IOIFACES_HDRS})
 
 source_group("Sources\\OS\\Search" FILES ${SEARCH_HDRS})
 source_group("Sources\\OS\\Logger" FILES ${LOGGER_HDRS})

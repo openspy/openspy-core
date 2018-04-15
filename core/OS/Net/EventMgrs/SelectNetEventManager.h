@@ -2,8 +2,8 @@
 	#if EVTMGR_USE_SELECT
 		#define _SELECTNETEVENTMGR_H
 		#include <OS/OpenSpy.h>
-		#include "NetEventManager.h"
-		#include "BSDNetIOInterface.h"
+		#include <OS/Net/NetEventManager.h>
+		#include <OS/Net/IOIFaces/BSDNetIOInterface.h>
 		#include <vector>
 
 		#define SELECT_TIMEOUT 5

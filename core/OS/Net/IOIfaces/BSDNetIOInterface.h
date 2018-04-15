@@ -1,6 +1,6 @@
 #ifndef _BSDNETIOINTERFACE_H
 #include <OS/OpenSpy.h>
-#include "NetIOInterface.h"
+#include <OS/Net/NetIOInterface.h>
 #include <vector>
 
 class BSDNetIOInterface : public INetIOInterface {

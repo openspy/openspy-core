@@ -1,8 +1,8 @@
 #include <OS/OpenSpy.h>
 #include <algorithm>
 #include "BSDNetIOInterface.h"
-#include "NetIOInterface.h"
-#include "NetPeer.h"
+#include <OS/Net/NetIOInterface.h>
+#include <OS/Net/NetPeer.h>
 BSDNetIOInterface::BSDNetIOInterface() : INetIOInterface() {
 
 }

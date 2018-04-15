@@ -4,7 +4,7 @@
 
 #include "SelectNetEventManager.h"
 #include <stdio.h>
-#include "NetPeer.h"
+#include <OS/Net/NetPeer.h>
 SelectNetEventManager::SelectNetEventManager() : BSDNetIOInterface(), INetEventManager() {
 	m_dirty_fdset = true;
 	mp_mutex = OS::CreateMutex();

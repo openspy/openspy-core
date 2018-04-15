@@ -1,8 +1,8 @@
 #include "NetServer.h"
 #if EVTMGR_USE_SELECT
-	#include "SelectNetEventManager.h"
+	#include <OS/Net/EventMgrs/SelectNetEventManager.h>
 #elif EVTMGR_USE_EPOLL
-	#include "EPollNetEventManager.h"
+	#include <OS/Net/EventMgrs/EPollNetEventManager.h>
 #endif
 
 
