@@ -3,8 +3,8 @@
 #include <OS/OpenSpy.h>
 #include <sys/epoll.h>
 	#if EVTMGR_USE_EPOLL
-		#include "BSDNetIOInterface.h"
-		#include "NetEventManager.h"
+		#include <OS/Net/NetEventManager.h>
+		#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 		#include <vector>
 		#include <map>
 		#define MAX_EPOLL_EVENTS 4096

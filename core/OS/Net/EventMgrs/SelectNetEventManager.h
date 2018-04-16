@@ -3,7 +3,7 @@
 		#define _SELECTNETEVENTMGR_H
 		#include <OS/OpenSpy.h>
 		#include <OS/Net/NetEventManager.h>
-		#include <OS/Net/IOIFaces/BSDNetIOInterface.h>
+		#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 		#include <vector>
 
 		#define SELECT_TIMEOUT 5
