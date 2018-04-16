@@ -31,7 +31,6 @@ namespace SB {
 		void think(bool listen_waiting);
 		INetIOSocket *getListenerSocket();
 
-		Peer *find_client(struct sockaddr_in *address);
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		const std::vector<INetIOSocket *> getSockets();
 		void SendDeleteServer(MM::Server *server);
@@ -74,7 +73,5 @@ namespace SB {
 		INetIOSocket *mp_socket;
 
 	};
-
-	extern Driver *g_gbl_driver;
 }
 #endif //_SBDRIVER_H

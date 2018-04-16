@@ -113,19 +113,6 @@ namespace SB {
 		}
 	}
 
-	Peer *Driver::find_client(struct sockaddr_in *address) {
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			const struct sockaddr_in peer_address = peer->GetSocket()->address.GetInAddr();
-			if (address->sin_port == peer_address.sin_port && address->sin_addr.s_addr == peer_address.sin_addr.s_addr) {
-				return peer;
-			}
-			it++;
-		}
-		return NULL;
-	}
-
 	INetIOSocket *Driver::getListenerSocket() {
 		return mp_socket;
 	}
