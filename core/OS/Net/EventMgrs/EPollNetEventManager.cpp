@@ -2,8 +2,8 @@
 #if EVTMGR_USE_EPOLL
 	#include "EPollNetEventManager.h"
 	#include <stdio.h>
-	#include "NetServer.h"
-	#include "NetPeer.h"
+	#include <OS/Net/NetServer.h>
+	#include <OS/Net/NetPeer.h>
 	#include <algorithm>
 
 	EPollNetEventManager::EPollNetEventManager() : BSDNetIOInterface(), INetEventManager() {
