@@ -33,7 +33,6 @@ namespace SM {
 		delete mp_mutex;
 	}
 	void Peer::think(bool packet_waiting) {
-		int len = 0;
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 
@@ -44,7 +43,7 @@ namespace SM {
 				goto end;
 			}
 
-			len = m_recv_buffer.size();
+			int len = m_recv_buffer.size();
 
 			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
 
@@ -73,8 +72,7 @@ namespace SM {
 		gettimeofday(&current_time, NULL);
 		if (current_time.tv_sec - m_last_recv.tv_sec > SM_PING_TIME * 2) {
 			Delete(true);
-		}
-		else if (len <= 0 && packet_waiting) {
+		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete();
 		}
 	}

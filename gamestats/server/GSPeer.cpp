@@ -59,7 +59,7 @@ namespace GS {
 		SendPacket(s.str());
 	}
 	void Peer::think(bool packet_waiting) {
-		int len = 0;
+		
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 		if (packet_waiting) {
@@ -68,7 +68,7 @@ namespace GS {
 			if (io_resp.disconnect_flag || io_resp.error_flag) {
 				goto end;
 			}
-			len = m_recv_buffer.size();
+			int len = m_recv_buffer.size();
 			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
 
 			gamespy3dxor((char *)m_recv_buffer.GetHead(), len);
@@ -94,8 +94,7 @@ namespace GS {
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
 			Delete(true);
-		} 
-		if (len <= 0 && packet_waiting) {
+		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete();
 		}
 	}
