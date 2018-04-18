@@ -102,9 +102,7 @@ namespace GS {
 		bool IsResponseValid(const char *response);
 
 		OS::GameData m_game;
-
-		Driver *mp_driver;
-
+		
 		struct timeval m_last_recv, m_last_ping;
 
 		bool m_delete_flag;

@@ -23,12 +23,13 @@ namespace GS {
 
 	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		ResetMetrics();
-		m_sd = sd;
-		mp_driver = driver;
 		m_delete_flag = false;
 		m_timeout_flag = false;
+		
 		mp_mutex = OS::CreateMutex();
+
 		gettimeofday(&m_last_ping, NULL);
+		gettimeofday(&m_last_recv, NULL);
 
 		m_user.id = 0;
 		m_profile.id = 0;
@@ -68,10 +69,10 @@ namespace GS {
 			if (io_resp.disconnect_flag || io_resp.error_flag) {
 				goto end;
 			}
+			gettimeofday(&m_last_recv, NULL);
 			int len = m_recv_buffer.size();
-			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
-
 			gamespy3dxor((char *)m_recv_buffer.GetHead(), len);
+			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
 
 			/* split by \\final\\  */
 			char *p = (char *)recv_buf.c_str();
