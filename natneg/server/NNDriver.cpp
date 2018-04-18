@@ -74,6 +74,7 @@ namespace NN {
 			while (it != datagrams.end()) {
 				INetIODatagram dgram = *it;
 				Peer *peer = NULL;
+				if(dgram.buffer.size() == 0) continue;
 				if (dgram.error_flag) {
 					peer = find_client(dgram.address);
 					if (peer) {

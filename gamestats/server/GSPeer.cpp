@@ -65,12 +65,13 @@ namespace GS {
 		if (m_delete_flag) return;
 		if (packet_waiting) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
+			int len = m_recv_buffer.size();
 
-			if (io_resp.disconnect_flag || io_resp.error_flag) {
+			if (io_resp.disconnect_flag || io_resp.error_flag || len == 0) {
 				goto end;
 			}
 			gettimeofday(&m_last_recv, NULL);
-			int len = m_recv_buffer.size();
+			
 			gamespy3dxor((char *)m_recv_buffer.GetHead(), len);
 			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
 
