@@ -39,11 +39,11 @@ namespace OS {
 						if (IsDataKey(key)) {
 							std::map<std::string, std::string>::iterator it = m_data_key_map.find(key);
 							int data_len = GetValueInt((*it).second);
-							int remaining = line_ss.str().substr(line_ss.tellg()).length();
-							if (data_len > remaining) {
+							
+							if (data_len > kv_pair.length()) { //not a perfect check, but read will not mess up when reading too much
 								break;
-							}							
-
+							}
+						
 							OS::Buffer binary_data = OS::Buffer(data_len);
 							line_ss.read((char *)binary_data.GetHead(), data_len);
 							line_ss.seekg(1, std::ios_base::cur);
