@@ -114,35 +114,24 @@ namespace GP {
 	void Peer::handle_packet(char *data, int len) {
 		OS::KVReader data_parser = OS::KVReader(std::string(data));
 		gettimeofday(&m_last_recv, NULL);
-		if (data_parser.Size() < 1) {
-			struct timeval current_time;
-			gettimeofday(&current_time, NULL);
-			if (current_time.tv_sec - m_status_refresh.tv_sec > (GP_STATUS_EXPIRE_TIME/2)) {
-				gettimeofday(&m_status_refresh, NULL);
-				//often called with keep alives
-				if (m_profile.id)
-					GPBackend::GPBackendRedisTask::SetPresenceStatus(m_profile.id, m_status, this);
-			}
-			//send_error(GPShared::GP_PARSE);
-			return;
-		}
+
 		std::string command = data_parser.GetKeyByIdx(0);
 
 		// OS::KVReader data_parser
 
 		if(!command.compare("login")) {
 			handle_login(data_parser);
-			return;
+			goto end;
 		} else if(!command.compare("ka")) {
 			handle_keepalive(data_parser);
-			return;
+			goto end;
 		} else if (command.compare("logout") == 0) {
 			Delete();
 			return;
 		}
 		else if (command.compare("newuser") == 0) {
 			handle_newuser(data_parser);
-			return;
+			goto end;
 		}
 		if(m_backend_session_key.length() > 0) {
 			if(command.compare("status") == 0) {
@@ -176,6 +165,15 @@ namespace GP {
 			} else if(command.compare("updatepro") == 0) {
 				handle_updatepro(data_parser);
 			}
+		}
+		end:
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if (current_time.tv_sec - m_status_refresh.tv_sec > (GP_STATUS_EXPIRE_TIME / 2)) {
+			gettimeofday(&m_status_refresh, NULL);
+			//often called with keep alives
+			if (m_profile.id)
+				GPBackend::GPBackendRedisTask::SetPresenceStatus(m_profile.id, m_status, this);
 		}
 	}
 	void Peer::handle_newuser(OS::KVReader data_parser) {

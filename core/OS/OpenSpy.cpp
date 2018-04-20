@@ -460,7 +460,7 @@ namespace OS {
 		std::string ret;
 		std::string::iterator it = s.begin();
 		while(it != s.end()) {
-			char ch = *(it++);
+			unsigned char ch = *(it++);
 			if(isspace(ch) && ch != ' ')
 				continue;
 			ret += ch;

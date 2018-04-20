@@ -70,7 +70,6 @@ namespace GS {
 			if (io_resp.disconnect_flag || io_resp.error_flag || len == 0) {
 				goto end;
 			}
-			gettimeofday(&m_last_recv, NULL);
 			
 			gamespy3dxor((char *)m_recv_buffer.GetHead(), len);
 			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
@@ -103,17 +102,18 @@ namespace GS {
 	void Peer::handle_packet(char *data, int len) {
 		printf("GStats Handle(%d): %s\n", len,data);
 
-		OS::KVReader data_parser = OS::KVReader(std::string(data));
-		std::string command;
-		memset(&command,0,sizeof(command));
+
+		std::map<std::string, std::string> data_map;
+		data_map["data"] = "length";
+		OS::KVReader data_parser = OS::KVReader(std::string(data), '\\', 0, data_map);
+		
 		if(data_parser.Size() == 0) {
-			Delete();
 			return;
 		}
 		if(len > 0)
 			gettimeofday(&m_last_recv, NULL);
 
-		command = data_parser.GetKeyByIdx(0);
+		std::string command = data_parser.GetKeyByIdx(0);
 		if(command.compare("auth") == 0) {
 			handle_auth(data_parser);
 		} else if(command.compare("authp") == 0) {
@@ -156,7 +156,7 @@ namespace GS {
 		uint8_t *data = NULL;
 		int data_len = 0;
 		
-		ss << "\\getpdr\\" << 1 << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\mod\\" << response_data.mod_time;// << "\\length\\" << data_len << "\\data\\";
+		ss << "\\getpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\mod\\" << response_data.mod_time;// << "\\length\\" << data_len << "\\data\\";
 
 		OS::Buffer buffer;
 		buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
@@ -493,7 +493,7 @@ namespace GS {
 		if(attach_final) {
 			buffer.WriteBuffer((uint8_t*)"\\final\\", 7);
 		}
-
+		printf("GSPeer send(%d) - %s\n", buffer.size(), buffer.GetHead());
 		gamespy3dxor((char *)buffer.GetHead(), buffer.size());
 
 		m_peer_stats.bytes_out += buffer.size();

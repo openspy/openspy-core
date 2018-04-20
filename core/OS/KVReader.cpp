@@ -3,15 +3,17 @@
 #include <sstream>
 #include <algorithm>
 #include <math.h>
+#include <OS/Buffer.h>
 namespace OS {
 	KVReader::KVReader() {
 
 	}
-	KVReader::KVReader(std::string kv_pair, char delim, char line_delim) {
+	KVReader::KVReader(std::string kv_pair, char delim, char line_delim, std::map<std::string, std::string> data_map) {
 		m_delimitor = delim;
+		m_data_key_map = data_map;
 		std::string token, key, value, line;
 		int i = 0;
-
+		
 		std::stringstream ss, line_ss;
 		if (kv_pair[0] == delim) {
 			kv_pair = kv_pair.substr(1, kv_pair.length() - 1);
@@ -26,15 +28,33 @@ namespace OS {
 				line_ss = std::stringstream(line);
 			}
 			i = 0;
-			while (std::getline(line_ss, token, delim)) {
+
+			while ((key.length() > 0 && IsDataKey(key)) || std::getline(line_ss, token, delim)) {
 				if (i % 2 == 0) {
 					key = OS::strip_whitespace(token);
 				}
 				else {
 					value = OS::strip_whitespace(token);
 					if (!HasKey(key)) {
-						m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
+						if (IsDataKey(key)) {
+							std::map<std::string, std::string>::iterator it = m_data_key_map.find(key);
+							int data_len = GetValueInt((*it).second);
+							int remaining = line_ss.str().substr(line_ss.tellg()).length();
+							if (data_len > remaining) {
+								break;
+							}							
+
+							OS::Buffer binary_data = OS::Buffer(data_len);
+							line_ss.read((char *)binary_data.GetHead(), data_len);
+							line_ss.seekg(1, std::ios_base::cur);
+							value = std::string((const char *)binary_data.GetHead(), data_len);
+							m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
+						}
+						else {
+							m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
+						}
 					}
+					key = "";
 				}
 				i++;
 			}
@@ -42,6 +62,9 @@ namespace OS {
 				break;
 			}
 		}
+	}
+	bool KVReader::IsDataKey(std::string key) {
+		return m_data_key_map.find(key) != m_data_key_map.end();
 	}
 	KVReader::~KVReader() {
 

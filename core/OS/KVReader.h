@@ -15,7 +15,7 @@ namespace OS {
 	class KVReader {
 	public:
 		KVReader();
-		KVReader(std::string kv_pair, char delim = '\\', char line_delim=0);
+		KVReader(std::string kv_pair, char delim = '\\', char line_delim=0, std::map<std::string, std::string> data_map = std::map<std::string, std::string>());
 		~KVReader();
 		std::string GetKeyByIdx(int n);
 		std::string GetValueByIdx(int n);
@@ -31,10 +31,12 @@ namespace OS {
 		std::string ToString() const;
 	private:
 		int GetIndex(int n); //map internal index to external index
+		bool IsDataKey(std::string key);
 		std::vector<std::pair<std::string, std::string>>::const_iterator FindKey(std::string key);
 		std::vector<std::pair<std::string, std::string>>::const_iterator FindValue(std::string key);
 		std::vector< std::pair<std::string, std::string> > m_kv_map;
 		char m_delimitor;
+		std::map<std::string, std::string> m_data_key_map;
 	};
 }
 #endif //_OS_KVREADER_H
