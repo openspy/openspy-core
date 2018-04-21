@@ -513,7 +513,7 @@ namespace GS {
 			buffer.WriteBuffer((uint8_t*)"\\final\\", 7);
 		}
 		printf("GSPeer send(%d) - %s\n", buffer.size(), buffer.GetHead());
-		//gamespy3dxor((char *)buffer.GetHead(), buffer.size());
+		gamespy3dxor((char *)buffer.GetHead(), buffer.size());
 
 		m_peer_stats.bytes_out += buffer.size();
 		m_peer_stats.packets_out++;
