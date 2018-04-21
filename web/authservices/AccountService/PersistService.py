@@ -170,8 +170,8 @@ class PersistService(BaseService):
             persist_req_data["modified_since"] = request_body["modified_since"]
         if "keyList" not in request_body:
             persist_data = self.get_persist_raw_data(persist_req_data)
+            response["success"] = True
             if persist_data != None:
-                response["success"] = True
                 response["data"] = persist_data["base64Data"]
                 response["modified"] = persist_data["modified"]
         else:
