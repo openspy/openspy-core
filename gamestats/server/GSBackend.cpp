@@ -260,14 +260,15 @@ namespace GSBackend {
 		json_object_set_new(send_json, "game_id", json_integer(req.mp_peer->GetGame().gameid));
 		json_object_set_new(send_json, "modified_since", json_integer(req.modified_since));
 
-		std::vector<std::string>::iterator it = req.keyList.begin();
-
-		json_t *keylist_array = json_array();
-		while(it != req.keyList.end()) {
-			json_array_append(keylist_array, json_string((*it).c_str()));
-			it++;
+		if (req.keyList.size() > 0) {
+			std::vector<std::string>::iterator it = req.keyList.begin();
+			json_t *keylist_array = json_array();
+			while (it != req.keyList.end()) {
+				json_array_append(keylist_array, json_string((*it).c_str()));
+				it++;
+			}
+			json_object_set(send_json, "keyList", keylist_array);
 		}
-		json_object_set(send_json, "keyList", keylist_array);
 
 		OS::HTTPClient client(GP_PERSIST_BACKEND_URL);
 
