@@ -141,7 +141,7 @@ void find_user_info(char *str, char *nick, char *user, char *address, int buffle
 }
 void gen_random(char *s, const int len) {
 	int i;
-//	srand((unsigned int)time(NULL));
+	srand((unsigned int)time(NULL));
     static const char alphanum[] =
         "0123456789"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
