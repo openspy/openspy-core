@@ -63,3 +63,33 @@ create table blocks (
 	foreign key fk_blocks_from_profileid(from_profileid)
 	references profiles(id)
 );
+
+
+CREATE TABLE `persist_data` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `modified` timestamp NULL DEFAULT NULL,
+  `base64Data` blob,
+  `persist_type` int(11) DEFAULT NULL,
+  `data_index` int(11) DEFAULT NULL,
+  `profileid` int(11) DEFAULT NULL,
+  `gameid` int(11) NOT NULL,
+  foreign key fk_pd_profile(profileid)
+  references profiles(id)
+  PRIMARY KEY (`id`)
+)
+
+
+
+CREATE TABLE `persist_keyed_data` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `key_name` text,
+  `key_value` blob,
+  `profileid` int(11) DEFAULT NULL,
+  `gameid` int(11) DEFAULT NULL,
+  `persist_type` int(11) DEFAULT NULL,
+  `data_index` int(11) DEFAULT NULL,
+  `modified` datetime DEFAULT NULL,
+  foreign key fk_pkd_profile(profileid)
+  references profiles(id)
+  PRIMARY KEY (`id`)
+)

@@ -1,6 +1,7 @@
 from peewee import *
 from BaseModel import BaseModel
 from Model.Profile import Profile
+from Model.Game import Game
 
 class PersistData(BaseModel):
     class Meta:
@@ -11,4 +12,4 @@ class PersistData(BaseModel):
     modified = DateTimeField()
     persist_type = IntegerField()
     data_index = IntegerField()
-    game = ForeignKeyField(Profile, db_column="game", related_name='fk_pd_game_id')
+    game = ForeignKeyField(Game, db_column="gameid", related_name='fk_pd_game_id')
