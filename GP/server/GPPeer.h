@@ -31,6 +31,8 @@
 // New CD Key registration style as opposed to using product ids
 #define GPI_NEW_CDKEY_REGISTRATION (1<<5)
 
+#define MAX_UNPROCESSED_DATA 5000
+
 namespace GP {
 	class Driver;
 	typedef struct _PeerStats {
@@ -55,7 +57,7 @@ namespace GP {
 		void Delete(bool timeout = false);
 		
 		void think(bool packet_waiting);
-		void handle_packet(char *data, int len);
+		void handle_packet(std::string packet);
 
 		int GetProfileID();
 
@@ -158,6 +160,7 @@ namespace GP {
 		GPShared::GPStatus m_status;
 
 		std::string m_backend_session_key; //session key
+		std::string m_kv_accumulator;
 
 		//these are modified by other threads
 		//std::vector<int> m_buddies;

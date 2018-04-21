@@ -21,6 +21,8 @@
 
 #include <OS/KVReader.h>
 
+#define MAX_UNPROCESSED_DATA 5000
+
 namespace GS {
 	typedef struct {
 		int profileid;
@@ -49,7 +51,7 @@ namespace GS {
 		~Peer();
 		
 		void think(bool packet_waiting);
-		void handle_packet(char *data, int len);
+		void handle_packet(std::string packet_string);
 		void Delete(bool timeout = false);
 
 		int GetProfileID();
@@ -125,6 +127,8 @@ namespace GS {
 		std::string m_current_game_identifier;
 		std::string m_response;
 		PeerStats m_peer_stats;
+
+		std::string m_kv_accumulator;
 	};
 }
 #endif //_GPPEER_H
