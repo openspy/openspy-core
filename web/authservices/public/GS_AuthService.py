@@ -158,6 +158,31 @@ class GS_AuthService(BaseService):
             signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
         return resp_xml
 
+    def handle_ps3_login(self, xml_tree, privkey):
+        resp_xml = ET.Element('SOAP-ENV:Envelope')
+        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
+        login_result = ET.SubElement(body, 'ns1:LoginPs3CertResult')
+
+        #auth stuff
+        peerkeyprivate_node = ET.SubElement(login_result, 'ns1:peerkeyprivate')
+        peerkeyprivate_node.text = '0'
+
+        length_node = ET.SubElement(login_result, 'ns1:length') #???
+        length_node.text = '111'
+
+        version_node = ET.SubElement(login_result, 'ns1:version')
+        version_node.text = '1'
+
+        response_code_node = ET.SubElement(login_result, 'ns1:responseCode')
+        response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
+
+        auth_token_node = ET.SubElement(login_result, 'ns1:authToken')
+        auth_token_node.text = "authToken"
+
+        partner_code_node = ET.SubElement(login_result, 'ns1:partnerChallenge')
+        partner_code_node.text = "partnerChallenge"
+
+        return resp_xml
     def handle_profile_login(self, xml_tree, privkey):
         resp_xml = ET.Element('SOAP-ENV:Envelope')
         body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
@@ -348,6 +373,8 @@ class GS_AuthService(BaseService):
             resp = self.handle_profile_login(login_profile_tree, privkey)
         elif login_remoteauth_tree != None:
             resp = self.handle_remoteauth_login(login_remoteauth_tree, privkey)
+        elif login_ps3_tree != None:
+            resp = self.handle_ps3_login(login_remoteauth_tree, privkey)
 
         if resp != None:
             return ET.tostring(resp, encoding='utf8', method='xml')
