@@ -417,8 +417,6 @@ class AuthService(BaseService):
             profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'user': user})
             ret["new_profile"] = True
             ret["success"] = True
-            
-            ret = {**ret, **profile}
 
             if "error" in profile:
                 ret["error"] = profile["error"]
@@ -537,6 +535,8 @@ class AuthService(BaseService):
             if request_body["set_context"] == "profile":
                 self.set_auth_context(response["session_key"], response["profile"])
 
+
+        response["expiretime"] = self.AUTH_EXPIRE_TIME
         return response
     def run(self, env, start_response):
         # the environment variable CONTENT_LENGTH may be empty or missing

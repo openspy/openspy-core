@@ -148,13 +148,14 @@ class GS_AuthService(BaseService):
         server_data = os.urandom(128)
         serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
 
-        signature_node = ET.SubElement(certificate_node, 'ns1:signature')
-
         peerkey = {}
         peerkey['exponent'] = peerkeyexponent_node.text
         peerkey['modulus'] = peerkeymodulus_node.text
 
-        signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
+
+        if 'profile' in auth_user_dir:
+            signature_node = ET.SubElement(certificate_node, 'ns1:signature')
+            signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
         return resp_xml
 
     def handle_profile_login(self, xml_tree, privkey):
@@ -225,13 +226,14 @@ class GS_AuthService(BaseService):
         server_data = os.urandom(128)
         serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
 
-        signature_node = ET.SubElement(certificate_node, 'ns1:signature')
-
         peerkey = {}
         peerkey['exponent'] = peerkeyexponent_node.text
         peerkey['modulus'] = peerkeymodulus_node.text
 
-        signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
+
+        if 'profile' in auth_user_dir:
+            signature_node = ET.SubElement(certificate_node, 'ns1:signature')
+            signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
 
         return resp_xml
 
@@ -302,13 +304,14 @@ class GS_AuthService(BaseService):
         server_data = os.urandom(128)
         serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
 
-        signature_node = ET.SubElement(certificate_node, 'ns1:signature')
-
         peerkey = {}
         peerkey['exponent'] = peerkeyexponent_node.text
         peerkey['modulus'] = peerkeymodulus_node.text
-        signature_node.text = (self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True))
 
+
+        if 'profile' in auth_user_dir:
+            signature_node = ET.SubElement(certificate_node, 'ns1:signature')
+            signature_node.text = (self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True))
 
         return resp_xml
 
