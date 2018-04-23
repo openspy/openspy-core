@@ -512,14 +512,20 @@ namespace OS {
 		}
 		json_decref(send_obj);
 	}
-	void AuthTask::PerformAuth_PID_GSStats_SessKey(AuthRequest request) {
+	void AuthTask::PerformAuth_GSStats_SessKey(AuthRequest request) {
 		curl_data recv_data;
 		//build json object
 		json_t *send_obj = json_object();
 
-		json_object_set_new(send_obj, "profileid", json_integer(request.profile.id));
+		if (request.type == EAuthType_PID_GStats_Sesskey) {
+			json_object_set_new(send_obj, "profileid", json_integer(request.profile.id));
+			json_object_set_new(send_obj, "hash_type", json_string("gstats_pid_sesskey"));
+		}
+		else if (request.type == EAuthType_PreAuth_GStats_Sesskey) {
+			json_object_set_new(send_obj, "hash_type", json_string("gstats_authtoken_sesskey"));
+			json_object_set_new(send_obj, "auth_token", json_string(request.client_challenge.c_str()));
+		}		
 		
-		json_object_set_new(send_obj, "hash_type", json_string("gstats_pid_sesskey"));
 		json_object_set_new(send_obj, "set_context", json_string("profile"));
 		json_object_set_new(send_obj, "save_session", request.create_session ? json_true() : json_false());
 
@@ -991,6 +997,26 @@ namespace OS {
 		request.peer = peer;
 		m_auth_task_pool->AddRequest(request);
 	}
+	void AuthTask::TryAuth_PreAuth_GStatsSessKey(int session_key, std::string response, std::string auth_token, AuthCallback cb, void *extra, int operation_id, INetPeer *peer) {
+		AuthRequest request;
+		request.type = EAuthType_PreAuth_GStats_Sesskey;
+
+		request.session_key = session_key;
+		request.client_response = response;
+		request.client_challenge = auth_token;
+
+		request.extra = extra;
+		request.operation_id = operation_id;
+		request.callback = cb;
+		request.create_session = true;
+		request.profile.namespaceid = -1;
+		request.user.partnercode = 0;
+		if (peer) {
+			peer->IncRef();
+		}
+		request.peer = peer;
+		m_auth_task_pool->AddRequest(request);
+	}
 	AuthTask::AuthTask(int thread_index) {
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(AuthTask::TaskThread, this, true);
@@ -1029,7 +1055,8 @@ namespace OS {
 					task->PerformAuth_CreateUser_OrProfile(task_params);
 					break;
 				case EAuthType_PID_GStats_Sesskey:
-					task->PerformAuth_PID_GSStats_SessKey(task_params);
+				case EAuthType_PreAuth_GStats_Sesskey:
+					task->PerformAuth_GSStats_SessKey(task_params);
 					break;
 				case EAuthType_MakeAuthTicket:
 					task->PerformAuth_MakeAuthTicket(task_params);

@@ -136,8 +136,6 @@ namespace GP {
 
 		std::string command = data_parser.GetKeyByIdx(0);
 
-		// OS::KVReader data_parser
-
 		if(!command.compare("login")) {
 			handle_login(data_parser);
 			goto end;

@@ -47,6 +47,7 @@ namespace OS {
 		EAuthType_NickEmail,
 		EAuthType_CreateUser_OrProfile,
 		EAuthType_PID_GStats_Sesskey,
+		EAuthType_PreAuth_GStats_Sesskey,
 	};
 
 	typedef struct {
@@ -88,13 +89,14 @@ namespace OS {
 			static void TryAuthEmailPassword(std::string email, int partnercode, std::string password, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryMakeAuthTicket(int profileid, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 			static void TryAuthTicket(const char *auth_token, const char *server_challenge, const char *client_challenge, const char *response, AuthCallback cb, int operation_id, INetPeer *peer = NULL);
+			static void TryAuth_PreAuth_GStatsSessKey(int session_key, std::string response, std::string auth_token, AuthCallback cb, void *extra, int operation_id, INetPeer *peer = NULL);
 		private:
 			static AuthTask *m_task_singleton;
 			static void *TaskThread(CThread *thread);
 			void PerformAuth_NickEMail_GPHash(AuthRequest request);
 			void PerformAuth_NickEMail(AuthRequest request);
 			void PerformAuth_CreateUser_OrProfile(AuthRequest request);
-			void PerformAuth_PID_GSStats_SessKey(AuthRequest request);
+			void PerformAuth_GSStats_SessKey(AuthRequest request);
 			void PerformAuth_EmailPass(AuthRequest request);
 			void PerformAuth_Uniquenick_GPHash(AuthRequest request);
 			void PerformAuth_Uniquenick_Password(AuthRequest request);

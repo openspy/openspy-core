@@ -68,6 +68,8 @@ class UserProfileMgrService(BaseService):
         try:
             for profile in Profile.select().where((Profile.userid == data["userid"]) & (Profile.deleted == False)):
                 profile_dict = model_to_dict(profile)
+                if "user" in profile_dict:
+                    del profile_dict['user']['password']
                 profiles.append(profile_dict)
             response["success"] = True
         except Profile.DoesNotExist:
@@ -90,6 +92,8 @@ class UserProfileMgrService(BaseService):
                     profile = Profile.get((Profile.uniquenick == data["uniquenick"]) & (Profile.namespaceid == 0))
             if profile:
                 response["profile"] = model_to_dict(profile)
+                if "user" in response["profile"]:
+                    del response["profile"]["user"]
                 response["success"] = True
         except Profile.DoesNotExist:
             pass
