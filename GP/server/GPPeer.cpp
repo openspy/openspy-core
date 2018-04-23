@@ -102,7 +102,7 @@ namespace GP {
 				std::string partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
 				handle_packet(partial_string);
 
-				last_pos = final_pos + 7; // 7 = strlen of \\final\\ 
+				last_pos = final_pos + 7; // 7 = strlen of \\final
 			} while (final_pos != std::string::npos);
 
 
