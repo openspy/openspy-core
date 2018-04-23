@@ -133,6 +133,30 @@ class AuthService(BaseService):
             ret += chr(ord(n) + i)
             i = i+1
         return ret
+    def test_gstats_sessionkey_response_auth_token(self, request_body, account_data):
+        response = {}
+
+        token = request_body['auth_token']
+
+        if not self.redis_ctx.exists("auth_token_{}".format(token)):
+            raise OS_Auth_InvalidCredentials()
+
+        profileid = int(self.redis_ctx.hget("auth_token_{}".format(token), 'profileid'))
+        profile = self.get_profile_by_id(profileid)
+        user = self.get_user_by_userid(profile.userid)
+        challenge = self.redis_ctx.hget("auth_token_{}".format(token), 'challenge').decode('utf-8')
+        challenge = str(challenge).encode('utf-8')
+
+        sess_key = self.gs_sesskey(request_body["session_key"])
+
+        pw_hashed = "{}{}".format(challenge,sess_key).encode('utf-8')
+        pw_hashed = hashlib.md5(pw_hashed).hexdigest()
+
+        response["success"] = pw_hashed == request_body["client_response"]       
+
+        response['profile'] = model_to_dict(profile)
+        response['user'] = model_to_dict(user)
+        return response
     def test_gstats_sessionkey_response_by_profileid(self, request_body, account_data):
         #, profile, session_key, client_response
         if "profile" not in account_data:
@@ -356,7 +380,7 @@ class AuthService(BaseService):
         user_where = (User.deleted == False)
         user_data = request_body["user"]
         if "email" in user_data:
-            if re.match('^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', user_data["email"]) == None:
+            if re.match('^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$', user_data["email"]) == None:
                 raise OS_InvalidParam("email")
             user_where = (user_where) & (User.email == user_data["email"])
         if "partnercode" in user_data:
@@ -365,13 +389,16 @@ class AuthService(BaseService):
         else:
             partnercode = 0
 
+        auth_create_auth_token = False
+        if "use_auth_token" in request_body:
+            auth_create_auth_token = request_body["use_auth_token"]
         user_where = ((user_where) & (User.partnercode == partnercode))
         try:
             user = User.get(user_where)
             user = model_to_dict(user)
-            if user['password'] != user_data["password"]:
+
+            if ("password" not in user_data or user['password'] != user_data["password"]) and not auth_create_auth_token:
                 raise OS_Auth_InvalidCredentials()
-                #raise OS_InvalidParam("password")
         except User.DoesNotExist:
             register_svc = RegistrationService()
             user = register_svc.try_register_user(user_data)
@@ -415,15 +442,20 @@ class AuthService(BaseService):
             user_profile_srv = UserProfileMgrService()
             #this should raise an exception instead of return an error object...
             profile = user_profile_srv.handle_create_profile({'profile': profile_data, 'user': user})
-            ret["new_profile"] = True
-            ret["success"] = True
-
             if "error" in profile:
                 ret["error"] = profile["error"]
-            return ret
+                return ret
+            ret["new_profile"] = True
+            ret["success"] = True
+            profile = profile["profile"]
+
         
         ret["profile"] = profile
         ret["user"] = user
+
+        if auth_create_auth_token:
+            auth_token_data = self.handle_make_auth_ticket({"profileid": profile["id"]})
+            ret["auth_token"] = auth_token_data
         return ret
 
 
@@ -485,7 +517,8 @@ class AuthService(BaseService):
             "nick_email": self.test_nick_email_by_profile,
             "auth_or_create_profile": self.auth_or_create_profile,
             "gstats_pid_sesskey": self.test_gstats_sessionkey_response_by_profileid,
-            "gp_preauth": self.test_gp_preauth_by_ticket
+            "gp_preauth": self.test_gp_preauth_by_ticket,
+            "gstats_authtoken_sesskey": self.test_gstats_sessionkey_response_auth_token
         }
 
         response = {}
@@ -514,9 +547,11 @@ class AuthService(BaseService):
                     user_source["user"] = model_to_dict(user_source["user"])
 
                 response["user"] = user_source["user"]
-                del response["user"]["password"]
+                if "password" in response["user"]:
+                    del response["user"]["password"]
             if "profile" in user_source:
                 if not isinstance(user_source["profile"], dict):
+                    print("src: {}\n".format(user_source))
                     user_source["profile"] = model_to_dict(user_source["profile"])
                 response["profile"] = user_source["profile"]
             response = {**user_source, **response, **auth_response}

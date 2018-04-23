@@ -3,6 +3,8 @@ import xml.etree.ElementTree as ET
 
 import binascii
 import hashlib
+import base64
+import uuid
 
 from collections import OrderedDict
 
@@ -54,6 +56,12 @@ class GS_AuthService(BaseService):
 
     #will be used if LOGIN_RESPONE_* differs from backend auth
     def convert_reason_code(self, reason):
+        if "name" in reason:
+            if reason["name"] == "InvalidParam":
+                if reason["param"] == "auth_token":
+                    return str(self.LOGIN_RESPONSE_USER_NOT_FOUND)
+            if reason["name"] == "InvalidCredentials":
+                return str(self.LOGIN_RESPONSE_INVALID_PASSWORD)
         return str(reason)
 
     def try_authenticate(self, login_data):
@@ -158,29 +166,73 @@ class GS_AuthService(BaseService):
             signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
         return resp_xml
 
+    def handle_ps3_npticket(self, request_data):
+        ret = {}
+        if "partnercode" not in request_data or "namespaceid" not in request_data or "gameid" not in request_data:
+            return ret
+
+        psn_data = {"PSNName": "CHC", "serviceId": "WM0002-NPXM00002_00"}
+
+        user_data = {"email": "{}@ps3-remote.stb".format(psn_data["PSNName"]), "partnercode": request_data["partnercode"], "password": str(uuid.uuid1()).encode('utf-8')}
+
+        profile_data = {"nick": psn_data["PSNName"], "uniquenick": psn_data["PSNName"], "namespaceid": request_data["namespaceid"]}
+
+        backend_request = {
+            "hash_type": "auth_or_create_profile",
+            "use_auth_token": True,
+            "user": user_data,
+            "profile": profile_data
+        }
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "text/plain",
+            "APIKey": self.BACKEND_PRIVATE_APIKEY
+        }
+        conn = http.client.HTTPConnection(self.LOGIN_SERVER)
+
+
+        params = json.dumps(backend_request)
+        conn.request("POST", self.LOGIN_SCRIPT, params, headers)
+        response = json.loads(conn.getresponse().read())
+
+        if "auth_token" in response:
+            ret = {**ret, **(response["auth_token"])}
+
+        return ret
     def handle_ps3_login(self, xml_tree, privkey):
         resp_xml = ET.Element('SOAP-ENV:Envelope')
         body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
         login_result = ET.SubElement(body, 'ns1:LoginPs3CertResult')
 
-        #auth stuff
-        peerkeyprivate_node = ET.SubElement(login_result, 'ns1:peerkeyprivate')
-        peerkeyprivate_node.text = '0'
+        ps3_request_data = {}
+        gameid_node = xml_tree.find('{http://gamespy.net/AuthService/}gameid')
+        ps3_request_data["gameid"] = int(gameid_node.text)
 
-        length_node = ET.SubElement(login_result, 'ns1:length') #???
-        length_node.text = '111'
+        partnercode_node = xml_tree.find('{http://gamespy.net/AuthService/}partnercode')
+        ps3_request_data["partnercode"] = int(partnercode_node.text)
 
-        version_node = ET.SubElement(login_result, 'ns1:version')
-        version_node.text = '1'
+        namespaceid_node = xml_tree.find('{http://gamespy.net/AuthService/}namespaceid')
+        ps3_request_data["namespaceid"] = int(namespaceid_node.text)
+
+        npticket_node = xml_tree.find('{http://gamespy.net/AuthService/}npticket')
+
+        
+        if npticket_node != None:
+            npticket_value_node = npticket_node.find('{http://gamespy.net/AuthService/}Value')
+            ps3_request_data["npticket"] = base64.b64decode(npticket_value_node.text)
+            
+        ps3_response_data = self.handle_ps3_npticket(ps3_request_data)
 
         response_code_node = ET.SubElement(login_result, 'ns1:responseCode')
-        response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
+        if "ticket" in ps3_response_data and "challenge" in ps3_response_data:
+            response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
+            auth_token_node = ET.SubElement(login_result, 'ns1:authToken')
+            auth_token_node.text = ps3_response_data["ticket"]
 
-        auth_token_node = ET.SubElement(login_result, 'ns1:authToken')
-        auth_token_node.text = "authToken"
-
-        partner_code_node = ET.SubElement(login_result, 'ns1:partnerChallenge')
-        partner_code_node.text = "partnerChallenge"
+            partner_code_node = ET.SubElement(login_result, 'ns1:partnerChallenge')
+            partner_code_node.text = ps3_response_data["challenge"]
+        else:
+            response_code_node.text = str(self.LOGIN_RESPONSE_SERVER_ERROR)
 
         return resp_xml
     def handle_profile_login(self, xml_tree, privkey):
@@ -233,7 +285,7 @@ class GS_AuthService(BaseService):
                 node = ET.SubElement(certificate_node, 'ns1:{}'.format(k))
                 node.text = str(v)
         else: #send error data
-            response_code_node.text = self.convert_reason_code(auth_user_dir['reason'])
+            response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
 
 
         #encrypted server data
@@ -313,7 +365,7 @@ class GS_AuthService(BaseService):
                 node = ET.SubElement(certificate_node, 'ns1:{}'.format(k))
                 node.text = str(v)
         else: #send error data
-            response_code_node.text = self.convert_reason_code(auth_user_dir['reason'])
+            response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
 
         #encrypted server data
         peerkeymodulus_node = ET.SubElement(certificate_node, 'ns1:peerkeymodulus')
@@ -352,7 +404,7 @@ class GS_AuthService(BaseService):
         # in the file like wsgi.input environment variable.
         request_body = env['wsgi.input'].read(request_body_size)
        # d = parse_qs(request_body)
-        start_response('200 OK', [('Content-Type','text/html')])
+        start_response('200 OK', [('Content-Type','application/xml')])
 
         private_key_file = open("/home/andy/openspy-core-v2/web/authservices/openspy_webservices_private.pem","r")
         keydata = private_key_file.read()
@@ -374,7 +426,7 @@ class GS_AuthService(BaseService):
         elif login_remoteauth_tree != None:
             resp = self.handle_remoteauth_login(login_remoteauth_tree, privkey)
         elif login_ps3_tree != None:
-            resp = self.handle_ps3_login(login_remoteauth_tree, privkey)
+            resp = self.handle_ps3_login(login_ps3_tree, privkey)
 
         if resp != None:
             return ET.tostring(resp, encoding='utf8', method='xml')
