@@ -400,9 +400,6 @@ namespace GS {
 		std::map<std::string,std::string> game_data;
 		std::string gamedata = data_parser.GetValue("gamedata");
 
-		if (data_parser.HasKey("gamedata")) {
-
-		}
 		for(int i=0;i<gamedata.length();i++) {
 			if(gamedata[i] == '\x1') {
 				gamedata[i] = '\\';
@@ -416,7 +413,7 @@ namespace GS {
 		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, NULL, operation_id, this);
 	}
 	void Peer::perform_preauth_auth(std::string auth_token, const char *response, int operation_id) {
-		//OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, this, operation_id);
+		OS::AuthTask::TryAuth_PreAuth_GStatsSessKey(m_session_key, response, auth_token, m_nick_email_auth_cb, NULL, operation_id, this);
 	}
 	void Peer::handle_authp(OS::KVReader data_parser) {
 		// TODO: CD KEY AUTH
@@ -437,6 +434,7 @@ namespace GS {
 		} else {
 			if (data_parser.HasKey("authtoken")) {
 				std::string auth_token = data_parser.GetValue("authtoken");
+				perform_preauth_auth(auth_token, resp.c_str(), operation_id);
 				return;
 			}
 			send_error(GPShared::GP_PARSE);
