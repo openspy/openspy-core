@@ -406,7 +406,7 @@ class GS_AuthService(BaseService):
        # d = parse_qs(request_body)
         start_response('200 OK', [('Content-Type','application/xml')])
 
-        private_key_file = open("/home/andy/openspy-core-v2/web/authservices/openspy_webservices_private.pem","r")
+        private_key_file = open("./authservices/openspy_webservices_private.pem","r")
         keydata = private_key_file.read()
         privkey = rsa.PrivateKey.load_pkcs1(keydata)
 
