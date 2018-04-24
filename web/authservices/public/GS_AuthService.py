@@ -57,12 +57,14 @@ class GS_AuthService(BaseService):
     #will be used if LOGIN_RESPONE_* differs from backend auth
     def convert_reason_code(self, reason):
         if "name" in reason:
+            if reason["name"] == "NoSuchUser":
+                return str(self.LOGIN_RESPONSE_USER_NOT_FOUND)
             if reason["name"] == "InvalidParam":
-                if reason["param"] == "auth_token":
-                    return str(self.LOGIN_RESPONSE_USER_NOT_FOUND)
+                if or reason["param"] == "auth_token":
+                    return str(self.LOGIN_RESPONSE_INVALID_PASSWORD)
             if reason["name"] == "InvalidCredentials":
                 return str(self.LOGIN_RESPONSE_INVALID_PASSWORD)
-        return str(reason)
+        return str(self.LOGIN_RESPONSE_SERVER_ERROR)
 
     def try_authenticate(self, login_data):
         
