@@ -16,18 +16,20 @@ namespace SM {
 		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
 	}
 	Driver::~Driver() {
+		mp_thread->SignalExit(true);
+		delete mp_mutex;
+		delete mp_thread;
+
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			delete peer;
 			it++;
 		}
-		delete mp_mutex;
-		delete mp_thread;
 	}
 	void *Driver::TaskThread(OS::CThread *thread) {
 		Driver *driver = (Driver *)thread->getParams();
-		for (;;) {
+		while (thread->isRunning()) {
 			driver->mp_mutex->lock();
 			std::vector<Peer *>::iterator it = driver->m_connections.begin();
 			while (it != driver->m_connections.end()) {
@@ -61,6 +63,7 @@ namespace SM {
 			driver->mp_mutex->unlock();
 			OS::Sleep(DRIVER_THREAD_TIME);
 		}
+		return NULL;
 	}
 	void Driver::think(bool listener_waiting) {
 		if (listener_waiting) {

@@ -214,8 +214,6 @@ class AuthService(BaseService):
         response["user"] = model_to_dict(user)
         response["server_response"] = true_resp
         response["success"] = True
-
-        self.redis_ctx.delete("auth_token_{}".format(token))
         return response
     def test_nick_email_by_profile(self, request_body, account_data):
         response = {}

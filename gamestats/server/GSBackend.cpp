@@ -60,6 +60,8 @@ namespace GSBackend {
 		mp_thread = OS::CreateThread(PersistBackendTask::TaskThread, this, true);
 	}
 	PersistBackendTask::~PersistBackendTask() {
+		mp_thread->SignalExit(true, mp_thread_poller);
+
 		delete mp_thread;
 		delete mp_mutex;
 
@@ -345,7 +347,7 @@ namespace GSBackend {
 
 	void *PersistBackendTask::TaskThread(OS::CThread *thread) {
 		PersistBackendTask *task = (PersistBackendTask *)thread->getParams();
-		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
+		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			while (!task->m_request_list.empty()) {
 				PersistBackendRequest task_params = task->m_request_list.front();
@@ -400,7 +402,9 @@ namespace GSBackend {
 		server->SetTaskPool(m_task_pool);
 	}
 	void ShutdownTaskPool() {
+		delete m_task_pool;
 
+		delete m_game_cache;
 	}
 
 }

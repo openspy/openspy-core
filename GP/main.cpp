@@ -7,7 +7,6 @@
 #include "server/GPDriver.h"
 #include "server/GPBackend.h"
 INetServer *g_gameserver = NULL;
-INetDriver *g_driver = NULL;
 bool g_running = true;
 
 void shutdown();
@@ -59,7 +58,6 @@ int main() {
 	}
 
     delete g_gameserver;
-    delete g_driver;
 
 	GPBackend::ShutdownTaskPool();
     OS::Shutdown();	

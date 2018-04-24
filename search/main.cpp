@@ -6,7 +6,6 @@
 #include "server/SMServer.h"
 #include "server/SMDriver.h"
 INetServer *g_gameserver = NULL;
-INetDriver *g_driver = NULL;
 bool g_running = true;
 
 void shutdown();
@@ -52,7 +51,6 @@ int main() {
 	}
 
     delete g_gameserver;
-    delete g_driver;
 
     OS::Shutdown();
     return 0;

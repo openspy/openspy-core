@@ -7,7 +7,6 @@
 #include "server/GSDriver.h"
 #include "server/GSBackend.h"
 INetServer *g_gameserver = NULL;
-INetDriver *g_driver = NULL;
 bool g_running = true;
 
 void shutdown();
@@ -57,7 +56,6 @@ int main() {
 		g_gameserver->tick();
 	}
     delete g_gameserver;
-    delete g_driver;
 
 	GSBackend::ShutdownTaskPool();
     OS::Shutdown();

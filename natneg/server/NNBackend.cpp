@@ -18,7 +18,7 @@ namespace NN {
 
 	void *NNQueryTask::TaskThread(OS::CThread *thread) {
 		NNQueryTask *task = (NNQueryTask *)thread->getParams();
-		while(!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
+		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			task->m_thread_awake = true;
 			while (!task->m_request_list.empty()) {
@@ -85,6 +85,8 @@ namespace NN {
 		mp_thread = OS::CreateThread(NNQueryTask::TaskThread, this, true);
 	}
 	NNQueryTask::~NNQueryTask() {
+		mp_thread->SignalExit(true, mp_thread_poller);
+
 		delete mp_thread;
 		delete mp_mutex;
 
@@ -175,6 +177,11 @@ namespace NN {
 		server->SetTaskPool(m_task_pool);
 	}
 	void Shutdown() {
+		delete m_task_pool;
+
+		mp_async_thread->SignalExit(true);
+		delete mp_async_thread;
+		Redis::Disconnect(mp_redis_async_retrival_connection);
 	}
 
 }
