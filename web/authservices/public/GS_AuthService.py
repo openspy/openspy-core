@@ -103,24 +103,25 @@ class GS_AuthService(BaseService):
 
 
     def handle_remoteauth_login(self, xml_tree, privkey):
-        resp_xml = ET.Element('SOAP-ENV:Envelope')
-        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:LoginRemoteAuthResult')
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/AuthService/}LoginRemoteAuthResult')
 
-        response_code_node = ET.SubElement(login_result, 'ns1:responseCode')
+        response_code_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}responseCode')
         
         #auth stuff
 
-        certificate_node = ET.SubElement(login_result, 'ns1:certificate')
-
-        peerkeyprivate_node = ET.SubElement(login_result, 'ns1:peerkeyprivate')
+        peerkeyprivate_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}peerkeyprivate')
         peerkeyprivate_node.text = '0'
 
-        length_node = ET.SubElement(certificate_node, 'ns1:length') #???
+        certificate_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}certificate')
+
+        length_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}length') #???
         length_node.text = '111'
 
-        version_node = ET.SubElement(certificate_node, 'ns1:version')
+        version_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}version')
         version_node.text = '1'
+
 
         authtoken_node = xml_tree.find('{http://gamespy.net/AuthService/}authtoken')
         authtoken = authtoken_node.text
@@ -135,23 +136,23 @@ class GS_AuthService(BaseService):
             response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
             #populate user info
             for k,v in auth_user_dir['profile'].items():
-                node = ET.SubElement(certificate_node, 'ns1:{}'.format(k))
+                node = ET.SubElement(certificate_node, '{}{}'.format("{http://gamespy.net/AuthService/}",k))
                 node.text = str(v)
         else: #send error data
             response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
 
 
         #encrypted server data
-        peerkeymodulus_node = ET.SubElement(certificate_node, 'ns1:peerkeymodulus')
+        peerkeymodulus_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeymodulus')
 
         rsa_modulus = str(privkey.n)
         peerkeymodulus_node.text = rsa_modulus[-128:].upper()
 
-        peerkeyexponent_node = ET.SubElement(certificate_node, 'ns1:peerkeyexponent')
+        peerkeyexponent_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeyexponent')
         rsa_exponent = hex(privkey.e)
         peerkeyexponent_node.text = rsa_exponent[2:]
 
-        serverdata_node = ET.SubElement(certificate_node, 'ns1:serverdata')
+        serverdata_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}serverdata')
 
         server_data = os.urandom(128)
         serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
@@ -162,7 +163,7 @@ class GS_AuthService(BaseService):
 
 
         if 'profile' in auth_user_dir:
-            signature_node = ET.SubElement(certificate_node, 'ns1:signature')
+            signature_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}signature')
             signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
         return resp_xml
 
@@ -171,11 +172,11 @@ class GS_AuthService(BaseService):
         if "partnercode" not in request_data or "namespaceid" not in request_data or "gameid" not in request_data:
             return ret
 
-        psn_data = {"PSNName": "CHC", "serviceId": "WM0002-NPXM00002_00"}
+        psn_data = {"Service": {"Alias":"CHC", "AccountId": 11111}, "serviceId": "WM0002-NPXM00002_00"}
 
-        user_data = {"email": "{}@ps3-remote.stb".format(psn_data["PSNName"]), "partnercode": request_data["partnercode"], "password": str(uuid.uuid1()).encode('utf-8')}
+        user_data = {"email": "{}@ps3-remote.stb".format(psn_data["Service"]["AccountId"]), "partnercode": request_data["partnercode"], "password": str(uuid.uuid1()).encode('utf-8')}
 
-        profile_data = {"nick": psn_data["PSNName"], "uniquenick": psn_data["PSNName"], "namespaceid": request_data["namespaceid"]}
+        profile_data = {"nick": psn_data["Service"]["Alias"], "uniquenick": psn_data["Service"]["Alias"], "namespaceid": request_data["namespaceid"]}
 
         backend_request = {
             "hash_type": "auth_or_create_profile",
@@ -200,9 +201,9 @@ class GS_AuthService(BaseService):
 
         return ret
     def handle_ps3_login(self, xml_tree, privkey):
-        resp_xml = ET.Element('SOAP-ENV:Envelope')
-        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:LoginPs3CertResult')
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/AuthService/}LoginPs3CertResult')
 
         ps3_request_data = {}
         gameid_node = xml_tree.find('{http://gamespy.net/AuthService/}gameid')
@@ -223,36 +224,36 @@ class GS_AuthService(BaseService):
             
         ps3_response_data = self.handle_ps3_npticket(ps3_request_data)
 
-        response_code_node = ET.SubElement(login_result, 'ns1:responseCode')
+        response_code_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}responseCode')
         if "ticket" in ps3_response_data and "challenge" in ps3_response_data:
             response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
-            auth_token_node = ET.SubElement(login_result, 'ns1:authToken')
+            auth_token_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}authToken')
             auth_token_node.text = ps3_response_data["ticket"]
 
-            partner_code_node = ET.SubElement(login_result, 'ns1:partnerChallenge')
+            partner_code_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}partnerChallenge')
             partner_code_node.text = ps3_response_data["challenge"]
         else:
             response_code_node.text = str(self.LOGIN_RESPONSE_SERVER_ERROR)
 
         return resp_xml
     def handle_profile_login(self, xml_tree, privkey):
-        resp_xml = ET.Element('SOAP-ENV:Envelope')
-        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:LoginProfileResult')
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/AuthService/}LoginProfileResult')
 
-        response_code_node = ET.SubElement(login_result, 'ns1:responseCode')
+        response_code_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}responseCode')
         
         #auth stuff
 
-        certificate_node = ET.SubElement(login_result, 'ns1:certificate')
+        certificate_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}certificate')
 
-        peerkeyprivate_node = ET.SubElement(login_result, 'ns1:peerkeyprivate')
+        peerkeyprivate_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}peerkeyprivate')
         peerkeyprivate_node.text = '0'
 
-        length_node = ET.SubElement(certificate_node, 'ns1:length') #???
+        length_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}length') #???
         length_node.text = '111'
 
-        version_node = ET.SubElement(certificate_node, 'ns1:version')
+        version_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}version')
         version_node.text = '1'
 
         #get login info
@@ -282,23 +283,23 @@ class GS_AuthService(BaseService):
             response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
             #populate user info
             for k,v in auth_user_dir['profile'].items():
-                node = ET.SubElement(certificate_node, 'ns1:{}'.format(k))
+                node = ET.SubElement(certificate_node, '{}{}'.format("{http://gamespy.net/AuthService/}",k))
                 node.text = str(v)
         else: #send error data
             response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
 
 
         #encrypted server data
-        peerkeymodulus_node = ET.SubElement(certificate_node, 'ns1:peerkeymodulus')
+        peerkeymodulus_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeymodulus')
 
         rsa_modulus = str(privkey.n)
         peerkeymodulus_node.text = rsa_modulus[-128:].upper()
 
-        peerkeyexponent_node = ET.SubElement(certificate_node, 'ns1:peerkeyexponent')
+        peerkeyexponent_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeyexponent')
         rsa_exponent = hex(privkey.e)
         peerkeyexponent_node.text = rsa_exponent[2:]
 
-        serverdata_node = ET.SubElement(certificate_node, 'ns1:serverdata')
+        serverdata_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}serverdata')
 
         server_data = os.urandom(128)
         serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
@@ -309,31 +310,31 @@ class GS_AuthService(BaseService):
 
 
         if 'profile' in auth_user_dir:
-            signature_node = ET.SubElement(certificate_node, 'ns1:signature')
+            signature_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}signature')
             signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
 
         return resp_xml
 
 
     def handle_unique_login(self, xml_tree, privkey):
-        resp_xml = ET.Element('SOAP-ENV:Envelope')
-        body = ET.SubElement(resp_xml, 'SOAP-ENV:Body')
-        login_result = ET.SubElement(body, 'ns1:LoginUniqueNickResult')
+        resp_xml = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
+        body = ET.SubElement(resp_xml, '{http://schemas.xmlsoap.org/soap/envelope/}Body')
+        login_result = ET.SubElement(body, '{http://gamespy.net/AuthService/}LoginUniqueNickResult')
 
-        response_code_node = ET.SubElement(login_result, 'ns1:responseCode')
+        response_code_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}responseCode')
 
 
         #auth stuff
 
-        certificate_node = ET.SubElement(login_result, 'ns1:certificate')
+        certificate_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}certificate')
 
-        peerkeyprivate_node = ET.SubElement(login_result, 'ns1:peerkeyprivate')
+        peerkeyprivate_node = ET.SubElement(login_result, '{http://gamespy.net/AuthService/}peerkeyprivate')
         peerkeyprivate_node.text = '0'
 
-        length_node = ET.SubElement(certificate_node, 'ns1:length') #???
+        length_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}length') #???
         length_node.text = '111'
 
-        version_node = ET.SubElement(certificate_node, 'ns1:version')
+        version_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}version')
         version_node.text = '1'
 
         
@@ -362,21 +363,21 @@ class GS_AuthService(BaseService):
             response_code_node.text = str(self.LOGIN_RESPONSE_SUCCESS)
             #populate user info
             for k,v in auth_user_dir['profile'].items():
-                node = ET.SubElement(certificate_node, 'ns1:{}'.format(k))
+                node = ET.SubElement(certificate_node, '{}{}'.format("{http://gamespy.net/AuthService/}",k))
                 node.text = str(v)
         else: #send error data
             response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
 
         #encrypted server data
-        peerkeymodulus_node = ET.SubElement(certificate_node, 'ns1:peerkeymodulus')
+        peerkeymodulus_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeymodulus')
         rsa_modulus = str(privkey.n)
         peerkeymodulus_node.text = rsa_modulus[-128:].upper()
 
-        peerkeyexponent_node = ET.SubElement(certificate_node, 'ns1:peerkeyexponent')
+        peerkeyexponent_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeyexponent')
         rsa_exponent = str(privkey.e)
         peerkeyexponent_node.text = rsa_exponent[-6:]
 
-        serverdata_node = ET.SubElement(certificate_node, 'ns1:serverdata')
+        serverdata_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}serverdata')
 
         server_data = os.urandom(128)
         serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
@@ -387,7 +388,7 @@ class GS_AuthService(BaseService):
 
 
         if 'profile' in auth_user_dir:
-            signature_node = ET.SubElement(certificate_node, 'ns1:signature')
+            signature_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}signature')
             signature_node.text = (self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True))
 
         return resp_xml
@@ -410,13 +411,18 @@ class GS_AuthService(BaseService):
         keydata = private_key_file.read()
         privkey = rsa.PrivateKey.load_pkcs1(keydata)
 
+
+        ET.register_namespace('SOAP-ENV',"http://schemas.xmlsoap.org/soap/envelope/")
+        ET.register_namespace('SOAP-ENC',"http://schemas.xmlsoap.org/soap/encoding/")
+        ET.register_namespace('xsi',"http://www.w3.org/2001/XMLSchema-instance")
+        ET.register_namespace('xsd',"http://www.w3.org/2001/XMLSchema")
         tree = ET.ElementTree(ET.fromstring(request_body))
 
         login_profile_tree = tree.find('.//{http://gamespy.net/AuthService/}LoginProfile')
         login_remoteauth_tree = tree.find('.//{http://gamespy.net/AuthService/}LoginRemoteAuth')
         login_uniquenick_tree = tree.find('.//{http://gamespy.net/AuthService/}LoginUniqueNick')
         login_ps3_tree = tree.find('.//{http://gamespy.net/AuthService/}LoginPs3Cert')
-        login_facebook_tree = tree.find('.//{http://gamespy.net/AuthService/}LoginFacebook')
+        #login_facebook_tree = tree.find('.//{http://gamespy.net/AuthService/}LoginFacebook')
 
         resp = None
         if login_uniquenick_tree != None:

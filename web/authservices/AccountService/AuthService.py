@@ -551,7 +551,6 @@ class AuthService(BaseService):
                     del response["user"]["password"]
             if "profile" in user_source:
                 if not isinstance(user_source["profile"], dict):
-                    print("src: {}\n".format(user_source))
                     user_source["profile"] = model_to_dict(user_source["profile"])
                 response["profile"] = user_source["profile"]
             response = {**user_source, **response, **auth_response}
