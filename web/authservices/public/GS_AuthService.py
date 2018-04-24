@@ -140,9 +140,6 @@ class GS_AuthService(BaseService):
             for k,v in auth_user_dir['profile'].items():
                 node = ET.SubElement(certificate_node, '{}{}'.format("{http://gamespy.net/AuthService/}",k))
                 node.text = str(v)
-        else: #send error data
-            response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
-
 
         #encrypted server data
         peerkeymodulus_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeymodulus')
@@ -167,6 +164,9 @@ class GS_AuthService(BaseService):
         if 'profile' in auth_user_dir:
             signature_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}signature')
             signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
+        else: #send error data
+            response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
+
         return resp_xml
 
     def handle_ps3_npticket(self, request_data):
@@ -287,9 +287,6 @@ class GS_AuthService(BaseService):
             for k,v in auth_user_dir['profile'].items():
                 node = ET.SubElement(certificate_node, '{}{}'.format("{http://gamespy.net/AuthService/}",k))
                 node.text = str(v)
-        else: #send error data
-            response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
-
 
         #encrypted server data
         peerkeymodulus_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeymodulus')
@@ -314,6 +311,8 @@ class GS_AuthService(BaseService):
         if 'profile' in auth_user_dir:
             signature_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}signature')
             signature_node.text = self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True)
+        else: #send error data
+            response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
 
         return resp_xml
 
@@ -367,31 +366,31 @@ class GS_AuthService(BaseService):
             for k,v in auth_user_dir['profile'].items():
                 node = ET.SubElement(certificate_node, '{}{}'.format("{http://gamespy.net/AuthService/}",k))
                 node.text = str(v)
+
+            #encrypted server data
+            peerkeymodulus_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeymodulus')
+            rsa_modulus = str(privkey.n)
+            peerkeymodulus_node.text = rsa_modulus[-128:].upper()
+
+            peerkeyexponent_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeyexponent')
+            rsa_exponent = str(privkey.e)
+            peerkeyexponent_node.text = rsa_exponent[-6:]
+
+            serverdata_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}serverdata')
+
+            server_data = os.urandom(128)
+            serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
+
+            peerkey = {}
+            peerkey['exponent'] = peerkeyexponent_node.text
+            peerkey['modulus'] = peerkeymodulus_node.text
+
+
+            if 'profile' in auth_user_dir:
+                signature_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}signature')
+                signature_node.text = (self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True))
         else: #send error data
             response_code_node.text = self.convert_reason_code(auth_user_dir['error'])
-
-        #encrypted server data
-        peerkeymodulus_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeymodulus')
-        rsa_modulus = str(privkey.n)
-        peerkeymodulus_node.text = rsa_modulus[-128:].upper()
-
-        peerkeyexponent_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}peerkeyexponent')
-        rsa_exponent = str(privkey.e)
-        peerkeyexponent_node.text = rsa_exponent[-6:]
-
-        serverdata_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}serverdata')
-
-        server_data = os.urandom(128)
-        serverdata_node.text = binascii.hexlify(server_data).decode('utf8')
-
-        peerkey = {}
-        peerkey['exponent'] = peerkeyexponent_node.text
-        peerkey['modulus'] = peerkeymodulus_node.text
-
-
-        if 'profile' in auth_user_dir:
-            signature_node = ET.SubElement(certificate_node, '{http://gamespy.net/AuthService/}signature')
-            signature_node.text = (self.generate_signature(privkey, int(length_node.text), int(version_node.text), auth_user_dir['profile'], peerkey, server_data, True))
 
         return resp_xml
 
