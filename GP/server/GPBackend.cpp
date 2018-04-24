@@ -130,6 +130,8 @@ namespace GPBackend {
 		mp_thread = OS::CreateThread(GPBackendRedisTask::TaskThread, this, true);
 	}
 	GPBackendRedisTask::~GPBackendRedisTask() {
+		mp_thread->SignalExit(true, mp_thread_poller);
+
 		delete mp_thread;
 		delete mp_mutex;
 
@@ -190,7 +192,7 @@ namespace GPBackend {
 	}
 	void *GPBackendRedisTask::TaskThread(OS::CThread *thread) {
 		GPBackendRedisTask *task = (GPBackendRedisTask *)thread->getParams();
-		while (!task->m_request_list.empty() || task->mp_thread_poller->wait()) {
+		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			while (!task->m_request_list.empty()) {
 				GPBackendRedisRequest task_params = task->m_request_list.front();
@@ -277,10 +279,6 @@ namespace GPBackend {
 		bool success = false;
 
 		char *json_data = json_dumps(send_obj, 0);
-
-		const char *server_response = NULL;
-
-
 
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
@@ -647,6 +645,13 @@ namespace GPBackend {
 	}
 
 	void ShutdownTaskPool() {
+		Redis::CancelLooping(mp_redis_async_connection);
+
+		mp_async_thread->SignalExit(true);
+		delete mp_async_thread;
+
+		Redis::Disconnect(mp_redis_async_connection);
+
 		delete m_task_pool;
 	}
 }
