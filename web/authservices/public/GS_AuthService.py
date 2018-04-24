@@ -60,7 +60,7 @@ class GS_AuthService(BaseService):
             if reason["name"] == "NoSuchUser":
                 return str(self.LOGIN_RESPONSE_USER_NOT_FOUND)
             if reason["name"] == "InvalidParam":
-                if or reason["param"] == "auth_token":
+                if reason["param"] == "auth_token":
                     return str(self.LOGIN_RESPONSE_INVALID_PASSWORD)
             if reason["name"] == "InvalidCredentials":
                 return str(self.LOGIN_RESPONSE_INVALID_PASSWORD)
