@@ -35,87 +35,49 @@ namespace FESL {
 		{ FESL_TYPE_ACCOUNT, "SendAccountName", &Peer::m_acct_send_account_name},
 		{ FESL_TYPE_ACCOUNT, "SendPassword", &Peer::m_acct_send_account_password},
 	};
-	Peer::Peer(Driver *driver, struct sockaddr_in *address_info, int sd) : INetPeer(driver, address_info, sd) {
+	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
-		mp_mutex = OS::CreateMutex();
+
 		ResetMetrics();
 		gettimeofday(&m_last_ping, NULL);
-		if (driver->getSSLCtx() != NULL) {
-			m_ssl_ctx = SSL_new(driver->getSSLCtx());
-			SSL_set_fd(m_ssl_ctx, sd);
-		}
-		else {
-			m_ssl_ctx = NULL;
-		}
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", OS::Address(m_address_info).ToString().c_str());
+		
 		m_sequence_id = 1;
-		m_ssl_num_fails = 0;
-		m_openssl_accepted = false;
 		m_logged_in = false;
 		m_pending_subaccounts = false;
 		m_got_profiles = false;
 		m_pending_nuget_personas = false;
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", OS::Address(m_address_info).ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
-		SSL_free(m_ssl_ctx);
 	}
 	void Peer::think(bool packet_waiting) {
-		char buf[FESL_READ_SIZE + 1];
-		socklen_t slen = sizeof(struct sockaddr_in);
-		int len = 0, piece_len = 0;
+		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
-		if (packet_waiting || (!m_openssl_accepted && m_ssl_ctx)) {
-			if (!m_openssl_accepted && m_ssl_ctx) {
-				gettimeofday(&m_last_recv, NULL);
-				if (SSL_accept(m_ssl_ctx) < 0) {
-					m_ssl_num_fails++;
-					OS::LogText(OS::ELogLevel_Info, "[%s] SSL accept failed", OS::Address(m_address_info).ToString().c_str());
+		if (packet_waiting) {
 
-					if (++m_ssl_num_fails > MAX_SSL_FAILS) {
-						m_delete_flag = true;
-					}
-					return;
-				}
-				OS::LogText(OS::ELogLevel_Info, "[%s] SSL accepted", OS::Address(m_address_info).ToString().c_str());
-				m_openssl_accepted = true;
-				send_memcheck(0);
-				return;
+			io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamRecv(m_sd, m_recv_buffer);
+			int len = m_recv_buffer.size();
+
+			if (io_resp.disconnect_flag || io_resp.error_flag || len == 0) {
+				goto end;
 			}
 
 			FESL_HEADER header;
-			if (m_ssl_ctx) {
-				len = SSL_read(m_ssl_ctx, (char *)&header, sizeof(header));
-			}
-			else {
-				len = recv(m_sd, (char *)&header, sizeof(header), 0);
-			}			
-			
-			if (m_ssl_ctx) {
-				len = SSL_read(m_ssl_ctx, (char *)&buf, htonl(header.len));
-			}
-			else {
-				len = recv(m_sd, (char *)&buf, htonl(header.len), 0);
-			}
-			if (OS::wouldBlock()) {
-				return;
-			}
-			if (len <= 0) {
-				goto end;
-			}
-			gettimeofday(&m_last_recv, NULL);
-			buf[len] = 0;
+			m_recv_buffer.ReadBuffer(&header, sizeof(header));
 
-			OS::KVReader kv_data(buf, '=', '\n');
+			gettimeofday(&m_last_recv, NULL);
+
+			OS::KVReader kv_data((const char *)m_recv_buffer.GetHead(), '=', '\n');
 			char *type;
 			for (int i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
 				if (Peer::m_commands[i].type == htonl(header.type)) {
 					if (Peer::m_commands[i].command.compare(kv_data.GetValue("TXN")) == 0) {
 						type = (char *)&Peer::m_commands[i].type;
-						OS::LogText(OS::ELogLevel_Info, "[%s] Got Command: %c%c%c%c %s", OS::Address(m_address_info).ToString().c_str(), type[3], type[2], type[1], type[0], Peer::m_commands[i].command.c_str());
+						OS::LogText(OS::ELogLevel_Info, "[%s] Got Command: %c%c%c%c %s", m_sd->address.ToString().c_str(), type[3], type[2], type[1], type[0], Peer::m_commands[i].command.c_str());
 						(*this.*Peer::m_commands[i].mpFunc)(kv_data);
 						return;
 					}
@@ -123,19 +85,20 @@ namespace FESL {
 			}
 			header.type = htonl(header.type);
 			type = (char *)&header.type;
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", OS::Address(m_address_info).ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", m_sd->address.ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
 		}
 
 		end:
 		send_ping();
+
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_recv.tv_sec > FESL_PING_TIME*2) {
-			m_delete_flag = true;
-			m_timeout_flag = true;
-		} else if(len <= 0 && packet_waiting) {
-			m_delete_flag = true;
+		if (current_time.tv_sec - m_last_recv.tv_sec > FESL_PING_TIME * 2) {
+			Delete(true);
+		}
+		else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
+			Delete();
 		}
 	}
 	void Peer::send_ping() {
@@ -162,14 +125,15 @@ namespace FESL {
 		header.type = htonl(type);
 		header.len = htonl(data.length() + sizeof(header) + 1);
 
-		if (m_ssl_ctx) {
-			SSL_write(m_ssl_ctx, &header, sizeof(header));
-			SSL_write(m_ssl_ctx, data.c_str(), data.length()+1);
-		}
-		else {
-			send(m_sd, (const char *)&header, sizeof(header), MSG_NOSIGNAL);
-			send(m_sd, data.c_str(), data.length() + 1, MSG_NOSIGNAL);
-		}
+		OS::Buffer send_buf;
+		send_buf.WriteBuffer((void *)&header, sizeof(header));
+		send_buf.WriteNTS(data);
+
+		NetIOCommResp io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamSend(m_sd, send_buf);
+
+		if (io_resp.disconnect_flag || io_resp.error_flag)
+			Delete();
+
 	}
 	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		((Peer *)peer)->mp_mutex->lock();
@@ -563,5 +527,9 @@ namespace FESL {
 		s << "tos=\"Hi\"\n";
 		SendPacket(FESL_TYPE_FSYS, s.str());
 		return true;
+	}
+	void Peer::Delete(bool timeout) {
+		m_timeout_flag = timeout;
+		m_delete_flag = true;
 	}
 }

@@ -3,13 +3,13 @@
 #include "BSDNetIOInterface.h"
 #include <OS/Net/NetIOInterface.h>
 #include <OS/Net/NetPeer.h>
-BSDNetIOInterface::BSDNetIOInterface() : INetIOInterface() {
+BSDNetIOInterface<>::BSDNetIOInterface() : INetIOInterface<>() {
 
 }
-BSDNetIOInterface::~BSDNetIOInterface() {
+BSDNetIOInterface<>::~BSDNetIOInterface() {
 
 }
-INetIOSocket *BSDNetIOInterface::BindTCP(OS::Address bind_address) {
+INetIOSocket *BSDNetIOInterface<>::BindTCP(OS::Address bind_address) {
 	INetIOSocket *net_socket = new INetIOSocket;
 	net_socket->address = bind_address;
 
@@ -57,7 +57,7 @@ end_error:
 
 	return NULL;
 }
-std::vector<INetIOSocket *> BSDNetIOInterface::TCPAccept(INetIOSocket *socket) {
+std::vector<INetIOSocket *> BSDNetIOInterface<>::TCPAccept(INetIOSocket *socket) {
 	std::vector<INetIOSocket *> ret;
 	INetIOSocket *incoming_socket;
 	while (true) {
@@ -73,7 +73,7 @@ std::vector<INetIOSocket *> BSDNetIOInterface::TCPAccept(INetIOSocket *socket) {
 	}
 	return ret;
 }
-NetIOCommResp BSDNetIOInterface::streamRecv(INetIOSocket *socket, OS::Buffer &buffer) {
+NetIOCommResp BSDNetIOInterface<>::streamRecv(INetIOSocket *socket, OS::Buffer &buffer) {
 	NetIOCommResp ret;
 
 	char recvbuf[1492];
@@ -94,7 +94,7 @@ NetIOCommResp BSDNetIOInterface::streamRecv(INetIOSocket *socket, OS::Buffer &bu
 end:
 	return ret;
 }
-NetIOCommResp BSDNetIOInterface::streamSend(INetIOSocket *socket, OS::Buffer &buffer) {
+NetIOCommResp BSDNetIOInterface<>::streamSend(INetIOSocket *socket, OS::Buffer &buffer) {
 	NetIOCommResp ret;
 
 	ret.comm_len = send(socket->sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
@@ -118,7 +118,7 @@ NetIOCommResp BSDNetIOInterface::streamSend(INetIOSocket *socket, OS::Buffer &bu
 	return ret;
 }
 
-INetIOSocket *BSDNetIOInterface::BindUDP(OS::Address bind_address) {
+INetIOSocket *BSDNetIOInterface<>::BindUDP(OS::Address bind_address) {
 	INetIOSocket *net_socket = new INetIOSocket;
 	net_socket->address = bind_address;
 
@@ -161,7 +161,7 @@ end_error:
 	return NULL;
 }
 
-NetIOCommResp BSDNetIOInterface::datagramRecv(INetIOSocket *socket, std::vector<INetIODatagram> &datagrams) {
+NetIOCommResp BSDNetIOInterface<>::datagramRecv(INetIOSocket *socket, std::vector<INetIODatagram> &datagrams) {
 	NetIOCommResp ret;
 	std::vector<INetIODatagram>::iterator it;
 	char recvbuf[1492];
@@ -196,7 +196,7 @@ NetIOCommResp BSDNetIOInterface::datagramRecv(INetIOSocket *socket, std::vector<
 	return ret;
 }
 
-NetIOCommResp BSDNetIOInterface::datagramSend(INetIOSocket *socket, OS::Buffer &buffer) {
+NetIOCommResp BSDNetIOInterface<>::datagramSend(INetIOSocket *socket, OS::Buffer &buffer) {
 	NetIOCommResp ret;
 	ret.comm_len = sendto(socket->sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL, (const sockaddr *)&socket->address.GetInAddr(), sizeof(sockaddr));
 	if (ret.comm_len != buffer.size()) {
@@ -212,28 +212,13 @@ NetIOCommResp BSDNetIOInterface::datagramSend(INetIOSocket *socket, OS::Buffer &
 	}
 	return ret;
 }
-void BSDNetIOInterface::closeSocket(INetIOSocket *socket) {
+void BSDNetIOInterface<>::closeSocket(INetIOSocket *socket) {
 	if (!socket->shared_socket)
 		close(socket->sd);
 	flushSocketFromSendQueue(socket);
 	delete socket;
 }
-void BSDNetIOInterface::makeNonBlocking(int sd) {
-	unsigned long mode = 1;
-#ifdef _WIN32
-	ioctlsocket(sd, FIONBIO, &mode);
-#elif defined(O_NONBLOCK)
-	/* Fixme: O_NONBLOCK is defined but broken on SunOS 4.1.x and AIX 3.2.5. */
-	if (-1 == (mode = fcntl(sd, F_GETFL, 0)))
-		mode = 0;
-	mode |= O_NONBLOCK;
-	fcntl(sd, F_SETFL, mode);
-#else
-	/* Otherwise, use the old way of doing it */
-	ioctl(sd, FIONBIO, &mode);
-#endif
-}
-void BSDNetIOInterface::flushSendQueue() {
+void BSDNetIOInterface<>::flushSendQueue() {
 	std::vector<OS::Buffer>::iterator it2;
 	std::map<INetIOSocket *, std::vector<OS::Buffer> > map_cpy = m_datagram_send_queue;
 	m_datagram_send_queue.clear();
@@ -259,27 +244,6 @@ void BSDNetIOInterface::flushSendQueue() {
 		while (it2 != send_list.end()) {
 			this->streamSend((*it).first, *it2);
 			it2++;
-		}
-		it++;
-	}
-}
-void BSDNetIOInterface::flushSocketFromSendQueue(INetIOSocket *socket) {
-	std::map<INetIOSocket *, std::vector<OS::Buffer> >::iterator it = m_datagram_send_queue.begin();
-	while (it != m_datagram_send_queue.end()) {
-		if ((*it).first == socket) {
-			m_datagram_send_queue.erase(it);
-			it = m_datagram_send_queue.begin();
-			continue;
-		}
-		it++;
-	}
-
-	it = m_stream_send_queue.begin();
-	while (it != m_stream_send_queue.end()) {
-		if ((*it).first == socket) {
-			m_stream_send_queue.erase(it);
-			it = m_stream_send_queue.begin();
-			continue;
 		}
 		it++;
 	}

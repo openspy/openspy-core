@@ -6,7 +6,6 @@
 #include <OS/Profile.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
-#include <openssl/ssl.h>
 #include <OS/KVReader.h>
 
 #define FESL_READ_SIZE                  (16 * 1024)
@@ -117,13 +116,10 @@ namespace FESL {
 	class Driver;
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, struct sockaddr_in *address_info, int sd);
+		Peer(Driver *driver, INetIOSocket *sd);
 		~Peer();
 		
 		void think(bool packet_waiting);
-		const struct sockaddr_in *getAddress() { return &m_address_info; }
-
-		int GetSocket() { return m_sd; };
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
@@ -138,6 +134,8 @@ namespace FESL {
 		void loginToPersona(std::string uniquenick);
 		void SendCustomError(FESL_COMMAND_TYPE type, std::string TXN, std::string fieldName, std::string fieldError);
 		void SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN);
+
+		void Delete(bool timeout = false);
 	private:
 		bool m_fsys_hello_handler(OS::KVReader kv_list);
 		bool m_fsys_ping_handler(OS::KVReader kv_list);
@@ -172,8 +170,8 @@ namespace FESL {
 		void send_memcheck(int type, int salt = 0);
 		void send_subaccounts();
 		void send_personas();
-		bool m_openssl_accepted;
-		SSL *m_ssl_ctx;
+
+		OS::CMutex *mp_mutex;
 		int m_sequence_id;
 		PeerStats m_peer_stats;
 		OS::User m_user;
@@ -185,8 +183,8 @@ namespace FESL {
 		std::vector<OS::Profile> m_profiles;
 		std::string m_session_key;
 		std::string m_encrypted_login_info;
+		OS::Buffer m_recv_buffer;
 		void send_ping();
-		int m_ssl_num_fails;
 
 		static CommandHandler m_commands[];
 

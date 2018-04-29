@@ -7,7 +7,6 @@
 #include "server/FESLServer.h"
 #include "server/FESLDriver.h"
 INetServer *g_gameserver = NULL;
-INetDriver *g_driver = NULL;
 bool g_running = true;
 
 void shutdown();
@@ -21,27 +20,28 @@ void sig_handler(int signo)
     shutdown();
 }
 
-FESL::EFESLSSL_Type getSSLVersion(configVar *driver_arr) {
+SSLNetIOIFace::ESSL_Type getSSLVersion(configVar *driver_arr) {
 	std::string ssl_version = OS::g_config->getArrayString(driver_arr, "ssl_version");
 
 	if (ssl_version.compare("SSLv2") == 0) {
-		return FESL::EFESLSSL_SSLv2;
+		return SSLNetIOIFace::ESSL_SSLv2;
 	}
 	if (ssl_version.compare("SSLv23") == 0) {
-		return FESL::EFESLSSL_SSLv23;
+		return SSLNetIOIFace::ESSL_SSLv23;
 	}
 	if (ssl_version.compare("SSLv3") == 0) {
-		return FESL::EFESLSSL_SSLv3;
+		return SSLNetIOIFace::ESSL_SSLv3;
 	}
 	if (ssl_version.compare("TLS1.0") == 0) {
-		return FESL::EFESLSSL_TLS10;
+		return SSLNetIOIFace::ESSL_TLS10;
 	}
 	if (ssl_version.compare("TLS1.1") == 0) {
-		return FESL::EFESLSSL_TLS11;
+		return SSLNetIOIFace::ESSL_TLS11;
 	}
 	if (ssl_version.compare("TLS1.2") == 0) {
-		return FESL::EFESLSSL_TLS12;
+		return SSLNetIOIFace::ESSL_TLS12;
 	}
+	return SSLNetIOIFace::ESSL_None;
 }
 int main() {
 	SSL_library_init();
@@ -67,7 +67,7 @@ int main() {
 		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
 		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
 		bool ssl = OS::g_config->getArrayInt(driver_arr, "ssl");
-		FESL::EFESLSSL_Type ssl_version = getSSLVersion(driver_arr);
+		SSLNetIOIFace::ESSL_Type ssl_version = getSSLVersion(driver_arr);
 
 		const char *x509_path = NULL, *rsa_path = NULL;
 
@@ -99,7 +99,6 @@ int main() {
 	}
 
     delete g_gameserver;
-    delete g_driver;
 
     OS::Shutdown();
     return 0;
@@ -107,7 +106,6 @@ int main() {
 
 void shutdown() {
     if(g_running) {
-        g_gameserver->flagExit();
         g_running = false;
     }
 }

@@ -8,7 +8,7 @@
 
 		#define SELECT_TIMEOUT 5
 
-		class SelectNetEventManager : public INetEventManager, public BSDNetIOInterface {
+		class SelectNetEventManager : public INetEventManager, public BSDNetIOInterface<> {
 		public:
 			SelectNetEventManager();
 			~SelectNetEventManager();

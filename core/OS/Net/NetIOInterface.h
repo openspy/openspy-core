@@ -55,6 +55,7 @@ public:
 	OS::Address address;
 	OS::Buffer buffer;
 };
+template<typename S = INetIOSocket>
 class INetIOInterface {
 	public:
 		INetIOInterface() { };
@@ -72,5 +73,7 @@ class INetIOInterface {
 		virtual void closeSocket(INetIOSocket *socket) = 0;
 		virtual void flushSendQueue() = 0;
 		virtual void flushSocketFromSendQueue(INetIOSocket *socket) = 0;
+
+		virtual S *createSocket() = 0;
 };
 #endif //_NET_IO_INTERFACE_H

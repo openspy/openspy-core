@@ -36,6 +36,6 @@ void INetServer::RegisterSocket(INetPeer *peer) {
 void INetServer::UnregisterSocket(INetPeer *peer) {
 	mp_net_event_mgr->UnregisterSocket(peer);
 }
-INetIOInterface *INetServer::getNetIOInterface() {
+INetIOInterface<> *INetServer::getNetIOInterface() {
 	return mp_net_io_interface;
 }
