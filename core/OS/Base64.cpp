@@ -47,13 +47,15 @@ namespace OS {
 		BIO_write(bio, in, in_len);
 		BIO_flush(bio);
 		BIO_get_mem_ptr(bio, &bufferPtr);
-		BIO_set_close(bio, BIO_NOCLOSE);
-		BIO_free_all(bio);
 
 		char *ret = (char *)malloc((*bufferPtr).length + 1);
 		ret[(*bufferPtr).length] = 0;
 		memcpy(ret, (*bufferPtr).data, (*bufferPtr).length);
-		return  ret;
+
+		BIO_set_close(bio, BIO_NOCLOSE);
+		BIO_free_all(bio);
+
+		return ret;
 	}
 	//////////////////////////////
 	/////// MD5
