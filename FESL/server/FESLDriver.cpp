@@ -8,7 +8,7 @@
 
 
 namespace FESL {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, bool use_ssl, const char *x509_path, const char *rsa_priv_path, SSLNetIOIFace::ESSL_Type ssl_version) : INetDriver(server) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, bool use_ssl, const char *x509_path, const char *rsa_priv_path, SSLNetIOIFace::ESSL_Type ssl_version) : INetDriver(server) {
 
 		//setup config vars
 		m_server_info.domainPartition = public_info.domainPartition;
@@ -18,13 +18,12 @@ namespace FESL {
 		m_server_info.theaterHostname = public_info.theaterHostname;
 		m_server_info.theaterPort = public_info.theaterPort;
 
-		mp_socket_interface = new SSLNetIOIFace::SSLNetIOInterface(ssl_version, "", "");
+		mp_socket_interface = new SSLNetIOIFace::SSLNetIOInterface(ssl_version, rsa_priv_path, x509_path);
 
 		mp_socket = mp_socket_interface->BindTCP(OS::Address(0, port));
 		mp_mutex = OS::CreateMutex();
 
-		m_encrypted_login_info_key = NULL;
-
+		mp_string_crypter = new OS::StringCrypter(str_crypter_rsa_key);
 	}
 	Driver::~Driver() {
 		std::vector<Peer *>::iterator it = m_connections.begin();
@@ -36,10 +35,7 @@ namespace FESL {
 
 		delete mp_mutex;
 		delete mp_thread;
-
-		if (m_encrypted_login_info_key) {
-			RSA_free(m_encrypted_login_info_key);
-		}
+		delete mp_string_crypter;
 	}
 	void *Driver::TaskThread(OS::CThread *thread) {
 		Driver *driver = (Driver *)thread->getParams();
@@ -168,40 +164,6 @@ namespace FESL {
 
 		mp_mutex->unlock();
 		return peer_metric;
-	}
-	std::string Driver::decryptString(std::string input) {
-		std::string ret;
-		uint8_t *b64_out;
-		int out_len = 0;
-
-		size_t pos = input.find("%3d");
-		if(pos != std::string::npos)
-			input.replace(pos, input.length(), "=");
-
-		int mem_len = RSA_size(m_encrypted_login_info_key);
-		unsigned char *buf = (unsigned char *)malloc(mem_len);
-
-		OS::Base64StrToBin(input.c_str(), &b64_out, out_len);
-		RSA_private_decrypt(out_len, b64_out,buf, m_encrypted_login_info_key, RSA_PKCS1_PADDING);
-		ret = std::string((char *)buf);
-		if (b64_out)
-			free((void *)b64_out);
-
-		if (buf) {
-			free((void *)buf);
-		}
-		return ret;
-	}
-	std::string Driver::encryptString(std::string input) {
-		std::string ret;
-		int mem_len = RSA_size(m_encrypted_login_info_key);
-		unsigned char *buf = (unsigned char *)malloc(mem_len);
-		RSA_public_encrypt(input.length()+1, (const unsigned char *)input.c_str(),buf, m_encrypted_login_info_key, RSA_PKCS1_PADDING);
-		const char *b64_str = OS::BinToBase64Str(buf, mem_len);
-		ret = std::string(b64_str);
-		free((void *)b64_str);
-		free((void *)buf);
-		return ret;
 	}
 
 	INetIOSocket *Driver::getListenerSocket() const {

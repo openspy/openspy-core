@@ -56,11 +56,14 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <OS/Logger.h>
 #include <OS/config.h>
 
+#include <curl/curl.h>
+
 #define OPENSPY_WEBSERVICES_URL "http://os-auth.us-east-1.elasticbeanstalk.com"
 
 class Config;
 namespace OS {
 	extern Config *g_config;
+	extern CURL *g_curl;
 	class Logger;
 	extern Logger *g_logger;
 	extern const char *g_appName;
@@ -176,6 +179,8 @@ namespace OS {
 
 	std::string FindBestMatch(std::vector<std::string> matches, std::string name);
 
+	std::string url_encode(std::string src);
+	std::string url_decode(std::string src);
 }
 
 #ifdef _WIN32

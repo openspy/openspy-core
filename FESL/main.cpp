@@ -6,6 +6,7 @@
 #include <openssl/ssl.h>
 #include "server/FESLServer.h"
 #include "server/FESLDriver.h"
+#include <OS/StringCrypter.h>
 INetServer *g_gameserver = NULL;
 bool g_running = true;
 
@@ -43,6 +44,8 @@ SSLNetIOIFace::ESSL_Type getSSLVersion(configVar *driver_arr) {
 	}
 	return SSLNetIOIFace::ESSL_None;
 }
+
+#include <curl/curl.h>
 int main() {
 	SSL_library_init();
 	#ifndef _WIN32
@@ -71,9 +74,11 @@ int main() {
 
 		const char *x509_path = NULL, *rsa_path = NULL;
 
+		const char *stringCrypterPKey = OS::g_config->getArrayString(driver_arr, "stringCrypterPKey");
+
 		if (ssl) {
 			x509_path = OS::g_config->getArrayString(driver_arr, "x509");
-			rsa_path = OS::g_config->getArrayString(driver_arr, "privkey");
+			rsa_path = OS::g_config->getArrayString(driver_arr, "x509_pkey");
 		}
 
 		FESL::PublicInfo server_info;
@@ -87,7 +92,7 @@ int main() {
 		server_info.theaterHostname = OS::g_config->getArrayString(driver_arr, "theaterHostname");
 		server_info.theaterPort = OS::g_config->getArrayInt(driver_arr, "theaterPort");
 
-		FESL::Driver *driver = new FESL::Driver(g_gameserver, bind_ip, bind_port, server_info, ssl, x509_path, rsa_path, ssl_version);
+		FESL::Driver *driver = new FESL::Driver(g_gameserver, bind_ip, bind_port, server_info, stringCrypterPKey, ssl, x509_path, rsa_path, ssl_version);
 		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s:%d (ssl: %d)\n", bind_ip, bind_port, ssl);
 		g_gameserver->addNetworkDriver(driver);
 		it++;

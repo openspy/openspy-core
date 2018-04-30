@@ -51,7 +51,7 @@ namespace FESL {
 	bool Peer::m_acct_nulogin_handler(OS::KVReader kv_list) {
 		std::string nuid, password;
 		if (kv_list.HasKey("encryptedInfo")) {
-			kv_list = ((FESL::Driver *)this->GetDriver())->decryptString(kv_list.GetValue("encryptedInfo"));
+			kv_list = ((FESL::Driver *)this->GetDriver())->getStringCrypter()->decryptString(OS::url_decode(kv_list.GetValue("encryptedInfo")));
 		}
 
 		nuid = kv_list.GetValue("nuid");
@@ -61,7 +61,7 @@ namespace FESL {
 			std::ostringstream s;
 			s << "\\nuid\\" << nuid;
 			s << "\\password\\" << password;
-			m_encrypted_login_info = ((FESL::Driver *)this->GetDriver())->encryptString(s.str());
+			m_encrypted_login_info = ((FESL::Driver *)this->GetDriver())->getStringCrypter()->encryptString(s.str());
 		}
 		OS::AuthTask::TryAuthEmailPassword(kv_list.GetValue("nuid"), OS_EA_PARTNER_CODE, kv_list.GetValue("password"), m_nulogin_auth_cb, NULL, 0, this);
 		return true;
@@ -85,7 +85,7 @@ namespace FESL {
 			s << "userId=" << user.id << "\n";
 			s << "profileId=" << profile.id << "\n";
 			if (((Peer *)peer)->m_encrypted_login_info.length()) {
-				s << "encryptedLoginInfo=" << ((Peer *)peer)->m_encrypted_login_info << "\n";
+				s << "encryptedLoginInfo=" << OS::url_encode(((Peer *)peer)->m_encrypted_login_info) << "\n";
 			}
 			((Peer *)peer)->m_logged_in = true;
 			((Peer *)peer)->m_user = user;

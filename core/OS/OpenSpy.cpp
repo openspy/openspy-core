@@ -32,10 +32,11 @@ namespace OS {
 	const char *g_redisAddress = NULL;
 	const char *g_webServicesURL = NULL;
 	const char *g_webServicesAPIKey = NULL;
-
+	CURL	   *g_curl = NULL;
 	void Init(const char *appName, const char *configPath) {
 
 		OS::g_config = new Config("openspy.cfg");
+		OS::g_curl = curl_easy_init();
 
 		configVar *config_struct = OS::g_config->getRootArray(appName);
 		int num_async = OS::g_config->getArrayInt(config_struct, "num_async_tasks");
@@ -86,6 +87,7 @@ namespace OS {
 		delete mp_redis_internal_connection_mutex;
 		delete g_logger;
 		delete OS::g_config;
+		curl_easy_cleanup(OS::g_curl);
 		curl_global_cleanup();
 	}
 	OS::GameData GetGameByRedisKey(const char *key, Redis::Connection *redis_ctx = NULL) {
@@ -572,5 +574,18 @@ namespace OS {
 			it++;
 		}
 		return best_result;
+	}
+	std::string url_encode(std::string src) {
+		char *ret = curl_easy_escape(OS::g_curl, src.c_str(), src.length());
+		std::string ret_str = ret;
+
+		curl_free(ret);
+		return ret_str;
+	}
+	std::string url_decode(std::string src) {
+		char *ret = curl_easy_unescape(OS::g_curl, src.c_str(), src.length(), NULL);
+		std::string ret_str = ret;
+		curl_free(ret);
+		return ret_str;
 	}
 }
