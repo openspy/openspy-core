@@ -89,6 +89,8 @@ namespace SSLNetIOIFace {
             int e = SSL_get_error(ssl_socket->mp_ssl, c);
             if(c > 0) {
                 resp.comm_len = c;
+                resp.packet_count++;
+                buffer.WriteBuffer(recvbuf, c);
             } else if(e != SSL_ERROR_WANT_READ) {
                 resp.disconnect_flag = true;
                 resp.error_flag = true;
@@ -96,6 +98,7 @@ namespace SSLNetIOIFace {
         } else {
             return BSDNetIOInterface::streamRecv(socket, buffer);
         }
+        buffer.reset();
         return resp;
     }
     NetIOCommResp SSLNetIOInterface::streamSend(INetIOSocket *socket, OS::Buffer &buffer) {

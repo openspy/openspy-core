@@ -97,6 +97,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				buffer.WriteBuffer(recvbuf, len);
 			}// while (errno != EWOULDBLOCK && errno != EAGAIN); //only check when data is available
 		end:
+			buffer.reset();
 			return ret;
 		}
 		NetIOCommResp streamSend(INetIOSocket *socket, OS::Buffer &buffer) {

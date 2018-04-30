@@ -28,10 +28,12 @@ namespace FESL {
 		ss << "messengerPort=" << public_info.messagingPort << "\n";
 		ss << "domationPartition.subDomain=" << public_info.subDomain << "\n";
 		ss << "activityTimeoutSecs=" << FESL_PING_TIME * 2 << "\n";
-		ss << "curTime=\"" << timeBuff << "\"\n";
+		ss << "curTime=\"" << OS::url_encode(timeBuff) << "\"\n";
 		ss << "theaterIp=" << public_info.theaterHostname << "\n";
 		ss << "theaterPort=" << public_info.theaterPort << "\n";
 		SendPacket(FESL_TYPE_FSYS, ss.str());
+
+		send_memcheck(0);
 		return true;
 	}
 	bool Peer::m_fsys_ping_handler(OS::KVReader kv_list) {
@@ -54,8 +56,8 @@ namespace FESL {
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
 		std::string nick, password;
 		if (kv_list.HasKey("encryptedInfo")) {
-			kv_list = ((FESL::Driver *)this->GetDriver())->getStringCrypter()->decryptString(kv_list.GetValue("encryptedInfo"));			
 			m_encrypted_login_info = OS::url_decode(kv_list.GetValue("encryptedInfo"));
+			kv_list = ((FESL::Driver *)this->GetDriver())->getStringCrypter()->decryptString(m_encrypted_login_info);
 		}
 
 		nick = kv_list.GetValue("name");
