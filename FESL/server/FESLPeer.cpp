@@ -48,6 +48,8 @@ namespace FESL {
 		m_got_profiles = false;
 		m_pending_nuget_personas = false;
 
+		mp_mutex = OS::CreateMutex();
+
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
 	}
 	Peer::~Peer() {

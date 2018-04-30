@@ -22,6 +22,7 @@ namespace FESL {
 
 		mp_socket = mp_socket_interface->BindTCP(OS::Address(0, port));
 		mp_mutex = OS::CreateMutex();
+		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
 
 		mp_string_crypter = new OS::StringCrypter(str_crypter_rsa_key);
 	}
