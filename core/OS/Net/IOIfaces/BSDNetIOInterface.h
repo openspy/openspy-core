@@ -3,6 +3,7 @@
 #include <OS/OpenSpy.h>
 #include <OS/Net/NetIOInterface.h>
 #include <vector>
+#include <algorithm>
 
 template<typename S = INetIOSocket>
 class BSDNetIOInterface : public INetIOInterface<S> {
