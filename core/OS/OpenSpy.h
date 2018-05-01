@@ -103,10 +103,7 @@ namespace OS {
 		QR2_GAME_UNAVAILABLE,
 		QR2_GAME_TEMPORARILY_UNAVAILABLE,
 	} QRV2AvailableStatus;
-
-	#define OS_COMPATIBILITY_FLAG_SBV2_FROMGAME_LIST_NOKEYS 1
-	#define OS_COMPATIBILITY_FLAG_GP_DISCONNECT_ON_NEWUSER 2
-	
+		
 	typedef struct {
 		int gameid;
 		int queryport;

@@ -135,6 +135,8 @@ namespace GP {
 		OS::KVReader data_parser = OS::KVReader(packet);
 		gettimeofday(&m_last_recv, NULL);
 
+		OS::LogText(OS::ELogLevel_Debug, "[%s] GP Recv: %s\n", getAddress().ToString(), packet.c_str());
+
 		std::string command = data_parser.GetKeyByIdx(0);
 
 		if(!command.compare("login")) {
@@ -283,10 +285,6 @@ namespace GP {
 
 		if (auth_data.gamedata.gameid != 0) {
 			((Peer *)peer)->m_game = auth_data.gamedata;
-		}
-
-		if (((Peer *)peer)->m_game.compatibility_flags & OS_COMPATIBILITY_FLAG_GP_DISCONNECT_ON_NEWUSER) {
-			((Peer *)peer)->m_delete_flag = true;
 		}
 	
 	}
