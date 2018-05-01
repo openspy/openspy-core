@@ -125,9 +125,11 @@ namespace GP {
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
+		/* ping doesn't exist in older games
 		if (current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME * 2) {
 			Delete(true);
-		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
+		} else */
+		if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete();
 		}
 	}
@@ -902,8 +904,8 @@ namespace GP {
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > GP_PING_TIME) {
 			gettimeofday(&m_last_ping, NULL);
-			//std::string ping_packet = "\\ka\\";
-			//SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
+			std::string ping_packet = "\\ka\\";
+			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
 		}
 	}
 	void Peer::perform_uniquenick_auth(const char *uniquenick, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
