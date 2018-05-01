@@ -26,6 +26,7 @@ namespace SM {
 		mp_mutex = OS::CreateMutex();
 		ResetMetrics();
 		gettimeofday(&m_last_ping, NULL);
+		gettimeofday(&m_last_recv, NULL);
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
 	}
 	Peer::~Peer() {
