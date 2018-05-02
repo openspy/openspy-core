@@ -81,7 +81,7 @@ namespace OS {
 	}
 	std::pair<std::string, std::string> KVReader::GetPairByIdx(int n) {
 		n = GetIndex(n);
-		if (m_kv_map.size() < (unsigned int)n)
+		if (m_kv_map.size() <= (unsigned int)n)
 			return std::pair<std::string, std::string>("", "");
 		std::vector<std::pair<std::string, std::string>>::const_iterator it = m_kv_map.begin();
 		std::advance(it, n);

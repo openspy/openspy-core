@@ -238,7 +238,6 @@ namespace SB {
 		buffer.WriteShort(htons(list_req.m_from_game.queryport));
 
 		bool send_push_keys = false;
-		bool no_keys = list_req.m_from_game.compatibility_flags & OS_COMPATIBILITY_FLAG_SBV2_FROMGAME_LIST_NOKEYS;
 
 		if(!list_req.no_server_list) {
 			buffer.WriteByte(list_req.field_list.size());
@@ -269,7 +268,7 @@ namespace SB {
 			std::vector<MM::Server *>::iterator it = servers.list.begin();
 			while (it != servers.list.end()) {
 				MM::Server *server = *it;
-				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, no_keys, servers.first_set);
+				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, false, servers.first_set);
 				it++;
 			}
 
@@ -481,7 +480,9 @@ namespace SB {
 		if (m_delete_flag) return;
 		if (waiting_packet) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
-			int len = m_recv_buffer.size();
+
+			int len = io_resp.comm_len;
+
 			if (io_resp.disconnect_flag || io_resp.error_flag || len == 0) {
 				goto end;
 			}

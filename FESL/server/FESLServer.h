@@ -13,10 +13,8 @@ namespace FESL {
 		void tick();
 		void shutdown();
 		OS::MetricInstance GetMetrics();
-		SSLNetIOIFace::SSLNetIOInterface *getSSLIO_Interface();
 	private:
 		struct timeval m_last_analytics_submit_time;
-		SSLNetIOIFace::SSLNetIOInterface *mp_ssl_io_interface;
 	};
 }
 #endif //_SMSERVER_H

@@ -75,7 +75,8 @@ namespace GP {
 		if (packet_waiting) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 
-			int len = m_recv_buffer.size();
+			int len = io_resp.comm_len;
+
 			if (io_resp.disconnect_flag || io_resp.error_flag || len == 0) {
 				goto end;
 			}
@@ -124,15 +125,19 @@ namespace GP {
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
+		/* ping doesn't exist in older games
 		if (current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME * 2) {
 			Delete(true);
-		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
+		} else */
+		if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete();
 		}
 	}
 	void Peer::handle_packet(std::string packet) {
 		OS::KVReader data_parser = OS::KVReader(packet);
 		gettimeofday(&m_last_recv, NULL);
+
+		OS::LogText(OS::ELogLevel_Debug, "[%s] GP Recv: %s\n", getAddress().ToString(), packet.c_str());
 
 		std::string command = data_parser.GetKeyByIdx(0);
 
@@ -282,10 +287,6 @@ namespace GP {
 
 		if (auth_data.gamedata.gameid != 0) {
 			((Peer *)peer)->m_game = auth_data.gamedata;
-		}
-
-		if (((Peer *)peer)->m_game.compatibility_flags & OS_COMPATIBILITY_FLAG_GP_DISCONNECT_ON_NEWUSER) {
-			((Peer *)peer)->m_delete_flag = true;
 		}
 	
 	}
@@ -903,8 +904,8 @@ namespace GP {
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > GP_PING_TIME) {
 			gettimeofday(&m_last_ping, NULL);
-			//std::string ping_packet = "\\ka\\";
-			//SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
+			std::string ping_packet = "\\ka\\";
+			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
 		}
 	}
 	void Peer::perform_uniquenick_auth(const char *uniquenick, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {

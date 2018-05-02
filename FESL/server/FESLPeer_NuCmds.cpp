@@ -51,7 +51,8 @@ namespace FESL {
 	bool Peer::m_acct_nulogin_handler(OS::KVReader kv_list) {
 		std::string nuid, password;
 		if (kv_list.HasKey("encryptedInfo")) {
-			kv_list = ((FESL::Driver *)this->GetDriver())->getStringCrypter()->decryptString(OS::url_decode(kv_list.GetValue("encryptedInfo")));
+			m_encrypted_login_info = OS::url_decode(kv_list.GetValue("encryptedInfo"));
+			kv_list = ((FESL::Driver *)this->GetDriver())->getStringCrypter()->decryptString(m_encrypted_login_info);
 		}
 
 		nuid = kv_list.GetValue("nuid");

@@ -41,6 +41,7 @@ namespace FESL {
 
 		ResetMetrics();
 		gettimeofday(&m_last_ping, NULL);
+		gettimeofday(&m_last_recv, NULL);
 		
 		m_sequence_id = 1;
 		m_logged_in = false;
@@ -62,7 +63,8 @@ namespace FESL {
 		if (packet_waiting) {
 
 			io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamRecv(m_sd, m_recv_buffer);
-			int len = m_recv_buffer.size();
+
+			int len = io_resp.comm_len;
 
 			if (io_resp.disconnect_flag || io_resp.error_flag || len == 0) {
 				goto end;
@@ -73,7 +75,13 @@ namespace FESL {
 
 			gettimeofday(&m_last_recv, NULL);
 
-			OS::KVReader kv_data((const char *)m_recv_buffer.GetHead(), '=', '\n');
+			int buf_len = len - sizeof(FESL_HEADER);
+
+			if (buf_len < 0) {
+				goto end;
+			}
+
+			OS::KVReader kv_data(std::string((const char *)m_recv_buffer.GetCursor(), buf_len), '=', '\n');
 			char *type;
 			for (int i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
 				if (Peer::m_commands[i].type == htonl(header.type)) {

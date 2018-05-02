@@ -26,6 +26,7 @@ namespace SM {
 		mp_mutex = OS::CreateMutex();
 		ResetMetrics();
 		gettimeofday(&m_last_ping, NULL);
+		gettimeofday(&m_last_recv, NULL);
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
 	}
 	Peer::~Peer() {
@@ -39,7 +40,7 @@ namespace SM {
 		if (packet_waiting) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 
-			int len = m_recv_buffer.size();
+			int len = io_resp.comm_len;
 
 			if (io_resp.disconnect_flag || io_resp.error_flag || len == 0) {
 				goto end;
