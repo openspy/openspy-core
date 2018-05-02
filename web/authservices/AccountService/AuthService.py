@@ -154,11 +154,12 @@ class AuthService(BaseService):
         return response
     def test_gstats_sessionkey_response_by_profileid(self, request_body, account_data):
         #, profile, session_key, client_response
-        if "profile" not in account_data:
+        if "profile" not in account_data or not account_data["profile"]:
             raise OS_InvalidParam("profile")
         response = {}
         profile = account_data["profile"]
         sess_key = self.gs_sesskey(request_body["session_key"])
+
         pw_hashed = "{}{}".format(profile.user.password,sess_key).encode('utf-8')
         pw_hashed = hashlib.md5(pw_hashed).hexdigest()
 
@@ -212,7 +213,7 @@ class AuthService(BaseService):
         return response
     def test_nick_email_by_profile(self, request_body, account_data):
         response = {}
-        if "profile" not in account_data:
+        if "profile" not in account_data or not account_data["profile"]:
             raise OS_InvalidParam("profile")
 
         if "user" in account_data:
