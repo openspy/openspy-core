@@ -83,7 +83,7 @@ namespace SM {
 			Delete();
 			return;
 		}
-		printf("Handle: %s\n", data);
+		OS::LogText(OS::ELogLevel_Debug, "[%s] Recv: %s\n", getAddress().ToString().c_str(), data);
 
 		OS::KVReader data_parser = OS::KVReader(data);
 		if(!strcmp("search", command)) {
@@ -467,6 +467,7 @@ namespace SM {
 	void Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
 		OS::Buffer buffer;
 		buffer.WriteBuffer((void *)buff, len);
+		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s\n", getAddress().ToString().c_str(), std::string((const char *)buff, len).c_str());
 		if (attach_final) {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}

@@ -120,7 +120,7 @@ namespace GS {
 		}
 	}
 	void Peer::handle_packet(std::string packet_string) {
-		printf("GStats Handle(%d): %s\n", packet_string.length(), packet_string.c_str());
+		OS::LogText(OS::ELogLevel_Debug, "[%s] Recv: %s", getAddress().ToString().c_str(), packet_string.c_str());
 
 
 		std::map<std::string, std::string> data_map;
@@ -510,7 +510,7 @@ namespace GS {
 		if(attach_final) {
 			buffer.WriteBuffer((uint8_t*)"\\final\\", 7);
 		}
-		printf("GSPeer send(%d) - %s\n", buffer.size(), buffer.GetHead());
+		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s", getAddress().ToString().c_str(), std::string((const char *)buffer.GetHead(), buffer.size()).c_str());
 		gamespy3dxor((char *)buffer.GetHead(), buffer.size());
 
 		m_peer_stats.bytes_out += buffer.size();
