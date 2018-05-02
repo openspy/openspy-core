@@ -137,7 +137,7 @@ namespace GP {
 		OS::KVReader data_parser = OS::KVReader(packet);
 		gettimeofday(&m_last_recv, NULL);
 
-		OS::LogText(OS::ELogLevel_Debug, "[%s] GP Recv: %s\n", getAddress().ToString().c_str(), packet.c_str());
+		OS::LogText(OS::ELogLevel_Debug, "[%s] Recv: %s\n", getAddress().ToString().c_str(), packet.c_str());
 
 		std::string command = data_parser.GetKeyByIdx(0);
 
@@ -890,7 +890,7 @@ namespace GP {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
 
-		OS::LogText(OS::ELogLevel_Debug, "[%s] GP Send: %s\n", getAddress().ToString().c_str(), std::string((const char *)buff, len).c_str());
+		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s\n", getAddress().ToString().c_str(), std::string((const char *)buff, len).c_str());
 
 		m_peer_stats.bytes_out += buffer.size();
 		m_peer_stats.packets_out++;
