@@ -810,6 +810,9 @@ namespace OS {
 			if (error_name.compare("UniqueNickInUse") == 0) {
 				data.response_code = LOGIN_RESPONSE_INVALID_PROFILE;
 			}
+			else if (error_name.compare("NickInvalid") == 0) {
+				data.response_code = LOGIN_RESPONSE_INVALID_PROFILE;
+			}
 		}
 		return;
 	end_error:
