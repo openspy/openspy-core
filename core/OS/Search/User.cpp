@@ -92,6 +92,12 @@ namespace OS {
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
 
+			struct curl_slist *chunk = NULL;
+			std::string apiKey = "APIKey: " + std::string(g_webServicesAPIKey);
+			chunk = curl_slist_append(chunk, apiKey.c_str());
+			chunk = curl_slist_append(chunk, "Content-Type: application/json");
+			curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+
 			res = curl_easy_perform(curl);
 
 			if(res == CURLE_OK) {
@@ -100,8 +106,10 @@ namespace OS {
 				if(user_obj) {
 					OS::User user = OS::LoadUserFromJson(user_obj);
 					results.push_back(user);
-				}
-				resp_type = EUserResponseType_Success;
+					resp_type = EUserResponseType_Success;
+				} else {
+					resp_type = EUserResponseType_GenericError;
+				}				
 			} else {
 				resp_type = EUserResponseType_GenericError;
 			}
