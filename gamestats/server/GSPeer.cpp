@@ -323,10 +323,11 @@ namespace GS {
 			client_data_len--;
 		}
 
+		/* Some games send data-1... but its safe now with the new reader
 		if (!data.length() || client_data_len != data.length()) {
 			send_error(GPShared::GP_PARSE);
 			return;
-		}
+		}*/
 
 		const char *b64_str = OS::BinToBase64Str((uint8_t *)data.c_str(), client_data_len);
 
