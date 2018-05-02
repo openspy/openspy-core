@@ -28,11 +28,6 @@ class AuthService(BaseService):
         BaseService.__init__(self)
         self.redis_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 3)
         self.PREAUTH_EXPIRE_TIME = 3600
-
-        self.PARTNERID_GAMESPY = 0
-        self.PARTNERID_IGN = 10
-        self.PARTNERID_EA = 20
-
         self.AUTH_EXPIRE_TIME = 86400
 
     def get_profile_by_uniquenick(self, uniquenick, namespaceid, partnercode):
@@ -79,14 +74,14 @@ class AuthService(BaseService):
         client_response = request_body["client_response"]
 
         md5_pw = hashlib.md5(str(password).encode('utf-8')).hexdigest()
-        if user.partnercode != self.PARTNERID_GAMESPY:
+        if user.partnercode != User.PARTNERID_GAMESPY:
             crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.uniquenick, client_challenge, server_challenge, md5_pw)
         else:
             crypt_buf = "{}{}{}{}{}{}".format(md5_pw, "                                                ",profile.uniquenick, client_challenge, server_challenge, md5_pw)
 
         true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
 
-        if user.partnercode != self.PARTNERID_GAMESPY:
+        if user.partnercode != User.PARTNERID_GAMESPY:
             proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.uniquenick, server_challenge, client_challenge, md5_pw)
         else:
             proof = "{}{}{}{}{}{}".format(md5_pw, "                                                ",profile.uniquenick, server_challenge, client_challenge, md5_pw)
@@ -106,14 +101,14 @@ class AuthService(BaseService):
         client_response = request_body["client_response"]
 
         md5_pw = hashlib.md5(str(password).encode('utf-8')).hexdigest()
-        if user.partnercode != self.PARTNERID_GAMESPY:
+        if user.partnercode != User.PARTNERID_GAMESPY:
             crypt_buf = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, client_challenge, server_challenge, md5_pw)
         else:
             crypt_buf = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, client_challenge, server_challenge, md5_pw)
 
         true_resp = hashlib.md5(str(crypt_buf).encode('utf-8')).hexdigest()
 
-        if user.partnercode != self.PARTNERID_GAMESPY:
+        if user.partnercode != User.PARTNERID_GAMESPY:
             proof = "{}{}{}@{}@{}{}{}{}".format(md5_pw, "                                                ",profile.user.partnercode,profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
         else:
             proof = "{}{}{}@{}{}{}{}".format(md5_pw, "                                                ",profile.nick, profile.user.email, server_challenge, client_challenge, md5_pw)
@@ -378,8 +373,8 @@ class AuthService(BaseService):
         user_where = (User.deleted == False)
         user_data = request_body["user"]
         if "email" in user_data:
-            if re.match('^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$', user_data["email"]) == None:
-                raise OS_InvalidParam("email")
+            #if User.is_email_valid(user_data["email"]):
+            #    raise OS_InvalidParam("email")
             user_where = (user_where) & (User.email == user_data["email"])
         if "partnercode" in user_data:
             user_data['partnercode'] = user_data["partnercode"]

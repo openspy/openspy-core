@@ -24,7 +24,6 @@ from lib.Exceptions.OS_CommonExceptions import *
 class UserProfileMgrService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
-        self.valid_characters = "1234567890#_-`()$-=;/@+&abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
         self.redis_presence_channel = "presence.buddies"
         self.redis_presence_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 5)
 
@@ -44,10 +43,10 @@ class UserProfileMgrService(BaseService):
         if "namespaceid" in data['profile']:
             namespaceid = data['profile']['namespaceid']
         if "nick" in data['profile']:
-            if not self.is_name_valid(data['profile']['nick']):
+            if not Profile.is_nick_valid(data['profile']['nick'], namespaceid):
                 raise OS_Profile_NickInvalid()
         if "uniquenick" in data['profile']:
-            if not self.is_name_valid(data['profile']['uniquenick']):
+            if not Profile.is_nick_valid(data['profile']['uniquenick'], namespaceid):
                 raise OS_Profile_UniquenickInvalid()
             nick_available = self.check_uniquenick_available(data['profile']['uniquenick'], namespaceid)
             if nick_available["exists"]:
@@ -57,11 +56,6 @@ class UserProfileMgrService(BaseService):
                 setattr(profile_model, key, data['profile'][key])
         profile_model.save()
         return {"success": True}
-    def is_name_valid(self, name):
-        for n in name:
-            if n not in self.valid_characters:
-                return False
-        return True
     def handle_get_profiles(self, data):
         response = {"success": False}
         profiles = []
@@ -124,14 +118,14 @@ class UserProfileMgrService(BaseService):
         else:
             namespaceid = 0
         if "uniquenick" in profile_data:
-            if not self.is_name_valid(profile_data["uniquenick"]):
+            if not Profile.is_nick_valid(profile_data["uniquenick"], namespaceid):
                 raise OS_Profile_UniquenickInvalid()
             nick_available = self.check_uniquenick_available(profile_data["uniquenick"], namespaceid)
             if nick_available["exists"]:
                 raise OS_Profile_UniquenickInUse(nick_available["profile"])
         user = User.get((User.id == user_data["id"]))
         if "nick" in profile_data:
-            if not self.is_name_valid(profile_data["nick"]):
+            if not Profile.is_nick_valid(profile_data["nick"], namespaceid):
                 raise OS_Profile_NickInvalid()
         profile_data["user"] = user
         profile_pk = Profile.insert(**profile_data).execute()
