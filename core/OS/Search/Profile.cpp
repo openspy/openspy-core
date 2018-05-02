@@ -308,7 +308,7 @@ namespace OS {
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
 
 		/* set default user agent */
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGPBackendRedisTask");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSSearchProfile");
 
 		/* set timeout */
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
