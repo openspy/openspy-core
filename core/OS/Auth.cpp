@@ -427,7 +427,7 @@ namespace OS {
 					}
 					else if (success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
-						json_t *user_json = json_object_get(profile_json, "user");
+						json_t *user_json = json_object_get(json_data, "user");
 						user = LoadUserFromJson(user_json);
 						profile = LoadProfileFromJson(profile_json);
 						
