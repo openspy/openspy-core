@@ -18,6 +18,7 @@ from public.Sake.GS_SakeStorage import GS_SakeStorageSvc
 import re
 import simplejson as json
 from wsgiref.util import request_uri
+import ipaddress
 
 from wsgiref.simple_server import make_server, WSGIServer
 from socketserver import ThreadingMixIn
@@ -26,19 +27,20 @@ from socketserver import ThreadingMixIn
 
 import os
 
-Valid_APIKeys = {
-				"b9d573fc-0377-495f-b031-aa0c51c09938": 
-					["auth", "register", "useraccount", "userprofile", "persist", "gameservice"],
-				 "d8ba81d9-f3b2-448b-a36e-f6116338fa5f": #web api
-				 	["auth", "register", "useraccount", "userprofile", "persist", "gameservice"]
-				}
+Valid_APIKeys = None
 
+def test_apikey_IP(user_ip, allowed_ips):
+	for ip_block in allowed_ips:
+		if ipaddress.ip_address(user_ip) in ipaddress.ip_network(ip_block):
+			return True
+	return False
 def check_apikey(env, path_info):
+	user_ip = env["REMOTE_ADDR"]
 	if "HTTP_APIKEY" in env:
 		key = env["HTTP_APIKEY"]
 		if key in Valid_APIKeys:
-			if path_info[2] in Valid_APIKeys[key]:
-				return True
+			if path_info[2] in Valid_APIKeys[key]["services"]:
+				return test_apikey_IP(user_ip, Valid_APIKeys[key]["allowedIPs"])
 	return False
 
 def application(env, start_response):
@@ -106,6 +108,8 @@ class ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
     pass
 
 if __name__ == '__main__':
+    with open("authservices/backend_apikeys.json") as json_data:
+        Valid_APIKeys = json.load(json_data)
     httpd = make_server('', 8000, application, ThreadingWSGIServer)
     print("Serving on port 8000...")
     httpd.serve_forever()

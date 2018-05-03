@@ -53,7 +53,7 @@ class UserAccountMgrService(BaseService):
                 response["user"] = user
                 response["success"] = True
         except User.DoesNotExist:
-            return None
+            raise OS_Auth_NoSuchUser()
 
         return response
 
