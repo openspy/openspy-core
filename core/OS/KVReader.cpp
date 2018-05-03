@@ -31,10 +31,10 @@ namespace OS {
 
 			while ((key.length() > 0 && IsDataKey(key)) || std::getline(line_ss, token, delim)) {
 				if (i % 2 == 0) {
-					key = OS::strip_whitespace(token);
+					key = (token);
 				}
 				else {
-					value = OS::strip_whitespace(token);
+					value = (token);
 					if (!HasKey(key)) {
 						if (IsDataKey(key)) {
 							std::map<std::string, std::string>::iterator it = m_data_key_map.find(key);
