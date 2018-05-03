@@ -488,11 +488,11 @@ namespace SB {
 			}
 
 			m_peer_stats.packets_in++;
-			m_peer_stats.bytes_in += m_recv_buffer.size();
+			m_peer_stats.bytes_in += len;
 
 			if(m_next_packet_send_msg) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), m_recv_buffer.size());
-				const char *base64 = OS::BinToBase64Str((uint8_t *)m_recv_buffer.GetHead(), m_recv_buffer.size());
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), len);
+				const char *base64 = OS::BinToBase64Str((uint8_t *)m_recv_buffer.GetHead(), len);
 
 				MM::MMQueryRequest req;
 				req.type = MM::EMMQueryRequestType_SubmitData;
@@ -504,7 +504,7 @@ namespace SB {
 				free((void *)base64);
 				m_next_packet_send_msg = false;
 			} else {
-				this->handle_packet((char *)m_recv_buffer.GetHead(), m_recv_buffer.size());
+				this->handle_packet((char *)m_recv_buffer.GetHead(), len);
 			}
 		}
 
