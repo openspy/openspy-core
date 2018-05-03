@@ -22,7 +22,7 @@ namespace OS {
 	HTTPClient::HTTPClient(std::string url) {
 		m_url = url;
 	}
-	HTTPResponse HTTPClient::Post(std::string send) {
+	HTTPResponse HTTPClient::Post(std::string send, INetPeer *peer) {
 		curl_data data;
 		HTTPResponse resp;
 
@@ -55,6 +55,10 @@ namespace OS {
 			std::string apiKey = "APIKey: " + std::string(g_webServicesAPIKey);
 			chunk = curl_slist_append(chunk, apiKey.c_str());
 			chunk = curl_slist_append(chunk, "Content-Type: application/json");
+			chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-App: ") + OS::g_appName).c_str());
+			if (peer) {
+				chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-Peer-Address: ") + peer->getAddress().ToString()).c_str());
+			}
 			curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
 			res = curl_easy_perform(curl);

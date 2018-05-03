@@ -172,7 +172,7 @@ namespace OS {
 		EProfileResponseType error = EProfileResponseType_GenericError;
 		if (curl) {
 
-			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 			res = curl_easy_perform(curl);
 			if (res == CURLE_OK) {
 				json_t *json_data = NULL;
@@ -297,11 +297,15 @@ namespace OS {
 	void ShutdownProfileTaskPool() {
 		delete m_profile_search_task_pool;
 	}
-	void ProfileSearchTask::ProfileReq_InitCurl(void *curl, char *post_data, void *write_data) {
+	void ProfileSearchTask::ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileSearchRequest request) {
 		struct curl_slist *chunk = NULL;
 		std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
 		chunk = curl_slist_append(chunk, apiKey.c_str());
 		chunk = curl_slist_append(chunk, "Content-Type: application/json");
+		chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-App: ") + OS::g_appName).c_str());
+		if (request.peer) {
+			chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-Peer-Address: ") + request.peer->getAddress().ToString()).c_str());
+		}
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
 		curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);

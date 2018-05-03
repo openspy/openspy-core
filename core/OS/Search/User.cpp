@@ -96,6 +96,10 @@ namespace OS {
 			std::string apiKey = "APIKey: " + std::string(g_webServicesAPIKey);
 			chunk = curl_slist_append(chunk, apiKey.c_str());
 			chunk = curl_slist_append(chunk, "Content-Type: application/json");
+			chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-App: ") + OS::g_appName).c_str());
+			if (request.peer) {
+				chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-Peer-Address: ") + request.peer->getAddress().ToString()).c_str());
+			}
 			curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
 			res = curl_easy_perform(curl);

@@ -10,9 +10,8 @@
 
 #include <OS/Net/NetPeer.h>
 
-//#define OPENSPY_WEBSERVICES_URL "http://10.10.10.10"
-#define OPENSPY_AUTH_URL OPENSPY_WEBSERVICES_URL "/backend/auth"
-#define OPENSPY_AUTH_KEY "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
+#define OPENSPY_AUTH_URL (std::string(OS::g_webServicesURL) + "/backend/auth").c_str()
+
 namespace OS {
 	enum AuthResponseCode {
 		LOGIN_RESPONSE_SUCCESS,
@@ -104,7 +103,7 @@ namespace OS {
 			void PerformAuth_PreAuth_Token(AuthRequest request);
 
 			void Handle_AuthWebError(AuthData &data, json_t *error_obj);
-			void AuthReq_InitCurl(void *curl, char *post_data, void *write_data);
+			void AuthReq_InitCurl(void *curl, char *post_data, void *write_data, AuthRequest request);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 	};
 	extern OS::TaskPool<AuthTask, AuthRequest> *m_auth_task_pool;

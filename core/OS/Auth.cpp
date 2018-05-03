@@ -58,7 +58,7 @@ namespace OS {
 		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 
 		if (curl) {
-			AuthReq_InitCurl(curl, json_data_str, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_data_str, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -150,7 +150,7 @@ namespace OS {
 		auth_data.response_code = LOGIN_RESPONSE_SERVER_ERROR;
 
 		if(curl) {
-			AuthReq_InitCurl(curl, json_data_str, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_data_str, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -239,7 +239,7 @@ namespace OS {
 		bool success = false;
 
 		if (curl) {
-			AuthReq_InitCurl(curl, json_data, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -321,7 +321,7 @@ namespace OS {
 		bool success = false;
 		if(curl) {
 
-			AuthReq_InitCurl(curl, json_data, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -409,7 +409,7 @@ namespace OS {
 		}
 
 		if(curl) {
-			AuthReq_InitCurl(curl, json_data, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -477,7 +477,7 @@ namespace OS {
 
 		if (curl) {
 
-			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -549,7 +549,7 @@ namespace OS {
 
 
 		if(curl) {
-			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -628,7 +628,7 @@ namespace OS {
 
 		if (curl) {
 
-			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -703,7 +703,7 @@ namespace OS {
 
 
 		if (curl) {
-			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data);
+			AuthReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -742,11 +742,15 @@ namespace OS {
 		}
 		json_decref(send_obj);
 	}
-	void AuthTask::AuthReq_InitCurl(void *curl, char *post_data, void *write_data) {
+	void AuthTask::AuthReq_InitCurl(void *curl, char *post_data, void *write_data, AuthRequest request) {
 		struct curl_slist *chunk = NULL;
 		std::string apiKey = "APIKey: " + std::string(g_webServicesAPIKey);
 		chunk = curl_slist_append(chunk, apiKey.c_str());
 		chunk = curl_slist_append(chunk, "Content-Type: application/json");
+		chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-App: ") + OS::g_appName).c_str());
+		if (request.peer) {
+			chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-Peer-Address: ") + request.peer->getAddress().ToString()).c_str());
+		}
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
 		curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);

@@ -281,7 +281,7 @@ namespace GPBackend {
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
-			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 			res = curl_easy_perform(curl);
 		}
 
@@ -309,7 +309,7 @@ namespace GPBackend {
 
 
 		if(curl) {
-			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 			res = curl_easy_perform(curl);
 		}
 
@@ -344,7 +344,7 @@ namespace GPBackend {
 
 
 		if(curl) {
-			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 			res = curl_easy_perform(curl);
 			curl_easy_cleanup(curl);
 		}
@@ -392,7 +392,7 @@ namespace GPBackend {
 
 
 		if(curl) {
-			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 			res = curl_easy_perform(curl);
 		}
 
@@ -436,7 +436,7 @@ namespace GPBackend {
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
-			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 			res = curl_easy_perform(curl);
 			curl_easy_cleanup(curl);
 		}
@@ -462,7 +462,7 @@ namespace GPBackend {
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
-			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 			res = curl_easy_perform(curl);
 		}
 
@@ -557,7 +557,7 @@ namespace GPBackend {
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
-			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data);
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
 
@@ -582,11 +582,15 @@ namespace GPBackend {
 		if(send_obj)
 			json_decref(send_obj);
 	}
-	void GPBackendRedisTask::ProfileReq_InitCurl(void *curl, char *post_data, void *write_data) {
+	void GPBackendRedisTask::ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request) {
 		struct curl_slist *chunk = NULL;
 		std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
 		chunk = curl_slist_append(chunk, apiKey.c_str());
 		chunk = curl_slist_append(chunk, "Content-Type: application/json");
+		chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-App: ") + OS::g_appName).c_str());
+		if (request.peer) {
+			chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-Peer-Address: ") + request.peer->getAddress().ToString()).c_str());
+		}
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
 		curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
@@ -632,11 +636,6 @@ namespace GPBackend {
 	}
 
 	void SetupTaskPool(GP::Server *server) {
-
-		struct timeval t;
-		t.tv_usec = 0;
-		t.tv_sec = 60;
-
 		mp_async_thread = OS::CreateThread(setup_redis_async, server, true);
 		OS::Sleep(200);
 

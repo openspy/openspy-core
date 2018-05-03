@@ -2,6 +2,7 @@
 #define _OS_HTTP_H
 #include <OS/OpenSpy.h>
 #include <curl/curl.h>
+#include <OS/Net/NetPeer.h>
 namespace OS {
 	typedef struct {
 		int status_code;
@@ -12,7 +13,7 @@ namespace OS {
 		HTTPClient(std::string url);
 		~HTTPClient();
 		//(GP_PERSIST_BACKEND_URL, GP_PERSIST_BACKEND_CRYPTKEY, send_json)
-		HTTPResponse Post(std::string send); //synchronous HTTP post
+		HTTPResponse Post(std::string send, INetPeer *peer); //synchronous HTTP post
 
 	private:
 		static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);

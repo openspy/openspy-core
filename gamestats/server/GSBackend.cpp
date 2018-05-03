@@ -25,37 +25,23 @@
 #define BUDDY_ADDREQ_EXPIRETIME 604800
 #define GP_STATUS_EXPIRE_TIME 3600
 
-#define GP_PERSIST_BACKEND_URL  OPENSPY_WEBSERVICES_URL "/backend/persist"
-#define GP_PERSIST_BACKEND_CRYPTKEY "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
+
+#define GP_PERSIST_BACKEND_URL (std::string(OS::g_webServicesURL) + "/backend/persist").c_str()
 
 namespace GSBackend {
-	struct curl_data {
-	    //json_t *json_data;
-	    std::string buffer;
-	};
-
 	OS::TaskPool<PersistBackendTask, PersistBackendRequest> *m_task_pool = NULL;
 	OS::GameCache *m_game_cache = NULL;
-	/* callback for curl fetch */
-	size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
-		if(!contents) {
-			return 0;
-		}
-	    size_t realsize = size * nmemb;                             /* calculate buffer size */
-	    curl_data *data = (curl_data *)userp;
 
-	    data->buffer = data->buffer + (const char *)contents;
-
-	    return realsize;
-	}
 
 	PersistBackendTask::PersistBackendTask(int thread_index) {
 		m_thread_index = thread_index;
+
+
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 3;
-
 		mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
+
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(PersistBackendTask::TaskThread, this, true);
 	}
@@ -101,7 +87,7 @@ namespace GSBackend {
 
 		char *json_data = json_dumps(send_json, 0);
 
-		OS::HTTPResponse resp =	client.Post(json_data);
+		OS::HTTPResponse resp =	client.Post(json_data, req.mp_peer);
 
 
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
@@ -147,7 +133,7 @@ namespace GSBackend {
 		char *json_data = json_dumps(send_json, 0);
 
 
-		OS::HTTPResponse resp =	client.Post(json_data);
+		OS::HTTPResponse resp =	client.Post(json_data, req.mp_peer);
 		
 		free(json_data);
 
@@ -226,7 +212,7 @@ namespace GSBackend {
 		char *json_data = json_dumps(send_json, 0);
 
 
-		OS::HTTPResponse resp =	client.Post(json_data);
+		OS::HTTPResponse resp =	client.Post(json_data, req.mp_peer);
 
 		free(json_data);
 		json_decref(send_json);
@@ -276,7 +262,7 @@ namespace GSBackend {
 
 		char *json_data = json_dumps(send_json, 0);
 
-		OS::HTTPResponse resp =	client.Post(json_data);
+		OS::HTTPResponse resp =	client.Post(json_data, req.mp_peer);
 
 		free(json_data);
 		json_decref(send_json);

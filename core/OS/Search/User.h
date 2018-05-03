@@ -9,7 +9,8 @@
 #include <string>
 #include <vector>
 #include <map>
-#define OPENSPY_USERMGR_URL OPENSPY_WEBSERVICES_URL "/backend/useraccount"
+#define OPENSPY_USERMGR_URL (std::string(OS::g_webServicesURL) +"/backend/useraccount").c_str()
+
 #define OPENSPY_USERMGR_KEY "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
 namespace OS {
 	/*

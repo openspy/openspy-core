@@ -10,9 +10,8 @@
 #include <string>
 #include <vector>
 #include <map>
-//#define OPENSPY_WEBSERVICES_URL "http://10.10.10.10"
-#define OPENSPY_PROFILEMGR_URL OPENSPY_WEBSERVICES_URL "/backend/userprofile"
-#define OPENSPY_PROFILEMGR_KEY "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
+
+#define OPENSPY_PROFILEMGR_URL (std::string(OS::g_webServicesURL) + "/backend/userprofile").c_str()
 
 namespace OS {
 
@@ -64,7 +63,7 @@ namespace OS {
 			static void PerformSearch(ProfileSearchRequest request);
 			static void *TaskThread(CThread *thread);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
-			static void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data);
+			static void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileSearchRequest request);
 	};
 	extern OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *m_profile_search_task_pool;
 	OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *GetProfileTaskPool();
