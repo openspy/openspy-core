@@ -232,7 +232,7 @@ namespace QR {
 		if (server_info.m_game.gameid != 0) {
 			if (m_server_pushed) {
 				if (server_info.m_keys.find("statechanged") != server_info.m_keys.end() && atoi(server_info.m_keys["statechanged"].c_str()) == 2) {
-					Delete(false, false);
+					DeleteServer();
 					m_recv_instance_key = false;
 					return;
 				}
@@ -290,7 +290,7 @@ namespace QR {
 			}
 
 			if (m_server_info.m_keys.find("statechanged") != m_server_info.m_keys.end() && atoi(m_server_info.m_keys["statechanged"].c_str()) == 2) {
-				Delete(false, false);
+				DeleteServer();
 				m_recv_instance_key = false;
 				return;
 			}

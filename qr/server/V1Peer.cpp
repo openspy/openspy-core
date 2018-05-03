@@ -273,7 +273,7 @@ namespace QR {
 			return;
 		}
 		if (state_changed == 2) {
-			Delete(false, false);
+			DeleteServer();
 			m_validated = false;
 			return;
 		}
