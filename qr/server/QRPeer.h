@@ -40,7 +40,7 @@ namespace QR {
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; };
-		void Delete(bool timeout = false);
+		void Delete(bool timeout = false, bool disconnect = true);
 
 		virtual void send_error(bool die, const char *fmt, ...) = 0;
 		virtual void SendClientMessage(uint8_t *data, int data_len) = 0;

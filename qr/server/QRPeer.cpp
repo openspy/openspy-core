@@ -129,7 +129,7 @@ namespace QR {
 			MM::m_task_pool->AddRequest(req);
 		}
 	}
-	void Peer::Delete(bool timeout) {
+	void Peer::Delete(bool timeout, bool disconnect) {
 		if (m_server_pushed) {
 			MM::MMPushRequest req;
 			req.peer = this;
@@ -141,6 +141,6 @@ namespace QR {
 		}
 		m_server_pushed = false;
 		m_timeout_flag = timeout;
-		m_delete_flag = true;
+		m_delete_flag = disconnect;
 	}
 }

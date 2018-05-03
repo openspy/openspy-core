@@ -272,6 +272,11 @@ namespace QR {
 			send_error(true, "unknown game");
 			return;
 		}
+		if (state_changed == 2) {
+			Delete(false, false);
+			m_validated = false;
+			return;
+		}
 		if (m_validated) {
 			m_query_state = EV1_CQS_Basic;
 			s << "\\basic\\\\echo\\" << m_challenge;

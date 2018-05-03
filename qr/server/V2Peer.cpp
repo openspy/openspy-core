@@ -75,10 +75,14 @@ namespace QR {
 
 		if(m_recv_instance_key) {
 			if(memcmp((uint8_t *)&instance_key, (uint8_t *)&m_instance_key, sizeof(instance_key)) != 0) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet", m_sd->address.ToString().c_str());
+				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet, keys: %d %d", m_sd->address.ToString().c_str(), *(uint32_t *)&m_instance_key, *(uint32_t *)&instance_key);
 				return;
 			}
+			else {
+				memcpy((uint8_t*)&m_instance_key, (uint8_t *)&instance_key, sizeof(instance_key));
+			}
 		}
+
 
 		gettimeofday(&m_last_recv, NULL);
 
@@ -228,7 +232,8 @@ namespace QR {
 		if (server_info.m_game.gameid != 0) {
 			if (m_server_pushed) {
 				if (server_info.m_keys.find("statechanged") != server_info.m_keys.end() && atoi(server_info.m_keys["statechanged"].c_str()) == 2) {
-					Delete();
+					Delete(false, false);
+					m_recv_instance_key = false;
 					return;
 				}
 				struct timeval current_time;
@@ -285,7 +290,8 @@ namespace QR {
 			}
 
 			if (m_server_info.m_keys.find("statechanged") != m_server_info.m_keys.end() && atoi(m_server_info.m_keys["statechanged"].c_str()) == 2) {
-				Delete();
+				Delete(false, false);
+				m_recv_instance_key = false;
 				return;
 			}
 
