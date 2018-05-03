@@ -258,7 +258,13 @@ namespace GPBackend {
 	}
 	void GPBackendRedisTask::Perform_BuddyRequest(GPBackendRedisRequest request) {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", GP_BACKEND_REDIS_DB);
-		Redis::Command(mp_redis_connection, 0, "HSET add_req_%d %d %s", request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.reason);
+
+		if (strlen(request.uReqData.BuddyRequest.reason) > 0) {
+			Redis::Command(mp_redis_connection, 0, "HSET add_req_%d %d '%s'", request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.from_profileid, request.uReqData.BuddyRequest.reason);
+		}
+		else {
+			Redis::Command(mp_redis_connection, 0, "HSET add_req_%d %d 'None'", request.uReqData.BuddyRequest.to_profileid, request.uReqData.BuddyRequest.from_profileid);
+		}
 		Redis::Command(mp_redis_connection, 0, "EXPIRE add_req_%d %d", request.uReqData.BuddyRequest.to_profileid, BUDDY_ADDREQ_EXPIRETIME);
 
 		if(request.uReqData.BuddyRequest.reason[0] != 0)
