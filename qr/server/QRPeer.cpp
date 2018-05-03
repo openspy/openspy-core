@@ -145,6 +145,7 @@ namespace QR {
 			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
 		}
+		m_sent_game_query = false;
 		
 	}
 }
