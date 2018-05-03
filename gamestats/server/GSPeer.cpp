@@ -202,16 +202,17 @@ namespace GS {
 			buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
 
 			std::string kv_str = kv_ss.str();
-			for (int i = 0; i < kv_str.length(); i++) {
+
+			//don't serialize in same format as recieved....
+			/*for (int i = 0; i < kv_str.length(); i++) {
 				if (kv_str[i] == '\\') {
 					buffer.WriteByte(1);
 				}
 				else {
 					buffer.WriteByte(kv_str[i]);
-				}
-				
-			}
-			
+				}				
+			}*/
+			buffer.WriteBuffer((void *)kv_str.c_str(), kv_str.length());			
 		}
 
 		peer->SendPacket(buffer);
