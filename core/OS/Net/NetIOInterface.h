@@ -41,9 +41,11 @@ public:
 	INetIODatagram(const INetIODatagram &cpy) : buffer(cpy.buffer) {
 		address = cpy.address;
 		error_flag = cpy.error_flag;
+		comm_len = cpy.comm_len;
 	}
 	INetIODatagram() {
 		error_flag = false;
+		comm_len = 0;
 	}
 	~INetIODatagram() {
 
@@ -54,6 +56,7 @@ public:
 	bool error_flag;
 	OS::Address address;
 	OS::Buffer buffer;
+	int comm_len;
 };
 template<typename S = INetIOSocket>
 class INetIOInterface {
