@@ -431,7 +431,7 @@ class AuthService(BaseService):
             ret["success"] = True
 
             if user["id"] != profile["user"]["id"]:
-                raise OS_InvalidParam("uniquenick")
+                raise OS_Profile_UniquenickInUse(profile)
         except Profile.DoesNotExist:
             user_profile_srv = UserProfileMgrService()
             #this should raise an exception instead of return an error object...
