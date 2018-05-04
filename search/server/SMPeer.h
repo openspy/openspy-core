@@ -7,6 +7,7 @@
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
 #include <OS/KVReader.h>
+#include <OS/GPShared.h>
 
 #define GPI_READ_SIZE                  (16 * 1024)
 
@@ -79,6 +80,7 @@ namespace SM {
 		bool IsTimeout() { return m_timeout_flag; }
 
 		void SendPacket(const uint8_t *buff, int len, bool attach_final = true);
+		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
 
 		void Delete(bool timeout = false);
 

@@ -140,31 +140,44 @@ namespace SM {
 		std::string nick;
 		std::string uniquenick;
 		std::string email;
-		std::string passenc;
 		int partnercode = data_parser.GetValueInt("partnerid");
 		int namespaceid = data_parser.GetValueInt("namespaceid");
 
-		if (!data_parser.HasKey("email") || !data_parser.HasKey("nick") || !data_parser.HasKey("passenc")) {
+		if (!data_parser.HasKey("email") || !data_parser.HasKey("nick")) {
 			return;
 		}
 
 		email = data_parser.GetValue("email");
 		nick = data_parser.GetValue("nick");
-		passenc = data_parser.GetValue("passenc");
 
 
 		if (data_parser.HasKey("uniquenick")) {
 			uniquenick = data_parser.GetValue("uniquenick");
 		}
 
-		int passlen = passenc.length();
-		char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
-		passlen = gspassenc((uint8_t *)dpass);
+		std::string password;
 
-		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, dpass, false, m_newuser_cb, this, 0, this);
-		if(dpass)
-			free((void *)dpass);
+		if (data_parser.HasKey("passenc")) {
+			password = data_parser.GetValue("passenc");
+			int passlen = password.length();
+			char *dpass = (char *)base64_decode((uint8_t *)password.c_str(), &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+			password = dpass;
+			if (dpass)
+				free((void *)dpass);
+		}
+		else if (data_parser.HasKey("pass")) {
+			password = data_parser.GetValue("pass");
+		}
+		else if (data_parser.HasKey("password")) {
+			password = data_parser.GetValue("password");
+		}
+		else {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
 
+		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, 0, this);
 	}
 	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
 		std::ostringstream s;
@@ -180,31 +193,44 @@ namespace SM {
 		std::string nick;
 		std::string uniquenick;
 		std::string email;
-		std::string passenc;
 		int partnercode = data_parser.GetValueInt("partnerid");
 		int namespaceid = data_parser.GetValueInt("namespaceid");
 
-		if (!data_parser.HasKey("email") || !data_parser.HasKey("nick") || !data_parser.HasKey("passenc")) {
+		if (!data_parser.HasKey("email") || !data_parser.HasKey("nick")) {
 			return;
 		}
 
 		email = data_parser.GetValue("email");
 		nick = data_parser.GetValue("nick");
-		passenc = data_parser.GetValue("passenc");
 
 
 		if (data_parser.HasKey("uniquenick")) {
 			uniquenick = data_parser.GetValue("uniquenick");
 		}
 
-		int passlen = passenc.length();
-		char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
-		passlen = gspassenc((uint8_t *)dpass);
-	
-		OS::AuthTask::TryAuthNickEmail(nick, email, partnercode, dpass, false, m_nick_email_auth_cb, this, 0, this);
+		std::string password;
 
-		if(dpass)
-			free((void *)dpass);
+		if (data_parser.HasKey("passenc")) {
+			password = data_parser.GetValue("passenc");
+			int passlen = password.length();
+			char *dpass = (char *)base64_decode((uint8_t *)password.c_str(), &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+			password = dpass;
+			if (dpass)
+				free((void *)dpass);
+		}
+		else if (data_parser.HasKey("pass")) {
+			password = data_parser.GetValue("pass");
+		}
+		else if (data_parser.HasKey("password")) {
+			password = data_parser.GetValue("password");
+		}
+		else {
+			send_error(GPShared::GP_PARSE);
+			return;
+		}
+	
+		OS::AuthTask::TryAuthNickEmail(nick, email, partnercode, password.c_str(), false, m_nick_email_auth_cb, this, 0, this);
 	}
 	void Peer::handle_search(OS::KVReader data_parser) {
 		OS::ProfileSearchRequest request;
@@ -422,21 +448,29 @@ namespace SM {
 			request.profile_search_details.namespaceid = data_parser.GetValueInt("namespaceid");
 		}
 
-		if (!data_parser.HasKey("passenc")) {
-			Delete();
+		std::string password;
+
+		if (data_parser.HasKey("passenc")) {
+			password = data_parser.GetValue("passenc");
+			int passlen = password.length();
+			char *dpass = (char *)base64_decode((uint8_t *)password.c_str(), &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+			password = dpass;
+			if (dpass)
+				free((void *)dpass);
+		}
+		else if (data_parser.HasKey("pass")) {
+			password = data_parser.GetValue("pass");
+		}
+		else if (data_parser.HasKey("password")) {
+			password = data_parser.GetValue("password");
+		}
+		else {
+			send_error(GPShared::GP_PARSE);
 			return;
 		}
 
-		std::string passenc = data_parser.GetValue("passenc");
-
-		int passlen = passenc.length();
-		char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
-		passlen = gspassenc((uint8_t *)dpass);
-
-		request.user_search_details.password = dpass;
-
-		if (dpass)
-			free((void *)dpass);
+		request.user_search_details.password = password;
 
 		request.extra = this;
 		request.peer = this;
@@ -463,6 +497,26 @@ namespace SM {
 		s << "\\ndone\\";
 
 		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
+	}
+	void Peer::send_error(GPShared::GPErrorCode code, std::string addon_data) {
+		GPShared::GPErrorData error_data = GPShared::getErrorDataByCode(code);
+		if (error_data.msg == NULL) {
+			Delete();
+			return;
+		}
+		std::ostringstream ss;
+		ss << "\\error\\";
+		ss << "\\err\\" << error_data.error;
+		if (error_data.die) {
+			ss << "\\fatal\\";
+		}
+		ss << "\\errmsg\\" << error_data.msg;
+		if (addon_data.length())
+			ss << addon_data;
+		SendPacket((const uint8_t *)ss.str().c_str(), ss.str().length());
+		if (error_data.die) {
+			Delete();
+		}
 	}
 	void Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
 		OS::Buffer buffer;

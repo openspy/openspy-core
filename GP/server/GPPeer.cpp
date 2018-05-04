@@ -1037,7 +1037,7 @@ namespace GP {
 	}
 	void Peer::send_error(GPErrorCode code, std::string addon_data) {
 		GPShared::GPErrorData error_data = GPShared::getErrorDataByCode(code);
-		if(error_data.msg == NULL) {
+		if (error_data.msg == NULL) {
 			Delete();
 			return;
 		}
@@ -1046,12 +1046,14 @@ namespace GP {
 		ss << "\\err\\" << error_data.error;
 		if (error_data.die) {
 			ss << "\\fatal\\";
-			Delete();
 		}
 		ss << "\\errmsg\\" << error_data.msg;
-		if(addon_data.length())
+		if (addon_data.length())
 			ss << addon_data;
-		SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
+		SendPacket((const uint8_t *)ss.str().c_str(), ss.str().length());
+		if (error_data.die) {
+			Delete();
+		}
 	}
 	void Peer::send_user_blocked(int from_profileid) {
 		if(std::find(m_blocked_by.begin(), m_blocked_by.end(), from_profileid) == m_blocked_by.end()) {

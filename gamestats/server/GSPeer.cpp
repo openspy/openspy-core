@@ -377,7 +377,7 @@ namespace GS {
 
 		if(!peer->IsResponseValid(peer->m_response.c_str())) {
 			peer->send_error(GPShared::GP_CONNECTION_CLOSED);
-			peer->m_delete_flag = true;
+			peer->Delete();
 			return;
 		}
 
@@ -547,10 +547,11 @@ namespace GS {
 		ss << "\\errmsg\\" << error_data.msg;
 		if(error_data.die) {
 			ss << "\\fatal\\" << error_data.die;
-			m_delete_flag = true;
 		}
-		printf("Send error: %s\n", error_data.msg);
 		SendPacket(ss.str());
+		if (error_data.die) {
+			Delete();
+		}
 	}
 
 	void Peer::gamespy3dxor(char *data, int len) {
