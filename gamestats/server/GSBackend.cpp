@@ -63,7 +63,7 @@ namespace GSBackend {
 		peer->IncRef();
 		m_task_pool->AddRequest(req);
 	}
-	void PersistBackendTask::SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb) {
+	void PersistBackendTask::SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb, bool done) {
 		PersistBackendRequest req;
 		req.mp_peer = peer;
 		req.mp_extra = extra;
@@ -71,6 +71,7 @@ namespace GSBackend {
 		req.type = EPersistRequestType_UpdateGame;
 		req.game_instance_identifier = game_instance_identifier;
 		req.callback = cb;
+		req.complete = done;
 		req.kvMap = kvMap;
 
 		peer->IncRef();
@@ -126,6 +127,7 @@ namespace GSBackend {
 			it++;
 		}
 
+		json_object_set_new(send_json, "complete", req.complete ? json_true() : json_false());
 		json_object_set_new(send_json, "data", data_obj);
 
 		OS::HTTPClient client(GP_PERSIST_BACKEND_URL);

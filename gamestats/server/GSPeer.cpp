@@ -402,13 +402,15 @@ namespace GS {
 		std::map<std::string,std::string> game_data;
 		std::string gamedata = data_parser.GetValue("gamedata");
 
+		bool done = data_parser.GetValueInt("done");
+
 		for(int i=0;i<gamedata.length();i++) {
 			if(gamedata[i] == '\x1') {
 				gamedata[i] = '\\';
 			}
 		}
 		game_data = OS::KeyStringToMap(gamedata);
-		GSBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_current_game_identifier, updateGameCreateCallback);
+		GSBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_current_game_identifier, updateGameCreateCallback, done);
 	}
 
 	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {

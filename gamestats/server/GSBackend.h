@@ -63,6 +63,8 @@ namespace GSBackend {
 		int data_index;
 		bool data_kv_set;
 
+		bool complete;
+
 		OS::KVReader kv_set_data;
 	} PersistBackendRequest;
 
@@ -72,7 +74,7 @@ namespace GSBackend {
 			PersistBackendTask(int thread_index);
 			~PersistBackendTask();
 			static void SubmitNewGameSession(GS::Peer *peer, void* extra, PersistBackendCallback cb);
-			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb);
+			static void SubmitUpdateGameSession(std::map<std::string, std::string> kvMap, GS::Peer *peer, void* extra, std::string game_instance_identifier, PersistBackendCallback cb, bool done);
 			static void SubmitSetPersistData(int profileid, GS::Peer *peer, void* extra, PersistBackendCallback cb, std::string data_b64_buffer, persisttype_t type, int index, bool kv_set, OS::KVReader kv_set_data);
 			static void SubmitGetPersistData(int profileid, GS::Peer *peer, void *extra, PersistBackendCallback cb, persisttype_t type, int index, std::vector<std::string> keyList, int modified_since = 0);
 			static void SubmitGetGameInfoByGameName(std::string gamename, GS::Peer *peer, void *extra, PersistBackendCallback cb);
