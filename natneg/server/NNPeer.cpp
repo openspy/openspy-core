@@ -225,7 +225,13 @@ namespace NN {
 
 		m_peer_stats.packets_out++;
 		m_peer_stats.bytes_out += size;
-		//sendto(m_sd,(char *)packet,size,0,(struct sockaddr *)&m_address_info,sizeof(struct sockaddr));
+
+		OS::Buffer buffer(size);
+		buffer.WriteBuffer(packet, size);
+		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
+		if (resp.disconnect_flag || resp.error_flag) {
+			Delete();
+		}
 	}
 	void Peer::OnGotPeerAddress(OS::Address address, OS::Address private_address) {
 		if (m_found_partner) {
