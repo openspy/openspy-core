@@ -10,7 +10,7 @@
 namespace NN {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		OS::Address bind_address(0, port);
-		mp_socket = server->getNetIOInterface()->BindTCP(bind_address);
+		mp_socket = server->getNetIOInterface()->BindUDP(bind_address);
 
 		gettimeofday(&m_server_start, NULL);
 
