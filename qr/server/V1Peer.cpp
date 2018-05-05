@@ -245,7 +245,7 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", m_sd->address.ToString().c_str(), data_parser.ToString());
 		//m_server_info.m_game = OS::GetGameByName(gamename.c_str());
 
-		if (m_server_info.m_game.gameid != 0) {
+		if (m_server_info.m_game.secretkey[0] != 0) {
 			this->OnGetGameInfo(m_server_info.m_game, (void *)state_changed);
 		}
 		else if(!m_sent_game_query){
@@ -273,8 +273,7 @@ namespace QR {
 			return;
 		}
 		if (state_changed == 2) {
-			DeleteServer();
-			m_validated = false;
+			Delete();
 			return;
 		}
 		if (m_validated) {

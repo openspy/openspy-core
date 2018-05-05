@@ -285,7 +285,7 @@ namespace GP {
 		
 		((Peer *)peer)->SendPacket((const uint8_t*)s.str().c_str(), s.str().length());
 
-		if (auth_data.gamedata.gameid != 0) {
+		if (auth_data.gamedata.secretkey[0] != 0) {
 			((Peer *)peer)->m_game = auth_data.gamedata;
 		}
 	

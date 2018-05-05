@@ -13,6 +13,7 @@ namespace QR {
 		m_server_info.groupid = 0;
 		m_server_info.m_game.gameid = 0;
 		m_server_info.m_game.gamename[0] = 0;
+		m_server_info.m_game.secretkey[0] = 0;
 		m_sent_game_query = false;
 		m_version = version;
 

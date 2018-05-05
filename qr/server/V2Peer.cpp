@@ -229,11 +229,10 @@ namespace QR {
 		//register gamename
 		MM::MMPushRequest req;
 		req.peer = this;
-		if (server_info.m_game.gameid != 0) {
+		if (server_info.m_game.secretkey[0] != 0) {
 			if (m_server_pushed) {
 				if (server_info.m_keys.find("statechanged") != server_info.m_keys.end() && atoi(server_info.m_keys["statechanged"].c_str()) == 2) {
-					DeleteServer();
-					m_recv_instance_key = false;
+					Delete();
 					return;
 				}
 				struct timeval current_time;
@@ -290,8 +289,7 @@ namespace QR {
 			}
 
 			if (m_server_info.m_keys.find("statechanged") != m_server_info.m_keys.end() && atoi(m_server_info.m_keys["statechanged"].c_str()) == 2) {
-				DeleteServer();
-				m_recv_instance_key = false;
+				Delete();
 				return;
 			}
 
