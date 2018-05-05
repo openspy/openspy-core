@@ -107,7 +107,7 @@ namespace QR {
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			OS::Address peer_address = peer->getAddress();
-			if (address == peer_address) {
+			if (address == peer_address && !peer->ShouldDelete()) {
 				return peer;
 			}
 			it++;
@@ -119,7 +119,7 @@ namespace QR {
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			OS::Address peer_address = peer->getAddress();
-			if (address == peer_address) {
+			if (address == peer_address && !peer->ShouldDelete()) {
 				return peer;
 			}
 			it++;
