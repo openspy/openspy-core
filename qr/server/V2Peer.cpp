@@ -419,6 +419,8 @@ namespace QR {
 
 		buffer.WriteInt(key);
 		buffer.WriteBuffer(data, data_len);
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Recv client message: key: %d - len: %d", m_sd->address.ToString().c_str(), key, data_len);
 		SendPacket(buffer);
 	}
 	void V2Peer::OnRegisteredServer(int pk_id, void *extra) {
