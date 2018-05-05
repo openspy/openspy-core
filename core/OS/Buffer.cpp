@@ -163,4 +163,9 @@ namespace OS {
 			reset();
 			IncCursor(offset);
 		}
+		void Buffer::SetCursor(int len) {
+			if (len > mp_ctx->alloc_size)
+				return;
+			_cursor = (void *)((size_t)mp_ctx->_head + (size_t)len);
+		}
 }

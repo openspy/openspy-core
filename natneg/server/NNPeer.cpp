@@ -218,7 +218,7 @@ namespace NN {
 	}
 	void Peer::sendPacket(NatNegPacket *packet) {
 		int size = packetSizeFromType(packet->packettype);
-		memcpy(packet->magic, NNMagicData, NATNEG_MAGIC_LEN);
+		memcpy(&packet->magic, NNMagicData, NATNEG_MAGIC_LEN);
 
 		packet->version = m_client_version;
 		packet->cookie = htonl(m_cookie);
@@ -228,6 +228,7 @@ namespace NN {
 
 		OS::Buffer buffer(size);
 		buffer.WriteBuffer(packet, size);
+		buffer.SetCursor(size);
 		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
 		if (resp.disconnect_flag || resp.error_flag) {
 			Delete();

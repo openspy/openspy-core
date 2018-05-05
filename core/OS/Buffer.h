@@ -42,6 +42,7 @@ namespace OS {
 			void *GetHead();
 			void reset();
 			int size();
+			void SetCursor(int pos);
 
 			Buffer &operator=(const Buffer& val) {
 				if(mp_ctx) {
