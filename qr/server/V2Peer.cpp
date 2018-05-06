@@ -42,6 +42,7 @@ namespace QR {
 
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
+		gettimeofday(&m_last_msg_resend, NULL);
 
 	}
 	V2Peer::~V2Peer() {
@@ -100,7 +101,7 @@ namespace QR {
 				handle_keepalive(packet.buffer);
 			break;
 			case PACKET_CLIENT_MESSAGE_ACK:
-				OS::LogText(OS::ELogLevel_Info, "[%s] Client Message ACK", m_sd->address.ToString().c_str());
+				handle_client_message_ack(packet.buffer);
 			break;
 		}
 	}
@@ -329,6 +330,16 @@ namespace QR {
 			Delete();
 		}
 	}
+	void V2Peer::handle_client_message_ack(OS::Buffer &buffer) {
+		uint32_t key = buffer.ReadInt();
+		std::map<uint32_t, OS::Buffer>::iterator it = m_client_message_queue.find(key);
+		bool key_found = false;
+		if(it != m_client_message_queue.end()) {
+			m_client_message_queue.erase(key);
+			key_found = true;
+		}
+		OS::LogText(OS::ELogLevel_Info, "[%s] Client Message ACK, key: %d, found: %d", m_sd->address.ToString().c_str(), key, key_found);
+	}
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
 
 		//XXX: make all these support const vars
@@ -376,13 +387,13 @@ namespace QR {
 	void V2Peer::think(bool listener_waiting) {
 		send_ping();
 		SubmitDirtyServer();
+		ResendMessages();
 
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > QR2_PING_TIME) {
-			Delete(true);
-			
+			Delete(true);			
 		}
 	}
 
@@ -408,20 +419,32 @@ namespace QR {
 		m_sent_challenge = true;
 	}
 	void V2Peer::SendClientMessage(uint8_t *data, int data_len) {
-		OS::Buffer buffer;
+		OS::Buffer buffer(data_len);
 		uint32_t key = rand() % 100000 + 1;
 
-		buffer.WriteByte(QR_MAGIC_1);
-		buffer.WriteByte(QR_MAGIC_2);
-
-		buffer.WriteByte(PACKET_CLIENT_MESSAGE);
-		buffer.WriteBuffer((void *)&m_instance_key, sizeof(m_instance_key));
-
-		buffer.WriteInt(key);
 		buffer.WriteBuffer(data, data_len);
+		buffer.SetCursor(data_len);
+		SendClientMessage(buffer, key);
+	}
+	void V2Peer::SendClientMessage(OS::Buffer buffer, uint32_t key, bool no_insert) {
+		OS::Buffer send_buff;
+		send_buff.WriteByte(QR_MAGIC_1);
+		send_buff.WriteByte(QR_MAGIC_2);
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Recv client message: key: %d - len: %d", m_sd->address.ToString().c_str(), key, data_len);
-		SendPacket(buffer);
+		send_buff.WriteByte(PACKET_CLIENT_MESSAGE);
+		send_buff.WriteBuffer((void *)&m_instance_key, sizeof(m_instance_key));
+
+
+		send_buff.WriteInt(key);
+		send_buff.WriteBuffer(buffer.GetHead(), buffer.size());
+
+		if(!no_insert) {
+			m_client_message_queue[key] = buffer;
+		}
+		gettimeofday(&m_last_msg_resend, NULL); //blocks resending of recent messages
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Recv client message: key: %d - len: %d, resend: %d", m_sd->address.ToString().c_str(), key, buffer.size(), no_insert);
+		SendPacket(send_buff);
 	}
 	void V2Peer::OnRegisteredServer(int pk_id, void *extra) {
 		OS::Buffer buffer;
@@ -432,7 +455,21 @@ namespace QR {
 
 		buffer.WriteByte(PACKET_CLIENT_REGISTERED);
 		buffer.WriteBuffer((void *)&m_instance_key, sizeof(m_instance_key));
-		SendPacket(buffer);
+		SendPacket(buffer);		
+	}
+	void V2Peer::ResendMessages() {
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+
+		if(current_time.tv_sec - m_last_msg_resend.tv_sec > QR2_RESEND_MSG_TIME) {
+			gettimeofday(&m_last_msg_resend, NULL);
+			std::map<uint32_t, OS::Buffer>::iterator it =  m_client_message_queue.begin();
+			while(it != m_client_message_queue.end()) {
+				std::pair<uint32_t, OS::Buffer> p = *it;
+				SendClientMessage(p.second, p.first, true);
+				it++;
+			}
+		}
 		
 	}
 }

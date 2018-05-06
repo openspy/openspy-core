@@ -11,8 +11,12 @@
 
 #include "MMPush.h"
 
+#include <time.h>
+
 #define REQUEST_KEY_LEN 4
 #define QR2_PING_TIME 120
+
+#define QR2_RESEND_MSG_TIME 5 //resend every 5 seconds
 namespace QR {
 	class Driver;
 
@@ -29,11 +33,16 @@ namespace QR {
 		void SendClientMessage(uint8_t *data, int data_len);
 		void OnGetGameInfo(OS::GameData game_info, void *extra);
 		void OnRegisteredServer(int pk_id, void *extra);
+
+		void ResendMessages();
 	private:
+
+		void SendClientMessage(OS::Buffer buffer, uint32_t key, bool no_insert = false);
 		void handle_heartbeat(OS::Buffer &buffer);
 		void handle_challenge(OS::Buffer &buffer);
 		void handle_keepalive(OS::Buffer &buffer);
 		void handle_available(OS::Buffer &buffer);
+		void handle_client_message_ack(OS::Buffer &buffer);
 
 		void SendPacket(OS::Buffer &buffer);
 		void send_ping();
@@ -43,6 +52,10 @@ namespace QR {
 		uint8_t m_instance_key[REQUEST_KEY_LEN];
 		char m_challenge[CHALLENGE_LEN + 1];
 		bool m_sent_challenge;
+
+		std::map<uint32_t, OS::Buffer> m_client_message_queue;
+
+		struct timeval m_last_msg_resend;
 	};
 }
 #endif //_V2PEER_H
