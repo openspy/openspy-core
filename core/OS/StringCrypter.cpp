@@ -30,10 +30,6 @@ namespace OS {
 			uint8_t *b64_out;
 			int out_len = 0;
 
-			size_t pos = input.find("%3d");
-			if (pos != std::string::npos)
-				input.replace(pos, input.length(), "=");
-
 			int mem_len = RSA_size(mp_rsa_key);
 			unsigned char *buf = (unsigned char *)malloc(mem_len);
 
