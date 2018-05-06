@@ -27,6 +27,7 @@ enum ETokenType {
 	EToken_Multiply,
 	EToken_Divide,
 	EToken_StrLike,
+	EToken_Not,
 
 };
 typedef struct {

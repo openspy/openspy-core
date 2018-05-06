@@ -84,7 +84,9 @@ bool read_integer(const char *filter, int &idx, int len, int &int_val, float &fl
 }
 bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 
-	if(idx+1 > len) return false; //can't be multibyte since this is the end
+	if (idx + 1 > len) {
+		return false; //can't be multibyte since this is the end
+	}
 
 	if(strncmp(&filter[idx],"==", 2) == 0) {
 		*token = CToken(EToken_Equals);
@@ -98,11 +100,6 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 		*token = CToken(EToken_NotEquals);
 		idx++;
 	}
-	
-	else if (strncmp(&filter[idx], "not", 3) == 0) {
-		*token = CToken(EToken_NotEquals);
-		idx+=2;
-	}
 	else if(strncmp(&filter[idx],">=", 2) == 0) {
 		*token = CToken(EToken_GreaterEquals);
 		idx ++;
@@ -113,7 +110,7 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 		*token = CToken(EToken_Less);
 	} else if(strncmp(&filter[idx],">", 1) == 0) {
 		*token = CToken(EToken_Greater);
-	} else if(strncmp(&filter[idx],"||", 2) == 0 || strncmp(&filter[idx],"OR", 2) == 0) {
+	} else if(strncmp(&filter[idx],"||", 2) == 0 || strncasecmp(&filter[idx],"OR", 2) == 0) {
 		*token = CToken(EToken_Or);
 		idx ++;
 	} else if(strncmp(&filter[idx],"&&", 2) == 0) {
@@ -127,15 +124,21 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 		*token = CToken(EToken_LeftBracket);
 	} else if(strncmp(&filter[idx],")", 1) == 0) {
 		*token = CToken(EToken_RightBracket);
-	} else if (strncmp(&filter[idx], "null", 4) == 0) {
+	} else if (strncasecmp(&filter[idx], "null", 4) == 0) {
 		*token = CToken(0);
 		idx += 3;
 	}
-	else if (strncmp(&filter[idx], "LIKE", 4) == 0) {
+	else if (strncasecmp(&filter[idx], "LIKE", 4) == 0) {
 		*token = CToken(EToken_StrLike);
 		idx += 3;
 	}
-		//EToken_StrLike
+	else if (strncasecmp(&filter[idx], "NOT", 3) == 0) {
+		*token = CToken(EToken_Not);
+		idx += 2;
+	}
+	else if (filter[idx] == '!') {
+		*token = CToken(EToken_Not);
+	}
 	else {
 		return false;
 	}
@@ -145,7 +148,7 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 bool isOperator(ETokenType token_type) {
 	return token_type == EToken_Equals || token_type == EToken_NotEquals || token_type == EToken_Greater ||
 		token_type == EToken_GreaterEquals || token_type == EToken_Less || token_type == EToken_LessEquals || token_type == EToken_Or || token_type == EToken_And
-		|| token_type == EToken_Multiply || token_type == EToken_Divide || token_type == EToken_Add || token_type == EToken_Subtract || token_type == EToken_StrLike;
+		|| token_type == EToken_Multiply || token_type == EToken_Divide || token_type == EToken_Add || token_type == EToken_Subtract || token_type == EToken_StrLike || token_type == EToken_Not;
 }
 
 bool isOperand(ETokenType token_type) {
@@ -163,7 +166,11 @@ int getPrecedence(ETokenType token_type) {
 		return 2;
 	} else if(token_type == EToken_Equals || token_type == EToken_NotEquals) {
 		return 3;
-	} else if(token_type == EToken_Add || token_type == EToken_Subtract) {
+	}
+	else if (token_type == EToken_Not) {
+		return 4;
+	} 
+	else if (token_type == EToken_Add || token_type == EToken_Subtract) {
 		return 4;
 	}
 	else if (token_type == EToken_Multiply || token_type == EToken_Divide) {
@@ -456,6 +463,23 @@ CToken subtraction(std::stack<CToken> &stack) {
 	return ret;
 }
 
+CToken logical_not(std::stack<CToken> &stack) {
+	CToken ret(0);
+	if (stack.size() >= 1) {
+		CToken token;
+		token = stack.top(); stack.pop();
+		switch (token.getType()) {
+		case EToken_Integer:
+			ret = CToken(!token.getInt());
+			break;
+		case EToken_Float:
+			ret = CToken(!token.getFloat());
+			break;
+		}
+	}
+	return ret;
+}
+
 /*#define DEFINE_MATH_OPERATION_ACCUM(funcname, _operator) CToken funcname(std::stack<CToken> &stack) { \
 	CToken return_token; \
 	int isum = 0; \
@@ -559,6 +583,10 @@ bool evaluate(std::vector<CToken> tokens, std::map<std::string, std::string>& kv
 					break;
 				case EToken_Or:
 					ret = evalor(operand_stack);
+					operand_stack.push(ret);
+					break;
+				case EToken_Not:
+					ret = logical_not(operand_stack);
 					operand_stack.push(ret);
 					break;
 			}
