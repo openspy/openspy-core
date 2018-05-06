@@ -22,7 +22,7 @@ void find_user_info(char *str, char *nick, char *user, char *address, int buffle
 void gen_random(char *s, const int len);
 uint32_t resolv(char *host);
 int match(const char *mask, const char *name);
-int match2(const char *mask, const char *name, int &match_count);
+int match2(const char *mask, const char *name, int &match_count, char wildcard_char = '*');
 void find_nth(char *p, int n, char *buff, int bufflen);
 bool find_param(const char *name, char *buff, char *dst, int dstlen);
 int find_paramint(const char *name, char *buff);

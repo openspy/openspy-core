@@ -236,7 +236,7 @@ bool find_param(int num, char *buff, char *dst, int dstlen) {
 	}
 	return false;
 }
-int match2(const char *mask, const char *name, int &match_count)
+int match2(const char *mask, const char *name, int &match_count, char wildcard_char)
 {
 	const u_char *m = (u_char *)mask;
 	const u_char *n = (u_char *)name;
@@ -247,9 +247,9 @@ int match2(const char *mask, const char *name, int &match_count)
 
 	while(1)
 	{
-		if (*m == '*')
+		if (*m == wildcard_char)
 		{
-			while (*m == '*') /* collapse.. */
+			while (*m == wildcard_char) /* collapse.. */
 				m++;
 			ma = m; 
 			na = n;
@@ -262,14 +262,14 @@ int match2(const char *mask, const char *name, int &match_count)
 			if (!ma)
 				return 1;
 			for (m--; (m > (const u_char *)mask) && (*m == '?'); m--);
-			if (*m == '*')
+			if (*m == wildcard_char)
 				return 0;
 			m = ma;
 			n = ++na;
 		} else
 		if (!*n)
 		{
-			while (*m == '*') /* collapse.. */
+			while (*m == wildcard_char) /* collapse.. */
 				m++;
 			return (*m != 0);
 		}

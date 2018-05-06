@@ -3,6 +3,7 @@
 #include <string>
 #include <stack>
 #include <sstream>
+#include <OS/legacy/helpers.h>
 
 
 /*
@@ -88,12 +89,21 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 	if(strncmp(&filter[idx],"==", 2) == 0) {
 		*token = CToken(EToken_Equals);
 		idx ++;
-	}else  if(strncmp(&filter[idx],"=", 1) == 0) {
+	} else if (strncmp(&filter[idx], "is", 2) == 0) {
 		*token = CToken(EToken_Equals);
-	} else if(strncmp(&filter[idx],"!=", 2) == 0 || strncmp(&filter[idx],"<>", 2) == 0) {
+		idx++;
+	} else if (strncmp(&filter[idx], "=", 1) == 0) {
+		*token = CToken(EToken_Equals);	}
+	else if (strncmp(&filter[idx], "!=", 2) == 0 || strncmp(&filter[idx], "<>", 2) == 0) {
 		*token = CToken(EToken_NotEquals);
-		idx ++;
-	} else if(strncmp(&filter[idx],">=", 2) == 0) {
+		idx++;
+	}
+	
+	else if (strncmp(&filter[idx], "not", 3) == 0) {
+		*token = CToken(EToken_NotEquals);
+		idx+=2;
+	}
+	else if(strncmp(&filter[idx],">=", 2) == 0) {
 		*token = CToken(EToken_GreaterEquals);
 		idx ++;
 	} else if(strncmp(&filter[idx],"<=", 2) == 0) {
@@ -117,7 +127,16 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 		*token = CToken(EToken_LeftBracket);
 	} else if(strncmp(&filter[idx],")", 1) == 0) {
 		*token = CToken(EToken_RightBracket);
-	}else {
+	} else if (strncmp(&filter[idx], "null", 4) == 0) {
+		*token = CToken(0);
+		idx += 3;
+	}
+	else if (strncmp(&filter[idx], "LIKE", 4) == 0) {
+		*token = CToken(EToken_StrLike);
+		idx += 3;
+	}
+		//EToken_StrLike
+	else {
 		return false;
 	}
 	return true;
@@ -126,7 +145,7 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 bool isOperator(ETokenType token_type) {
 	return token_type == EToken_Equals || token_type == EToken_NotEquals || token_type == EToken_Greater ||
 		token_type == EToken_GreaterEquals || token_type == EToken_Less || token_type == EToken_LessEquals || token_type == EToken_Or || token_type == EToken_And
-		|| token_type == EToken_Multiply || token_type == EToken_Divide || token_type == EToken_Add || token_type == EToken_Subtract;
+		|| token_type == EToken_Multiply || token_type == EToken_Divide || token_type == EToken_Add || token_type == EToken_Subtract || token_type == EToken_StrLike;
 }
 
 bool isOperand(ETokenType token_type) {
@@ -152,6 +171,9 @@ int getPrecedence(ETokenType token_type) {
 	}
 	else if (token_type == EToken_Greater ||
 		token_type == EToken_GreaterEquals || token_type == EToken_Less || token_type == EToken_LessEquals) {
+		return 3;
+	}
+	else if (token_type == EToken_StrLike) {
 		return 3;
 	}
 	return 0;
@@ -266,6 +288,11 @@ std::string tokenToString(CToken *token) {
 int string_compare_equals(std::string s1, std::string s2) {
 	return s1.compare(s2);
 }
+int string_compare_like(std::string s1, std::string s2) {
+	int match_count;
+	return match2(s2.c_str(), s1.c_str(), match_count, '%') == 0;
+}
+
 int string_compare_greater_than(std::string s1, std::string s2) {
 	return s1.length() > s2.length();
 }
@@ -319,6 +346,7 @@ int string_compare_less_than_equals(std::string s1, std::string s2) {
 }
 
 DEFINE_BOOLEAN_OPERATION(equals, == , string_compare_equals, == 0)
+DEFINE_BOOLEAN_OPERATION(string_like, == , string_compare_like, == 1)
 DEFINE_BOOLEAN_OPERATION(nequals, != , string_compare_equals, != 0)
 DEFINE_BOOLEAN_OPERATION(gequals, >= , string_compare_greater_than_equals, ;)
 DEFINE_BOOLEAN_OPERATION(lequals, <= , string_compare_less_than_equals, ;)
@@ -501,6 +529,10 @@ bool evaluate(std::vector<CToken> tokens, std::map<std::string, std::string>& kv
 					ret = equals(operand_stack);
 					operand_stack.push(ret);
 					break;
+				case EToken_StrLike:
+					ret = string_like(operand_stack);
+					operand_stack.push(ret);
+					break;
 				case EToken_NotEquals:
 					ret = nequals(operand_stack);
 					operand_stack.push(ret);
@@ -553,7 +585,7 @@ TokenOperand resolve_variable(const char *name, std::map<std::string, std::strin
 	if((var != NULL && atoi(var) != 0 || (var != NULL && var[0] =='0' && var[1] ==0 )) && (kvList[name].find('.') == std::string::npos)) {
 		ret.token = EToken_Integer;
 		ret.ival = atoi(var);
-	} else if(var != NULL) {
+	} else if(var != NULL && strlen(var) > 0) {
 		ret.token = EToken_String;
 		ret.sval = var;
 	} else {
