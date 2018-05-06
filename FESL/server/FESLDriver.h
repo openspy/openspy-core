@@ -50,6 +50,8 @@ namespace FESL {
 		SSLNetIOIFace::SSLNetIOInterface *getSSL_Socket_Interface();
 
 		OS::StringCrypter *getStringCrypter() const { return mp_string_crypter; };
+
+		void OnUserAuth(OS::Address remote_address, int userid, int profileid);
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();

@@ -174,4 +174,20 @@ namespace FESL {
 	SSLNetIOIFace::SSLNetIOInterface *Driver::getSSL_Socket_Interface() {
 		return mp_socket_interface;
 	}
+	void Driver::OnUserAuth(OS::Address remote_address, int userid, int profileid) {
+		mp_mutex->lock();
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *peer = *it;
+			OS::User user;
+			OS::Profile profile;
+			if(peer->GetAuthCredentials(user, profile)) {
+				if(user.id == userid && peer->getAddress() != remote_address) {
+					peer->DuplicateLoginExit();
+				}
+			}
+			it++;
+		}
+		mp_mutex->unlock();
+	}
 }

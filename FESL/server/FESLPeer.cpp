@@ -542,4 +542,17 @@ namespace FESL {
 		m_timeout_flag = timeout;
 		m_delete_flag = true;
 	}
+	bool Peer::GetAuthCredentials(OS::User &user, OS::Profile &profile) {
+		if(m_user.id) {
+			user = m_user;
+			profile = m_profile;
+			return true;
+		}
+		return false;
+	}
+	void Peer::DuplicateLoginExit() {
+		std::string kv_str = "TXN=Goodbye\n";
+		SendPacket(FESL_TYPE_FSYS, kv_str);
+		Delete();
+	}
 }

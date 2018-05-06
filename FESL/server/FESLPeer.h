@@ -1,5 +1,5 @@
-#ifndef _GPPEER_H
-#define _GPPEER_H
+#ifndef _FESLPEER_H
+#define _FESLPEER_H
 #include "../main.h"
 #include <OS/Auth.h>
 #include <OS/User.h>
@@ -136,6 +136,10 @@ namespace FESL {
 		void SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN);
 
 		void Delete(bool timeout = false);
+
+		bool GetAuthCredentials(OS::User &user, OS::Profile &profile);
+
+		void DuplicateLoginExit();
 	private:
 		bool m_fsys_hello_handler(OS::KVReader kv_list);
 		bool m_fsys_ping_handler(OS::KVReader kv_list);
@@ -201,4 +205,4 @@ namespace FESL {
 
 	};
 }
-#endif //_GPPEER_H
+#endif //_FESLPEER_H

@@ -13,6 +13,7 @@ namespace FESL {
 		void tick();
 		void shutdown();
 		OS::MetricInstance GetMetrics();
+		void OnUserAuth(OS::Address remote_address, int userid, int profileid);
 	private:
 		struct timeval m_last_analytics_submit_time;
 	};
