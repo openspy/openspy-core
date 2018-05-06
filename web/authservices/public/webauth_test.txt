@@ -1,5 +1,0 @@
-{
-"email":"sctest@gamespy.com",
-"password": "gspy",
-"partnercode": 0
-}

@@ -27,6 +27,7 @@ class AuthService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
         self.redis_ctx = redis.StrictRedis(host=os.environ['REDIS_SERV'], port=int(os.environ['REDIS_PORT']), db = 3)
+        self.redis_auth_channel = "auth.events"
         self.PREAUTH_EXPIRE_TIME = 3600
         self.AUTH_EXPIRE_TIME = 86400
 
@@ -613,4 +614,14 @@ class AuthService(BaseService):
         if "profile" in response and "user" in response["profile"]:
             if "password" in response["profile"]["user"]:
                 del response["profile"]["user"]["password"]
+
+        if "user" in response and "profile" in response:
+            self.send_auth_event(env, response)
         return response
+
+    def send_auth_event(self, env, response):
+        app_name = env["HTTP_X_OPENSPY_APP"]
+        peer_address  = env["HTTP_X_OPENSPY_PEER_ADDRESS"]
+
+        publish_data = "\\type\\auth_event\\userid\\{}\\profileid\\{}\\remote_addr\\{}\\app_name\\{}".format(response["user"]["id"], response["profile"]["id"], peer_address, app_name)
+        self.redis_ctx.publish(self.redis_auth_channel, publish_data)

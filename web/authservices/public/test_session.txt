@@ -1,5 +1,0 @@
-{
-"mode": "test_session",
-"userid":"10001",
-"session_key": "8319a4e6c9dc3e8e3a35c4c543a3513108d48446"
-}
