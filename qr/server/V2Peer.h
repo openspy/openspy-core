@@ -17,6 +17,7 @@
 #define QR2_PING_TIME 120
 
 #define QR2_RESEND_MSG_TIME 5 //resend every 5 seconds
+#define QR2_MAX_RESEND_COUNT 5
 namespace QR {
 	class Driver;
 
@@ -56,6 +57,7 @@ namespace QR {
 		std::map<uint32_t, OS::Buffer> m_client_message_queue;
 
 		struct timeval m_last_msg_resend;
+		int m_resend_count;
 	};
 }
 #endif //_V2PEER_H

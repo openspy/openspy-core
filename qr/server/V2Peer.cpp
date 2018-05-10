@@ -32,6 +32,7 @@
 namespace QR {
 	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : Peer(driver,sd,2) {
 		m_recv_instance_key = false;
+		m_resend_count = 0;
 
 		m_sent_challenge = false;
 		m_server_pushed = false;
@@ -463,6 +464,13 @@ namespace QR {
 
 		if(current_time.tv_sec - m_last_msg_resend.tv_sec > QR2_RESEND_MSG_TIME) {
 			gettimeofday(&m_last_msg_resend, NULL);
+			if (m_client_message_queue.size() > 0) {
+				if (m_resend_count > QR2_MAX_RESEND_COUNT) {
+					Delete();
+					return;
+				}
+				m_resend_count++;
+			}
 			std::map<uint32_t, OS::Buffer>::iterator it =  m_client_message_queue.begin();
 			while(it != m_client_message_queue.end()) {
 				std::pair<uint32_t, OS::Buffer> p = *it;

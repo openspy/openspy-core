@@ -65,7 +65,7 @@ namespace QR {
 		}
 		std::string command = data_parser.GetKeyByIdx(0);
 
-		//gettimeofday(&m_last_recv, NULL); //not here due to spoofing
+		gettimeofday(&m_last_recv, NULL);
 
 		if (command.compare("heartbeat") == 0) {
 			handle_heartbeat(data_parser);
@@ -245,6 +245,11 @@ namespace QR {
 		int query_port = data_parser.GetValueInt("heartbeat");
 		int state_changed = data_parser.GetValueInt("statechanged");
 
+		if (state_changed == 2) {
+			Delete();
+			return;
+		}
+
 		gamename = data_parser.GetValue("gamename");
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", m_sd->address.ToString().c_str(), data_parser.ToString().c_str());
@@ -303,7 +308,7 @@ namespace QR {
 			gettimeofday(&m_last_recv, NULL);
 			if (m_validated) {
 				//already validated, ping request
-				gettimeofday(&m_last_ping, NULL);\
+				gettimeofday(&m_last_ping, NULL);
 			}
 			else { //just validated, recieve server info for MMPush
 				m_validated = true;
