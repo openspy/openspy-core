@@ -505,9 +505,6 @@ DEFINE_MATH_OPERATION_ACCUM(subtract, -= )
 DEFINE_MATH_OPERATION(multiply, *= )
 DEFINE_MATH_OPERATION(divide, /= )*/
 
-void fix_divide_zero(std::stack<CToken> stack) {
-	CToken t1, *t2;
-}
 
 bool evaluate(std::vector<CToken> tokens, std::map<std::string, std::string>& kvList) {
 	std::vector<CToken>::iterator it = tokens.begin();
