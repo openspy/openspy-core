@@ -61,7 +61,7 @@ namespace QR {
 	void V2Peer::handle_packet(INetIODatagram packet) {
 
 		m_peer_stats.packets_in++;
-		m_peer_stats.bytes_in += packet.buffer.size();
+		m_peer_stats.bytes_in += packet.buffer.remaining();
 
 		uint8_t type = packet.buffer.ReadByte();
 

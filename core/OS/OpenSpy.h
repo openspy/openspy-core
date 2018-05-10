@@ -157,7 +157,7 @@ namespace OS {
 	std::vector<std::string> KeyStringToVector(std::string input);
 	std::string MapToKVString(std::map<std::string, std::string> kv_data);
 	std::string strip_quotes(std::string s);
-	std::string strip_whitespace(std::string s);
+	std::string strip_whitespace(std::string s, bool skip_spaces = false);
 
 	std::string escapeJSON(const std::string& input);
 	std::string unescapeJSON(const std::string& input);

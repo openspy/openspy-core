@@ -23,6 +23,7 @@ namespace QR {
 		m_pushed_server = false;
 
 
+		m_server_info.m_game.secretkey[0] = 0;
 		m_server_info.m_game.gameid = 0;
 		m_server_info.m_address = socket->address;
 
@@ -52,9 +53,12 @@ namespace QR {
 		}
 
 		m_peer_stats.packets_in++;
-		m_peer_stats.bytes_in += packet.buffer.size();
+		m_peer_stats.bytes_in += packet.buffer.remaining();
 
-		OS::KVReader data_parser = OS::KVReader(std::string((const char *)packet.buffer.GetHead()));
+
+		std::string recv_buf = std::string((const char *)packet.buffer.GetHead(), packet.buffer.remaining());
+		OS::KVReader data_parser = OS::KVReader(recv_buf);
+
 		if (data_parser.Size() < 1) {
 			Delete();
 			return;
@@ -149,8 +153,9 @@ namespace QR {
 			return;
 		}
 		else {
-			challenge = data_parser.GetValue("echo");
-			if (strcmp(OS::strip_whitespace(challenge).c_str(), (char *)&m_challenge)) {
+			challenge = OS::strip_whitespace(data_parser.GetValue("echo"), true);
+			int ret = strcmp(challenge.c_str(), (char *)&m_challenge);
+			if (ret) {
 				send_error(true, "incorrect challenge response in query response");
 				return;
 			}
@@ -213,7 +218,7 @@ namespace QR {
 
 		gen_random((char *)&m_challenge, 6); //make new challenge
 		s << "\\echo\\ " << m_challenge;
-		SendPacket(s.str(), false);
+		SendPacket(s.str());
 	}
 	void V1Peer::handle_validate(OS::KVReader data_parser) {
 		std::string validate = data_parser.GetValue("validate");
@@ -242,7 +247,7 @@ namespace QR {
 
 		gamename = data_parser.GetValue("gamename");
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", m_sd->address.ToString().c_str(), data_parser.ToString());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", m_sd->address.ToString().c_str(), data_parser.ToString().c_str());
 		//m_server_info.m_game = OS::GetGameByName(gamename.c_str());
 
 		if (m_server_info.m_game.secretkey[0] != 0) {
@@ -268,7 +273,7 @@ namespace QR {
 		m_server_info.m_game = game_info;
 
 		m_dirty_server_info = m_server_info;
-		if (!m_server_info.m_game.gameid) {
+		if (m_server_info.m_game.secretkey[0] == 0) {
 			send_error(true, "unknown game");
 			return;
 		}
@@ -284,13 +289,13 @@ namespace QR {
 			s << "\\secure\\" << m_challenge;
 		}
 		if (s.str().length() > 0)
-			SendPacket(s.str(), false);
+			SendPacket(s.str());
 	}
 	void V1Peer::handle_echo(OS::KVReader data_parser) {
 		std::string validation;
 		std::ostringstream s;
 
-		validation = data_parser.GetValue("echo");
+		validation = OS::strip_whitespace(data_parser.GetValue("echo"), true);
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Echo: %s", m_sd->address.ToString().c_str(), data_parser.ToString().c_str());
 
@@ -298,7 +303,7 @@ namespace QR {
 			gettimeofday(&m_last_recv, NULL);
 			if (m_validated) {
 				//already validated, ping request
-				gettimeofday(&m_last_ping, NULL);
+				gettimeofday(&m_last_ping, NULL);\
 			}
 			else { //just validated, recieve server info for MMPush
 				m_validated = true;
@@ -336,7 +341,7 @@ namespace QR {
 		m_peer_stats.packets_out++;
 		m_peer_stats.bytes_out += send_str.length()+1;
 
-		buffer.WriteNTS(send_str);
+		buffer.WriteBuffer((void *)send_str.c_str(), send_str.length());
 
 		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
 		if (resp.disconnect_flag || resp.error_flag) {

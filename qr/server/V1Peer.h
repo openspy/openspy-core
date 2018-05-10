@@ -37,7 +37,7 @@ namespace QR {
 		void OnGetGameInfo(OS::GameData game_info, void *extra);
 		void OnRegisteredServer(int pk_id, void *extra);
 	private:
-		void SendPacket(std::string str, bool attach_final);
+		void SendPacket(std::string str, bool attach_final = true);
 		void send_ping();
 		void handle_echo(OS::KVReader data_parser);
 		void handle_heartbeat(OS::KVReader data_parser);

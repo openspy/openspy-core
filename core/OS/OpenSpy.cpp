@@ -458,12 +458,12 @@ namespace OS {
 		return output;
 	}
 
-	std::string strip_whitespace(std::string s) {
+	std::string strip_whitespace(std::string s, bool skip_spaces) {
 		std::string ret;
 		std::string::iterator it = s.begin();
 		while(it != s.end()) {
 			unsigned char ch = *(it++);
-			if(isspace(ch) && ch != ' ')
+			if(isspace(ch) && (ch != ' ' || (skip_spaces && ch == ' ')))
 				continue;
 			ret += ch;
 		}
