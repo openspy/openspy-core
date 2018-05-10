@@ -381,8 +381,8 @@ namespace SB {
 			std::vector<MM::Server *>::iterator it = results.list.begin();
 			while(it != results.list.end()) {
 				MM::Server *serv = *it;
-				buffer.WriteInt(serv->wan_address.ip);
-				buffer.WriteShort(serv->wan_address.port);
+				buffer.WriteInt(serv->wan_address.GetIP());
+				buffer.WriteShort(serv->wan_address.GetPort());
 				it++;
 			}
 			SendPacket((const uint8_t *)buffer.GetHead(), buffer.size(), results.last_set);
