@@ -333,7 +333,7 @@ namespace QR {
 			gettimeofday(&m_last_ping, NULL);
 			gen_random((char *)&m_ping_challenge, 6);
 			s << "\\echo\\" << m_ping_challenge;
-			SendPacket(s.str(), false);
+			SendPacket(s.str());
 		}
 	}
 	void V1Peer::SendPacket(std::string str, bool attach_final) {
