@@ -150,7 +150,7 @@ namespace OS {
 		std::vector<std::pair<std::string, std::string>>::const_iterator it = m_kv_map.cbegin();
 		while (it != m_kv_map.cend()) {
 			std::pair<std::string, std::string> p = *it;
-			ret += p.first + m_delimitor + p.second;
+			ret += m_delimitor + p.first + m_delimitor + p.second;
 			it++;
 		}
 		return ret;
