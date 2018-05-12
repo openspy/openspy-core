@@ -325,12 +325,12 @@ namespace QR {
 		}
 	}
 	void V1Peer::send_ping() {
-		//check for timeout
 		struct timeval current_time;
 		std::ostringstream s;
 
 		gettimeofday(&current_time, NULL);
 		if (current_time.tv_sec - m_last_ping.tv_sec > QR1_PING_TIME) {
+			gettimeofday(&m_last_ping, NULL);
 			gen_random((char *)&m_ping_challenge, 6);
 			s << "\\echo\\" << m_ping_challenge;
 			SendPacket(s.str(), false);
