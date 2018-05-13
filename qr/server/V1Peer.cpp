@@ -20,8 +20,6 @@ namespace QR {
 		m_uses_validation = false;
 		m_validated = false;
 		m_query_state = EV1_CQS_Complete;
-		m_pushed_server = false;
-
 
 		m_server_info.m_game.secretkey[0] = 0;
 		m_server_info.m_game.gameid = 0;
@@ -185,8 +183,8 @@ namespace QR {
 		case EV1_CQS_Players:
 			parse_players(data_parser);
 			MM::MMPushRequest req;
-			if (!m_pushed_server) {
-				m_pushed_server = true;
+			if (!m_server_pushed) {
+				m_server_pushed = true;
 				req.type = MM::EMMPushRequestType_PushServer;
 			}
 			else {

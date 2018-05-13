@@ -53,8 +53,6 @@ namespace QR {
 		bool m_uses_validation;
 		bool m_validated; //passed "echo" validation or use "secure" response
 
-		bool m_pushed_server;
-
 		EV1ClientQueryState m_query_state;
 	};
 }
