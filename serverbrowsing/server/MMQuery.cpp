@@ -218,6 +218,8 @@ namespace MM {
 
 		server->key = entry_name;
 
+		server->kvFields["backend_id"] = entry_name;
+
 		Redis::Command(redis_ctx, 0, "ZINCRBY %s -1 \"%s\"", server->game.gamename, entry_name.c_str());
 
 
