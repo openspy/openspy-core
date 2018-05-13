@@ -220,14 +220,23 @@ class UserProfileMgrService(BaseService):
 
                     to_profile_model = Profile.get((Profile.id == request_data["to_profileid"]))
                     from_profile_model = Profile.get((Profile.id == request_data["from_profileid"]))
-                    Buddy.insert(from_profile=to_profile_model,to_profile=from_profile_model).execute()
-                    Buddy.insert(to_profile=to_profile_model,from_profile=from_profile_model).execute()
 
-                    publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["from_profileid"], request_data["to_profileid"])
-                    self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+                    #Buddy.insert(to_profile=to_profile_model,from_profile=from_profile_model).execute()
+                    #publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["from_profileid"], request_data["to_profileid"])
+                    #self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
 
+                    
                     publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}\\silent\\1".format(request_data["to_profileid"], request_data["from_profileid"])
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+
+                    do_insert = False
+                    try:
+                        buddy = Buddy.get((Buddy.from_profile == to_profile & Buddy.to_profile == from_profile))
+                    except (Buddy.DoesNotExist) as e:
+                        do_insert = True
+
+                    if do_insert:
+                        Buddy.insert(from_profile=to_profile_model,to_profile=from_profile_model).execute()
         return {"success": success}
 
     def handle_del_buddy(self, request_data):
