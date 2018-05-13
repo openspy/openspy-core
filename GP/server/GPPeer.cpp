@@ -495,7 +495,7 @@ namespace GP {
 
 		s << "|p|" << productid;
 		s << "|l|" << m_status.location_str;
-		s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+		//s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
 		GPBackend::GPBackendRedisTask::SendMessage(this, profileid, GPI_BM_INVITE, s.str().c_str());
 	}
 	void Peer::handle_status(OS::KVReader data_parser) {
