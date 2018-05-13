@@ -102,7 +102,14 @@ namespace OS {
 		QR2_GAME_TEMPORARILY_UNAVAILABLE,
 	} QRV2AvailableStatus;
 		
-	typedef struct {
+	class GameData {
+	public:
+		GameData() :gameid(0), queryport(0), disabled_services(0), compatibility_flags(0) {
+			secretkey[0] = 0;
+			gamename[0] = 0;
+			secretkey[0] = 0;
+			description[0] = 0;
+		};
 		int gameid;
 		int queryport;
 		char gamename[OS_MAX_GAMENAME];
@@ -112,7 +119,7 @@ namespace OS {
 		int compatibility_flags;
 		std::vector<std::string> popular_values;
 		std::map<std::string, uint8_t> push_keys; //SB push keys + type(hostname/KEYTYPE_STRING)
-	} GameData;
+	};
 
 	GameData GetGameByName(const char *from_gamename, Redis::Connection *redis_ctx = NULL);
 	GameData GetGameByID(int gameid, Redis::Connection *redis_ctx = NULL);
