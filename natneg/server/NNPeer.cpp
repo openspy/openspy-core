@@ -65,7 +65,7 @@ namespace NN {
 	}
 	void Peer::handle_packet(INetIODatagram net_packet) {
 		m_peer_stats.packets_in++;
-		m_peer_stats.bytes_in += net_packet.buffer.size();
+		m_peer_stats.bytes_in += net_packet.buffer.remaining();
 		NatNegPacket *packet = (NatNegPacket *)net_packet.buffer.GetHead();
 		unsigned char NNMagicData[] = {NN_MAGIC_0, NN_MAGIC_1, NN_MAGIC_2, NN_MAGIC_3, NN_MAGIC_4, NN_MAGIC_5};
 		if(memcmp(&NNMagicData,&packet->magic, NATNEG_MAGIC_LEN) != 0) {
@@ -83,8 +83,9 @@ namespace NN {
 
 		int packetSize = packetSizeFromType(packet->packettype);
 
-		int len = net_packet.buffer.size();
-		if (((char *)net_packet.buffer.GetHead())[len] == 0 && m_gamename.length() == 0) {
+		int len = net_packet.buffer.remaining();
+		
+		if (((char *)net_packet.buffer.GetHead())[len-1] == 0 && m_gamename.length() == 0 && m_client_version > 2) {
 			m_gamename = (const char *)&((char *)net_packet.buffer.GetHead())[packetSize];
 		}
 		switch(packet->packettype) {
@@ -144,8 +145,9 @@ namespace NN {
 		if (m_found_partner) {
 			SendConnectPacket(m_peer_address);
 		}
-
-		//gettimeofday(&m_init_time, NULL);
+		else {
+			gettimeofday(&m_init_time, NULL);
+		}
 	}
 	void Peer::handleNatifyPacket(NatNegPacket *packet) {
 		NNBackendRequest req;
@@ -274,6 +276,8 @@ namespace NN {
 		NatNegPacket p;
 		p.version = m_client_version;
 		p.packettype = NN_CONNECT;
+		p.Packet.Connect.remoteIP = 0;
+		p.Packet.Connect.remotePort = 0;
 		p.Packet.Connect.finished = error;
 		sendPacket(&p);
 		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", m_sd->address.ToString().c_str());
@@ -294,6 +298,7 @@ namespace NN {
 
 		p.Packet.Connect.remoteIP = remote_addr.sin_addr.s_addr;
 		p.Packet.Connect.remotePort = remote_addr.sin_port;
+		p.Packet.Connect.gotyourdata = 1;
 
 		sendPacket(&p);
 
