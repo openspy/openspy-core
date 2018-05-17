@@ -31,6 +31,7 @@ namespace NN {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
 	}
 	void Peer::think(bool waiting_packet) {
+		if (m_delete_flag) return;
 		struct timeval time_now;
 		gettimeofday(&time_now, NULL);
 
