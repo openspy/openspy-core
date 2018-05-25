@@ -47,7 +47,7 @@ namespace NN {
 		return NULL;
 	}
 
-	void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
+	void NNQueryTask::onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
 		Redis::Value v = reply.values.front();
 		NN::Server *server = (NN::Server *)privdata;
 
@@ -55,13 +55,28 @@ namespace NN {
 			if (v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
 				if (strcmp(v.arr_value.values[1].second.value._str.c_str(), nn_channel) == 0) {
 					std::map<std::string, std::string> kv_data = OS::KeyStringToMap(v.arr_value.values[2].second.value._str.c_str());
-					if(kv_data.find("natneg_init") != kv_data.end()) {
-						//if (kv_data["type"].compare("") == 0) {
-						NNCookieType cookie = (NNCookieType)atoi(kv_data["natneg_init"].c_str());
-						int client_idx = atoi(kv_data["index"].c_str());
-						OS::Address addr(kv_data["ipstr"].c_str());
-						OS::Address private_addr(kv_data["privateip"].c_str());
-						server->OnGotCookie(cookie, client_idx, addr, private_addr);
+					if(kv_data.find("msg") != kv_data.end()) {
+						std::string msg = kv_data["msg"];
+						if (msg.compare("final_peer") == 0) {
+							NNCookieType cookie = (NNCookieType)atoi(kv_data["cookie"].c_str());
+							int client_idx = atoi(kv_data["client_index"].c_str());
+							int opposite_client_idx = client_idx;
+							//int opposite_client_idx = client_idx == 0 ? 1 : 0;
+							NN::Peer *peer = server->FindConnection(cookie, opposite_client_idx, false);
+							if (peer) {
+								std::ostringstream nn_key_ss;
+								nn_key_ss << "nn_client_" << client_idx << "_" << cookie;
+
+								ConnectionSummary summary = mp_async_lookup_task->LoadConnectionSummary(nn_key_ss.str());
+								NAT nat;
+								OS::Address next_public_address, next_private_address;
+								NN::LoadSummaryIntoNAT(summary, nat);
+								NN:DetermineNatType(nat);								
+								NN::DetermineNextAddress(nat, next_public_address, next_private_address);
+								printf("Determined addresses: %s %s\n", next_public_address.ToString().c_str(), next_private_address.ToString().c_str());
+								peer->OnGotPeerAddress(next_public_address, next_private_address);
+							}
+						}
 					}
 				end_exit:
 					return;
@@ -114,45 +129,108 @@ namespace NN {
 	void NNQueryTask::PerformERTTest(NNBackendRequest task_params) {
 		OS::Address address = task_params.peer->getAddress();
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\natneg_erttest\\%s\\type\\%d'", nn_channel, address.ToString().c_str(),task_params.extra);
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\natneg_erttest\\address\\%s\\type\\%d'", nn_channel, address.ToString().c_str(),task_params.extra);
 	}
+
 	void NNQueryTask::PerformSubmit(NNBackendRequest task_params) {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
 
 		OS::Address address = task_params.peer->getAddress();
+		OS::Address private_address = task_params.peer->getPrivateAddress();
+
 		int client_index = task_params.peer->GetClientIndex();
-		int search_index = client_index == 1 ? 0 : 1;
 
 		std::string nn_key;
 		std::ostringstream nn_key_ss;
-		nn_key_ss << "nn_cookie_" << task_params.peer->GetCookie();
+		nn_key_ss << "nn_client_" << client_index << "_" << task_params.peer->GetCookie();
 		nn_key = nn_key_ss.str();
 
-		//Check for existing natneg cookies, and send if already sent by client
-		Redis::Response reply = Redis::Command(mp_redis_connection, 0, "EXISTS %s", nn_key.c_str());
-		if (!(reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)) { 
-			std::string connect_address;
-			reply = Redis::Command(mp_redis_connection, 0, "HGET %s %d", nn_key.c_str(), search_index);
-			if (reply.values.size() > 0 && reply.values.front().type != Redis::REDIS_RESPONSE_TYPE_ERROR) {
-				Redis::Value v = reply.values.front();
-				std::vector<std::string> ip_list = OS::KeyStringToVector(v.value._str);
-				if (ip_list.size() == 2) {
-					OS::Address peer_address(ip_list.at(0).c_str()), private_peer_address(ip_list.at(1).c_str());
-					task_params.peer->OnGotPeerAddress(peer_address, private_peer_address);
-				}
+		Redis::Command(mp_redis_connection, 0, "HSET %s usegameport %d", nn_key.c_str(), task_params.peer->getUseGamePort());
+		Redis::Command(mp_redis_connection, 0, "HSET %s cookie %d", nn_key.c_str(), task_params.peer->GetCookie());
+		Redis::Command(mp_redis_connection, 0, "HSET %s clientindex %d", nn_key.c_str(), client_index);
+
+		Redis::Command(mp_redis_connection, 0, "HSET %s address_%d \"%s\"", nn_key.c_str(), task_params.peer->getPortType(), address.ToString().c_str());
+		printf("saving Address %d - %s\n", task_params.peer->getPortType(), address.ToString().c_str());
+
+		if (task_params.peer->isFinalPeer()) {
+			Redis::Command(mp_redis_connection, 0, "HSET %s private_address \"%s\"", nn_key.c_str(), private_address.ToString().c_str());
+			if (task_params.peer->getUseGamePort()) {
+				Redis::Command(mp_redis_connection, 0, "HSET %s gameport \"%d\"", nn_key.c_str(), private_address.GetPort());
 			}
-			//Redis::Command(mp_redis_connection, 0, "HDEL %s %d", nn_key.c_str(), search_index); //delete cookie to prevent re-sends when invalid
-		}
-			
 
-		Redis::Command(mp_redis_connection, 0, "HSET %s %d '\\%s\\%s'", nn_key.c_str(), client_index, address.ToString().c_str(), task_params.peer->getPrivateAddress().ToString().c_str());
-		Redis::Command(mp_redis_connection, 0, "EXPIRE %s %d", nn_key.c_str(), NATNEG_COOKIE_TIME);
-		switch (task_params.type) {
-			case NN::ENNQueryRequestType_SubmitClient:
-				Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\natneg_init\\%d\\index\\%d\\ipstr\\%s\\gamename\\%s\\privateip\\%s'", nn_channel, task_params.peer->GetCookie(), task_params.peer->GetClientIndex(), address.ToString().c_str(), task_params.peer->getGamename().c_str(), task_params.peer->getPrivateAddress().ToString().c_str());
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\final_peer\\cookie\\%d\\client_index\\%d'", nn_channel, task_params.peer->GetCookie(), client_index);
+		}
+	}
+	ConnectionSummary NNQueryTask::LoadConnectionSummary(std::string redis_key) {
+		ConnectionSummary connection_summary;
+		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
+
+		Redis::Response reply;
+
+		reply = Redis::Command(mp_redis_connection, 0, "EXISTS %s", redis_key.c_str());
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+			return connection_summary;
+
+		reply = Redis::Command(mp_redis_connection, 0, "HGET %s usegameport", redis_key.c_str());
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+			goto error_cleanup;
+
+		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING)
+			connection_summary.usegameport = atoi((reply.values[0].value._str).c_str());
+
+		if (connection_summary.usegameport) {
+			reply = Redis::Command(mp_redis_connection, 0, "HGET %s gameport", redis_key.c_str());
+			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+				goto error_cleanup;
+
+			if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING)
+				connection_summary.gameport = atoi((reply.values[0].value._str).c_str());
+		}
+
+		reply = Redis::Command(mp_redis_connection, 0, "HGET %s clientindex", redis_key.c_str());
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+			goto error_cleanup;
+
+		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING)
+			connection_summary.index = atoi((reply.values[0].value._str).c_str());
+
+		reply = Redis::Command(mp_redis_connection, 0, "HGET %s cookie", redis_key.c_str());
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+			goto error_cleanup;
+
+		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING)
+			connection_summary.cookie = atoi((reply.values[0].value._str).c_str());
+
+		reply = Redis::Command(mp_redis_connection, 0, "HGET %s private_address", redis_key.c_str());
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+			goto error_cleanup;
+
+		connection_summary.private_address = OS::Address(reply.values.front().value._str.c_str());
+
+
+		int address_counter = 0;
+		if (!connection_summary.usegameport) {
+			address_counter = 1;
+		}
+		while (true) {
+			std::ostringstream key_ss;
+			key_ss << "address_" << address_counter;
+			reply = Redis::Command(mp_redis_connection, 0, "HEXISTS %s %s", redis_key.c_str(), key_ss.str().c_str());
+			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
 				break;
+			if (reply.values[0].value._int == 0)
+				break;
+			
+			
+			reply = Redis::Command(mp_redis_connection, 0, "HGET %s %s", redis_key.c_str(), key_ss.str().c_str());
+			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+				goto error_cleanup;
+
+			connection_summary.m_port_type_addresses[address_counter++] = OS::Address(reply.values.front().value._str.c_str());
 		}
 
+	error_cleanup:
+		return connection_summary;
 	}
 
 	void *setup_redis_async(OS::CThread *thread) {
@@ -161,7 +239,7 @@ namespace NN {
 		t.tv_sec = 1;
 		mp_redis_async_connection = Redis::Connect(OS::g_redisAddress, t);
 		mp_async_lookup_task = new NNQueryTask(NUM_NN_QUERY_THREADS+1);
-		Redis::LoopingCommand(mp_redis_async_connection, 0, onRedisMessage, thread->getParams(), "SUBSCRIBE %s", nn_channel);
+		Redis::LoopingCommand(mp_redis_async_connection, 0, NNQueryTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s", nn_channel);
 		return NULL;
 	}
 	void SetupTaskPool(NN::Server* server) {

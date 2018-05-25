@@ -1,6 +1,8 @@
 #ifndef _NN_STRUCTS_INC
 #define _NN_STRUCTS_INC
 
+namespace NN {
+
 #define NATNEG_MAGIC_LEN 6
 #define NN_MAGIC_0 0xFD
 #define NN_MAGIC_1 0xFC
@@ -32,8 +34,8 @@
 #define REPORT_RETRY_COUNT 4
 
 #define NN_PROTVER 4
-//#define NN_PROTVER 3
-//#define NN_PROTVER 2
+	//#define NN_PROTVER 3
+	//#define NN_PROTVER 2
 
 #define NN_PT_GP  0
 #define NN_PT_NN1 1
@@ -62,83 +64,120 @@
 #define NN_PREINIT_WAITING_FOR_MATCHUP 1
 #define NN_PREINIT_READY 2
 
-typedef enum { packet_map1a, packet_map2, packet_map3, packet_map1b, NUM_PACKETS } NatifyPacket;
-typedef enum { no_nat, firewall_only, full_cone, restricted_cone, port_restricted_cone, symmetric, unknown, NUM_NAT_TYPES } NatType;
-typedef enum { promiscuous, not_promiscuous, port_promiscuous, ip_promiscuous, promiscuity_not_applicable, NUM_PROMISCUITY_TYPES } NatPromiscuity;
-typedef enum { unrecognized, private_as_public, consistent_port, incremental, mixed, NUM_MAPPING_SCHEMES } NatMappingScheme;
-static uint8_t NNMagicData[] = {NN_MAGIC_0, NN_MAGIC_1, NN_MAGIC_2, NN_MAGIC_3, NN_MAGIC_4, NN_MAGIC_5};
+	typedef enum { packet_map1a, packet_map2, packet_map3, packet_map1b, NUM_PACKETS } NatifyPacket;
+	typedef enum { no_nat, firewall_only, full_cone, restricted_cone, port_restricted_cone, symmetric, unknown, NUM_NAT_TYPES } NatType;
+	typedef enum { promiscuous, not_promiscuous, port_promiscuous, ip_promiscuous, promiscuity_not_applicable, NUM_PROMISCUITY_TYPES } NatPromiscuity;
+	typedef enum { unrecognized, private_as_public, consistent_port, incremental, mixed, NUM_MAPPING_SCHEMES } NatMappingScheme;
+	static uint8_t NNMagicData[] = { NN_MAGIC_0, NN_MAGIC_1, NN_MAGIC_2, NN_MAGIC_3, NN_MAGIC_4, NN_MAGIC_5 };
 #if !defined(_PS2) && !defined(_NITRO)
 # pragma pack(1)
 #endif
 
 #define INITPACKET_SIZE				(BASEPACKET_SIZE + 9)
 #define INITPACKET_ADDRESS_OFFSET	(BASEPACKET_SIZE + 3)
-typedef struct _InitPacket
-{
-	uint8_t porttype;
-	uint8_t clientindex;
-	uint8_t usegameport;
-	uint32_t localip;
-	uint16_t localport;
-} InitPacket;
+	typedef struct _InitPacket
+	{
+		uint8_t porttype;
+		uint8_t clientindex;
+		uint8_t usegameport;
+		uint32_t localip;
+		uint16_t localport;
+	} InitPacket;
 
 #define REPORTPACKET_SIZE			(BASEPACKET_SIZE + 61)
-typedef struct _ReportPacket
-{
-	uint8_t porttype;
-	uint8_t clientindex;
-	uint8_t negResult;
-	NatType natType;
-	NatMappingScheme natMappingScheme;
-	char gamename[50];
-} ReportPacket;
+	typedef struct _ReportPacket
+	{
+		uint8_t porttype;
+		uint8_t clientindex;
+		uint8_t negResult;
+		NatType natType;
+		NatMappingScheme natMappingScheme;
+		char gamename[50];
+	} ReportPacket;
 
 #define CONNECTPACKET_SIZE			(BASEPACKET_SIZE + 8)
-typedef struct _ConnectPacket
-{
-	uint32_t remoteIP;
-	uint16_t remotePort;
-	uint8_t gotyourdata;
-	uint8_t finished;
-} ConnectPacket;
+	typedef struct _ConnectPacket
+	{
+		uint32_t remoteIP;
+		uint16_t remotePort;
+		uint8_t gotyourdata;
+		uint8_t finished;
+	} ConnectPacket;
 
 #define PREINITPACKET_SIZE			(BASEPACKET_SIZE + 6)
-typedef struct _PreinitPacket
-{
-	uint8_t clientindex;
-	uint8_t state;
-	uint32_t clientID;
-} PreinitPacket;
+	typedef struct _PreinitPacket
+	{
+		uint8_t clientindex;
+		uint8_t state;
+		uint32_t clientID;
+	} PreinitPacket;
 
 #define BASEPACKET_SIZE				12
 #define BASEPACKET_TYPE_OFFSET		7
 
-typedef struct _NatNegPacket {
-	// Base members:
-	uint8_t magic[NATNEG_MAGIC_LEN];
-	uint8_t version;
-	uint8_t packettype;
-	uint32_t cookie;	
+	typedef struct _NatNegPacket {
+		// Base members:
+		uint8_t magic[NATNEG_MAGIC_LEN];
+		uint8_t version;
+		uint8_t packettype;
+		uint32_t cookie;
 
-	union 
-	{
-		InitPacket Init;
-		ConnectPacket Connect;
-		ReportPacket Report;
-		PreinitPacket Preinit;
-	} Packet;
+		union
+		{
+			InitPacket Init;
+			ConnectPacket Connect;
+			ReportPacket Report;
+			PreinitPacket Preinit;
+		} Packet;
 
-} NatNegPacket;
+	} NatNegPacket;
 
 #if !defined(_PS2) && !defined(_NITRO)
 # pragma pack()
 #endif
 
-typedef struct _HandlerData {
-	int sd;
-	struct sockaddr si_other;
-} HandlerData;
 
-typedef uint32_t NNCookieType;
+	//////////////////////////////////////////////////////////////
+	// AddressMapping
+	// Summary
+	//		Internal and external address pairing for an observed network address translation.
+	// See Also
+	//		NAT
+	typedef struct _AddressMapping {
+		unsigned int privateIp;		// Internal IP address.
+		unsigned short privatePort;	// Internal port number.
+		unsigned int publicIp;		// External IP address.
+		unsigned short publicPort;	// External port number.
+	} AddressMapping;
 
+
+	typedef struct _NAT {
+		bool ipRestricted;			// true if the NAT drops packets from unsolicited IP addresses.
+		bool portRestricted;		// true if the NAT drops packets from unsolicited ports.
+		NatPromiscuity promiscuity;		// The type of promiscuity the NAT allows.
+		NatType natType;				// The type of NAT as defined by RFC2663.
+		NatMappingScheme mappingScheme;	// The type of port mapping/allocation scheme used by the NAT.
+		AddressMapping mappings[4];		// Port mappings observed during the detection process.
+
+		AddressMapping privateAddress; //the private address mapping for next private connection
+	} NAT;
+
+	typedef uint32_t NNCookieType;
+
+	class ConnectionSummary {
+	public:
+		ConnectionSummary() {
+			usegameport = 0;
+			cookie = 0;
+			gameport = 0;
+		}
+		bool usegameport;
+		NNCookieType cookie;
+		int index;
+		uint16_t gameport;
+		std::map<int, OS::Address> m_port_type_addresses;
+		OS::Address private_address;
+	};
+
+}
 #endif

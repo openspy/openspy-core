@@ -106,6 +106,17 @@ namespace NN {
 		}
 		return NULL;
 	}
+	Peer *Driver::find_client(NNCookieType cookie, int client_idx) {
+		std::vector<Peer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *peer = *it;
+			if(peer->GetCookie() == cookie && peer->GetClientIndex() == client_idx) {
+				return peer;
+			}
+			it++;
+		}
+		return NULL;
+	}
 	Peer *Driver::find_or_create(OS::Address address, INetIOSocket *socket) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
@@ -126,20 +137,6 @@ namespace NN {
 		Peer *ret = new Peer(this, client_socket);
 		m_connections.push_back(ret);
 		return ret;
-	}
-
-
-	void Driver::OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address) {
-		const std::vector < INetPeer * > peers = this->getPeers(true);
-		std::vector<INetPeer *>::const_iterator it = peers.begin();
-		while (it != peers.end()) {
-			Peer *p = (Peer *)*it;
-			if(p->GetCookie() == cookie && p->GetClientIndex() != client_idx && p->GetClientIndex() != -1) {
-				p->OnGotPeerAddress(address, private_address);
-			}
-			p->DecRef();
-			it++;
-		}
 	}
 
 	void Driver::TickConnections() {

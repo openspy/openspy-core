@@ -133,9 +133,11 @@ namespace NN {
 	}
 	void Peer::handleInitPacket(NatNegPacket *packet) {
 		m_client_index = packet->Packet.Init.clientindex;
-		m_private_address = OS::Address(packet->Packet.Init.localip, packet->Packet.Init.localport);
+		m_port_type = packet->Packet.Init.porttype;
+		m_use_gameport = packet->Packet.Init.usegameport;
+		m_private_address = OS::Address(packet->Packet.Init.localip, htons(packet->Packet.Init.localport));
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, game: %s", m_sd->address.ToString().c_str(), packet->version, m_client_index, m_cookie, m_gamename.c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, porttype: %d, use_gameport: %d, private: %s, game: %s", m_sd->address.ToString().c_str(), packet->version, m_client_index, m_cookie, m_port_type, m_use_gameport, m_private_address.ToString().c_str(), m_gamename.c_str());
 
 		SubmitClient();
 
@@ -237,38 +239,23 @@ namespace NN {
 			Delete();
 		}
 	}
-	void Peer::OnGotPeerAddress(OS::Address address, OS::Address private_address) {
+	void Peer::OnGotPeerAddress(OS::Address public_address, OS::Address private_address) {
 		if (m_found_partner) {
 			return;
 		}
-		if (address.GetIP() == getAddress().GetIP()) {
+		if (public_address.GetIP() == getAddress().GetIP()) {
 			m_peer_address = private_address;
 		}
 		else {
-			m_peer_address = address;
+			m_peer_address = public_address;
 		}
 		
 		m_found_partner = true;
 
-		/*if (is_preinit && m_got_preinit) {
-			struct timeval time_now;
-			gettimeofday(&time_now, NULL);
-			if (time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
-				printf("send preinit ready\n");
-				SendPreInitPacket(NN_PREINIT_READY);
-			}
-			else {
-				printf("send preinit matchup\n");
-				SendPreInitPacket(NN_PREINIT_WAITING_FOR_MATCHUP);
-				//SendPreInitPacket(NN_PREINIT_READY);
-			}
-		}
-		else*/ {
-			struct timeval time_now;
-			gettimeofday(&time_now, NULL);
-			if (!m_got_natify_request || time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
-				SendConnectPacket(m_peer_address);
-			}
+		struct timeval time_now;
+		gettimeofday(&time_now, NULL);
+		if (!m_got_natify_request || time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
+			SendConnectPacket(m_peer_address);
 		}
 
 		SubmitClient(); //resubmit for other client
@@ -299,7 +286,7 @@ namespace NN {
 
 		p.Packet.Connect.remoteIP = remote_addr.sin_addr.s_addr;
 		p.Packet.Connect.remotePort = remote_addr.sin_port;
-		p.Packet.Connect.gotyourdata = 1;
+		p.Packet.Connect.gotyourdata = 0;
 
 		sendPacket(&p);
 

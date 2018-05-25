@@ -11,6 +11,8 @@
 #define NATNEG_PORT 27901
 namespace NN {
 	class NNQueryTask;
+	class Peer;
+	class NNConnectionSummary;
 	typedef struct _NNBackendRequest NNBackendRequest;
 	class Server : public INetServer {
 		public:
@@ -19,7 +21,7 @@ namespace NN {
 			void tick();
 			void shutdown();
 			void SetTaskPool(OS::TaskPool<NN::NNQueryTask, NN::NNBackendRequest> *pool);
-			void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address);
+			NN::Peer *FindConnection(NNCookieType cookie, int client_idx, bool master = false);
 			OS::MetricInstance GetMetrics();
 		private:
 			struct timeval m_last_analytics_submit_time;

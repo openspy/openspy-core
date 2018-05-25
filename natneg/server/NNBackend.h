@@ -4,6 +4,7 @@
 #include "NNServer.h"
 #include "NNDriver.h"
 #include "NNPeer.h"
+#include "NATMapper.h"
 
 #include <OS/OpenSpy.h>
 #include <OS/Task.h>
@@ -38,11 +39,12 @@ namespace NN {
 			static void Shutdown();
 			void AddDriver(NN::Driver *driver);
 			void RemoveDriver(NN::Driver *driver);
-
+			ConnectionSummary LoadConnectionSummary(std::string redis_key);
+			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
 		private:
 			static void *TaskThread(OS::CThread *thread);
 
-			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
+
 
 			void PerformSubmit(NNBackendRequest request);
 			void PerformERTTest(NNBackendRequest request);

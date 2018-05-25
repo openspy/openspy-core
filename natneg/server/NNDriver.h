@@ -26,9 +26,8 @@ namespace NN {
 		void think(bool packet_waiting);
 
 		Peer *find_client(OS::Address address);
+		Peer *find_client(NNCookieType cookie, int client_idx);
 		Peer *find_or_create(OS::Address address, INetIOSocket *socket);
-
-		void OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address);
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		INetIOSocket *getListenerSocket() const;

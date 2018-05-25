@@ -45,14 +45,24 @@ namespace NN {
 			it++;
 		}
 	}
-	void Server::OnGotCookie(NNCookieType cookie, int client_idx, OS::Address address, OS::Address private_address) {
+
+	NN::Peer *Server::FindConnection(NNCookieType cookie, int client_idx, bool master) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
+		NN::Peer *peer;
 		while (it != m_net_drivers.end()) {
 			NN::Driver *driver = (NN::Driver *)*it;
-			driver->OnGotCookie(cookie, client_idx, address, private_address);
+			peer = driver->find_client(cookie, client_idx);
+			if (peer) {
+				if (!master || peer->isMasterPeer()) {
+					return peer;
+				}
+			}
 			it++;
 		}
+		return NULL;
 	}
+
+
 	OS::MetricInstance Server::GetMetrics() {
 		OS::MetricInstance peer_metric;
 		OS::MetricValue value, arr_value, arr_value2, container_val;

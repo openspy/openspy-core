@@ -13,6 +13,7 @@
 namespace NN {
 
 	class Driver;
+	class ConnectionSummary;
 
 	typedef struct _PeerStats {
 		int pending_requests;
@@ -44,9 +45,15 @@ namespace NN {
 		bool IsTimeout() { return m_timeout_flag; }
 		NNCookieType GetCookie() { return m_cookie; }
 		uint8_t GetClientIndex() { return m_client_index; }
+		bool isFinalPeer() { return m_private_address.GetPort() != 0; };
 
 		void OnGotPeerAddress(OS::Address address, OS::Address private_address);
 		std::string getGamename() { return m_gamename; };
+
+		bool isMasterPeer() { return (m_port_type == 0 && m_use_gameport) || (m_port_type == 1 && !m_use_gameport); };
+
+		bool getUseGamePort() { return m_use_gameport; };
+		uint8_t getPortType() { return m_port_type; };
 
 		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
 		OS::MetricInstance GetMetrics();
@@ -77,8 +84,11 @@ namespace NN {
 		NNCookieType m_cookie;
 		uint8_t m_client_index;
 		uint8_t m_client_version;
-		uint8_t m_state;
 		uint32_t m_client_id;
+		uint8_t m_port_type;
+		bool m_use_gameport;
+
+
 		OS::Address m_private_address;
 
 		OS::Address m_peer_address;
