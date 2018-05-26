@@ -56,14 +56,12 @@ namespace NN {
 		}
 		else {
 			if (time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
-				if (sent_connect) {
-					if (m_got_preinit) {
-						SendPreInitPacket(NN_PREINIT_READY);
-					}
-					else if(!m_got_connect_ack && time_now.tv_sec - m_last_connect_attempt.tv_sec > NN_CONNECT_RESEND_TIME) {
-						SendConnectPacket(m_peer_address);
-					}					
+				if (m_got_preinit) {
+					SendPreInitPacket(NN_PREINIT_READY);
 				}
+				else if(!m_got_connect_ack && ((time_now.tv_sec - m_last_connect_attempt.tv_sec) > NN_CONNECT_RESEND_TIME)) {
+					SendConnectPacket(m_peer_address);
+				}					
 			}
 		}
 	}
@@ -112,6 +110,7 @@ namespace NN {
 				if (m_client_version <= 2) {
 					Delete();
 				}
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got connection ACK", m_sd->address.ToString().c_str());
 				m_got_connect_ack = true;
 			break;
 			case NN_REPORT:
@@ -240,6 +239,9 @@ namespace NN {
 		}
 	}
 	void Peer::OnGotPeerAddress(OS::Address public_address, OS::Address private_address, NN::NAT nat) {
+		if (m_last_connect_attempt.tv_sec > 0) {
+			return;
+		}
 		if (public_address.GetIP() == getAddress().GetIP()) {
 			m_peer_address = private_address;
 		}
