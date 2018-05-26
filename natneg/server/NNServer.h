@@ -21,7 +21,7 @@ namespace NN {
 			void tick();
 			void shutdown();
 			void SetTaskPool(OS::TaskPool<NN::NNQueryTask, NN::NNBackendRequest> *pool);
-			NN::Peer *FindConnection(NNCookieType cookie, int client_idx, bool master = false);
+			NN::Peer *FindConnection(NNCookieType cookie, int client_idx);
 			OS::MetricInstance GetMetrics();
 		private:
 			struct timeval m_last_analytics_submit_time;

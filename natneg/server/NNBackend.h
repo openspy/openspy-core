@@ -24,10 +24,12 @@ namespace NN {
 	struct _NNBackendRequest;
 	enum ENNQueryRequestType {
 		ENNQueryRequestType_SubmitClient,
-		ENNQueryRequestType_PerformERTTest,
+		ENNQueryRequestType_PerformERTTest_IPUnsolicited,
+		ENNQueryRequestType_PerformERTTest_IPPortUnsolicited,
 	};
 	typedef struct _NNBackendRequest {
 		ENNQueryRequestType type;
+		NN::ConnectionSummary summary;
 		void *extra;
 		NN::Peer *peer;
 	} NNBackendRequest;
@@ -43,7 +45,6 @@ namespace NN {
 			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
 		private:
 			static void *TaskThread(OS::CThread *thread);
-
 
 
 			void PerformSubmit(NNBackendRequest request);

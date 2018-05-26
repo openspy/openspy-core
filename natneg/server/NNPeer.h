@@ -50,14 +50,16 @@ namespace NN {
 		void OnGotPeerAddress(OS::Address address, OS::Address private_address);
 		std::string getGamename() { return m_gamename; };
 
-		bool isMasterPeer() { return (m_port_type == 0 && m_use_gameport) || (m_port_type == 1 && !m_use_gameport); };
-
 		bool getUseGamePort() { return m_use_gameport; };
 		uint8_t getPortType() { return m_port_type; };
 
 		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
 		OS::MetricInstance GetMetrics();
 		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
+
+		int NumRequiredAddresses() const;
+
+		NN::ConnectionSummary GetSummary() const;
 	protected:
 		void ResetMetrics();
 		static int packetSizeFromType(uint8_t type);

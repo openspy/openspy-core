@@ -20,6 +20,7 @@ namespace NN {
 		m_got_init = false;
 		m_got_preinit = false;
 		m_sent_connect = false;
+		m_use_gameport = false;
 		memset(&m_ert_test_time, 0, sizeof(m_ert_test_time));
 		memset(&m_init_time, 0, sizeof(m_init_time));
 		ResetMetrics();
@@ -135,7 +136,7 @@ namespace NN {
 		m_client_index = packet->Packet.Init.clientindex;
 		m_port_type = packet->Packet.Init.porttype;
 		m_use_gameport = packet->Packet.Init.usegameport;
-		m_private_address = OS::Address(packet->Packet.Init.localip, htons(packet->Packet.Init.localport));
+		m_private_address = OS::Address(packet->Packet.Init.localip, ntohs(packet->Packet.Init.localport));
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, porttype: %d, use_gameport: %d, private: %s, game: %s", m_sd->address.ToString().c_str(), packet->version, m_client_index, m_cookie, m_port_type, m_use_gameport, m_private_address.ToString().c_str(), m_gamename.c_str());
 
@@ -167,15 +168,13 @@ namespace NN {
 				sendPacket(packet);
 				break;
 			case NN_PT_NN2: //unsolicited IP ERT reply
-				req.type = NN::ENNQueryRequestType_PerformERTTest;
-				req.extra = (void *)2;
+				req.type = NN::ENNQueryRequestType_PerformERTTest_IPUnsolicited;
 				this->IncRef();
 				req.peer = this;
 				NN::m_task_pool->AddRequest(req);
 				break;
 			case NN_PT_NN3: //unsolicited IP&Port ERT reply				
-				req.type = NN::ENNQueryRequestType_PerformERTTest;
-				req.extra = (void *)3;
+				req.type = NN::ENNQueryRequestType_PerformERTTest_IPPortUnsolicited;
 				this->IncRef();
 				req.peer = this;
 				NN::m_task_pool->AddRequest(req);
@@ -310,6 +309,7 @@ namespace NN {
 		req.type = NN::ENNQueryRequestType_SubmitClient;
 		this->IncRef();
 		req.peer = this;
+		req.summary = GetSummary();
 		m_peer_stats.pending_requests++;
 		NN::m_task_pool->AddRequest(req);
 	}
@@ -380,5 +380,30 @@ namespace NN {
 		m_peer_stats.from_game.gameid = 0;
 		m_peer_stats.from_game.secretkey[0] = 0;
 		m_peer_stats.from_game.gamename[0] = 0;
+	}
+	int Peer::NumRequiredAddresses() const {
+		int required_addresses = 0;
+		if (this->m_use_gameport) {
+			required_addresses++;
+		}
+		if (this->m_client_version >= 2) {
+			required_addresses += 2;
+		}
+		if (this->m_client_version >= 3) {
+			required_addresses++;
+		}
+		return required_addresses;
+	}
+	NN::ConnectionSummary Peer::GetSummary() const {
+		ConnectionSummary summary;
+		summary.cookie = m_cookie;
+		summary.index = m_client_index;
+		summary.usegameport = m_use_gameport;
+		summary.port_type = m_port_type;
+		summary.private_address = m_private_address;
+		if (m_use_gameport) {
+			summary.gameport = m_private_address.GetPort();
+		}
+		return summary;
 	}
 }

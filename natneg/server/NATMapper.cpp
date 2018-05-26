@@ -59,7 +59,7 @@ namespace NN {
 			else
 				nat.natType = unknown;
 		}
-		printf("xxx\n");
+
 		// What is the port mapping behavior?
 		if ((!has_gameport || nat.mappings[packet_map1a].publicPort == nat.mappings[packet_map1a].privatePort) &&
 			(nat.mappings[packet_map2].publicPort == 0 || nat.mappings[packet_map2].publicPort == nat.mappings[packet_map2].privatePort) &&
@@ -136,7 +136,7 @@ namespace NN {
 	void LoadSummaryIntoNAT(NN::ConnectionSummary summary, NAT &nat) {
 		memset(&nat.mappings, 0, sizeof(nat.mappings));
 		std::map<int, OS::Address>::iterator it = summary.m_port_type_addresses.begin();
-		printf("Private address: %s\n", summary.private_address.ToString().c_str());
+
 		while (it != summary.m_port_type_addresses.end()) {
 			std::pair<int, OS::Address> p = *it;
 			if (p.first < sizeof(nat.mappings)) {
@@ -144,8 +144,6 @@ namespace NN {
 				nat.mappings[p.first].privatePort = summary.private_address.GetPort();
 				nat.mappings[p.first].publicIp = summary.m_port_type_addresses[p.first].GetIP();
 				nat.mappings[p.first].publicPort = summary.m_port_type_addresses[p.first].GetPort();
-
-				printf("Loading port address: %d %s\n", p.first, summary.m_port_type_addresses[p.first].ToString().c_str());
 			}
 			it++;
 		}

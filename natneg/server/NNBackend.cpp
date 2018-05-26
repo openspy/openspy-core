@@ -29,7 +29,8 @@ namespace NN {
 					case ENNQueryRequestType_SubmitClient:
 						task->PerformSubmit(task_params);
 						break;
-					case ENNQueryRequestType_PerformERTTest:
+					case ENNQueryRequestType_PerformERTTest_IPUnsolicited:
+					case ENNQueryRequestType_PerformERTTest_IPPortUnsolicited:
 						task->PerformERTTest(task_params);
 						break;
 				}
@@ -62,7 +63,7 @@ namespace NN {
 							int client_idx = atoi(kv_data["client_index"].c_str());
 							int opposite_client_idx = client_idx;
 							//int opposite_client_idx = client_idx == 0 ? 1 : 0;
-							NN::Peer *peer = server->FindConnection(cookie, opposite_client_idx, false);
+							NN::Peer *peer = server->FindConnection(cookie, opposite_client_idx);
 							if (peer) {
 								std::ostringstream nn_key_ss;
 								nn_key_ss << "nn_client_" << client_idx << "_" << cookie;
@@ -73,7 +74,6 @@ namespace NN {
 								NN::LoadSummaryIntoNAT(summary, nat);
 								NN:DetermineNatType(nat);								
 								NN::DetermineNextAddress(nat, next_public_address, next_private_address);
-								printf("Determined addresses: %s %s\n", next_public_address.ToString().c_str(), next_private_address.ToString().c_str());
 								peer->OnGotPeerAddress(next_public_address, next_private_address);
 							}
 						}
@@ -129,36 +129,48 @@ namespace NN {
 	void NNQueryTask::PerformERTTest(NNBackendRequest task_params) {
 		OS::Address address = task_params.peer->getAddress();
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\natneg_erttest\\address\\%s\\type\\%d'", nn_channel, address.ToString().c_str(),task_params.extra);
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\natneg_erttest\\address\\%s\\type\\%d'", nn_channel, address.ToString().c_str(), task_params.type == ENNQueryRequestType_PerformERTTest_IPUnsolicited ? 0 : 1);
 	}
 
 	void NNQueryTask::PerformSubmit(NNBackendRequest task_params) {
+		Redis::Response reply;
+
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
 
-		OS::Address address = task_params.peer->getAddress();
-		OS::Address private_address = task_params.peer->getPrivateAddress();
+		NN::ConnectionSummary summary = task_params.summary;
 
-		int client_index = task_params.peer->GetClientIndex();
+		OS::Address address = task_params.peer->getAddress();
+		OS::Address private_address = summary.private_address;
+
+
+		int client_index = summary.index;
+		int num_addresses = 0;
 
 		std::string nn_key;
 		std::ostringstream nn_key_ss;
 		nn_key_ss << "nn_client_" << client_index << "_" << task_params.peer->GetCookie();
 		nn_key = nn_key_ss.str();
 
-		Redis::Command(mp_redis_connection, 0, "HSET %s usegameport %d", nn_key.c_str(), task_params.peer->getUseGamePort());
-		Redis::Command(mp_redis_connection, 0, "HSET %s cookie %d", nn_key.c_str(), task_params.peer->GetCookie());
+		Redis::Command(mp_redis_connection, 0, "HSET %s usegameport %d", nn_key.c_str(), summary.usegameport);
+		Redis::Command(mp_redis_connection, 0, "HSET %s cookie %d", nn_key.c_str(), summary.cookie);
 		Redis::Command(mp_redis_connection, 0, "HSET %s clientindex %d", nn_key.c_str(), client_index);
 
-		Redis::Command(mp_redis_connection, 0, "HSET %s address_%d \"%s\"", nn_key.c_str(), task_params.peer->getPortType(), address.ToString().c_str());
-		printf("saving Address %d - %s\n", task_params.peer->getPortType(), address.ToString().c_str());
+		reply = Redis::Command(mp_redis_connection, 0, "HINCRBY %s address_hits 1", nn_key.c_str());
+		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+			num_addresses = reply.values[0].value._int;
+		}
 
-		if (task_params.peer->isFinalPeer()) {
+		Redis::Command(mp_redis_connection, 0, "HSET %s address_%d \"%s\"", nn_key.c_str(), summary.port_type, address.ToString().c_str());
+
+		if (private_address.GetPort() != 0) {
 			Redis::Command(mp_redis_connection, 0, "HSET %s private_address \"%s\"", nn_key.c_str(), private_address.ToString().c_str());
 			if (task_params.peer->getUseGamePort()) {
 				Redis::Command(mp_redis_connection, 0, "HSET %s gameport \"%d\"", nn_key.c_str(), private_address.GetPort());
 			}
+		}
 
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\final_peer\\cookie\\%d\\client_index\\%d'", nn_channel, task_params.peer->GetCookie(), client_index);
+		if (num_addresses >= task_params.peer->NumRequiredAddresses()) {
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\final_peer\\cookie\\%d\\client_index\\%d'", nn_channel, summary.cookie, client_index);
 		}
 	}
 	ConnectionSummary NNQueryTask::LoadConnectionSummary(std::string redis_key) {
