@@ -61,8 +61,7 @@ namespace NN {
 						if (msg.compare("final_peer") == 0) {
 							NNCookieType cookie = (NNCookieType)atoi(kv_data["cookie"].c_str());
 							int client_idx = atoi(kv_data["client_index"].c_str());
-							int opposite_client_idx = client_idx;
-							//int opposite_client_idx = client_idx == 0 ? 1 : 0;
+							int opposite_client_idx = client_idx == 0 ? 1 : 0;
 							NN::Peer *peer = server->FindConnection(cookie, opposite_client_idx);
 							if (peer) {
 								std::ostringstream nn_key_ss;
