@@ -15,14 +15,14 @@ namespace NN {
 		m_client_index = -1;
 		m_client_version = 0;
 		m_gamename = "";
-		m_found_partner = false;
 		m_got_natify_request = false;
 		m_got_init = false;
 		m_got_preinit = false;
-		m_sent_connect = false;
 		m_use_gameport = false;
+		m_got_connect_ack = false;
 		memset(&m_ert_test_time, 0, sizeof(m_ert_test_time));
 		memset(&m_init_time, 0, sizeof(m_init_time));
+		memset(&m_last_connect_attempt, 0, sizeof(m_last_connect_attempt));
 		ResetMetrics();
 		m_peer_stats.m_address = sd->address;
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",sd->address.ToString().c_str());
@@ -36,6 +36,8 @@ namespace NN {
 		struct timeval time_now;
 		gettimeofday(&time_now, NULL);
 
+		bool sent_connect = m_last_connect_attempt.tv_sec > 0;
+
 		if(time_now.tv_sec - m_last_recv.tv_sec > NN_TIMEOUT_TIME) {
 			Delete(true);
 			return;
@@ -46,19 +48,19 @@ namespace NN {
 				Delete();
 			}
 		}
-		if(!m_found_partner) {
+		if(!sent_connect) {
 			if(time_now.tv_sec - m_init_time.tv_sec > NN_DEADBEAT_TIME && m_init_time.tv_sec != 0) {
 				sendPeerInitError(FINISHED_ERROR_DEADBEAT_PARTNER);
 				Delete();
 			}
 		}
 		else {
-			if (m_got_natify_request && time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
-				if (m_found_partner) {
+			if (time_now.tv_sec - m_ert_test_time.tv_sec > NN_NATIFY_WAIT_TIME) {
+				if (sent_connect) {
 					if (m_got_preinit) {
 						SendPreInitPacket(NN_PREINIT_READY);
 					}
-					else {
+					else if(!m_got_connect_ack && time_now.tv_sec - m_last_connect_attempt.tv_sec > NN_CONNECT_RESEND_TIME) {
 						SendConnectPacket(m_peer_address);
 					}					
 				}
@@ -92,11 +94,9 @@ namespace NN {
 		}
 		switch(packet->packettype) {
 			case NN_PREINIT:
-				m_sent_connect = false;
 				handlePreInitPacket(packet);
 			break;
 			case NN_INIT:
-				m_sent_connect = false;
 				m_got_init = true;
 				handleInitPacket(packet);
 			break;
@@ -112,6 +112,7 @@ namespace NN {
 				if (m_client_version <= 2) {
 					Delete();
 				}
+				m_got_connect_ack = true;
 			break;
 			case NN_REPORT:
 				handleReportPacket(packet);
@@ -146,7 +147,7 @@ namespace NN {
 		packet->packettype = NN_INITACK;
 		sendPacket(packet);
 
-		if (m_found_partner) {
+		if (m_last_connect_attempt.tv_sec > 0) {
 			SendConnectPacket(m_peer_address);
 		}
 		else {
@@ -238,18 +239,15 @@ namespace NN {
 			Delete();
 		}
 	}
-	void Peer::OnGotPeerAddress(OS::Address public_address, OS::Address private_address) {
-		if (m_found_partner) {
-			return;
-		}
+	void Peer::OnGotPeerAddress(OS::Address public_address, OS::Address private_address, NN::NAT nat) {
 		if (public_address.GetIP() == getAddress().GetIP()) {
 			m_peer_address = private_address;
 		}
 		else {
 			m_peer_address = public_address;
 		}
-		
-		m_found_partner = true;
+
+		m_nat = nat;
 
 		struct timeval time_now;
 		gettimeofday(&time_now, NULL);
@@ -271,12 +269,9 @@ namespace NN {
 		m_delete_flag = true;
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
-		if (!m_sent_connect) {
-			m_sent_connect = true;
-		}
-		else {
-			return;
-		}
+
+		gettimeofday(&m_last_connect_attempt, NULL);
+
 		NatNegPacket p;
 		struct sockaddr_in remote_addr = address.GetInAddr();
 
@@ -289,7 +284,7 @@ namespace NN {
 
 		sendPacket(&p);
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s)", m_sd->address.ToString().c_str(), address.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s), NAT type: %s", m_sd->address.ToString().c_str(), address.ToString().c_str(), NN::GetNatMappingSchemeString(m_nat));
 
 		//p.Packet.Connect.gotyourdata = 1;
 		//p.packettype = NN_CONNECT_PING;

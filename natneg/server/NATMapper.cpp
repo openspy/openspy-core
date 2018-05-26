@@ -150,7 +150,26 @@ namespace NN {
 
 		nat.ipRestricted = false;
 		nat.portRestricted = false;
+	}
 
-		
+	const char *GetNatMappingSchemeString(NAT nat) {
+		switch (nat.mappingScheme) {
+		case unrecognized:
+			return "unrecognized";
+			break;
+		case private_as_public:
+			return "private as public";
+			break;
+		case consistent_port:
+			return "consistent Port";
+			break;
+		case incremental:
+			return "incremental";
+			break;
+		case mixed:
+			return "mixed";
+			break;
+		}
+		return "invalid";
 	}
 }

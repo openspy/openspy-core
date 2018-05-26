@@ -73,7 +73,7 @@ namespace NN {
 								NN::LoadSummaryIntoNAT(summary, nat);
 								NN:DetermineNatType(nat);								
 								NN::DetermineNextAddress(nat, next_public_address, next_private_address);
-								peer->OnGotPeerAddress(next_public_address, next_private_address);
+								peer->OnGotPeerAddress(next_public_address, next_private_address, nat);
 							}
 						}
 					}

@@ -180,6 +180,5 @@ namespace NN {
 		std::map<int, OS::Address> m_port_type_addresses;
 		OS::Address private_address;
 	};
-
 }
 #endif
