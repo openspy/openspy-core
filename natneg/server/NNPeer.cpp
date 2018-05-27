@@ -104,11 +104,11 @@ namespace NN {
 				handleNatifyPacket(packet);
 			break;
 			case NN_CONNECT_ACK:
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got connection ACK", m_sd->address.ToString().c_str());
+				m_got_connect_ack = true;
 				if (m_client_version <= 2) {
 					Delete();
 				}
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got connection ACK", m_sd->address.ToString().c_str());
-				m_got_connect_ack = true;
 			break;
 			case NN_REPORT:
 				handleReportPacket(packet);
@@ -145,7 +145,7 @@ namespace NN {
 		packet->packettype = NN_INITACK;
 		sendPacket(packet);
 
-		if (m_last_connect_attempt.tv_sec > 0) {
+		if (m_last_connect_attempt.tv_sec > 0 && !m_got_connect_ack) {
 			SendConnectPacket(m_peer_address);
 		}
 		else {
@@ -271,7 +271,6 @@ namespace NN {
 		p.Packet.Connect.finished = error;
 		sendPacket(&p);
 		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", m_sd->address.ToString().c_str());
-		Delete();
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
 		
@@ -288,8 +287,6 @@ namespace NN {
 		p.Packet.Connect.gotyourdata = 0;
 
 		sendPacket(&p);
-
-		Delete();
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s), NAT mapping scheme: %s", m_sd->address.ToString().c_str(), address.ToString().c_str(), NN::GetNatMappingSchemeString(m_nat));
 	}
