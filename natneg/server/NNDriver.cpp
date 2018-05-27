@@ -108,6 +108,7 @@ namespace NN {
 	}
 	std::vector<Peer *> Driver::find_clients(NNCookieType cookie, int client_idx) {
 		std::vector<Peer *> peers;
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
@@ -116,25 +117,32 @@ namespace NN {
 			}
 			it++;
 		}
+		mp_mutex->unlock();
 		return peers;
 	}
 	Peer *Driver::find_client(NNCookieType cookie, int client_idx) {
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
+		Peer *return_value = NULL;
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			if (peer->GetCookie() == cookie && peer->GetClientIndex() == client_idx) {
-				return peer;
+				return_value = peer;
+				break;
 			}
 			it++;
 		}
-		return NULL;
+		mp_mutex->unlock();
+		return return_value;
 	}
 	Peer *Driver::find_or_create(OS::Address address, INetIOSocket *socket) {
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			OS::Address peer_address = peer->getAddress();
 			if (address == peer_address) {
+				mp_mutex->unlock();
 				return peer;
 			}
 			it++;
@@ -148,6 +156,7 @@ namespace NN {
 
 		Peer *ret = new Peer(this, client_socket);
 		m_connections.push_back(ret);
+		mp_mutex->unlock();
 		return ret;
 	}
 
