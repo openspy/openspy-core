@@ -95,7 +95,6 @@ namespace NN {
 				handlePreInitPacket(packet);
 			break;
 			case NN_INIT:
-				m_got_init = true;
 				handleInitPacket(packet);
 			break;
 			case NN_ADDRESS_CHECK:
@@ -103,8 +102,6 @@ namespace NN {
 			break;
 			case NN_NATIFY_REQUEST:
 				handleNatifyPacket(packet);
-			break;
-			case NN_CONNECT_PING:
 			break;
 			case NN_CONNECT_ACK:
 				if (m_client_version <= 2) {
@@ -140,7 +137,10 @@ namespace NN {
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, porttype: %d, use_gameport: %d, private: %s, game: %s", m_sd->address.ToString().c_str(), packet->version, m_client_index, m_cookie, m_port_type, m_use_gameport, m_private_address.ToString().c_str(), m_gamename.c_str());
 
-		SubmitClient();
+		if (!m_got_init) {
+			SubmitClient();
+			m_got_init = true;
+		}
 
 		packet->packettype = NN_INITACK;
 		sendPacket(packet);
@@ -271,7 +271,7 @@ namespace NN {
 		p.Packet.Connect.finished = error;
 		sendPacket(&p);
 		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", m_sd->address.ToString().c_str());
-		m_delete_flag = true;
+		Delete();
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
 		
@@ -289,11 +289,9 @@ namespace NN {
 
 		sendPacket(&p);
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s), NAT mapping scheme: %s", m_sd->address.ToString().c_str(), address.ToString().c_str(), NN::GetNatMappingSchemeString(m_nat));
+		Delete();
 
-		//p.Packet.Connect.gotyourdata = 1;
-		//p.packettype = NN_CONNECT_PING;
-		//sendPacket(&p);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s), NAT mapping scheme: %s", m_sd->address.ToString().c_str(), address.ToString().c_str(), NN::GetNatMappingSchemeString(m_nat));
 	}
 	void Peer::SendPreInitPacket(uint8_t state) {
 		NatNegPacket p;
