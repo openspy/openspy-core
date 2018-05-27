@@ -130,14 +130,19 @@ namespace NN {
 		//SubmitClient(true);
 	}
 	void Peer::handleInitPacket(NatNegPacket *packet) {
+		bool send_override = packet->Packet.Init.clientindex != m_client_index || m_port_type != packet->Packet.Init.porttype || packet->cookie != m_cookie;
 		m_client_index = packet->Packet.Init.clientindex;
 		m_port_type = packet->Packet.Init.porttype;
 		m_use_gameport = packet->Packet.Init.usegameport;
 		m_private_address = OS::Address(packet->Packet.Init.localip, ntohs(packet->Packet.Init.localport));
 
+		if (send_override) {
+
+		}
+
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, porttype: %d, use_gameport: %d, private: %s, game: %s", m_sd->address.ToString().c_str(), packet->version, m_client_index, m_cookie, m_port_type, m_use_gameport, m_private_address.ToString().c_str(), m_gamename.c_str());
 
-		if (!m_got_init) {
+		if (!m_got_init || send_override) {
 			SubmitClient();
 			m_got_init = true;
 		}

@@ -85,7 +85,9 @@ namespace NN {
 					}
 				}
 				else {
-					peer = find_or_create(dgram.address, mp_socket);
+					NNCookieType cookie;
+					get_packet_cookie(dgram, cookie);
+					peer = find_or_create(dgram.address, mp_socket, cookie);
 					peer->handle_packet(dgram);
 				}
 				it++;
@@ -93,14 +95,25 @@ namespace NN {
 		}
 		mp_mutex->unlock();
 	}
-
-	Peer *Driver::find_client(OS::Address address) {
+	void Driver::get_packet_cookie(INetIODatagram dgram, NNCookieType &cookie) {
+		NatNegPacket *packet = (NatNegPacket *)dgram.buffer.GetHead();
+		unsigned char NNMagicData[] = { NN_MAGIC_0, NN_MAGIC_1, NN_MAGIC_2, NN_MAGIC_3, NN_MAGIC_4, NN_MAGIC_5 };
+		if (memcmp(&NNMagicData, &packet->magic, NATNEG_MAGIC_LEN) == 0) {
+			cookie = packet->cookie;
+		}
+		else {
+			cookie = 0;
+		}
+	}
+	Peer *Driver::find_client(OS::Address address, NNCookieType cookie, bool use_client_info) {
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			OS::Address peer_address = peer->getAddress();
 			if (address == peer_address) {
-				return peer;
+				if (!use_client_info || peer->GetCookie() == cookie) {
+					return peer;
+				}				
 			}
 			it++;
 		}
@@ -138,13 +151,13 @@ namespace NN {
 		mp_mutex->unlock();
 		return return_value;
 	}
-	Peer *Driver::find_or_create(OS::Address address, INetIOSocket *socket) {
+	Peer *Driver::find_or_create(OS::Address address, INetIOSocket *socket, NNCookieType cookie) {
 		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			OS::Address peer_address = peer->getAddress();
-			if (address == peer_address) {
+			if (address == peer_address && peer->GetCookie() == cookie) {
 				mp_mutex->unlock();
 				return peer;
 			}

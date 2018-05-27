@@ -25,10 +25,12 @@ namespace NN {
 		~Driver();
 		void think(bool packet_waiting);
 
-		Peer *find_client(OS::Address address);
+		Peer *find_client(OS::Address address, NNCookieType cookie = 0, bool use_client_info = false);
 		Peer *find_client(NNCookieType cookie, int client_idx);
 		std::vector<Peer *> find_clients(NNCookieType cookie, int client_idx, bool inc_ref = false);
-		Peer *find_or_create(OS::Address address, INetIOSocket *socket);
+		Peer *find_or_create(OS::Address address, INetIOSocket *socket, NNCookieType cookie);
+
+		void get_packet_cookie(INetIODatagram dgram, NNCookieType &cookie);
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		INetIOSocket *getListenerSocket() const;
