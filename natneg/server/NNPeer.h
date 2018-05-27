@@ -11,6 +11,7 @@
 #define NN_INIT_WAIT_TIME 30 //time in seconds to wait before d/cing when no init packet recieved
 #define NN_NATIFY_WAIT_TIME 10 //wait 10 seconds for NN SDK to detect NAT type
 #define NN_CONNECT_RESEND_TIME 5 //resend every 5 seconds if connect attempt sent
+#define NN_CONNECT_MAX_RESENDS 5
 namespace NN {
 
 	class Driver;
@@ -101,7 +102,9 @@ namespace NN {
 
 		bool m_got_natify_request;
 		bool m_got_preinit;
+
 		bool m_got_connect_ack;
+		int m_num_connect_resends;
 
 		PeerStats m_peer_stats;
 	};

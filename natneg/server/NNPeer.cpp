@@ -11,6 +11,8 @@ namespace NN {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 
+		m_num_connect_resends = 0;
+
 		m_cookie = 0;
 		m_client_index = -1;
 		m_client_version = 0;
@@ -130,19 +132,14 @@ namespace NN {
 		//SubmitClient(true);
 	}
 	void Peer::handleInitPacket(NatNegPacket *packet) {
-		bool send_override = packet->Packet.Init.clientindex != m_client_index || m_port_type != packet->Packet.Init.porttype || packet->cookie != m_cookie;
 		m_client_index = packet->Packet.Init.clientindex;
 		m_port_type = packet->Packet.Init.porttype;
 		m_use_gameport = packet->Packet.Init.usegameport;
 		m_private_address = OS::Address(packet->Packet.Init.localip, ntohs(packet->Packet.Init.localport));
 
-		if (send_override) {
-
-		}
-
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, porttype: %d, use_gameport: %d, private: %s, game: %s", m_sd->address.ToString().c_str(), packet->version, m_client_index, m_cookie, m_port_type, m_use_gameport, m_private_address.ToString().c_str(), m_gamename.c_str());
 
-		if (!m_got_init || send_override) {
+		if (!m_got_init) {
 			SubmitClient();
 			m_got_init = true;
 		}
@@ -278,7 +275,6 @@ namespace NN {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", m_sd->address.ToString().c_str());
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
-		
 		gettimeofday(&m_last_connect_attempt, NULL);
 
 		NatNegPacket p;
@@ -294,6 +290,10 @@ namespace NN {
 		sendPacket(&p);
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s), NAT mapping scheme: %s", m_sd->address.ToString().c_str(), address.ToString().c_str(), NN::GetNatMappingSchemeString(m_nat));
+
+		if (m_num_connect_resends++ > NN_CONNECT_MAX_RESENDS) {
+			Delete();
+		}
 	}
 	void Peer::SendPreInitPacket(uint8_t state) {
 		NatNegPacket p;
