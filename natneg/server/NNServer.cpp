@@ -46,18 +46,17 @@ namespace NN {
 		}
 	}
 
-	NN::Peer *Server::FindConnection(NNCookieType cookie, int client_idx) {
+	std::vector<NN::Peer *> Server::FindConnections(NNCookieType cookie, int client_idx) {
+		std::vector<NN::Peer *> peers;
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		NN::Peer *peer;
 		while (it != m_net_drivers.end()) {
 			NN::Driver *driver = (NN::Driver *)*it;
-			peer = driver->find_client(cookie, client_idx);
-			if (peer) {
-				return peer;
-			}
+			std::vector<NN::Peer *> driver_peers = driver->find_clients(cookie, client_idx);
+			peers.insert(peers.end(), driver_peers.begin(), driver_peers.end());
 			it++;
 		}
-		return NULL;
+		return peers;
 	}
 
 

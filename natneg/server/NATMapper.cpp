@@ -115,11 +115,11 @@ namespace NN {
 		address = bottom_address;
 
 		switch (nat.mappingScheme) {
-			case unrecognized: //good default
 			case private_as_public: //first connection = game socket
 				address = top_address;
 				address.port = next_private_address.port;
 				break;
+			case unrecognized: //good default
 			case consistent_port: //since same public port from address, and natneg will send connect packet from first connection.
 				address = top_address;
 				address.port = top_address.port;

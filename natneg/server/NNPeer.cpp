@@ -142,7 +142,6 @@ namespace NN {
 
 		SubmitClient();
 
-		
 		packet->packettype = NN_INITACK;
 		sendPacket(packet);
 
@@ -239,6 +238,10 @@ namespace NN {
 		}
 	}
 	void Peer::OnGotPeerAddress(OS::Address public_address, OS::Address private_address, NN::NAT nat) {
+		if (m_port_type == 0) { //stop NN V2(and maybe above?) bug - can't recv on game port
+			Delete();
+			return;
+		}
 		if (m_last_connect_attempt.tv_sec > 0) {
 			return;
 		}
@@ -271,7 +274,7 @@ namespace NN {
 		m_delete_flag = true;
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
-
+		
 		gettimeofday(&m_last_connect_attempt, NULL);
 
 		NatNegPacket p;
@@ -286,7 +289,7 @@ namespace NN {
 
 		sendPacket(&p);
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s), NAT type: %s", m_sd->address.ToString().c_str(), address.ToString().c_str(), NN::GetNatMappingSchemeString(m_nat));
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s), NAT mapping scheme: %s", m_sd->address.ToString().c_str(), address.ToString().c_str(), NN::GetNatMappingSchemeString(m_nat));
 
 		//p.Packet.Connect.gotyourdata = 1;
 		//p.packettype = NN_CONNECT_PING;
@@ -380,13 +383,13 @@ namespace NN {
 	}
 	int Peer::NumRequiredAddresses() const {
 		int required_addresses = 0;
-		if (this->m_use_gameport) {
+		if (m_use_gameport) {
 			required_addresses++;
 		}
-		if (this->m_client_version >= 2) {
+		if (m_client_version >= 2) {
 			required_addresses += 2;
 		}
-		if (this->m_client_version >= 3) {
+		if (m_client_version >= 3) {
 			required_addresses++;
 		}
 		return required_addresses;

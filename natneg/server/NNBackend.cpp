@@ -62,18 +62,22 @@ namespace NN {
 							NNCookieType cookie = (NNCookieType)atoi(kv_data["cookie"].c_str());
 							int client_idx = atoi(kv_data["client_index"].c_str());
 							int opposite_client_idx = client_idx == 0 ? 1 : 0;
-							NN::Peer *peer = server->FindConnection(cookie, opposite_client_idx);
-							if (peer) {
-								std::ostringstream nn_key_ss;
-								nn_key_ss << "nn_client_" << client_idx << "_" << cookie;
+							std::vector<NN::Peer *> peer_list = server->FindConnections(cookie, opposite_client_idx);
+							std::vector<NN::Peer *>::iterator it = peer_list.begin();
+							std::ostringstream nn_key_ss;
+							nn_key_ss << "nn_client_" << client_idx << "_" << cookie;
 
-								ConnectionSummary summary = mp_async_lookup_task->LoadConnectionSummary(nn_key_ss.str());
-								NAT nat;
-								OS::Address next_public_address, next_private_address;
-								NN::LoadSummaryIntoNAT(summary, nat);
-								NN:DetermineNatType(nat);								
-								NN::DetermineNextAddress(nat, next_public_address, next_private_address);
+							ConnectionSummary summary = mp_async_lookup_task->LoadConnectionSummary(nn_key_ss.str());
+							NAT nat;
+							OS::Address next_public_address, next_private_address;
+							NN::LoadSummaryIntoNAT(summary, nat);
+							NN:DetermineNatType(nat);
+							NN::DetermineNextAddress(nat, next_public_address, next_private_address);
+							
+							while (it != peer_list.end()) {
+								NN::Peer *peer = *it;
 								peer->OnGotPeerAddress(next_public_address, next_private_address, nat);
+								it++;
 							}
 						}
 					}
