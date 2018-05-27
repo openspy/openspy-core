@@ -147,12 +147,15 @@ namespace NN {
 
 
 		int client_index = summary.index;
+
 		int num_addresses = 0;
 
 		std::string nn_key;
 		std::ostringstream nn_key_ss;
 		nn_key_ss << "nn_client_" << client_index << "_" << task_params.peer->GetCookie();
 		nn_key = nn_key_ss.str();
+
+		Redis::Command(mp_redis_connection, 0, "HSET %s required_addresses %d", nn_key.c_str(), task_params.peer->NumRequiredAddresses());
 
 		Redis::Command(mp_redis_connection, 0, "HSET %s usegameport %d", nn_key.c_str(), summary.usegameport);
 		Redis::Command(mp_redis_connection, 0, "HSET %s cookie %d", nn_key.c_str(), summary.cookie);
@@ -172,8 +175,22 @@ namespace NN {
 			}
 		}
 
+		Redis::Command(mp_redis_connection, 0, "EXPIRE %s %d", nn_key.c_str(), NN_REDIS_EXPIRE_TIME);
+
 		if (num_addresses >= task_params.peer->NumRequiredAddresses()) {
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\final_peer\\cookie\\%d\\client_index\\%d'", nn_channel, summary.cookie, client_index);
+			//check if other peer is ready too, otherwise wait for it
+
+			int opposite_client_index = client_index == 0 ? 1 : 0; //invert client index
+			nn_key_ss.str("");
+			nn_key_ss << "nn_client_" << opposite_client_index  << "_" << task_params.peer->GetCookie();
+
+			ConnectionSummary summary = mp_async_lookup_task->LoadConnectionSummary(nn_key_ss.str());
+
+			if (summary.address_hits >= summary.required_addresses) {
+				Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\final_peer\\cookie\\%d\\client_index\\%d'", nn_channel, summary.cookie, client_index);
+				Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\final_peer\\cookie\\%d\\client_index\\%d'", nn_channel, summary.cookie, opposite_client_index);
+			}
+			
 		}
 	}
 	ConnectionSummary NNQueryTask::LoadConnectionSummary(std::string redis_key) {
@@ -243,6 +260,21 @@ namespace NN {
 
 			connection_summary.m_port_type_addresses[address_counter++] = OS::Address(reply.values.front().value._str.c_str());
 		}
+
+		reply = Redis::Command(mp_redis_connection, 0, "HGET %s required_addresses", redis_key.c_str());
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+			goto error_cleanup;
+
+		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING)
+			connection_summary.required_addresses = atoi((reply.values[0].value._str).c_str());
+
+		reply = Redis::Command(mp_redis_connection, 0, "HGET %s address_hits", redis_key.c_str());
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+			goto error_cleanup;
+
+		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING)
+			connection_summary.address_hits = atoi((reply.values[0].value._str).c_str());
+
 
 	error_cleanup:
 		return connection_summary;

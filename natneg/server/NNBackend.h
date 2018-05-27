@@ -20,6 +20,8 @@
 #include <OS/TaskPool.h>
 #include <OS/Redis.h>
 
+#define NN_REDIS_EXPIRE_TIME 120
+
 namespace NN {
 	struct _NNBackendRequest;
 	enum ENNQueryRequestType {
