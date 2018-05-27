@@ -186,7 +186,7 @@ namespace NN {
 			nn_key_ss.str("");
 			nn_key_ss << "nn_client_" << opposite_client_index  << "_" << task_params.peer->GetCookie();
 
-			ConnectionSummary summary = mp_async_lookup_task->LoadConnectionSummary(nn_key_ss.str());
+			ConnectionSummary summary = LoadConnectionSummary(nn_key_ss.str());
 
 			if (summary.address_hits >= summary.required_addresses) {
 				Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\msg\\final_peer\\cookie\\%d\\client_index\\%d'", nn_channel, summary.cookie, client_index);
