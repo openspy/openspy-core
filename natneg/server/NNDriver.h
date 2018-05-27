@@ -27,7 +27,7 @@ namespace NN {
 
 		Peer *find_client(OS::Address address);
 		Peer *find_client(NNCookieType cookie, int client_idx);
-		std::vector<Peer *> find_clients(NNCookieType cookie, int client_idx);
+		std::vector<Peer *> find_clients(NNCookieType cookie, int client_idx, bool inc_ref = false);
 		Peer *find_or_create(OS::Address address, INetIOSocket *socket);
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);

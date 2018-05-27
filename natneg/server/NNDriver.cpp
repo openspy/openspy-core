@@ -106,13 +106,16 @@ namespace NN {
 		}
 		return NULL;
 	}
-	std::vector<Peer *> Driver::find_clients(NNCookieType cookie, int client_idx) {
+	std::vector<Peer *> Driver::find_clients(NNCookieType cookie, int client_idx, bool inc_ref) {
 		std::vector<Peer *> peers;
 		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			if (peer->GetCookie() == cookie && peer->GetClientIndex() == client_idx) {
+				if (inc_ref) {
+					peer->IncRef();
+				}
 				peers.push_back(peer);
 			}
 			it++;

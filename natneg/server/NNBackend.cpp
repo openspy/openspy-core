@@ -62,7 +62,7 @@ namespace NN {
 							NNCookieType cookie = (NNCookieType)atoi(kv_data["cookie"].c_str());
 							int client_idx = atoi(kv_data["client_index"].c_str());
 							int opposite_client_idx = client_idx == 0 ? 1 : 0;
-							std::vector<NN::Peer *> peer_list = server->FindConnections(cookie, opposite_client_idx);
+							std::vector<NN::Peer *> peer_list = server->FindConnections(cookie, opposite_client_idx, true);
 							
 							std::ostringstream nn_key_ss;
 							nn_key_ss << "nn_client_" << client_idx << "_" << cookie;
@@ -79,6 +79,7 @@ namespace NN {
 							while (it != peer_list.end()) {
 								NN::Peer *peer = *it;
 								peer->OnGotPeerAddress(next_public_address, next_private_address, nat);
+								peer->DecRef();
 								it++;
 							}
 						}
