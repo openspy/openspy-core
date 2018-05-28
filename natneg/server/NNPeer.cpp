@@ -89,7 +89,7 @@ namespace NN {
 
 		int len = net_packet.buffer.remaining();
 		
-		if (((char *)net_packet.buffer.GetHead())[len-1] == 0 && m_gamename.length() == 0 && m_client_version > 2) {
+		if (((char *)net_packet.buffer.GetHead())[len-1] == 0 && m_gamename.length() == 0) {
 			m_gamename = (const char *)&((char *)net_packet.buffer.GetHead())[packetSize];
 		}
 		switch(packet->packettype) {
