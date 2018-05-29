@@ -236,7 +236,7 @@ class UserProfileMgrService(BaseService):
                         do_insert = True
 
                     if do_insert:
-                        Buddy.insert(to_profile=to_profile_model,to_profile=from_profile_model).execute()
+                        Buddy.insert(to_profile=to_profile_model,from_profile=from_profile_model).execute()
         return {"success": success}
 
     def handle_del_buddy(self, request_data):
