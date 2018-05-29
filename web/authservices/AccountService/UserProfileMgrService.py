@@ -226,7 +226,7 @@ class UserProfileMgrService(BaseService):
                     #self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
 
                     
-                    publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}\\silent\\1".format(request_data["to_profileid"], request_data["from_profileid"])
+                    publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}\\silent\\1".format(request_data["from_profileid"], request_data["to_profileid"])
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
 
                     do_insert = False
@@ -236,7 +236,7 @@ class UserProfileMgrService(BaseService):
                         do_insert = True
 
                     if do_insert:
-                        Buddy.insert(from_profile=to_profile_model,to_profile=from_profile_model).execute()
+                        Buddy.insert(to_profile=to_profile_model,to_profile=from_profile_model).execute()
         return {"success": success}
 
     def handle_del_buddy(self, request_data):
