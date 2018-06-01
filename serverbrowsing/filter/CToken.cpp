@@ -604,10 +604,23 @@ TokenOperand resolve_variable(CToken *token, std::map<std::string, std::string>&
 		return resolve_variable((const char *)token->getString().c_str(), kvList);
 	return ret;
 }
+
+bool is_numeric(std::string numericString) {
+	std::string::iterator it = numericString.begin();
+	while (it != numericString.end()) {
+		char ch = *it;
+		if (!isdigit(ch)) {
+			return false;
+		}
+		it++;
+	}
+	return true;
+
+}
 TokenOperand resolve_variable(const char *name, std::map<std::string, std::string>& kvList) {
 	TokenOperand ret;
 	const char *var = kvList[name].c_str();
-	if((var != NULL && atoi(var) != 0 || (var != NULL && var[0] =='0' && var[1] ==0 )) && (kvList[name].find('.') == std::string::npos)) {
+	if(is_numeric(var)) {
 		ret.token = EToken_Integer;
 		ret.ival = atoi(var);
 	} else if(var != NULL && strlen(var) > 0) {
