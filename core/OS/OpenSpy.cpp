@@ -203,9 +203,7 @@ namespace OS {
 		Redis::Value v, arr;
 
 		OS::GameData ret;
-		ret.gameid = 0;
-		ret.gamename[0] = 0;
-		ret.secretkey[0] = 0;
+
 		bool must_unlock = false;
 		if(redis_ctx == NULL) {
 			must_unlock = true;

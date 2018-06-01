@@ -21,8 +21,6 @@ namespace QR {
 		m_validated = false;
 		m_query_state = EV1_CQS_Complete;
 
-		m_server_info.m_game.secretkey[0] = 0;
-		m_server_info.m_game.gameid = 0;
 		m_server_info.m_address = socket->address;
 
 		gettimeofday(&m_last_recv, NULL);

@@ -343,7 +343,7 @@ namespace MM {
 		PushServer(modified_server, false, request.server.id); //push to prevent expire
 
 		if(change_occured)
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, modified_server.m_game.gamename, modified_server.groupid, modified_server.id);
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, modified_server.m_game.gamename.c_str(), modified_server.groupid, modified_server.id);
 	}
 	void MMPushTask::PerformUpdateServer(MMPushRequest request) {
 		DeleteServer(request.server, false);
@@ -398,7 +398,7 @@ namespace MM {
 			Redis::Command(mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), ipinput.c_str());
 		}
 		else {
-			Redis::Command(mp_redis_connection, 0, "ZINCRBY %s 1 \"%s\"", server.m_game.gamename, server_key.c_str());
+			Redis::Command(mp_redis_connection, 0, "ZINCRBY %s 1 \"%s\"", server.m_game.gamename.c_str(), server_key.c_str());
 		}
 
 		Redis::Command(mp_redis_connection, 0, "HINCRBY %s num_beats 1", server_key.c_str());
@@ -465,7 +465,7 @@ namespace MM {
 
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		if (publish) {
-			Redis::Command(mp_redis_connection, 0, "ZADD %s %d \"%s\"", server.m_game.gamename, pk_id, server_key.c_str());
+			Redis::Command(mp_redis_connection, 0, "ZADD %s %d \"%s\"", server.m_game.gamename.c_str(), pk_id, server_key.c_str());
 			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\new\\%s'", sb_mm_channel, server_key.c_str());
 		}
 
@@ -477,7 +477,7 @@ namespace MM {
 		DeleteServer(server, false);
 		PushServer(server, false, server.id);
 
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, server.m_game.gamename, server.groupid, server.id);
+		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, server.m_game.gamename.c_str(), server.groupid, server.id);
 	}
 	void MMPushTask::DeleteServer(ServerInfo server, bool publish) {
 		int groupid = server.groupid;
@@ -489,7 +489,7 @@ namespace MM {
 
 
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
-		Redis::Command(mp_redis_connection, 0, "ZREM %s \"%s:%d:%d:\"", server.m_game.gamename, server.m_game.gamename, server.groupid, server.id);
+		Redis::Command(mp_redis_connection, 0, "ZREM %s \"%s:%d:%d:\"", server.m_game.gamename.c_str(), server.m_game.gamename.c_str(), server.groupid, server.id);
 		if (publish) {
 			Redis::Response reply = Redis::Command(mp_redis_connection, 0, "HGET %s deleted", entry_name.c_str());
 			Redis::Value v = reply.values[0];
@@ -499,13 +499,13 @@ namespace MM {
 			else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0) {
 				return;
 			}
-			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server.m_game.gamename, server.groupid, server.id);
-			Redis::Command(mp_redis_connection, 0, "EXPIRE %s:%d:%d: %d", server.m_game.gamename, server.groupid, server.id, MM_PUSH_EXPIRE_TIME);
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\del\\%s:%d:%d:'", sb_mm_channel, server.m_game.gamename, groupid, id);
+			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server.m_game.gamename.c_str(), server.groupid, server.id);
+			Redis::Command(mp_redis_connection, 0, "EXPIRE %s:%d:%d: %d", server.m_game.gamename.c_str(), server.groupid, server.id, MM_PUSH_EXPIRE_TIME);
+			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\del\\%s:%d:%d:'", sb_mm_channel, server.m_game.gamename.c_str(), groupid, id);
 		}
 		else {
-			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:", server.m_game.gamename, server.groupid, server.id);
-			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys", server.m_game.gamename, server.groupid, server.id);
+			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:", server.m_game.gamename.c_str(), server.groupid, server.id);
+			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys", server.m_game.gamename.c_str(), server.groupid, server.id);
 
 			int i = 0;
 			int groupid = server.groupid;
@@ -520,7 +520,7 @@ namespace MM {
 				it3 = p.second.begin();
 				while (it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
 					std::string s = *it3;
-					Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys_player_%d", server.m_game.gamename, groupid, id, i);
+					Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys_player_%d", server.m_game.gamename.c_str(), groupid, id, i);
 					i++;
 					it3++;
 				}
@@ -536,7 +536,7 @@ namespace MM {
 				it3 = p.second.begin();
 				while (it3 != p.second.end()) { //XXX: will be duplicate deletes but better than writing stuff to delete indivually atm, rewrite later though
 					std::string s = *it3;
-					Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys_team_%d", server.m_game.gamename, groupid, id, i);
+					Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:custkeys_team_%d", server.m_game.gamename.c_str(), groupid, id, i);
 					i++;
 					it3++;
 				}

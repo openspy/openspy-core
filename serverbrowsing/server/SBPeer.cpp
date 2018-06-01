@@ -115,7 +115,7 @@ namespace SB {
 	}
 	void Peer::AddRequest(MM::MMQueryRequest req) {
 		if (req.type != MM::EMMQueryRequestType_GetGameInfoByGameName && req.type != MM::EMMQueryRequestType_GetGameInfoPairByGameName) {
-			if (m_game.gameid == 0) {
+			if (m_game.secretkey[0] == 0) {
 				m_pending_request_list.push(req);
 				return;
 			}

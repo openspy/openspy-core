@@ -203,7 +203,7 @@ namespace SB {
 			int type = (int)extra;
 			m_waiting_gamedata = 2;
 			if (type == 1) {
-				if (game_data.gameid == 0) {
+				if (game_data.secretkey[0] == 0) {
 					send_error(true, "Invalid target gamename");
 					return;
 				}
@@ -217,7 +217,7 @@ namespace SB {
 			}
 			else if (type == 2) {
 				char realvalidate[16];
-				if (game_data.gameid == 0) {
+				if (game_data.secretkey[0] == 0) {
 					send_error(true, "Invalid source gamename");
 					return;
 				}
@@ -239,7 +239,7 @@ namespace SB {
 
 			OS::KVReader kv_parser(data);
 
-			if (m_game.gameid == 0) {
+			if (m_game.secretkey[0] == 0) {
 				send_error(true, "No source gamename registered");
 				return;
 			}
@@ -275,7 +275,7 @@ namespace SB {
 				return;
 			}
 
-			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", m_sd->address.ToString().c_str(), req.req.m_from_game.gamename, req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
+			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", m_sd->address.ToString().c_str(), req.req.m_from_game.gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
 
 			req.extra = (void *)1;
 			m_last_list_req = req.req;

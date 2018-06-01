@@ -220,7 +220,7 @@ namespace MM {
 
 		server->kvFields["backend_id"] = entry_name;
 
-		Redis::Command(redis_ctx, 0, "ZINCRBY %s -1 \"%s\"", server->game.gamename, entry_name.c_str());
+		Redis::Command(redis_ctx, 0, "ZINCRBY %s -1 \"%s\"", server->game.gamename.c_str(), entry_name.c_str());
 
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s id", entry_name.c_str());
@@ -641,7 +641,7 @@ namespace MM {
 		do {
 			ServerListQuery streamed_ret;
 			streamed_ret.requested_fields = ret.requested_fields;
-			reply = Redis::Command(mp_redis_connection, 0, "ZSCAN %s %d", req->m_for_game.gamename, cursor);
+			reply = Redis::Command(mp_redis_connection, 0, "ZSCAN %s %d", req->m_for_game.gamename.c_str(), cursor);
 			if (Redis::CheckError(reply))
 				goto error_cleanup;
 
@@ -677,7 +677,7 @@ namespace MM {
 				else {
 					v = reply.values[0];
 					if ((v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 0) || (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("0") == 0)) {
-						Redis::Command(mp_redis_connection, 0, "ZREM %s \"%s\"", req->m_for_game.gamename, server_key.c_str());
+						Redis::Command(mp_redis_connection, 0, "ZREM %s \"%s\"", req->m_for_game.gamename.c_str(), server_key.c_str());
 						continue;
 					}
 				}
@@ -718,7 +718,7 @@ namespace MM {
 		bool sent_servers = false;
 		do {
 			ServerListQuery streamed_ret;
-			reply = Redis::Command(mp_redis_connection, 0, "SCAN %d MATCH %s:*:", cursor, req->m_for_game.gamename);
+			reply = Redis::Command(mp_redis_connection, 0, "SCAN %d MATCH %s:*:", cursor, req->m_for_game.gamename.c_str());
 			if (Redis::CheckError(reply))
 				goto error_cleanup;
 

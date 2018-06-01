@@ -377,9 +377,6 @@ namespace NN {
 		m_peer_stats.packets_in = 0;
 		m_peer_stats.packets_out = 0;
 		m_peer_stats.pending_requests = 0;
-		m_peer_stats.from_game.gameid = 0;
-		m_peer_stats.from_game.secretkey[0] = 0;
-		m_peer_stats.from_game.gamename[0] = 0;
 	}
 	int Peer::NumRequiredAddresses() const {
 		int required_addresses = 0;
