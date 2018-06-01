@@ -221,7 +221,7 @@ namespace QR {
 	void V1Peer::handle_validate(OS::KVReader data_parser) {
 		std::string validate = data_parser.GetValue("validate");
 
-		unsigned char *validation = gsseckey(NULL, (unsigned char *)m_challenge, (unsigned char *)m_server_info.m_game.secretkey, 0);
+		unsigned char *validation = gsseckey(NULL, (unsigned char *)m_challenge, (const unsigned char *)m_server_info.m_game.secretkey.c_str(), 0);
 
 		if (strcmp((const char *)validation, (const char *)validate.c_str()) == 0) {
 			m_validated = true;

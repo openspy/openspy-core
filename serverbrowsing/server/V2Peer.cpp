@@ -324,8 +324,8 @@ namespace SB {
 		buffer.WriteBuffer((uint8_t *)&servchal, servchallen);
 
 		//combine our secret key, our challenge, and the server's challenge into a crypt key
-		int seckeylen = (int)strlen(m_game.secretkey);
-		char *seckey = (char *)&m_game.secretkey;
+		size_t seckeylen = m_game.secretkey.length();
+		const char *seckey = m_game.secretkey.c_str();
 		for (uint32_t i = 0 ; i < servchallen ; i++)
 		{
 			m_challenge[(i *  seckey[i % seckeylen]) % LIST_CHALLENGE_LEN] ^= (char)((m_challenge[i % LIST_CHALLENGE_LEN] ^ servchal[i]) & 0xFF);

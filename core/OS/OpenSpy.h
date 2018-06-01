@@ -86,11 +86,6 @@ namespace OS {
 	#define KEYTYPE_SHORT	2
 	#define KEYTYPE_INT		3
 
-
-	#define OS_MAX_GAMENAME 32
-	#define OS_MAX_DESCRIPTION 64
-	#define OS_MAX_SECRETKEY 7
-
 	#define OS_GAMESPY_PARTNER_CODE 0
 	#define OS_IGN_PARTNER_CODE 10
 	#define OS_EA_PARTNER_CODE 20
@@ -105,16 +100,12 @@ namespace OS {
 	class GameData {
 	public:
 		GameData() :gameid(0), queryport(0), disabled_services(0), compatibility_flags(0) {
-			secretkey[0] = 0;
-			gamename[0] = 0;
-			secretkey[0] = 0;
-			description[0] = 0;
 		};
 		int gameid;
 		int queryport;
-		char gamename[OS_MAX_GAMENAME];
-		char description[OS_MAX_DESCRIPTION];
-		char secretkey[OS_MAX_SECRETKEY];
+		std::string gamename;
+		std::string description;
+		std::string secretkey;;
 		char disabled_services; //0= ok, 1 = temp, 2 = perm
 		int compatibility_flags;
 		std::vector<std::string> popular_values;

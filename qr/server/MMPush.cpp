@@ -22,7 +22,7 @@ namespace MM {
 
 	//struct event_base *mp_event_base;
 	void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
-	    char gamename[OS_MAX_GAMENAME+1],from_ip[32], to_ip[32], from_port[16], to_port[16], data[MAX_BASE64_STR+1], type[32];
+	    char gamename[32],from_ip[32], to_ip[32], from_port[16], to_port[16], data[MAX_BASE64_STR+1], type[32];
 		uint8_t *data_out;
 		int data_len;
 		Redis::Value v = reply.values.front();

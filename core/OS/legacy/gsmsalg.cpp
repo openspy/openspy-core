@@ -93,7 +93,7 @@ unsigned char gsvalfunc(int reg) {
 unsigned char *gsseckey(
   unsigned char *dst,
   unsigned char *src,
-  unsigned char *key,
+  const unsigned char *key,
   int           enctype) {
 
     int             i,

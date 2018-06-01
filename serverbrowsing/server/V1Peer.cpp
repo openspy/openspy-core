@@ -223,7 +223,7 @@ namespace SB {
 				}
 				m_game = game_data;
 				m_peer_stats.from_game = m_game;
-				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (unsigned char *)m_game.secretkey, m_enctype);
+				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (const unsigned char *)m_game.secretkey.c_str(), m_enctype);
 				if(strcmp(realvalidate,m_validation.c_str()) == 0) {
 					send_crypt_header(m_enctype);
 					m_validated = true;
@@ -418,7 +418,7 @@ namespace SB {
 			char *p = (char *)(&buff);
 			int len = 0;
 			char cryptkey[13];
-			int secretkeylen = strlen(m_game.secretkey);
+			int secretkeylen = m_game.secretkey.length();
 			if(enctype == 2) {
 				for(unsigned int x=0;x<sizeof(cryptkey);x++) {
 					cryptkey[x] = (uint8_t)rand();

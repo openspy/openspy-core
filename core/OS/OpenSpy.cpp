@@ -120,7 +120,7 @@ namespace OS {
 		}
 		v = reply.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			strcpy(game.secretkey, OS::strip_quotes(v.value._str).c_str());
+			game.secretkey = OS::strip_quotes(v.value._str);
 		}
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s description", key);
@@ -129,7 +129,7 @@ namespace OS {
 		}
 		v = reply.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			strcpy(game.description, OS::strip_quotes(v.value._str).c_str());
+			game.description = OS::strip_quotes(v.value._str);
 		}
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s gamename", key);
@@ -138,7 +138,7 @@ namespace OS {
 		}
 		v = reply.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			strcpy(game.gamename, OS::strip_quotes(v.value._str).c_str());
+			game.gamename = OS::strip_quotes(v.value._str);
 		}
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s disabled_services", key);
