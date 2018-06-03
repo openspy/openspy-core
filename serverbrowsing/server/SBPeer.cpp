@@ -14,17 +14,6 @@ namespace SB {
 		
 		mp_mutex = OS::CreateMutex();
 
-		m_peer_stats.version = version;
-		m_peer_stats.m_address = m_sd->address;
-		m_peer_stats.bytes_in = 0;
-		m_peer_stats.bytes_out = 0;
-		m_peer_stats.packets_in = 0;
-		m_peer_stats.packets_out = 0;
-		m_peer_stats.total_requests = 0;
-		m_peer_stats.from_game.gamename[0] = 0;
-		m_peer_stats.from_game.gameid = 0;
-		m_peer_stats.disconnected = false;
-
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version %d",m_sd->address.ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
@@ -124,7 +113,6 @@ namespace SB {
 		req.peer->IncRef();
 		req.driver = mp_driver;
 
-		m_peer_stats.total_requests++;
 		MM::m_task_pool->AddRequest(req);
 	}
 	void Peer::FlushPendingRequests() {
@@ -133,76 +121,11 @@ namespace SB {
 			req.peer = this;
 			req.peer->IncRef();
 			req.driver = mp_driver;
-			m_peer_stats.total_requests++;
 			MM::m_task_pool->AddRequest(req);
 			m_pending_request_list.pop();
 		}
 	}
 
-	OS::MetricValue Peer::GetMetricItemFromStats(PeerStats stats) {
-		OS::MetricValue arr_value, value;
-		value.value._str = stats.m_address.ToString(false);
-		value.key = "ip";
-		value.type = OS::MetricType_String;
-		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-		value.value._int = stats.disconnected;
-		value.key = "disconnected";
-		value.type = OS::MetricType_Integer;
-		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));		
-
-		value.type = OS::MetricType_Integer;
-		value.value._int = stats.bytes_in;
-		value.key = "bytes_in";
-		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-		value.value._int = stats.bytes_out;
-		value.key = "bytes_out";
-		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-		value.value._int = stats.packets_in;
-		value.key = "packets_in";
-		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-		value.value._int = stats.packets_out;
-		value.key = "packets_out";
-		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-		value.value._int = stats.total_requests;
-		value.key = "pending_requests";
-		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-		arr_value.type = OS::MetricType_Array;
-			
-		value.type = OS::MetricType_String;	
-		value.key = "gamename";
-		value.value._str = stats.from_game.gamename;
-		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-		value.type = OS::MetricType_Integer;	
-		value.key = "version";
-		value.value._int = stats.version;
-		arr_value.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_String, value));
-
-		arr_value.key = stats.m_address.ToString(false);
-		return arr_value;
-	}
-	void Peer::ResetMetrics() {
-		m_peer_stats.bytes_in = 0;
-		m_peer_stats.bytes_out = 0;
-		m_peer_stats.packets_in = 0;
-		m_peer_stats.packets_out = 0;
-		m_peer_stats.total_requests = 0;
-	}
-	OS::MetricInstance Peer::GetMetrics() {
-		OS::MetricInstance peer_metric;
-
-		peer_metric.value = GetMetricItemFromStats(m_peer_stats);
-		peer_metric.key = "peer";
-
-		ResetMetrics();
-
-		return peer_metric;
-	}
 	void Peer::Delete(bool timeout) {
 		m_timeout_flag = timeout;
 		m_delete_flag = true;

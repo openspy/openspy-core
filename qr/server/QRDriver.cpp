@@ -46,8 +46,6 @@ namespace QR {
 					peer->DecRef();
 					driver->m_peers_to_delete.push_back(peer);
 
-					driver->m_stats_queue.push(peer->GetPeerStats());
-
 					driver->m_server->UnregisterSocket(peer);
 					continue;
 				}
@@ -173,42 +171,5 @@ namespace QR {
 		}
 		mp_mutex->unlock();
 		return peers;
-	}
-	OS::MetricInstance Driver::GetMetrics() {
-		OS::MetricInstance peer_metric;
-		OS::MetricValue arr_value2, value, peers;
-
-		mp_mutex->lock();
-
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			INetPeer * peer = (INetPeer *)*it;
-			OS::Address address = peer->getAddress();
-			value = peer->GetMetrics().value;
-
-			value.key = address.ToString(false);
-
-			peers.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, value));			
-			it++;
-		}
-
-		while(!m_stats_queue.empty()) {
-			PeerStats stats = m_stats_queue.front();
-			m_stats_queue.pop();
-			peers.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, Peer::GetMetricItemFromStats(stats)));
-		}
-
-		peers.key = "peers";
-		arr_value2.type = OS::MetricType_Array;
-		peers.type = OS::MetricType_Array;
-		arr_value2.arr_value.values.push_back(std::pair<OS::MetricType, struct OS::_Value>(OS::MetricType_Array, peers));
-	
-
-		peer_metric.key = mp_socket->address.ToString(false);
-		arr_value2.key = peer_metric.key;
-		peer_metric.value = arr_value2;
-		
-		mp_mutex->unlock();
-		return peer_metric;
 	}
 }

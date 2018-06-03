@@ -21,8 +21,7 @@
 #define DRIVER_THREAD_TIME 1000
 namespace QR {
 	class Peer;
-	typedef struct _PeerStats PeerStats;
-
+	
 
 	class Driver : public INetDriver {
 	public:
@@ -34,7 +33,6 @@ namespace QR {
 		Peer *find_or_create(OS::Address address, INetIOSocket *socket, int version = 2);
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
-		OS::MetricInstance GetMetrics();
 
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
@@ -46,8 +44,6 @@ namespace QR {
 		std::vector<Peer *> m_peers_to_delete;
 		
 		struct timeval m_server_start;
-
-		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		INetIOSocket *mp_socket;
 

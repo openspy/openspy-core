@@ -41,7 +41,6 @@ namespace SB {
 		void AddNewServer(MM::Server serv);
 		void AddUpdateServer(MM::Server serv);
 
-		OS::MetricInstance GetMetrics();
 		void debug_dump();
 
 		INetIOSocket *getListenerSocket() const;
@@ -65,7 +64,6 @@ namespace SB {
 		std::queue<MM::Server> m_server_delete_queue;
 		std::queue<MM::Server> m_server_new_queue;
 		std::queue<MM::Server> m_server_update_queue;
-		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 		
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;

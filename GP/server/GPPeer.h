@@ -35,21 +35,7 @@
 
 namespace GP {
 	class Driver;
-	typedef struct _PeerStats {
-		int total_requests;
-		int version;
 
-		long long bytes_in;
-		long long bytes_out;
-
-		int packets_in;
-		int packets_out;
-
-		OS::Address m_address;
-		OS::GameData from_game;
-
-		bool disconnected;
-	} PeerStats;
 	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, INetIOSocket *sd);
@@ -64,7 +50,6 @@ namespace GP {
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 
-		int GetPing();
 		void send_ping();
 
 		void send_login_challenge(int type);
@@ -81,10 +66,6 @@ namespace GP {
 		void send_user_blocked(int from_profileid);
 		void send_user_block_deleted(int from_profileid);
 
-		//
-		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
-		OS::MetricInstance GetMetrics();
-		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 	private:
 		void refresh_buddy_list();
 		//packet handlers
@@ -144,8 +125,6 @@ namespace GP {
 		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
 		void send_backend_auth_event();
 
-		void ResetMetrics();
-
 		OS::GameData m_game;
 		OS::Buffer m_recv_buffer;
 		Driver *mp_driver;
@@ -170,7 +149,6 @@ namespace GP {
 
 		OS::User m_user;
 		OS::Profile m_profile;
-		PeerStats m_peer_stats;
 
 		OS::CMutex *mp_mutex;
 	};

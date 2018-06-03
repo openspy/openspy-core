@@ -17,8 +17,6 @@
 namespace NN {
 	class Peer;
 
-	typedef struct _PeerStats PeerStats;
-
 	class Driver : public INetDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
@@ -35,7 +33,6 @@ namespace NN {
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
-		OS::MetricInstance GetMetrics();
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
@@ -46,8 +43,6 @@ namespace NN {
 		std::vector<Peer *> m_peers_to_delete;
 
 		struct timeval m_server_start;
-
-		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;

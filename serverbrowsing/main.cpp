@@ -29,7 +29,6 @@ void sig_handler(int signo)
 }
 #endif
 
-#include <OS/Analytics/AnalyticsMgr.h>
 int main() {
     int i = atexit(on_exit);
     if (i != 0) {

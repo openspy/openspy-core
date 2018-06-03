@@ -51,22 +51,6 @@ enum {
 #define SM_PING_TIME 120
 
 namespace SM {
-	typedef struct _PeerStats {
-		int total_requests;
-		int version;
-
-		long long bytes_in;
-		long long bytes_out;
-
-		int packets_in;
-		int packets_out;
-
-		OS::Address m_address;
-		OS::GameData from_game;
-
-		bool disconnected;
-	} PeerStats;
-
 	class Driver;
 	class Peer : public INetPeer {
 	public:
@@ -83,10 +67,6 @@ namespace SM {
 		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
 
 		void Delete(bool timeout = false);
-
-		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
-		OS::MetricInstance GetMetrics();
-		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
 	private:
 
 		void handle_search(OS::KVReader data_parser);
@@ -110,11 +90,7 @@ namespace SM {
 		void handle_nicks(OS::KVReader data_parser);
 		static void m_nicks_cb(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
-		PeerStats m_peer_stats;
-
-		
 		static const char *mp_hidden_str;
-		void ResetMetrics();
 
 		OS::CMutex *mp_mutex;
 		OS::Buffer m_recv_buffer;

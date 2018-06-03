@@ -34,7 +34,6 @@ namespace GP {
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
-		OS::MetricInstance GetMetrics();
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
@@ -42,8 +41,6 @@ namespace GP {
 		std::vector<Peer *> m_connections;
 
 		struct timeval m_server_start;
-
-		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		std::vector<GP::Peer *> m_peers_to_delete;
 		OS::CMutex *mp_mutex;

@@ -126,10 +126,6 @@ namespace FESL {
 
 		void SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence = -1);
 
-		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
-		OS::MetricInstance GetMetrics();
-		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
-
 		void loginToSubAccount(std::string uniquenick);
 		void loginToPersona(std::string uniquenick);
 		void SendCustomError(FESL_COMMAND_TYPE type, std::string TXN, std::string fieldName, std::string fieldError);
@@ -201,7 +197,6 @@ namespace FESL {
 		void handle_auth_callback_error(OS::AuthResponseCode response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN);
 		void handle_profile_search_callback_error(OS::EProfileResponseType response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN);
 
-		void ResetMetrics();
 
 	};
 }

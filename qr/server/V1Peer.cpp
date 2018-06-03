@@ -48,9 +48,6 @@ namespace QR {
 			return;
 		}
 
-		m_peer_stats.packets_in++;
-		m_peer_stats.bytes_in += packet.buffer.remaining();
-
 
 		std::string recv_buf = std::string((const char *)packet.buffer.GetHead(), packet.buffer.remaining());
 		OS::KVReader data_parser = OS::KVReader(recv_buf);
@@ -201,7 +198,6 @@ namespace QR {
 
 				m_server_info_dirty = false;
 				gettimeofday(&m_last_heartbeat, NULL);
-				m_peer_stats.pending_requests++;
 				MM::m_task_pool->AddRequest(req);
 			} else {
 				m_server_info_dirty = true;
@@ -263,14 +259,12 @@ namespace QR {
 			m_sent_game_query = true;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
-			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
 		}
 	}
 	void V1Peer::OnGetGameInfo(OS::GameData game_info, void *extra) {
 		std::ostringstream s;
 		int state_changed = (int)extra;
-		m_peer_stats.from_game = game_info;
 		m_server_info.m_game = game_info;
 
 		m_dirty_server_info = m_server_info;
@@ -338,9 +332,6 @@ namespace QR {
 		if (attach_final) {
 			send_str += "\\final\\";
 		}
-
-		m_peer_stats.packets_out++;
-		m_peer_stats.bytes_out += send_str.length()+1;
 
 		buffer.WriteBuffer((void *)send_str.c_str(), send_str.length());
 

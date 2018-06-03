@@ -2,7 +2,6 @@
 #define _INETSERVER_H
 #include <vector>
 #include <OS/OpenSpy.h>
-#include <OS/Analytics/Metric.h>
 #include "NetDriver.h"
 #include "NetEventManager.h"
 #include "NetIOInterface.h"
@@ -19,8 +18,6 @@ public:
 
 	void RegisterSocket(INetPeer *peer);
 	void UnregisterSocket(INetPeer *peer);
-
-	virtual OS::MetricInstance GetMetrics() = 0;
 
 	INetIOInterface<> *getNetIOInterface();
 protected:

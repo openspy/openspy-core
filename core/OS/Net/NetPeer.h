@@ -1,7 +1,6 @@
 #ifndef _NETPEER_H
 #define _NETPEER_H
 #include <OS/Ref.h>
-#include <OS/Analytics/Metric.h>
 #include "NetDriver.h"
 #include "NetIOInterface.h"
 #include <OS/Net/NetServer.h>
@@ -16,8 +15,6 @@ class INetPeer : public OS::Ref {
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 		INetDriver *GetDriver() { return mp_driver; };
-
-		virtual OS::MetricInstance GetMetrics() = 0;
 
 		OS::Address getAddress() { return m_sd->address; };
 

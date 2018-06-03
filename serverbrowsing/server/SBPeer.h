@@ -23,23 +23,6 @@ namespace SB {
 		bool full_keys;
 	};
 
-	typedef struct _PeerStats {
-		int total_requests; //should be renamed to "pending requests"
-		int version;
-
-		long long bytes_in;
-		long long bytes_out;
-
-		int packets_in;
-		int packets_out;
-
-		OS::Address m_address;
-		OS::GameData from_game;
-
-		bool disconnected;
-	} PeerStats;
-
-
 	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, INetIOSocket *sd, int version);
@@ -63,10 +46,6 @@ namespace SB {
 		virtual void OnRecievedGameInfo(const OS::GameData game_data, void *extra) = 0;
 		virtual void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) = 0;
 
-		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
-		OS::MetricInstance GetMetrics();
-		PeerStats GetPeerStats() { if(m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
-
 		void Delete(bool timeout = false);
 	protected:
 		void cacheServer(MM::Server *server, bool full_keys = false);
@@ -74,8 +53,6 @@ namespace SB {
 		void DeleteServerFromCacheByKey(std::string key);
 		sServerCache FindServerByIP(OS::Address address);
 		sServerCache FindServerByKey(std::string key);
-
-		void ResetMetrics();
 
 		int m_version;
 
@@ -97,7 +74,6 @@ namespace SB {
 
 
 		OS::CMutex *mp_mutex;
-		PeerStats m_peer_stats;
 	private:
 
 

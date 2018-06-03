@@ -32,14 +32,11 @@ namespace GS {
 		Peer *FindPeerByProfileID(int profileid);
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
-		OS::MetricInstance GetMetrics();
 
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
 	private:
 		void TickConnections();
-
-		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		std::vector<Peer *> m_connections;
 

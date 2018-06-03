@@ -50,20 +50,12 @@ namespace QR {
 	}
 
 	void V2Peer::SendPacket(OS::Buffer &buffer) {
-
-		m_peer_stats.packets_out++;
-		m_peer_stats.bytes_out += buffer.size();
-
 		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
 		if (resp.disconnect_flag || resp.error_flag) {
 			Delete();
 		}
 	}
 	void V2Peer::handle_packet(INetIODatagram packet) {
-
-		m_peer_stats.packets_in++;
-		m_peer_stats.bytes_in += packet.buffer.remaining();
-
 		uint8_t type = packet.buffer.ReadByte();
 
 		uint8_t instance_key[REQUEST_KEY_LEN];
@@ -125,7 +117,6 @@ namespace QR {
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_PushServer;
 				m_server_pushed = true;
-				m_peer_stats.pending_requests++;
 				MM::m_task_pool->AddRequest(req);
 			}
 			m_sent_challenge = true;
@@ -247,7 +238,6 @@ namespace QR {
 					req.old_server = old_server_info;
 					req.peer->IncRef();
 					req.type = MM::EMMPushRequestType_UpdateServer;
-					m_peer_stats.pending_requests++;
 					MM::m_task_pool->AddRequest(req);
 				} else {
 					m_server_info_dirty = true;
@@ -263,7 +253,6 @@ namespace QR {
 			req.extra = (void *)1;
 			req.gamename = server_info.m_keys["gamename"];
 			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
-			m_peer_stats.pending_requests++;
 			MM::m_task_pool->AddRequest(req);
 		}
 	}
@@ -277,11 +266,9 @@ namespace QR {
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got available request: %s", m_sd->address.ToString().c_str(), req.gamename.c_str());
 		req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
-		m_peer_stats.pending_requests++;
 		MM::m_task_pool->AddRequest(req);
 	}
 	void V2Peer::OnGetGameInfo(OS::GameData game_info, void *extra) {
-		m_peer_stats.from_game = game_info;
 		if (extra == (void *)1) {
 			m_server_info.m_game = game_info;
 			m_dirty_server_info.m_game = game_info;
@@ -312,7 +299,6 @@ namespace QR {
 					req.server = m_server_info;
 					req.peer->IncRef();
 					req.type = MM::EMMPushRequestType_UpdateServer_NoDiff;
-					m_peer_stats.pending_requests++;
 					MM::m_task_pool->AddRequest(req);
 				}
 			}

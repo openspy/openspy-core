@@ -352,15 +352,10 @@ namespace SB {
 		
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.size() - header_len);
 
-		m_peer_stats.packets_out++;
-
 		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
 		if(io_resp.disconnect_flag || io_resp.error_flag) {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d %d", m_sd->address.ToString().c_str(), io_resp.disconnect_flag, io_resp.error_flag);
 			Delete();
-		}
-		else {
-			m_peer_stats.bytes_out += io_resp.comm_len;
 		}
 	}
 	void V2Peer::ProcessListRequest(OS::Buffer &buffer) {
@@ -408,8 +403,6 @@ namespace SB {
 			send_error(true, "Invalid target gamename");
 			return;
 		}
-
-		m_peer_stats.from_game = m_last_list_req.m_from_game;
 
 		m_got_game_pair = true;
 
@@ -486,9 +479,6 @@ namespace SB {
 			if ((io_resp.disconnect_flag || io_resp.error_flag) && len <= 0) {
 				goto end;
 			}
-
-			m_peer_stats.packets_in++;
-			m_peer_stats.bytes_in += len;
 
 			if(m_next_packet_send_msg) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), len);
@@ -771,8 +761,6 @@ namespace SB {
 
 		OS::Buffer buffer((void *)&send_str, len);
 
-		m_peer_stats.bytes_out += len+1;
-		m_peer_stats.packets_out++;
 		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", m_sd->address.ToString().c_str(), send_str, die);
 		if (io_resp.disconnect_flag || io_resp.error_flag || die)

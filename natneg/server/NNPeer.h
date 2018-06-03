@@ -17,22 +17,6 @@ namespace NN {
 	class Driver;
 	class ConnectionSummary;
 
-	typedef struct _PeerStats {
-		int pending_requests;
-		int version;
-
-		long long bytes_in;
-		long long bytes_out;
-
-		int packets_in;
-		int packets_out;
-
-		OS::Address m_address;
-		OS::GameData from_game;
-
-		bool disconnected;
-	} PeerStats;
-
 	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, INetIOSocket *sd);
@@ -54,16 +38,11 @@ namespace NN {
 
 		bool getUseGamePort() { return m_use_gameport; };
 		uint8_t getPortType() { return m_port_type; };
-
-		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
-		OS::MetricInstance GetMetrics();
-		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
-
+		
 		int NumRequiredAddresses() const;
 
 		NN::ConnectionSummary GetSummary() const;
 	protected:
-		void ResetMetrics();
 		static int packetSizeFromType(uint8_t type);
 
 		void SendConnectPacket(OS::Address address);
@@ -105,8 +84,6 @@ namespace NN {
 
 		bool m_got_connect_ack;
 		int m_num_connect_resends;
-
-		PeerStats m_peer_stats;
 	};
 }
 #endif //_QRPEER_H

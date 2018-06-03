@@ -65,12 +65,6 @@ namespace GS {
 		void SendPacket(std::string str, bool attach_final = true);
 		void SendPacket(OS::Buffer &buffer, bool attach_final = true);
 
-		static OS::MetricValue GetMetricItemFromStats(PeerStats stats);
-		OS::MetricInstance GetMetrics();
-		PeerStats GetPeerStats() { if (m_delete_flag) m_peer_stats.disconnected = true; return m_peer_stats; };
-
-		void ResetMetrics();
-
 		OS::GameData GetGame() { return m_game; };
 	private:
 		//packet handlers
@@ -126,7 +120,6 @@ namespace GS {
 
 		std::string m_current_game_identifier;
 		std::string m_response;
-		PeerStats m_peer_stats;
 
 		std::string m_kv_accumulator;
 	};

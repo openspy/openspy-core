@@ -68,9 +68,6 @@ namespace SB {
 
 				std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
 
-				m_peer_stats.packets_in++;
-				m_peer_stats.bytes_in += len;
-
 				/* split by \\final\\  */
 				char *p = (char *)recv_buf.c_str();
 				char *x;
@@ -222,7 +219,6 @@ namespace SB {
 					return;
 				}
 				m_game = game_data;
-				m_peer_stats.from_game = m_game;
 				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (const unsigned char *)m_game.secretkey.c_str(), m_enctype);
 				if(strcmp(realvalidate,m_validation.c_str()) == 0) {
 					send_crypt_header(m_enctype);
@@ -404,8 +400,6 @@ namespace SB {
 				}
 			}
 
-			m_peer_stats.bytes_out += buffer.size();
-			m_peer_stats.packets_out++;
 			NetIOCommResp io_resp;
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
 			if(io_resp.disconnect_flag || io_resp.error_flag) {

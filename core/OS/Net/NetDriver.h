@@ -1,7 +1,6 @@
 #ifndef _NETDRIVER_H
 #define _NETDRIVER_H
 #include <OS/OpenSpy.h>
-#include <OS/Analytics/Metric.h>
 #include "NetIOInterface.h"
 class INetServer;
 class INetPeer;
@@ -17,7 +16,6 @@ public:
 	virtual const std::vector<INetIOSocket *> getSockets() const = 0;
 	INetServer *getServer() { return m_server; }
 	virtual const std::vector<INetPeer *> getPeers(bool inc_ref = false) = 0;
-	virtual OS::MetricInstance GetMetrics() = 0;
 protected:
 	INetServer *m_server;
 };

@@ -26,16 +26,11 @@ namespace SM {
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
-
-		OS::MetricInstance GetMetrics();
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
 
 		std::vector<SM::Peer *> m_peers_to_delete;
-
-		//safe for now, until pointers one day get added
-		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		std::vector<Peer *> m_connections;
 
