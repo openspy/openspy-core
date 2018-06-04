@@ -8,8 +8,7 @@
 #include "QRDriver.h"
 #include "V2Peer.h"
 
-#include <OS/legacy/enctypex_decoder.h>
-#include <OS/legacy/helpers.h>
+#include <OS/gamespy/enctypex_decoder.h>
 
 #define PACKET_QUERY              0x00  //S -> C
 #define PACKET_CHALLENGE          0x01  //S -> C
@@ -388,7 +387,7 @@ namespace QR {
 		OS::Buffer buffer;
 
 		memset(&m_challenge, 0, sizeof(m_challenge));
-		gen_random((char *)&m_challenge,sizeof(m_challenge)-1);
+		OS::gen_random((char *)&m_challenge,sizeof(m_challenge)-1);
 
 		uint16_t *backend_flags = (uint16_t *)&m_challenge[13];
 		//*backend_flags &= ~QR2_OPTION_USE_QUERY_CHALLENGE;

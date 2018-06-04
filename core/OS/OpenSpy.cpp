@@ -13,8 +13,6 @@
 	#include "OS/Logger/Win32/Win32Logger.h"
 #endif
 
-#include <OS/legacy/helpers.h>
-
 #include <OS/Auth.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
@@ -478,13 +476,13 @@ namespace OS {
 	Address::Address(const char *str) {
 		char address[16];
 		const char *seperator = strrchr(str, ':');
-		unsigned int len = strlen(str);
+		size_t len = strlen(str);
 		if(seperator) {
 			port = htons(atoi(seperator+1));
 			len = seperator - str;
 		}
 		if(len < sizeof(address)) {
-			strncpy(address, str, len);
+			strncpy_s(address, sizeof(address), str, len);
 			address[len] = 0;
 		}
 		ip = inet_addr((const char *)&address);
@@ -567,16 +565,106 @@ namespace OS {
 		return best_result;
 	}
 	std::string url_encode(std::string src) {
-		char *ret = curl_easy_escape(OS::g_curl, src.c_str(), src.length());
+		char *ret = curl_easy_escape(OS::g_curl, src.c_str(), (int)src.length());
 		std::string ret_str = ret;
 
 		curl_free(ret);
 		return ret_str;
 	}
 	std::string url_decode(std::string src) {
-		char *ret = curl_easy_unescape(OS::g_curl, src.c_str(), src.length(), NULL);
+		char *ret = curl_easy_unescape(OS::g_curl, src.c_str(), (int)src.length(), NULL);
 		std::string ret_str = ret;
 		curl_free(ret);
 		return ret_str;
+	}
+	int match2(const char *mask, const char *name, int &match_count, char wildcard_char)
+	{
+		const u_char *m = (u_char *)mask;
+		const u_char *n = (u_char *)name;
+		const u_char *ma = NULL;
+		const u_char *na = (u_char *)name;
+
+		match_count = 0;
+
+		while (1)
+		{
+			if (*m == wildcard_char)
+			{
+				while (*m == wildcard_char) /* collapse.. */
+					m++;
+				ma = m;
+				na = n;
+			}
+
+			if (!*m)
+			{
+				if (!*n)
+					return 0;
+				if (!ma)
+					return 1;
+				for (m--; (m > (const u_char *)mask) && (*m == '?'); m--);
+				if (*m == wildcard_char)
+					return 0;
+				m = ma;
+				n = ++na;
+			}
+			else
+				if (!*n)
+				{
+					while (*m == wildcard_char) /* collapse.. */
+						m++;
+					return (*m != 0);
+				}
+
+			if ((tolower(*m) != tolower(*n)) && !((*m == '_') && (*n == ' ')) && (*m != '?'))
+			{
+				if (!ma)
+					return 1;
+				m = ma;
+				n = ++na;
+			}
+			else
+			{
+				m++;
+				n++;
+				match_count++;
+			}
+		}
+		return 1;
+	}
+	int match(const char *mask, const char *name) {
+		int match_count;
+		if (mask[0] == '*' && mask[1] == '!') {
+			mask += 2;
+			while (*name != '!' && *name)
+				name++;
+			if (!*name)
+				return 1;
+			name++;
+		}
+
+		if (mask[0] == '*' && mask[1] == '@') {
+			mask += 2;
+			while (*name != '@' && *name)
+				name++;
+			if (!*name)
+				return 1;
+			name++;
+		}
+		return match2(mask, name, match_count);
+	}
+	void gen_random(char *s, const int len) {
+		int i;
+		srand((unsigned int)time(NULL));
+		static const char alphanum[] =
+			"0123456789"
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			"abcdefghijklmnopqrstuvwxyz";
+
+		for (i = 0; i < len; ++i) {
+			s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+		}
+
+		s[len] = 0;
 	}
 }

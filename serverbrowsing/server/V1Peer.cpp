@@ -1,7 +1,7 @@
 #include <OS/OpenSpy.h>
-#include <OS/legacy/enctypex_decoder.h>
-#include <OS/legacy/gsmsalg.h>
-#include <OS/legacy/enctype_shared.h>
+#include <OS/gamespy/enctypex_decoder.h>
+#include <OS/gamespy/gsmsalg.h>
+#include <OS/gamespy/enctype_shared.h>
 #include <sstream>
 #include "SBDriver.h"
 #include "SBPeer.h"
@@ -13,7 +13,6 @@
 
 #include <OS/Buffer.h>
 
-#include <OS/legacy/helpers.h> //gen_random
 #include <OS/KVReader.h>
 
 #include <OS/Net/NetServer.h>
@@ -23,7 +22,7 @@ namespace SB {
 			std::ostringstream s;
 
 			memset(&m_challenge,0,sizeof(m_challenge));
-			gen_random((char *)&m_challenge,6);
+			OS::gen_random((char *)&m_challenge,6);
 
 			m_enctype = 0;
 			m_waiting_gamedata = 0;
@@ -54,13 +53,13 @@ namespace SB {
 				while (!m_waiting_packets.empty()) {
 					std::string cmd = m_waiting_packets.front();
 					m_waiting_packets.pop();
-					handle_packet(cmd.c_str(), cmd.length());
+					handle_packet(cmd);
 				}
 			}
 			if (packet_waiting) {
 				io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 
-				int len = io_resp.comm_len;
+				size_t len = io_resp.comm_len;
 
 				if ((io_resp.disconnect_flag || io_resp.error_flag) && len <= 0) {
 					goto end;
@@ -76,10 +75,10 @@ namespace SB {
 					p = strstr(p,"\\final\\");
 					if(p == NULL) { break; }
 					*p = 0;
-					this->handle_packet(x, strlen(x));
+					this->handle_packet(x);
 					p+=7;
 				}
-				this->handle_packet(x, strlen(x));
+				this->handle_packet(x);
 
 				
 			}
@@ -126,8 +125,8 @@ namespace SB {
 				Delete();
 			}
 		}
-		void V1Peer::handle_gamename(const char *data, int len) {
-			OS::KVReader data_parser = OS::KVReader(std::string(data));
+		void V1Peer::handle_gamename(std::string data) {
+			OS::KVReader data_parser = OS::KVReader(data);
 			MM::MMQueryRequest req;
 
 			std::string validation;
@@ -146,18 +145,12 @@ namespace SB {
 			m_enctype = enctype;
 			AddRequest(req);
 		}
-		void V1Peer::handle_packet(const char *data, int len) {
-			if(len < 0) {
-				Delete();
-				return;
-			} else if(len == 0) {
-				return;
-			}
+		void V1Peer::handle_packet(std::string data) {
 			if (m_waiting_gamedata == 1) {
-				m_waiting_packets.push(std::string(data));
+				m_waiting_packets.push(data);
 				return;
 			}
-			OS::KVReader kv_parser = OS::KVReader(std::string(data));
+			OS::KVReader kv_parser = OS::KVReader(data);
 
 			if (kv_parser.Size() < 1) {
 				Delete();
@@ -169,10 +162,10 @@ namespace SB {
 
 			command = kv_parser.GetKeyByIdx(0);
 			if(strcmp(command.c_str(),"gamename") == 0 && !m_validated) {
-				handle_gamename(data, len);
+				handle_gamename(data);
 			}
 			else if (strcmp(command.c_str(), "list") == 0) {
-				handle_list(data, len);
+				handle_list(data);
 			}
 			else if (strcmp(command.c_str(), "queryid") == 0) {
 
@@ -197,7 +190,7 @@ namespace SB {
 			SendGroups(results);
 		}
 		void V1Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {
-			int type = (int)extra;
+			size_t type = (size_t)extra;
 			m_waiting_gamedata = 2;
 			if (type == 1) {
 				if (game_data.secretkey[0] == 0) {
@@ -230,7 +223,7 @@ namespace SB {
 			}
 			FlushPendingRequests();
 		}
-		void V1Peer::handle_list(const char *data, int len) {
+		void V1Peer::handle_list(std::string data) {
 			std::string mode, gamename;
 
 			OS::KVReader kv_parser(data);
@@ -280,7 +273,7 @@ namespace SB {
 		}
 		void V1Peer::SendServerInfo(MM::ServerListQuery results) {
 			std::ostringstream resp;
-			int field_count;
+			size_t field_count;
 
 			std::vector<std::string>::iterator it;
 			results.captured_basic_fields.insert(results.captured_basic_fields.begin(), "ip"); //insert ip/port field
@@ -316,7 +309,7 @@ namespace SB {
 
 			std::ostringstream resp;
 			std::vector<std::string> group_fields;
-			int fieldcount;
+			size_t fieldcount;
 
 			group_fields.push_back("groupid");
 			group_fields.push_back("hostname");
@@ -386,7 +379,7 @@ namespace SB {
 				Delete();
 			}
 		}
-		void V1Peer::SendPacket(const uint8_t *buff, int len, bool attach_final, bool skip_encryption) {
+		void V1Peer::SendPacket(const uint8_t *buff, size_t len, bool attach_final, bool skip_encryption) {
 			OS::Buffer buffer;
 			buffer.WriteBuffer((void *)buff, len);
 			if(attach_final) {
@@ -395,7 +388,7 @@ namespace SB {
 			if (!skip_encryption) {
 				switch (m_enctype) {
 				case 2:
-					m_keyptr = encshare1((unsigned int *)&m_cryptkey_enctype2, (unsigned char *)buffer.GetHead(), buffer.size(), m_keyptr);
+					m_keyptr = encshare1((unsigned int *)&m_cryptkey_enctype2, (unsigned char *)buffer.GetHead(), (int)buffer.size(), m_keyptr);
 					break;
 				}
 			}
@@ -412,7 +405,7 @@ namespace SB {
 			char *p = (char *)(&buff);
 			int len = 0;
 			char cryptkey[13];
-			int secretkeylen = m_game.secretkey.length();
+			size_t secretkeylen = m_game.secretkey.length();
 			if(enctype == 2) {
 				for(unsigned int x=0;x<sizeof(cryptkey);x++) {
 					cryptkey[x] = (uint8_t)rand();

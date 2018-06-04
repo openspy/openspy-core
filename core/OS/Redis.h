@@ -22,7 +22,7 @@ namespace Redis {
 		int         _int;
 	} ScalarValue;
 
-	typedef struct _Value;
+	typedef struct _Value Value;
 	typedef struct _ArrayValue {
 		std::vector<std::pair<REDIS_RESPONSE_TYPE, struct _Value> > values;
 	} ArrayValue;

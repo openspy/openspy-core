@@ -10,7 +10,6 @@
 #include <OS/OpenSpy.h>
 #include <OS/Thread.h>
 #include <OS/KVReader.h>
-#include <OS/legacy/helpers.h>
 
 #include <sstream>
 

@@ -25,7 +25,7 @@ namespace OS {
 		int 								GetValueInt(std::string key);
 		std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> GetHead() const;
 		bool HasKey(std::string name);
-		int	Size() { return m_kv_map.size(); };
+		size_t Size() { return m_kv_map.size(); };
 		std::map<std::string, std::string> GetKVMap() const;
 
 		std::string ToString() const;

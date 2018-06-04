@@ -43,8 +43,6 @@ namespace FESL {
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 
-		OS::MetricInstance GetMetrics();
-
 		PublicInfo GetServerInfo() { return m_server_info; };
 
 		SSLNetIOIFace::SSLNetIOInterface *getSSL_Socket_Interface();
@@ -57,9 +55,6 @@ namespace FESL {
 		void TickConnections();
 
 		std::vector<FESL::Peer *> m_peers_to_delete;
-
-		//safe for now, until pointers one day get added
-		std::queue<PeerStats> m_stats_queue; //pending stats to be sent(deleted clients)
 
 		std::vector<Peer *> m_connections;
 

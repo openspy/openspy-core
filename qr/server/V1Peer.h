@@ -5,7 +5,7 @@
 #include "QRDriver.h"
 #include "QRPeer.h"
 
-#include <OS/legacy/gsmsalg.h>
+#include <OS/gamespy/gsmsalg.h>
 #include <OS/KVReader.h>
 
 #include "MMPush.h"

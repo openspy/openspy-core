@@ -24,9 +24,9 @@ typedef struct _GOACryptState
 void GOACryptInit(GOACryptState *state, unsigned char *key, unsigned char keysize);
 void GOAHashInit(GOACryptState *state);
 unsigned char GOAEncryptByte(GOACryptState *state, unsigned char b);   // Encrypt byte
-void GOAEncrypt(GOACryptState *state, unsigned char *bp, int len);   // Encrypt byte array
+void GOAEncrypt(GOACryptState *state, unsigned char *bp, size_t len);   // Encrypt byte array
 unsigned char GOADecryptByte(GOACryptState *state, unsigned char b);       // Decrypt byte.
-void GOADecrypt(GOACryptState *state,unsigned char *bp, int len);   // decrypt byte array
+void GOADecrypt(GOACryptState *state,unsigned char *bp, size_t len);   // decrypt byte array
 void GOAHashFinal(GOACryptState *state, unsigned char *hash, unsigned char hashlength); // Hash length (16-32)
 
 #endif

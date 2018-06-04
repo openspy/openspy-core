@@ -17,10 +17,10 @@ namespace OS {
 
 		return (len*3)/4 - padding;
 	}
-	void Base64StrToBin(const char *str, uint8_t **out, int &len) {
+	void Base64StrToBin(const char *str, uint8_t **out, size_t &len) {
 		BIO *bio, *b64;
 
-		int decodeLen = calcDecodeLength(str);
+		size_t decodeLen = calcDecodeLength(str);
 		*out = (uint8_t*)malloc(decodeLen + 1);
 		memset(*out, 0,decodeLen + 1);
 
@@ -29,12 +29,12 @@ namespace OS {
 		bio = BIO_push(b64, bio);
 
 		BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); //Do not use newlines to flush buffer
-		len = BIO_read(bio, (char *)*out, strlen(str));
+		len = BIO_read(bio, (char *)*out, (int)strlen(str));
 		//assert(*length == decodeLen); //length should equal decodeLen, else something went horribly wrong
 		BIO_free_all(bio);
 
 	}
-	const char *BinToBase64Str(const uint8_t *in, int in_len) {
+	const char *BinToBase64Str(const uint8_t *in, size_t in_len) {
 		BIO *bio, *b64;
 		BUF_MEM *bufferPtr;
 

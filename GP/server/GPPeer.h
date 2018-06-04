@@ -53,7 +53,7 @@ namespace GP {
 		void send_ping();
 
 		void send_login_challenge(int type);
-		void SendPacket(const uint8_t *buff, int len, bool attach_final = true);
+		void SendPacket(const uint8_t *buff, size_t len, bool attach_final = true);
 
 		//event messages
 		void send_add_buddy_request(int from_profileid, const char *reason);

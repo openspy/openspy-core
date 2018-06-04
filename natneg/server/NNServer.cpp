@@ -40,7 +40,6 @@ namespace NN {
 	std::vector<NN::Peer *> Server::FindConnections(NNCookieType cookie, int client_idx, bool inc_ref) {
 		std::vector<NN::Peer *> peers;
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
-		NN::Peer *peer;
 		while (it != m_net_drivers.end()) {
 			NN::Driver *driver = (NN::Driver *)*it;
 			std::vector<NN::Peer *> driver_peers = driver->find_clients(cookie, client_idx, inc_ref);

@@ -28,7 +28,7 @@ namespace OS {
     std::string StringCrypter::decryptString(std::string input) {
 			std::string ret;
 			uint8_t *b64_out;
-			int out_len = 0;
+			size_t out_len = 0;
 
 			int mem_len = RSA_size(mp_rsa_key);
 			unsigned char *buf = (unsigned char *)malloc(mem_len);

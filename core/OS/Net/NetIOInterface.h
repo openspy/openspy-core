@@ -2,6 +2,11 @@
 #define _NET_IO_INTERFACE_H
 #include <OS/OpenSpy.h>
 #include <OS/Buffer.h>
+#ifdef _WIN32
+typedef SOCKET socktype_t;
+#else
+typedef int socktype_t;
+#endif
 class INetIOSocket {
 public:
 	INetIOSocket() {
@@ -14,7 +19,7 @@ public:
 		address = socket.address;
 	}
 	bool shared_socket;
-	int sd;
+	socktype_t sd;
 	OS::Address address;
 };
 class NetIOCommResp {
@@ -34,7 +39,7 @@ public:
 	bool error_flag;
 	bool disconnect_flag;
 	int packet_count;
-	int comm_len;
+	size_t comm_len;
 };
 class INetIODatagram {
 public:

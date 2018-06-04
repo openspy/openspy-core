@@ -7,19 +7,19 @@
 namespace OS {
 	class BufferCtx : public OS::Ref {
 	private:
-		BufferCtx(int alloc_size);
-		BufferCtx(void *addr, int len);
+		BufferCtx(size_t alloc_size);
+		BufferCtx(void *addr, size_t len);
 		~BufferCtx();
 		void *_head;
-		int alloc_size;
+		size_t alloc_size;
 		bool pointer_owner;
 		friend class Buffer;
 	};
 	class Buffer {
 		public:
 			Buffer(const Buffer &cpy);
-			Buffer(void *addr, int len);
-			Buffer(int alloc_size);
+			Buffer(void *addr, size_t len);
+			Buffer(size_t alloc_size);
 			Buffer();
 			~Buffer();
 			uint8_t ReadByte();
@@ -28,7 +28,7 @@ namespace OS {
 			float ReadFloat();
 			double ReadDouble();
 			std::string ReadNTS();
-			void ReadBuffer(void *out, int len);
+			void ReadBuffer(void *out, size_t len);
 		
 			void WriteByte(uint8_t byte);
 			void WriteShort(uint16_t byte);
@@ -36,13 +36,13 @@ namespace OS {
 			void WriteFloat(float f);
 			void WriteDouble(double d);
 			void WriteNTS(std::string str);
-			void WriteBuffer(void *buf, int len);
-			int remaining();
+			void WriteBuffer(void *buf, size_t len);
+			size_t remaining();
 			void *GetCursor();
 			void *GetHead();
 			void reset();
-			int size();
-			void SetCursor(int pos);
+			size_t size();
+			void SetCursor(size_t pos);
 
 			Buffer &operator=(const Buffer& val) {
 				if(mp_ctx) {
@@ -58,8 +58,8 @@ namespace OS {
 				return *this;
 			}
 		private:
-			void realloc_buffer(int new_size);
-			void IncCursor(int len, bool write_operation = false);
+			void realloc_buffer(size_t new_size);
+			void IncCursor(size_t len, bool write_operation = false);
 			BufferCtx *mp_ctx;
 			void *_cursor;
 	};

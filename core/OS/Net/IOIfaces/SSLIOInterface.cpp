@@ -20,7 +20,7 @@ namespace SSLNetIOIFace {
 	void SSL_Socket::init(SSL_CTX *ctx, ESSL_Type ssl_version) {
 		mp_ssl_ctx = ctx;
 		mp_ssl = SSL_new(mp_ssl_ctx);
-		SSL_set_fd(mp_ssl, sd);
+		SSL_set_fd(mp_ssl, (int)sd);
 	}
     SSLNetIOInterface::SSLNetIOInterface(ESSL_Type type, std::string privateKey_raw, std::string cert_raw) {
 		m_ssl_version = type;

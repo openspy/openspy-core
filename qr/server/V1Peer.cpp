@@ -1,3 +1,4 @@
+#include <OS/OpenSpy.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -8,14 +9,13 @@
 #include "QRDriver.h"
 #include "V1Peer.h"
 
-#include <OS/legacy/helpers.h>
 
 #include <sstream>
 
 namespace QR {
 	V1Peer::V1Peer(Driver *driver, INetIOSocket *socket) : Peer(driver, socket, 1) {
 		memset(&m_challenge, 0, sizeof(m_challenge));
-		gen_random((char *)&m_challenge, 6);
+		OS::gen_random((char *)&m_challenge, 6);
 		m_sent_challenge = false;
 		m_uses_validation = false;
 		m_validated = false;
@@ -208,7 +208,7 @@ namespace QR {
 			break;
 		}
 
-		gen_random((char *)&m_challenge, 6); //make new challenge
+		OS::gen_random((char *)&m_challenge, 6); //make new challenge
 		s << "\\echo\\ " << m_challenge;
 		SendPacket(s.str());
 	}
@@ -235,9 +235,9 @@ namespace QR {
 	void V1Peer::handle_heartbeat(OS::KVReader data_parser) {
 		std::string gamename;
 		int query_port = data_parser.GetValueInt("heartbeat");
-		int state_changed = data_parser.GetValueInt("statechanged");
+		void *state_changed = (void *)data_parser.GetValueInt("statechanged");
 
-		if (state_changed == 2) {
+		if (state_changed == (void *)2) {
 			Delete();
 			return;
 		}
@@ -248,7 +248,7 @@ namespace QR {
 		//m_server_info.m_game = OS::GetGameByName(gamename.c_str());
 
 		if (m_server_info.m_game.secretkey[0] != 0) {
-			this->OnGetGameInfo(m_server_info.m_game, (void *)state_changed);
+			this->OnGetGameInfo(m_server_info.m_game, state_changed);
 		}
 		else if(!m_sent_game_query){
 			MM::MMPushRequest req;
@@ -321,7 +321,7 @@ namespace QR {
 		gettimeofday(&current_time, NULL);
 		if (current_time.tv_sec - m_last_ping.tv_sec > QR1_PING_TIME) {
 			gettimeofday(&m_last_ping, NULL);
-			gen_random((char *)&m_ping_challenge, 6);
+			OS::gen_random((char *)&m_ping_challenge, 6);
 			s << "\\echo\\" << m_ping_challenge;
 			SendPacket(s.str());
 		}

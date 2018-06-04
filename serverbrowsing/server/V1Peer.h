@@ -30,13 +30,13 @@ namespace SB {
 		void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra);
 
 
-		void SendPacket(const uint8_t *buff, int len, bool attach_final, bool skip_encryption = false);
+		void SendPacket(const uint8_t *buff, size_t len, bool attach_final, bool skip_encryption = false);
 		void SendServers(MM::ServerListQuery results);
 		void SendServerInfo(MM::ServerListQuery results);
 		void SendGroups(MM::ServerListQuery results);
-		void handle_packet(const char *data, int len);
-		void handle_gamename(const char *data, int len);
-		void handle_list(const char *data, int len);
+		void handle_packet(std::string data);
+		void handle_gamename(std::string data);
+		void handle_list(std::string data);
 		void send_error(bool disconnect, const char *fmt, ...);
 		void send_crypt_header(int enctype);
 		std::string field_cleanup(std::string s);

@@ -2,7 +2,6 @@
 #include "GPDriver.h"
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
-#include <OS/legacy/helpers.h>
 
 #include <OS/Search/User.h>
 
@@ -12,6 +11,8 @@
 #include <algorithm>
 
 #include "GPBackend.h"
+
+#include <OS/gamespy/gamespy.h>
 
 using namespace GPShared;
 
@@ -46,7 +47,7 @@ namespace GP {
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
 
-		gen_random(m_challenge, CHALLENGE_LEN);
+		OS::gen_random(m_challenge, CHALLENGE_LEN);
 
 		send_login_challenge(1);
 	}
@@ -74,7 +75,7 @@ namespace GP {
 		if (packet_waiting) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 
-			int len = io_resp.comm_len;
+			size_t len = io_resp.comm_len;
 
 			if ((io_resp.disconnect_flag || io_resp.error_flag) && len <= 0) {
 				goto end;
@@ -218,7 +219,7 @@ namespace GP {
 
 		if (data_parser.HasKey("passenc")) {
 			passenc = data_parser.GetValue("passenc");
-			int passlen = passenc.length();
+			int passlen = (int)passenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
 			passlen = gspassenc((uint8_t *)dpass);
 			password = dpass;
@@ -227,7 +228,7 @@ namespace GP {
 		}
 		else if (data_parser.HasKey("passwordenc")) {
 			passenc = data_parser.GetValue("passwordenc");
-			int passlen = passenc.length();
+			int passlen = (int)passenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
 			passlen = gspassenc((uint8_t *)dpass);
 			password = dpass;
@@ -347,7 +348,6 @@ namespace GP {
 		}
 	}
 	void Peer::handle_updateui(OS::KVReader data_parser) {
-		char buff[GP_STATUS_STRING_LEN + 1];
 		OS::UserSearchRequest request;
 
 		//OS::KVReader data_parser = OS::KVReader(std::string(data));
@@ -364,7 +364,7 @@ namespace GP {
 
 		if(data_parser.HasKey("passwordenc")) {
 			std::string pwenc = data_parser.GetValue("passwordenc");
-			int passlen = pwenc.length();
+			int passlen = (int)pwenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)pwenc.c_str(), &passlen);
 			passlen = gspassenc((uint8_t *)dpass);
 
@@ -428,8 +428,6 @@ namespace GP {
 		OS::m_profile_search_task_pool->AddRequest(request);
 	}
 	void Peer::handle_login(OS::KVReader data_parser) {
-		char gamename[33 + 1];
-		
 		int partnercode = data_parser.GetValueInt("partnerid");
 		int peer_port = data_parser.GetValueInt("port");
 		int sdkrev = data_parser.GetValueInt("sdkrevision");
@@ -750,9 +748,6 @@ namespace GP {
 		//SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::handle_bm(OS::KVReader data_parser) {
-		char msg[GP_REASON_LEN+1];
-
-
 		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("t") && data_parser.HasKey("bm") && data_parser.HasKey("msg")) {
 			int to_profileid = data_parser.GetValueInt("t");
@@ -879,7 +874,7 @@ namespace GP {
 		}
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
-	void Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
+	void Peer::SendPacket(const uint8_t *buff, size_t len, bool attach_final) {
 		OS::Buffer buffer;
 		buffer.WriteBuffer((void *)buff, len);
 		if(attach_final) {
@@ -913,7 +908,7 @@ namespace GP {
 		char nick[31 + 1];
 		const char *first_at = strchr(nick_email, '@');
 		if(first_at) {
-			unsigned int nick_len = first_at - nick_email;
+			unsigned int nick_len = (unsigned int)(first_at - nick_email);
 			if(nick_len < sizeof(nick)) {
 				strncpy(nick, nick_email, nick_len);
 				nick[nick_len] = 0;

@@ -2,7 +2,6 @@
 #include "MMPush.h"
 
 #include <OS/Redis.h>
-#include <OS/legacy/helpers.h>
 #include "QRDriver.h"
 #include "QRPeer.h"
 
@@ -24,7 +23,7 @@ namespace MM {
 	void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
 	    char gamename[32],from_ip[32], to_ip[32], from_port[16], to_port[16], data[MAX_BASE64_STR+1], type[32];
 		uint8_t *data_out;
-		int data_len;
+		size_t data_len;
 		Redis::Value v = reply.values.front();
 		QR::Server *server = (QR::Server *)privdata;
 

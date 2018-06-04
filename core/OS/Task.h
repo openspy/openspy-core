@@ -20,7 +20,7 @@ namespace OS {
 			mp_thread_poller->signal();
 		}
 		int GetListSize() {
-			return m_request_list.size();
+			return (int)m_request_list.size();
 		}
 	protected:
 		CThreadPoller *mp_thread_poller;

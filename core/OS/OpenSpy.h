@@ -161,8 +161,8 @@ namespace OS {
 	std::string unescapeJSON(const std::string& input);
 
 	#define MAX_BASE64_STR 768
-	void Base64StrToBin(const char *str, uint8_t **out, int &len);
-	const char *BinToBase64Str(const uint8_t *in, int in_len);
+	void Base64StrToBin(const char *str, uint8_t **out, size_t &len);
+	const char *BinToBase64Str(const uint8_t *in, size_t in_len);
 
 	const char *MD5String(const char *string);
 
@@ -177,6 +177,10 @@ namespace OS {
 
 	std::string url_encode(std::string src);
 	std::string url_decode(std::string src);
+
+	int match(const char *mask, const char *name);
+	int match2(const char *mask, const char *name, int &match_count, char wildcard_char = '*');
+	void gen_random(char *s, const int len);
 }
 
 #ifdef _WIN32

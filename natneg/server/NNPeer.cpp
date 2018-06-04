@@ -1,6 +1,5 @@
 #include "NNPeer.h"
 #include "NNDriver.h"
-#include <OS/legacy/helpers.h>
 
 #include "structs.h"
 #include "NNBackend.h"
@@ -83,7 +82,7 @@ namespace NN {
 
 		int packetSize = packetSizeFromType(packet->packettype);
 
-		int len = net_packet.buffer.remaining();
+		size_t len = net_packet.buffer.remaining();
 		
 		if (((char *)net_packet.buffer.GetHead())[len-1] == 0 && m_gamename.length() == 0) {
 			m_gamename = (const char *)&((char *)net_packet.buffer.GetHead())[packetSize];

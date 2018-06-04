@@ -18,12 +18,12 @@
 			void run();
 
 		private:
-			int setup_fdset();
+			socktype_t setup_fdset();
 			fd_set  m_fdset;
 
 			bool m_dirty_fdset;
-			std::vector<int> m_cached_sockets;
-			int m_hsock;
+			std::vector<socktype_t> m_cached_sockets;
+			socktype_t m_hsock;
 
 			std::vector<INetPeer *> m_peers;
 			OS::CMutex *mp_mutex;

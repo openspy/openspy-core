@@ -3,7 +3,6 @@
 #include <OS/OpenSpy.h>
 #include <OS/Buffer.h>
 #include <OS/Search/Profile.h>
-#include <OS/legacy/helpers.h>
 
 #include <OS/Search/User.h>
 
@@ -35,7 +34,7 @@ namespace GS {
 
 		m_session_key = 1234567;
 
-		gen_random(m_challenge, CHALLENGE_LEN);
+		OS::gen_random(m_challenge, CHALLENGE_LEN);
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",m_sd->address.ToString().c_str());
 
@@ -172,7 +171,7 @@ namespace GS {
 		std::ostringstream ss;
 
 		uint8_t *data = NULL;
-		int data_len = 0;
+		size_t data_len = 0;
 		
 		ss << "\\getpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\mod\\" << response_data.mod_time;// << "\\length\\" << data_len << "\\data\\";
 

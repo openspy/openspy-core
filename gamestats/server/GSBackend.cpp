@@ -13,8 +13,6 @@
 #include <OS/Thread.h>
 #include <OS/HTTP.h>
 
-#include <OS/legacy/helpers.h>
-
 #include <sstream>
 
 #include <OS/Search/Profile.h>

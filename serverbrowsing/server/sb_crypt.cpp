@@ -169,7 +169,7 @@ unsigned char GOAEncryptByte(GOACryptState *state, unsigned char byte)
     return state->last_cipher;
 }
 
-void GOAEncrypt(GOACryptState *state, unsigned char *bp, int len)
+void GOAEncrypt(GOACryptState *state, unsigned char *bp, size_t len)
 {
 	unsigned char Rotor = state->rotor;
 	unsigned char Ratchet = state->ratchet;
@@ -177,7 +177,7 @@ void GOAEncrypt(GOACryptState *state, unsigned char *bp, int len)
 	unsigned char Last_plain = state->last_plain;
 	unsigned char Last_cipher = state->last_cipher;
 	unsigned char swaptemp;
-	int i;
+	size_t i;
 
 	for (i=0; i<len; i++) {
 		Ratchet = (unsigned char)(Ratchet + state->cards[Rotor++]);
@@ -231,7 +231,7 @@ unsigned char GOADecryptByte(GOACryptState *state, unsigned char byte)
     return state->last_plain;
 }
 
-void GOADecrypt(GOACryptState *state, unsigned char *bp, int len)
+void GOADecrypt(GOACryptState *state, unsigned char *bp, size_t len)
 {
 	unsigned char Rotor = state->rotor;
 	unsigned char Ratchet = state->ratchet;
@@ -239,7 +239,7 @@ void GOADecrypt(GOACryptState *state, unsigned char *bp, int len)
 	unsigned char Last_plain = state->last_plain;
 	unsigned char Last_cipher = state->last_cipher;
 	unsigned char swaptemp;
-	int i;
+	size_t i;
 
 	for (i=0; i<len; i++) {
 		Ratchet = (unsigned char)(Ratchet + state->cards[Rotor++]);

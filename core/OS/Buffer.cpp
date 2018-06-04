@@ -5,12 +5,12 @@
 #define REALLOC_ADD_SIZE 512
 #define BUFFER_SAFE_SIZE 128 //if this amount of bytes isn't available, realloc
 namespace OS {
-		BufferCtx::BufferCtx(int alloc_size) : OS::Ref() {
+		BufferCtx::BufferCtx(size_t alloc_size) : OS::Ref() {
 			_head = malloc(alloc_size);
 			pointer_owner = true;
 			this->alloc_size = alloc_size;
 		}
-		BufferCtx::BufferCtx(void *addr, int len) : OS::Ref() {
+		BufferCtx::BufferCtx(void *addr, size_t len) : OS::Ref() {
 			pointer_owner = false; 
 			_head = addr;
 			alloc_size = len;
@@ -20,11 +20,11 @@ namespace OS {
 				free((void *)_head);
 			}
 		}
-		Buffer::Buffer(void *addr, int len) {
+		Buffer::Buffer(void *addr, size_t len) {
 			mp_ctx = new BufferCtx(addr, len);
 			reset();
 		}
-		Buffer::Buffer(int alloc_size) {
+		Buffer::Buffer(size_t alloc_size) {
 			mp_ctx = new BufferCtx(alloc_size);
 			reset();
 		}	
@@ -83,7 +83,7 @@ namespace OS {
 			IncCursor(ret.length() + 1);
 			return ret;
 		}
-		void Buffer::ReadBuffer(void *out, int len) {
+		void Buffer::ReadBuffer(void *out, size_t len) {
 			if (remaining() < len) return;
 			memcpy(out, _cursor, len);
 			IncCursor(len);
@@ -122,14 +122,14 @@ namespace OS {
 				WriteByte(0);
 			}
 		}
-		void Buffer::WriteBuffer(void *buf, int len) {
+		void Buffer::WriteBuffer(void *buf, size_t len) {
 			if (len > remaining()) {
 				realloc_buffer(len + REALLOC_ADD_SIZE);
 			}
 			memcpy(_cursor, buf, len);
 			IncCursor(len, true);
 		}
-		void Buffer::IncCursor(int len, bool write_operation) {
+		void Buffer::IncCursor(size_t len, bool write_operation) {
 			char *cursor = (char *)_cursor;
 			cursor += len;
 			_cursor = cursor;
@@ -147,23 +147,23 @@ namespace OS {
 		void Buffer::reset() {
 			_cursor = mp_ctx->_head;
 		}
-		int Buffer::remaining() {
+		size_t Buffer::remaining() {
 			size_t end = (size_t)mp_ctx->_head + (size_t)mp_ctx->alloc_size;
 			size_t diff = end - (size_t)_cursor;
 			return diff;
 		}
-		int Buffer::size() {
+		size_t Buffer::size() {
 			size_t size = (size_t)_cursor - (size_t)mp_ctx->_head;
 			return size;
 		}
-		void Buffer::realloc_buffer(int new_size) {
+		void Buffer::realloc_buffer(size_t new_size) {
 			if (!mp_ctx->pointer_owner) return;
 			int offset = remaining();
 			mp_ctx->_head = realloc(mp_ctx->_head, size() + new_size);
 			reset();
 			IncCursor(offset);
 		}
-		void Buffer::SetCursor(int len) {
+		void Buffer::SetCursor(size_t len) {
 			if (len > mp_ctx->alloc_size)
 				return;
 			_cursor = (void *)((size_t)mp_ctx->_head + (size_t)len);

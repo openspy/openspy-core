@@ -13,13 +13,13 @@ namespace OS {
 	Date Date::GetDateFromJSON(json_t *object) {
 		Date date;
 		json_t *obj = json_object_get(object, "day");
-		date.m_day = json_integer_value(obj);
+		date.m_day = (uint8_t)json_integer_value(obj);
 		
 		obj = json_object_get(object, "month");
-		date.m_month = json_integer_value(obj);
+		date.m_month = (uint8_t)json_integer_value(obj);
 		
 		obj = json_object_get(object, "year");
-		date.m_year = json_integer_value(obj);
+		date.m_year = (uint16_t)json_integer_value(obj);
 		
 		return date;
 	}

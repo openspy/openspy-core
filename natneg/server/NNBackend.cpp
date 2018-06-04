@@ -84,7 +84,6 @@ namespace NN {
 							}
 						}
 					}
-				end_exit:
 					return;
 				}
 			}

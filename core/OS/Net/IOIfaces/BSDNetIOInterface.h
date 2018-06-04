@@ -69,8 +69,13 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 			while (true) {
 				socklen_t psz = sizeof(struct sockaddr_in);
 				struct sockaddr_in peer;
-				int sda = accept(socket->sd, (struct sockaddr *)&peer, &psz);
+				socktype_t sda = accept(socket->sd, (struct sockaddr *)&peer, &psz);
+				#ifdef _WIN32
+				if (sda == INVALID_SOCKET) break;
+				#else
 				if (sda <= 0) break;
+				#endif
+				
 				makeNonBlocking(sda);
 				incoming_socket = this->createSocket();
 				incoming_socket->sd = sda;
@@ -277,7 +282,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				it++;
 			}
 		}
-		void makeNonBlocking(int sd) {
+		void makeNonBlocking(socktype_t sd) {
 			unsigned long mode = 1;
 			#ifdef _WIN32
 				ioctlsocket(sd, FIONBIO, &mode);

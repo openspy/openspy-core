@@ -29,16 +29,7 @@ namespace SB {
 	}
 	V2Peer::~V2Peer() {
 	}
-	void V2Peer::handle_packet(char *data, int len) {
-		if(len == 0)
-			return;
-
-		/*uint8_t *buffer = (uint8_t *)data;
-		void *end = (void *)((char *)data + len);
-		int pos = len;*/
-
-		OS::Buffer buffer(data, len);
-
+	void V2Peer::handle_packet(OS::Buffer &buffer) {
 		uint8_t request_type = 0;
 
 		bool break_flag = false;
@@ -240,7 +231,7 @@ namespace SB {
 		bool send_push_keys = false;
 
 		if(!list_req.no_server_list) {
-			buffer.WriteByte(list_req.field_list.size());
+			buffer.WriteByte((uint8_t)list_req.field_list.size());
 
 			//send fields
 			std::map<std::string, int> field_types;
@@ -253,7 +244,7 @@ namespace SB {
 
 			//send popular string values list
 			if (usepopularlist) {
-				buffer.WriteByte(list_req.m_for_game.popular_values.size());
+				buffer.WriteByte((uint8_t)list_req.m_for_game.popular_values.size());
 				std::vector<std::string>::const_iterator it_v = list_req.m_for_game.popular_values.begin();
 				while (it_v != list_req.m_for_game.popular_values.end()) {
 					const std::string v = *it_v;
@@ -301,10 +292,10 @@ namespace SB {
 			m_in_message = false;
 		}
 	}
-	int V2Peer::setupCryptHeader(OS::Buffer &buffer) {
+	size_t V2Peer::setupCryptHeader(OS::Buffer &buffer) {
 		//	memset(&options->cryptkey,0,sizeof(options->cryptkey));
-		int start_len = buffer.remaining();
-		srand(time(NULL));
+		size_t start_len = buffer.remaining();
+		srand((u_int)time(NULL));
 		uint32_t cryptlen = CRYPTCHAL_LEN;
 		uint8_t cryptchal[CRYPTCHAL_LEN];
 		uint32_t servchallen = SERVCHAL_LEN;
@@ -318,9 +309,9 @@ namespace SB {
 			servchal[i] = (uint8_t)rand();
 		}
 
-		buffer.WriteByte(cryptlen ^ 0xEC);
+		buffer.WriteByte((uint8_t)(cryptlen ^ 0xEC));
 		buffer.WriteBuffer((uint8_t *)&cryptchal, cryptlen);
-		buffer.WriteByte(servchallen ^ 0xEA);
+		buffer.WriteByte((uint8_t)(servchallen ^ 0xEA));
 		buffer.WriteBuffer((uint8_t *)&servchal, servchallen);
 
 		//combine our secret key, our challenge, and the server's challenge into a crypt key
@@ -333,12 +324,12 @@ namespace SB {
 		GOACryptInit(&(m_crypt_state), (unsigned char *)(&m_challenge), LIST_CHALLENGE_LEN);
 		return start_len - buffer.remaining();
 	}
-	void V2Peer::SendPacket(uint8_t *buff, int len, bool prepend_length) {
+	void V2Peer::SendPacket(uint8_t *buff, size_t len, bool prepend_length) {
 		if (m_delete_flag) {
 			return;
 		}
 		OS::Buffer buffer;
-		int header_len = 0;
+		size_t header_len = 0;
 
 		if (!m_sent_crypt_header && m_game.secretkey[0] != 0) {
 			//this is actually part of the main key list, not to be sent on each packet
@@ -346,7 +337,7 @@ namespace SB {
 			m_sent_crypt_header = true;
 		}
 		if(prepend_length) {
-			buffer.WriteShort(htons(len + sizeof(uint16_t)));
+			buffer.WriteShort(htons((uint16_t)(len + sizeof(uint16_t))));
 		}
 		buffer.WriteBuffer(buff, len);
 		
@@ -427,7 +418,6 @@ namespace SB {
 		FlushPendingRequests();
 	}
 	void V2Peer::ProcessInfoRequest(OS::Buffer &buffer) {
-		int len = buffer.remaining();
 		OS::Address address;
 		address.ip = buffer.ReadInt();
 		address.port = buffer.ReadShort();
@@ -474,7 +464,7 @@ namespace SB {
 		if (waiting_packet) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 
-			int len = io_resp.comm_len;
+			size_t len = io_resp.comm_len;
 
 			if ((io_resp.disconnect_flag || io_resp.error_flag) && len <= 0) {
 				goto end;
@@ -494,7 +484,7 @@ namespace SB {
 				free((void *)base64);
 				m_next_packet_send_msg = false;
 			} else {
-				this->handle_packet((char *)m_recv_buffer.GetHead(), len);
+				this->handle_packet(m_recv_buffer);
 			}
 		}
 
@@ -631,7 +621,7 @@ namespace SB {
 						}
 					}
 					else { //write popular string index
-						buffer->WriteByte(std::distance(server->game.popular_values.begin(), push_it));
+						buffer->WriteByte((uint8_t)std::distance(server->game.popular_values.begin(), push_it));
 					}
 				}
 				tok_it++;
@@ -737,7 +727,7 @@ namespace SB {
 		OS::Buffer buffer;
 		std::map<std::string, uint8_t>::iterator it = m_last_list_req.m_from_game.push_keys.begin();
 
-		buffer.WriteByte(m_last_list_req.m_from_game.push_keys.size());
+		buffer.WriteByte((uint8_t)m_last_list_req.m_from_game.push_keys.size());
 		while(it != m_last_list_req.m_from_game.push_keys.end()) {
 			std::pair<std::string, uint8_t> pair = *it;
 			buffer.WriteByte(pair.second);
@@ -755,7 +745,7 @@ namespace SB {
 		va_start(args, fmt);
 
 		char send_str[1092]; //mtu size
-		int len = vsprintf(send_str, fmt, args);
+		int len = vsnprintf(send_str, sizeof(send_str), fmt, args);
 		send_str[len] = 0;
 		va_end(args);
 

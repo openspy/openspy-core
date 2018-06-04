@@ -66,10 +66,10 @@ namespace SB {
 
 
 				
-				void SendPacket(uint8_t *buff, int len, bool prepend_length);
+				void SendPacket(uint8_t *buff, size_t len, bool prepend_length);
 				void send_ping();
-				void handle_packet(char *data, int len);
-				int setupCryptHeader(OS::Buffer &buffer);
+				void handle_packet(OS::Buffer &buffer);
+				size_t setupCryptHeader(OS::Buffer &buffer);
 
 				//request type handles
 				void	ProcessListRequest(OS::Buffer &buffer);

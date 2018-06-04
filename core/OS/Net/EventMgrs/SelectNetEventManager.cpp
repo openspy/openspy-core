@@ -19,9 +19,9 @@ void SelectNetEventManager::run() {
 	memset(&timeout, 0, sizeof(struct timeval));
 	timeout.tv_sec = SELECT_TIMEOUT;
 
-	int hsock = setup_fdset();
+	socktype_t hsock = setup_fdset();
 
-	if (select(hsock, &m_fdset, NULL, NULL, &timeout) < 0) {
+	if (select((int)hsock, &m_fdset, NULL, NULL, &timeout) < 0) {
 		//return;
 	}
 
@@ -48,8 +48,8 @@ void SelectNetEventManager::run() {
 
 	mp_mutex->unlock();
 }
-int SelectNetEventManager::setup_fdset() {
-	int hsock = -1;
+socktype_t SelectNetEventManager::setup_fdset() {
+	socktype_t hsock = 0;
 	mp_mutex->lock();
 	FD_ZERO(&m_fdset);
 	if (m_dirty_fdset) {
@@ -77,9 +77,9 @@ int SelectNetEventManager::setup_fdset() {
 		return m_hsock;
 	}
 	else {
-		std::vector<int>::iterator it = m_cached_sockets.begin();
+		std::vector<socktype_t>::iterator it = m_cached_sockets.begin();
 		while (it != m_cached_sockets.end()) {
-			int sd = *it;
+			socktype_t sd = *it;
 			FD_SET(sd, &m_fdset);
 			it++;
 		}

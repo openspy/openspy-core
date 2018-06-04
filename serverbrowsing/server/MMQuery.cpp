@@ -3,8 +3,6 @@
 #include "server/SBDriver.h"
 #include "server/SBServer.h"
 
-#include <OS/legacy/helpers.h>
-
 #include <OS/Thread.h>
 
 #include <sstream>

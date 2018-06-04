@@ -3,8 +3,6 @@
 #include <string>
 #include <stack>
 #include <sstream>
-#include <OS/legacy/helpers.h>
-
 
 /*
 �appnamever=�PS3POKER1.28V� and (password=0 or password=1)
@@ -297,7 +295,7 @@ int string_compare_equals(std::string s1, std::string s2) {
 }
 int string_compare_like(std::string s1, std::string s2) {
 	int match_count;
-	return match2(s2.c_str(), s1.c_str(), match_count, '%') == 0;
+	return OS::match2(s2.c_str(), s1.c_str(), match_count, '%') == 0;
 }
 
 int string_compare_greater_than(std::string s1, std::string s2) {

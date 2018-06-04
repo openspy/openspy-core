@@ -7,7 +7,7 @@
 
 #include <OS/Buffer.h>
 
-#include <OS/legacy/gsmsalg.h>
+#include <OS/gamespy/gsmsalg.h>
 
 #include "MMPush.h"
 
