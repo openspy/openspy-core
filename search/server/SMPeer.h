@@ -49,6 +49,7 @@ enum {
 };
 
 #define SM_PING_TIME 120
+#define MAX_UNPROCESSED_DATA 5000
 
 namespace SM {
 	class Driver;
@@ -58,12 +59,12 @@ namespace SM {
 		~Peer();
 		
 		void think(bool packet_waiting);
-		void handle_packet(char *data, int len);
+		void handle_packet(std::string data);
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 
-		void SendPacket(const uint8_t *buff, int len, bool attach_final = true);
+		void SendPacket(std::string string, bool attach_final = true);
 		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
 
 		void Delete(bool timeout = false);
@@ -94,6 +95,8 @@ namespace SM {
 
 		OS::CMutex *mp_mutex;
 		OS::Buffer m_recv_buffer;
+
+		std::string m_kv_accumulator;
 
 	};
 }

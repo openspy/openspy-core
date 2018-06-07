@@ -130,7 +130,7 @@ namespace MM {
 
 		struct timeval t;
 		t.tv_usec = 0;
-		t.tv_sec = m_redis_timeout;
+		t.tv_sec = (long)m_redis_timeout;
 
 		mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
 

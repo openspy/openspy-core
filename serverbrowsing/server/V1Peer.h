@@ -3,6 +3,8 @@
 #include "../main.h"
 #include "MMQuery.h"
 
+#define MAX_UNPROCESSED_DATA 5000
+
 
 namespace SB {
 	class Driver;
@@ -51,6 +53,8 @@ namespace SB {
 
 		int m_waiting_gamedata; //1 = waiting, 2 = process packet queue
 		std::queue<std::string> m_waiting_packets;
+
+		std::string m_kv_accumulator;
 	};
 }
 #endif //_SAMPRAKPEER_H

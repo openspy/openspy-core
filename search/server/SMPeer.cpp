@@ -3,10 +3,12 @@
 #include <OS/OpenSpy.h>
 #include <OS/Buffer.h>
 #include <OS/Search/Profile.h>
-#include <OS/legacy/helpers.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
 #include <OS/Auth.h>
+
+#include <OS/gamespy/gamespy.h>
+#include <OS/gamespy/gsmsalg.h>
 
 #include <sstream>
 
@@ -39,26 +41,45 @@ namespace SM {
 		if (packet_waiting) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 
-			int len = io_resp.comm_len;
+			size_t len = io_resp.comm_len;
 
 			if ((io_resp.disconnect_flag || io_resp.error_flag) && len <= 0) {
 				goto end;
 			}
 
-			std::string recv_buf((const char *)m_recv_buffer.GetHead(), len);
+			/*
+			This scans the incoming packets for \\final\\ and splits based on that,
 
-			/* split by \\final\\  */
-			char *p = (char *)recv_buf.c_str();
-			char *x;
-			while (true) {
-				x = p;
-				p = strstr(p, "\\final\\");
-				if (p == NULL) { break; }
-				*p = 0;
-				this->handle_packet(x, strlen(x));
-				p += 7;
+
+			as well as handles incomplete packets -- due to TCP preserving data order, this is possible, and cannot be used on UDP protocols
+			*/
+			std::string recv_buf = m_kv_accumulator;
+			m_kv_accumulator.clear();
+			recv_buf.append((const char *)m_recv_buffer.GetHead(), len);
+
+			size_t final_pos = 0, last_pos = 0;
+
+			do {
+				final_pos = recv_buf.find("\\final\\", last_pos);
+				if (final_pos == std::string::npos) break;
+
+				std::string partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
+				handle_packet(partial_string);
+
+				last_pos = final_pos + 7; // 7 = strlen of \\final
+			} while (final_pos != std::string::npos);
+
+
+			//check for extra data that didn't have the final string -- incase of incomplete data
+			if (last_pos < len) {
+				std::string remaining_str = recv_buf.substr(last_pos);
+				m_kv_accumulator.append(remaining_str);
 			}
-			this->handle_packet(x, strlen(x));
+
+			if (m_kv_accumulator.length() > MAX_UNPROCESSED_DATA) {
+				Delete();
+				return;
+			}
 		}
 
 	end:
@@ -73,34 +94,30 @@ namespace SM {
 			Delete();
 		}
 	}
-	void Peer::handle_packet(char *data, int len) {
-		char command[32];
-		if(!find_param(0, data,(char *)&command, sizeof(command))) {
-			Delete();
-			return;
-		}
-		OS::LogText(OS::ELogLevel_Debug, "[%s] Recv: %s\n", getAddress().ToString().c_str(), data);
+	void Peer::handle_packet(std::string data) {
+		OS::LogText(OS::ELogLevel_Debug, "[%s] Recv: %s\n", getAddress().ToString().c_str(), data.c_str());
 
 		OS::KVReader data_parser = OS::KVReader(data);
-		if(!strcmp("search", command)) {
+		std::string command = data_parser.GetValueByIdx(0);
+		if(!command.compare("search")) {
 			handle_search(data_parser);
-		} else if(!strcmp("others", command)) {
+		} else if(!command.compare("others")) {
 			handle_others(data_parser);
-		} else if(!strcmp("otherslist", command)) {
+		} else if(!command.compare("otherslist")) {
 			handle_otherslist(data_parser);
-		} else if(!strcmp("valid", command)) {
+		} else if(!command.compare("valid")) {
 			handle_valid(data_parser);
-		} else if(!strcmp("nicks", command)) {
+		} else if(!command.compare("nicks")) {
 			handle_nicks(data_parser);
-		} else if(!strcmp("pmatch", command)) {
+		} else if(!command.compare("pmatch")) {
 
-		} else if(!strcmp("check", command)) {
+		} else if(!command.compare("check")) {
 			handle_check(data_parser);
-		} else if(!strcmp("newuser", command)) {
+		} else if(!command.compare("newuser")) {
 			handle_newuser(data_parser);
-		} else if(!strcmp("uniquesearch", command)) {
+		} else if(!command.compare("uniquesearch")) {
 			
-		} else if(!strcmp("profilelist", command)) {
+		} else if(!command.compare("profilelist")) {
 			
 		}
 
@@ -128,7 +145,7 @@ namespace SM {
 		s << "\\nur\\" << err_code;
 		s << "\\pid\\" << profile.id;
 
-		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		((Peer *)peer)->SendPacket(s.str().c_str());
 
 		((Peer *)peer)->Delete();
 	}
@@ -155,7 +172,7 @@ namespace SM {
 
 		if (data_parser.HasKey("passenc")) {
 			password = data_parser.GetValue("passenc");
-			int passlen = password.length();
+			int passlen = (int)password.length();
 			char *dpass = (char *)base64_decode((uint8_t *)password.c_str(), &passlen);
 			passlen = gspassenc((uint8_t *)dpass);
 			password = dpass;
@@ -180,7 +197,7 @@ namespace SM {
 		s << "\\cur\\" << (int)success;
 		s << "\\pid\\" << profile.id;
 
-		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		((Peer *)peer)->SendPacket(s.str().c_str());
 
 		((Peer *)peer)->Delete();
 	}
@@ -208,7 +225,7 @@ namespace SM {
 
 		if (data_parser.HasKey("passenc")) {
 			password = data_parser.GetValue("passenc");
-			int passlen = password.length();
+			int passlen = (int)password.length();
 			char *dpass = (char *)base64_decode((uint8_t *)password.c_str(), &passlen);
 			passlen = gspassenc((uint8_t *)dpass);
 			password = dpass;
@@ -230,8 +247,7 @@ namespace SM {
 	}
 	void Peer::handle_search(OS::KVReader data_parser) {
 		OS::ProfileSearchRequest request;
-		char temp[GP_REASON_LEN + 1];
-		int temp_int;
+		
 		request.profile_search_details.id = 0;
 		if(data_parser.HasKey("email")) {
 			request.user_search_details.email = data_parser.GetValue("email");
@@ -248,9 +264,10 @@ namespace SM {
 		if (data_parser.HasKey("lastname")) {
 			request.profile_search_details.lastname = data_parser.GetValue("lastname");
 		}
-		temp_int = data_parser.GetValueInt("namespaceid");
-		if (temp_int != 0) {
-			request.namespaceids.push_back(temp_int);
+		
+		int namespace_id = data_parser.GetValueInt("namespaceid");
+		if (namespace_id != 0) {
+			request.namespaceids.push_back(namespace_id);
 		}
 
 		request.user_search_details.partnercode = data_parser.GetValueInt("partnerid");
@@ -286,7 +303,7 @@ namespace SM {
 			it++;
 		}
 		s << "\\bsrdone\\";
-		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		((Peer *)peer)->SendPacket(s.str().c_str());
 
 		((Peer *)peer)->Delete();
 	}
@@ -312,7 +329,7 @@ namespace SM {
 		}
 		s << "\\oldone\\";
 
-		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		((Peer *)peer)->SendPacket(s.str().c_str());
 
 		((Peer *)peer)->Delete();
 	}
@@ -356,7 +373,7 @@ namespace SM {
 		}
 		s << "\\odone\\";
 
-		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		((Peer *)peer)->SendPacket(s.str().c_str());
 
 		((Peer *)peer)->Delete();
 	}
@@ -371,15 +388,14 @@ namespace SM {
 		request.namespaceids.push_back(namespaceid);
 
 		if(data_parser.HasKey("opids")) {
-			char *pid_buffer = strdup(data_parser.GetValue("opids").c_str());
-			char *token;
-			token = strtok(pid_buffer, "|");
+			std::string opids = data_parser.GetValue("opids");
+/*			token = strtok(pid_buffer, "|");
 			while(token != NULL) {
 				request.target_profileids.push_back(atoi(token));
 				token = strtok(NULL, "|");
 			}
 
-			free((void *)pid_buffer);
+			free((void *)pid_buffer);*/
 		}
 
 		request.type = OS::EProfileSearch_Buddies_Reverse;
@@ -394,7 +410,7 @@ namespace SM {
 
 		s << "\\vr\\" << ((results.size() > 0) ? 1 : 0) << "\\final\\";
 
-		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+		((Peer *)peer)->SendPacket(s.str().c_str());
 
 		((Peer *)peer)->Delete();
 	}
@@ -448,7 +464,7 @@ namespace SM {
 
 		if (data_parser.HasKey("passenc")) {
 			password = data_parser.GetValue("passenc");
-			int passlen = password.length();
+			int passlen = (int)password.length();
 			char *dpass = (char *)base64_decode((uint8_t *)password.c_str(), &passlen);
 			passlen = gspassenc((uint8_t *)dpass);
 			password = dpass;
@@ -492,7 +508,7 @@ namespace SM {
 
 		s << "\\ndone\\";
 
-		((Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
+		((Peer *)peer)->SendPacket(s.str().c_str());
 	}
 	void Peer::send_error(GPShared::GPErrorCode code, std::string addon_data) {
 		GPShared::GPErrorData error_data = GPShared::getErrorDataByCode(code);
@@ -509,15 +525,16 @@ namespace SM {
 		ss << "\\errmsg\\" << error_data.msg;
 		if (addon_data.length())
 			ss << addon_data;
-		SendPacket((const uint8_t *)ss.str().c_str(), ss.str().length());
+		
+		SendPacket(ss.str().c_str());
 		if (error_data.die) {
 			Delete();
 		}
 	}
-	void Peer::SendPacket(const uint8_t *buff, int len, bool attach_final) {
+	void Peer::SendPacket(std::string string, bool attach_final) {
 		OS::Buffer buffer;
-		buffer.WriteBuffer((void *)buff, len);
-		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s\n", getAddress().ToString().c_str(), std::string((const char *)buff, len).c_str());
+		//buffer.Write
+		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s\n", getAddress().ToString().c_str(), string.c_str());
 		if (attach_final) {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}

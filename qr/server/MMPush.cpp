@@ -21,40 +21,40 @@ namespace MM {
 
 	//struct event_base *mp_event_base;
 	void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
-	    char gamename[32],from_ip[32], to_ip[32], from_port[16], to_port[16], data[MAX_BASE64_STR+1], type[32];
+	    //char gamename[32],from_ip[32], to_ip[32], from_port[16], to_port[16], data[MAX_BASE64_STR+1], type[32];
+		std::string gamename, from_ip, to_ip, from_port, to_port, data, type;
 		uint8_t *data_out;
 		size_t data_len;
 		Redis::Value v = reply.values.front();
 		QR::Server *server = (QR::Server *)privdata;
 
-		char msg_type[16], server_key[64];
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
 			if (v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-				if (strcmp(v.arr_value.values[1].second.value._str.c_str(), sb_mm_channel) == 0) {
-					char *temp_str = strdup(v.arr_value.values[2].second.value._str.c_str());
-					find_param(0, temp_str, (char *)&type, sizeof(type) - 1);
-					if (!strcmp(type, "send_msg")) {
-						find_param(1, temp_str, (char *)&gamename, sizeof(gamename) - 1);
-						find_param(2, temp_str, (char *)&from_ip, sizeof(from_ip) - 1);
-						find_param(3, temp_str, (char *)&from_port, sizeof(from_port) - 1);
-						find_param(4, temp_str, (char *)&to_ip, sizeof(to_ip) - 1);
-						find_param(5, temp_str, (char *)&to_port, sizeof(to_port) - 1);
-						find_param(6, temp_str, (char *)&data, sizeof(data) - 1);
-						struct sockaddr_in address;
-						address.sin_port = htons(atoi(to_port));
-						address.sin_addr.s_addr = inet_addr((const char *)&to_ip);
+				if (v.arr_value.values[1].second.value._str.compare(sb_mm_channel) == 0) {
+					std::vector<std::string> vec = OS::KeyStringToVector(v.arr_value.values[2].second.value._str);
+					type = vec.at(0);
+					if (!type.compare("send_msg")) {
+						if (vec.size() < 7) return;
+						gamename = vec.at(1);
+						from_ip = vec.at(2);
+						from_port = vec.at(3);
+						to_ip = vec.at(4);
+						to_port = vec.at(5);
+						data = vec.at(6);
+
+						std::ostringstream ss;
+						ss << to_ip << ":" << to_port;
+
+						OS::Address address(ss.str().c_str());
 						QR::Peer *peer = server->find_client(address);
 						if (!peer) {
-							goto end_exit;
-							
+							return;							
 						}
 							
 						OS::Base64StrToBin((const char *)&data, &data_out, data_len);
 						peer->SendClientMessage(data_out, data_len);
 						free(data_out);
 					}
-					end_exit:
-						free((void *)temp_str);
 				}
 			}
 		}
