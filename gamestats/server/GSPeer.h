@@ -92,7 +92,7 @@ namespace GS {
 
 
 		void send_error(GPShared::GPErrorCode code);
-		void gamespy3dxor(char *data, int len);
+		void gamespy3dxor(char *data, size_t len);
 		int gs_chresp_num(const char *challenge);
 		void gs_sesskey(int sesskey, char *out);
 		bool IsResponseValid(const char *response);

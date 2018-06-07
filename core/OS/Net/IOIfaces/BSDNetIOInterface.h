@@ -109,7 +109,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		NetIOCommResp streamSend(INetIOSocket *socket, OS::Buffer &buffer) {
 			NetIOCommResp ret;
 
-			ret.comm_len = send(socket->sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL);
+			ret.comm_len = send(socket->sd, (const char *)buffer.GetHead(), (int)buffer.size(), MSG_NOSIGNAL);
 			if (ret.comm_len < 0) {
 				if (ret.comm_len == -1) {
 					ret.disconnect_flag = true;
@@ -209,7 +209,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		}
 		NetIOCommResp datagramSend(INetIOSocket *socket, OS::Buffer &buffer) {
 			NetIOCommResp ret;
-			ret.comm_len = sendto(socket->sd, (const char *)buffer.GetHead(), buffer.size(), MSG_NOSIGNAL, (const sockaddr *)&socket->address.GetInAddr(), sizeof(sockaddr));
+			ret.comm_len = sendto(socket->sd, (const char *)buffer.GetHead(), (int)buffer.size(), MSG_NOSIGNAL, (const sockaddr *)&socket->address.GetInAddr(), sizeof(sockaddr));
 			if (ret.comm_len != buffer.size()) {
 				switch (errno) {
 				case EAGAIN:

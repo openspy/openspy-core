@@ -404,7 +404,7 @@ namespace QR {
 
 		m_sent_challenge = true;
 	}
-	void V2Peer::SendClientMessage(uint8_t *data, int data_len) {
+	void V2Peer::SendClientMessage(void *data, size_t data_len) {
 		OS::Buffer buffer(data_len);
 		uint32_t key = rand() % 100000 + 1;
 

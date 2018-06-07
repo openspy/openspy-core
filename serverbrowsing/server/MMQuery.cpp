@@ -11,6 +11,7 @@
 #include <serverbrowsing/filter/filter.h>
 
 #include <OS/Cache/GameCache.h>
+#include <OS/KVReader.h>
 
 namespace MM {
 
@@ -75,16 +76,17 @@ namespace MM {
 
 	    Server *server = NULL;
 
-	    char msg_type[16], server_key[64];
+		std::string msg_type, server_key;
 	    if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
 	    	if(v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-	    		if(strcmp(v.arr_value.values[1].second.value._str.c_str(),sb_mm_channel) == 0) {
-					char *temp_str = strdup(v.arr_value.values[2].second.value._str.c_str());
-	    			find_param(0, temp_str,(char *)&msg_type, sizeof(msg_type));
-	    			find_param(1, temp_str, (char *)&server_key, sizeof(server_key));
-					free((void *)temp_str);
+	    		if(v.arr_value.values[1].second.value._str.compare(sb_mm_channel) == 0) {
+					std::vector<std::string> vec = OS::KeyStringToVector(v.arr_value.values[2].second.value._str);
+					if (vec.size() < 2) return;
+					msg_type = vec.at(0);
+					server_key = vec.at(1);
 
-	    			server = mp_async_lookup_task->GetServerByKey(server_key, mp_redis_async_retrival_connection, strcmp(msg_type,"del") == 0);
+
+	    			server = mp_async_lookup_task->GetServerByKey(server_key, mp_redis_async_retrival_connection, msg_type.compare("del") == 0);
 	    			if(!server) return;
 
 					MM::Server server_cpy = *server;
@@ -92,11 +94,11 @@ namespace MM {
 	    			std::vector<SB::Driver *>::iterator it = task->m_drivers.begin();
 	    			while(it != task->m_drivers.end()) {
 	    				SB::Driver *driver = *it;
-			   			if(strcmp(msg_type,"del") == 0) {
+			   			if(msg_type.compare("del") == 0) {
 							driver->AddDeleteServer(server_cpy);
-		    			} else if(strcmp(msg_type,"new") == 0) {
+		    			} else if(msg_type.compare("new") == 0) {
 							driver->AddNewServer(server_cpy);
-		    			} else if(strcmp(msg_type,"update") == 0) {
+		    			} else if(msg_type.compare("update") == 0) {
 							driver->AddUpdateServer(server_cpy);
 		    			}
 	    				it++;

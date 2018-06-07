@@ -92,7 +92,7 @@ namespace QR {
 		if (die)
 			Delete();
 	}
-	void V1Peer::SendClientMessage(uint8_t *data, int data_len) {
+	void V1Peer::SendClientMessage(void *data, size_t data_len) {
 
 	}
 	void V1Peer::parse_rules(OS::KVReader data_parser) {

@@ -63,7 +63,7 @@ namespace FESL {
 
 			io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamRecv(m_sd, m_recv_buffer);
 
-			int len = io_resp.comm_len;
+			size_t len = io_resp.comm_len;
 
 			if ((io_resp.disconnect_flag || io_resp.error_flag) && len <= 0) {
 				goto end;
@@ -74,7 +74,7 @@ namespace FESL {
 
 			gettimeofday(&m_last_recv, NULL);
 
-			int buf_len = len - sizeof(FESL_HEADER);
+			size_t buf_len = len - sizeof(FESL_HEADER);
 
 			if (buf_len < 0) {
 				goto end;
@@ -132,7 +132,7 @@ namespace FESL {
 		}
 		
 		header.type = htonl(type);
-		header.len = htonl(data.length() + sizeof(header) + 1);
+		header.len = htonl((u_long)data.length() + sizeof(header) + 1);
 
 		OS::Buffer send_buf;
 		send_buf.WriteBuffer((void *)&header, sizeof(header));
@@ -300,7 +300,7 @@ namespace FESL {
 			std::vector<OS::Profile>::iterator it = ((Peer *)peer)->m_profiles.begin();
 			while (it != ((Peer *)peer)->m_profiles.end()) {
 				OS::Profile profile = *it;
-				if (profile.id == (int)extra) {
+				if ((void *)profile.id == extra) {
 					((Peer *)peer)->m_profiles.erase(it);
 					break;
 				}

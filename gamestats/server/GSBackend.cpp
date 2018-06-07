@@ -227,7 +227,7 @@ namespace GSBackend {
 
 		success_obj = json_object_get(send_json, "modified");
 		if (success_obj) {
-			resp_data.mod_time = json_integer_value(success_obj);
+			resp_data.mod_time = (uint32_t)json_integer_value(success_obj);
 		}
 		else {
 			resp_data.mod_time = 0;
@@ -297,7 +297,7 @@ namespace GSBackend {
 
 		success_obj = json_object_get(send_json, "modified");
 		if (success_obj) {
-			resp_data.mod_time = json_integer_value(success_obj);
+			resp_data.mod_time = (uint32_t)json_integer_value(success_obj);
 		}
 		else {
 			resp_data.mod_time = 0;

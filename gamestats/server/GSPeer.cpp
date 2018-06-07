@@ -63,7 +63,7 @@ namespace GS {
 		if (m_delete_flag) return;
 		if (packet_waiting) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
-			int len = io_resp.comm_len;
+			size_t len = io_resp.comm_len;
 
 			if ((io_resp.disconnect_flag || io_resp.error_flag) && len <= 0) {
 				goto end;
@@ -552,7 +552,7 @@ namespace GS {
 		}
 	}
 
-	void Peer::gamespy3dxor(char *data, int len) {
+	void Peer::gamespy3dxor(char *data, size_t len) {
 	    static const char gamespy[] = "GameSpy3D\0";
 	    char  *gs;
 

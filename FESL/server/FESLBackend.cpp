@@ -17,7 +17,6 @@ namespace FESLBackend {
     void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
 		Redis::Value v = reply.values.front();
 
-		char msg_type[16], server_key[64];
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
 			if (v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
 				if (strcmp(v.arr_value.values[1].second.value._str.c_str(), auth_channel) == 0) {

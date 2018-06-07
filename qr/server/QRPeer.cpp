@@ -26,7 +26,7 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
 	}
 	bool Peer::isTeamString(const char *string) {
-		int len = strlen(string);
+		size_t len = strlen(string);
 		if(len < 2)
 			return false;
 		if(string[len-2] == '_' && string[len-1] == 't') {

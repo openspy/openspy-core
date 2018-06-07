@@ -24,7 +24,7 @@ namespace QR {
 		void Delete(bool timeout = false);
 
 		virtual void send_error(bool die, const char *fmt, ...) = 0;
-		virtual void SendClientMessage(uint8_t *data, int data_len) = 0;
+		virtual void SendClientMessage(void *data, size_t data_len) = 0;
 		
 
 

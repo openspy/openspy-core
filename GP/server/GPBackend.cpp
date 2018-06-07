@@ -144,7 +144,7 @@ namespace GPBackend {
 		req.uReqData.BuddyRequest.from_profileid = peer->GetProfileID();
 		req.uReqData.BuddyRequest.to_profileid = to_profileid;
 
-		int len = reason.length();
+		size_t len = reason.length();
 		if(len > GP_REASON_LEN)
 			len = GP_REASON_LEN;
 
@@ -368,7 +368,7 @@ namespace GPBackend {
 		req.uReqData.BuddyMessage.to_profileid = to_profileid;
 
 
-		int len = strlen(message);
+		size_t len = strlen(message);
 		if(len > GP_REASON_LEN)
 			len = GP_REASON_LEN;
 
@@ -482,10 +482,11 @@ namespace GPBackend {
 		GPShared::GPStatus status;
 		json_t* json_obj = json_object_get(json, "profileid");
 		const char *str;
-		int len;
+		size_t len;
+		uint16_t port;
 		if(!json_obj)
 			return;
-		int profileid = json_integer_value(json_obj);
+		int profileid = (int)json_integer_value(json_obj);
 
 		json_obj = json_object_get(json, "status");
 		if(!json_obj)
@@ -529,7 +530,7 @@ namespace GPBackend {
 		json_obj = json_object_get(json, "quiet_flags");
 		if(!json_obj)
 			return;
-		status.quiet_flags = json_integer_value(json_obj);
+		status.quiet_flags = (uint8_t)json_integer_value(json_obj);
 
 		json_obj = json_object_get(json, "ip");
 		if(!json_obj)
@@ -542,8 +543,8 @@ namespace GPBackend {
 		json_obj = json_object_get(json, "port");
 		if(!json_obj)
 			return;
-		len = json_integer_value(json_obj);
-		status.address.port = htons(len);
+		port = (uint16_t)json_integer_value(json_obj);
+		status.address.port = htons(port);
 
 		peer->inform_status_update(profileid, status, true);
 
@@ -570,8 +571,8 @@ namespace GPBackend {
 
 			json_t *status_array = json_object_get(root, "statuses");
 			if(status_array) {
-				int num_items = json_array_size(status_array);
-				for(int i=0;i<num_items;i++) {
+				size_t num_items = json_array_size(status_array);
+				for(size_t i=0;i<num_items;i++) {
 					json_t *status = json_array_get(status_array, i);
 					load_and_send_gpstatus(request.peer, status);
 				}

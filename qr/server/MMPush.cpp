@@ -50,7 +50,7 @@ namespace MM {
 						}
 							
 						OS::Base64StrToBin((const char *)&data, &data_out, data_len);
-						peer->SendClientMessage((uint8_t*)data_out, data_len);
+						peer->SendClientMessage(data_out, data_len);
 						free(data_out);
 					}
 					end_exit:
