@@ -38,7 +38,7 @@ namespace Redis {
 
 	void get_server_address_port(const char *input, char *address, uint16_t &port) {
 		const char *seperator = strrchr(input, ':');
-		int len = strlen(input);
+		size_t len = strlen(input);
 		if (seperator) {
 			port = atoi(seperator + 1);
 			len = seperator - input;
@@ -116,9 +116,9 @@ namespace Redis {
 		Redis::ArrayValue arr;
 		std::string len_line = Redis::read_line(str).substr(1);
 		int num_elements = atoi(len_line.c_str());
-		diff += len_line.length() + ENDLINE_STR_COUNT + 1; // +1 for the operator
-		if (diff > str.length()) {
-			diff = str.length();
+		diff += (int)len_line.length() + ENDLINE_STR_COUNT + 1; // +1 for the operator
+		if (diff > (int)str.length()) {
+			diff = (int)str.length();
 		}
 		str = str.substr(diff);
 		for (int i = 0; i < num_elements; i++) {
@@ -133,7 +133,7 @@ namespace Redis {
 		Redis::Value v;
 		std::string info_line = Redis::read_line(str);
 		int str_len = 0;
-		int line_len = ENDLINE_STR_COUNT + info_line.length();
+		int line_len = ENDLINE_STR_COUNT + (int)info_line.length();
 		//printf("Info Line: %s\n", info_line.c_str());
 		diff += line_len;
 
@@ -291,11 +291,11 @@ namespace Redis {
 		vsprintf(conn->read_buff, fmt, args);
 
 		std::string cmd = conn->read_buff + std::string("\r\n");
-		send(conn->sd, cmd.c_str(), cmd.length(), 0);
+		send(conn->sd, cmd.c_str(), (int)cmd.length(), 0);
 		va_end(args);
 
 		if (sleepMS != 0)
-			OS::Sleep(sleepMS);
+			OS::Sleep((int)sleepMS);
 		int len = Recv(conn);
 		if (len <= 0) {
 			OS::LogText(OS::ELogLevel_Critical, "redis recv error: %d", len);
@@ -329,11 +329,11 @@ namespace Redis {
 		vsprintf(conn->read_buff, fmt, args);
 
 		std::string cmd = conn->read_buff + std::string("\r\n");
-		send(conn->sd, cmd.c_str(), cmd.length(), 0);
+		send(conn->sd, cmd.c_str(), (int)cmd.length(), 0);
 		va_end(args);
 
 		if (sleepMS != 0) {
-			OS::Sleep(sleepMS);
+			OS::Sleep((int)sleepMS);
 		}
 
 		conn->runLoop = true;
@@ -341,7 +341,7 @@ namespace Redis {
 			if (Recv(conn) <= 0) {
 				OS::Sleep(5000); //Sleep even longer due to async... more likely to be in a CPU consuming loop
 				Reconnect(conn);
-				send(conn->sd, cmd.c_str(), cmd.length(), 0);
+				send(conn->sd, cmd.c_str(), (int)cmd.length(), 0);
 				continue;
 			}
 			parse_response(conn->read_buff, diff, &resp, NULL);
