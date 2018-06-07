@@ -341,6 +341,7 @@ namespace Redis {
 			if (Recv(conn) <= 0) {
 				OS::Sleep(5000); //Sleep even longer due to async... more likely to be in a CPU consuming loop
 				Reconnect(conn);
+				send(conn->sd, cmd.c_str(), cmd.length(), 0);
 				continue;
 			}
 			parse_response(conn->read_buff, diff, &resp, NULL);
