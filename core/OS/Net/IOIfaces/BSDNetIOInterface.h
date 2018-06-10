@@ -104,11 +104,6 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		end:
 			buffer.reset();
 
-			if (ret.packet_count == 0 && !ret.disconnect_flag) {
-				ret.error_flag = true;
-				ret.disconnect_flag = true;
-			}
-
 			if (ret.comm_len > 0) {
 				OS::Buffer full_buffer(ret.comm_len);
 				full_buffer.WriteBuffer(buffer.GetHead(), ret.comm_len);

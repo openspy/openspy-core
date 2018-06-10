@@ -65,7 +65,7 @@ namespace GS {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
 			int len = io_resp.comm_len;
 
-			if ((io_resp.disconnect_flag || io_resp.error_flag)) {
+			if ((io_resp.disconnect_flag || io_resp.error_flag) || len <= 0) {
 				goto end;
 			}
 			
