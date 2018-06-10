@@ -39,7 +39,7 @@ public:
 	bool error_flag;
 	bool disconnect_flag;
 	int packet_count;
-	size_t comm_len;
+	int comm_len;
 };
 class INetIODatagram {
 public:

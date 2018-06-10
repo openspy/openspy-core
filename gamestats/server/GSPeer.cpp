@@ -63,9 +63,9 @@ namespace GS {
 		if (m_delete_flag) return;
 		if (packet_waiting) {
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
-			size_t len = io_resp.comm_len;
+			int len = io_resp.comm_len;
 
-			if ((io_resp.disconnect_flag || io_resp.error_flag) && len <= 0) {
+			if ((io_resp.disconnect_flag || io_resp.error_flag)) {
 				goto end;
 			}
 			

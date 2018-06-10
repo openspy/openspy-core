@@ -93,7 +93,6 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				int len = recv(socket->sd, recvbuf, sizeof recvbuf, 0);
 				if (len <= 0) {
 					if (len == 0) {
-						ret.error_flag = true;
 						ret.disconnect_flag = true;
 					}
 					goto end;
@@ -104,6 +103,18 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 			}// while (errno != EWOULDBLOCK && errno != EAGAIN); //only check when data is available
 		end:
 			buffer.reset();
+
+			if (ret.packet_count == 0 && !ret.disconnect_flag) {
+				ret.error_flag = true;
+				ret.disconnect_flag = true;
+			}
+
+			if (ret.comm_len > 0) {
+				OS::Buffer full_buffer(ret.comm_len);
+				full_buffer.WriteBuffer(buffer.GetHead(), ret.comm_len);
+				full_buffer.reset();
+				buffer = full_buffer;
+			}
 			return ret;
 		}
 		NetIOCommResp streamSend(INetIOSocket *socket, OS::Buffer &buffer) {
