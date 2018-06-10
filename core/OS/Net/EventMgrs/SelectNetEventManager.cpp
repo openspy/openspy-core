@@ -60,6 +60,9 @@ socktype_t SelectNetEventManager::setup_fdset() {
 			INetIOSocket *sd = driver->getListenerSocket();
 			m_cached_sockets.push_back(sd->sd);
 			FD_SET(sd->sd, &m_fdset);
+			if(sd->sd > hsock) {
+				hsock = sd->sd;
+			}
 			it++;
 		}
 
@@ -69,6 +72,9 @@ socktype_t SelectNetEventManager::setup_fdset() {
 			INetIOSocket *sd = peer->GetSocket();
 			m_cached_sockets.push_back(sd->sd);
 			FD_SET(sd->sd, &m_fdset);
+			if(sd->sd > hsock) {
+				hsock = sd->sd;
+			}
 			it2++;
 		}
 		m_hsock = hsock + 1;
