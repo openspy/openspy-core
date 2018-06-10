@@ -465,62 +465,6 @@ namespace OS {
 		sleep(time_ms / 1000);
 		#endif
 	}
-	Address::Address(uint32_t ip, uint16_t port) {
-		this->ip = ip;
-		this->port = htons(port);
-	}
-	Address::Address(struct sockaddr_in addr) {
-		ip = addr.sin_addr.s_addr;
-		port = addr.sin_port;
-	}
-	Address::Address(const char *str) {
-		char address[16];
-		const char *seperator = strrchr(str, ':');
-		size_t len = strlen(str);
-		if(seperator) {
-			port = htons(atoi(seperator+1));
-			len = seperator - str;
-		}
-		if(len < sizeof(address)) {
-			strncpy_s(address, sizeof(address), str, len);
-			address[len] = 0;
-		}
-		ip = inet_addr((const char *)&address);
-	}
-	Address::Address() {
-		ip = 0;
-		port = 0;
-	}
-	uint16_t Address::GetPort() const {
-		return htons(port);
-	}
-	const struct sockaddr_in Address::GetInAddr() {
-		struct sockaddr_in ret;
-		ret.sin_family = AF_INET;
-		memset(&ret.sin_zero,0,sizeof(ret.sin_zero));
-		ret.sin_addr.s_addr = ip;
-		ret.sin_port = port;
-		return ret;
-
-	}
-	std::string Address::ToString(bool ip_only) {
-		struct sockaddr_in addr;
-		addr.sin_port = (port);
-		addr.sin_addr.s_addr = (ip);
-
-		char ipinput[64];
-		memset(&ipinput, 0, sizeof(ipinput));
-
-		inet_ntop(AF_INET, &(addr.sin_addr), ipinput, sizeof(ipinput));
-
-
-		std::ostringstream s;
-		s << ipinput;
-		if(!ip_only) {
- 			s << ":" << htons(port);
-		}
-		return s.str();
-	}
 
 	template<typename Out>
 	void split(const std::string &s, char delim, Out result) {

@@ -126,7 +126,7 @@ namespace OS {
 	class Address {
 	public:
 		Address(struct sockaddr_in);
-		Address(const char *str);
+		Address(std::string input);
 		Address();
 		Address(uint32_t ip, uint16_t port);
 		uint32_t GetIP() const { return ip; };
