@@ -86,24 +86,44 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		}
 		NetIOCommResp streamRecv(INetIOSocket *socket, OS::Buffer &buffer) {
 			NetIOCommResp ret;
+			ret.error_flag = false;
+			ret.disconnect_flag = false;
+			ret.comm_len = 0;
+			int err;
 
 			char recvbuf[1492];
 			buffer.reset();
 			while (true) {
 				int len = recv(socket->sd, recvbuf, sizeof recvbuf, 0);
+				err = errno;
+				#ifdef _WIN32
+				DWORD wsa_err = WSAGetLastError();
+				if (wsa_err == WSAECONNRESET) {
+					err = ECONNRESET;
+				}
+				#endif
 				if (len <= 0) {
-					if (len == 0) {
+					if((len == 0 && err != EWOULDBLOCK && err != EAGAIN) || err == ECONNRESET) {
 						ret.error_flag = true;
 						ret.disconnect_flag = true;
 					}
+
 					goto end;
 				}
 				ret.comm_len += len;
 				ret.packet_count++;
 				buffer.WriteBuffer(recvbuf, len);
-			}// while (errno != EWOULDBLOCK && errno != EAGAIN); //only check when data is available
+			}
 		end:
 			buffer.reset();
+
+			if (ret.comm_len > 0) {
+				OS::Buffer full_buffer(ret.comm_len);
+				full_buffer.WriteBuffer(buffer.GetHead(), ret.comm_len);
+				full_buffer.reset();
+				buffer = full_buffer;
+			}
+
 			return ret;
 		}
 		NetIOCommResp streamSend(INetIOSocket *socket, OS::Buffer &buffer) {
