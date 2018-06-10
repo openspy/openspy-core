@@ -32,6 +32,7 @@ namespace MM {
 			if (v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
 				if (v.arr_value.values[1].second.value._str.compare(sb_mm_channel) == 0) {
 					std::vector<std::string> vec = OS::KeyStringToVector(v.arr_value.values[2].second.value._str);
+					if (vec.size() < 1) return;
 					type = vec.at(0);
 					if (!type.compare("send_msg")) {
 						if (vec.size() < 7) return;
