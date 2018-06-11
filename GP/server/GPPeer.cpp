@@ -73,7 +73,8 @@ namespace GP {
 		if (m_delete_flag) return;
 
 		if (packet_waiting) {
-			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
+			OS::Buffer recv_buffer;
+			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 
 			int len = io_resp.comm_len;
 
@@ -89,7 +90,7 @@ namespace GP {
 			*/
 			std::string recv_buf = m_kv_accumulator;
 			m_kv_accumulator.clear();
-			recv_buf.append((const char *)m_recv_buffer.GetHead(), len);
+			recv_buf.append((const char *)recv_buffer.GetHead(), len);
 
 			size_t final_pos = 0, last_pos = 0;
 

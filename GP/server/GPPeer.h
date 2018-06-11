@@ -126,7 +126,6 @@ namespace GP {
 		void send_backend_auth_event();
 
 		OS::GameData m_game;
-		OS::Buffer m_recv_buffer;
 		Driver *mp_driver;
 
 		struct timeval m_last_recv, m_last_ping, m_status_refresh;

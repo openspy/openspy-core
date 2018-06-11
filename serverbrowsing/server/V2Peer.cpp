@@ -462,7 +462,8 @@ namespace SB {
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 		if (waiting_packet) {
-			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
+			OS::Buffer recv_buffer;
+			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 
 			int len = io_resp.comm_len;
 
@@ -472,7 +473,7 @@ namespace SB {
 
 			if(m_next_packet_send_msg) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), len);
-				const char *base64 = OS::BinToBase64Str((uint8_t *)m_recv_buffer.GetHead(), len);
+				const char *base64 = OS::BinToBase64Str((uint8_t *)recv_buffer.GetHead(), len);
 
 				MM::MMQueryRequest req;
 				req.type = MM::EMMQueryRequestType_SubmitData;
@@ -484,7 +485,7 @@ namespace SB {
 				free((void *)base64);
 				m_next_packet_send_msg = false;
 			} else {
-				this->handle_packet(m_recv_buffer);
+				this->handle_packet(recv_buffer);
 			}
 		}
 

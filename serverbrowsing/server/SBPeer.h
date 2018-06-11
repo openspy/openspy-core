@@ -57,7 +57,6 @@ namespace SB {
 		int m_version;
 
 		OS::GameData m_game;
-		OS::Buffer m_recv_buffer;
 		Driver *mp_driver;
 
 		struct timeval m_last_recv, m_last_ping;

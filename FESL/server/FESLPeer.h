@@ -183,7 +183,6 @@ namespace FESL {
 		std::vector<OS::Profile> m_profiles;
 		std::string m_session_key;
 		std::string m_encrypted_login_info;
-		OS::Buffer m_recv_buffer;
 		void send_ping();
 
 		static CommandHandler m_commands[];

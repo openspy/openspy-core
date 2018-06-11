@@ -62,14 +62,15 @@ namespace GS {
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 		if (packet_waiting) {
-			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, m_recv_buffer);
+			OS::Buffer recv_buffer;
+			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 			int len = io_resp.comm_len;
 
 			if ((io_resp.disconnect_flag || io_resp.error_flag) || len <= 0) {
 				goto end;
 			}
 			
-			gamespy3dxor((char *)m_recv_buffer.GetHead(), len);
+			gamespy3dxor((char *)recv_buffer.GetHead(), len);
 
 			/*
 				This scans the incoming packets for \\final\\ and splits based on that,
@@ -79,7 +80,7 @@ namespace GS {
 			*/
 			std::string recv_buf = m_kv_accumulator;
 			m_kv_accumulator.clear();
-			recv_buf.append((const char *)m_recv_buffer.GetHead(), len);
+			recv_buf.append((const char *)recv_buffer.GetHead(), len);
 
 			size_t final_pos = 0, last_pos = 0;
 

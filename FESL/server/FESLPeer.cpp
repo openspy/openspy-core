@@ -60,8 +60,9 @@ namespace FESL {
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 		if (packet_waiting) {
+			OS::Buffer recv_buffer;
 
-			io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamRecv(m_sd, m_recv_buffer);
+			io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamRecv(m_sd, recv_buffer);
 
 			int len = io_resp.comm_len;
 
@@ -70,7 +71,7 @@ namespace FESL {
 			}
 
 			FESL_HEADER header;
-			m_recv_buffer.ReadBuffer(&header, sizeof(header));
+			recv_buffer.ReadBuffer(&header, sizeof(header));
 
 			gettimeofday(&m_last_recv, NULL);
 
@@ -80,7 +81,7 @@ namespace FESL {
 				goto end;
 			}
 
-			OS::KVReader kv_data(std::string((const char *)m_recv_buffer.GetCursor(), buf_len), '=', '\n');
+			OS::KVReader kv_data(std::string((const char *)recv_buffer.GetCursor(), buf_len), '=', '\n');
 			char *type;
 			for (int i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
 				if (Peer::m_commands[i].type == htonl(header.type)) {

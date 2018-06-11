@@ -94,7 +94,6 @@ namespace SM {
 		static const char *mp_hidden_str;
 
 		OS::CMutex *mp_mutex;
-		OS::Buffer m_recv_buffer;
 
 		std::string m_kv_accumulator;
 

@@ -112,7 +112,6 @@ namespace GS {
 		std::string m_backend_session_key;
 		OS::User m_user;
 		OS::Profile m_profile;
-		OS::Buffer m_recv_buffer;
 
 		OS::CMutex *mp_mutex;
 
