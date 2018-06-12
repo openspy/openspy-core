@@ -82,7 +82,7 @@ namespace NN {
 
 		int packetSize = packetSizeFromType(packet->packettype);
 
-		size_t len = net_packet.buffer.remaining();
+		size_t len = net_packet.buffer.readRemaining();
 		
 		if (((char *)net_packet.buffer.GetHead())[len-1] == 0 && m_gamename.length() == 0) {
 			m_gamename = (const char *)&((char *)net_packet.buffer.GetHead())[packetSize];
@@ -225,7 +225,7 @@ namespace NN {
 
 		OS::Buffer buffer(size);
 		buffer.WriteBuffer(packet, size);
-		buffer.SetCursor(size);
+
 		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
 		if (resp.disconnect_flag || resp.error_flag) {
 			Delete();
