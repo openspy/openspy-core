@@ -84,7 +84,7 @@ namespace SSLNetIOIFace {
         }
         if(ssl_socket->mp_ssl) {
             char recvbuf[1492];
-            buffer.reset();
+			buffer.resetWriteCursor();
             int c = SSL_read(ssl_socket->mp_ssl, recvbuf, sizeof(recvbuf));
             int e = SSL_get_error(ssl_socket->mp_ssl, c);
             if(c > 0) {
@@ -98,14 +98,14 @@ namespace SSLNetIOIFace {
         } else {
             return BSDNetIOInterface::streamRecv(socket, buffer);
         }
-        buffer.reset();
+		buffer.resetReadCursor();
         return resp;
     }
     NetIOCommResp SSLNetIOInterface::streamSend(INetIOSocket *socket, OS::Buffer &buffer) {
         SSL_Socket *ssl_socket = (SSL_Socket *)socket;
         NetIOCommResp resp;
         if(ssl_socket->mp_ssl) {
-            int c = SSL_write(ssl_socket->mp_ssl, buffer.GetHead(), buffer.size());
+            int c = SSL_write(ssl_socket->mp_ssl, buffer.GetHead(), buffer.bytesWritten());
 			int e = SSL_get_error(ssl_socket->mp_ssl, c);
 			if (e == SSL_ERROR_WANT_WRITE) {
 				m_stream_send_queue[socket].push_back(buffer);

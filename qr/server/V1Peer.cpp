@@ -49,7 +49,7 @@ namespace QR {
 		}
 
 
-		std::string recv_buf = std::string((const char *)packet.buffer.GetHead(), packet.buffer.remaining());
+		std::string recv_buf = std::string((const char *)packet.buffer.GetHead(), packet.buffer.readRemaining());
 		OS::KVReader data_parser = OS::KVReader(recv_buf);
 
 		if (data_parser.Size() < 1) {

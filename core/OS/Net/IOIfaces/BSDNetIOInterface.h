@@ -88,7 +88,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 			NetIOCommResp ret;
 
 			char recvbuf[1492];
-			buffer.reset();
+			buffer.resetWriteCursor();
 			while (true) {
 				int len = recv(socket->sd, recvbuf, sizeof recvbuf, 0);
 				if (len <= 0) {
@@ -102,27 +102,20 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				buffer.WriteBuffer(recvbuf, len);
 			}// while (errno != EWOULDBLOCK && errno != EAGAIN); //only check when data is available
 		end:
-			buffer.reset();
-
-			if (ret.comm_len > 0) {
-				OS::Buffer full_buffer(ret.comm_len);
-				full_buffer.WriteBuffer(buffer.GetHead(), ret.comm_len);
-				full_buffer.reset();
-				buffer = full_buffer;
-			}
+			buffer.resetReadCursor();
 			return ret;
 		}
 		NetIOCommResp streamSend(INetIOSocket *socket, OS::Buffer &buffer) {
 			NetIOCommResp ret;
 
-			ret.comm_len = send(socket->sd, (const char *)buffer.GetHead(), (int)buffer.size(), MSG_NOSIGNAL);
+			ret.comm_len = send(socket->sd, (const char *)buffer.GetHead(), (int)buffer.bytesWritten(), MSG_NOSIGNAL);
 			if (ret.comm_len < 0) {
 				if (ret.comm_len == -1) {
 					ret.disconnect_flag = true;
 					ret.error_flag = true;
 				}
 			}
-			if (ret.comm_len != buffer.size()) {
+			if (ret.comm_len != buffer.bytesWritten()) {
 				switch (errno) {
 				case EAGAIN:
 				#if EWOULDBLOCK != EAGAIN
@@ -201,7 +194,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				dgram.address = in_addr;
 				dgram.buffer = OS::Buffer(len);
 				dgram.buffer.WriteBuffer(recvbuf, len);
-				dgram.buffer.reset();
+
 				dgram.comm_len = len;
 
 				if (it != datagrams.end()) {
@@ -215,8 +208,8 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		}
 		NetIOCommResp datagramSend(INetIOSocket *socket, OS::Buffer &buffer) {
 			NetIOCommResp ret;
-			ret.comm_len = sendto(socket->sd, (const char *)buffer.GetHead(), (int)buffer.size(), MSG_NOSIGNAL, (const sockaddr *)&socket->address.GetInAddr(), sizeof(sockaddr));
-			if (ret.comm_len != buffer.size()) {
+			ret.comm_len = sendto(socket->sd, (const char *)buffer.GetHead(), (int)buffer.bytesWritten(), MSG_NOSIGNAL, (const sockaddr *)&socket->address.GetInAddr(), sizeof(sockaddr));
+			if (ret.comm_len != buffer.bytesWritten()) {
 				switch (errno) {
 				case EAGAIN:
 				#if EWOULDBLOCK != EAGAIN

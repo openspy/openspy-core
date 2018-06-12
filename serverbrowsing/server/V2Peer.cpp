@@ -35,7 +35,7 @@ namespace SB {
 		bool break_flag = false;
 
 		int idx = 0;
-		while(buffer.remaining() > 0 && !break_flag) {
+		while(buffer.readRemaining() > 0 && !break_flag) {
 			uint16_t buff_len = htons(buffer.ReadShort()); //length
 
 			request_type = buffer.ReadByte();
@@ -147,9 +147,9 @@ namespace SB {
 
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", m_sd->address.ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
-		if (buffer.remaining() > 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), buffer.remaining());
-			const char *base64 = OS::BinToBase64Str((uint8_t *)buffer.GetCursor(), buffer.remaining());
+		if (buffer.readRemaining() > 0) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), buffer.readRemaining());
+			const char *base64 = OS::BinToBase64Str((uint8_t *)buffer.GetReadCursor(), buffer.readRemaining());
 			MM::MMQueryRequest req;
 			req.type = MM::EMMQueryRequestType_SubmitData;
 			req.SubmitData.from = m_sd->address;
@@ -264,7 +264,7 @@ namespace SB {
 			}
 
 			if (!servers.first_set) {
-				buffer.reset();
+				buffer.resetWriteCursor();
 			}
 			if (servers.list.empty() || servers.last_set) {
 				//terminator
@@ -279,8 +279,8 @@ namespace SB {
 
 		gettimeofday(&m_last_recv, NULL); //prevent timeout during long lists
 
-		if (buffer.size() > 0) {
-			SendPacket((uint8_t *)buffer.GetHead(), buffer.size(), false);
+		if (buffer.bytesWritten() > 0) {
+			SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), false);
 		}
 
 		if (!m_sent_push_keys && send_push_keys) {
@@ -294,7 +294,7 @@ namespace SB {
 	}
 	size_t V2Peer::setupCryptHeader(OS::Buffer &buffer) {
 		//	memset(&options->cryptkey,0,sizeof(options->cryptkey));
-		size_t start_len = buffer.remaining();
+		size_t start_len = buffer.bytesWritten();
 		srand((u_int)time(NULL));
 		uint32_t cryptlen = CRYPTCHAL_LEN;
 		uint8_t cryptchal[CRYPTCHAL_LEN];
@@ -322,7 +322,7 @@ namespace SB {
 			m_challenge[(i *  seckey[i % seckeylen]) % LIST_CHALLENGE_LEN] ^= (char)((m_challenge[i % LIST_CHALLENGE_LEN] ^ servchal[i]) & 0xFF);
 		}
 		GOACryptInit(&(m_crypt_state), (unsigned char *)(&m_challenge), LIST_CHALLENGE_LEN);
-		return start_len - buffer.remaining();
+		return buffer.bytesWritten() - start_len;
 	}
 	void V2Peer::SendPacket(uint8_t *buff, size_t len, bool prepend_length) {
 		if (m_delete_flag) {
@@ -341,7 +341,7 @@ namespace SB {
 		}
 		buffer.WriteBuffer(buff, len);
 		
-		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.size() - header_len);
+		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.bytesWritten() - header_len);
 
 		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
 		if(io_resp.disconnect_flag || io_resp.error_flag) {
@@ -454,7 +454,7 @@ namespace SB {
 
 			//embed response into reply, as SB client just sends same data back
 			buffer.WriteByte(KEEPALIVE_REPLY);
-			SendPacket((uint8_t *)buffer.GetHead(), buffer.size(), true);
+			SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), true);
 		}
 
 	}
@@ -464,7 +464,7 @@ namespace SB {
 		if (waiting_packet) {
 			OS::Buffer recv_buffer;
 			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
-
+			
 			int len = io_resp.comm_len;
 
 			if ((io_resp.disconnect_flag || io_resp.error_flag) || len <= 0) {
@@ -680,8 +680,8 @@ namespace SB {
 		}
 
 		if (!first_set) {
-			SendPacket((uint8_t *)buffer->GetHead(), buffer->size(), push);
-			buffer->reset();
+			SendPacket((uint8_t *)buffer->GetHead(), buffer->bytesWritten(), push);
+			buffer->resetWriteCursor();
 		}
 		end:
 		if (!sendBuffer) {
@@ -699,7 +699,7 @@ namespace SB {
 		buffer.WriteByte(DELETE_SERVER_MESSAGE);
 		buffer.WriteInt(server->wan_address.ip);
 		buffer.WriteShort(server->wan_address.port);
-		SendPacket((uint8_t *)buffer.GetHead(), buffer.size(), true);
+		SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), true);
 	}
 	void V2Peer::informNewServers(MM::Server *server) {
 		sServerCache cache = FindServerByKey(server->key);
@@ -735,7 +735,7 @@ namespace SB {
 			buffer.WriteNTS(pair.first);
 			it++;
 		}
-		SendPacket((uint8_t *)buffer.GetHead(), buffer.size(), true);
+		SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), true);
 	}
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
 		if (m_delete_flag) {

@@ -37,12 +37,22 @@ namespace OS {
 			void WriteDouble(double d);
 			void WriteNTS(std::string str);
 			void WriteBuffer(void *buf, size_t len);
-			size_t remaining();
-			void *GetCursor();
+
+			size_t readRemaining();
+			size_t bytesWritten();
+			size_t allocSize();
+
+			void *GetReadCursor();
+			void *GetWriteCursor();
+
+			void resetCursors();
+			void resetReadCursor();
+			void resetWriteCursor();
+
+			void SetReadCursor(size_t pos);
+			void SetWriteCursor(size_t pos);
+
 			void *GetHead();
-			void reset();
-			size_t size();
-			void SetCursor(size_t pos);
 
 			Buffer &operator=(const Buffer& val) {
 				if(mp_ctx) {
@@ -53,15 +63,18 @@ namespace OS {
 				}
 				
 				mp_ctx = val.mp_ctx;
-				_cursor = val._cursor;
+				_read_cursor = val._read_cursor;
+				_write_cursor = val._write_cursor;
 				mp_ctx->IncRef();
 				return *this;
 			}
 		private:
 			void realloc_buffer(size_t new_size);
-			void IncCursor(size_t len, bool write_operation = false);
+			void IncReadCursor(size_t len);
+			void IncWriteCursor(size_t len);
 			BufferCtx *mp_ctx;
-			void *_cursor;
+			void *_read_cursor;
+			void *_write_cursor;
 	};
 }
 #endif //_OS_BUFFER_H

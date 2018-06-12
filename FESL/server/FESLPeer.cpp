@@ -81,7 +81,7 @@ namespace FESL {
 				goto end;
 			}
 
-			OS::KVReader kv_data(std::string((const char *)recv_buffer.GetCursor(), buf_len), '=', '\n');
+			OS::KVReader kv_data(std::string((const char *)recv_buffer.GetReadCursor(), buf_len), '=', '\n');
 			char *type;
 			for (int i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
 				if (Peer::m_commands[i].type == htonl(header.type)) {

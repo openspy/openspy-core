@@ -380,7 +380,7 @@ namespace SB {
 				}
 				it2++;
 			}
-			SendPacket((const uint8_t *)buffer.GetHead(), buffer.size(), results.last_set);
+			SendPacket((const uint8_t *)buffer.GetHead(), buffer.bytesWritten(), results.last_set);
 		}
 		void V1Peer::SendServers(MM::ServerListQuery results) {
 			OS::Buffer buffer;
@@ -394,7 +394,7 @@ namespace SB {
 				buffer.WriteShort(serv->wan_address.GetPort());
 				it++;
 			}
-			SendPacket((const uint8_t *)buffer.GetHead(), buffer.size(), results.last_set);
+			SendPacket((const uint8_t *)buffer.GetHead(), buffer.bytesWritten(), results.last_set);
 			if (results.last_set) {
 				Delete();
 			}
@@ -408,7 +408,7 @@ namespace SB {
 			if (!skip_encryption) {
 				switch (m_enctype) {
 				case 2:
-					m_keyptr = encshare1((unsigned int *)&m_cryptkey_enctype2, (unsigned char *)buffer.GetHead(), (int)buffer.size(), m_keyptr);
+					m_keyptr = encshare1((unsigned int *)&m_cryptkey_enctype2, (unsigned char *)buffer.GetHead(), (int)buffer.bytesWritten(), m_keyptr);
 					break;
 				}
 			}

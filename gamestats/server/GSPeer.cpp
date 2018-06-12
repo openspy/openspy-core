@@ -505,19 +505,23 @@ namespace GS {
 	}
 
 	void Peer::SendPacket(std::string str, bool attach_final) {
-		OS::Buffer buffer;
+		OS::Buffer buffer(str.length());
 		buffer.WriteBuffer((void *)str.c_str(), str.length());
 		SendPacket(buffer, attach_final);
 	}
 	void Peer::SendPacket(OS::Buffer &buffer, bool attach_final) {
-		if(attach_final) {
-			buffer.WriteBuffer((uint8_t*)"\\final\\", 7);
+		OS::Buffer send_buffer;
+		send_buffer.WriteBuffer((char *)buffer.GetHead(), buffer.bytesWritten());
+		if (attach_final) {
+			send_buffer.WriteBuffer("\\final\\", 7);
 		}
-		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s", getAddress().ToString().c_str(), std::string((const char *)buffer.GetHead(), buffer.size()).c_str());
-		gamespy3dxor((char *)buffer.GetHead(), buffer.size());
+		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s", getAddress().ToString().c_str(), std::string((const char *)buffer.GetHead(), buffer.bytesWritten()).c_str());
+		gamespy3dxor((char *)send_buffer.GetHead(), send_buffer.bytesWritten());
+
+		buffer.resetReadCursor();
 
 		NetIOCommResp io_resp;
-		io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, send_buffer);
 		if (io_resp.disconnect_flag || io_resp.error_flag) {
 			Delete();
 		}
@@ -553,7 +557,7 @@ namespace GS {
 		}
 	}
 
-	void Peer::gamespy3dxor(char *data, size_t len) {
+	void Peer::gamespy3dxor(char *data, int len) {
 	    static const char gamespy[] = "GameSpy3D\0";
 	    char  *gs;
 

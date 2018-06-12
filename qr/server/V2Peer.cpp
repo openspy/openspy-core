@@ -171,12 +171,12 @@ namespace QR {
 
 		while((num_values = htons(buffer.ReadShort()))) {
 			std::vector<std::string> nameValueList;
-			if(buffer.remaining() <= 3) {
+			if(buffer.readRemaining() <= 3) {
 				break;
 			}
 			uint32_t num_keys = 0;
 			std::string x;
-			while(buffer.remaining() && (x = buffer.ReadNTS()).length() > 0) {
+			while(buffer.readRemaining() && (x = buffer.ReadNTS()).length() > 0) {
 				nameValueList.push_back(x);
 				num_keys++;
 			}
@@ -409,7 +409,6 @@ namespace QR {
 		uint32_t key = rand() % 100000 + 1;
 
 		buffer.WriteBuffer(data, data_len);
-		buffer.SetCursor(data_len);
 		SendClientMessage(buffer, key);
 	}
 	void V2Peer::SendClientMessage(OS::Buffer buffer, uint32_t key, bool no_insert) {
@@ -422,14 +421,14 @@ namespace QR {
 
 
 		send_buff.WriteInt(key);
-		send_buff.WriteBuffer(buffer.GetHead(), buffer.size());
+		send_buff.WriteBuffer(buffer.GetHead(), buffer.readRemaining());
 
 		if(!no_insert) {
 			m_client_message_queue[key] = buffer;
 		}
 		gettimeofday(&m_last_msg_resend, NULL); //blocks resending of recent messages
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Recv client message: key: %d - len: %d, resend: %d", m_sd->address.ToString().c_str(), key, buffer.size(), no_insert);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Recv client message: key: %d - len: %d, resend: %d", m_sd->address.ToString().c_str(), key, buffer.readRemaining(), no_insert);
 		SendPacket(send_buff);
 	}
 	void V2Peer::OnRegisteredServer(int pk_id, void *extra) {

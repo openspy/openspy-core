@@ -22,20 +22,21 @@ namespace OS {
 		}
 		Buffer::Buffer(void *addr, size_t len) {
 			mp_ctx = new BufferCtx(addr, len);
-			reset();
+			resetCursors();
 		}
 		Buffer::Buffer(size_t alloc_size) {
 			mp_ctx = new BufferCtx(alloc_size);
-			reset();
+			resetCursors();
 		}	
 		Buffer::Buffer(const Buffer &cpy) {
 			cpy.mp_ctx->IncRef();
 			mp_ctx = cpy.mp_ctx;
-			_cursor = cpy._cursor;
+			_read_cursor = cpy._read_cursor;
+			_write_cursor = cpy._write_cursor;
 		}
 		Buffer::Buffer() {
 			mp_ctx = new BufferCtx(1492);
-			reset();
+			resetCursors();
 		}
 		Buffer::~Buffer() {
 			mp_ctx->DecRef();
@@ -44,128 +45,152 @@ namespace OS {
 			}
 		}	
 		uint8_t Buffer::ReadByte() {
-			if (remaining() < sizeof(uint8_t)) return 0;
-			uint8_t val = *(uint8_t *)_cursor;
-			IncCursor(sizeof(uint8_t));
+			if (readRemaining() < sizeof(uint8_t)) return 0;
+			uint8_t val = *(uint8_t *)_read_cursor;
+			IncReadCursor(sizeof(uint8_t));
 			return val;
 		}
 		uint16_t Buffer::ReadShort() {
-			if (remaining() < sizeof(uint16_t)) return 0;
-			uint16_t val = *(uint16_t *)_cursor;
-			IncCursor(sizeof(uint16_t));
+			if (readRemaining() < sizeof(uint16_t)) return 0;
+			uint16_t val = *(uint16_t *)_read_cursor;
+			IncReadCursor(sizeof(uint16_t));
 			return val;
 		}
 		uint32_t Buffer::ReadInt() {
-			if (remaining() < sizeof(uint32_t)) return 0;
-			uint32_t val = *(uint32_t *)_cursor;
-			IncCursor(sizeof(uint32_t));
+			if (readRemaining() < sizeof(uint32_t)) return 0;
+			uint32_t val = *(uint32_t *)_read_cursor;
+			IncReadCursor(sizeof(uint32_t));
 			return val;
 		}
 		float Buffer::ReadFloat() {
-			if (remaining() < sizeof(float)) return 0;
-			float val = *(float *)_cursor;
-			IncCursor(sizeof(float));
+			if (readRemaining() < sizeof(float)) return 0;
+			float val = *(float *)_read_cursor;
+			IncReadCursor(sizeof(float));
 			return val;
 		}
 		double Buffer::ReadDouble() {
-			if (remaining() < sizeof(double)) return 0;
-			double val = *(double *)_cursor;
-			IncCursor(sizeof(double));
+			if (readRemaining() < sizeof(double)) return 0;
+			double val = *(double *)_read_cursor;
+			IncReadCursor(sizeof(double));
 			return val;
 		}
 		std::string Buffer::ReadNTS() {
 			std::string ret;
-			char *p = (char *)_cursor;
-			while (*p && remaining() > 0) {
+			char *p = (char *)_read_cursor;
+			while (*p && readRemaining() > 0) {
 				ret += *p;
 				p++;
 			}
-			IncCursor(ret.length() + 1);
+			IncReadCursor(ret.length() + 1);
 			return ret;
 		}
 		void Buffer::ReadBuffer(void *out, size_t len) {
-			if (remaining() < len) return;
-			memcpy(out, _cursor, len);
-			IncCursor(len);
+			if (readRemaining() < len) return;
+			memcpy(out, _read_cursor, len);
+			IncReadCursor(len);
 		}
 		void Buffer::WriteByte(uint8_t byte) {
-			*(uint8_t *)_cursor = byte;
-			IncCursor(sizeof(uint8_t), true);
+			*(uint8_t *)_write_cursor = byte;
+			IncWriteCursor(sizeof(uint8_t));
 		}
 		void Buffer::WriteShort(uint16_t byte) {
-			*(uint16_t *)_cursor = byte;
-			IncCursor(sizeof(uint16_t), true);
+			*(uint16_t *)_write_cursor = byte;
+			IncWriteCursor(sizeof(uint16_t));
 		}
 		void Buffer::WriteInt(uint32_t byte) {
-			*(uint32_t *)_cursor = byte;
-			IncCursor(sizeof(uint32_t), true);
+			*(uint32_t *)_write_cursor = byte;
+			IncWriteCursor(sizeof(uint32_t));
 		}
 		void Buffer::WriteFloat(float f) {
-			*(float *)_cursor = f;
-			IncCursor(sizeof(float), true);
+			*(float *)_write_cursor = f;
+			IncWriteCursor(sizeof(float));
 		}
 		void Buffer::WriteDouble(double d) {
-			*(double *)_cursor = d;
-			IncCursor(sizeof(double), true);
+			*(double *)_write_cursor = d;
+			IncWriteCursor(sizeof(double));
 		}
 		void Buffer::WriteNTS(std::string str) {
-			if (str.length() > remaining()) {
+			if (str.length() > readRemaining()) {
 				realloc_buffer(str.length() + REALLOC_ADD_SIZE);
 			}
 			if (str.length()) {
 				int len = str.length();
 				const char *c_str = str.c_str();
-				memcpy(_cursor, c_str, len + 1);
-				IncCursor(len + 1, true);
+				memcpy(_write_cursor, c_str, len + 1);
+				IncWriteCursor(len + 1);
 			}
 			else {
 				WriteByte(0);
 			}
 		}
 		void Buffer::WriteBuffer(void *buf, size_t len) {
-			if (len > remaining()) {
+			if (len > readRemaining()) {
 				realloc_buffer(len + REALLOC_ADD_SIZE);
 			}
-			memcpy(_cursor, buf, len);
-			IncCursor(len, true);
+			memcpy(_write_cursor, buf, len);
+			IncWriteCursor(len);
 		}
-		void Buffer::IncCursor(size_t len, bool write_operation) {
-			char *cursor = (char *)_cursor;
+		void Buffer::IncWriteCursor(size_t len) {
+			char *cursor = (char *)_write_cursor;
 			cursor += len;
-			_cursor = cursor;
+			_write_cursor = cursor;
 
-			if (write_operation && remaining() < BUFFER_SAFE_SIZE) {
+			if (allocSize() < BUFFER_SAFE_SIZE) {
 				realloc_buffer(REALLOC_ADD_SIZE);
 			}
 		}
-		void *Buffer::GetCursor() {
-			return _cursor;
+		void Buffer::IncReadCursor(size_t len) {
+			char *cursor = (char *)_read_cursor;
+			cursor += len;
+			_read_cursor = cursor;
+		}
+		void *Buffer::GetReadCursor() {
+			return _read_cursor;
+		}
+		void *Buffer::GetWriteCursor() {
+			return _write_cursor;
 		}
 		void *Buffer::GetHead() {
 			return mp_ctx->_head;
 		}
-		void Buffer::reset() {
-			_cursor = mp_ctx->_head;
+		void Buffer::resetReadCursor() {
+			_read_cursor = mp_ctx->_head;
 		}
-		size_t Buffer::remaining() {
-			size_t end = (size_t)mp_ctx->_head + (size_t)mp_ctx->alloc_size;
-			size_t diff = end - (size_t)_cursor;
+		void Buffer::resetWriteCursor() {
+			_write_cursor = mp_ctx->_head;
+		}
+		size_t Buffer::allocSize() {
+			return mp_ctx->alloc_size;
+		}
+		size_t Buffer::readRemaining() {
+			size_t end = bytesWritten();
+			size_t diff = ((size_t)mp_ctx->_head - (size_t)_read_cursor) + end;
 			return diff;
 		}
-		size_t Buffer::size() {
-			size_t size = (size_t)_cursor - (size_t)mp_ctx->_head;
+		size_t Buffer::bytesWritten() {
+			size_t size = (size_t)_write_cursor - (size_t)mp_ctx->_head;
 			return size;
 		}
 		void Buffer::realloc_buffer(size_t new_size) {
 			if (!mp_ctx->pointer_owner) return;
-			int offset = remaining();
-			mp_ctx->_head = realloc(mp_ctx->_head, size() + new_size);
-			reset();
-			IncCursor(offset);
+			int offset = bytesWritten();
+			mp_ctx->_head = realloc(mp_ctx->_head, offset + new_size);
+			mp_ctx->alloc_size = offset + new_size;
+			resetWriteCursor();
+			IncWriteCursor(offset);
 		}
-		void Buffer::SetCursor(size_t len) {
+		void Buffer::SetReadCursor(size_t len) {
 			if (len > mp_ctx->alloc_size)
 				return;
-			_cursor = (void *)((size_t)mp_ctx->_head + (size_t)len);
+			_read_cursor = (void *)((size_t)mp_ctx->_head + (size_t)len);
+		}
+		void Buffer::SetWriteCursor(size_t len) {
+			if (len > mp_ctx->alloc_size)
+				return;
+			_write_cursor = (void *)((size_t)mp_ctx->_head + (size_t)len);
+		}
+		void Buffer::resetCursors() {
+			_write_cursor = mp_ctx->_head;
+			_read_cursor = mp_ctx->_head;
 		}
 }
