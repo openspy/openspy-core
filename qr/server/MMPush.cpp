@@ -52,7 +52,7 @@ namespace MM {
 							return;							
 						}
 							
-						OS::Base64StrToBin((const char *)&data, &data_out, data_len);
+						OS::Base64StrToBin((const char *)data.c_str(), &data_out, data_len);
 						peer->SendClientMessage(data_out, data_len);
 						free(data_out);
 					}
