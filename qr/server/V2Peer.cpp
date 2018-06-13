@@ -418,7 +418,7 @@ namespace QR {
 
 
 		send_buff.WriteInt(key);
-		send_buff.WriteBuffer(buffer.GetHead(), buffer.readRemaining());
+		send_buff.WriteBuffer(buffer.GetHead(), buffer.bytesWritten());
 
 		if(!no_insert) {
 			m_client_message_queue[key] = buffer;
