@@ -71,9 +71,6 @@ namespace QR {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet, keys: %d %d", m_sd->address.ToString().c_str(), *(uint32_t *)&m_instance_key, *(uint32_t *)&instance_key);
 				return;
 			}
-			else {
-				memcpy((uint8_t*)&m_instance_key, (uint8_t *)&instance_key, sizeof(instance_key));
-			}
 		}
 
 
@@ -107,7 +104,7 @@ namespace QR {
 		}
 		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (const unsigned char *)m_server_info.m_game.secretkey.c_str(), 0);
 		if(strcmp(buffer.ReadNTS().c_str(),challenge_resp) == 0) { //matching challenge
-			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename.c_str());
 			if(m_sent_challenge && !m_server_pushed) {
 				MM::MMPushRequest req;
 				req.peer = this;
@@ -121,7 +118,7 @@ namespace QR {
 			m_sent_challenge = true;
 		}
 		else {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Incorrect challenge for gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Incorrect challenge for gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename.c_str());
 		}
 	}
 	void V2Peer::handle_keepalive(OS::Buffer &buffer) {

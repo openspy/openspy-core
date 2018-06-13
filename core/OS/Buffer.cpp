@@ -89,6 +89,9 @@ namespace OS {
 			memcpy(out, _read_cursor, len);
 			IncReadCursor(len);
 		}
+		/*
+			These should all be updated to use WriteBuffer internally
+		*/
 		void Buffer::WriteByte(uint8_t byte) {
 			*(uint8_t *)_write_cursor = byte;
 			IncWriteCursor(sizeof(uint8_t));
@@ -110,7 +113,7 @@ namespace OS {
 			IncWriteCursor(sizeof(double));
 		}
 		void Buffer::WriteNTS(std::string str) {
-			if (str.length() > readRemaining()) {
+			if (str.length() > readRemaining() + bytesWritten()) {
 				realloc_buffer(str.length() + REALLOC_ADD_SIZE);
 			}
 			if (str.length()) {
@@ -124,7 +127,7 @@ namespace OS {
 			}
 		}
 		void Buffer::WriteBuffer(void *buf, size_t len) {
-			if (len > readRemaining()) {
+			if (len > readRemaining()+bytesWritten()) {
 				realloc_buffer(len + REALLOC_ADD_SIZE);
 			}
 			memcpy(_write_cursor, buf, len);
@@ -173,11 +176,13 @@ namespace OS {
 		}
 		void Buffer::realloc_buffer(size_t new_size) {
 			if (!mp_ctx->pointer_owner) return;
-			int offset = bytesWritten();
-			mp_ctx->_head = realloc(mp_ctx->_head, offset + new_size);
-			mp_ctx->alloc_size = offset + new_size;
-			resetWriteCursor();
-			IncWriteCursor(offset);
+			int write_offset = bytesWritten();
+			int read_offset = readRemaining();
+			mp_ctx->_head = realloc(mp_ctx->_head, write_offset + new_size);
+			mp_ctx->alloc_size = write_offset + new_size;
+			resetCursors();
+			SetWriteCursor(write_offset);
+			SetReadCursor(read_offset);
 		}
 		void Buffer::SetReadCursor(size_t len) {
 			if (len > mp_ctx->alloc_size)
