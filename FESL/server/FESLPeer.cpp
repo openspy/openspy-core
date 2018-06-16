@@ -66,7 +66,7 @@ namespace FESL {
 
 			int len = io_resp.comm_len;
 
-			if ((io_resp.disconnect_flag || io_resp.error_flag)) {
+			if (len <= 0) {
 				goto end;
 			}
 
