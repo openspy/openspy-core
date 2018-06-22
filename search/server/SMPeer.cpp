@@ -99,7 +99,7 @@ namespace SM {
 		OS::LogText(OS::ELogLevel_Debug, "[%s] Recv: %s\n", getAddress().ToString().c_str(), data.c_str());
 
 		OS::KVReader data_parser = OS::KVReader(data);
-		std::string command = data_parser.GetValueByIdx(0);
+		std::string command = data_parser.GetKeyByIdx(0);
 		if(!command.compare("search")) {
 			handle_search(data_parser);
 		} else if(!command.compare("others")) {
@@ -409,7 +409,7 @@ namespace SM {
 	void Peer::m_search_valid_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 
-		s << "\\vr\\" << ((results.size() > 0) ? 1 : 0) << "\\final\\";
+		s << "\\vr\\" << ((results.size() > 0) ? 1 : 0);
 
 		((Peer *)peer)->SendPacket(s.str().c_str());
 
@@ -536,6 +536,7 @@ namespace SM {
 		OS::Buffer buffer;
 		//buffer.Write
 		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s\n", getAddress().ToString().c_str(), string.c_str());
+		buffer.WriteBuffer((void *)string.c_str(), string.length());
 		if (attach_final) {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
