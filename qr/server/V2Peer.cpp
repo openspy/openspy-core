@@ -320,6 +320,7 @@ namespace QR {
 		if(it != m_client_message_queue.end()) {
 			m_client_message_queue.erase(key);
 			key_found = true;
+			m_resend_count = 0;
 		}
 		OS::LogText(OS::ELogLevel_Info, "[%s] Client Message ACK, key: %d, found: %d", m_sd->address.ToString().c_str(), key, key_found);
 	}
