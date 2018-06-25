@@ -80,7 +80,7 @@ namespace SB {
 
 				do {
 					final_pos = recv_buf.find("\\final\\", last_pos);
-					if (final_pos == std::string::npos) break;
+					//if (final_pos == std::string::npos) break; //old MS protocol sends buffers without \\final\\....
 
 					std::string partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
 					handle_packet(partial_string);
@@ -92,7 +92,10 @@ namespace SB {
 				//check for extra data that didn't have the final string -- incase of incomplete data
 				if (last_pos < len) {
 					std::string remaining_str = recv_buf.substr(last_pos);
-					m_kv_accumulator.append(remaining_str);
+
+					if (remaining_str.length() > 0) {
+						m_kv_accumulator.append(remaining_str);
+					}
 				}
 
 				if (m_kv_accumulator.length() > MAX_UNPROCESSED_DATA) {
@@ -166,10 +169,22 @@ namespace SB {
 			AddRequest(req);
 		}
 		void V1Peer::handle_packet(std::string data) {
+			OS::LogText(OS::ELogLevel_Info, "[%s]: Handle %s", getAddress().ToString().c_str(), data.c_str());
 			if (m_waiting_gamedata == 1) {
 				m_waiting_packets.push(data);
 				return;
 			}
+			if (data.substr(0, 9).compare("\\queryid\\") == 0) {
+				data = data.substr(9);
+				size_t queryid_offset = data.find("\\");
+				if (queryid_offset != std::string::npos) {
+					if (data.length() > queryid_offset) {
+						queryid_offset++;
+					}
+					data = data.substr(queryid_offset);
+				}
+			}
+
 			OS::KVReader kv_parser = OS::KVReader(data);
 
 			if (kv_parser.Size() < 1) {
@@ -187,12 +202,9 @@ namespace SB {
 			else if (strcmp(command.c_str(), "list") == 0) {
 				handle_list(data);
 			}
-			else if (strcmp(command.c_str(), "queryid") == 0) {
-
-			}
 			else {
 				//send_error(true, "Cannot handle request");
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", m_sd->address.ToString().c_str(), data);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", m_sd->address.ToString().c_str(), command.c_str());
 			}
 		}
 		void V1Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
@@ -434,9 +446,8 @@ namespace SB {
 				}
 				buffer.WriteByte(sizeof(cryptkey) ^ 0xEC);
 				buffer.WriteBuffer((uint8_t *)&cryptkey, sizeof(cryptkey));
-				SendPacket((const uint8_t *)buffer.GetHead(), len, false, true);
+				SendPacket((const uint8_t *)buffer.GetHead(), buffer.bytesWritten(), false, true);
 			}
-
 		}
 		std::string V1Peer::field_cleanup(std::string s) {
 			std::string r;
