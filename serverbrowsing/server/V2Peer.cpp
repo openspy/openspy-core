@@ -155,6 +155,7 @@ namespace SB {
 				m_hp_msg_spam_count = 0;
 			}
 			else if (m_hp_msg_spam_count > HACKER_PATCH_MSG_SPAM_CHECKER_DUPLICATE) {
+				OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting spammed submit data", getAddress().ToString().c_str());
 				return;
 			}
 			m_hp_msg_spam_count++;
@@ -164,15 +165,13 @@ namespace SB {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", m_sd->address.ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
 		if (buffer.readRemaining() > 0) {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), buffer.readRemaining());
-			const char *base64 = OS::BinToBase64Str((uint8_t *)buffer.GetReadCursor(), buffer.readRemaining());
 			MM::MMQueryRequest req;
 			req.type = MM::EMMQueryRequestType_SubmitData;
 			req.SubmitData.from = m_sd->address;
 			req.SubmitData.to = m_send_msg_to;
-			req.SubmitData.base64 = base64;
+			req.SubmitData.buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
 			req.SubmitData.game = m_game;
 			AddRequest(req);
-			free((void *)base64);
 
 		}
 		else {
@@ -488,16 +487,13 @@ namespace SB {
 
 			if(m_next_packet_send_msg) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), len);
-				const char *base64 = OS::BinToBase64Str((uint8_t *)recv_buffer.GetHead(), len);
-
 				MM::MMQueryRequest req;
 				req.type = MM::EMMQueryRequestType_SubmitData;
 				req.SubmitData.from = m_sd->address;
 				req.SubmitData.to = m_send_msg_to;
-				req.SubmitData.base64 = base64;
+				req.SubmitData.buffer.WriteBuffer(recv_buffer.GetHead(), len);
 				req.SubmitData.game = m_game;
 				AddRequest(req);
-				free((void *)base64);
 				m_next_packet_send_msg = false;
 			} else {
 				this->handle_packet(recv_buffer);

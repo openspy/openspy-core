@@ -50,9 +50,6 @@
 #define HAS_KEYS_FLAG					64
 #define HAS_FULL_RULES_FLAG				128
 
-#define HACKER_PATCH_MSG_SPAM_CHECKER 1
-#define HACKER_PATCH_MSG_SPAM_CHECKER_DUPLICATE 5
-
 namespace SB {
 		class V2Peer : public Peer {
 			public:

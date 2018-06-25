@@ -434,7 +434,7 @@ namespace SB {
 				}
 				buffer.WriteByte(sizeof(cryptkey) ^ 0xEC);
 				buffer.WriteBuffer((uint8_t *)&cryptkey, sizeof(cryptkey));
-				SendPacket((const uint8_t *)&buffer, len, false, true);
+				SendPacket((const uint8_t *)buffer.GetHead(), len, false, true);
 			}
 
 		}

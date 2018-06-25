@@ -3,6 +3,7 @@
 #include "main.h"
 
 #include <OS/OpenSpy.h>
+#include <OS/Buffer.h>
 #include <OS/Task.h>
 #include <OS/TaskPool.h>
 #include <OS/Thread.h>
@@ -99,7 +100,7 @@ namespace MM {
 		//union {
 			sServerListReq req;
 			struct {
-				std::string base64;
+				OS::Buffer buffer;
 				OS::Address from;
 				OS::Address to;
 				OS::GameData game;

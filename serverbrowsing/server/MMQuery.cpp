@@ -841,7 +841,20 @@ namespace MM {
 		MM::MMQueryTask::FreeServerListQuery(&ret);
 	}
 	void MMQueryTask::PerformSubmitData(MMQueryRequest request) {
-
+		#if HACKER_PATCH_MSG_FORCE_NATNEG_ONLY
+			request.SubmitData.buffer.resetReadCursor();
+			if (request.SubmitData.buffer.readRemaining() != 10) {
+				OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting non-10 submit data (%d)", request.peer->getAddress().ToString().c_str(), request.SubmitData.buffer.readRemaining());
+				return;
+			}
+			if (memcmp(request.SubmitData.buffer.GetHead(), "\xFD\xFC\x1E\x66\x6A\xB2", 6) != 0) {
+				OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting non-natneg submit data", request.peer->getAddress().ToString().c_str());
+				return;
+			}
+		#endif
+		const char *base64 = OS::BinToBase64Str((uint8_t *)request.SubmitData.buffer.GetReadCursor(), request.SubmitData.buffer.readRemaining());
+		std::string b64_string = base64;
+		free((void *)base64);
 		std::string src_ip = request.SubmitData.from.ToString(true), dst_ip = request.SubmitData.to.ToString(true);
 		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\send_msg\\%s\\%s\\%d\\%s\\%d\\%s'",
 			sb_mm_channel,
@@ -851,7 +864,7 @@ namespace MM {
 			request.SubmitData.from.GetPort(),
 			dst_ip.c_str(),
 			request.SubmitData.to.GetPort(),
-			request.SubmitData.base64.c_str());
+			b64_string.c_str());
 	}
 	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {
 		OS::GameData games[2];
