@@ -421,8 +421,6 @@ namespace SB {
 		}
 		void V1Peer::send_crypt_header(int enctype) {
 			OS::Buffer buffer;
-			char buff[256];
-			char *p = (char *)(&buff);
 			int len = 0;
 			char cryptkey[13];
 			size_t secretkeylen = m_game.secretkey.length();
@@ -436,7 +434,7 @@ namespace SB {
 				}
 				buffer.WriteByte(sizeof(cryptkey) ^ 0xEC);
 				buffer.WriteBuffer((uint8_t *)&cryptkey, sizeof(cryptkey));
-				SendPacket((const uint8_t *)&buff, len, false, true);
+				SendPacket((const uint8_t *)&buffer, len, false, true);
 			}
 
 		}
