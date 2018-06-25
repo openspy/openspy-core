@@ -50,6 +50,9 @@
 #define HAS_KEYS_FLAG					64
 #define HAS_FULL_RULES_FLAG				128
 
+#define HACKER_PATCH_MSG_SPAM_CHECKER 1
+#define HACKER_PATCH_MSG_SPAM_CHECKER_DUPLICATE 5
+
 namespace SB {
 		class V2Peer : public Peer {
 			public:
@@ -101,6 +104,11 @@ namespace SB {
 				bool m_sent_push_keys;
 				bool m_got_game_pair;
 				bool m_in_message;
+
+				#if HACKER_PATCH_MSG_SPAM_CHECKER
+					int m_hp_msg_spam_count;
+					OS::Address m_hp_msg_spam_last_msg_sent_to;
+				#endif
 		};
 
 }

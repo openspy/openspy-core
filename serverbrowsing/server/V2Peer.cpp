@@ -25,6 +25,10 @@ namespace SB {
 		m_in_message = false;
 		m_got_game_pair = false;
 
+		#if HACKER_PATCH_MSG_SPAM_CHECKER
+				m_hp_msg_spam_count = 0;
+		#endif
+
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
 	}
 	V2Peer::~V2Peer() {
@@ -144,6 +148,17 @@ namespace SB {
 	void V2Peer::ProcessSendMessage(OS::Buffer &buffer) {
 		m_send_msg_to.sin_addr.s_addr = (buffer.ReadInt());
 		m_send_msg_to.sin_port = buffer.ReadShort();
+
+		#if HACKER_PATCH_MSG_SPAM_CHECKER
+			if (m_hp_msg_spam_count == 0 || m_hp_msg_spam_last_msg_sent_to != m_send_msg_to) {
+				m_hp_msg_spam_last_msg_sent_to = m_send_msg_to;
+				m_hp_msg_spam_count = 0;
+			}
+			else if (m_hp_msg_spam_count > HACKER_PATCH_MSG_SPAM_CHECKER_DUPLICATE) {
+				return;
+			}
+			m_hp_msg_spam_count++;
+		#endif
 
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", m_sd->address.ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
