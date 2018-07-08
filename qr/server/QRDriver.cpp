@@ -101,28 +101,23 @@ namespace QR {
 
 
 	Peer *Driver::find_client(OS::Address address) {
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			OS::Address peer_address = peer->getAddress();
 			if (address == peer_address && !peer->ShouldDelete()) {
+				mp_mutex->unlock();
 				return peer;
 			}
 			it++;
 		}
+		mp_mutex->unlock();
 		return NULL;
 	}
 	Peer *Driver::find_or_create(OS::Address address, INetIOSocket *socket, int version) {
-		std::vector<Peer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = *it;
-			OS::Address peer_address = peer->getAddress();
-			if (address == peer_address && !peer->ShouldDelete()) {
-				return peer;
-			}
-			it++;
-		}
-		Peer *ret = NULL;
+		Peer *ret = find_client(address);
+		if(ret) return ret;
 		INetIOSocket *client_socket = new INetIOSocket();
 		client_socket->address = address;
 		client_socket->sd = socket->sd;
@@ -137,7 +132,9 @@ namespace QR {
 			break;
 		}
 		m_server->RegisterSocket(ret);
+		mp_mutex->lock();
 		m_connections.push_back(ret);
+		mp_mutex->unlock();
 		return ret;
 	}
 
