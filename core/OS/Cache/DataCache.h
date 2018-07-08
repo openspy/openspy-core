@@ -31,7 +31,7 @@ namespace OS {
 			}
 			free((void *)m_thread_mutexes);
 			delete m_main_mutex;
-			delete threadTempCache;
+			delete [] threadTempCache;
 		}
 
 		void AddItem(int thread_index, K key, V item) {
