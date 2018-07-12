@@ -19,9 +19,7 @@ namespace MM {
 	Redis::Connection *mp_redis_async_connection;
 	MMPushTask *mp_async_lookup_task = NULL;
 
-	//struct event_base *mp_event_base;
 	void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
-	    //char gamename[32],from_ip[32], to_ip[32], from_port[16], to_port[16], data[MAX_BASE64_STR+1], type[32];
 		std::string gamename, from_ip, to_ip, from_port, to_port, data, type;
 		uint8_t *data_out;
 		size_t data_len;
