@@ -207,10 +207,10 @@ namespace SB {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", m_sd->address.ToString().c_str(), command.c_str());
 			}
 		}
-		void V1Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+		void V1Peer::OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 			SendServerInfo(results);
 		}
-		void V1Peer::OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+		void V1Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 			if (request.req.all_keys) {
 				SendServerInfo(results);
 			}
@@ -218,7 +218,7 @@ namespace SB {
 				SendServers(results);
 			}			
 		}
-		void V1Peer::OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+		void V1Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 			SendGroups(results);
 		}
 		void V1Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {

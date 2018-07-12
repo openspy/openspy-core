@@ -23,69 +23,98 @@ namespace SB {
 
 
 namespace MM {
-	typedef struct {
-		OS::Address wan_address;
-		OS::Address lan_address;
-		OS::GameData game;
-		OS::countryRegion region;
-		std::map<std::string, std::string> kvFields;
+	class Server {
+		public:
+			Server() {
+				id = 0;
+			}
+			~Server() {
 
-		std::map<int, std::map<std::string, std::string> > kvPlayers;
-		std::map<int, std::map<std::string, std::string> > kvTeams;
+			}
+			OS::Address wan_address;
+			OS::Address lan_address;
+			OS::GameData game;
+			OS::countryRegion region;
+			std::map<std::string, std::string> kvFields;
 
-		std::string key;
+			std::map<int, std::map<std::string, std::string> > kvPlayers;
+			std::map<int, std::map<std::string, std::string> > kvTeams;
+
+			std::string key;
 
 
-		int id;		
-	} Server;
+			int id;		
+	};
 
-	struct ServerListQuery {
-		std::vector<std::string> requested_fields;
+	class ServerListQuery {
+		public:
+			ServerListQuery() {
+				first_set = false;
+				last_set = false;
+			}
+			~ServerListQuery() {
 
-		std::vector<std::string> captured_basic_fields;
-		std::vector<std::string> captured_player_fields;
-		std::vector<std::string> captured_team_fields;
-		std::vector<Server *> list;
-		bool first_set;
-		bool last_set;
+			}
+			std::vector<std::string> requested_fields;
+
+			std::vector<std::string> captured_basic_fields;
+			std::vector<std::string> captured_player_fields;
+			std::vector<std::string> captured_team_fields;
+			std::vector<Server *> list;
+			bool first_set;
+			bool last_set;
 	};
 	
 	extern Redis::Connection *mp_redis_connection;
 
-	struct sServerListReq {
-		uint8_t protocol_version;
-		uint8_t encoding_version;
-		uint32_t game_version;
+	class sServerListReq {
+		public:
+			sServerListReq() {
+				protocol_version = 0;
+				encoding_version = 0;
+				game_version = 0;
+				send_groups = false;
+				push_updates = false;
+				no_server_list = false;
+				no_list_cache = false;
+				send_fields_for_all = false;
+				all_keys = false;
+			}
+			~sServerListReq() {
+
+			}
+			uint8_t protocol_version;
+			uint8_t encoding_version;
+			uint32_t game_version;
 		
-		std::string filter;
-		//const char *field_list;
-		std::vector<std::string> field_list;
+			std::string filter;
+			//const char *field_list;
+			std::vector<std::string> field_list;
 		
-		uint32_t source_ip; //not entire sure what this is for atm
-		uint32_t max_results;
+			uint32_t source_ip; //not entire sure what this is for atm
+			uint32_t max_results;
 		
-		bool send_groups;
-		//bool send_wan_ip;
-		bool push_updates;
-		bool no_server_list;
-		bool no_list_cache;
-		bool send_fields_for_all;
+			bool send_groups;
+			//bool send_wan_ip;
+			bool push_updates;
+			bool no_server_list;
+			bool no_list_cache;
+			bool send_fields_for_all;
 		
 
-		//used after lookup
-		OS::GameData m_for_game;
-		OS::GameData m_from_game;
+			//used after lookup
+			OS::GameData m_for_game;
+			OS::GameData m_from_game;
 
 
-		//used before lookup
-		std::string m_for_gamename;
-		std::string m_from_gamename;
+			//used before lookup
+			std::string m_for_gamename;
+			std::string m_from_gamename;
 
-		bool all_keys;
+			bool all_keys;
 		
 	};
 
-	struct _MMQueryRequest;
 	enum EMMQueryRequestType {
 		EMMQueryRequestType_GetServers,
 		EMMQueryRequestType_GetGroups,
@@ -95,40 +124,59 @@ namespace MM {
 		EMMQueryRequestType_GetGameInfoByGameName,
 		EMMQueryRequestType_GetGameInfoPairByGameName, //get 2 game names in same thread
 	};
-	typedef struct _MMQueryRequest {
-		EMMQueryRequestType type;
-		//union {
-			sServerListReq req;
-			struct {
-				OS::Buffer buffer;
-				OS::Address from;
-				OS::Address to;
-				OS::GameData game;
-			} SubmitData;
-			OS::Address address; //used for GetServerByIP
-			std::string key; //used for GetServerByKey
-		//} sQueryData;
-		SB::Driver *driver;
-		SB::Peer *peer;
+	class MMQueryRequest {
+		public:
+			MMQueryRequest() {
+				type = EMMQueryRequestType_GetServers;
+				peer = NULL;
+				driver = NULL;
+				extra = NULL;
+			}
+			~MMQueryRequest() {
 
-		std::string gamenames[2];
-		void *extra;
-	} MMQueryRequest;
+			}
+
+			EMMQueryRequestType type;
+			//union {
+				sServerListReq req;
+				struct {
+					OS::Buffer buffer;
+					OS::Address from;
+					OS::Address to;
+					OS::GameData game;
+				} SubmitData;
+				OS::Address address; //used for GetServerByIP
+				std::string key; //used for GetServerByKey
+			//} sQueryData;
+			SB::Driver *driver;
+			SB::Peer *peer;
+
+			std::string gamenames[2];
+			void *extra;
+	};
 
 	//
-	typedef struct _MMQueryResponse {
-		SB::Peer *peer;
-		struct MM::_MMQueryRequest request;
-		struct MM::ServerListQuery results;
-		void *extra;
-	} MMQueryResponse;
+	class MMQueryResponse {
+		public:
+			MMQueryResponse() {
+				peer = NULL;
+				extra = NULL;
+			};
+			~MMQueryResponse() {
+
+			};
+			SB::Peer *peer;
+			MM::MMQueryRequest request;
+			MM::ServerListQuery results;
+			void *extra;
+	};
 	
 	class MMQueryTask : public OS::Task<MMQueryRequest> {
 		public:
 			MMQueryTask(int index);
 			~MMQueryTask();
 
-			static void FreeServerListQuery(struct MM::ServerListQuery *query);
+			static void FreeServerListQuery(MM::ServerListQuery *query);
 
 			void AddDriver(SB::Driver *driver);
 			void RemoveDriver(SB::Driver *driver);

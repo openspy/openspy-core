@@ -25,9 +25,9 @@ namespace SB {
 		void informUpdateServers(MM::Server *server);
 	protected:
 
-		void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
-		void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
-		void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+		void OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra);
+		void OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra);
+		void OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra);
 		void OnRecievedGameInfo(const OS::GameData game_data, void *extra);
 		void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra);
 

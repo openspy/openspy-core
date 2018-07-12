@@ -79,14 +79,14 @@ namespace SB {
 				//request processors
 				MM::sServerListReq ParseListRequest(OS::Buffer &buffer);
 
-				void OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
-				void OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
-				void OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra);
+				void OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra);
+				void OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra);
+				void OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra);
 
-				void SendListQueryResp(struct MM::ServerListQuery servers, const MM::sServerListReq list_req, bool usepopularlist = true, bool send_fullkeys = false);
+				void SendListQueryResp(MM::ServerListQuery servers, const MM::sServerListReq list_req, bool usepopularlist = true, bool send_fullkeys = false);
 				
 				void sendServerData(MM::Server *server, bool usepopularlist, bool push, OS::Buffer *sendBuffer, bool full_keys = false, const std::map<std::string, int> *optimized_fields = NULL, bool no_keys = false, bool first_set = false);
-				void WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, OS::Buffer &buffer, std::map<std::string, int> &field_types);
+				void WriteOptimizedField(MM::ServerListQuery servers, std::string field_name, OS::Buffer &buffer, std::map<std::string, int> &field_types);
 				void SendPushKeys();
 				void send_error(bool die, const char *fmt, ...);
 

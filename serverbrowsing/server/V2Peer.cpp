@@ -182,7 +182,7 @@ namespace SB {
 	/*		
 		TODO: save this with game data and load it from that
 	*/
-	void V2Peer::WriteOptimizedField(struct MM::ServerListQuery servers, std::string field_name, OS::Buffer &buffer, std::map<std::string, int> &field_types) {
+	void V2Peer::WriteOptimizedField(MM::ServerListQuery servers, std::string field_name, OS::Buffer &buffer, std::map<std::string, int> &field_types) {
 		
 		uint8_t var = KEYTYPE_STRING;
 		std::vector<MM::Server *>::iterator it = servers.list.begin();
@@ -227,7 +227,7 @@ namespace SB {
 
 		field_types[field_name] = var;
 	}
-	void V2Peer::SendListQueryResp(struct MM::ServerListQuery servers, const MM::sServerListReq list_req, bool usepopularlist, bool send_fullkeys) {
+	void V2Peer::SendListQueryResp(MM::ServerListQuery servers, const MM::sServerListReq list_req, bool usepopularlist, bool send_fullkeys) {
 		/*
 		TODO: make support split packets
 		*/
@@ -770,13 +770,13 @@ namespace SB {
 	}
 
 
-	void V2Peer::OnRetrievedServers(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		SendListQueryResp(results, request.req);
 	}
-	void V2Peer::OnRetrievedGroups(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+	void V2Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		SendListQueryResp(results, request.req);
 	}
-	void V2Peer::OnRetrievedServerInfo(const struct MM::_MMQueryRequest request, struct MM::ServerListQuery results, void *extra) {
+	void V2Peer::OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		if (results.list.size() == 0) return;
 		MM::Server *server = results.list.front();
 		if (server) {

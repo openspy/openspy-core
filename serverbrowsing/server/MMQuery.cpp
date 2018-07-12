@@ -809,7 +809,7 @@ namespace MM {
 				delete server;
 			return NULL;
 	}
-	void MMQueryTask::FreeServerListQuery(struct MM::ServerListQuery *query) {
+	void MMQueryTask::FreeServerListQuery(MM::ServerListQuery *query) {
 		std::vector<Server *>::iterator it = query->list.begin();
 		while(it != query->list.end()) {
 			Server *server = *it;
