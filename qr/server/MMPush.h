@@ -39,14 +39,21 @@ namespace MM {
 		EMMPushRequestType_DeleteServer,
 		EMMPushRequestType_GetGameInfoByGameName,
 	};
-	typedef struct _MMPushRequest {
+	class MMPushRequest {
+	public:
+		MMPushRequest() {
+			type = EMMPushRequestType_PushServer;
+			peer = NULL;
+			extra = NULL;
+		}
+		~MMPushRequest() { }
 		EMMPushRequestType type;
 		QR::Peer *peer;
 		ServerInfo server;
 		ServerInfo old_server;
 		std::string gamename;
 		void *extra;
-	} MMPushRequest;
+	};
 	class MMPushTask : public OS::Task<MMPushRequest> {
 		public:
 			MMPushTask(int thread_index);

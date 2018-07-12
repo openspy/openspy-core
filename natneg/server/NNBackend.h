@@ -23,18 +23,24 @@
 #define NN_REDIS_EXPIRE_TIME 120
 
 namespace NN {
-	struct _NNBackendRequest;
 	enum ENNQueryRequestType {
 		ENNQueryRequestType_SubmitClient,
 		ENNQueryRequestType_PerformERTTest_IPUnsolicited,
 		ENNQueryRequestType_PerformERTTest_IPPortUnsolicited,
 	};
-	typedef struct _NNBackendRequest {
-		ENNQueryRequestType type;
-		NN::ConnectionSummary summary;
-		void *extra;
-		NN::Peer *peer;
-	} NNBackendRequest;
+	class NNBackendRequest {
+		public:
+			NNBackendRequest() {
+				peer = NULL;
+				extra = NULL;
+				type = ENNQueryRequestType_SubmitClient;
+			}
+			~NNBackendRequest() { }
+			ENNQueryRequestType type;
+			NN::ConnectionSummary summary;
+			void *extra;
+			NN::Peer *peer;
+	};
 
 	class NNQueryTask : public OS::Task<NNBackendRequest> {
 		public:

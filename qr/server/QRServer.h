@@ -7,7 +7,7 @@
 #define MASTER_PORT 27900
 namespace MM {
 	class MMPushTask;
-	typedef struct _MMPushRequest MMPushRequest;
+	class MMPushRequest;
 }
 namespace QR {
 	class Peer;

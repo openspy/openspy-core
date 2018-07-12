@@ -12,7 +12,7 @@ namespace NN {
 	class NNQueryTask;
 	class Peer;
 	class NNConnectionSummary;
-	typedef struct _NNBackendRequest NNBackendRequest;
+	class NNBackendRequest;
 	class Server : public INetServer {
 		public:
 			Server();
