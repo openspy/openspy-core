@@ -104,17 +104,20 @@ namespace NN {
 		}
 	}
 	Peer *Driver::find_client(OS::Address address, NNCookieType cookie, bool use_client_info) {
+		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = *it;
 			OS::Address peer_address = peer->getAddress();
 			if (address == peer_address) {
 				if (!use_client_info || peer->GetCookie() == cookie) {
+					mp_mutex->unlock();
 					return peer;
 				}				
 			}
 			it++;
 		}
+		mp_mutex->unlock();
 		return NULL;
 	}
 	std::vector<Peer *> Driver::find_clients(NNCookieType cookie, int client_idx, bool inc_ref) {
