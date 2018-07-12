@@ -139,12 +139,11 @@ namespace MM {
 			EMMQueryRequestType type;
 			//union {
 				sServerListReq req;
-				struct {
+				//submit data
 					OS::Buffer buffer;
 					OS::Address from;
 					OS::Address to;
-					OS::GameData game;
-				} SubmitData;
+//
 				OS::Address address; //used for GetServerByIP
 				std::string key; //used for GetServerByKey
 			//} sQueryData;

@@ -832,7 +832,7 @@ namespace MM {
 	}
 	void MMQueryTask::PerformGetServerByIP(MMQueryRequest request) {
 		ServerListQuery ret;
-		Server *serv = GetServerByIP(request.address, request.SubmitData.game, NULL);
+		Server *serv = GetServerByIP(request.address, request.req.m_for_game, NULL);
 		if(serv)
 			ret.list.push_back(serv);
 
@@ -842,28 +842,28 @@ namespace MM {
 	}
 	void MMQueryTask::PerformSubmitData(MMQueryRequest request) {
 		#if HACKER_PATCH_MSG_FORCE_NATNEG_ONLY
-			request.SubmitData.buffer.resetReadCursor();
-			if (request.SubmitData.buffer.readRemaining() != 10) {
-				OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting non-10 submit data (%d)", request.peer->getAddress().ToString().c_str(), request.SubmitData.buffer.readRemaining());
+			request.buffer.resetReadCursor();
+			if (request.buffer.readRemaining() != 10) {
+				OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting non-10 submit data (%d)", request.peer->getAddress().ToString().c_str(), request.buffer.readRemaining());
 				return;
 			}
-			if (memcmp(request.SubmitData.buffer.GetHead(), "\xFD\xFC\x1E\x66\x6A\xB2", 6) != 0) {
+			if (memcmp(request.buffer.GetHead(), "\xFD\xFC\x1E\x66\x6A\xB2", 6) != 0) {
 				OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting non-natneg submit data", request.peer->getAddress().ToString().c_str());
 				return;
 			}
 		#endif
-		const char *base64 = OS::BinToBase64Str((uint8_t *)request.SubmitData.buffer.GetReadCursor(), request.SubmitData.buffer.readRemaining());
+		const char *base64 = OS::BinToBase64Str((uint8_t *)request.buffer.GetReadCursor(), request.buffer.readRemaining());
 		std::string b64_string = base64;
 		free((void *)base64);
-		std::string src_ip = request.SubmitData.from.ToString(true), dst_ip = request.SubmitData.to.ToString(true);
+		std::string src_ip = request.from.ToString(true), dst_ip = request.to.ToString(true);
 		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\send_msg\\%s\\%s\\%d\\%s\\%d\\%s'",
 			sb_mm_channel,
-			/*request.SubmitData.game.gamename*/
+			/*request.game.gamename*/
 			"REMOVED",
 			src_ip.c_str(),
-			request.SubmitData.from.GetPort(),
+			request.from.GetPort(),
 			dst_ip.c_str(),
-			request.SubmitData.to.GetPort(),
+			request.to.GetPort(),
 			b64_string.c_str());
 	}
 	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {

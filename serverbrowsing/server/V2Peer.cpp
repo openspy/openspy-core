@@ -167,10 +167,10 @@ namespace SB {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), buffer.readRemaining());
 			MM::MMQueryRequest req;
 			req.type = MM::EMMQueryRequestType_SubmitData;
-			req.SubmitData.from = m_sd->address;
-			req.SubmitData.to = m_send_msg_to;
-			req.SubmitData.buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
-			req.SubmitData.game = m_game;
+			req.from = m_sd->address;
+			req.to = m_send_msg_to;
+			req.buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
+			req.req.m_for_game = m_game;
 			AddRequest(req);
 
 		}
@@ -453,7 +453,6 @@ namespace SB {
 		}
 
 		req.req.m_for_game = m_game;
-		req.SubmitData.game = m_game;
 		AddRequest(req);
 	}
 	void V2Peer::send_ping() {
@@ -489,10 +488,10 @@ namespace SB {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), len);
 				MM::MMQueryRequest req;
 				req.type = MM::EMMQueryRequestType_SubmitData;
-				req.SubmitData.from = m_sd->address;
-				req.SubmitData.to = m_send_msg_to;
-				req.SubmitData.buffer.WriteBuffer(recv_buffer.GetHead(), len);
-				req.SubmitData.game = m_game;
+				req.from = m_sd->address;
+				req.to = m_send_msg_to;
+				req.buffer.WriteBuffer(recv_buffer.GetHead(), len);
+				req.req.m_for_game = m_game;
 				AddRequest(req);
 				m_next_packet_send_msg = false;
 			} else {
