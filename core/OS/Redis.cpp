@@ -236,7 +236,7 @@ namespace Redis {
 		sReadLineData.recv_loop = true;
 		int total_len = 0, len;
 		while(sReadLineData.recv_loop) {
-			len = recv(conn->sd, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len, 0); //TODO: check if exeeds max len.. currently set to 1 MB so shouldn't...
+			len = recv(conn->sd, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len, MSG_NOSIGNAL); //TODO: check if exeeds max len.. currently set to 1 MB so shouldn't...
 			if (len <= 0) { return len; }
 			while (len--) {
 				switch (sReadLineData.state) {
@@ -329,7 +329,7 @@ namespace Redis {
 		vsprintf(conn->read_buff, fmt, args);
 
 		std::string cmd = conn->read_buff + std::string("\r\n");
-		send(conn->sd, cmd.c_str(), (int)cmd.length(), 0);
+		send(conn->sd, cmd.c_str(), (int)cmd.length(), MSG_NOSIGNAL);
 		va_end(args);
 
 		if (sleepMS != 0) {
@@ -341,7 +341,7 @@ namespace Redis {
 			if (Recv(conn) <= 0) {
 				OS::Sleep(5000); //Sleep even longer due to async... more likely to be in a CPU consuming loop
 				Reconnect(conn);
-				send(conn->sd, cmd.c_str(), (int)cmd.length(), 0);
+				send(conn->sd, cmd.c_str(), (int)cmd.length(), MSG_NOSIGNAL);
 				continue;
 			}
 			parse_response(conn->read_buff, diff, &resp, NULL);
