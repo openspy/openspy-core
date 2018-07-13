@@ -40,7 +40,7 @@ namespace SB {
 
 		int idx = 0;
 		while(buffer.readRemaining() > 0 && !break_flag) {
-			uint16_t buff_len = htons(buffer.ReadShort()); //length
+			uint16_t buff_len = htons(buffer.ReadShort()); //length, maybe incase of packets greater than MTU length
 
 			request_type = buffer.ReadByte();
 
