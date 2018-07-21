@@ -39,3 +39,6 @@ void INetServer::UnregisterSocket(INetPeer *peer) {
 INetIOInterface<> *INetServer::getNetIOInterface() {
 	return mp_net_io_interface;
 }
+void INetServer::setNetIOInterface(INetIOInterface<> *iface) {
+	mp_net_io_interface = iface;
+}

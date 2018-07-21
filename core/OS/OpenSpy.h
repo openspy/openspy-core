@@ -137,6 +137,12 @@ namespace OS {
 		bool operator==(const Address &addr) const {
 			return addr.GetIP() == this->GetIP() && addr.GetPort() == this->GetPort();
 		}
+		bool operator>(const Address &addr) const {
+			return addr.GetIP() > this->GetIP() && addr.GetPort() > this->GetPort();
+		}
+		bool operator<(const Address &addr) const {
+			return addr.GetIP() < this->GetIP() && addr.GetPort() < this->GetPort();
+		}
 		bool operator!=(const Address &addr) const {
 			return !operator==(addr);
 		}

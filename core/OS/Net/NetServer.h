@@ -20,6 +20,7 @@ public:
 	void UnregisterSocket(INetPeer *peer);
 
 	INetIOInterface<> *getNetIOInterface();
+	void setNetIOInterface(INetIOInterface<> *iface);
 protected:
 	void NetworkTick(); //fires the INetEventMgr
 //private:
