@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 
 project(openspy)
+enable_testing()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
