@@ -12,7 +12,7 @@ file (GLOB FILTER_SRCS "filter/*.cpp")
 file (GLOB FILTER_HDRS "filter/*.h")
 
 
-set (ALL_SRCS ${MAIN_SRCS} ${MAIN_HDRS} ${SERVER_SRCS} ${SERVER_HDRS} ${FILTER_SRCS} ${FILTER_HDRS})
+set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${FILTER_SRCS} ${FILTER_HDRS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -24,10 +24,12 @@ source_group("Headers" FILES ${MAIN_HDRS})
 source_group("Headers\\Server" FILES ${SERVER_HDRS})
 source_group("Headers\\Filter" FILES ${FILTER_HDRS})
 
-add_executable (serverbrowsing ${ALL_SRCS})
+add_executable (serverbrowsing ${ALL_SRCS} ${MAIN_SRCS} ${MAIN_HDRS})
 
 IF(WIN32)	
 	target_link_libraries(serverbrowsing ws2_32.lib openspy.lib)
 ELSE() #unix
 	target_link_libraries(serverbrowsing pthread openspy)
 ENDIF()
+
+add_subdirectory(test)

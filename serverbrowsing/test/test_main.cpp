@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include <OS\Net\NetServer.h>
+#include <OS/Net/NetServer.h>
 
-#include <OS\test\TestNetIOInterface.h>
-#include "server\SBServer.h"
-#include "server\SBDriver.h"
+#include <OS/test/TestNetIOInterface.h>
+#include "server/SBServer.h"
+#include "server/SBDriver.h"
 INetServer *test_gameserver = NULL;
 Test::TestNetIOInterface<> *test_netio_iface = NULL;
 
@@ -97,7 +97,7 @@ bool Fake_SendCallback(INetIOSocket *socket, OS::Buffer buffer) {
 	return false;
 }
 
-int test_main() {
+int main() {
 	OS::Init("serverbrowsing", "openspy.cfg");
 
 	test_gameserver = new SBServer();
