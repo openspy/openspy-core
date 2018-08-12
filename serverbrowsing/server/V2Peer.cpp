@@ -9,8 +9,6 @@
 #include <OS/Net/NetServer.h>
 #include <stdarg.h>
 
-#define CRYPTCHAL_LEN 10
-#define SERVCHAL_LEN 25
 namespace SB {
 	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : Peer(driver, sd, 2) {
 		m_next_packet_send_msg = false;
@@ -307,7 +305,6 @@ namespace SB {
 		}
 	}
 	size_t V2Peer::setupCryptHeader(OS::Buffer &buffer) {
-		//	memset(&options->cryptkey,0,sizeof(options->cryptkey));
 		size_t start_len = buffer.bytesWritten();
 		srand((u_int)time(NULL));
 		uint32_t cryptlen = CRYPTCHAL_LEN;
@@ -331,6 +328,7 @@ namespace SB {
 		//combine our secret key, our challenge, and the server's challenge into a crypt key
 		size_t seckeylen = m_game.secretkey.length();
 		const char *seckey = m_game.secretkey.c_str();
+
 		for (uint32_t i = 0 ; i < servchallen ; i++)
 		{
 			m_challenge[(i *  seckey[i % seckeylen]) % LIST_CHALLENGE_LEN] ^= (char)((m_challenge[i % LIST_CHALLENGE_LEN] ^ servchal[i]) & 0xFF);
@@ -354,7 +352,7 @@ namespace SB {
 			buffer.WriteShort(htons((uint16_t)(len + sizeof(uint16_t))));
 		}
 		buffer.WriteBuffer(buff, len);
-		
+
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.bytesWritten() - header_len);
 
 		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
@@ -687,6 +685,7 @@ namespace SB {
 				}
 				it++;
 			}
+			buffer->WriteByte(0); //terminator
 		}
 
 		if (!first_set) {

@@ -36,7 +36,8 @@
 #define ALTERNATE_SOURCE_IP 8
 
 
-
+#define CRYPTCHAL_LEN 10
+#define SERVCHAL_LEN 25
 #define LIST_CHALLENGE_LEN 8
 
 
