@@ -70,16 +70,33 @@ namespace Test {
 		}
 
 		INetIOSocket *BindUDP(OS::Address bind_address) {
-			return NULL;
+			INetIOSocket * socket = new INetIOSocket;
+			return socket;
 		}
 
 		NetIOCommResp datagramRecv(INetIOSocket *socket, std::vector<INetIODatagram> &datagrams) {
-			NetIOCommResp resp;
-			return resp;
+			NetIOCommResp ret;
+			ret.error_flag = false;
+			ret.disconnect_flag = false;
+			datagrams.insert(datagrams.end(), m_pending_datagrams[socket].begin(),m_pending_datagrams[socket].end());
+			std::vector<INetIODatagram>::iterator it = datagrams.begin();
+			while(it != datagrams.end()) {
+				ret.comm_len += (*it).buffer.bytesWritten();
+				ret.packet_count++;
+				it++;
+			}
+
+			m_pending_datagrams[socket].clear();
+			return ret;
 		}
 
 		NetIOCommResp datagramSend(INetIOSocket *socket, OS::Buffer &buffer) {
 			NetIOCommResp resp;
+			resp.comm_len = buffer.bytesWritten();
+			resp.packet_count = 1;
+			bool error_flag = mp_SendCallback(socket, buffer);
+			resp.disconnect_flag = error_flag;
+			resp.error_flag = error_flag;
 			return resp;
 		}
 
@@ -103,6 +120,7 @@ namespace Test {
         //fake connection functions
         void fake_AddTCPConnection(INetIOSocket *socket);
 		void fake_PushIncomingPacket(INetIOSocket *socket, OS::Buffer &buffer);
+		void fake_PushIncomingDatagram(INetIOSocket *socket, INetIODatagram dgram);
 		void fake_TCPDisconnect(INetIOSocket *socket);
 		void fake_SetSendCallback(bool (*SendCallback)(INetIOSocket *, OS::Buffer));
         protected:
@@ -110,6 +128,9 @@ namespace Test {
         std::vector<INetIOSocket *> m_TCPAccept_WaitList;
 		std::map<INetIOSocket *, std::vector<OS::Buffer> > m_pending_packets;
 		std::vector<INetIOSocket *> m_pending_tcp_disconnects;
+
+
+		std::map<INetIOSocket *, std::vector<INetIODatagram> > m_pending_datagrams;
 	};
 }
 #endif // _TESTNETIOINTERFACE_H

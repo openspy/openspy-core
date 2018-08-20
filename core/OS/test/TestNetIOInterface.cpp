@@ -17,4 +17,8 @@ namespace Test {
 	void TestNetIOInterface<>::fake_TCPDisconnect(INetIOSocket *socket) {
 		m_pending_tcp_disconnects.push_back(socket);
 	}
+	template<>
+	void TestNetIOInterface<>::fake_PushIncomingDatagram(INetIOSocket *socket, INetIODatagram dgram) {
+		m_pending_datagrams[socket].push_back(dgram);
+	}
 }

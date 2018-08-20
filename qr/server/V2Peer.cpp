@@ -10,24 +10,6 @@
 
 #include <OS/gamespy/enctypex_decoder.h>
 
-#define PACKET_QUERY              0x00  //S -> C
-#define PACKET_CHALLENGE          0x01  //S -> C
-#define PACKET_ECHO               0x02  //S -> C (purpose..?)
-#define PACKET_ECHO_RESPONSE      0x05  // 0x05, not 0x03 (order) | C -> S
-#define PACKET_HEARTBEAT          0x03  //C -> S
-#define PACKET_ADDERROR           0x04  //S -> C
-#define PACKET_CLIENT_MESSAGE     0x06  //S -> C
-#define PACKET_CLIENT_MESSAGE_ACK 0x07  //C -> S
-#define PACKET_KEEPALIVE          0x08  //S -> C | C -> S
-#define PACKET_PREQUERY_IP_VERIFY 0x09  //S -> C
-#define PACKET_AVAILABLE          0x09  //C -> S
-#define PACKET_CLIENT_REGISTERED  0x0A  //S -> C
-
-#define QR2_OPTION_USE_QUERY_CHALLENGE 128 //backend flag
-
-#define QR_MAGIC_1 0xFE
-#define QR_MAGIC_2 0xFD
-
 namespace QR {
 	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : Peer(driver,sd,2) {
 		m_recv_instance_key = false;
@@ -398,9 +380,9 @@ namespace QR {
 		buffer.WriteBuffer((void *)&m_instance_key, sizeof(m_instance_key));
 		buffer.WriteNTS(m_challenge);
 
-		SendPacket(buffer);
-
 		m_sent_challenge = true;
+
+		SendPacket(buffer);
 	}
 	void V2Peer::SendClientMessage(void *data, size_t data_len) {
 		OS::Buffer buffer(data_len);
