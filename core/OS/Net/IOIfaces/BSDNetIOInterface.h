@@ -195,6 +195,8 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				dgram.buffer = OS::Buffer(len);
 				dgram.buffer.WriteBuffer(recvbuf, len);
 
+				dgram.buffer.resetReadCursor();
+
 				dgram.comm_len = len;
 
 				if (it != datagrams.end()) {
