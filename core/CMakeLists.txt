@@ -47,6 +47,8 @@ source_group("Headers\\OS\\Net\\IOFaces" FILES ${NET_IOIFACES_HDRS})
 source_group("Sources\\OS\\Search" FILES ${SEARCH_HDRS})
 source_group("Sources\\OS\\Logger" FILES ${LOGGER_HDRS})
 
+add_subdirectory(test)
+
 
 IF(WIN32)
 	file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Win32/*.cpp")

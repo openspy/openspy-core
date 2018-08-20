@@ -75,6 +75,7 @@ namespace OS {
 			BufferCtx *mp_ctx;
 			void *_read_cursor;
 			void *_write_cursor;
+			void *_write_cursor_last;
 	};
 }
 #endif //_OS_BUFFER_H

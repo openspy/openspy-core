@@ -76,6 +76,7 @@ namespace OS {
 		}
 		std::string Buffer::ReadNTS() {
 			std::string ret;
+			if(readRemaining() < 1) return ret;
 			char *p = (char *)_read_cursor;
 			while (*p && readRemaining() > 0) {
 				ret += *p;
@@ -93,48 +94,44 @@ namespace OS {
 			These should all be updated to use WriteBuffer internally
 		*/
 		void Buffer::WriteByte(uint8_t byte) {
-			*(uint8_t *)_write_cursor = byte;
 			IncWriteCursor(sizeof(uint8_t));
+			*(uint8_t *)_write_cursor_last = byte;
 		}
 		void Buffer::WriteShort(uint16_t byte) {
-			*(uint16_t *)_write_cursor = byte;
 			IncWriteCursor(sizeof(uint16_t));
+			*(uint16_t *)_write_cursor_last = byte;
 		}
 		void Buffer::WriteInt(uint32_t byte) {
-			*(uint32_t *)_write_cursor = byte;
 			IncWriteCursor(sizeof(uint32_t));
+			*(uint32_t *)_write_cursor_last = byte;
 		}
 		void Buffer::WriteFloat(float f) {
-			*(float *)_write_cursor = f;
 			IncWriteCursor(sizeof(float));
+			*(float *)_write_cursor_last = f;
 		}
 		void Buffer::WriteDouble(double d) {
-			*(double *)_write_cursor = d;
 			IncWriteCursor(sizeof(double));
+			*(double *)_write_cursor_last = d;
 		}
 		void Buffer::WriteNTS(std::string str) {
-			if (str.length() > readRemaining() + bytesWritten()) {
-				realloc_buffer(str.length() + REALLOC_ADD_SIZE);
-			}
 			if (str.length()) {
 				int len = str.length();
-				const char *c_str = str.c_str();
-				memcpy(_write_cursor, c_str, len + 1);
 				IncWriteCursor(len + 1);
+				const char *c_str = str.c_str();
+				memcpy(_write_cursor_last, c_str, len + 1);
 			}
 			else {
 				WriteByte(0);
 			}
 		}
 		void Buffer::WriteBuffer(void *buf, size_t len) {
-			if (len > readRemaining()+bytesWritten()) {
-				realloc_buffer(len + REALLOC_ADD_SIZE);
-			}
-			memcpy(_write_cursor, buf, len);
 			IncWriteCursor(len);
+			memcpy(_write_cursor_last, buf, len);
 		}
 		void Buffer::IncWriteCursor(size_t len) {
 			char *cursor = (char *)_write_cursor;
+			_write_cursor_last = cursor;
+
 			cursor += len;
 			_write_cursor = cursor;
 
@@ -161,6 +158,7 @@ namespace OS {
 		}
 		void Buffer::resetWriteCursor() {
 			_write_cursor = mp_ctx->_head;
+			_write_cursor_last = _write_cursor;
 		}
 		size_t Buffer::allocSize() {
 			return mp_ctx->alloc_size;
@@ -196,6 +194,7 @@ namespace OS {
 		}
 		void Buffer::resetCursors() {
 			_write_cursor = mp_ctx->_head;
+			_write_cursor_last = mp_ctx->_head;
 			_read_cursor = mp_ctx->_head;
 		}
 }
