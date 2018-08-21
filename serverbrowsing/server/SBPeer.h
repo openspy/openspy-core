@@ -17,12 +17,6 @@ namespace SB {
 	class Driver;
 	class Server;
 
-	struct sServerCache {
-		std::string key;
-		OS::Address wan_address;
-		bool full_keys;
-	};
-
 	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, INetIOSocket *sd, int version);
@@ -48,12 +42,6 @@ namespace SB {
 
 		void Delete(bool timeout = false);
 	protected:
-		void cacheServer(MM::Server *server, bool full_keys = false);
-		void DeleteServerFromCacheByIP(OS::Address address);
-		void DeleteServerFromCacheByKey(std::string key);
-		sServerCache FindServerByIP(OS::Address address);
-		sServerCache FindServerByKey(std::string key);
-
 		int m_version;
 
 		OS::GameData m_game;
@@ -64,7 +52,6 @@ namespace SB {
 		bool m_delete_flag;
 		bool m_timeout_flag;
 
-		std::vector<sServerCache> m_visible_servers;
 		MM::sServerListReq m_last_list_req;
 
 		void AddRequest(MM::MMQueryRequest req);

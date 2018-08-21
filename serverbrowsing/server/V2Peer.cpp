@@ -434,21 +434,12 @@ namespace SB {
 		address.ip = buffer.ReadInt();
 		address.port = buffer.ReadShort();
 
-		sServerCache cache = FindServerByIP(address);
-
 		MM::MMQueryRequest req;
 		req.address = address;
 
-		if(cache.key[0] != 0) {
-			req.type = MM::EMMQueryRequestType_GetServerByKey;
-			req.key = cache.key;
-			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, cached %s %s", m_sd->address.ToString().c_str(),cache.wan_address.ToString().c_str(),cache.key.c_str()) ;
-			cache.full_keys = true;
-		} else {
-			req.type = MM::EMMQueryRequestType_GetServerByIP;
-			req.address = address;
-			OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", m_sd->address.ToString().c_str(), req.address.ToString().c_str());
-		}
+		req.type = MM::EMMQueryRequestType_GetServerByIP;
+		req.address = address;
+		OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", m_sd->address.ToString().c_str(), req.address.ToString().c_str());
 
 		req.req.m_for_game = m_game;
 		AddRequest(req);
@@ -514,7 +505,6 @@ namespace SB {
 		if (!buffer) {
 			buffer = new OS::Buffer();
 		}
-		cacheServer(server);
 
 		uint8_t flags = 0;
 		uint32_t private_ip = 0;
@@ -563,8 +553,6 @@ namespace SB {
 		if(push) {
 			buffer->WriteByte(PUSH_SERVER_MESSAGE);
 		}
-
-		
 
 		if (server->wan_address.GetIP() == -1) {
 			goto end;
@@ -699,11 +687,7 @@ namespace SB {
 	}
 	void V2Peer::informDeleteServers(MM::Server *server) {
 		OS::Buffer buffer;
-		sServerCache cache = FindServerByKey(server->key);
-
-		if(cache.key[0] == 0 || !m_last_list_req.push_updates || m_in_message) return;
-
-		DeleteServerFromCacheByKey(server->key);
+		if(!m_last_list_req.push_updates || m_in_message) return;
 
 		buffer.WriteByte(DELETE_SERVER_MESSAGE);
 		buffer.WriteInt(server->wan_address.ip);
@@ -711,23 +695,16 @@ namespace SB {
 		SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), true);
 	}
 	void V2Peer::informNewServers(MM::Server *server) {
-		sServerCache cache = FindServerByKey(server->key);
-		if(cache.key[0] != 0 || !m_last_list_req.push_updates || m_in_message) return;
+		if(!m_last_list_req.push_updates || m_in_message) return;
 		if(server) {
 			if(serverMatchesLastReq(server)) {
-				cacheServer(server);
 				sendServerData(server, false, true, NULL, true, NULL, false, true);
 			}
 		}
 	}
 	void V2Peer::informUpdateServers(MM::Server *server) {
 		if(!m_last_list_req.push_updates || m_in_message) return;
-		sServerCache cache = FindServerByKey(server->key);
 
-		//client never recieved server notification, add to cache and send anyways, as it will be registered as a new server by the SB SDK
-		if(cache.key[0] == 0 && server && serverMatchesLastReq(server)) {
-			cacheServer(server);
-		}
 		if(server && serverMatchesLastReq(server)) {
 			sendServerData(server, false, true, NULL, true, NULL, false, true);
 		}
@@ -779,7 +756,6 @@ namespace SB {
 		MM::Server *server = results.list.front();
 		if (server) {
 			sendServerData(server, false, true, NULL, true, NULL, false, false);
-			cacheServer(server, true);
 		}
 	}
 }
