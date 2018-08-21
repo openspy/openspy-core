@@ -136,7 +136,9 @@ namespace QR {
 			}
 
 			if(value.length() > 0) {
-				server_info.m_keys[key] = value;
+				if(server_info.m_keys.find(key) == server_info.m_keys.end()) {
+					server_info.m_keys[key] = value;
+				}
 				value = std::string();
 			}
 			i++;
@@ -346,6 +348,7 @@ namespace QR {
 
 			buffer.WriteByte(PACKET_KEEPALIVE);
 			buffer.WriteBuffer((uint8_t *)&m_instance_key, sizeof(m_instance_key));
+			buffer.WriteInt(m_last_ping.tv_sec);
 			SendPacket(buffer);
 		}
 
