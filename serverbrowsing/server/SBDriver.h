@@ -70,6 +70,9 @@ namespace SB {
 
 		INetIOSocket *mp_socket;
 
+		protected:
+			void SetSocket(INetIOSocket *socket);
+
 	};
 }
 #endif //_SBDRIVER_H
