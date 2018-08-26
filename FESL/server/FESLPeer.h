@@ -90,22 +90,6 @@ enum FESL_ERROR {
 #define FESL_ACCOUNT_NAMESPACEID 1
 #define FESL_PROFILE_NAMESPACEID 2
 namespace FESL {
-	typedef struct _PeerStats {
-		int total_requests;
-		int version;
-
-		long long bytes_in;
-		long long bytes_out;
-
-		int packets_in;
-		int packets_out;
-
-		OS::Address m_address;
-		OS::GameData from_game;
-
-		bool disconnected;
-	} PeerStats;
-
 	class Peer;
 	typedef struct _CommandHandler {
 		FESL_COMMAND_TYPE type;
@@ -173,7 +157,6 @@ namespace FESL {
 
 		OS::CMutex *mp_mutex;
 		int m_sequence_id;
-		PeerStats m_peer_stats;
 		OS::User m_user;
 		OS::Profile m_profile;
 		bool m_logged_in;

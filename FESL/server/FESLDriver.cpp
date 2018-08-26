@@ -17,6 +17,7 @@ namespace FESL {
 		m_server_info.messagingPort = public_info.messagingPort;
 		m_server_info.theaterHostname = public_info.theaterHostname;
 		m_server_info.theaterPort = public_info.theaterPort;
+		m_server_info.termsOfServiceData = public_info.termsOfServiceData;
 
 		mp_socket_interface = new SSLNetIOIFace::SSLNetIOInterface(ssl_version, rsa_priv_path, x509_path);
 

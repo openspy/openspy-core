@@ -470,7 +470,8 @@ namespace FESL {
 	bool Peer::m_acct_gettos_handler(OS::KVReader kv_list) {
 		std::ostringstream s;
 		s << "TXN=GetTos\n";
-		s << "tos=\"Hi\"\n";
+		s << "tos=\"" << ((FESL::Driver *)GetDriver())->GetServerInfo().termsOfServiceData << "\"\n";
+
 		SendPacket(FESL_TYPE_FSYS, s.str());
 		return true;
 	}

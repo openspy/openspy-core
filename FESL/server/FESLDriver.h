@@ -27,6 +27,7 @@ namespace FESL {
 		uint16_t  messagingPort;
 		std::string theaterHostname;
 		uint16_t  theaterPort;
+		std::string termsOfServiceData;
 	} PublicInfo;
 
 

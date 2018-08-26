@@ -21,6 +21,24 @@ void sig_handler(int signo)
     shutdown();
 }
 
+std::string get_file_contents(std::string path) {
+	std::string ret;
+	FILE *fd = fopen(path.c_str(),"r");
+	if(fd) {
+		fseek(fd,0,SEEK_END);
+		int len = ftell(fd);
+		fseek(fd,0,SEEK_SET);
+
+		char *str_data = malloc(len+1);
+		fread(str_data, len, 1, fd);
+		str_data[len] = 0;
+		ret = str_data;
+		free((void *)str_data);
+	}
+	fclose(fd);
+	return ret;
+}
+
 SSLNetIOIFace::ESSL_Type getSSLVersion(configVar *driver_arr) {
 	std::string ssl_version = OS::g_config->getArrayString(driver_arr, "ssl_version");
 
@@ -91,6 +109,10 @@ int main() {
 
 		server_info.theaterHostname = OS::g_config->getArrayString(driver_arr, "theaterHostname");
 		server_info.theaterPort = OS::g_config->getArrayInt(driver_arr, "theaterPort");
+
+		const char *tos_path = OS::g_config->getArrayString(driver_arr, "tosFile");
+
+		server_info.termsOfServiceData = get_file_contents(tos_path);
 
 		FESL::Driver *driver = new FESL::Driver(g_gameserver, bind_ip, bind_port, server_info, stringCrypterPKey, ssl, x509_path, rsa_path, ssl_version);
 		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s:%d (ssl: %d)\n", bind_ip, bind_port, ssl);
