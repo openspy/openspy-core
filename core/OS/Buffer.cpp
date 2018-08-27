@@ -28,7 +28,7 @@ namespace OS {
 			mp_ctx = new BufferCtx(alloc_size);
 			resetCursors();
 		}	
-		Buffer::Buffer(const Buffer &cpy) {
+		Buffer::Buffer(const Buffer &cpy) {			
 			cpy.mp_ctx->IncRef();
 			mp_ctx = cpy.mp_ctx;
 			_read_cursor = cpy._read_cursor;
@@ -40,7 +40,8 @@ namespace OS {
 		}
 		Buffer::~Buffer() {
 			mp_ctx->DecRef();
-			if (mp_ctx->GetRefCount() == 0) {
+			int ref = mp_ctx->GetRefCount();
+			if (ref == 0) {
 				delete mp_ctx;
 			}
 		}	
@@ -129,15 +130,15 @@ namespace OS {
 			memcpy(_write_cursor_last, buf, len);
 		}
 		void Buffer::IncWriteCursor(size_t len) {
+			if (bytesWritten()+len >= allocSize()) {
+				realloc_buffer(REALLOC_ADD_SIZE+len);
+			}
+
 			char *cursor = (char *)_write_cursor;
 			_write_cursor_last = cursor;
 
 			cursor += len;
 			_write_cursor = cursor;
-
-			if (allocSize() < BUFFER_SAFE_SIZE) {
-				realloc_buffer(REALLOC_ADD_SIZE);
-			}
 		}
 		void Buffer::IncReadCursor(size_t len) {
 			char *cursor = (char *)_read_cursor;
