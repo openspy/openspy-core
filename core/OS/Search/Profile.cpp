@@ -181,8 +181,12 @@ namespace OS {
 
 				if (json_data) {
 					error = EProfileResponseType_Success;
+					json_t *error_obj = json_object_get(json_data, "error");
+
 					json_t *profiles_obj = json_object_get(json_data, "profiles");
-					if (profiles_obj) {
+					if(error_obj) {
+						error = Handle_ProfileWebError(request, error_obj);
+					} else if (profiles_obj) {
 						size_t num_profiles = json_array_size(profiles_obj);
 						for (size_t i = 0; i < num_profiles; i++) {
 							json_t *profile_obj = json_array_get(profiles_obj, i);
