@@ -1,4 +1,5 @@
 from lib.Exceptions.OS_BaseException import OS_BaseException
+from playhouse.shortcuts import model_to_dict, dict_to_model
 class OS_InvalidMode(OS_BaseException):
     def __init__(self):
         self.data = {}
@@ -77,5 +78,5 @@ class OS_Profile_UniquenickInUse(OS_BaseException):
         self.data["class"] = "profile"
         self.data["name"] = "UniqueNickInUse"
         self.data["message"] = "Unique nick in use"
-        self.data["profile"] = profile
+        self.data["profile"] = model_to_dict(profile)
         super(OS_BaseException, self).__init__(self.data["message"])

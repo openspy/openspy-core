@@ -101,7 +101,7 @@ namespace FESL {
 		EProfileResponseType_UniqueNick_Invalid,
 		EProfileResponseType_UniqueNick_InUse,
 		*/
-		FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
+		FESL_ERROR error = FESL_ERROR_SYSTEM_ERROR;
 		switch (response_code) {
 			default:
 			case OS::EProfileResponseType_UniqueNick_Invalid:
