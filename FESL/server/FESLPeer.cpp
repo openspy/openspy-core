@@ -120,7 +120,7 @@ namespace FESL {
 			std::ostringstream s;
 			s << "TXN=Ping\n";
 			s << "TID=" << current_time.tv_sec << "\n";
-			SendPacket(FESL_TYPE_FSYS, s.str());
+			SendPacket(FESL_TYPE_FSYS, s.str(), 1);
 		}
 	}
 	void Peer::SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence) {
