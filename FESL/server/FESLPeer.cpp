@@ -120,7 +120,7 @@ namespace FESL {
 			std::ostringstream s;
 			s << "TXN=Ping\n";
 			s << "TID=" << current_time.tv_sec << "\n";
-			SendPacket(FESL_TYPE_FSYS, s.str());
+			SendPacket(FESL_TYPE_FSYS, s.str(), 1);
 		}
 	}
 	void Peer::SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence) {
@@ -361,26 +361,17 @@ namespace FESL {
 		return true;
 	}
 	bool Peer::m_acct_add_account(OS::KVReader kv_list) {
-		/*
-		Got EAMsg(166):
-		TXN=AddAccount
-		name=thisisatest
-		password=123321
-		email=chc@test.com
-		DOBDay=11
-		DOBMonth=11
-		DOBYear=1966
-		zipCode=111231
-		countryCode=1
-		eaMailFlag=1
-		thirdPartyMailFlag=1
-		*/
 		OS::User user;
 		OS::Profile profile;
 		user.email = kv_list.GetValue("email");
 		user.password = kv_list.GetValue("password");
 		profile.uniquenick = kv_list.GetValue("name");
 		profile.nick = profile.uniquenick;
+
+		if(user.email.length() <= 0) {
+			SendCustomError(FESL_TYPE_ACCOUNT, "AddAccount", "Account.EmailAddress", "The specified email was invalid. Please change it and try again.");
+			return true;
+		}
 
 		profile.birthday = OS::Date::Date(kv_list.GetValueInt("DOBYear"), kv_list.GetValueInt("DOBMonth"), kv_list.GetValueInt("DOBDay"));
 
