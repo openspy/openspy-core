@@ -176,9 +176,13 @@ class UserProfileMgrService(BaseService):
 
         if "nick" in profile_search_data:
             where_expression = ((where_expression) & (Profile.nick == profile_search_data["nick"]))
+        elif "nick_like" in profile_search_data:
+            where_expression = ((where_expression) & (Profile.nick.contains(profile_search_data["nick_like"])))
 
         if "uniquenick" in profile_search_data:
             where_expression = ((where_expression) & (Profile.uniquenick == profile_search_data["uniquenick"]))
+        elif "uniquenick_like" in profile_search_data:
+            where_expression = ((where_expression) & (Profile.uniquenick.contains(profile_search_data["uniquenick_like"])))
 
         if "firstname" in profile_search_data:
             where_expression = ((where_expression) & (Profile.firstname == profile_search_data["firstname"]))
