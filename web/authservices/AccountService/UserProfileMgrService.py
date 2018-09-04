@@ -167,8 +167,8 @@ class UserProfileMgrService(BaseService):
         if "email" in user_seach_data:
             where_expression = ((where_expression) & (User.email == user_seach_data["email"]))
 
-        if "partnercode" in profile_search_data:
-            where_expression = ((where_expression) & (User.partnercode == profile_search_data["partnercode"]))
+        if "partnercode" in user_seach_data:
+            where_expression = ((where_expression) & (User.partnercode == user_seach_data["partnercode"]))
 
         #profile search
         if "id" in profile_search_data:
