@@ -7,7 +7,7 @@ namespace OS {
 	public:
 		User() {
 			id = 0;
-			partnercode = 0;
+			partnercode = -1;
 			videocard_ram[0] = 0;
 			videocard_ram[1] = 0;
 			cpu_speed = 0;

@@ -140,6 +140,7 @@ namespace FESL {
 			OS::ProfileSearchRequest request;
 			request.type = OS::EProfileSearch_Profiles;
 			request.user_search_details.id = user.id;
+			request.user_search_details.partnercode = OS_EA_PARTNER_CODE;
 			request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
 			request.namespaceids.push_back(request.profile_search_details.namespaceid);
 

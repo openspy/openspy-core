@@ -78,7 +78,9 @@ namespace OS {
 			}
 
 
-			json_object_set_new(user_obj, "partnercode", json_integer(request.user_search_details.partnercode));
+			if(request.user_search_details.partnercode != -1) {
+				json_object_set_new(user_obj, "partnercode", json_integer(request.user_search_details.partnercode));
+			}
 
 
 

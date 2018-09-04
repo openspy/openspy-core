@@ -59,7 +59,9 @@ namespace OS {
 			json_object_set_new(user_obj, "hasnetwork", request.search_params.hasnetwork ? json_true() : json_false());
 			json_object_set_new(user_obj, "publicmask", json_integer(request.search_params.publicmask));
 		}		
-		json_object_set_new(user_obj, "partnercode", json_integer(request.search_params.partnercode));
+		if(request.search_params.partnercode != -1) {
+			json_object_set_new(user_obj, "partnercode", json_integer(request.search_params.partnercode));
+		}
 
 		json_object_set_new(send_obj, "user", user_obj);
 
