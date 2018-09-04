@@ -225,6 +225,7 @@ class AuthService(BaseService):
         session_key.update(str(uuid.uuid4()).encode('utf-8'))
 
         session_key = session_key.hexdigest()
+        session_key = session_key[0:24] #limit to 24 bytes for BF2142 - login token capped at 24 bytes
         redis_key = '{}:{}'.format(user["id"],session_key)
 
         self.redis_ctx.hset(redis_key, 'userid', user["id"])
@@ -255,31 +256,25 @@ class AuthService(BaseService):
     def test_session(self, params):
         if "userid" not in params or "session_key" not in params:
             return {"valid": False, "admin": False}
-        cursor = 0
-        servers = []
         key = None
-        
-        while True:
-            msg_scan_key = "*:{}".format(params["session_key"])
-            resp = self.redis_ctx.scan(cursor, msg_scan_key)
-            cursor = resp[0]
-            for item in resp[1]:
-                key = item.decode('utf8')
-                break
-            if cursor == 0:
-                break
-        if key == None:
+
+        key = "{}:{}".format(params["userid"], params["session_key"])
+            
+        if not self.redis_ctx.exists(key):
             return {"valid": False, "admin": False}
 
+        
         session_user_id = self.redis_ctx.hget(key, "userid")
         if session_user_id:
-            session_user_id = session_user_id.decode('utf8')
+            session_user_id = int(session_user_id.decode('utf8'))
 
-        session_user = self.get_user_by_userid(int(session_user_id))
+        session_user = self.get_user_by_userid(session_user_id)
         if session_user:
             is_admin = session_user.is_admin()
             if session_user.id == session_user_id or is_admin:
-                return {"valid": True, "admin": is_admin, 'session_user': model_to_dict(session_user)}
+                user = model_to_dict(session_user)
+                del user["password"]
+                return {"valid": True, "admin": is_admin, 'session_user': user}
         return {"valid": False, "admin": False}
 
     def test_session_by_profileid(self, params):
