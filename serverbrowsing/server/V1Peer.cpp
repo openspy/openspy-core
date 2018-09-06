@@ -68,7 +68,7 @@ namespace SB {
 				if (len <= 0) {
 					goto end;
 				}
-				
+		
 				/*
 				This scans the incoming packets for \\final\\ and splits based on that,
 
@@ -78,9 +78,8 @@ namespace SB {
 				std::string recv_buf = m_kv_accumulator;
 				m_kv_accumulator.clear();
 				recv_buf.append((const char *)recv_buffer.GetHead(), len);
-
 				size_t final_pos = 0, last_pos = 0;
-
+				
 				do {
 					final_pos = recv_buf.find("\\final\\", last_pos);
 					std::string partial_string;
@@ -91,7 +90,7 @@ namespace SB {
 						last_pos = final_pos + 7; // 7 = strlen of \\final
 					}
 
-					 
+					 if(partial_string.length() == 0) break;
 					handle_packet(partial_string);
 				} while (final_pos != std::string::npos);
 
@@ -235,6 +234,7 @@ namespace SB {
 			SendGroups(results);
 		}
 		void V1Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {
+			
 			size_t type = (size_t)extra;
 			m_waiting_gamedata = 2;
 
@@ -271,7 +271,6 @@ namespace SB {
 		}
 		void V1Peer::handle_list(std::string data) {
 			std::string mode, gamename;
-
 			OS::KVReader kv_parser(data);
 
 			if (m_game.secretkey[0] == 0) {
@@ -405,7 +404,6 @@ namespace SB {
 							}
 							it3++;
 						}
-						buffer.WriteByte('\\');
 					} else {
 						buffer.WriteByte('\\');
 						buffer.WriteBuffer((void*)field_cleanup(serv->kvFields[*it]).c_str(), serv->kvFields[*it].length());
