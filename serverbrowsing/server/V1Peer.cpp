@@ -68,7 +68,7 @@ namespace SB {
 				if (len <= 0) {
 					goto end;
 				}
-
+				
 				/*
 				This scans the incoming packets for \\final\\ and splits based on that,
 
@@ -83,15 +83,16 @@ namespace SB {
 
 				do {
 					final_pos = recv_buf.find("\\final\\", last_pos);
-
-					if (final_pos == std::string::npos) break;
 					std::string partial_string;
-					partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
-					last_pos = final_pos + 7; // 7 = strlen of \\final
+					if (final_pos == std::string::npos) {
+						partial_string = recv_buf.substr(last_pos);
+					} else {						
+						partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
+						last_pos = final_pos + 7; // 7 = strlen of \\final
+					}
+
 					 
 					handle_packet(partial_string);
-
-					
 				} while (final_pos != std::string::npos);
 
 
@@ -184,7 +185,7 @@ namespace SB {
 				m_waiting_packets.push(data);
 				return;
 			}
-			if (data.substr(0, 9).compare("\\queryid\\") == 0) {
+			/*if (data.substr(0, 9).compare("\\queryid\\") == 0) {
 				data = data.substr(9);
 				size_t queryid_offset = data.find("\\");
 				if (queryid_offset != std::string::npos) {
@@ -193,7 +194,7 @@ namespace SB {
 					}
 					data = data.substr(queryid_offset);
 				}
-			}
+			}*/
 
 			OS::KVReader kv_parser = OS::KVReader(data);
 
@@ -236,6 +237,7 @@ namespace SB {
 		void V1Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {
 			size_t type = (size_t)extra;
 			m_waiting_gamedata = 2;
+
 			if (type == 1) {
 				if (game_data.secretkey[0] == 0) {
 					send_error(true, "Invalid target gamename");
