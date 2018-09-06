@@ -21,6 +21,8 @@ namespace QR {
 		m_validated = false;
 		m_query_state = EV1_CQS_Complete;
 
+		m_waiting_gamedata = 0;
+
 		m_server_info.m_address = socket->address;
 
 		gettimeofday(&m_last_recv, NULL);
@@ -32,6 +34,15 @@ namespace QR {
 	void V1Peer::think(bool listener_waiting) {
 		send_ping();
 		SubmitDirtyServer();
+
+		if (m_waiting_gamedata == 2) {
+			m_waiting_gamedata = 0;
+			while (!m_waiting_packets.empty()) {
+				INetIODatagram packet = m_waiting_packets.front();
+				m_waiting_packets.pop();
+				handle_packet(packet);
+			}
+		}
 
 		//check for timeout
 		struct timeval current_time;
@@ -48,32 +59,53 @@ namespace QR {
 			return;
 		}
 
-
-		std::string recv_buf = std::string((const char *)packet.buffer.GetHead(), packet.buffer.readRemaining());
-		OS::KVReader data_parser = OS::KVReader(recv_buf);
-
-		if (data_parser.Size() < 1) {
-			Delete();
+		if(m_waiting_gamedata == 1) {
+			m_waiting_packets.push(packet);
 			return;
 		}
-		std::string command = data_parser.GetKeyByIdx(0);
 
-		gettimeofday(&m_last_recv, NULL);
 
-		if (command.compare("heartbeat") == 0) {
-			handle_heartbeat(data_parser);
-		}
-		else if (command.compare("echo") == 0) {
-			handle_echo(data_parser);
-		}
-		else if (command.compare("validate") == 0) {
-			handle_validate(data_parser);
-		}
-		else {
-			if (m_query_state != EV1_CQS_Complete) {
-				handle_ready_query_state(data_parser);
+		std::string recv_buf = std::string((const char *)packet.buffer.GetHead(), packet.buffer.readRemaining());
+		size_t final_pos = 0, last_pos = 0;
+
+		do {
+			final_pos = recv_buf.find("\\final\\", last_pos);
+			std::string partial_string;
+			if (final_pos == std::string::npos) {
+				partial_string = recv_buf.substr(last_pos);
+			} else {						
+				partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
+				last_pos = final_pos + 7; // 7 = strlen of \\final
 			}
-		}
+
+			OS::KVReader data_parser = OS::KVReader(partial_string);
+
+			if (data_parser.Size() < 1) {
+				Delete();
+				return;
+			}
+			std::string command = data_parser.GetKeyByIdx(0);
+			gettimeofday(&m_last_recv, NULL);
+
+			if (command.compare("heartbeat") == 0) {
+				handle_heartbeat(data_parser);
+			}
+			else if (command.compare("echo") == 0) {
+				handle_echo(data_parser);
+			}
+			else if (command.compare("validate") == 0) {
+				handle_validate(data_parser);
+			} else if(command.compare("queryid") == 0) {
+
+			}
+			else {
+				if (m_query_state != EV1_CQS_Complete) {
+					handle_ready_query_state(data_parser);
+				}
+			}
+		} while (final_pos != std::string::npos);
+
+
 	}
 
 	void V1Peer::send_error(bool die, const char *fmt, ...) {
@@ -87,6 +119,7 @@ namespace QR {
 		va_end(args);
 
 		s << "\\error\\" << send_str << "\\fatal\\" << die;
+
 		SendPacket(s.str(), true);
 
 		if (die)
@@ -177,35 +210,36 @@ namespace QR {
 			break;
 		case EV1_CQS_Players:
 			parse_players(data_parser);
-			MM::MMPushRequest req;
-			if (!m_server_pushed) {
-				m_server_pushed = true;
-				req.type = MM::EMMPushRequestType_PushServer;
-			}
-			else {
-				req.type = MM::EMMPushRequestType_UpdateServer;
-			}
-
-			struct timeval current_time;
-			gettimeofday(&current_time, NULL);
-			if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME || req.type == MM::EMMPushRequestType_PushServer) {
-				req.peer = this;
-				req.server = m_dirty_server_info;
-				req.old_server = m_server_info;
-				m_server_info = m_dirty_server_info;
-
-				req.peer->IncRef();
-
-				m_server_info_dirty = false;
-				gettimeofday(&m_last_heartbeat, NULL);
-				MM::m_task_pool->AddRequest(req);
-			} else {
-				m_server_info_dirty = true;
-			}
-
 			m_query_state = EV1_CQS_Complete;
 			return;
 			break;
+		}
+
+		//update with partial data, as some games do not even send rules/players
+		MM::MMPushRequest req;
+		if (!m_server_pushed) {
+			m_server_pushed = true;
+			req.type = MM::EMMPushRequestType_PushServer;
+		}
+		else {
+			req.type = MM::EMMPushRequestType_UpdateServer;
+		}
+
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME || req.type == MM::EMMPushRequestType_PushServer) {
+			req.peer = this;
+			req.server = m_dirty_server_info;
+			req.old_server = m_server_info;
+			m_server_info = m_dirty_server_info;
+
+			req.peer->IncRef();
+
+			m_server_info_dirty = false;
+			gettimeofday(&m_last_heartbeat, NULL);
+			MM::m_task_pool->AddRequest(req);
+		} else {
+			m_server_info_dirty = true;
 		}
 
 		OS::gen_random((char *)&m_challenge, 6); //make new challenge
@@ -213,6 +247,10 @@ namespace QR {
 		SendPacket(s.str());
 	}
 	void V1Peer::handle_validate(OS::KVReader data_parser) {
+		if(!m_server_info.m_game.secretkey[0]) {
+			Delete();
+			return;
+		}
 		std::string validate = data_parser.GetValue("validate");
 
 		unsigned char *validation = gsseckey(NULL, (unsigned char *)m_challenge, (const unsigned char *)m_server_info.m_game.secretkey.c_str(), 0);
@@ -251,6 +289,7 @@ namespace QR {
 			this->OnGetGameInfo(m_server_info.m_game, state_changed);
 		}
 		else if(!m_sent_game_query){
+			m_waiting_gamedata = 1;
 			MM::MMPushRequest req;
 			req.peer = this;
 			req.server = m_server_info;
@@ -266,8 +305,10 @@ namespace QR {
 		std::ostringstream s;
 		int state_changed = (int)extra;
 		m_server_info.m_game = game_info;
-
+		
 		m_dirty_server_info = m_server_info;
+
+		m_waiting_gamedata = 2;
 		if (m_server_info.m_game.secretkey[0] == 0) {
 			send_error(true, "unknown game");
 			return;
@@ -332,7 +373,6 @@ namespace QR {
 		if (attach_final) {
 			send_str += "\\final\\";
 		}
-
 		buffer.WriteBuffer((void *)send_str.c_str(), send_str.length());
 
 		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);

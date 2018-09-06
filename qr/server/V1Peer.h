@@ -53,6 +53,10 @@ namespace QR {
 		bool m_uses_validation;
 		bool m_validated; //passed "echo" validation or use "secure" response
 
+		//used for queueing packets that require game info until gamedata available
+		int m_waiting_gamedata;
+		std::queue<INetIODatagram> m_waiting_packets;
+
 		EV1ClientQueryState m_query_state;
 	};
 }

@@ -159,7 +159,7 @@ namespace OS {
 	void Shutdown();
 
 	std::map<std::string, std::string> KeyStringToMap(std::string input);
-	std::vector<std::string> KeyStringToVector(std::string input, bool skip_null = true);
+	std::vector<std::string> KeyStringToVector(std::string input, bool skip_null = false);
 	std::string MapToKVString(std::map<std::string, std::string> kv_data);
 	std::vector< std::map<std::string, std::string> > ValueStringToMapArray(std::vector<std::string> fields, std::string values);
 
