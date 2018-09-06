@@ -41,6 +41,7 @@ namespace SB {
 		void handle_list(std::string data);
 		void send_error(bool disconnect, const char *fmt, ...);
 		void send_crypt_header(int enctype);
+		void send_validation();
 		std::string field_cleanup(std::string s);
 
 		std::string m_validation;
@@ -53,6 +54,8 @@ namespace SB {
 
 		int m_waiting_gamedata; //1 = waiting, 2 = process packet queue
 		std::queue<std::string> m_waiting_packets;
+
+		bool m_sent_validation;
 
 		std::string m_kv_accumulator;
 	};

@@ -294,7 +294,10 @@ namespace OS {
 		return ret;
 
 	}
-	std::vector<std::string> KeyStringToVector(std::string input) {
+	std::vector<std::string> KeyStringToVector(std::string input, bool skip_null) {
+		if(skip_null)
+			input = input.substr(1);
+
 		std::vector<std::string> ret;
 
 		std::stringstream ss(input);
@@ -302,7 +305,7 @@ namespace OS {
 		std::string token;
 
 		while (std::getline(ss, token, '\\')) {
-			if (!token.length())
+			if (!token.length() && !skip_null)
 				continue;
 			ret.push_back(token);
 		}
@@ -319,6 +322,39 @@ namespace OS {
 		}
 		return s.str();
 	}
+
+	std::vector< std::map<std::string, std::string> > ValueStringToMapArray(std::vector<std::string> fields, std::string values) {
+		std::vector< std::map<std::string, std::string> > ret;
+		values = values.substr(1);
+		std::stringstream ss(values);
+		std::string token;
+		std::map<std::string, std::string> temp_map;
+		int field_count = fields.size();
+
+		int idx = 0;
+
+		bool skip_next = false; //might not be desired, as it is specific to the weird legacy SB protocol KV strings
+
+		while (std::getline(ss, token, '\\')) {
+			if(skip_next) {
+				skip_next = false;
+				continue;
+			}
+			printf("Token: %s - %s\n", fields[idx++].c_str(), token.c_str());
+
+			if(idx % field_count == 0 && idx != 0) {
+				idx = 0;
+				ret.push_back(temp_map);
+				temp_map.clear();
+				skip_next = true;
+			}
+		}
+
+
+		return ret;
+	}
+
+
 	CThread *CreateThread(OS::ThreadEntry *entry, void *param,  bool auto_start) {
 		#if _WIN32
 			return new OS::CWin32Thread(entry, param, auto_start);

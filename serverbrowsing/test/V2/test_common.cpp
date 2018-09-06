@@ -233,7 +233,6 @@ bool SB2_ParseServerEntry(SBTestState *state, OS::Buffer &buffer, ServerListResp
 		}
 	}
 
-	printf("server ip: %08x\n", server_ip);
 	list_response.entries.push_back(entry);
 	return true;
 }

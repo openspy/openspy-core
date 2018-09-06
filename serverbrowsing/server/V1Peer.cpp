@@ -19,8 +19,6 @@
 
 namespace SB {
 		V1Peer::V1Peer(Driver *driver, INetIOSocket *sd) : SB::Peer(driver, sd, 1) {
-			std::ostringstream s;
-
 			memset(&m_challenge,0,sizeof(m_challenge));
 			OS::gen_random((char *)&m_challenge,6);
 
@@ -29,13 +27,19 @@ namespace SB {
 			m_validated = false;
 			m_keyptr = NULL;
 
-			s << "\\basic\\\\secure\\" << m_challenge;
-			SendPacket((const uint8_t*)s.str().c_str(),s.str().length(), true);
+			m_sent_validation = false;
+
+
 		}
 		V1Peer::~V1Peer() {
 
 		}
-		
+		void V1Peer::send_validation() {
+			std::ostringstream s;
+			s << "\\basic\\\\secure\\" << m_challenge;
+			m_sent_validation = true;
+			SendPacket((const uint8_t*)s.str().c_str(),s.str().length(), true);
+		}
 		void V1Peer::send_ping() {
 			//check for timeout
 			struct timeval current_time;
@@ -61,7 +65,6 @@ namespace SB {
 				io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 
 				int len = io_resp.comm_len;
-
 				if (len <= 0) {
 					goto end;
 				}
@@ -80,12 +83,15 @@ namespace SB {
 
 				do {
 					final_pos = recv_buf.find("\\final\\", last_pos);
-					//if (final_pos == std::string::npos) break; //old MS protocol sends buffers without \\final\\....
 
-					std::string partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
+					if (final_pos == std::string::npos) break;
+					std::string partial_string;
+					partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
+					last_pos = final_pos + 7; // 7 = strlen of \\final
+					 
 					handle_packet(partial_string);
 
-					last_pos = final_pos + 7; // 7 = strlen of \\final
+					
 				} while (final_pos != std::string::npos);
 
 
@@ -104,6 +110,10 @@ namespace SB {
 				}
 
 				
+			} else {
+				if(!m_sent_validation) {
+					send_validation();
+				}
 			}
 
 			end:
@@ -201,6 +211,8 @@ namespace SB {
 			}
 			else if (strcmp(command.c_str(), "list") == 0) {
 				handle_list(data);
+			} else if(strcmp(command.c_str(), "queryid") == 0) {
+				OS::LogText(OS::ELogLevel_Info, "[%s] Ignore queryid %s", m_sd->address.ToString().c_str(), data.c_str());
 			}
 			else {
 				//send_error(true, "Cannot handle request");
@@ -308,13 +320,16 @@ namespace SB {
 			size_t field_count;
 
 			std::vector<std::string>::iterator it;
-			results.captured_basic_fields.insert(results.captured_basic_fields.begin(), "ip"); //insert ip/port field
-			field_count = results.captured_basic_fields.size(); // + results.captured_player_fields.size() + results.captured_team_fields.size();
-			it = results.captured_basic_fields.begin();
-			resp << "\\fieldcount\\" << field_count;
-			while(it != results.captured_basic_fields.end()) {
-				resp << "\\" << *it;
-				it++;
+			if(results.first_set) {
+				results.captured_basic_fields.insert(results.captured_basic_fields.begin(), "ip"); //insert ip/port field
+				field_count = results.captured_basic_fields.size(); // + results.captured_player_fields.size() + results.captured_team_fields.size();
+				it = results.captured_basic_fields.begin();
+				resp << "\\fieldcount\\" << field_count;
+				while(it != results.captured_basic_fields.end()) {
+					resp << "\\" << *it;
+					it++;
+				}
+				SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), false);
 			}
 
 			std::vector<MM::Server *>::iterator it2 = results.list.begin();
@@ -348,19 +363,24 @@ namespace SB {
 			group_fields.push_back("numplayers");
 			group_fields.push_back("maxwaiting");
 			group_fields.push_back("numwaiting");
+			group_fields.push_back("numservers");
 			group_fields.push_back("password");
 			group_fields.push_back("other");
 						
 			fieldcount = group_fields.size();
 
-			resp << "\\fieldcount\\" << fieldcount;
-			std::vector<std::string>::iterator it = group_fields.begin();
-			while(it != group_fields.end()) {
-				resp << "\\" << *it;
-				it++;
-			}
+			if(results.first_set) {
+				resp << "\\fieldcount\\" << fieldcount;
+				std::vector<std::string>::iterator it = group_fields.begin();
+				while(it != group_fields.end()) {
+					resp << "\\" << *it;
+					it++;
+				}
 
-			buffer.WriteBuffer((void *)resp.str().c_str(), resp.str().length());
+				buffer.WriteBuffer((void *)resp.str().c_str(), resp.str().length());
+				SendPacket((const uint8_t *)buffer.GetHead(), buffer.bytesWritten(), false);
+				buffer.resetCursors();
+			}
 
 			std::vector<MM::Server *>::iterator it2 = results.list.begin();
 			while(it2 != results.list.end()) {
