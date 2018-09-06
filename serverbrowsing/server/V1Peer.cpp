@@ -184,7 +184,7 @@ namespace SB {
 				m_waiting_packets.push(data);
 				return;
 			}
-			/*if (data.substr(0, 9).compare("\\queryid\\") == 0) {
+			if (data.substr(0, 9).compare("\\queryid\\") == 0) {
 				data = data.substr(9);
 				size_t queryid_offset = data.find("\\");
 				if (queryid_offset != std::string::npos) {
@@ -193,7 +193,7 @@ namespace SB {
 					}
 					data = data.substr(queryid_offset);
 				}
-			}*/
+			}
 
 			OS::KVReader kv_parser = OS::KVReader(data);
 
