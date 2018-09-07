@@ -73,17 +73,6 @@ bool Fake_SendCallback(INetIOSocket *socket, OS::Buffer buffer) {
 
 
 int main() {
-	/*
-	std::vector<std::string> test_map;
-	test_map.push_back("groupid");
-	test_map.push_back("hostname");
-	test_map.push_back("numplayers");
-	test_map.push_back("maxplayers");
-
-	std::string test_string = "\\666\\some hostname\\6\\8\\667\\some hostname\\525\\888";
-	ValueStringToMapArray(test_map, test_string);
-	exit(1);
-	*/
 	OS::Init("serverbrowsing", "openspy.cfg");
 
 	test_gameserver = new SBServer();

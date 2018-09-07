@@ -67,7 +67,7 @@ void Send_ConnectionInitPacket(SBTestState *test_state) {
 	
     std::ostringstream ss;
 
-    ss << "\\gamename\\" << test_state->from_gamename << "\\gamever\\1.0\\location\\0\\validate\\" << test_state->validation << "\\final\\";
+    ss << "\\gamename\\" << test_state->from_gamename << "\\gamever\\1.0\\location\\0\\validate\\" << test_state->validation << "\\final\\\\queryid\\1.1\\";
     buff.WriteBuffer(ss.str().c_str(), ss.str().length());
 
 	buff.resetReadCursor();

@@ -43,6 +43,7 @@ namespace SB {
 		void send_crypt_header(int enctype);
 		void send_validation();
 		std::string field_cleanup(std::string s);
+		std::string skip_queryid(std::string s);
 
 		std::string m_validation;
 		uint8_t m_challenge[7];

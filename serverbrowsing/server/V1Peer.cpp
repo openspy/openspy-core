@@ -79,7 +79,6 @@ namespace SB {
 				m_kv_accumulator.clear();
 				recv_buf.append((const char *)recv_buffer.GetHead(), len);
 				size_t final_pos = 0, last_pos = 0;
-				
 				do {
 					final_pos = recv_buf.find("\\final\\", last_pos);
 					std::string partial_string;
@@ -89,8 +88,9 @@ namespace SB {
 						partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
 						last_pos = final_pos + 7; // 7 = strlen of \\final
 					}
+					partial_string = skip_queryid(partial_string);
 
-					 if(partial_string.length() == 0) break;
+					if(partial_string.length() == 0) break;
 					handle_packet(partial_string);
 				} while (final_pos != std::string::npos);
 
@@ -184,16 +184,8 @@ namespace SB {
 				m_waiting_packets.push(data);
 				return;
 			}
-			if (data.substr(0, 9).compare("\\queryid\\") == 0) {
-				data = data.substr(9);
-				size_t queryid_offset = data.find("\\");
-				if (queryid_offset != std::string::npos) {
-					if (data.length() > queryid_offset) {
-						queryid_offset++;
-					}
-					data = data.substr(queryid_offset);
-				}
-			}
+
+			data = skip_queryid(data);
 
 			OS::KVReader kv_parser = OS::KVReader(data);
 
@@ -481,5 +473,18 @@ namespace SB {
 		}
 
 		void V1Peer::OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) {
+		}
+		std::string V1Peer::skip_queryid(std::string s) {
+		if (s.substr(0, 9).compare("\\queryid\\") == 0) {
+			s = s.substr(9);
+			size_t queryid_offset = s.find("\\");
+			if (queryid_offset != std::string::npos) {
+				if (s.length() > queryid_offset) {
+					queryid_offset++;
+				}
+				s = s.substr(queryid_offset);
+			}
+		}
+		return s;
 		}
 }
