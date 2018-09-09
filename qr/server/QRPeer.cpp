@@ -48,7 +48,14 @@ namespace QR {
 
 			req.server = m_server_info;
 			req.peer->IncRef();
-			req.type = MM::EMMPushRequestType_UpdateServer;
+			if (!m_server_pushed) {
+				m_server_pushed = true;
+				req.type = MM::EMMPushRequestType_PushServer;
+			}
+			else {
+				req.type = MM::EMMPushRequestType_UpdateServer;
+			}
+
 			MM::m_task_pool->AddRequest(req);
 		}
 	}

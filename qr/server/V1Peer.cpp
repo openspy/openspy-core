@@ -197,49 +197,26 @@ namespace QR {
 			s << "\\info\\";
 			parse_rules(data_parser);
 			m_query_state = EV1_CQS_Info;
+			m_server_info_dirty = true;
 			break;
 		case EV1_CQS_Info:
 			s << "\\rules\\";
 			parse_rules(data_parser);
 			m_query_state = EV1_CQS_Rules;
+			m_server_info_dirty = true;
 			break;
 		case EV1_CQS_Rules:
 			s << "\\players\\";
 			parse_players(data_parser);
 			m_query_state = EV1_CQS_Players;
+			m_server_info_dirty = true;
 			break;
 		case EV1_CQS_Players:
 			parse_players(data_parser);
 			m_query_state = EV1_CQS_Complete;
+			m_server_info_dirty = true;
 			return;
 			break;
-		}
-
-		//update with partial data, as some games do not even send rules/players
-		MM::MMPushRequest req;
-		if (!m_server_pushed) {
-			m_server_pushed = true;
-			req.type = MM::EMMPushRequestType_PushServer;
-		}
-		else {
-			req.type = MM::EMMPushRequestType_UpdateServer;
-		}
-
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
-		if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME || req.type == MM::EMMPushRequestType_PushServer) {
-			req.peer = this;
-			req.server = m_dirty_server_info;
-			req.old_server = m_server_info;
-			m_server_info = m_dirty_server_info;
-
-			req.peer->IncRef();
-
-			m_server_info_dirty = false;
-			gettimeofday(&m_last_heartbeat, NULL);
-			MM::m_task_pool->AddRequest(req);
-		} else {
-			m_server_info_dirty = true;
 		}
 
 		OS::gen_random((char *)&m_challenge, 6); //make new challenge
