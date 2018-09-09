@@ -22,7 +22,6 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version: %d",m_sd->address.ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
-		DeleteServer();
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
 	}
 	bool Peer::isTeamString(const char *string) {

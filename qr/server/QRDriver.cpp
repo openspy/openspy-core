@@ -43,10 +43,11 @@ namespace QR {
 				if (peer->ShouldDelete() && std::find(driver->m_peers_to_delete.begin(), driver->m_peers_to_delete.end(), peer) == driver->m_peers_to_delete.end()) {
 					//marked for delection, dec reference and delete when zero
 					it = driver->m_connections.erase(it);
-					peer->DecRef();
 					driver->m_peers_to_delete.push_back(peer);
 
 					driver->m_server->UnregisterSocket(peer);
+					peer->DeleteServer();
+					peer->DecRef();
 					continue;
 				}
 				it++;

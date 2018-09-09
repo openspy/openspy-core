@@ -195,9 +195,7 @@ namespace QR {
 			m_dirty_server_info.m_keys.clear();
 			m_dirty_server_info.m_player_keys.clear();
 			s << "\\info\\";
-			parse_rules(data_parser);
 			m_query_state = EV1_CQS_Info;
-			m_server_info_dirty = true;
 			break;
 		case EV1_CQS_Info:
 			s << "\\rules\\";
