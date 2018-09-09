@@ -154,21 +154,21 @@ class UserProfileMgrService(BaseService):
         #u'birthday': 0, u'mode': u'profile_search', u'partnercode': 0, u'ind': 0, u'sex': 0, u'email': u'sctest@gamespy.com'}
 
         profile_search_data = search_data["profile"]
-        user_seach_data = search_data["user"]
+        user_search_data = search_data["user"]
 
         where_expression = ((Profile.deleted == False) & (User.deleted == False))
 
         #user search
         if "userid" in profile_search_data:
             where_expression = ((where_expression) & (User.id == profile_search_data["userid"]))
-        elif "id" in user_seach_data:
-            where_expression = ((where_expression) & (User.id == user_seach_data["id"]))
+        elif "id" in user_search_data:
+            where_expression = ((where_expression) & (User.id == user_search_data["id"]))
 
-        if "email" in user_seach_data:
-            where_expression = ((where_expression) & (User.email == user_seach_data["email"]))
+        if "email" in user_search_data:
+            where_expression = ((where_expression) & (User.email == user_search_data["email"]))
 
-        if "partnercode" in user_seach_data:
-            where_expression = ((where_expression) & (User.partnercode == user_seach_data["partnercode"]))
+        if "partnercode" in user_search_data:
+            where_expression = ((where_expression) & (User.partnercode == user_search_data["partnercode"]))
 
         #profile search
         if "id" in profile_search_data:
