@@ -222,13 +222,12 @@ class UserProfileMgrService(BaseService):
                 if self.redis_presence_ctx.hdel(redis_key, request_data["to_profileid"]):
                     success = True
 
-                    print("Process request: {}\n".format(request_data))
-
                     to_profile_model = Profile.get((Profile.id == request_data["to_profileid"]))
                     from_profile_model = Profile.get((Profile.id == request_data["from_profileid"]))
 
                     Buddy.insert(from_profile=to_profile_model,to_profile=from_profile_model).execute()
                     publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["from_profileid"], request_data["to_profileid"])
+                    self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
 
                     Buddy.insert(from_profile=from_profile_model,to_profile=to_profile_model).execute()
                     publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["to_profileid"], request_data["from_profileid"])
