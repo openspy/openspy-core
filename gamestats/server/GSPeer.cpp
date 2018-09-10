@@ -32,7 +32,7 @@ namespace GS {
 		m_user.id = 0;
 		m_profile.id = 0;
 
-		m_session_key = 1234567;
+		m_session_key = rand();
 
 		OS::gen_random(m_challenge, CHALLENGE_LEN);
 
@@ -385,11 +385,12 @@ namespace GS {
 	}
 	void Peer::newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 
-		peer->m_current_game_identifier = response_data.game_instance_identifier;
+		peer->m_game_session_backend_identifier_map[(int)extra] = response_data.game_instance_identifier;
 
 	}
 	void Peer::handle_newgame(OS::KVReader data_parser) {
-		GSBackend::PersistBackendTask::SubmitNewGameSession(this, NULL, newGameCreateCallback);
+		int session_id = data_parser.GetValueInt("sesskey"); //identifier, used incase of multiple game sessions happening at once
+		GSBackend::PersistBackendTask::SubmitNewGameSession(this, (void *)session_id, newGameCreateCallback);
 	}
 	void Peer::updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		if (extra) {
@@ -398,6 +399,12 @@ namespace GS {
 	}
 	void Peer::handle_updgame(OS::KVReader data_parser) {
 		//\updgame\\sesskey\%d\done\%d\gamedata\%s
+		int sesskey = data_parser.GetValueInt("sesskey");
+		std::map<int, std::string>::iterator it = m_game_session_backend_identifier_map.find(sesskey);
+		if(it == m_game_session_backend_identifier_map.end()) {
+			send_error(GPShared::GP_BAD_SESSKEY);
+			return;
+		}
 		std::map<std::string,std::string> game_data;
 		std::string gamedata = data_parser.GetValue("gamedata");
 
@@ -409,7 +416,7 @@ namespace GS {
 			}
 		}
 		game_data = OS::KeyStringToMap(gamedata);
-		GSBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_current_game_identifier, updateGameCreateCallback, done);
+		GSBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_game_session_backend_identifier_map[sesskey], updateGameCreateCallback, done);
 	}
 
 	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {

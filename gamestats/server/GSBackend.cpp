@@ -91,7 +91,6 @@ namespace GSBackend {
 
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
-
 		json_t *success_obj = json_object_get(send_json, "success");
 		bool success = success_obj == json_true();
 		PersistBackendResponse resp_data;

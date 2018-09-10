@@ -117,7 +117,7 @@ namespace GS {
 
 		uint16_t m_game_port;
 
-		std::string m_current_game_identifier;
+		std::map<int, std::string> m_game_session_backend_identifier_map; //map used for lookup of backend identifier, seperate from client generated identifier, used for multiple game sessions at once
 		std::string m_response;
 
 		std::string m_kv_accumulator;
