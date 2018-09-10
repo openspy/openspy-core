@@ -372,9 +372,9 @@ namespace QR {
 		memset(&m_challenge, 0, sizeof(m_challenge));
 		OS::gen_random((char *)&m_challenge,sizeof(m_challenge)-1);
 
-		uint16_t *backend_flags = (uint16_t *)&m_challenge[13];
+		uint16_t *backend_flags = (uint16_t *)&m_challenge[6];
+		
 		*backend_flags &= ~QR2_OPTION_USE_QUERY_CHALLENGE;
-
 
 		buffer.WriteByte(QR_MAGIC_1);
 		buffer.WriteByte(QR_MAGIC_2);
