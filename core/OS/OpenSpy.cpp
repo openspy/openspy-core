@@ -202,25 +202,17 @@ namespace OS {
 			mp_redis_internal_connection_mutex->lock();
 		}
 		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
-		//memset(&ret, 0, sizeof(ret));
-		int cursor = 0;
-		do {
-			reply = Redis::Command(redis_ctx, 0, "SCAN %d MATCH %s:*", cursor, from_gamename);
-			if (Redis::CheckError(reply)) {
-				goto end_error;
+
+		reply = Redis::Command(redis_ctx, 0, "GET %s",from_gamename);
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		if(reply.values.size() > 0) {
+			v = reply.values.front();
+			if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+				ret = GetGameByRedisKey(v.value._str.c_str());
 			}
-			v = reply.values[0].arr_value.values[0].second;
-		 	if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-		 		cursor = atoi(v.value._str.c_str());
-		 	} else if(v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-		 		cursor = v.value._int;
-		 	}
-			arr = reply.values[0].arr_value.values[1].second;
-			for(size_t i=0;i<arr.arr_value.values.size();i++) {
-				ret = GetGameByRedisKey(arr.arr_value.values[i].second.value._str.c_str(), redis_ctx);
-				break;
-			}
-		} while(cursor != 0);
+		}
 
 	end_error:
 		if (must_unlock) {
@@ -233,41 +225,31 @@ namespace OS {
 		Redis::Value v, arr;
 
 		OS::GameData ret;
+
 		bool must_unlock = false;
-		if (redis_ctx == NULL) {
+		if(redis_ctx == NULL) {
 			must_unlock = true;
 			redis_ctx = OS::redis_internal_connection;
 			mp_redis_internal_connection_mutex->lock();
 		}
 		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
 
-		int cursor = 0;
-		do {
-			reply = Redis::Command(redis_ctx, 0, "SCAN %d MATCH *:%d", cursor, gameid);
-			if (Redis::CheckError(reply)) {
-				goto end_error;
+		reply = Redis::Command(redis_ctx, 0, "GET gameid_%d",gameid);
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		if(reply.values.size() > 0) {
+			v = reply.values.front();
+			if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+				ret = GetGameByRedisKey(v.value._str.c_str());
 			}
-			v = reply.values[0].arr_value.values[0].second;
-			if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-				cursor = atoi(v.value._str.c_str());
-			}
-			else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-				cursor = v.value._int;
-			}
-			if (cursor == 0) break;
-			arr = reply.values[0].arr_value.values[1].second;
-
-			for (size_t i = 0; i<arr.arr_value.values.size(); i++) {
-				ret = GetGameByRedisKey(arr.arr_value.values[i].second.value._str.c_str(), redis_ctx);
-				break;
-			}
-		} while(cursor != 0);
+		}
 
 	end_error:
-			if (must_unlock) {
-				mp_redis_internal_connection_mutex->unlock();
-			}
-			return ret;
+		if (must_unlock) {
+			mp_redis_internal_connection_mutex->unlock();
+		}
+		return ret;
 	}
 	std::map<std::string, std::string> KeyStringToMap(std::string input) {
 		std::map<std::string, std::string> ret;
