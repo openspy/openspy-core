@@ -17,36 +17,28 @@ from Model.Game import Game
 from Model.PersistData import PersistData
 from Model.PersistKeyedData import PersistKeyedData
 
-from AccountService.SH.THPS6PC_Handler import THPS6PC_Handler
+from AccountService.SimpleSnapshotHandler import SimpleSnapshotHandler
 
 class PersistService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
+        self.snapshot_handler = SimpleSnapshotHandler()
 
-        self.snapshot_handlers = {
-            1003 : {"gamename": "thps6pc", "module": THPS6PC_Handler},
-            #1324 : {"gamename": "stella", "module": None}
-        }
-
-    def handle_new_game(self, request_body):
+    def handle_new_game(self, env, request_body):
         response = {"success": False}
 
         if "game_id" not in request_body:
             raise OS_MissingParam("game_id")
 
-        if request_body["game_id"] in self.snapshot_handlers:
-            module = self.snapshot_handlers[request_body["game_id"]]["module"]()
-            return module.handle_new_game(request_body)
+        response = self.snapshot_handler.handle_new_game(env, request_body)
 
         return response
-    def handle_update_game(self, request_body):
+    def handle_update_game(self, env, request_body):
         response = {"success": False}
         if "game_id" not in request_body:
             raise OS_MissingParam("game_id")
 
-        if request_body["game_id"] in self.snapshot_handlers:
-            module = self.snapshot_handlers[request_body["game_id"]]["module"]()
-            return module.handle_update_game(request_body)
+        response = self.snapshot_handler.handle_update_game(env, request_body)
             
         return response
     def set_persist_raw_data(self, persist_data):
@@ -118,7 +110,7 @@ class PersistService(BaseService):
         ret["modified"] = calendar.timegm(ret["modified"].utctimetuple())
         return ret
 
-    def set_persist_keyed_data(self, persist_data):
+    def set_persist_keyed_data(self, env, persist_data):
         ret = {}
         d = datetime.utcnow()
         ret["modified"] = calendar.timegm(d.utctimetuple())
@@ -127,7 +119,7 @@ class PersistService(BaseService):
         for key in persist_data["keyList"]:
             self.update_or_create_keyed_data(persist_data, key, persist_data["keyList"][key])
         return ret
-    def get_persist_raw_data(self, persist_data):
+    def get_persist_raw_data(self, env, persist_data):
         profile = None
         game = None
         try:
@@ -148,7 +140,7 @@ class PersistService(BaseService):
             pass
         
         return ret
-    def handle_set_data(self, request_body):
+    def handle_set_data(self, env, request_body):
         response = {}
         search_params = {"data_index": request_body["data_index"], "data_type": request_body["data_type"], "game_id": request_body["game_id"], "profileid": request_body["profileid"]}
         if "data" in request_body:
@@ -162,7 +154,7 @@ class PersistService(BaseService):
 
         response['success'] = True
         return response
-    def handle_get_data(self, request_body):
+    def handle_get_data(self, env, request_body):
         response = {"success": False}
         persist_req_data = {"data_index": request_body["data_index"], "data_type": request_body["data_type"], 
         "game_id": request_body["game_id"], "profileid": request_body["profileid"]}
@@ -217,7 +209,7 @@ class PersistService(BaseService):
             if 'mode' in request_body:
                 req_type = request_body["mode"]
                 if req_type in type_table:
-                    response = type_table[req_type](request_body)
+                    response = type_table[req_type](env, request_body)
                 else:
                     raise OS_InvalidMode()
             else:
