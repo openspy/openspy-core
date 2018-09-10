@@ -9,6 +9,8 @@
 #include <OS/Net/NetServer.h>
 #include <stdarg.h>
 
+#define QR2_USE_QUERY_CHALLENGE 128
+
 namespace SB {
 	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : Peer(driver, sd, 2) {
 		m_next_packet_send_msg = false;
@@ -315,7 +317,16 @@ namespace SB {
 		for (uint32_t i = 0; i<cryptlen; i++) {
 			cryptchal[i] = (uint8_t)rand();
 		}
-		*backendflags = 0;
+
+		//set prequery ip verify flag for QR2 direct queries
+		*backendflags = htons(*backendflags);		
+		if(m_game.backendflags & QR2_USE_QUERY_CHALLENGE) {
+			*backendflags |= QR2_USE_QUERY_CHALLENGE;
+		} else {
+			*backendflags &= ~QR2_USE_QUERY_CHALLENGE;
+		}		
+		*backendflags = ntohs(*backendflags);
+
 		for (uint32_t i = 0; i<servchallen; i++) {
 			servchal[i] = (uint8_t)rand();
 		}

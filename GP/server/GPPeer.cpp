@@ -42,9 +42,6 @@ namespace GP {
 		m_status.quiet_flags = GP_SILENCE_NONE;
 		m_status.address = sd->address;
 
-		m_game.gameid = 0;
-		m_game.compatibility_flags = 0;
-
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
 
 		OS::gen_random(m_challenge, CHALLENGE_LEN);

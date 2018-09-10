@@ -150,16 +150,16 @@ namespace OS {
 			game.queryport = atoi(OS::strip_quotes(v.value._str).c_str());
 		}
 
-		reply = Redis::Command(redis_ctx, 0, "HGET %s compatibility_flags", key);
+		reply = Redis::Command(redis_ctx, 0, "HGET %s backendflags", key);
 		if (Redis::CheckError(reply)) {
 			goto end_error;
 		}
 		v = reply.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			game.compatibility_flags = atoi(OS::strip_quotes(v.value._str).c_str());
+			game.backendflags = atoi(OS::strip_quotes(v.value._str).c_str());
 		}
 		else {
-			game.compatibility_flags = 0;
+			game.backendflags = 0;
 		}
 
 		/*

@@ -374,7 +374,11 @@ namespace QR {
 
 		uint16_t *backend_flags = (uint16_t *)&m_challenge[6];
 		
-		*backend_flags &= ~QR2_OPTION_USE_QUERY_CHALLENGE;
+		if(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE) {
+			*backend_flags |= QR2_OPTION_USE_QUERY_CHALLENGE;
+		} else {
+			*backend_flags &= ~QR2_OPTION_USE_QUERY_CHALLENGE;
+		}
 
 		buffer.WriteByte(QR_MAGIC_1);
 		buffer.WriteByte(QR_MAGIC_2);

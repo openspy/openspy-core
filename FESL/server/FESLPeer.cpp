@@ -311,8 +311,7 @@ namespace FESL {
 
 			std::ostringstream s;
 			s << "TXN=DisableSubAccount\n";
-			//((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)0, "DisableSubAccount");
+			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		}
 		else {
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)FESL_ERROR_SYSTEM_ERROR, "DisableSubAccount");

@@ -99,15 +99,15 @@ namespace OS {
 		
 	class GameData {
 	public:
-		GameData() :gameid(0), queryport(0), disabled_services(0), compatibility_flags(0) {
+		GameData() :gameid(0), queryport(0), disabled_services(0), backendflags(0) {
 		};
 		int gameid;
 		int queryport;
 		std::string gamename;
 		std::string description;
-		std::string secretkey;;
+		std::string secretkey;
 		char disabled_services; //0= ok, 1 = temp, 2 = perm
-		int compatibility_flags;
+		int backendflags;
 		std::vector<std::string> popular_values;
 		std::map<std::string, uint8_t> push_keys; //SB push keys + type(hostname/KEYTYPE_STRING)
 	};
