@@ -374,9 +374,12 @@ namespace QR {
 
 		uint16_t *backend_flags = (uint16_t *)&m_challenge[6];
 		
-		if(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE) {
+		//backend has query flag, but its not set in the challenge
+		if(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE && !(*backend_flags & QR2_OPTION_USE_QUERY_CHALLENGE)) {
 			*backend_flags |= QR2_OPTION_USE_QUERY_CHALLENGE;
-		} else {
+
+		//backend doesn't have query flag, but its in the challenge
+		} else if(!(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE) && (*backend_flags & QR2_OPTION_USE_QUERY_CHALLENGE)) {
 			*backend_flags &= ~QR2_OPTION_USE_QUERY_CHALLENGE;
 		}
 
