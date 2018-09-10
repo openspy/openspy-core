@@ -584,7 +584,7 @@ namespace MM {
 	int MMPushTask::TryFindServerID(ServerInfo server) {
 		std::string ip = server.m_address.ToString(true);
 		std::stringstream map;
-		map << "IPMAP_" << ip << "-" << server.m_address.port;
+		map << "IPMAP_" << ip << "-" << server.m_address.GetPort();
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		Redis::Response resp = Redis::Command(mp_redis_connection, 0, "EXISTS %s", map.str().c_str());
 		Redis::Value v = resp.values.front();
@@ -596,13 +596,25 @@ namespace MM {
 			ret = atoi(v.value._str.c_str());
 		}
 		if (ret == 1) {
-			resp = Redis::Command(mp_redis_connection, 0, "HGET %s id", map.str().c_str());
+			resp = Redis::Command(mp_redis_connection, 0, "GET %s", map.str().c_str());
 			v = resp.values.front();
-			if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-				ret = v.value._int;
-			}
-			else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-				ret = atoi(v.value._str.c_str());
+			if(resp.values.size() > 0) {
+				std::string server_key; 
+				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+					server_key = v.value._str;
+				}
+
+				resp = Redis::Command(mp_redis_connection, 0, "GET %s id", server_key.c_str());
+
+				if(resp.values.size() > 0) {
+					v = resp.values.front();
+					if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+						ret = v.value._int;
+					}
+					else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+						ret = atoi(v.value._str.c_str());
+					}
+				}
 			}
 			return ret;
 		}
