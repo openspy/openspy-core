@@ -596,6 +596,7 @@ namespace MM {
 			ret = atoi(v.value._str.c_str());
 		}
 		if (ret == 1) {
+			ret = -1;
 			resp = Redis::Command(mp_redis_connection, 0, "GET %s", map.str().c_str());
 			v = resp.values.front();
 			if(resp.values.size() > 0) {
