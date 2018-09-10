@@ -6,24 +6,27 @@ import MySQLdb
 
 # Open database connection
 db = MySQLdb.connect(user='openspy', passwd='openspy', db='Gamemaster')
-redis_ctx = redis.StrictRedis(host='localhost', port=6379, db = 2)
+redis_ctx = redis.StrictRedis(port=6379, db = 2, host='localhost')
 
 # prepare a cursor object using cursor() method
 cursor = db.cursor()
 
 # execute SQL query using execute() method.
-cursor.execute("SELECT id, gamename, secretkey,description from games")
+cursor.execute("SELECT id, gamename, secretkey,description,backendflags,queryport,disabledservices from games")
 
 
-for (id, gamename, secretkey, description) in cursor:
+for (id, gamename, secretkey, description, backendflags, queryport, disabledservices) in cursor:
 	game_key = "{}:{}".format(gamename, id)
 	redis_ctx.hset(game_key,"gameid", id)
 	redis_ctx.hset(game_key,"gamename", gamename)
 	redis_ctx.hset(game_key,"secretkey", secretkey)
 	redis_ctx.hset(game_key,"description", description)
-	redis_ctx.hset(game_key,"queryport", "6500")
-	redis_ctx.hset(game_key,"disabled_services", "0")
-	print("Reading game: {}\n".format(gamename))
+	redis_ctx.hset(game_key,"queryport", queryport)
+	redis_ctx.hset(game_key,"backendflags", backendflags)
+	redis_ctx.hset(game_key,"disabled_services", disabledservices)
+
+	redis_ctx.set(gamename, game_key)
+	redis_ctx.set("gameid_{}".format(id), game_key)
 
 cursor.close()
 
@@ -40,7 +43,7 @@ for (gameid, groupid, name, gamename, maxwaiting, other) in cursor:
 	redis_ctx.hset(redis_key,"maxwaiting", maxwaiting)
 	redis_ctx.hset(redis_key,"hostname", name)
 
-	other_params = other.split('\\');
+	other_params = other.split('\\')
 	key = None
 	custkeys_key = "{}custkeys".format(redis_key)
 	for (idx, param) in enumerate(other_params[1:]):
