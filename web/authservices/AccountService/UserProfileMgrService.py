@@ -229,10 +229,10 @@ class UserProfileMgrService(BaseService):
                     publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["from_profileid"], request_data["to_profileid"])
                     self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
 
-                    Buddy.insert(from_profile=from_profile_model,to_profile=to_profile_model).execute()
-                    publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["to_profileid"], request_data["from_profileid"])
-
-                    self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
+                    #below adds the person to the authorizers list, but gamespy didn't work that way
+                    #Buddy.insert(from_profile=from_profile_model,to_profile=to_profile_model).execute()
+                    #publish_data = "\\type\\authorize_add\\from_profileid\\{}\\to_profileid\\{}".format(request_data["to_profileid"], request_data["from_profileid"])
+                    #self.redis_presence_ctx.publish(self.redis_presence_channel, publish_data)
         return {"success": success}
 
     def handle_del_buddy(self, request_data):
