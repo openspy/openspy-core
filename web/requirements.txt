@@ -6,3 +6,4 @@ redis
 PyMySQL
 rsa
 ipaddress
+pymongo
