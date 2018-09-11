@@ -372,7 +372,7 @@ namespace QR {
 		memset(&m_challenge, 0, sizeof(m_challenge));
 		OS::gen_random((char *)&m_challenge,sizeof(m_challenge)-1);
 
-		uint16_t *backend_flags = (uint16_t *)&m_challenge[6];
+		uint8_t *backend_flags = (uint8_t *)&m_challenge[6];
 		
 		//backend has query flag, but its not set in the challenge
 		if(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE && !(*backend_flags & QR2_OPTION_USE_QUERY_CHALLENGE)) {
