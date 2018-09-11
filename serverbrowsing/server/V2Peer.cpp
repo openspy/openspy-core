@@ -321,11 +321,9 @@ namespace SB {
 		//set prequery ip verify flag for QR2 direct queries
 		*backendflags = htons(*backendflags);
 		
-		//backend has query flag, but its not set in the challenge
-		if(m_game.backendflags & QR2_USE_QUERY_CHALLENGE && !(*backendflags & QR2_USE_QUERY_CHALLENGE)) {
+		if(m_game.backendflags & QR2_USE_QUERY_CHALLENGE) {
 			*backendflags |= QR2_USE_QUERY_CHALLENGE;
-		//backend doesn't have query flag, but its in the challenge
-		} else if(!(m_game.backendflags & QR2_USE_QUERY_CHALLENGE) && (*backendflags & QR2_USE_QUERY_CHALLENGE)) {
+		} else if(!(m_game.backendflags & QR2_USE_QUERY_CHALLENGE)) {
 			*backendflags &= ~QR2_USE_QUERY_CHALLENGE;
 		}		
 		*backendflags = ntohs(*backendflags);
