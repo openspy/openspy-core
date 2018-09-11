@@ -377,7 +377,7 @@ namespace QR {
 		//force this part of the challenge to match sscanf pattern %02x, by setting the most significant bit		
 		char hex_chars[] = "0123456789abcdef";
 		if(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE) {
-			*backend_flags = hex_chars[(rand() % 8) + 7];
+			*backend_flags = hex_chars[(rand() % 8) + 8];
 		} else if(!(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE)) {
 			*backend_flags = hex_chars[rand() % 8];
 		}
