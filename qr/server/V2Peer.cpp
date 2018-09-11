@@ -373,15 +373,17 @@ namespace QR {
 		OS::gen_random((char *)&m_challenge,sizeof(m_challenge)-1);
 
 		uint8_t *backend_flags = (uint8_t *)&m_challenge[6];
-		
-		//backend has query flag, but its not set in the challenge
-		if(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE && !(*backend_flags & QR2_OPTION_USE_QUERY_CHALLENGE)) {
-			*backend_flags |= QR2_OPTION_USE_QUERY_CHALLENGE;
 
-		//backend doesn't have query flag, but its in the challenge
-		} else if(!(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE) && (*backend_flags & QR2_OPTION_USE_QUERY_CHALLENGE)) {
-			*backend_flags &= ~QR2_OPTION_USE_QUERY_CHALLENGE;
+		//force this part of the challenge to match sscanf pattern %02x, by setting the most significant bit		
+		char hex_chars[] = "0123456789abcdef";
+		if(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE) {
+			char set_chars[] = "89abcdef";
+			*backend_flags = set_chars[rand() % (sizeof(set_chars)-1)];
+		} else if(!(m_server_info.m_game.backendflags & QR2_OPTION_USE_QUERY_CHALLENGE)) {
+			char unset_chars[] = "01234567";
+			*backend_flags = unset_chars[rand() % (sizeof(unset_chars)-1)];
 		}
+		*(backend_flags+1) = hex_chars[rand() % (sizeof(hex_chars)-1)];
 
 		buffer.WriteByte(QR_MAGIC_1);
 		buffer.WriteByte(QR_MAGIC_2);

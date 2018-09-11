@@ -619,17 +619,12 @@ namespace OS {
 		int i;
 		srand((unsigned int)time(NULL));
 		static const char alphanum[] =
-			"0123456789abcdef"
+			"0123456789"
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-			"ghijklmnopqrstuvwxyz";
+			"abcdefghijklmnopqrstuvwxyz";
 
 		for (i = 0; i < len; ++i) {
 			s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
-		}
-
-		//this override is for the QR server, it must be a valid lowercase hex character, to pass the sscanf rule for pre-query ip verify
-		if(len > 6) {
-			s[6] = alphanum[rand() % 16];
 		}
 
 		s[len] = 0;
