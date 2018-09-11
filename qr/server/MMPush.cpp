@@ -605,8 +605,7 @@ namespace MM {
 					server_key = v.value._str;
 				}
 
-				resp = Redis::Command(mp_redis_connection, 0, "GET %s id", server_key.c_str());
-
+				resp = Redis::Command(mp_redis_connection, 0, "HGET %s id", server_key.c_str());
 				if(resp.values.size() > 0) {
 					v = resp.values.front();
 					if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
