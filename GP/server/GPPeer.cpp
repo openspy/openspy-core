@@ -14,6 +14,11 @@
 
 #include <OS/gamespy/gamespy.h>
 
+/*
+	TODO: delete/create profile errors
+	cannot delete last profile
+*/
+
 using namespace GPShared;
 
 #define LoadParamInt(read_name, write_var, var_name) if(var_name.HasKey(read_name)) { \
@@ -769,6 +774,14 @@ namespace GP {
 		}
 	}
 	void Peer::m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		if(response_reason != OS::EProfileResponseType_Success) {
+			((GP::Peer *)peer)->send_error(GP_GETPROFILE);
+			return;
+		}
+		if(results.size() == 0) {
+			((GP::Peer *)peer)->send_error(GP_GETPROFILE_BAD_PROFILE);
+			return;
+		}
 		std::vector<OS::Profile>::iterator it = results.begin();
 		while(it != results.end()) {
 			OS::Profile p = *it;
