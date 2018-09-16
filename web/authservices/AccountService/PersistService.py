@@ -41,7 +41,7 @@ class PersistService(BaseService):
         response = self.snapshot_handler.handle_update_game(env, request_body)
             
         return response
-    def set_persist_raw_data(self, persist_data):
+    def set_persist_raw_data(self, env, persist_data):
         profile = None
         game = None
         try:
@@ -145,10 +145,10 @@ class PersistService(BaseService):
         search_params = {"data_index": request_body["data_index"], "data_type": request_body["data_type"], "game_id": request_body["game_id"], "profileid": request_body["profileid"]}
         if "data" in request_body:
             save_data = {"data": request_body["data"], **search_params}
-            response = self.set_persist_raw_data(save_data)
+            response = self.set_persist_raw_data(env,save_data)
         elif "keyList" in request_body:
             save_data = {"keyList": request_body["keyList"], **search_params}
-            self.set_persist_keyed_data(save_data)
+            self.set_persist_keyed_data(env, save_data)
             d = datetime.utcnow()
             response["modified"] = calendar.timegm(d.utctimetuple())
 
@@ -161,7 +161,7 @@ class PersistService(BaseService):
         if "modified_since" in request_body and request_body["modified_since"] != 0:
             persist_req_data["modified_since"] = request_body["modified_since"]
         if "keyList" not in request_body:
-            persist_data = self.get_persist_raw_data(persist_req_data)
+            persist_data = self.get_persist_raw_data(env, persist_req_data)
             response["success"] = True
             if persist_data != None:
                 response["data"] = persist_data["base64Data"]
