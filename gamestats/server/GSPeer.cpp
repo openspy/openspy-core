@@ -180,7 +180,11 @@ namespace GS {
 		uint8_t *data = NULL;
 		size_t data_len = 0;
 		
-		ss << "\\getpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\mod\\" << response_data.mod_time;// << "\\length\\" << data_len << "\\data\\";
+		ss << "\\getpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid;
+
+		if(response_data.mod_time != 0) {
+			 << "\\mod\\" << response_data.mod_time;
+		}
 
 		OS::Buffer buffer;
 		buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
@@ -645,7 +649,7 @@ namespace GS {
 			OS::CMutex::SafeIncr(&wait_ctx.wait_index);
 		}
 		else {
-			wait_ctx.buffer_map[index] = buffer;
+			wait_ctx.buffer_map[index] = OS::Buffer(buffer);
 		}
 		int top_index = wait_ctx.top_index;
 		while (top_index > 0) {
