@@ -36,12 +36,18 @@ namespace GS {
 
 		OS::gen_random(m_challenge, CHALLENGE_LEN);
 
+		m_getpd_wait_ctx.wait_index = 0;
+		m_getpd_wait_ctx.top_index = 0;
+		m_get_request_index = 0;
+		m_getpd_wait_ctx.mutex = OS::CreateMutex();
+
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",m_sd->address.ToString().c_str());
 
 		send_login_challenge(1);
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", m_sd->address.ToString().c_str());
+		delete m_getpd_wait_ctx.mutex;
 		delete mp_mutex;
 	}
 	void Peer::send_login_challenge(int type) {
@@ -69,8 +75,8 @@ namespace GS {
 			if (len <= 0) {
 				goto end;
 			}
-			
-			gamespy3dxor((char *)recv_buffer.GetHead(), len);
+
+			gamespy3dxor((char *)recv_buffer.GetHead(), recv_buffer.bytesWritten());
 
 			/*
 				This scans the incoming packets for \\final\\ and splits based on that,
@@ -214,7 +220,9 @@ namespace GS {
 			buffer.WriteBuffer((void *)kv_str.c_str(), kv_str.length());			
 		}
 
-		peer->SendPacket(buffer);
+
+		peer->SendOrWaitBuffer(persist_request_data->wait_index, peer->m_getpd_wait_ctx, buffer);
+		//peer->SendPacket(buffer);
 
 		if(data)
 			free((void *)data);
@@ -268,6 +276,7 @@ namespace GS {
 		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
 		persist_request_data->profileid = pid;
 		persist_request_data->operation_id = operation_id;
+		persist_request_data->wait_index = m_get_request_index++;
 
 		GSBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList, modified_since);
 	}
@@ -277,7 +286,9 @@ namespace GS {
 
 		std::ostringstream ss;
 		ss << "\\setpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\mod\\" << response_data.mod_time;
-		peer->SendPacket(ss.str());
+		OS::Buffer buffer;
+		buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
+		peer->SendOrWaitBuffer(persist_request_data->wait_index, peer->m_setpd_wait_ctx, buffer);
 
 		free((void *)persist_request_data);
 	}
@@ -334,6 +345,7 @@ namespace GS {
 		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
 		persist_request_data->profileid = pid;
 		persist_request_data->operation_id = operation_id;
+		persist_request_data->wait_index = m_set_request_index++;
 
 
 		GSBackend::PersistBackendTask::SubmitSetPersistData(m_profile.id, this, (void *)persist_request_data, setPersistDataCallback, b64_str, persist_type, data_index, kv_set, save_data);
@@ -572,7 +584,7 @@ namespace GS {
 	    while(len-- && len >= 0) {
 			if(strncmp(data,"\\final\\",7) == 0)  {
 				data+=7;
-				len-=7;
+				len-=6;
 				gs = (char *)gamespy;
 				continue;
 			}
@@ -622,5 +634,33 @@ namespace GS {
 	void Peer::Delete(bool timeout) {
 		m_delete_flag = true;
 		m_timeout_flag = timeout;
+	}
+	void Peer::SendOrWaitBuffer(int index, WaitBufferCtx &wait_ctx, OS::Buffer buffer) {
+		if (index > wait_ctx.top_index) {
+			wait_ctx.top_index = index;
+		}
+		if (index == wait_ctx.wait_index) {
+			wait_ctx.buffer_map.erase(index);
+			this->SendPacket(buffer);
+			OS::CMutex::SafeIncr(&wait_ctx.wait_index);
+		}
+		else {
+			wait_ctx.buffer_map[index] = buffer;
+		}
+		int top_index = wait_ctx.top_index;
+		while (top_index > 0) {
+			std::map<int, OS::Buffer>::iterator it = wait_ctx.buffer_map.find(wait_ctx.wait_index);
+			if (it != wait_ctx.buffer_map.end()) {
+				this->SendPacket((*it).second);
+				OS::CMutex::SafeIncr(&wait_ctx.wait_index);
+				wait_ctx.buffer_map.erase(it);
+				top_index--;
+
+			}
+			else {
+				break;
+			}
+		}
+
 	}
 }

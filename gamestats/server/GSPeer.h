@@ -27,22 +27,16 @@ namespace GS {
 	typedef struct {
 		int profileid;
 		int operation_id;
+		uint32_t wait_index;
 	} GPPersistRequestData;
-	typedef struct _PeerStats {
-		int total_requests;
-		int version;
 
-		long long bytes_in;
-		long long bytes_out;
+	typedef struct {
+		uint32_t wait_index;
+		uint32_t top_index;
+		OS::CMutex *mutex;
+		std::map<int, OS::Buffer> buffer_map;
+	} WaitBufferCtx;
 
-		int packets_in;
-		int packets_out;
-
-		OS::Address m_address;
-		OS::GameData from_game;
-
-		bool disconnected;
-	} PeerStats;
 	class Driver;
 
 	class Peer : public INetPeer {
@@ -89,6 +83,15 @@ namespace GS {
 		void perform_preauth_auth(std::string auth_token, const char *response, int operation_id);
 		void perform_pid_auth(int profileid, const char *response, int operation_id);
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
+
+
+		//void IncrBufferIndex(WaitBufferCtx &wait_ctx) { OS::CMutex::SafeIncr(&wait_ctx.wait_index); };
+		//void DecrBufferIndex(WaitBufferCtx &wait_ctx) { OS::CMutex::SafeDecr(&wait_ctx.wait_index); };
+		void SendOrWaitBuffer(int index, WaitBufferCtx &wait_ctx, OS::Buffer buffer);
+		WaitBufferCtx m_getpd_wait_ctx; //getpd must respond in order of request, as "lid" value is not always used
+		int m_get_request_index;
+		WaitBufferCtx m_setpd_wait_ctx; //setpd must respond in order of request, as "lid" value is not always used
+		int m_set_request_index;
 
 
 		void send_error(GPShared::GPErrorCode code);
