@@ -41,6 +41,8 @@ namespace GS {
 		m_get_request_index = 0;
 		m_getpd_wait_ctx.mutex = OS::CreateMutex();
 
+		m_xor_index = 0;
+
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",m_sd->address.ToString().c_str());
 
 		send_login_challenge(1);
@@ -183,7 +185,7 @@ namespace GS {
 		ss << "\\getpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid;
 
 		if(response_data.mod_time != 0) {
-			 << "\\mod\\" << response_data.mod_time;
+			 ss << "\\mod\\" << response_data.mod_time;
 		}
 
 		OS::Buffer buffer;
@@ -584,7 +586,7 @@ namespace GS {
 	    static const char gamespy[] = "GameSpy3D\0";
 	    char  *gs;
 
-	    gs = (char *)gamespy;
+	    gs = (char *)((int)gamespy) + m_xor_index;
 	    while(len-- && len >= 0) {
 			if(strncmp(data,"\\final\\",7) == 0)  {
 				data+=7;
@@ -595,6 +597,7 @@ namespace GS {
 	        *data++ ^= *gs++;
 	        if(!*gs) gs = (char *)gamespy;
 	    }
+		m_xor_index = gs - ((char *)gamespy);
 	}
 	bool Peer::IsResponseValid(const char *response) {
 		int chrespnum = gs_chresp_num(m_challenge);

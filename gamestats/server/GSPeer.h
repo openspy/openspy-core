@@ -109,6 +109,7 @@ namespace GS {
 
 		char m_challenge[CHALLENGE_LEN + 1];
 		int m_session_key;
+		int m_xor_index;
 
 
 		//these are modified by other threads
