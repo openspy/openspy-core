@@ -6,6 +6,7 @@
 
 #include <OS/Search/User.h>
 
+#include <stddef.h>
 #include <sstream>
 #include <algorithm>
 
