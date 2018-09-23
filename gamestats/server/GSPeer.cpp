@@ -579,8 +579,8 @@ namespace GS {
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_ping.tv_sec > GP_PING_TIME) {
 			gettimeofday(&m_last_ping, NULL);
-			//std::string ping_packet = "\\ka\\";
-			//SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
+			std::string ping_packet = "\\ka\\";
+			SendPacket(ping_packet);
 		}
 	}
 
