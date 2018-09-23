@@ -402,8 +402,9 @@ namespace GS {
 		peer->SendPacket(ss.str());
 	}
 	void Peer::newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-
+		peer->mp_mutex->lock();
 		peer->m_game_session_backend_identifier_map[(int)extra] = response_data.game_instance_identifier;
+		peer->mp_mutex->unlock();
 
 	}
 	void Peer::handle_newgame(OS::KVReader data_parser) {
@@ -411,6 +412,19 @@ namespace GS {
 		GSBackend::PersistBackendTask::SubmitNewGameSession(this, (void *)session_id, newGameCreateCallback);
 	}
 	void Peer::updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
+		int sesskey = (int)extra;
+		peer->mp_mutex->lock();
+		std::map<int, std::vector<OS::KVReader> >::iterator it = peer->m_updgame_sesskey_wait_list.find(sesskey);
+		if (it != peer->m_updgame_sesskey_wait_list.end()) {
+			std::pair<int, std::vector<OS::KVReader> > p = *it;
+			std::vector<OS::KVReader>::iterator it2 = p.second.begin();
+			while (it2 != p.second.end()) {
+				peer->handle_updgame(*it2);
+				it2++;
+			}
+			peer->m_updgame_sesskey_wait_list.erase(it);			
+		}
+		peer->mp_mutex->unlock();
 		if (extra) {
 			free((void *)extra);
 		}
@@ -418,9 +432,14 @@ namespace GS {
 	void Peer::handle_updgame(OS::KVReader data_parser) {
 		//\updgame\\sesskey\%d\done\%d\gamedata\%s
 		int sesskey = data_parser.GetValueInt("sesskey");
+		mp_mutex->lock();
 		std::map<int, std::string>::iterator it = m_game_session_backend_identifier_map.find(sesskey);
 		if(it == m_game_session_backend_identifier_map.end()) {
-			send_error(GPShared::GP_BAD_SESSKEY);
+			m_updgame_sesskey_wait_list[sesskey].push_back(data_parser);
+			if (m_updgame_sesskey_wait_list[sesskey].size() > MAX_SESSKEY_WAIT || m_updgame_sesskey_wait_list.size() > MAX_SESSKEY_WAIT) {				
+				send_error(GPShared::GP_BAD_SESSKEY);
+			}
+			mp_mutex->unlock();
 			return;
 		}
 		std::map<std::string,std::string> game_data;
@@ -435,6 +454,7 @@ namespace GS {
 		}
 		game_data = OS::KeyStringToMap(gamedata);
 		GSBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_game_session_backend_identifier_map[sesskey], updateGameCreateCallback, done);
+		mp_mutex->unlock();
 	}
 
 	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {
@@ -586,7 +606,8 @@ namespace GS {
 	    static const char gamespy[] = "GameSpy3D\0";
 	    char  *gs;
 
-	    gs = (char *)((int)gamespy) + m_xor_index;
+		mp_mutex->lock();
+	    gs = (char *)((ptrdiff_t)gamespy) + m_xor_index;
 	    while(len-- && len >= 0) {
 			if(strncmp(data,"\\final\\",7) == 0)  {
 				data+=7;
@@ -598,6 +619,7 @@ namespace GS {
 	        if(!*gs) gs = (char *)gamespy;
 	    }
 		m_xor_index = gs - ((char *)gamespy);
+		mp_mutex->unlock();
 	}
 	bool Peer::IsResponseValid(const char *response) {
 		int chrespnum = gs_chresp_num(m_challenge);
