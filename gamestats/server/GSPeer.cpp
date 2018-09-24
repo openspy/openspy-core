@@ -40,6 +40,7 @@ namespace GS {
 		m_getpd_wait_ctx.wait_index = 0;
 		m_getpd_wait_ctx.top_index = 0;
 		m_get_request_index = 0;
+		m_updgame_increfs = 0;
 		m_getpd_wait_ctx.mutex = OS::CreateMutex();
 
 		m_xor_index = 0;
@@ -404,7 +405,23 @@ namespace GS {
 	}
 	void Peer::newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		peer->mp_mutex->lock();
-		peer->m_game_session_backend_identifier_map[(int)extra] = response_data.game_instance_identifier;
+		int sesskey = (int)extra;
+		peer->m_game_session_backend_identifier_map[sesskey] = response_data.game_instance_identifier;
+		
+		
+		
+		std::map<int, std::vector<OS::KVReader> >::iterator it = peer->m_updgame_sesskey_wait_list.find(sesskey);
+		if (it != peer->m_updgame_sesskey_wait_list.end()) {
+			std::pair<int, std::vector<OS::KVReader> > p = *it;
+			std::vector<OS::KVReader>::iterator it2 = p.second.begin();
+			while (it2 != p.second.end()) {
+				peer->handle_updgame(*it2);
+				peer->DecRef();
+				peer->m_updgame_increfs--;
+				it2++;
+			}
+			peer->m_updgame_sesskey_wait_list.erase(it);
+		}
 		peer->mp_mutex->unlock();
 
 	}
@@ -413,22 +430,6 @@ namespace GS {
 		GSBackend::PersistBackendTask::SubmitNewGameSession(this, (void *)session_id, newGameCreateCallback);
 	}
 	void Peer::updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-		int sesskey = (int)extra;
-		peer->mp_mutex->lock();
-		std::map<int, std::vector<OS::KVReader> >::iterator it = peer->m_updgame_sesskey_wait_list.find(sesskey);
-		if (it != peer->m_updgame_sesskey_wait_list.end()) {
-			std::pair<int, std::vector<OS::KVReader> > p = *it;
-			std::vector<OS::KVReader>::iterator it2 = p.second.begin();
-			while (it2 != p.second.end()) {
-				peer->handle_updgame(*it2);
-				it2++;
-			}
-			peer->m_updgame_sesskey_wait_list.erase(it);			
-		}
-		peer->mp_mutex->unlock();
-		if (extra) {
-			free((void *)extra);
-		}
 	}
 	void Peer::handle_updgame(OS::KVReader data_parser) {
 		//\updgame\\sesskey\%d\done\%d\gamedata\%s
@@ -437,7 +438,12 @@ namespace GS {
 		std::map<int, std::string>::iterator it = m_game_session_backend_identifier_map.find(sesskey);
 		if(it == m_game_session_backend_identifier_map.end()) {
 			m_updgame_sesskey_wait_list[sesskey].push_back(data_parser);
+			this->IncRef();
+			m_updgame_increfs++;
 			if (m_updgame_sesskey_wait_list[sesskey].size() > MAX_SESSKEY_WAIT || m_updgame_sesskey_wait_list.size() > MAX_SESSKEY_WAIT) {				
+				for (int i = 0; i < m_updgame_increfs; i++) {
+					this->DecRef();
+				}
 				send_error(GPShared::GP_BAD_SESSKEY);
 			}
 			mp_mutex->unlock();

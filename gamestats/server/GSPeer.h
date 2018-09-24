@@ -21,7 +21,7 @@
 
 #include <OS/KVReader.h>
 
-#define MAX_UNPROCESSED_DATA 5000
+#define MAX_UNPROCESSED_DATA 500000
 
 namespace GS {
 	typedef struct {
@@ -97,6 +97,7 @@ namespace GS {
 		//incase updgame calls are sent prior to the retrieval of the backend identify, save calls by client provided sesskey
 		#define MAX_SESSKEY_WAIT 10
 		std::map<int, std::vector<OS::KVReader> > m_updgame_sesskey_wait_list;
+		int m_updgame_increfs;
 
 
 		void send_error(GPShared::GPErrorCode code);
