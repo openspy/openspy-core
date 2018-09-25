@@ -672,6 +672,7 @@ namespace GS {
 		m_timeout_flag = timeout;
 	}
 	void Peer::SendOrWaitBuffer(int index, WaitBufferCtx &wait_ctx, OS::Buffer buffer) {
+		mp_mutex->lock();
 		if (index > wait_ctx.top_index) {
 			wait_ctx.top_index = index;
 		}
@@ -697,6 +698,6 @@ namespace GS {
 				break;
 			}
 		}
-
+		mp_mutex->unlock();
 	}
 }
