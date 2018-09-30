@@ -1,3 +1,4 @@
+#include <OS/Mutex.h>
 #include "PThreadPoller.h"
 #include <stdio.h>
 #include <sys/time.h>
@@ -30,12 +31,13 @@ namespace OS {
 			}
 			
 		}
-		m_signal_count = 0;
+		if(m_signal_count > 0)
+			OS::CMutex::SafeDecr(&m_signal_count);
 		return true;
 	}
 	void CPThreadPoller::signal() {
-		if(m_signal_count == 0) {
-			m_signal_count++;
+		OS::CMutex::SafeIncr(&m_signal_count);
+		if(m_signal_count > 0) {
 			pthread_cond_broadcast(&m_condition);
 		}
 	}
