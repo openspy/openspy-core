@@ -8,7 +8,7 @@ namespace OS {
 	public:
 		CWin32ThreadPoller();
 		~CWin32ThreadPoller();
-		bool wait();
+		bool wait(uint64_t time_ms = 0);
 		void signal();
 	private:
 		HANDLE m_handle;

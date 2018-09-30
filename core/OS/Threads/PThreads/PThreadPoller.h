@@ -7,7 +7,7 @@ namespace OS {
 	public:
 		CPThreadPoller();
 		~CPThreadPoller();
-		bool wait();
+		bool wait(uint64_t time_ms = 0);
 		void signal();
 	private:
         pthread_mutex_t m_mutex;

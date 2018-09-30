@@ -15,9 +15,14 @@ namespace OS {
 	CWin32ThreadPoller::~CWin32ThreadPoller() {
 		CloseHandle(m_handle);
 	}
-	bool CWin32ThreadPoller::wait() {
+	bool CWin32ThreadPoller::wait(uint64_t time_ms) {
 		ResetEvent(m_handle);
-		WaitForSingleObject(m_handle, INFINITE);
+		if(time_ms == 0) {
+			WaitForSingleObject(m_handle, INFINITE);
+		} else {
+			WaitForSingleObject(m_handle, time_ms);
+		}
+		
 		return true;
 	}
 	void CWin32ThreadPoller::signal() {
