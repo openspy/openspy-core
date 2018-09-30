@@ -413,10 +413,12 @@ namespace QR {
 		send_buff.WriteInt(key);
 		send_buff.WriteBuffer(buffer.GetHead(), buffer.bytesWritten());
 
+		mp_mutex->lock();
 		if(!no_insert) {
 			m_client_message_queue[key] = buffer;
 		}
 		gettimeofday(&m_last_msg_resend, NULL); //blocks resending of recent messages
+		mp_mutex->unlock();
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Recv client message: key: %d - len: %d, resend: %d", m_sd->address.ToString().c_str(), key, buffer.readRemaining(), no_insert);
 		SendPacket(send_buff);

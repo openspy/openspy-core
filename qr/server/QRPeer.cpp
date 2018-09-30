@@ -16,6 +16,7 @@ namespace QR {
 		m_version = version;
 
 		m_server_info_dirty = false;
+		mp_mutex = OS::CreateMutex();
 
 		memset(&m_last_heartbeat,0,sizeof(m_last_heartbeat));
 
@@ -23,6 +24,7 @@ namespace QR {
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
+		delete mp_mutex;
 	}
 	bool Peer::isTeamString(const char *string) {
 		size_t len = strlen(string);

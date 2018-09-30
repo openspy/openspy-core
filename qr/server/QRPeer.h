@@ -40,6 +40,7 @@ namespace QR {
 		bool isTeamString(const char *string);
 
 		Driver *mp_driver;
+		OS::CMutex *mp_mutex;
 
 		struct timeval m_last_recv, m_last_ping, m_last_heartbeat;
 
