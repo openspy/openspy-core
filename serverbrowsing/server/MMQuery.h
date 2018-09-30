@@ -217,6 +217,7 @@ namespace MM {
 	};
 
 	#define NUM_MM_QUERY_THREADS 8
+	#define MM_WAIT_MAX_TIME 1500
 	extern OS::TaskPool<MMQueryTask, MMQueryRequest> *m_task_pool;
 	void SetupTaskPool(SBServer *server);
 	void ShutdownTaskPool();
