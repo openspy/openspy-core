@@ -18,7 +18,7 @@ namespace NN {
 
 	void *NNQueryTask::TaskThread(OS::CThread *thread) {
 		NNQueryTask *task = (NNQueryTask *)thread->getParams();
-		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
+		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait(NN_WAIT_MAX_TIME)) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			task->m_thread_awake = true;
 			while (!task->m_request_list.empty()) {

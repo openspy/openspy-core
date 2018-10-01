@@ -120,6 +120,7 @@ namespace GPBackend {
 			int m_thread_index;
 	};
 	#define NUM_PRESENCE_THREADS 8
+	#define GP_WAIT_MAX_TIME 1500
 	extern OS::TaskPool<GPBackendRedisTask, GPBackendRedisRequest> *m_task_pool;
 	void SetupTaskPool(GP::Server *server);
 	void ShutdownTaskPool();

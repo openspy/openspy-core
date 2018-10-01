@@ -90,6 +90,7 @@ namespace MM {
 	};
 
 	#define NUM_MM_PUSH_THREADS 8
+	#define MM_WAIT_MAX_TIME 1500
 	extern OS::TaskPool<MMPushTask, MMPushRequest> *m_task_pool;
 	void SetupTaskPool(QR::Server *server);
 	void *setup_redis_async(OS::CThread *thread);

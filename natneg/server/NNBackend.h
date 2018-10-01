@@ -65,6 +65,7 @@ namespace NN {
 			int m_thread_id;
 	};
 	#define NUM_NN_QUERY_THREADS 8
+	#define NN_WAIT_MAX_TIME 1500
 	extern OS::TaskPool<NNQueryTask, NNBackendRequest> *m_task_pool;
 	void SetupTaskPool(NN::Server *server);
 	void *setup_redis_async(OS::CThread *thread);
