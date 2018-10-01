@@ -10,7 +10,7 @@
 #include <vector>
 #include <map>
 #define OPENSPY_USERMGR_URL (std::string(OS::g_webServicesURL) +"/backend/useraccount").c_str()
-
+#define USER_TASK_WAIT_MAX_TIME 1500
 #define OPENSPY_USERMGR_KEY "dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5dGhpc2lzdGhla2V5"
 namespace OS {
 	/*

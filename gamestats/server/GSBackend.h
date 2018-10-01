@@ -97,6 +97,7 @@ namespace GSBackend {
 			Redis::Connection *mp_redis_connection;
 	};
 	#define NUM_STATS_THREADS 8
+	#define GS_WAIT_MAX_TIME 1500
 	extern OS::TaskPool<PersistBackendTask, PersistBackendRequest> *m_task_pool;
 	void SetupTaskPool(GS::Server *server);
 	void ShutdownTaskPool();

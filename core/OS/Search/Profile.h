@@ -12,7 +12,7 @@
 #include <map>
 
 #define OPENSPY_PROFILEMGR_URL (std::string(OS::g_webServicesURL) + "/backend/userprofile").c_str()
-
+#define PROFILE_TASK_WAIT_MAX_TIME 1500
 namespace OS {
 
 	/*

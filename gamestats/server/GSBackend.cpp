@@ -332,7 +332,7 @@ namespace GSBackend {
 
 	void *PersistBackendTask::TaskThread(OS::CThread *thread) {
 		PersistBackendTask *task = (PersistBackendTask *)thread->getParams();
-		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
+		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait(GS_WAIT_MAX_TIME)) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			while (!task->m_request_list.empty()) {
 				PersistBackendRequest task_params = task->m_request_list.front();

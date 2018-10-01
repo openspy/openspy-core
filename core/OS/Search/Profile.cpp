@@ -267,7 +267,7 @@ namespace OS {
 	void *ProfileSearchTask::TaskThread(CThread *thread) {
 		ProfileSearchTask *task = (ProfileSearchTask *)thread->getParams();
 		
-		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
+		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait(PROFILE_TASK_WAIT_MAX_TIME)) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			while (!task->m_request_list.empty()) {
 				ProfileSearchRequest task_params = task->m_request_list.front();

@@ -139,7 +139,7 @@ namespace OS {
 
 	void *UserSearchTask::TaskThread(CThread *thread) {
 		UserSearchTask *task = (UserSearchTask *)thread->getParams();
-		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait()) && thread->isRunning()) {
+		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait(USER_TASK_WAIT_MAX_TIME)) && thread->isRunning()) {
 			task->mp_mutex->lock();
 			while (!task->m_request_list.empty()) {
 				UserSearchRequest task_params = task->m_request_list.front();

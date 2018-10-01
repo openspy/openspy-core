@@ -11,7 +11,7 @@
 #include <OS/Net/NetPeer.h>
 
 #define OPENSPY_AUTH_URL (std::string(OS::g_webServicesURL) + "/backend/auth").c_str()
-
+#define AUTH_WAIT_MAX_TIME 1500
 namespace OS {
 	enum AuthResponseCode {
 		LOGIN_RESPONSE_SUCCESS,
