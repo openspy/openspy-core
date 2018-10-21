@@ -19,7 +19,7 @@
 
 namespace OS {
 	Logger *g_logger = NULL;
-	Config *g_config = NULL;
+	AppConfig *g_config = NULL;
 	struct timeval redis_timeout;
 	Redis::Connection *redis_internal_connection = NULL;
 	OS::CMutex *mp_redis_internal_connection_mutex = NULL;
@@ -29,24 +29,24 @@ namespace OS {
 	const char *g_webServicesURL = NULL;
 	const char *g_webServicesAPIKey = NULL;
 	CURL	   *g_curl = NULL;
-	void Init(const char *appName, const char *configPath) {
+	void Init(const char *appName, AppConfig *appConfig) {
 
-		OS::g_config = new Config("openspy.cfg");
+		OS::g_config = appConfig;
 		OS::g_curl = curl_easy_init();
 
-		configVar *config_struct = OS::g_config->getRootArray(appName);
-		int num_async = OS::g_config->getArrayInt(config_struct, "num_async_tasks");
-		const char *hostname = OS::g_config->getArrayString(config_struct, "hostname");
-		const char *redis_address = OS::g_config->getArrayString(config_struct, "redis_address");
-		const char *webservices_url = OS::g_config->getArrayString(config_struct, "webservices_url");
-
-		const char *apikey = OS::g_config->getArrayString(config_struct, "webservices_apikey");
+		int num_async = 0;
+		std::string hostname, redis_address, webservices_url, apikey;
+		OS::g_config->GetVariableInt(appName, "num-async-tasks", num_async);
+		OS::g_config->GetVariableString(appName, "hostname", hostname);
+		OS::g_config->GetVariableString(appName, "redis-address", redis_address);
+		OS::g_config->GetVariableString(appName, "webservices-url", webservices_url);
+		OS::g_config->GetVariableString(appName, "webservices-apikey", apikey);
 
 		g_appName = appName;
-		g_hostName = hostname;
-		g_webServicesURL = webservices_url;
-		g_redisAddress = redis_address;
-		g_webServicesAPIKey = apikey;
+		g_hostName = strdup(hostname.c_str());
+		g_webServicesURL = strdup(webservices_url.c_str());
+		g_redisAddress = strdup(redis_address.c_str());
+		g_webServicesAPIKey = strdup(apikey.c_str());
 
 		curl_global_init(CURL_GLOBAL_SSL);
 
@@ -66,7 +66,7 @@ namespace OS {
 		OS::SetupUserSearchTaskPool(num_async);
 		OS::SetupProfileTaskPool(num_async);
 		
-		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, webservices: %s)\n", appName, num_async, hostname, redis_address, webservices_url);
+		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, webservices: %s)\n", appName, num_async, g_hostName, g_redisAddress, g_webServicesURL);
 	}
 	void Shutdown() {
 		OS::ShutdownAuthTaskPool();

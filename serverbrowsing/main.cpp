@@ -42,9 +42,30 @@ int main() {
 		WSADATA wsdata;
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
-	OS::Init("serverbrowsing", "openspy.cfg");
+
+	OS::Config *cfg = new OS::Config("openspy.xml");
+	AppConfig *app_config = new AppConfig(cfg, "serverbrowsing");
+	OS::Init("serverbrowsing", app_config);
+	g_gameserver = new SBServer();
+
+	std::vector<std::string> drivers = app_config->getDriverNames();
+	std::vector<std::string>::iterator it = drivers.begin();
+	while (it != drivers.end()) {
+		std::string s = *it;
+		int version = 0;
+		app_config->GetVariableInt(s, "protocol-version", version);
+		const char* bind_ip = "0.0.0.0";
+		uint16_t bind_port = htons(28910);
+		SB::Driver *driver = new SB::Driver(g_gameserver, bind_ip, bind_port, version);
+		OS::LogText(OS::ELogLevel_Info, "Adding SB Driver: %s:%d Version: (%d)\n", bind_ip, bind_port, version);
+		g_gameserver->addNetworkDriver(driver);
+		it++;
+	}
+	/*
+	
     
 	g_gameserver = new SBServer();
+	
 	configVar *sb_struct = OS::g_config->getRootArray("serverbrowsing");
 	configVar *driver_struct = OS::g_config->getArrayArray(sb_struct, "drivers");
 	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
@@ -59,6 +80,7 @@ int main() {
 		g_gameserver->addNetworkDriver(driver);
 		it++;
 	}
+	*/
 
 	g_gameserver->init();
 	while(g_running) {

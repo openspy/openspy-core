@@ -54,13 +54,14 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <OS/Redis.h>
 
 #include <OS/Logger.h>
-#include <OS/config.h>
+#include <OS/Config/Config.h>
+#include <OS/Config/AppConfig.h>
 
 #include <curl/curl.h>
 
 class Config;
 namespace OS {
-	extern Config *g_config;
+	extern AppConfig *g_config;
 	extern CURL *g_curl;
 	class Logger;
 	extern Logger *g_logger;
@@ -155,7 +156,7 @@ namespace OS {
 	void split(const std::string &s, char delim, Out result);
 	std::vector<std::string> split(const std::string &s, char delim);
 
-	void Init(const char *appName, const char *configPath);
+	void Init(const char *appName, AppConfig *appConfig);
 	void Shutdown();
 
 	std::map<std::string, std::string> KeyStringToMap(std::string input);
