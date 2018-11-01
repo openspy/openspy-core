@@ -150,3 +150,44 @@ std::string AppConfig::GetVariableValue(OS::ConfigNode node) {
 	end:
 	return ret;
 }
+std::vector<OS::Address> AppConfig::GetDriverAddresses(std::string driverName) {
+	std::vector<OS::Address> ret;
+	OS::Address address;
+	OS::ConfigNode node;
+	if (getDriverNode(driverName, node)) {
+		std::vector<OS::ConfigNode> driver_children = node.GetArrayChildren();
+		std::vector<OS::ConfigNode>::iterator it = driver_children.begin();
+		while (it != driver_children.end()) {
+			OS::ConfigNode node = *it;
+
+			if (node.GetKey().compare("addresses") == 0) {
+				std::vector<OS::ConfigNode> address_nodes = node.GetArrayChildren();
+				std::vector<OS::ConfigNode>::iterator it2 = address_nodes.begin();
+				while (it2 != address_nodes.end()) {
+					OS::ConfigNode node2 = *it2;
+					std::vector<OS::ConfigNode> address_info_nodes = node2.GetArrayChildren();
+					std::vector<OS::ConfigNode>::iterator it3 = address_info_nodes.begin();
+					std::string ip;
+					int port;
+					while (it3 != address_info_nodes.end()) {
+						OS::ConfigNode node3 = *it3;
+						std::vector<OS::ConfigNode> address_detail_nodes = node3.GetArrayChildren();
+						if (node3.GetKey().compare("ip") == 0) {
+							ip = node3.GetValue();
+						}
+						else if (node3.GetKey().compare("port") == 0) {
+							port = node3.GetValueInt();
+						}
+						it3++;
+					}
+					address = OS::Address(ip);
+					address.port = htons(port);
+					ret.push_back(address);
+					it2++;
+				}
+			}
+			it++;
+		}
+	}
+	return ret;
+}

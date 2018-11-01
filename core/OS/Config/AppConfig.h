@@ -1,5 +1,6 @@
 #ifndef _APP_CONFIG_H
 #define _APP_CONFIG_H
+#include <OS/OpenSpy.h>
 #include "Config.h"
 class AppConfig {
 	public:
@@ -10,6 +11,8 @@ class AppConfig {
 
 		bool GetVariableString(std::string driverName , std::string name, std::string &out);
 		bool GetVariableInt(std::string driverName, std::string name, int &out);
+
+		std::vector<OS::Address> GetDriverAddresses(std::string driverName);
 
 	private:
 		std::string GetVariableValue(OS::ConfigNode node);

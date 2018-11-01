@@ -16,6 +16,7 @@
 #include <OS/Auth.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
+#include <OS/Config/AppConfig.h>
 
 namespace OS {
 	Logger *g_logger = NULL;

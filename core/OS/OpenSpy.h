@@ -55,7 +55,8 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 
 #include <OS/Logger.h>
 #include <OS/Config/Config.h>
-#include <OS/Config/AppConfig.h>
+
+class AppConfig;
 
 #include <curl/curl.h>
 

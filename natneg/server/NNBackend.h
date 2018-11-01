@@ -50,7 +50,7 @@ namespace NN {
 			void AddDriver(NN::Driver *driver);
 			void RemoveDriver(NN::Driver *driver);
 			ConnectionSummary LoadConnectionSummary(std::string redis_key);
-			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
+			void BroadcastMessage(std::string message);
 		private:
 			static void *TaskThread(OS::CThread *thread);
 
