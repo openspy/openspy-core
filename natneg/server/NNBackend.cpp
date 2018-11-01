@@ -332,7 +332,7 @@ namespace NN {
 
 		std::string rabbitmq_user, rabbitmq_pass;
 		OS::g_config->GetVariableString("", "rabbitmq_user", rabbitmq_user);
-		OS::g_config->GetVariableString("", "rabbitmq_pass", rabbitmq_pass);
+		OS::g_config->GetVariableString("", "rabbitmq_password", rabbitmq_pass);
 
 
 		std::string rabbitmq_vhost;
