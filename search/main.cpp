@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
+#include <OS/Config/AppConfig.h>
 #include "server/SMServer.h"
 #include "server/SMDriver.h"
 INetServer *g_gameserver = NULL;
@@ -28,21 +29,23 @@ int main() {
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
-	OS::Init("SM", "openspy.cfg");
+		OS::Config *cfg = new OS::Config("openspy.xml");
+		AppConfig *app_config = new AppConfig(cfg, "SM");
+		OS::Init("SM", app_config);
 
-	g_gameserver = new SM::Server();
-	configVar *sm_struct = OS::g_config->getRootArray("SM");
-	configVar *driver_struct = OS::g_config->getArrayArray(sm_struct, "drivers");
-	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
-	std::list<configVar *>::iterator it = drivers.begin();
-	while (it != drivers.end()) {
-		configVar *driver_arr = *it;
-		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
-		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
-		SM::Driver *driver = new SM::Driver(g_gameserver, bind_ip, bind_port);
-		OS::LogText(OS::ELogLevel_Info, "Adding SM Driver: %s:%d\n", bind_ip, bind_port);
-		g_gameserver->addNetworkDriver(driver);
-		it++;
+		g_gameserver = new SM::Server();
+
+
+		std::vector<std::string> drivers = app_config->getDriverNames();
+		std::vector<std::string>::iterator it = drivers.begin();
+		while (it != drivers.end()) {
+			std::string s = *it;
+			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+			OS::Address address = addresses.front();
+			SM::Driver *driver = new SM::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort());
+			OS::LogText(OS::ELogLevel_Info, "Adding SM Driver: %s:%d\n", address.ToString(true).c_str(), address.GetPort());
+			g_gameserver->addNetworkDriver(driver);
+			it++;
 	}
 
 	g_gameserver->init();

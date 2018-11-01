@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
+#include <OS/Config/AppConfig.h>
 #include "server/GPServer.h"
 #include "server/GPDriver.h"
 #include "server/GPBackend.h"
@@ -35,21 +36,23 @@ int main() {
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
-	OS::Init("GP", "openspy.cfg");
+		OS::Config *cfg = new OS::Config("openspy.xml");
+		AppConfig *app_config = new AppConfig(cfg, "GP");
+		OS::Init("GP", app_config);
 
-	g_gameserver = new GP::Server();
-	configVar *gp_struct = OS::g_config->getRootArray("GP");
-	configVar *driver_struct = OS::g_config->getArrayArray(gp_struct, "drivers");
-	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
-	std::list<configVar *>::iterator it = drivers.begin();
-	while (it != drivers.end()) {
-		configVar *driver_arr = *it;
-		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
-		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
-		GP::Driver *driver = new GP::Driver(g_gameserver, bind_ip, bind_port);
-		OS::LogText(OS::ELogLevel_Info, "Adding GP Driver: %s:%d\n", bind_ip, bind_port);
-		g_gameserver->addNetworkDriver(driver);
-		it++;
+		g_gameserver = new GP::Server();
+
+
+		std::vector<std::string> drivers = app_config->getDriverNames();
+		std::vector<std::string>::iterator it = drivers.begin();
+		while (it != drivers.end()) {
+			std::string s = *it;
+			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+			OS::Address address = addresses.front();
+			GP::Driver *driver = new GP::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort());
+			OS::LogText(OS::ELogLevel_Info, "Adding GP Driver: %s:%d\n", address.ToString(true).c_str(), address.GetPort());
+			g_gameserver->addNetworkDriver(driver);
+			it++;
 	}
 
 	g_gameserver->init();

@@ -30,7 +30,6 @@ CToken::~CToken() {
 }
 std::string readString(const char *filter, int &idx, int len) {
 	std::string str = "";
-	char *ret_str;
 	int i;
 	for(i=idx;i<len;i++) {
 		if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='�') break;
@@ -61,7 +60,6 @@ const char *readVariable(const char *filter, int &idx, int len) {
 }
 bool read_integer(const char *filter, int &idx, int len, int &int_val, float &float_val) {
 	std::string str = "";
-	char *ret_str;
 	int i;
 	bool is_float = false;
 	for(i=idx;i<len;i++) {

@@ -939,7 +939,7 @@ namespace MM {
 	}
 	void MMQueryTask::debug_dump() {
 		mp_mutex->lock();
-		printf("Task [%p] awake: %d, num_tasks: %d\n", this, m_thread_awake, m_request_list.size());
+		printf("Task [%p] awake: %d, num_tasks: %d\n", this, m_thread_awake, (int)m_request_list.size());
 		mp_mutex->unlock();
 	}
 }
