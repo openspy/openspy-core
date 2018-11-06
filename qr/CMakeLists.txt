@@ -27,5 +27,3 @@ IF(WIN32)
 ELSE() #unix
 	target_link_libraries(qr pthread openspy)
 ENDIF()
-
-add_subdirectory(test)

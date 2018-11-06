@@ -9,13 +9,13 @@ file (GLOB OS_HDRS "OS/*.h")
 file (GLOB NET_SRCS "OS/Net/*.cpp")
 file (GLOB NET_HDRS "OS/Net/*.h")
 
+file (GLOB CONFIG_SRCS "OS/Config/*.cpp")
+file (GLOB CONFIG_HDRS "OS/Config/*.h")
+
 file (GLOB NET_EVENTMGR_SRCS "OS/Net/EventMgrs/*.cpp")
 file (GLOB NET_EVENTMGR_HDRS "OS/Net/EventMgrs/*.h")
 file (GLOB NET_IOIFACES_SRCS "OS/Net/IOIfaces/*.cpp")
 file (GLOB NET_IOIFACES_HDRS "OS/Net/IOIfaces/*.h")
-
-file (GLOB TEST_HDRS "OS/test/*.h")
-file (GLOB TEST_SRCS "OS/test/*.cpp")
 
 file (GLOB LEGACY_SRCS "OS/gamespy/*.cpp" "OS/gamespy/*.c")
 file (GLOB LEGACY_HDRS "OS/gamespy/*.h")
@@ -27,7 +27,7 @@ file (GLOB TIMER_SRCS "OS/Timer/*.cpp")
 file (GLOB TIMER_HDRS "OS/Timer/*.h")
 
 
-set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${TEST_HDRS} ${TEST_SRCS})
+set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -46,8 +46,6 @@ source_group("Headers\\OS\\Net\\IOFaces" FILES ${NET_IOIFACES_HDRS})
 
 source_group("Sources\\OS\\Search" FILES ${SEARCH_HDRS})
 source_group("Sources\\OS\\Logger" FILES ${LOGGER_HDRS})
-
-add_subdirectory(test)
 
 
 IF(WIN32)
@@ -90,5 +88,5 @@ ELSE() #unix
 
 	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
 	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
-	target_link_libraries(openspy pthread ssl crypto curl jansson)
+	target_link_libraries(openspy pthread ssl crypto curl jansson pugixml)
 ENDIF()
