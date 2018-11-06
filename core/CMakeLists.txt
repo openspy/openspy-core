@@ -88,5 +88,5 @@ ELSE() #unix
 
 	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
 	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
-	target_link_libraries(openspy pthread ssl crypto curl jansson pugixml)
+	target_link_libraries(openspy pthread ssl crypto curl jansson pugixml rabbitmq)
 ENDIF()
