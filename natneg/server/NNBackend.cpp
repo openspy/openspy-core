@@ -7,19 +7,20 @@
 #include <OS/Redis.h>
 
 
-#include <amqp.h>
-#include <amqp_tcp_socket.h>
-
 #include <sstream>
+
+#include <OS/MessageQueue/MQListener.h>
+#include <OS/MessageQueue/MQSender.h>
+#include <OS/MessageQueue/rabbitmq/rmqListener.h>
+#include <OS/MessageQueue/rabbitmq/rmqSender.h>
 #define NATNEG_COOKIE_TIME 30 
 namespace NN {
 	OS::TaskPool<NNQueryTask, NNBackendRequest> *m_task_pool = NULL;
-	Redis::Connection *mp_redis_async_retrival_connection;
-	OS::CThread *mp_async_thread;
-	NNQueryTask *mp_async_lookup_task = NULL;
+	Redis::Connection *mp_redis_async_retrival_connection = NULL;
 
-	amqp_socket_t *mp_rabbitmq_socket = NULL, *mp_rabbitmq_sender_socket = NULL;
-	amqp_connection_state_t mp_rabbitmq_conn, mp_rabbitmq_sender_conn;
+	NNQueryTask *mp_async_lookup_task = NULL;
+	IMQListener *mp_mqlistener = NULL;
+	IMQSender *mp_mqsender = NULL;
 
 	const char *nn_channel_exchange = "amq.topic", *nn_channel_routingkey="natneg";
 	const char *nn_channel_queuename = "natneg.backend";
@@ -167,15 +168,10 @@ namespace NN {
 		}
 	}
 	void NNQueryTask::BroadcastMessage(std::string message) {
-		amqp_basic_properties_t props;
-		props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
-		props.content_type = amqp_cstring_bytes("text/plain");
-		props.delivery_mode = 2; /* persistent delivery mode */
-		amqp_basic_publish(mp_rabbitmq_sender_conn, 1, amqp_cstring_bytes(nn_channel_exchange),
-			amqp_cstring_bytes(nn_channel_routingkey), 0, 0,
-			&props, amqp_cstring_bytes(message.c_str()));
+		mp_mqsender->sendMessage(message);
 	}
 	ConnectionSummary NNQueryTask::LoadConnectionSummary(std::string redis_key) {
+		int address_counter = 0;
 		ConnectionSummary connection_summary;
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
 
@@ -221,8 +217,6 @@ namespace NN {
 
 		connection_summary.private_address = OS::Address(reply.values.front().value._str.c_str());
 
-
-		int address_counter = 0;
 		if (!connection_summary.usegameport) {
 			address_counter = 1;
 		}
@@ -262,25 +256,8 @@ namespace NN {
 		return connection_summary;
 	}
 
-	void *setup_redis_async(OS::CThread *thread) {
-		mp_async_lookup_task = new NNQueryTask(NUM_NN_QUERY_THREADS+1);
-
-		NN::Server *server = (NN::Server *)thread->getParams();
-
-		for (;;) {
-			amqp_rpc_reply_t res;
-			amqp_envelope_t envelope;
-
-			amqp_maybe_release_buffers(mp_rabbitmq_conn);
-
-			res = amqp_consume_message(mp_rabbitmq_conn, &envelope, NULL, 0);
-			
-
-			if (AMQP_RESPONSE_NORMAL != res.reply_type) {
-				break;
-			}
-
-			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
+	void MQListenerCallback(std::string message, void *extra) {
+			NN::Server *server = (NN::Server *)extra;
 
 			std::map<std::string, std::string> kv_data = OS::KeyStringToMap(message);
 			if (kv_data.find("msg") != kv_data.end()) {
@@ -310,19 +287,9 @@ namespace NN {
 						it++;
 					}
 				}
+			
 			}
-
-			amqp_basic_ack(mp_rabbitmq_conn, envelope.channel, envelope.delivery_tag, false);
-
-			amqp_destroy_envelope(&envelope);
-		}
-
-		amqp_channel_close(mp_rabbitmq_conn, 1, AMQP_REPLY_SUCCESS);
-		amqp_connection_close(mp_rabbitmq_conn, AMQP_REPLY_SUCCESS);
-		amqp_destroy_connection(mp_rabbitmq_conn);
-
-		return NULL;
-	}
+	} 
 	void SetupTaskPool(NN::Server* server) {
 
 		std::string rabbitmq_address;
@@ -338,52 +305,24 @@ namespace NN {
 		std::string rabbitmq_vhost;
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
-
-		//init listener
-		mp_rabbitmq_conn = amqp_new_connection();
-		mp_rabbitmq_socket = amqp_tcp_socket_new(mp_rabbitmq_conn);
-		int status = amqp_socket_open(mp_rabbitmq_socket, rabbitmq_address.c_str(), rabbitmq_port);
-		amqp_login(mp_rabbitmq_conn, rabbitmq_vhost.c_str(), 0, 131072, 0, AMQP_SASL_METHOD_PLAIN,
-			rabbitmq_user, rabbitmq_pass);
-		amqp_channel_open(mp_rabbitmq_conn, 1);
-		amqp_get_rpc_reply(mp_rabbitmq_conn); //TODO: channel error check
-
-		amqp_queue_bind(mp_rabbitmq_conn, 1, amqp_cstring_bytes(nn_channel_queuename), amqp_cstring_bytes(nn_channel_exchange),
-			amqp_cstring_bytes(nn_channel_routingkey), amqp_empty_table);
-
-		amqp_get_rpc_reply(mp_rabbitmq_conn);
-
-		amqp_basic_consume(mp_rabbitmq_conn, 1, amqp_cstring_bytes(nn_channel_queuename), amqp_empty_bytes, 0, 1, 0,
-			amqp_empty_table);
-
-		amqp_get_rpc_reply(mp_rabbitmq_conn);
-
-		//init sender
-		mp_rabbitmq_sender_conn = amqp_new_connection();
-		mp_rabbitmq_sender_socket = amqp_tcp_socket_new(mp_rabbitmq_sender_conn);
-
-		status = amqp_socket_open(mp_rabbitmq_sender_socket, rabbitmq_address.c_str(), rabbitmq_port);
-		amqp_login(mp_rabbitmq_sender_conn, rabbitmq_vhost.c_str(), 0, 131072, 0, AMQP_SASL_METHOD_PLAIN,
-			rabbitmq_user, rabbitmq_pass);
-		amqp_channel_open(mp_rabbitmq_sender_conn, 1);
-		amqp_get_rpc_reply(mp_rabbitmq_sender_conn); //TODO: channel error check
+		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, NN::nn_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, NN::MQListenerCallback);
+		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, NN::nn_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 60;
 
 		mp_redis_async_retrival_connection = Redis::Connect(OS::g_redisAddress, t);
-		mp_async_thread = OS::CreateThread(setup_redis_async, server, true);
 
 		m_task_pool = new OS::TaskPool<NNQueryTask, NNBackendRequest>(NUM_NN_QUERY_THREADS);
-		server->SetTaskPool(m_task_pool);
+		mp_async_lookup_task = new NNQueryTask(NUM_NN_QUERY_THREADS+1);
+		server->SetTaskPool(NN::m_task_pool);
 	}
 	void Shutdown() {
-		delete m_task_pool;
+		delete NN::m_task_pool;
+		delete NN::mp_mqlistener;
+		delete NN::mp_mqsender;
 
-		mp_async_thread->SignalExit(true);
-		delete mp_async_thread;
-		Redis::Disconnect(mp_redis_async_retrival_connection);
+		Redis::Disconnect(NN::mp_redis_async_retrival_connection);
 	}
-
 }

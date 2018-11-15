@@ -26,8 +26,11 @@ file (GLOB LOGGER_HDRS "OS/Logger/*.h")
 file (GLOB TIMER_SRCS "OS/Timer/*.cpp")
 file (GLOB TIMER_HDRS "OS/Timer/*.h")
 
+file (GLOB MQ_SRCS "OS/MessageQueue/*.cpp" "OS/MessageQueue/rabbitmq/*.cpp")
+file (GLOB MQ_HDRS "OS/MessageQueue/*.h" "OS/MessageQueue/rabbitmq/*.h")
 
-set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS})
+
+set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${MQ_SRCS} ${MQ_HDRS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -46,6 +49,10 @@ source_group("Headers\\OS\\Net\\IOFaces" FILES ${NET_IOIFACES_HDRS})
 
 source_group("Sources\\OS\\Search" FILES ${SEARCH_HDRS})
 source_group("Sources\\OS\\Logger" FILES ${LOGGER_HDRS})
+
+
+source_group("Sources\\OS\\MessageQueue" FILES ${MQ_SRCS})
+source_group("Headers\\OS\\MessageQueue" FILES ${MQ_HDRS})
 
 
 IF(WIN32)
