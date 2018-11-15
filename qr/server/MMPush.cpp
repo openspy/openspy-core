@@ -1,12 +1,19 @@
 
 #include "MMPush.h"
 
+#include <OS/OpenSpy.h>
+#include <OS/Config/AppConfig.h>
 #include <OS/Redis.h>
 #include "QRDriver.h"
 #include "QRPeer.h"
 
 #include <sstream>
 #include <algorithm>
+
+#include <OS/MessageQueue/MQListener.h>
+#include <OS/MessageQueue/MQSender.h>
+#include <OS/MessageQueue/rabbitmq/rmqListener.h>
+#include <OS/MessageQueue/rabbitmq/rmqSender.h>
 
 #define MM_PUSH_EXPIRE_TIME 1800
 
@@ -15,9 +22,13 @@ namespace MM {
 	OS::TaskPool<MMPushTask, MMPushRequest> *m_task_pool = NULL;
 	const char *mp_pk_name = "QRID";
 	Redis::Connection *mp_redis_async_retrival_connection;
-	OS::CThread *mp_async_thread;
-	Redis::Connection *mp_redis_async_connection;
-	MMPushTask *mp_async_lookup_task = NULL;
+
+	IMQListener *mp_mqlistener = NULL;
+	IMQSender *mp_mqsender = NULL;
+
+	const char *mm_channel_exchange = "amq.topic", *mm_channel_routingkey="natneg";
+	const char *mm_channel_queuename = "serverbrowsing.servers";
+
 
 	void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
 		std::string gamename, from_ip, to_ip, from_port, to_port, data, type;
@@ -58,15 +69,6 @@ namespace MM {
 			}
 		}
 	}
-	void *setup_redis_async(OS::CThread *thread) {
-		struct timeval t;
-		t.tv_usec = 0;
-		t.tv_sec = 1;
-		mp_redis_async_connection = Redis::Connect(OS::g_redisAddress, t);
-		mp_async_lookup_task = new MMPushTask(NUM_MM_PUSH_THREADS+1);
-		Redis::LoopingCommand(mp_redis_async_connection, 0, onRedisMessage, thread->getParams(), "SUBSCRIBE %s", sb_mm_channel);
-	    return NULL;
-	}
 
 	MMPushTask::MMPushTask(int thread_index) {
 		struct timeval t;
@@ -96,9 +98,6 @@ namespace MM {
 	void MMPushTask::AddDriver(QR::Driver *driver) {
 		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {
 			m_drivers.push_back(driver);
-		}
-		if (this != mp_async_lookup_task && mp_async_lookup_task) {
-			mp_async_lookup_task->AddDriver(driver);
 		}
 	}
 	void MMPushTask::RemoveDriver(QR::Driver *driver) {
@@ -340,8 +339,12 @@ namespace MM {
 		}
 		PushServer(modified_server, false, request.server.id); //push to prevent expire
 
-		if(change_occured)
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, modified_server.m_game.gamename.c_str(), modified_server.groupid, modified_server.id);
+		if(change_occured) {
+			std::ostringstream s;
+			s << "\\update\\" << modified_server.m_game.gamename << ":" << modified_server.groupid << ":" << modified_server.id << ":";
+			mp_mqsender->sendMessage(s.str());
+		}
+			//Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, modified_server.m_game.gamename.c_str(), modified_server.groupid, modified_server.id);
 	}
 	void MMPushTask::PerformUpdateServer(MMPushRequest request) {
 		DeleteServer(request.server, false);
@@ -557,28 +560,71 @@ namespace MM {
 		}
 		return ret;
 	}
+	void MMPushTask::MQListenerCallback(std::string message, void *extra) {
+		std::string gamename, from_ip, to_ip, from_port, to_port, data, type;
+		uint8_t *data_out;
+		size_t data_len;
+
+		QR::Server *server = (QR::Server *)extra;
+
+		std::vector<std::string> vec = OS::KeyStringToVector(message);
+		if (vec.size() < 1) return;
+		type = vec.at(0);
+		if (!type.compare("send_msg")) {
+			if (vec.size() < 7) return;
+			gamename = vec.at(1);
+			from_ip = vec.at(2);
+			from_port = vec.at(3);
+			to_ip = vec.at(4);
+			to_port = vec.at(5);
+			data = vec.at(6);
+
+			std::ostringstream ss;
+			ss << to_ip << ":" << to_port;
+
+			OS::Address address(ss.str().c_str());
+			QR::Peer *peer = server->find_client(address);
+			if (!peer) {
+				return;							
+			}
+				
+			OS::Base64StrToBin((const char *)data.c_str(), &data_out, data_len);
+			peer->SendClientMessage(data_out, data_len);
+			free(data_out);
+		}
+	}
 	void SetupTaskPool(QR::Server* server) {
+
+		std::string rabbitmq_address;
+		int rabbitmq_port;
+		OS::g_config->GetVariableString("", "rabbitmq_host", rabbitmq_address);
+		OS::g_config->GetVariableInt("", "rabbitmq_port", rabbitmq_port);
+
+		std::string rabbitmq_user, rabbitmq_pass;
+		OS::g_config->GetVariableString("", "rabbitmq_user", rabbitmq_user);
+		OS::g_config->GetVariableString("", "rabbitmq_password", rabbitmq_pass);
+
+
+		std::string rabbitmq_vhost;
+		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
+
+		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMPushTask::MQListenerCallback);
+		mp_mqlistener->setRecieverCallback(MMPushTask::MQListenerCallback, server);
+
+		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
 		t.tv_usec = 0;
 		t.tv_sec = 60;
 
 		mp_redis_async_retrival_connection = Redis::Connect(OS::g_redisAddress, t);
-		mp_async_thread = OS::CreateThread(setup_redis_async, server, true);
 
 		m_task_pool = new OS::TaskPool<MMPushTask, MMPushRequest>(NUM_MM_PUSH_THREADS);
 		server->SetTaskPool(m_task_pool);
 	}
 	void Shutdown() {
-		Redis::CancelLooping(mp_redis_async_connection);
-
-		mp_async_thread->SignalExit(true);
-		delete mp_async_thread;
-
-		Redis::Disconnect(mp_redis_async_connection);
 		Redis::Disconnect(mp_redis_async_retrival_connection);
 
-		delete mp_async_lookup_task;
 		delete m_task_pool;
 	}
 	int MMPushTask::TryFindServerID(ServerInfo server) {

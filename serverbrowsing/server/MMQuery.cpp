@@ -25,14 +25,13 @@ namespace MM {
 	OS::TaskPool<MMQueryTask, MMQueryRequest> *m_task_pool = NULL;
 	OS::GameCache *m_game_cache;
 	Redis::Connection *mp_redis_async_retrival_connection;
-	OS::CThread *mp_async_thread;
 	MMQueryTask *mp_async_lookup_task = NULL;
 
 	IMQListener *mp_mqlistener = NULL;
 	IMQSender *mp_mqsender = NULL;
 
-	const char *nn_channel_exchange = "amq.topic", *nn_channel_routingkey="natneg";
-	const char *nn_channel_queuename = "serverbrowsing.servers";
+	const char *mm_channel_exchange = "amq.topic", *mm_channel_routingkey="natneg";
+	const char *mm_channel_queuename = "serverbrowsing.servers";
 
 	void SetupTaskPool(SBServer *server) {
 
@@ -49,8 +48,8 @@ namespace MM {
 		std::string rabbitmq_vhost;
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
-		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::nn_channel_exchange, MM::nn_channel_routingkey, MM::nn_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMQueryTask::MQListenerCallback);
-		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::nn_channel_exchange, MM::nn_channel_routingkey, MM::nn_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMQueryTask::MQListenerCallback);
+		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -73,9 +72,6 @@ namespace MM {
 	void ShutdownTaskPool() {
 		delete mp_mqsender;
 		delete mp_mqlistener;
-
-		mp_async_thread->SignalExit(true);
-		delete mp_async_thread;
 
 		Redis::Disconnect(mp_redis_async_retrival_connection);
 
@@ -869,7 +865,7 @@ namespace MM {
 			dst_ip <<
 			request.to.GetPort() <<
 			b64_string;
-		mp_mqsender->sendMessage("hello");
+		mp_mqsender->sendMessage(message.str());
 	}
 	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {
 		OS::GameData games[2];

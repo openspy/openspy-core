@@ -62,7 +62,7 @@ namespace MM {
 			void AddDriver(QR::Driver *driver);
 			void RemoveDriver(QR::Driver *driver);
 			int TryFindServerID(ServerInfo server);
-			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
+			static void MQListenerCallback(std::string message, void *extra);
 		private:
 			static void *TaskThread(OS::CThread *thread);
 			void PerformPushServer(MMPushRequest request);
