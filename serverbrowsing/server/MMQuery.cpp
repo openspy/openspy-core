@@ -3,6 +3,7 @@
 #include "server/SBDriver.h"
 #include "server/SBServer.h"
 
+#include <OS/Config/AppConfig.h>
 #include <OS/Thread.h>
 
 #include <sstream>
@@ -10,8 +11,14 @@
 
 #include <serverbrowsing/filter/filter.h>
 
+#include <OS/OpenSpy.h>
 #include <OS/Cache/GameCache.h>
 #include <OS/KVReader.h>
+
+#include <OS/MessageQueue/MQListener.h>
+#include <OS/MessageQueue/MQSender.h>
+#include <OS/MessageQueue/rabbitmq/rmqListener.h>
+#include <OS/MessageQueue/rabbitmq/rmqSender.h>
 
 namespace MM {
 
@@ -19,23 +26,31 @@ namespace MM {
 	OS::GameCache *m_game_cache;
 	Redis::Connection *mp_redis_async_retrival_connection;
 	OS::CThread *mp_async_thread;
-	Redis::Connection *mp_redis_async_connection;
 	MMQueryTask *mp_async_lookup_task = NULL;
-	const char *sb_mm_channel = "serverbrowsing.servers";
 
-	void *setup_redis_async(OS::CThread *thread) {
-		struct timeval t;
-		t.tv_usec = 0;
-		t.tv_sec = 60;
-		mp_redis_async_connection = Redis::Connect(OS::g_redisAddress, t);
+	IMQListener *mp_mqlistener = NULL;
+	IMQSender *mp_mqsender = NULL;
 
-		mp_async_lookup_task = new MMQueryTask(NUM_MM_QUERY_THREADS);
-
-		Redis::LoopingCommand(mp_redis_async_connection, 60, MMQueryTask::onRedisMessage, thread->getParams(), "SUBSCRIBE %s", sb_mm_channel);
-		return NULL;
-	}
+	const char *nn_channel_exchange = "amq.topic", *nn_channel_routingkey="natneg";
+	const char *nn_channel_queuename = "serverbrowsing.servers";
 
 	void SetupTaskPool(SBServer *server) {
+
+		std::string rabbitmq_address;
+		int rabbitmq_port;
+		OS::g_config->GetVariableString("", "rabbitmq_host", rabbitmq_address);
+		OS::g_config->GetVariableInt("", "rabbitmq_port", rabbitmq_port);
+
+		std::string rabbitmq_user, rabbitmq_pass;
+		OS::g_config->GetVariableString("", "rabbitmq_user", rabbitmq_user);
+		OS::g_config->GetVariableString("", "rabbitmq_password", rabbitmq_pass);
+
+
+		std::string rabbitmq_vhost;
+		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
+
+		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::nn_channel_exchange, MM::nn_channel_routingkey, MM::nn_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMQueryTask::MQListenerCallback);
+		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::nn_channel_exchange, MM::nn_channel_routingkey, MM::nn_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -46,7 +61,7 @@ namespace MM {
 		gameCacheTimeout.timeout_time_secs = 7200;
 
 		mp_redis_async_retrival_connection = Redis::Connect(OS::g_redisAddress, t);
-		mp_async_thread = OS::CreateThread(setup_redis_async, NULL, true);
+		mp_async_lookup_task = new MMQueryTask(NUM_MM_QUERY_THREADS);
 		OS::Sleep(200);
 
 		m_game_cache = new OS::GameCache(NUM_MM_QUERY_THREADS+1, gameCacheTimeout);
@@ -56,58 +71,46 @@ namespace MM {
 	}
 
 	void ShutdownTaskPool() {
-		Redis::CancelLooping(mp_redis_async_connection);
+		delete mp_mqsender;
+		delete mp_mqlistener;
 
 		mp_async_thread->SignalExit(true);
 		delete mp_async_thread;
 
-		Redis::Disconnect(mp_redis_async_connection);		
-		Redis::Disconnect(mp_redis_async_retrival_connection);		
+		Redis::Disconnect(mp_redis_async_retrival_connection);
 
 		delete mp_async_lookup_task;
 		delete m_task_pool;
 		delete m_game_cache;
 	}
 
-
-	void MMQueryTask::onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
+	void MMQueryTask::MQListenerCallback(std::string message, void *extra) {
 		MMQueryTask *task = (MMQueryTask *)mp_async_lookup_task;
-		Redis::Value v = reply.values.front();
-
-	    Server *server = NULL;
-
-		std::string msg_type, server_key;
-	    if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-	    	if(v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-	    		if(v.arr_value.values[1].second.value._str.compare(sb_mm_channel) == 0) {
-					std::vector<std::string> vec = OS::KeyStringToVector(v.arr_value.values[2].second.value._str);
-					if (vec.size() < 2) return;
-					msg_type = vec.at(0);
-					server_key = vec.at(1);
+		std::vector<std::string> vec = OS::KeyStringToVector(message);
+		if (vec.size() < 2) return;
+		std::string msg_type = vec.at(0);
+		std::string server_key = vec.at(1);
 
 
-	    			server = mp_async_lookup_task->GetServerByKey(server_key, mp_redis_async_retrival_connection, msg_type.compare("del") == 0);
-	    			if(!server) return;
+		MM::Server *server = mp_async_lookup_task->GetServerByKey(server_key, mp_redis_async_retrival_connection, msg_type.compare("del") == 0);
+		if(!server) return;
 
-					MM::Server server_cpy = *server;
-					delete server;
-	    			std::vector<SB::Driver *>::iterator it = task->m_drivers.begin();
-	    			while(it != task->m_drivers.end()) {
-	    				SB::Driver *driver = *it;
-			   			if(msg_type.compare("del") == 0) {
-							driver->AddDeleteServer(server_cpy);
-		    			} else if(msg_type.compare("new") == 0) {
-							driver->AddNewServer(server_cpy);
-		    			} else if(msg_type.compare("update") == 0) {
-							driver->AddUpdateServer(server_cpy);
-		    			}
-	    				it++;
-	    			}
-					
-	    		}
-	    	}
-	    }
+		MM::Server server_cpy = *server;
+		delete server;
+		std::vector<SB::Driver *>::iterator it = task->m_drivers.begin();
+		while(it != task->m_drivers.end()) {
+			SB::Driver *driver = *it;
+			if(msg_type.compare("del") == 0) {
+				driver->AddDeleteServer(server_cpy);
+			} else if(msg_type.compare("new") == 0) {
+				driver->AddNewServer(server_cpy);
+			} else if(msg_type.compare("update") == 0) {
+				driver->AddUpdateServer(server_cpy);
+			}
+			it++;
+		}
 	}
+
 	void MMQueryTask::AddDriver(SB::Driver *driver) {
 		if (std::find(m_drivers.begin(), m_drivers.end(), driver) == m_drivers.end()) {
 			m_drivers.push_back(driver);
@@ -852,19 +855,21 @@ namespace MM {
 				return;
 			}
 		#endif
+		
 		const char *base64 = OS::BinToBase64Str((uint8_t *)request.buffer.GetReadCursor(), request.buffer.readRemaining());
 		std::string b64_string = base64;
 		free((void *)base64);
+
 		std::string src_ip = request.from.ToString(true), dst_ip = request.to.ToString(true);
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\send_msg\\%s\\%s\\%d\\%s\\%d\\%s'",
-			sb_mm_channel,
-			/*request.game.gamename*/
-			"REMOVED",
-			src_ip.c_str(),
-			request.from.GetPort(),
-			dst_ip.c_str(),
-			request.to.GetPort(),
-			b64_string.c_str());
+
+
+		std::ostringstream message;
+		message << "\\send_msg\\REMOVED\\" << src_ip <<
+			request.from.GetPort() <<
+			dst_ip <<
+			request.to.GetPort() <<
+			b64_string;
+		mp_mqsender->sendMessage("hello");
 	}
 	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {
 		OS::GameData games[2];

@@ -180,7 +180,7 @@ namespace MM {
 			void AddDriver(SB::Driver *driver);
 			void RemoveDriver(SB::Driver *driver);
 
-			static void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata);
+			static void MQListenerCallback(std::string message, void *extra);
 
 			void debug_dump();
 		private:
