@@ -13,7 +13,7 @@ namespace MQ {
         private:
             static void *ListenThread(OS::CThread *thread);
             void Reconnect();
-            void handle_amqp_error(amqp_rpc_reply_t x, char const *context);
+            bool handle_amqp_error(amqp_rpc_reply_t x, char const *context);
             amqp_socket_t *mp_rabbitmq_socket;
             amqp_connection_state_t mp_rabbitmq_conn;
             std::string m_hostname;

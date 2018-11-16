@@ -24,10 +24,13 @@ namespace MQ {
 		amqp_connection_close(mp_rabbitmq_conn, AMQP_REPLY_SUCCESS);
 		amqp_destroy_connection(mp_rabbitmq_conn);
     }
-    void RMQListener::handle_amqp_error(amqp_rpc_reply_t x, char const *context) {
+    bool RMQListener::handle_amqp_error(amqp_rpc_reply_t x, char const *context) {
+        if(x.reply_type == AMQP_RESPONSE_LIBRARY_EXCEPTION && x.library_error == AMQP_STATUS_TIMEOUT) {
+            return true;
+        }
         switch (x.reply_type) {
             case AMQP_RESPONSE_NORMAL:
-            return;
+            return false;
 
             case AMQP_RESPONSE_NONE:
             OS::LogText(OS::ELogLevel_Error, "RMQListener: %s: missing RPC reply type!\n", context);
@@ -38,7 +41,6 @@ namespace MQ {
             break;
 
             case AMQP_RESPONSE_SERVER_EXCEPTION:
-            Reconnect();
             switch (x.reply.id) {
                 case AMQP_CONNECTION_CLOSE_METHOD: {
                 amqp_connection_close_t *m =
@@ -60,8 +62,11 @@ namespace MQ {
                         context, x.reply.id);
                 break;
             }
+            Reconnect();
+            return true;
             break;
         }
+        return true;
     }
     void RMQListener::Reconnect() {
 		if(mp_thread)
@@ -99,9 +104,9 @@ namespace MQ {
 
 			res = amqp_consume_message(listener->mp_rabbitmq_conn, &envelope, &timeout, 0);
 			
-            if(res.reply_type == AMQP_STATUS_TIMEOUT) continue;
-
-			listener->handle_amqp_error(res, "consume message");
+			if(listener->handle_amqp_error(res, "consume message")) {
+                continue;
+            }
 
 			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
             amqp_basic_ack(listener->mp_rabbitmq_conn, envelope.channel, envelope.delivery_tag, false);
