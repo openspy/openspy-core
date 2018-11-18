@@ -323,7 +323,6 @@ namespace OS {
 				skip_next = false;
 				continue;
 			}
-			printf("Token: %s - %s\n", fields[idx++].c_str(), token.c_str());
 
 			if(idx % field_count == 0 && idx != 0) {
 				idx = 0;
