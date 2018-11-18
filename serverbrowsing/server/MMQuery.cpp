@@ -30,7 +30,7 @@ namespace MM {
 	IMQListener *mp_mqlistener = NULL;
 	IMQSender *mp_mqsender = NULL;
 
-	const char *mm_channel_exchange = "amq.topic", *mm_channel_routingkey="natneg";
+	const char *mm_channel_exchange = "amq.topic", *mm_channel_routingkey="serverbrowsing";
 	const char *mm_channel_queuename = "serverbrowsing.servers";
 
 	void SetupTaskPool(SBServer *server) {
