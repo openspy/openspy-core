@@ -25,7 +25,7 @@ namespace MM {
 	IMQListener *mp_mqlistener = NULL;
 	IMQSender *mp_mqsender = NULL;
 
-	const char *mm_channel_exchange = "openspy.master", *mm_channel_routingkey="master";
+	const char *mm_channel_exchange = "openspy.master";
 	const char *mm_channel_queuename = "qr.slave";
 
 	const char *mm_client_message_routingkey = "client.message";
@@ -299,7 +299,6 @@ namespace MM {
 			s << "\\update\\" << modified_server.m_game.gamename << ":" << modified_server.groupid << ":" << modified_server.id << ":";
 			mp_mqsender->sendMessage(s.str());
 		}
-			//Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, modified_server.m_game.gamename.c_str(), modified_server.groupid, modified_server.id);
 	}
 	void MMPushTask::PerformUpdateServer(MMPushRequest request) {
 		DeleteServer(request.server, false);
