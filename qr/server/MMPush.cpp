@@ -467,7 +467,10 @@ namespace MM {
 		Redis::Command(mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
 		if (publish) {
 			Redis::Command(mp_redis_connection, 0, "ZADD %s %d \"%s\"", server.m_game.gamename.c_str(), pk_id, server_key.c_str());
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\new\\%s'", sb_mm_channel, server_key.c_str());
+
+			std::ostringstream s;
+			s << "\\new\\" << server_key.c_str();
+			mp_mqsender->sendMessage(s.str());
 		}
 
 		return id;
@@ -502,7 +505,10 @@ namespace MM {
 			}
 			Redis::Command(mp_redis_connection, 0, "HSET %s:%d:%d: deleted 1", server.m_game.gamename.c_str(), server.groupid, server.id);
 			Redis::Command(mp_redis_connection, 0, "EXPIRE %s:%d:%d: %d", server.m_game.gamename.c_str(), server.groupid, server.id, MM_PUSH_EXPIRE_TIME);
-			Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\del\\%s:%d:%d:'", sb_mm_channel, server.m_game.gamename.c_str(), groupid, id);
+
+			std::ostringstream s;
+			s << "\\del\\" << server.m_game.gamename.c_str() << ":" << groupid << ":" << id << ":";
+			mp_mqsender->sendMessage(s.str());
 		}
 		else {
 			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:", server.m_game.gamename.c_str(), server.groupid, server.id);
