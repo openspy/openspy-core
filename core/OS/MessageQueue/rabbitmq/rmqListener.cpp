@@ -109,7 +109,8 @@ namespace MQ {
             }
 
 			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
-            amqp_basic_ack(listener->mp_rabbitmq_conn, envelope.channel, envelope.delivery_tag, false);
+
+            //amqp_basic_ack(listener->mp_rabbitmq_conn, envelope.channel, envelope.delivery_tag, false);
 
             listener->mp_message_handler(message, listener->mp_extra);
 

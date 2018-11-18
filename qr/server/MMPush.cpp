@@ -18,7 +18,6 @@
 #define MM_PUSH_EXPIRE_TIME 1800
 
 namespace MM {
-	const char *sb_mm_channel = "serverbrowsing.servers";
 	OS::TaskPool<MMPushTask, MMPushRequest> *m_task_pool = NULL;
 	const char *mp_pk_name = "QRID";
 	Redis::Connection *mp_redis_async_retrival_connection;
@@ -26,49 +25,11 @@ namespace MM {
 	IMQListener *mp_mqlistener = NULL;
 	IMQSender *mp_mqsender = NULL;
 
-	const char *mm_channel_exchange = "amq.topic", *mm_channel_routingkey="serverbrowsing";
-	const char *mm_channel_queuename = "serverbrowsing.servers";
+	const char *mm_channel_exchange = "openspy.master", *mm_channel_routingkey="master";
+	const char *mm_channel_queuename = "qr.slave";
 
-
-	void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata) {
-		std::string gamename, from_ip, to_ip, from_port, to_port, data, type;
-		uint8_t *data_out;
-		size_t data_len;
-		Redis::Value v = reply.values.front();
-		QR::Server *server = (QR::Server *)privdata;
-
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-			if (v.arr_value.values.size() == 3 && v.arr_value.values[2].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-				if (v.arr_value.values[1].second.value._str.compare(sb_mm_channel) == 0) {
-					std::vector<std::string> vec = OS::KeyStringToVector(v.arr_value.values[2].second.value._str);
-					if (vec.size() < 1) return;
-					type = vec.at(0);
-					if (!type.compare("send_msg")) {
-						if (vec.size() < 7) return;
-						gamename = vec.at(1);
-						from_ip = vec.at(2);
-						from_port = vec.at(3);
-						to_ip = vec.at(4);
-						to_port = vec.at(5);
-						data = vec.at(6);
-
-						std::ostringstream ss;
-						ss << to_ip << ":" << to_port;
-
-						OS::Address address(ss.str().c_str());
-						QR::Peer *peer = server->find_client(address);
-						if (!peer) {
-							return;							
-						}
-							
-						OS::Base64StrToBin((const char *)data.c_str(), &data_out, data_len);
-						peer->SendClientMessage(data_out, data_len);
-						free(data_out);
-					}
-				}
-			}
-		}
-	}
+	const char *mm_client_message_routingkey = "client.message";
+	const char *mm_server_event_routingkey = "server.event";
 
 	MMPushTask::MMPushTask(int thread_index) {
 		struct timeval t;
@@ -217,6 +178,7 @@ namespace MM {
 					force_delete = true;
 				}
 			}
+			ss.str("");
 			ss << server_key << "custkeys_player_" << idx++;
 			resp = Redis::Command(mp_redis_connection, 0, "EXISTS %s", ss.str().c_str());
 			v = resp.values.front();
@@ -229,10 +191,9 @@ namespace MM {
 			}
 			if(ret <= 0) {
 				break;
-			}
-			if(force_delete) {
+			} else if(force_delete) {
 				Redis::Command(mp_redis_connection, 0, "DEL %s", ss.str().c_str());
-				goto end;
+				break;
 			}
 			it3 = missing_player_keys.begin();
 			while(it3 != missing_player_keys.end()) {
@@ -240,10 +201,6 @@ namespace MM {
 				Redis::Command(mp_redis_connection, 0, "HDEL %s %s", ss.str().c_str(), name.c_str());
 				it3++;
 			}
-
-
-			end:
-			ss.str("");
 		}
 		
 		idx = 0;
@@ -255,7 +212,7 @@ namespace MM {
 					force_delete = true;
 				}
 			}
-
+			ss.str("");
 			ss << server_key << "custkeys_team_" << idx++;
 			resp = Redis::Command(mp_redis_connection, 0, "EXISTS %s", ss.str().c_str());
 			v = resp.values.front();
@@ -268,10 +225,9 @@ namespace MM {
 			}
 			if(ret <= 0) {
 				break;
-			}
-			if(force_delete) {
+			} else if(force_delete) {
 				Redis::Command(mp_redis_connection, 0, "DEL %s", ss.str().c_str());
-				goto end;
+				break;
 			}
 			it3 = missing_team_keys.begin();
 			while(it3 != missing_team_keys.end()) {
@@ -279,7 +235,6 @@ namespace MM {
 				Redis::Command(mp_redis_connection, 0, "HDEL %s %s", ss.str().c_str(), name.c_str());
 				it3++;
 			}
-			ss.str("");
 		}
 
 		//create ServerInfo struct with changed keys only
@@ -481,7 +436,9 @@ namespace MM {
 		DeleteServer(server, false);
 		PushServer(server, false, server.id);
 
-		Redis::Command(mp_redis_connection, 0, "PUBLISH %s '\\update\\%s:%d:%d:'", sb_mm_channel, server.m_game.gamename.c_str(), server.groupid, server.id);
+		std::ostringstream s;
+		s << "\\update\\" << server.m_game.gamename.c_str() << ":" << server.groupid << ":" << server.id << ":";
+		mp_mqsender->sendMessage(s.str());
 	}
 	void MMPushTask::DeleteServer(ServerInfo server, bool publish) {
 		int groupid = server.groupid;
@@ -614,10 +571,10 @@ namespace MM {
 		std::string rabbitmq_vhost;
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
-		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMPushTask::MQListenerCallback);
+		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_client_message_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMPushTask::MQListenerCallback);
 		mp_mqlistener->setRecieverCallback(MMPushTask::MQListenerCallback, server);
 
-		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_server_event_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
 		t.tv_usec = 0;

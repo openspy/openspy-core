@@ -30,8 +30,8 @@ namespace MM {
 	IMQListener *mp_mqlistener = NULL;
 	IMQSender *mp_mqsender = NULL;
 
-	const char *mm_channel_exchange = "amq.topic", *mm_channel_routingkey="serverbrowsing";
-	const char *mm_channel_queuename = "serverbrowsing.servers";
+	const char *mm_channel_exchange = "openspy.master", *mm_channel_routingkey="server.event", *mm_send_message_routingkey = "client.message";
+	const char *mm_channel_queuename = "serverbrowsing.slave";
 
 	void SetupTaskPool(SBServer *server) {
 
@@ -49,7 +49,7 @@ namespace MM {
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
 		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMQueryTask::MQListenerCallback);
-		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_send_message_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -860,10 +860,10 @@ namespace MM {
 
 
 		std::ostringstream message;
-		message << "\\send_msg\\REMOVED\\" << src_ip <<
-			request.from.GetPort() <<
-			dst_ip <<
-			request.to.GetPort() <<
+		message << "\\send_msg\\REMOVED\\" << src_ip << "\\" <<
+			request.from.GetPort() << "\\" <<
+			dst_ip << "\\" <<
+			request.to.GetPort() << "\\" <<
 			b64_string;
 		mp_mqsender->sendMessage(message.str());
 	}
