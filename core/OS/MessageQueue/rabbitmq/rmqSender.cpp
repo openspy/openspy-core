@@ -2,7 +2,7 @@
 #define RMQSENDER_WAIT_MAX_TIME 1500
 namespace MQ {
     
-    RMQSenderTask::RMQSenderTask(RMQSender *sender, std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string queueName, std::string username, std::string password, std::string vhost) {
+    RMQSenderTask::RMQSenderTask(RMQSender *sender, std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string username, std::string password, std::string vhost) {
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(RMQSenderTask::TaskThread, this, true);
 
@@ -13,7 +13,6 @@ namespace MQ {
         m_password = password;
         m_exchange_name = exchangeName;
         m_routing_key = routingKey;
-        m_queue_name = queueName;
 
 		//init sender
 		mp_rabbitmq_conn = amqp_new_connection();
@@ -107,8 +106,8 @@ namespace MQ {
         }
     }
 
-    RMQSender::RMQSender(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string queueName, std::string username, std::string password, std::string vhost) : IMQSender() {
-            mp_task = new RMQSenderTask(this, hostname, port, exchangeName, routingKey, queueName, username, password, vhost);
+    RMQSender::RMQSender(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string username, std::string password, std::string vhost) : IMQSender() {
+            mp_task = new RMQSenderTask(this, hostname, port, exchangeName, routingKey, username, password, vhost);
 
     }
     RMQSender::~RMQSender() {

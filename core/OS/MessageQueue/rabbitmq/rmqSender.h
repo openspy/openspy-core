@@ -18,7 +18,7 @@ namespace MQ {
 	};
     class RMQSenderTask : public OS::Task<RMQSenderRequest> {
         public:
-            RMQSenderTask(RMQSender *sender, std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string queueName, std::string username, std::string password, std::string vhost);
+            RMQSenderTask(RMQSender *sender, std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string username, std::string password, std::string vhost);
             ~RMQSenderTask();
         private:
             amqp_socket_t *mp_rabbitmq_socket;
@@ -29,7 +29,6 @@ namespace MQ {
             int m_port;
             std::string m_exchange_name;
             std::string m_routing_key;
-            std::string m_queue_name;
 
             std::string m_user;
             std::string m_password;
@@ -40,7 +39,7 @@ namespace MQ {
     };
     class RMQSender : public IMQSender {
         public:
-            RMQSender(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string queueName, std::string username, std::string password, std::string vhost);
+            RMQSender(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string username, std::string password, std::string vhost);
             ~RMQSender();
             void sendMessage(std::string message);
         private:

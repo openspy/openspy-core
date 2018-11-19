@@ -1,14 +1,14 @@
 #include "rmqListener.h"
 namespace MQ {
-    RMQListener::RMQListener(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string queueName, std::string username, std::string password, std::string vhost, _MQMessageHandler handler) : IMQListener() {
+    RMQListener::RMQListener(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string username, std::string password, std::string vhost, _MQMessageHandler handler, std::string queuename) : IMQListener() {
         m_hostname = hostname;
         m_port = port;
         m_exchange_name = exchangeName;
         m_routing_key = routingKey;
-        m_queue_name = queueName;
         m_username = username;
         m_password = password;
         m_vhost = vhost;
+        m_queue_name = queuename;
         setRecieverCallback(handler, this);
 
 		mp_thread = NULL;
@@ -78,6 +78,8 @@ namespace MQ {
 		listener->mp_rabbitmq_conn = amqp_new_connection();
 		listener->mp_rabbitmq_socket = amqp_tcp_socket_new(listener->mp_rabbitmq_conn);
 
+        amqp_bytes_t queuename;
+
         struct timeval timeout;
         memset(&timeout, 0, sizeof(timeout));
         timeout.tv_sec = 5;
@@ -91,7 +93,25 @@ namespace MQ {
 		amqp_channel_open(listener->mp_rabbitmq_conn, 1);
 		listener->handle_amqp_error(amqp_get_rpc_reply(listener->mp_rabbitmq_conn), "channel open"); //TODO: channel error check
 
-		amqp_basic_consume(listener->mp_rabbitmq_conn, 1, amqp_cstring_bytes(listener->m_queue_name.c_str()), amqp_empty_bytes, 0, 1, 0,
+        if(listener->m_queue_name.length() > 0) {
+             queuename = amqp_cstring_bytes(listener->m_queue_name.c_str());
+        } else {
+            amqp_queue_declare_ok_t *r = amqp_queue_declare(listener->mp_rabbitmq_conn, 1, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
+            listener->handle_amqp_error(amqp_get_rpc_reply(listener->mp_rabbitmq_conn), "Declaring queue");
+            queuename = amqp_bytes_malloc_dup(r->queue);
+            if (queuename.bytes == NULL) {
+                fprintf(stderr, "Out of memory while copying queue name");
+                exit(-1);
+            }
+
+            amqp_queue_bind(listener->mp_rabbitmq_conn, 1, queuename, amqp_cstring_bytes(listener->m_exchange_name.c_str()),
+                            amqp_cstring_bytes(listener->m_routing_key.c_str()), amqp_empty_table);
+
+            listener->handle_amqp_error(amqp_get_rpc_reply(listener->mp_rabbitmq_conn), "Binding queue");
+        }
+
+
+		amqp_basic_consume(listener->mp_rabbitmq_conn, 1, queuename, amqp_empty_bytes, 0, 1, 0,
 			amqp_empty_table);
 
         listener->handle_amqp_error(amqp_get_rpc_reply(listener->mp_rabbitmq_conn), "basic consume");
@@ -117,6 +137,7 @@ namespace MQ {
 			amqp_destroy_envelope(&envelope);
         }
 
+        amqp_bytes_free(queuename);
 		amqp_channel_close(listener->mp_rabbitmq_conn, 1, AMQP_REPLY_SUCCESS);
 		amqp_connection_close(listener->mp_rabbitmq_conn, AMQP_REPLY_SUCCESS);
 		amqp_destroy_connection(listener->mp_rabbitmq_conn);

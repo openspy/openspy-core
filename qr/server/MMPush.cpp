@@ -26,7 +26,6 @@ namespace MM {
 	IMQSender *mp_mqsender = NULL;
 
 	const char *mm_channel_exchange = "openspy.master";
-	const char *mm_channel_queuename = "qr.slave";
 
 	const char *mm_client_message_routingkey = "client.message";
 	const char *mm_server_event_routingkey = "server.event";
@@ -570,10 +569,11 @@ namespace MM {
 		std::string rabbitmq_vhost;
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
-		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_client_message_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMPushTask::MQListenerCallback);
+
+		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_client_message_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMPushTask::MQListenerCallback);
 		mp_mqlistener->setRecieverCallback(MMPushTask::MQListenerCallback, server);
 
-		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_server_event_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_server_event_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
 		t.tv_usec = 0;

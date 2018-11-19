@@ -48,8 +48,8 @@ namespace MM {
 		std::string rabbitmq_vhost;
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
-		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMQueryTask::MQListenerCallback);
-		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_send_message_routingkey, MM::mm_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMQueryTask::MQListenerCallback);
+		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_send_message_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -344,6 +344,7 @@ namespace MM {
 			idx = 0;
 
 			do {
+				s.str("");
 				s << entry_name << "custkeys_team_" << idx;
 				key = s.str();
 
@@ -392,7 +393,6 @@ namespace MM {
 							}
 						}
 					}
-					s.str("");
 				} while(cursor != 0);
 				idx++;
 			} while(true);
