@@ -22,8 +22,7 @@ namespace NN {
 	IMQListener *mp_mqlistener = NULL;
 	IMQSender *mp_mqsender = NULL;
 
-	const char *nn_channel_exchange = "amq.topic", *nn_channel_routingkey="natneg";
-	const char *nn_channel_queuename = "natneg.backend";
+	const char *nn_channel_exchange = "openspy.natneg", *nn_channel_routingkey="natneg.core";
 
 	void *NNQueryTask::TaskThread(OS::CThread *thread) {
 		NNQueryTask *task = (NNQueryTask *)thread->getParams();
@@ -305,8 +304,8 @@ namespace NN {
 		std::string rabbitmq_vhost;
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
-		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, NN::nn_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, NN::MQListenerCallback);
-		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, NN::nn_channel_queuename, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, NN::MQListenerCallback);
+		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
 		t.tv_usec = 0;

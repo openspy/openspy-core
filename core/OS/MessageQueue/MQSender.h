@@ -4,7 +4,7 @@
 class IMQSender {
     public:
         IMQSender() { };
-        ~IMQSender() { };
+        virtual ~IMQSender() { };
         virtual void sendMessage(std::string message) = 0;
 };
 #endif //_MQSender_H

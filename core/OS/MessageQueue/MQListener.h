@@ -5,7 +5,7 @@ typedef void (*_MQMessageHandler)(std::string message, void *extra);
 class IMQListener {
     public:
         IMQListener() { };
-        ~IMQListener() { };
+        virtual ~IMQListener() { };
         void setRecieverCallback(_MQMessageHandler handler, void *extra = NULL) {
             mp_message_handler = handler;
             mp_extra = extra;
