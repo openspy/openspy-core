@@ -35,7 +35,7 @@ namespace FESL {
 
 	class Driver : public INetDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, bool use_ssl = true, const char *x509_path = NULL, const char *rsa_priv_path = NULL, SSLNetIOIFace::ESSL_Type ssl_version = SSLNetIOIFace::ESSL_SSLv3);
+		Driver(INetServer *server, OS::Address address, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path = NULL, const char *rsa_priv_path = NULL, SSLNetIOIFace::ESSL_Type ssl_version = SSLNetIOIFace::ESSL_None);
 		~Driver();
 		void think(bool listener_waiting);
 

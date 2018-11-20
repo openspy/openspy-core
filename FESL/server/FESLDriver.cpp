@@ -8,7 +8,7 @@
 
 
 namespace FESL {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, bool use_ssl, const char *x509_path, const char *rsa_priv_path, SSLNetIOIFace::ESSL_Type ssl_version) : INetDriver(server) {
+	Driver::Driver(INetServer *server, OS::Address address, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path, const char *rsa_priv_path, SSLNetIOIFace::ESSL_Type ssl_version) : INetDriver(server) {
 
 		//setup config vars
 		m_server_info.domainPartition = public_info.domainPartition;
@@ -19,9 +19,9 @@ namespace FESL {
 		m_server_info.theaterPort = public_info.theaterPort;
 		m_server_info.termsOfServiceData = public_info.termsOfServiceData;
 
-		mp_socket_interface = new SSLNetIOIFace::SSLNetIOInterface(ssl_version, rsa_priv_path, x509_path);
+		mp_socket_interface = new SSLNetIOIFace::SSLNetIOInterface(ssl_version, rsa_priv_path, x509_path);		
 
-		mp_socket = mp_socket_interface->BindTCP(OS::Address(0, port));
+		mp_socket = mp_socket_interface->BindTCP(address);
 		mp_mutex = OS::CreateMutex();
 		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
 

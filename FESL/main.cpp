@@ -4,6 +4,7 @@
 #include <sstream>
 #include <OS/Net/NetServer.h>
 #include <openssl/ssl.h>
+#include <OS/Config/AppConfig.h>
 #include "server/FESLServer.h"
 #include "server/FESLDriver.h"
 #include <OS/StringCrypter.h>
@@ -39,8 +40,10 @@ std::string get_file_contents(std::string path) {
 	return ret;
 }
 
-SSLNetIOIFace::ESSL_Type getSSLVersion(configVar *driver_arr) {
-	std::string ssl_version = OS::g_config->getArrayString(driver_arr, "ssl_version");
+SSLNetIOIFace::ESSL_Type getSSLVersion(std::string driver_name, AppConfig *app_config) {
+	std::string ssl_version;
+
+	app_config->GetVariableString(driver_name, "ssl-version", ssl_version);
 
 	if (ssl_version.compare("SSLv2") == 0) {
 		return SSLNetIOIFace::ESSL_SSLv2;
@@ -75,62 +78,57 @@ int main() {
 		WSAStartup(MAKEWORD(1, 0), &wsdata);
 	#endif
 
-	OS::Init("FESL", "openspy.cfg");
-
+	OS::Config *cfg = new OS::Config("openspy.xml");
+	AppConfig *app_config = new AppConfig(cfg, "FESL");
+	OS::Init("FESL", app_config);
 	g_gameserver = new FESL::Server();
-	configVar *gp_struct = OS::g_config->getRootArray("FESL");
-	configVar *driver_struct = OS::g_config->getArrayArray(gp_struct, "drivers");
-	std::list<configVar *> drivers = OS::g_config->getArrayVariables(driver_struct);
-	std::list<configVar *>::iterator it = drivers.begin();
+
+	std::vector<std::string> drivers = app_config->getDriverNames();
+	std::vector<std::string>::iterator it = drivers.begin();
 	while (it != drivers.end()) {
-		
-		configVar *driver_arr = *it;
-		const char *bind_ip = OS::g_config->getArrayString(driver_arr, "address");
-		int bind_port = OS::g_config->getArrayInt(driver_arr, "port");
-		bool ssl = OS::g_config->getArrayInt(driver_arr, "ssl");
-		SSLNetIOIFace::ESSL_Type ssl_version = getSSLVersion(driver_arr);
+		std::string s = *it;
 
-		const char *x509_path = NULL, *rsa_path = NULL;
+		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+		OS::Address address = addresses.front();
 
-		const char *stringCrypterPKey = OS::g_config->getArrayString(driver_arr, "stringCrypterPKey");
+		SSLNetIOIFace::ESSL_Type ssl_version = getSSLVersion(s, app_config);
 
-		if (ssl) {
-			x509_path = OS::g_config->getArrayString(driver_arr, "x509");
-			rsa_path = OS::g_config->getArrayString(driver_arr, "x509_pkey");
+		std::string x509_path, rsa_path;
+
+		std::string stringCrypterPKey;
+		app_config->GetVariableString(s, "stringCrypterPKey", stringCrypterPKey);
+
+		if (ssl_version != SSLNetIOIFace::ESSL_None) {
+			app_config->GetVariableString(s, "x509", x509_path);
+			app_config->GetVariableString(s, "x509_pkey", rsa_path);
 		}
 
 		FESL::PublicInfo server_info;
 
-		server_info.domainPartition = OS::g_config->getArrayString(driver_arr, "domainPartition");
-		server_info.subDomain = OS::g_config->getArrayString(driver_arr, "subDomain");
+		std::string tos_path;
+		app_config->GetVariableString(s, "tosFile", tos_path);
+		app_config->GetVariableString(s, "domainPartition", server_info.domainPartition);
+		app_config->GetVariableString(s, "subDomain", server_info.subDomain);
 
-		server_info.messagingHostname = OS::g_config->getArrayString(driver_arr, "messagingHostname");
-		server_info.messagingPort = OS::g_config->getArrayInt(driver_arr, "messagingPort");
+		app_config->GetVariableString(s, "messagingHostname", server_info.messagingHostname);
+		
+		int port;
+		app_config->GetVariableInt(s, "messagingPort", port);
+		server_info.messagingPort = (uint16_t)port;
 
-		server_info.theaterHostname = OS::g_config->getArrayString(driver_arr, "theaterHostname");
-		server_info.theaterPort = OS::g_config->getArrayInt(driver_arr, "theaterPort");
-
-		const char *tos_path = OS::g_config->getArrayString(driver_arr, "tosFile");
+		app_config->GetVariableString(s, "theaterHostname", server_info.theaterHostname);
+		app_config->GetVariableInt(s, "theaterPort", port);
+		server_info.theaterPort = (uint16_t)port;
 
 		server_info.termsOfServiceData = get_file_contents(tos_path);
 
-		FESL::Driver *driver = new FESL::Driver(g_gameserver, bind_ip, bind_port, server_info, stringCrypterPKey, ssl, x509_path, rsa_path, ssl_version);
-		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s:%d (ssl: %d)\n", bind_ip, bind_port, ssl);
+		FESL::Driver *driver = new FESL::Driver(g_gameserver, address, server_info, stringCrypterPKey, x509_path.c_str(), rsa_path.c_str(), ssl_version);
+		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s (ssl: %d)\n", address.ToString().c_str(), ssl_version != SSLNetIOIFace::ESSL_None);
 		g_gameserver->addNetworkDriver(driver);
 		it++;
 	}
 
-	g_gameserver->init();
-	while(g_running) {
-		g_gameserver->tick();
-	}
-
-    delete g_gameserver;
-
-    OS::Shutdown();
-    return 0;
 }
-
 void shutdown() {
     if(g_running) {
         g_running = false;
