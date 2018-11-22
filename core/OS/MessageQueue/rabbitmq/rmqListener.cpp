@@ -1,6 +1,6 @@
 #include "rmqListener.h"
 namespace MQ {
-    RMQListener::RMQListener(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string username, std::string password, std::string vhost, _MQMessageHandler handler, std::string queuename) : IMQListener() {
+    RMQListener::RMQListener(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string username, std::string password, std::string vhost, _MQMessageHandler handler, std::string queuename, void *extra) : IMQListener() {
         m_hostname = hostname;
         m_port = port;
         m_exchange_name = exchangeName;
@@ -9,7 +9,8 @@ namespace MQ {
         m_password = password;
         m_vhost = vhost;
         m_queue_name = queuename;
-        setRecieverCallback(handler, this);
+
+        setRecieverCallback(handler, extra==NULL ? this : extra);
 
 		mp_thread = NULL;
 		Reconnect();

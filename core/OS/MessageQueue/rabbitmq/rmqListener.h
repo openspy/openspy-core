@@ -8,7 +8,7 @@
 namespace MQ {
     class RMQListener : public IMQListener {
         public:
-            RMQListener(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string username, std::string password, std::string vhost, _MQMessageHandler handler, std::string queueName = "");
+            RMQListener(std::string hostname, int port, std::string exchangeName, std::string routingKey, std::string username, std::string password, std::string vhost, _MQMessageHandler handler, std::string queueName = "", void *extra = NULL);
             ~RMQListener();
         private:
             static void *ListenThread(OS::CThread *thread);

@@ -304,7 +304,7 @@ namespace NN {
 		std::string rabbitmq_vhost;
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
-		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, NN::MQListenerCallback);
+		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, NN::MQListenerCallback, "", server);
 		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 
 		struct timeval t;
