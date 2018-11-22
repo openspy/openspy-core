@@ -128,6 +128,15 @@ int main() {
 		it++;
 	}
 
+	g_gameserver->init();
+	while(g_running) {
+			g_gameserver->tick();
+	}
+
+    delete g_gameserver;
+
+    OS::Shutdown();
+    return 0;
 }
 void shutdown() {
     if(g_running) {
