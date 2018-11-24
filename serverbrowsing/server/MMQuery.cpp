@@ -15,10 +15,7 @@
 #include <OS/Cache/GameCache.h>
 #include <OS/KVReader.h>
 
-#include <OS/MessageQueue/MQListener.h>
-#include <OS/MessageQueue/MQSender.h>
-#include <OS/MessageQueue/rabbitmq/rmqListener.h>
-#include <OS/MessageQueue/rabbitmq/rmqSender.h>
+#include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 
 namespace MM {
 
@@ -27,8 +24,7 @@ namespace MM {
 	Redis::Connection *mp_redis_async_retrival_connection;
 	MMQueryTask *mp_async_lookup_task = NULL;
 
-	IMQListener *mp_mqlistener = NULL;
-	IMQSender *mp_mqsender = NULL;
+	MQ::IMQInterface *mp_mqconnection = NULL;
 
 	const char *mm_channel_exchange = "openspy.master", *mm_channel_routingkey="server.event", *mm_send_message_routingkey = "client.message";
 	const char *mm_channel_queuename = "serverbrowsing.slave";
@@ -36,9 +32,7 @@ namespace MM {
 	void SetupTaskPool(SBServer *server) {
 
 		std::string rabbitmq_address;
-		int rabbitmq_port;
-		OS::g_config->GetVariableString("", "rabbitmq_host", rabbitmq_address);
-		OS::g_config->GetVariableInt("", "rabbitmq_port", rabbitmq_port);
+		OS::g_config->GetVariableString("", "rabbitmq_address", rabbitmq_address);
 
 		std::string rabbitmq_user, rabbitmq_pass;
 		OS::g_config->GetVariableString("", "rabbitmq_user", rabbitmq_user);
@@ -48,8 +42,8 @@ namespace MM {
 		std::string rabbitmq_vhost;
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
-		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_channel_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMQueryTask::MQListenerCallback);
-		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_send_message_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqconnection = (MQ::IMQInterface*)new MQ::rmqConnection(OS::Address(rabbitmq_address), rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqconnection->setReciever(MM::mm_channel_exchange, MM::mm_channel_routingkey, MMQueryTask::MQListenerCallback);
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -70,8 +64,7 @@ namespace MM {
 	}
 
 	void ShutdownTaskPool() {
-		delete mp_mqsender;
-		delete mp_mqlistener;
+		delete mp_mqconnection;
 
 		Redis::Disconnect(mp_redis_async_retrival_connection);
 
@@ -865,7 +858,7 @@ namespace MM {
 			dst_ip << "\\" <<
 			request.to.GetPort() << "\\" <<
 			b64_string;
-		mp_mqsender->sendMessage(message.str());
+		mp_mqconnection->sendMessage(MM::mm_channel_exchange, MM::mm_send_message_routingkey, message.str());
 	}
 	void MMQueryTask::PerformGetGameInfoPairByGameName(MMQueryRequest request) {
 		OS::GameData games[2];

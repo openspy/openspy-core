@@ -10,10 +10,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include <OS/MessageQueue/MQListener.h>
-#include <OS/MessageQueue/MQSender.h>
-#include <OS/MessageQueue/rabbitmq/rmqListener.h>
-#include <OS/MessageQueue/rabbitmq/rmqSender.h>
+#include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 
 #define MM_PUSH_EXPIRE_TIME 1800
 
@@ -22,8 +19,7 @@ namespace MM {
 	const char *mp_pk_name = "QRID";
 	Redis::Connection *mp_redis_async_retrival_connection;
 
-	IMQListener *mp_mqlistener = NULL;
-	IMQSender *mp_mqsender = NULL;
+	MQ::IMQInterface *mp_mqconnection = NULL;
 
 	const char *mm_channel_exchange = "openspy.master";
 
@@ -296,7 +292,7 @@ namespace MM {
 		if(change_occured) {
 			std::ostringstream s;
 			s << "\\update\\" << modified_server.m_game.gamename << ":" << modified_server.groupid << ":" << modified_server.id << ":";
-			mp_mqsender->sendMessage(s.str());
+			mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey,s.str());
 		}
 	}
 	void MMPushTask::PerformUpdateServer(MMPushRequest request) {
@@ -423,7 +419,7 @@ namespace MM {
 
 			std::ostringstream s;
 			s << "\\new\\" << server_key.c_str();
-			mp_mqsender->sendMessage(s.str());
+			mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
 		}
 
 		return id;
@@ -436,7 +432,7 @@ namespace MM {
 
 		std::ostringstream s;
 		s << "\\update\\" << server.m_game.gamename.c_str() << ":" << server.groupid << ":" << server.id << ":";
-		mp_mqsender->sendMessage(s.str());
+		mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey,s.str());
 	}
 	void MMPushTask::DeleteServer(ServerInfo server, bool publish) {
 		int groupid = server.groupid;
@@ -463,7 +459,7 @@ namespace MM {
 
 			std::ostringstream s;
 			s << "\\del\\" << server.m_game.gamename.c_str() << ":" << groupid << ":" << id << ":";
-			mp_mqsender->sendMessage(s.str());
+			mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey,s.str());
 		}
 		else {
 			Redis::Command(mp_redis_connection, 0, "DEL %s:%d:%d:", server.m_game.gamename.c_str(), server.groupid, server.id);
@@ -557,9 +553,7 @@ namespace MM {
 	void SetupTaskPool(QR::Server* server) {
 
 		std::string rabbitmq_address;
-		int rabbitmq_port;
-		OS::g_config->GetVariableString("", "rabbitmq_host", rabbitmq_address);
-		OS::g_config->GetVariableInt("", "rabbitmq_port", rabbitmq_port);
+		OS::g_config->GetVariableString("", "rabbitmq_address", rabbitmq_address);
 
 		std::string rabbitmq_user, rabbitmq_pass;
 		OS::g_config->GetVariableString("", "rabbitmq_user", rabbitmq_user);
@@ -570,10 +564,8 @@ namespace MM {
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
 
-		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_client_message_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, MMPushTask::MQListenerCallback);
-		mp_mqlistener->setRecieverCallback(MMPushTask::MQListenerCallback, server);
-
-		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, MM::mm_channel_exchange, MM::mm_server_event_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqconnection = (MQ::IMQInterface*)new MQ::rmqConnection(OS::Address(rabbitmq_address), rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqconnection->setReciever(mm_channel_exchange, mm_client_message_routingkey, MMPushTask::MQListenerCallback, "", server);
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -585,6 +577,7 @@ namespace MM {
 		server->SetTaskPool(m_task_pool);
 	}
 	void Shutdown() {
+		delete mp_mqconnection;
 		Redis::Disconnect(mp_redis_async_retrival_connection);
 
 		delete m_task_pool;

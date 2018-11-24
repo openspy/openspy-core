@@ -9,18 +9,14 @@
 
 #include <sstream>
 
-#include <OS/MessageQueue/MQListener.h>
-#include <OS/MessageQueue/MQSender.h>
-#include <OS/MessageQueue/rabbitmq/rmqListener.h>
-#include <OS/MessageQueue/rabbitmq/rmqSender.h>
+#include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 #define NATNEG_COOKIE_TIME 30 
 namespace NN {
 	OS::TaskPool<NNQueryTask, NNBackendRequest> *m_task_pool = NULL;
 	Redis::Connection *mp_redis_async_retrival_connection = NULL;
 
 	NNQueryTask *mp_async_lookup_task = NULL;
-	IMQListener *mp_mqlistener = NULL;
-	IMQSender *mp_mqsender = NULL;
+	MQ::IMQInterface *mp_mqconnection = NULL;
 
 	const char *nn_channel_exchange = "openspy.natneg", *nn_channel_routingkey="natneg.core";
 
@@ -167,7 +163,7 @@ namespace NN {
 		}
 	}
 	void NNQueryTask::BroadcastMessage(std::string message) {
-		mp_mqsender->sendMessage(message);
+		mp_mqconnection->sendMessage(NN::nn_channel_exchange, NN::nn_channel_routingkey, message);
 	}
 	ConnectionSummary NNQueryTask::LoadConnectionSummary(std::string redis_key) {
 		int address_counter = 0;
@@ -292,9 +288,7 @@ namespace NN {
 	void SetupTaskPool(NN::Server* server) {
 
 		std::string rabbitmq_address;
-		int rabbitmq_port;
-		OS::g_config->GetVariableString("", "rabbitmq_host", rabbitmq_address);
-		OS::g_config->GetVariableInt("", "rabbitmq_port", rabbitmq_port);
+		OS::g_config->GetVariableString("", "rabbitmq_address", rabbitmq_address);
 
 		std::string rabbitmq_user, rabbitmq_pass;
 		OS::g_config->GetVariableString("", "rabbitmq_user", rabbitmq_user);
@@ -304,8 +298,8 @@ namespace NN {
 		std::string rabbitmq_vhost;
 		OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
 
-		mp_mqlistener = new MQ::RMQListener(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, NN::MQListenerCallback, "", server);
-		mp_mqsender = new MQ::RMQSender(rabbitmq_address, rabbitmq_port, NN::nn_channel_exchange, NN::nn_channel_routingkey, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqconnection = (MQ::IMQInterface*)new MQ::rmqConnection(OS::Address(rabbitmq_address), rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
+		mp_mqconnection->setReciever(NN::nn_channel_exchange, NN::nn_channel_routingkey,  NN::MQListenerCallback, "", server);
 
 		struct timeval t;
 		t.tv_usec = 0;
@@ -319,8 +313,7 @@ namespace NN {
 	}
 	void Shutdown() {
 		delete NN::m_task_pool;
-		delete NN::mp_mqlistener;
-		delete NN::mp_mqsender;
+		delete NN::mp_mqconnection;
 
 		Redis::Disconnect(NN::mp_redis_async_retrival_connection);
 	}
