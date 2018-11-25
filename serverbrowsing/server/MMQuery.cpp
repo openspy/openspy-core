@@ -44,6 +44,7 @@ namespace MM {
 
 		mp_mqconnection = (MQ::IMQInterface*)new MQ::rmqConnection(OS::Address(rabbitmq_address), rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 		mp_mqconnection->setReciever(MM::mm_channel_exchange, MM::mm_channel_routingkey, MMQueryTask::MQListenerCallback);
+		mp_mqconnection->declareReady();
 
 		struct timeval t;
 		t.tv_usec = 0;

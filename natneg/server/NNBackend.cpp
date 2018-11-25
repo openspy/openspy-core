@@ -300,6 +300,7 @@ namespace NN {
 
 		mp_mqconnection = (MQ::IMQInterface*)new MQ::rmqConnection(OS::Address(rabbitmq_address), rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 		mp_mqconnection->setReciever(NN::nn_channel_exchange, NN::nn_channel_routingkey,  NN::MQListenerCallback, "", server);
+		mp_mqconnection->declareReady();
 
 		struct timeval t;
 		t.tv_usec = 0;

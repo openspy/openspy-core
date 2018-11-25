@@ -13,6 +13,7 @@ namespace MQ {
             std::string exchange;
             std::string routingKey;
             std::string queueName;
+            
             _MQMessageHandler handler;
     };
 
@@ -23,6 +24,7 @@ namespace MQ {
             ~rmqConnection();
             void sendMessage(std::string exchange, std::string routingKey, std::string message);
             void setReciever(std::string exchange, std::string routingKey, _MQMessageHandler handler, std::string queueName = "", void *extra = NULL);
+            void declareReady();
             void deleteReciever(std::string exchange, std::string routingKey, std::string queueName = "");
             static void *ListenThread(OS::CThread *thread);
             static void *ReconnectRetryThread(OS::CThread *thread);
@@ -50,6 +52,15 @@ namespace MQ {
             OS::CThread *mp_listen_thread;
             OS::CThread *mp_reconnect_retry_thread;
             OS::CMutex *mp_mutex;
+
+            bool m_setup_default_queue;
+            amqp_bytes_t m_default_queue;
+
+            bool m_declared_ready;
+
+            std::map<std::string, amqp_bytes_t> m_queue_map;
+
+            bool m_setup_recievers;
             
     };
 }

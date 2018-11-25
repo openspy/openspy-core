@@ -39,7 +39,7 @@ namespace OS {
 		if (!strlen(xml_node.name())) return;
 
 
-		pugi::xml_attribute_iterator ia = ia = xml_node.attributes().begin();
+		pugi::xml_attribute_iterator ia = xml_node.attributes().begin();
 		while (ia != xml_node.attributes().end()) {
 			pugi::xml_attribute attribute = (*ia);
 			OS::ConfigNode attribute_node(ENodeType_Variable, attribute.name(), attribute.as_string());

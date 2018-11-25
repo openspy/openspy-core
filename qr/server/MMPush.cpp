@@ -566,6 +566,7 @@ namespace MM {
 
 		mp_mqconnection = (MQ::IMQInterface*)new MQ::rmqConnection(OS::Address(rabbitmq_address), rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
 		mp_mqconnection->setReciever(mm_channel_exchange, mm_client_message_routingkey, MMPushTask::MQListenerCallback, "", server);
+		mp_mqconnection->declareReady();
 
 		struct timeval t;
 		t.tv_usec = 0;
