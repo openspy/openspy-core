@@ -25,10 +25,13 @@ namespace MQ {
             void setReciever(std::string exchange, std::string routingKey, _MQMessageHandler handler, std::string queueName = "", void *extra = NULL);
             void deleteReciever(std::string exchange, std::string routingKey, std::string queueName = "");
             static void *ListenThread(OS::CThread *thread);
+            static void *ReconnectRetryThread(OS::CThread *thread);
         private:
             void connect();
             void disconnect();
             void reconnect();
+            void spawnReconnectThread();
+            void setupRecievers();
 
             void initConsumers();
             bool handle_amqp_error(amqp_rpc_reply_t x, char const *context);
@@ -45,6 +48,7 @@ namespace MQ {
             std::string m_vhost;
 
             OS::CThread *mp_listen_thread;
+            OS::CThread *mp_reconnect_retry_thread;
             OS::CMutex *mp_mutex;
             
     };
