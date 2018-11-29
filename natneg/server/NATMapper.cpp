@@ -109,7 +109,7 @@ namespace NN {
 
 		do { //find last index
 			i++;
-		} while (i < (sizeof(nat.mappings) / sizeof(AddressMapping)) && nat.mappings[i].publicPort != 0);
+		} while (i+1 < (sizeof(nat.mappings) / sizeof(AddressMapping)) && nat.mappings[i].publicPort != 0);
 
 		bottom_address = OS::Address(nat.mappings[i].publicIp, nat.mappings[i].publicPort);
 		address = bottom_address;
@@ -127,7 +127,7 @@ namespace NN {
 			case mixed: //unknown
 			case incremental: //should work if no new connections were made during natneg process
 				address = bottom_address;
-				address.port = bottom_address.port + 1;
+				address.port = htons(ntohs(bottom_address.port) + 1);
 				break;
 
 		}
