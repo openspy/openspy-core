@@ -108,7 +108,7 @@ namespace GP {
 
 
 			//check for extra data that didn't have the final string -- incase of incomplete data
-			if (last_pos < len) {
+			if (last_pos < (size_t)len) {
 				std::string remaining_str = recv_buf.substr(last_pos);
 				m_kv_accumulator.append(remaining_str);
 			}
@@ -268,6 +268,7 @@ namespace GP {
 				case OS::CREATE_RESPONSE_INVALID_UNIQUENICK:
 					err_code = GP_NEWUSER_UNIQUENICK_INVALID;
 					break;
+				default:
 				case OS::LOGIN_RESPONSE_SERVER_ERROR:
 					err_code = GP_DATABASE;
 			}
@@ -432,10 +433,10 @@ namespace GP {
 	}
 	void Peer::handle_login(OS::KVReader data_parser) {
 		int partnercode = data_parser.GetValueInt("partnerid");
-		int peer_port = data_parser.GetValueInt("port");
-		int sdkrev = data_parser.GetValueInt("sdkrevision");
+		//int peer_port = data_parser.GetValueInt("port");
+		//int sdkrev = data_parser.GetValueInt("sdkrevision");
 		int namespaceid = data_parser.GetValueInt("namespaceid");
-		int quiet = data_parser.GetValueInt("quiet");
+		//int quiet = data_parser.GetValueInt("quiet");
 
 		int operation_id = data_parser.GetValueInt("id");
 		int type = 0;
@@ -982,6 +983,7 @@ namespace GP {
 				case OS::LOGIN_RESPONSE_DB_ERROR:
 					((GP::Peer *)peer)->send_error(GP_DATABASE);
 				break;
+				default:
 				case OS::LOGIN_RESPONSE_SERVERINITFAILED:
 				case OS::LOGIN_RESPONSE_SERVER_ERROR:
 					((GP::Peer *)peer)->send_error(GP_NETWORK);

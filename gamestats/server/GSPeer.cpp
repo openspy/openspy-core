@@ -106,7 +106,7 @@ namespace GS {
 
 
 			//check for extra data that didn't have the final string -- incase of incomplete data
-			if (last_pos < len) {
+			if (last_pos < (size_t)len) {
 				std::string remaining_str = recv_buf.substr(last_pos);
 				m_kv_accumulator.append(remaining_str);
 			}
@@ -170,7 +170,7 @@ namespace GS {
 				Send error response until implemented
 		*/
 		int operation_id = data_parser.GetValueInt("lid");
-		int pid = data_parser.GetValueInt("pid");
+		//int pid = data_parser.GetValueInt("pid");
 		std::ostringstream ss;
 		ss << "\\getpidr\\-1\\lid\\" << operation_id;
 		SendPacket(ss.str());
@@ -273,7 +273,7 @@ namespace GS {
 
 		if (data_parser.HasKey("keys")) {
 			keys = data_parser.GetValue("keys");
-			for (int i = 0; i<keys.length(); i++) {
+			for (size_t i = 0; i<keys.length(); i++) {
 				if (keys[i] == '\x01') {
 					keys[i] = '\\';
 				}
@@ -405,7 +405,7 @@ namespace GS {
 	}
 	void Peer::newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		peer->mp_mutex->lock();
-		int sesskey = (int)extra;
+		size_t sesskey = (size_t)extra;
 		peer->m_game_session_backend_identifier_map[sesskey] = response_data.game_instance_identifier;
 		
 		
@@ -426,7 +426,7 @@ namespace GS {
 
 	}
 	void Peer::handle_newgame(OS::KVReader data_parser) {
-		int session_id = data_parser.GetValueInt("sesskey"); //identifier, used incase of multiple game sessions happening at once
+		size_t session_id = (size_t)data_parser.GetValueInt("sesskey"); //identifier, used incase of multiple game sessions happening at once
 		GSBackend::PersistBackendTask::SubmitNewGameSession(this, (void *)session_id, newGameCreateCallback);
 	}
 	void Peer::updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
@@ -454,7 +454,7 @@ namespace GS {
 
 		bool done = data_parser.GetValueInt("done");
 
-		for(int i=0;i<gamedata.length();i++) {
+		for(size_t i=0;i<gamedata.length();i++) {
 			if(gamedata[i] == '\x1') {
 				gamedata[i] = '\\';
 			}
@@ -539,6 +539,7 @@ namespace GS {
 				case OS::LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED:
 					code = GP_LOGIN_BAD_UNIQUENICK;
 				break;
+				default:
 				case OS::LOGIN_RESPONSE_DB_ERROR:
 					code = GP_DATABASE;
 				break;
@@ -565,7 +566,7 @@ namespace GS {
 		OS::Buffer send_buffer;
 		send_buffer.WriteBuffer((char *)buffer.GetHead(), buffer.bytesWritten());
 		if (attach_final) {
-			send_buffer.WriteBuffer("\\final\\", 7);
+			send_buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
 		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s", getAddress().ToString().c_str(), std::string((const char *)buffer.GetHead(), buffer.bytesWritten()).c_str());
 		gamespy3dxor((char *)send_buffer.GetHead(), send_buffer.bytesWritten());
@@ -671,7 +672,7 @@ namespace GS {
 		m_delete_flag = true;
 		m_timeout_flag = timeout;
 	}
-	void Peer::SendOrWaitBuffer(int index, WaitBufferCtx &wait_ctx, OS::Buffer buffer) {
+	void Peer::SendOrWaitBuffer(uint32_t index, WaitBufferCtx &wait_ctx, OS::Buffer buffer) {
 		mp_mutex->lock();
 		if (index > wait_ctx.top_index) {
 			wait_ctx.top_index = index;

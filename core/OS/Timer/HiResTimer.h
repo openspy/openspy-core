@@ -4,7 +4,7 @@ namespace OS {
 	class HiResTimer {
 	public:
 		HiResTimer() { };
-		~HiResTimer() { };
+		virtual ~HiResTimer() { };
 		virtual void start() = 0;
 		virtual void stop() = 0;
 		virtual long long time_elapsed() = 0; //time in nanoseconds

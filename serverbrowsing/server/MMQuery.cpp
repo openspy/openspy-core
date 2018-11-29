@@ -150,7 +150,7 @@ namespace MM {
 		Redis::Response reply;
 		int cursor = 0;
 		int idx = 0;
-		uint8_t last_type = Redis::REDIS_RESPONSE_TYPE_NULL;
+
 		std::string key;
 		std::ostringstream s;
 
@@ -169,8 +169,6 @@ namespace MM {
 
 		//freeReplyObject(redisCommand(redis_ctx, "SELECT %d", OS::ERedisDB_QR));
 		Redis::Command(redis_ctx, 0, "SELECT %d", OS::ERedisDB_QR);
-
-		std::vector<std::string>::iterator it = ret->requested_fields.begin();
 
 		//skip deleted servers
 		if (!include_deleted) {
@@ -261,7 +259,7 @@ namespace MM {
 						cursor = v.arr_value.values[0].second.value._int;
 					}
 
-					for(int i=0;i<arr.arr_value.values.size();i+=2) {
+					for(size_t i=0;i<arr.arr_value.values.size();i+=2) {
 
 						if(arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
 							continue;
@@ -312,7 +310,7 @@ namespace MM {
 					if (arr.arr_value.values.size() < 2)
 						break;
 
-					for (int i = 0; i<arr.arr_value.values.size(); i += 2) {
+					for (size_t i = 0; i<arr.arr_value.values.size(); i += 2) {
 
 						if (arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
 							continue;
@@ -369,7 +367,7 @@ namespace MM {
 						if (v.arr_value.values.size() <= 0) {
 							break;
 						}
-						for (int i = 0; i<arr.arr_value.values.size(); i += 2) {
+						for (size_t i = 0; i<arr.arr_value.values.size(); i += 2) {
 
 							if (arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
 								continue;
@@ -410,7 +408,7 @@ namespace MM {
 						cursor = v.arr_value.values[0].second.value._int;
 					}
 
-					for (int i = 0; i<arr.arr_value.values.size(); i += 2) {
+					for (size_t i = 0; i<arr.arr_value.values.size(); i += 2) {
 
 						if (arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
 							continue;
@@ -571,28 +569,28 @@ namespace MM {
 				if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
 					goto error_cleanup;
 
-					v = reply.values[0].arr_value.values[0].second;
-					arr = reply.values[0].arr_value.values[1].second;
-					if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-						if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					 		cursor = atoi(v.value._str.c_str());
-					 	} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					 		cursor = v.value._int;
-					 	}
+				v = reply.values[0].arr_value.values[0].second;
+				arr = reply.values[0].arr_value.values[1].second;
+				if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+					if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+						cursor = atoi(v.value._str.c_str());
+					} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+						cursor = v.value._int;
+					}
 
-						if(arr.arr_value.values.size() <= 0) {
-							break;
-						}
+					if(arr.arr_value.values.size() <= 0) {
+						break;
+					}
 
-						for(int i=0;i<arr.arr_value.values.size();i++) {
-							std::string search_key = entry_name;
-							search_key += "custkeys";
-							FindAppend_ServKVFields(server, search_key, arr.arr_value.values[i].second.value._str, redis_ctx);
-							if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), arr.arr_value.values[i].second.value._str) == ret->captured_basic_fields.end()) {
-								ret->captured_basic_fields.push_back(arr.arr_value.values[i].second.value._str);
-							}
+					for(size_t i=0;i<arr.arr_value.values.size();i++) {
+						std::string search_key = entry_name;
+						search_key += "custkeys";
+						FindAppend_ServKVFields(server, search_key, arr.arr_value.values[i].second.value._str, redis_ctx);
+						if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), arr.arr_value.values[i].second.value._str) == ret->captured_basic_fields.end()) {
+							ret->captured_basic_fields.push_back(arr.arr_value.values[i].second.value._str);
 						}
 					}
+				}
 			} while(cursor != 0);
 
 		} else {
@@ -660,7 +658,7 @@ namespace MM {
 				streamed_ret.last_set = true;
 			}
 
-			for(int i=0;i<arr.arr_value.values.size();i+=2) {
+			for(size_t i=0;i<arr.arr_value.values.size();i+=2) {
 				std::string server_key = arr.arr_value.values[i].second.value._str;
 				reply = Redis::Command(mp_redis_connection, 0, "EXISTS %s", server_key.c_str());
 				
@@ -740,7 +738,7 @@ namespace MM {
 			if (cursor == 0) {
 				streamed_ret.last_set = true;
 			}
-			for (int i = 0; i<arr.values.size(); i++) {
+			for (size_t i = 0; i<arr.values.size(); i++) {
 				if (request) {
 					AppendGroupEntry(arr.values[i].second.value._str.c_str(), &streamed_ret, mp_redis_connection, req->all_keys, request);
 				}

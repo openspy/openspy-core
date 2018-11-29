@@ -28,8 +28,8 @@ namespace QR {
 		
 
 
-		virtual void OnGetGameInfo(OS::GameData game_info, void *extra) = 0;
-		virtual void OnRegisteredServer(int pk_id, void *extra) = 0;
+		virtual void OnGetGameInfo(OS::GameData game_info, int state) = 0;
+		virtual void OnRegisteredServer(int pk_id) = 0;
 		
 		bool ServerDirty() { return m_server_info_dirty; };
 		void SubmitDirtyServer();

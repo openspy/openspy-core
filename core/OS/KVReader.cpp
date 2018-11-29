@@ -38,7 +38,7 @@ namespace OS {
 					if (!HasKey(key)) {
 						if (IsDataKey(key)) {
 							std::map<std::string, std::string>::iterator it = m_data_key_map.find(key);
-							int data_len = GetValueInt((*it).second);
+							size_t data_len = (size_t)GetValueInt((*it).second);
 							
 							if (data_len > kv_pair.length()) { //not a perfect check, but read will not mess up when reading too much
 								break;

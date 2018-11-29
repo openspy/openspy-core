@@ -194,7 +194,6 @@ namespace GSBackend {
 		if (req.data_kv_set) {
 			json_t *key_obj = json_object();
 			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it = req.kv_set_data.GetHead();
-			bool found_end = false;
 			std::ostringstream ss;
 			while (it.first != it.second) {
 				std::pair< std::string, std::string> item = *it.first;

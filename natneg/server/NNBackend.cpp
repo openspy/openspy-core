@@ -96,7 +96,7 @@ namespace NN {
 	void NNQueryTask::PerformERTTest(NNBackendRequest task_params) {
 		OS::Address address = task_params.peer->getAddress();
 		std::ostringstream ss;
-		ss << "\\msg\\natneg_erttest\\address\\" << address.ToString() << "\\type\\" << (task_params.type == ENNQueryRequestType_PerformERTTest_IPUnsolicited) ? 0 : 1;
+		ss << "\\msg\\natneg_erttest\\address\\" << address.ToString() << "\\type\\" << (task_params.type == ENNQueryRequestType_PerformERTTest_IPUnsolicited);
 		BroadcastMessage(ss.str());
 	}
 

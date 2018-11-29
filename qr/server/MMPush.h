@@ -44,7 +44,7 @@ namespace MM {
 		MMPushRequest() {
 			type = EMMPushRequestType_PushServer;
 			peer = NULL;
-			extra = NULL;
+			state = 0;
 		}
 		~MMPushRequest() { }
 		EMMPushRequestType type;
@@ -52,7 +52,7 @@ namespace MM {
 		ServerInfo server;
 		ServerInfo old_server;
 		std::string gamename;
-		void *extra;
+		int state;
 	};
 	class MMPushTask : public OS::Task<MMPushRequest> {
 		public:

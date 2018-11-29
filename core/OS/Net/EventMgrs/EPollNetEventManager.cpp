@@ -6,7 +6,7 @@
 	#include <OS/Net/NetPeer.h>
 	#include <algorithm>
 
-	EPollNetEventManager::EPollNetEventManager() : BSDNetIOInterface(), INetEventManager() {
+	EPollNetEventManager::EPollNetEventManager() : INetEventManager(), BSDNetIOInterface() {
 		m_epollfd = epoll_create(MAX_EPOLL_EVENTS);
 
 		m_added_drivers = false;

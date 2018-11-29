@@ -49,8 +49,6 @@ int main() {
 	std::vector<std::string>::iterator it = drivers.begin();
 	while (it != drivers.end()) {
 		std::string s = *it;
-		int version = 0;
-
 
 		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
 		OS::Address address = addresses.front();

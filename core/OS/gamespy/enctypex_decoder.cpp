@@ -645,7 +645,7 @@ int enctypex_quick_encrypt(unsigned char *key, unsigned char *validate, unsigned
     keylen = strlen((const char *)key);   // only for giving a certain randomness, so useless
     vallen = strlen((const char *)validate);
     rnd = ~time(NULL);
-    for(i = 0; i < sizeof(tmp); i++) {
+    for(i = 0; (unsigned int)i < sizeof(tmp); i++) {
         rnd = (rnd * 0x343FD) + 0x269EC3;
         tmp[i] = rnd ^ key[i % keylen] ^ validate[i % vallen];
     }

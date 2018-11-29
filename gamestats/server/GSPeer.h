@@ -87,7 +87,7 @@ namespace GS {
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
 
 
-		void SendOrWaitBuffer(int index, WaitBufferCtx &wait_ctx, OS::Buffer buffer);
+		void SendOrWaitBuffer(uint32_t index, WaitBufferCtx &wait_ctx, OS::Buffer buffer);
 		WaitBufferCtx m_getpd_wait_ctx; //getpd must respond in order of request, as "lid" value is not always used
 		int m_get_request_index;
 		WaitBufferCtx m_setpd_wait_ctx; //setpd must respond in order of request, as "lid" value is not always used

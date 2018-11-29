@@ -215,6 +215,9 @@ namespace QR {
 			m_server_info_dirty = true;
 			return;
 			break;
+		case EV1_CQS_Complete:
+		default:
+		break;
 		}
 
 		OS::gen_random((char *)&m_challenge, 6); //make new challenge
@@ -248,16 +251,16 @@ namespace QR {
 	void V1Peer::handle_heartbeat(OS::KVReader data_parser) {
 		std::string gamename;
 		int query_port = data_parser.GetValueInt("heartbeat");
-		void *state_changed = (void *)data_parser.GetValueInt("statechanged");
+		int state_changed = data_parser.GetValueInt("statechanged");
 
-		if (state_changed == (void *)2) {
+		if (state_changed == 2) {
 			Delete();
 			return;
 		}
 
 		gamename = data_parser.GetValue("gamename");
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", m_sd->address.ToString().c_str(), data_parser.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB(%d): %s", m_sd->address.ToString().c_str(), query_port, data_parser.ToString().c_str());
 		//m_server_info.m_game = OS::GetGameByName(gamename.c_str());
 
 		if (m_server_info.m_game.secretkey[0] != 0) {
@@ -268,7 +271,7 @@ namespace QR {
 			MM::MMPushRequest req;
 			req.peer = this;
 			req.server = m_server_info;
-			req.extra = (void *)state_changed;
+			req.state = state_changed;
 			req.gamename = gamename;
 			m_sent_game_query = true;
 			req.peer->IncRef();
@@ -276,9 +279,9 @@ namespace QR {
 			MM::m_task_pool->AddRequest(req);
 		}
 	}
-	void V1Peer::OnGetGameInfo(OS::GameData game_info, void *extra) {
+	void V1Peer::OnGetGameInfo(OS::GameData game_info, int state) {
 		std::ostringstream s;
-		int state_changed = (int)extra;
+		int state_changed = state;
 		m_server_info.m_game = game_info;
 		
 		m_dirty_server_info = m_server_info;
@@ -355,7 +358,7 @@ namespace QR {
 			Delete();
 		}
 	}
-	void V1Peer::OnRegisteredServer(int pk_id, void *extra) {
+	void V1Peer::OnRegisteredServer(int pk_id) {
 		m_server_info.id = pk_id;
 		m_dirty_server_info = m_server_info;
 	}

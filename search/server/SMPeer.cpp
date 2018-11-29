@@ -72,7 +72,7 @@ namespace SM {
 
 
 			//check for extra data that didn't have the final string -- incase of incomplete data
-			if (last_pos < len) {
+			if (last_pos < (size_t)len) {
 				std::string remaining_str = recv_buf.substr(last_pos);
 				m_kv_accumulator.append(remaining_str);
 			}
@@ -139,6 +139,9 @@ namespace SM {
 				break;
 				case OS::CREATE_RESPONSE_INVALID_UNIQUENICK:
 					err_code = GP_NEWUSER_UNIQUENICK_INVALID;
+				break;
+				default:
+					err_code = GP_NEWUSER;
 				break;
 			}
 		}

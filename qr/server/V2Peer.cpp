@@ -78,8 +78,7 @@ namespace QR {
 	}
 	void V2Peer::handle_challenge(OS::Buffer &buffer) {
 		char challenge_resp[90] = { 0 };
-		int outlen = 0;
-		uint8_t *p = (uint8_t *)challenge_resp;
+
 		if(m_server_info.m_game.secretkey[0] == 0) {
 			send_error(true, "Unknown game");
 			return;
@@ -161,7 +160,7 @@ namespace QR {
 				nameValueList.push_back(x);
 				num_keys++;
 			}
-			unsigned int player=0,num_keys_t = num_keys,num_values_t = num_values*num_keys;
+			unsigned int player=0/*,num_keys_t = num_keys*/,num_values_t = num_values*num_keys;
 			i = 0;
 
 			while(num_values_t--) {
@@ -224,13 +223,13 @@ namespace QR {
 				}
 			}
 			else {
-				OnGetGameInfo(server_info.m_game, (void *)1);
+				OnGetGameInfo(server_info.m_game, 1);
 			}
 		}
 		else if(!m_sent_game_query){
 			m_sent_game_query = true;
 			req.peer->IncRef();
-			req.extra = (void *)1;
+			req.state = 1;
 			req.gamename = server_info.m_keys["gamename"];
 			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
 			MM::m_task_pool->AddRequest(req);
@@ -240,7 +239,7 @@ namespace QR {
 		MM::MMPushRequest req;
 		req.peer = this;
 		req.peer->IncRef();
-		req.extra = (void *)2;
+		req.state = 2;
 
 		req.gamename = buffer.ReadNTS();
 
@@ -248,8 +247,8 @@ namespace QR {
 		req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
 		MM::m_task_pool->AddRequest(req);
 	}
-	void V2Peer::OnGetGameInfo(OS::GameData game_info, void *extra) {
-		if (extra == (void *)1) {
+	void V2Peer::OnGetGameInfo(OS::GameData game_info, int state) {
+		if (state == 1) {
 			m_server_info.m_game = game_info;
 			m_dirty_server_info.m_game = game_info;
 			if (m_server_info.m_game.secretkey[0] == 0) {
@@ -283,7 +282,7 @@ namespace QR {
 				}
 			}
 		}
-		else if(extra == (void *)2) {
+		else if(state == 2) {
 			if (game_info.secretkey[0] == 0) {
 				game_info.disabled_services = OS::QR2_GAME_AVAILABLE;
 			}
@@ -423,7 +422,7 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Recv client message: key: %d - len: %d, resend: %d", m_sd->address.ToString().c_str(), key, buffer.readRemaining(), no_insert);
 		SendPacket(send_buff);
 	}
-	void V2Peer::OnRegisteredServer(int pk_id, void *extra) {
+	void V2Peer::OnRegisteredServer(int pk_id) {
 		OS::Buffer buffer;
 		m_server_info.id = pk_id;
 

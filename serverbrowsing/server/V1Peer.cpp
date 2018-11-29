@@ -96,7 +96,7 @@ namespace SB {
 
 
 				//check for extra data that didn't have the final string -- incase of incomplete data
-				if (last_pos < len) {
+				if (last_pos < (size_t)len) {
 					std::string remaining_str = recv_buf.substr(last_pos);
 
 					if (remaining_str.length() > 0) {
@@ -427,7 +427,7 @@ namespace SB {
 			OS::Buffer buffer;
 			buffer.WriteBuffer((void *)buff, len);
 			if(attach_final) {
-				buffer.WriteBuffer("\\final\\", 7);
+				buffer.WriteBuffer((void*)"\\final\\", 7);
 			}
 			if (!skip_encryption) {
 				switch (m_enctype) {
@@ -445,7 +445,6 @@ namespace SB {
 		}
 		void V1Peer::send_crypt_header(int enctype) {
 			OS::Buffer buffer;
-			int len = 0;
 			char cryptkey[13];
 			size_t secretkeylen = m_game.secretkey.length();
 			if(enctype == 2) {
@@ -453,7 +452,7 @@ namespace SB {
 					cryptkey[x] = (uint8_t)rand();
 				}
 				encshare4((unsigned char *)&cryptkey, sizeof(cryptkey),(unsigned int *)&m_cryptkey_enctype2);
-				for(int i=0;i< secretkeylen;i++) {
+				for(size_t i=0;i< secretkeylen;i++) {
 					cryptkey[i] ^= m_game.secretkey[i];
 				}
 				buffer.WriteByte(sizeof(cryptkey) ^ 0xEC);

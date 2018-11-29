@@ -83,7 +83,7 @@ namespace FESL {
 
 			OS::KVReader kv_data(std::string((const char *)recv_buffer.GetReadCursor(), buf_len), '=', '\n');
 			char *type;
-			for (int i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
+			for (size_t i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
 				if (Peer::m_commands[i].type == htonl(header.type)) {
 					if (Peer::m_commands[i].command.compare(kv_data.GetValue("TXN")) == 0) {
 						type = (char *)&Peer::m_commands[i].type;
@@ -282,7 +282,7 @@ namespace FESL {
 				OS::ProfileSearchRequest request;
 				request.profile_search_details.id = profile.id;
 				request.peer = this;
-				request.extra = (void *)profile.id;
+				request.extra = (void *)((size_t)profile.id);
 				request.peer->IncRef();
 				request.type = OS::EProfileSearch_DeleteProfile;
 				request.callback = Peer::m_delete_profile_callback;
@@ -301,7 +301,7 @@ namespace FESL {
 			std::vector<OS::Profile>::iterator it = ((Peer *)peer)->m_profiles.begin();
 			while (it != ((Peer *)peer)->m_profiles.end()) {
 				OS::Profile profile = *it;
-				if ((void *)profile.id == extra) {
+				if ((size_t)profile.id == (size_t)extra) {
 					((Peer *)peer)->m_profiles.erase(it);
 					break;
 				}
@@ -372,7 +372,7 @@ namespace FESL {
 			return true;
 		}
 
-		profile.birthday = OS::Date::Date(kv_list.GetValueInt("DOBYear"), kv_list.GetValueInt("DOBMonth"), kv_list.GetValueInt("DOBDay"));
+		profile.birthday = OS::Date(kv_list.GetValueInt("DOBYear"), kv_list.GetValueInt("DOBMonth"), kv_list.GetValueInt("DOBDay"));
 
 		profile.namespaceid = FESL_ACCOUNT_NAMESPACEID;
 		user.partnercode = OS_EA_PARTNER_CODE;
@@ -450,7 +450,7 @@ namespace FESL {
 	void Peer::m_update_user_callback(OS::EUserResponseType response_reason, std::vector<OS::User> results, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		s << "TXN=UpdateAccount\n";
-		if (response_reason == OS::EProfileResponseType_Success) {
+		if (response_reason == OS::EUserResponseType_Success) {
 			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		}
 		else {

@@ -101,7 +101,7 @@ namespace Redis {
 	}
 	std::string read_line(std::string str) {
 		std::string r;
-		for (int i = 0; i < str.length(); i++) {
+		for (size_t i = 0; i < str.length(); i++) {
 			if (str[i] == '\r' && i + 1 < str.length()) {
 				if (str[i + 1] == '\n') {
 					return r;
@@ -200,7 +200,7 @@ namespace Redis {
 			else {
 				resp->values.push_back(v);
 			}
-			if (diff > str.length()) {
+			if ((size_t)diff > str.length()) {
 				break;
 			}
 			str = str.substr(diff);

@@ -38,9 +38,7 @@ namespace SB {
 
 		bool break_flag = false;
 
-		int idx = 0;
 		while(buffer.readRemaining() > 0 && !break_flag) {
-			uint16_t buff_len = htons(buffer.ReadShort()); //length, maybe incase of packets greater than MTU length
 
 			request_type = buffer.ReadByte();
 
@@ -566,7 +564,7 @@ namespace SB {
 			buffer->WriteByte(PUSH_SERVER_MESSAGE);
 		}
 
-		if (server->wan_address.GetIP() == -1) {
+		if (server->wan_address.GetIP() == (uint32_t)-1) {
 			goto end;
 		}
 

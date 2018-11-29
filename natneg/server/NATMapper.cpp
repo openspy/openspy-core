@@ -1,5 +1,6 @@
 #include "NATMapper.h"
 namespace NN {
+	uint8_t NNMagicData[] = { NN_MAGIC_0, NN_MAGIC_1, NN_MAGIC_2, NN_MAGIC_3, NN_MAGIC_4, NN_MAGIC_5 };
 	bool DetermineNatType(NAT &nat) {
 		bool has_gameport = nat.mappings[packet_map1a].publicPort != 0;
 		bool has_nn_serv_3 = nat.mappings[packet_map1b].publicPort != 0;
@@ -109,7 +110,7 @@ namespace NN {
 
 		do { //find last index
 			i++;
-		} while (i+1 < (sizeof(nat.mappings) / sizeof(AddressMapping)) && nat.mappings[i].publicPort != 0);
+		} while (i+1 < (int)(sizeof(nat.mappings) / sizeof(AddressMapping)) && nat.mappings[i].publicPort != 0);
 
 		bottom_address = OS::Address(nat.mappings[i].publicIp, nat.mappings[i].publicPort);
 		address = bottom_address;
@@ -129,6 +130,8 @@ namespace NN {
 				address = bottom_address;
 				address.port = htons(ntohs(bottom_address.port) + 1);
 				break;
+			default:
+			break;
 
 		}
 		next_public_address = address;
@@ -139,7 +142,7 @@ namespace NN {
 
 		while (it != summary.m_port_type_addresses.end()) {
 			std::pair<int, OS::Address> p = *it;
-			if (p.first < sizeof(nat.mappings)) {
+			if (p.first < (int)sizeof(nat.mappings)) {
 				nat.mappings[p.first].privateIp = summary.private_address.GetIP();
 				nat.mappings[p.first].privatePort = summary.private_address.GetPort();
 				nat.mappings[p.first].publicIp = summary.m_port_type_addresses[p.first].GetIP();
@@ -154,6 +157,7 @@ namespace NN {
 
 	const char *GetNatMappingSchemeString(NAT nat) {
 		switch (nat.mappingScheme) {
+		default:
 		case unrecognized:
 			return "unrecognized";
 			break;

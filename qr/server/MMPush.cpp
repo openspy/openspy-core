@@ -104,7 +104,7 @@ namespace MM {
 	void MMPushTask::PerformPushServer(MMPushRequest request) {
 		int pk_id = PushServer(request.server, true, request.server.id);
 		if (request.server.id != pk_id) {
-			request.peer->OnRegisteredServer(pk_id, request.extra);
+			request.peer->OnRegisteredServer(pk_id);
 		}
 	}
 	void MMPushTask::PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request) {
@@ -117,7 +117,7 @@ namespace MM {
 		Redis::Value v;
 		Redis::Response resp;
 		std::string name;
-		int idx = 0;
+		size_t idx = 0;
 		bool force_delete = false;
 		bool change_occured = false;
 		ServerInfo modified_server;
@@ -304,7 +304,7 @@ namespace MM {
 	}
 	void MMPushTask::PerformGetGameInfo(MMPushRequest request) {
 		OS::GameData game_info = OS::GetGameByName(request.gamename.c_str(), mp_redis_connection);
-		request.peer->OnGetGameInfo(game_info, request.extra);
+		request.peer->OnGetGameInfo(game_info, request.state);
 	}
 	int MMPushTask::PushServer(ServerInfo server, bool publish, int pk_id) {
 		int id = pk_id;

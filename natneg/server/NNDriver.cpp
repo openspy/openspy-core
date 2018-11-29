@@ -67,7 +67,7 @@ namespace NN {
 		TickConnections();
 		if (listener_waiting) {
 			std::vector<INetIODatagram> datagrams;
-			NetIOCommResp resp = getServer()->getNetIOInterface()->datagramRecv(mp_socket, datagrams);
+			getServer()->getNetIOInterface()->datagramRecv(mp_socket, datagrams);
 			std::vector<INetIODatagram>::iterator it = datagrams.begin();
 			while (it != datagrams.end()) {
 				INetIODatagram dgram = *it;

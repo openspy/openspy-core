@@ -16,6 +16,9 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		}
 		//NET IO INTERFACE
 		INetIOSocket *BindTCP(OS::Address bind_address) {
+			struct sockaddr_in addr;
+			int n;
+			int on = 1;
 			INetIOSocket *net_socket = this->createSocket();
 			net_socket->address = bind_address;
 
@@ -24,7 +27,6 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				perror("socket()");
 				goto end_error;
 			}
-			int on = 1;
 			if (setsockopt(net_socket->sd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on))
 				< 0) {
 				perror("setsockopt()");
@@ -39,11 +41,11 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				goto end_error;
 			}
 #endif
-			struct sockaddr_in addr;
+			
 
 			addr = bind_address.GetInAddr();
 			addr.sin_family = AF_INET;
-			int n = bind(net_socket->sd, (struct sockaddr *)&addr, sizeof addr);
+			n = bind(net_socket->sd, (struct sockaddr *)&addr, sizeof addr);
 			if (n < 0) {
 				perror("bind()");
 				//signal error
@@ -115,7 +117,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 					ret.error_flag = true;
 				}
 			}
-			if (ret.comm_len != buffer.bytesWritten()) {
+			if (ret.comm_len != (int)buffer.bytesWritten()) {
 				switch (errno) {
 				case EAGAIN:
 				#if EWOULDBLOCK != EAGAIN
@@ -130,6 +132,9 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		}
 
 		INetIOSocket *BindUDP(OS::Address bind_address) {
+			struct sockaddr_in addr;
+			int on = 1;
+			int n;			
 			INetIOSocket *net_socket = this->createSocket();
 			net_socket->address = bind_address;
 
@@ -138,7 +143,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				perror("socket()");
 				goto end_error;
 			}
-			int on = 1;
+
 			if (setsockopt(net_socket->sd, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on))
 				< 0) {
 				//signal error
@@ -153,11 +158,9 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				goto end_error;
 			}
 #endif
-			struct sockaddr_in addr;
-
 			addr = bind_address.GetInAddr();
 			addr.sin_family = AF_INET;
-			int n = bind(net_socket->sd, (struct sockaddr *)&addr, sizeof addr);
+			n = bind(net_socket->sd, (struct sockaddr *)&addr, sizeof addr);
 			if (n < 0) {
 				perror("bind()");
 				//signal error
@@ -210,8 +213,9 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		}
 		NetIOCommResp datagramSend(INetIOSocket *socket, OS::Buffer &buffer) {
 			NetIOCommResp ret;
-			ret.comm_len = sendto(socket->sd, (const char *)buffer.GetHead(), (int)buffer.bytesWritten(), MSG_NOSIGNAL, (const sockaddr *)&socket->address.GetInAddr(), sizeof(sockaddr));
-			if (ret.comm_len != buffer.bytesWritten()) {
+			const sockaddr_in addr = (const sockaddr_in)socket->address.GetInAddr();
+			ret.comm_len = sendto(socket->sd, (const char *)buffer.GetHead(), (int)buffer.bytesWritten(), MSG_NOSIGNAL, (const sockaddr *)&addr, sizeof(sockaddr));
+			if (ret.comm_len != (int)buffer.bytesWritten()) {
 				switch (errno) {
 				case EAGAIN:
 				#if EWOULDBLOCK != EAGAIN

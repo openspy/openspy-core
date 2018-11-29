@@ -280,14 +280,11 @@ namespace GPBackend {
 
 
 		CURL *curl = curl_easy_init();
-		CURLcode res;
-		bool success = false;
-
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
-			res = curl_easy_perform(curl);
+			curl_easy_perform(curl);
 		}
 
 		if(json_data)
@@ -307,15 +304,12 @@ namespace GPBackend {
 
 
 		CURL *curl = curl_easy_init();
-		CURLcode res;
-		bool success = false;
 
 		char *json_data = json_dumps(send_obj, 0);
 
-
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
-			res = curl_easy_perform(curl);
+			curl_easy_perform(curl);
 		}
 
 		if(json_data)
@@ -342,15 +336,12 @@ namespace GPBackend {
 
 
 		CURL *curl = curl_easy_init();
-		CURLcode res;
-		bool success = false;
-
 		char *json_data = json_dumps(send_obj, 0);
 
 
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
-			res = curl_easy_perform(curl);
+			curl_easy_perform(curl);
 			curl_easy_cleanup(curl);
 		}
 		if(json_data)
@@ -390,15 +381,13 @@ namespace GPBackend {
 
 
 		CURL *curl = curl_easy_init();
-		CURLcode res;
-		bool success = false;
 
 		char *json_data = json_dumps(send_obj, 0);
 
 
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
-			res = curl_easy_perform(curl);
+			curl_easy_perform(curl);
 		}
 
  		if(json_data)
@@ -435,14 +424,12 @@ namespace GPBackend {
 
 
 		CURL *curl = curl_easy_init();
-		CURLcode res;
-		bool success = false;
 
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
-			res = curl_easy_perform(curl);
+			curl_easy_perform(curl);
 			curl_easy_cleanup(curl);
 		}
 
@@ -461,14 +448,12 @@ namespace GPBackend {
 
 
 		CURL *curl = curl_easy_init();
-		CURLcode res;
-		bool success = false;
 
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
-			res = curl_easy_perform(curl);
+			curl_easy_perform(curl);
 		}
 
 		if(json_data)
@@ -557,15 +542,13 @@ namespace GPBackend {
 
 
 		CURL *curl = curl_easy_init();
-		CURLcode res;
-		bool success = false;
 
 		char *json_data = json_dumps(send_obj, 0);
 
 		if(curl) {
 			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
 
-			res = curl_easy_perform(curl);
+			curl_easy_perform(curl);
 
 			json_t *root = json_loads(recv_data.buffer.c_str(), 0, NULL);
 

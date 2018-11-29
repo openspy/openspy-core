@@ -43,8 +43,8 @@ public:
 	CToken() : m_type(EToken_None) {}
 	CToken(int int_val) : m_type(EToken_Integer), m_int(int_val) {};
 	CToken(float f_val) : m_type(EToken_Float), m_float(f_val) {};
-	CToken(std::string extra) : m_str(extra), m_type(EToken_String) {}
-	CToken(ETokenType type, std::string extra) :  m_str (extra), m_type(type) {}
+	CToken(std::string extra) : m_type(EToken_String), m_str(extra) {}
+	CToken(ETokenType type, std::string extra) :  m_type(type), m_str (extra) {}
 	CToken(ETokenType type) : m_type(type) {}
 	~CToken();
 	ETokenType getType() { return m_type; }

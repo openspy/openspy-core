@@ -32,11 +32,11 @@ std::string readString(const char *filter, int &idx, int len) {
 	std::string str = "";
 	int i;
 	for(i=idx;i<len;i++) {
-		if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='�') break;
+		if(filter[i] == '\'' || filter[i] == '"') break;
 		str += filter[i];
 	}
 	idx = i;
-	if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='�') idx++; //skip the " or '
+	if(filter[i] == '\'' || filter[i] == '"') idx++; //skip the " or '
 	return str;
 }
 const char *readVariable(const char *filter, int &idx, int len) {
@@ -230,7 +230,7 @@ std::vector<CToken> CToken::filterToTokenList(const char *filter) {
 			 continue;
 		}else if(checkMultiCharToken(filter, i, filterlen, &token)) {
 			tokens.push_back(token);
-		} else if(filter[i] == '\'' || filter[i] == '"' || filter[i]=='�') {
+		} else if(filter[i] == '\'' || filter[i] == '"') {
 			//gets freed in token deconstructor
 			std::string str = readString(filter, ++i, filterlen);
 			token = CToken(str);
@@ -378,6 +378,8 @@ CToken divide(std::stack<CToken> &stack) {
 			fsum = lh.getFloat() / rh.getFloat();
 			ret = CToken(fsum);
 			break;
+		default:
+		break;
 		}
 
 	}
@@ -402,6 +404,8 @@ CToken multiply(std::stack<CToken> &stack) {
 			fsum = lh.getFloat() * rh.getFloat();
 			ret = CToken(fsum);
 			break;
+		default:
+		break;
 		}
 
 	}
@@ -428,6 +432,8 @@ CToken addition(std::stack<CToken> &stack) {
 			fsum = lh.getFloat() + rh.getFloat();
 			ret = CToken(fsum);
 			break;
+		default:
+		break;
 		}
 
 	}
@@ -453,6 +459,8 @@ CToken subtraction(std::stack<CToken> &stack) {
 			fsum = lh.getFloat() - rh.getFloat();
 			ret = CToken(fsum);
 			break;
+		default:
+		break;
 		}
 
 	}
@@ -471,6 +479,8 @@ CToken logical_not(std::stack<CToken> &stack) {
 		case EToken_Float:
 			ret = CToken(!token.getFloat());
 			break;
+		default:
+		break;
 		}
 	}
 	return ret;
@@ -520,6 +530,8 @@ bool evaluate(std::vector<CToken> tokens, std::map<std::string, std::string>& kv
 					case EToken_Float:
 						ret = CToken(tok.fval);
 						break;
+					default:
+					break;
 				}
 				operand_stack.push(ret);
 			} else
@@ -582,6 +594,8 @@ bool evaluate(std::vector<CToken> tokens, std::map<std::string, std::string>& kv
 					ret = logical_not(operand_stack);
 					operand_stack.push(ret);
 					break;
+				default:
+				break;
 			}
 		}
 		it++;

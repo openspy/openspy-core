@@ -30,7 +30,7 @@ std::string get_file_contents(std::string path) {
 		int len = ftell(fd);
 		fseek(fd,0,SEEK_SET);
 
-		char *str_data = malloc(len+1);
+		char *str_data = (char *)malloc(len+1);
 		fread(str_data, len, 1, fd);
 		str_data[len] = 0;
 		ret = str_data;

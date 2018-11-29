@@ -66,7 +66,6 @@ namespace NN {
 	}
 	void Peer::handle_packet(INetIODatagram net_packet) {
 		NatNegPacket *packet = (NatNegPacket *)net_packet.buffer.GetHead();
-		unsigned char NNMagicData[] = {NN_MAGIC_0, NN_MAGIC_1, NN_MAGIC_2, NN_MAGIC_3, NN_MAGIC_4, NN_MAGIC_5};
 		if(memcmp(&NNMagicData,&packet->magic, NATNEG_MAGIC_LEN) != 0) {
 			Delete();
 			return;

@@ -52,8 +52,8 @@ namespace QR {
 
 		void send_error(bool die, const char *fmt, ...);
 		void SendClientMessage(void *data, size_t data_len);
-		void OnGetGameInfo(OS::GameData game_info, void *extra);
-		void OnRegisteredServer(int pk_id, void *extra);
+		void OnGetGameInfo(OS::GameData game_info, int state);
+		void OnRegisteredServer(int pk_id);
 
 		void ResendMessages();
 	private:
