@@ -40,6 +40,8 @@ namespace SB {
 
 		while(buffer.readRemaining() > 0 && !break_flag) {
 
+			htons(buffer.ReadShort()); //read length
+
 			request_type = buffer.ReadByte();
 
 			gettimeofday(&m_last_recv, NULL);
