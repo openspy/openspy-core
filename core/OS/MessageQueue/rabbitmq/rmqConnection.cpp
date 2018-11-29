@@ -11,6 +11,7 @@ namespace MQ {
         mp_mutex = OS::CreateMutex();
         mp_rabbitmq_socket = NULL;
         mp_rabbitmq_conn = NULL;
+		mp_listen_thread = NULL;
         mp_reconnect_retry_thread = NULL;
 
         connect();
@@ -31,6 +32,7 @@ namespace MQ {
             }
             return;
         }
+
         amqp_basic_properties_t props;
                 props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
                 props.content_type = amqp_cstring_bytes("text/plain");
@@ -173,8 +175,7 @@ namespace MQ {
 
 			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
 
-
-            std::string routing_key = std::string((char *)envelope.routing_key.bytes);
+            std::string routing_key = std::string((char *)envelope.routing_key.bytes, envelope.routing_key.len);
             listener->mp_mutex->lock();
             std::map<std::string, rmqListenerData *>::iterator it = listener->m_listener_callbacks.find(routing_key);
             rmqListenerData *rmqlistener = NULL;
