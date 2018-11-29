@@ -212,9 +212,9 @@ namespace NN {
 
 		connection_summary.private_address = OS::Address(reply.values.front().value._str.c_str());
 
-		if (!connection_summary.usegameport) {
-			address_counter = 1;
-		}
+		//if (!connection_summary.usegameport) {
+		//	address_counter = 1;
+		//}
 		while (true) {
 			std::ostringstream key_ss;
 			key_ss << "address_" << address_counter;
