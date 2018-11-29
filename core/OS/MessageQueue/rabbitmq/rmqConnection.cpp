@@ -83,8 +83,9 @@ namespace MQ {
     void rmqConnection::reconnect() {
         disconnect();
         connect();
+
         if(mp_rabbitmq_conn) {
-            setupRecievers();
+            declareReady();
         }
         
     }
@@ -100,6 +101,7 @@ namespace MQ {
 		amqp_channel_close(mp_rabbitmq_conn, 1, AMQP_REPLY_SUCCESS);
 		amqp_connection_close(mp_rabbitmq_conn, AMQP_REPLY_SUCCESS);
 		amqp_destroy_connection(mp_rabbitmq_conn);
+        m_declared_ready = false;
         mp_rabbitmq_conn = NULL;
     }
 
@@ -160,6 +162,7 @@ namespace MQ {
 			amqp_rpc_reply_t res;
 			amqp_envelope_t envelope;
 
+            
             if(!listener->m_declared_ready) {
                 OS::Sleep(1000);
                 continue;
@@ -168,7 +171,7 @@ namespace MQ {
 			amqp_maybe_release_buffers(listener->mp_rabbitmq_conn);
 
 			res = amqp_consume_message(listener->mp_rabbitmq_conn, &envelope, &timeout, 0);
-			
+
 			if(listener->handle_amqp_error(res, "consume message")) {
                 continue;
             }
@@ -187,7 +190,7 @@ namespace MQ {
             if(rmqlistener != NULL)
                 rmqlistener->handler(message, rmqlistener->extra);            
 
-            //amqp_basic_ack(listener->mp_rabbitmq_conn, envem_setup_recieverslope.channel, envelope.delivery_tag, false);
+            //amqp_basic_ack(listener->mp_rabbitmq_conn, envelope.channel, envelope.delivery_tag, false);
 
 			amqp_destroy_envelope(&envelope);
         }
