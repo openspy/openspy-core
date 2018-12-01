@@ -4,7 +4,6 @@
 #include "NNServer.h"
 
 #include "NNPeer.h"
-#include "NNBackend.h"
 #include "NNDriver.h"
 
 namespace NN {

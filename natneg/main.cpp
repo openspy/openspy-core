@@ -7,7 +7,7 @@
 #include "server/NNServer.h"
 #include "server/NNPeer.h"
 #include "server/NNDriver.h"
-#include "server/NNBackend.h"
+
 INetServer *g_gameserver = NULL;
 bool g_running = true;
 
@@ -63,7 +63,6 @@ int main() {
 	}
     
     delete g_gameserver;
-    NN::NNQueryTask::Shutdown();
 	OS::Shutdown();
     return 0;
 }

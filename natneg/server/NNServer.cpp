@@ -1,14 +1,15 @@
 #include "NNServer.h"
 #include "NNPeer.h"
 #include "NNDriver.h"
-#include "NNBackend.h"
+#include <tasks/tasks.h>
 #include <iterator>
 namespace NN {
 
 	Server::Server() : INetServer() {
+		mp_task_scheduler = NULL;
 	}
 	void Server::init() {
-		NN::SetupTaskPool(this);
+		mp_task_scheduler = InitTasks();
 	}
 	void Server::tick() {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
@@ -21,20 +22,6 @@ namespace NN {
 	}
 	void Server::shutdown() {
 
-	}
-	void Server::SetTaskPool(OS::TaskPool<NN::NNQueryTask, NN::NNBackendRequest> *pool) {
-		const std::vector<NN::NNQueryTask *> task_list = pool->getTasks();
-		std::vector<NN::NNQueryTask *>::const_iterator it = task_list.begin();
-		while (it != task_list.end()) {
-			NN::NNQueryTask *task = *it;
-			std::vector<INetDriver *>::iterator it2 = m_net_drivers.begin();
-			while (it2 != m_net_drivers.end()) {
-				NN::Driver *driver = (NN::Driver *)*it2;
-				task->AddDriver(driver);
-				it2++;
-			}
-			it++;
-		}
 	}
 
 	std::vector<NN::Peer *> Server::FindConnections(NNCookieType cookie, int client_idx, bool inc_ref) {

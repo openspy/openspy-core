@@ -1,8 +1,12 @@
 #include "NNPeer.h"
 #include "NNDriver.h"
+#include "NNServer.h"
 
 #include "structs.h"
-#include "NNBackend.h"
+
+#include "NATMapper.h"
+
+#include <tasks/tasks.h>
 
 
 namespace NN {
@@ -149,11 +153,14 @@ namespace NN {
 		}
 	}
 	void Peer::handleNatifyPacket(NatNegPacket *packet) {
-		NNBackendRequest req;
+		//void AddRequest(TaskSchedulerRequestType type, ReqClass request);
+		NNRequestData req;
 		if (!m_got_natify_request) {
 			m_got_natify_request = true;
 			gettimeofday(&m_ert_test_time, NULL);
 		}
+
+		TaskScheduler<NNRequestData, TaskThreadData> *scheduler = ((NN::Server *)(GetDriver()->getServer()))->getScheduler();
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got ERTTest type %d", m_sd->address.ToString().c_str(), packet->Packet.Init.porttype);
 		switch (packet->Packet.Init.porttype) {
@@ -163,16 +170,14 @@ namespace NN {
 				sendPacket(packet);
 				break;
 			case NN_PT_NN2: //unsolicited IP ERT reply
-				req.type = NN::ENNQueryRequestType_PerformERTTest_IPUnsolicited;
 				this->IncRef();
 				req.peer = this;
-				NN::m_task_pool->AddRequest(req);
+				scheduler->AddRequest(ENNRequestType_PerformERTTest_IPUnsolicited, req);
 				break;
 			case NN_PT_NN3: //unsolicited IP&Port ERT reply				
-				req.type = NN::ENNQueryRequestType_PerformERTTest_IPPortUnsolicited;
 				this->IncRef();
 				req.peer = this;
-				NN::m_task_pool->AddRequest(req);
+				scheduler->AddRequest(ENNRequestType_PerformERTTest_IPPortUnsolicited, req);
 				break;
 		}
 	}
@@ -296,12 +301,12 @@ namespace NN {
 		sendPacket(&p);
 	}
 	void Peer::SubmitClient() {
-		NNBackendRequest req;
-		req.type = NN::ENNQueryRequestType_SubmitClient;
+		TaskScheduler<NNRequestData, TaskThreadData> *scheduler = ((NN::Server *)(GetDriver()->getServer()))->getScheduler();
+		NNRequestData req;
 		this->IncRef();
 		req.peer = this;
 		req.summary = GetSummary();
-		NN::m_task_pool->AddRequest(req);
+		scheduler->AddRequest(ENNRequestType_SubmitClient, req);
 	}
 
 	int Peer::NumRequiredAddresses() const {
