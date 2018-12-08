@@ -25,12 +25,13 @@ file (GLOB LOGGER_SRCS "OS/Logger/*.cpp")
 file (GLOB LOGGER_HDRS "OS/Logger/*.h")
 file (GLOB TIMER_SRCS "OS/Timer/*.cpp")
 file (GLOB TIMER_HDRS "OS/Timer/*.h")
+file (GLOB TASK_HDRS "OS/Task/*.h")
 
 file (GLOB MQ_SRCS "OS/MessageQueue/*.cpp" "OS/MessageQueue/rabbitmq/*.cpp")
 file (GLOB MQ_HDRS "OS/MessageQueue/*.h" "OS/MessageQueue/rabbitmq/*.h")
 
 
-set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${MQ_SRCS} ${MQ_HDRS})
+set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${MQ_SRCS} ${MQ_HDRS} ${TASK_HDRS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -56,9 +57,6 @@ source_group("Headers\\OS\\MessageQueue" FILES ${MQ_HDRS})
 
 
 IF(WIN32)
-	file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Win32/*.cpp")
-	source_group("Sources\\OS\\socketlib\\Win32\\" FILES ${PLAT_SOCKETLIB_SRCS})
-
 
 	file(GLOB PLAT_THREAD_SRCS "OS/Threads/Win32/*.cpp")
 	source_group("Sources\\OS\\Threads\\Win32\\" FILES ${PLAT_THREAD_SRCS})
@@ -66,14 +64,23 @@ IF(WIN32)
 	file(GLOB PLAT_THREAD_HDRS "OS/Threads/Win32/*.h")	
 	source_group("Headers\\OS\\Threads\\Win32\\" FILES ${PLAT_THREAD_HDRS})
 
+	file(GLOB PLAT_LOGGER_SRCS "OS/Logger/Win32/*.cpp")
+	source_group("Sources\\OS\\Logger\\Win32\\" FILES ${PLAT_LOGGER_SRCS})
 
-	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS})
+	file(GLOB PLAT_LOGGER_HDRS "OS/Logger/Win32/*.h")	
+	source_group("Headers\\OS\\Logger\\Win32\\" FILES ${PLAT_LOGGER_HDRS})
+
+	file(GLOB PLAT_TIMER_SRCS "OS/Timer/Win32/*.cpp")
+	source_group("Sources\\OS\\Timer\\Win32\\" FILES ${PLAT_TIMER_SRCS})
+
+	file(GLOB PLAT_TIMER_HDRS "OS/Timer/Win32/*.h")	
+	source_group("Headers\\OS\\Timer\\Win32\\" FILES ${PLAT_TIMER_HDRS})
+
+	set (ALL_PLAT ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
 	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
-	target_link_libraries(openspy ws2_32.lib curl jansson)
+	target_link_libraries(openspy ws2_32.lib curl jansson libcurl_imp pugixml libeay32 ssleay32)
 
 ELSE() #unix
-	file(GLOB PLAT_SOCKETLIB_SRCS "OS/socketlib/Unix/*.cpp")
-	source_group("Sources\\OS\\socketlib\\Unix\\" FILES ${PLAT_SOCKETLIB_SRCS})
 	
 	file(GLOB PLAT_THREAD_SRCS "OS/Threads/PThreads/*.cpp")
 	source_group("Sources\\OS\\Threads\\PThreads\\" FILES ${PLAT_THREAD_SRCS})
@@ -93,7 +100,7 @@ ELSE() #unix
 	file(GLOB PLAT_TIMER_HDRS "OS/Timer/Unix/*.h")	
 	source_group("Headers\\OS\\Timer\\Unix\\" FILES ${PLAT_TIMER_HDRS})
 
-	set (ALL_PLAT ${PLAT_SOCKETLIB_SRCS} ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
+	set (ALL_PLAT ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
 	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
 	target_link_libraries(openspy pthread ssl crypto curl jansson pugixml rabbitmq)
 ENDIF()

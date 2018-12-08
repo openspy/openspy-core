@@ -13,10 +13,10 @@
 #include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 
 namespace NN {
-    bool PerformERTTest(TaskScheduler<NNRequestData, TaskThreadData> *scheduler, TaskSchedulerRequestType type, NNRequestData request, TaskThreadData  *thread_data) {
+    bool PerformERTTest(NNRequestData request, TaskThreadData  *thread_data) {
 		OS::Address address = request.peer->getAddress();
 		std::ostringstream ss;
-		ss << "\\msg\\natneg_erttest\\address\\" << address.ToString() << "\\type\\" << (type == ENNRequestType_PerformERTTest_IPUnsolicited);
+		ss << "\\msg\\natneg_erttest\\address\\" << address.ToString() << "\\type\\" << (request.type == ENNRequestType_PerformERTTest_IPUnsolicited);
 		thread_data->mp_mqconnection->sendMessage(nn_channel_exchange, nn_channel_routingkey,ss.str());
         return true;
     }

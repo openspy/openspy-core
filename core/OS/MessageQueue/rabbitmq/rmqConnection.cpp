@@ -8,14 +8,35 @@ namespace MQ {
         m_password = password;
         m_vhost = vhost;
 
+		m_channel_id = 1;
+		m_next_channel_id = m_channel_id + 1;
+
         mp_mutex = OS::CreateMutex();
         mp_rabbitmq_socket = NULL;
         mp_rabbitmq_conn = NULL;
 		mp_listen_thread = NULL;
         mp_reconnect_retry_thread = NULL;
+		m_cloned_connection = false;
 
         connect();
     }
+	rmqConnection::rmqConnection(rmqConnection *connection) {
+		connection->setupDefaultQueue();
+
+		m_channel_id = connection->m_next_channel_id++;
+		m_next_channel_id = m_channel_id + 1;
+		mp_parentMQConnection = connection;
+
+		mp_mutex = OS::CreateMutex();
+
+		mp_rabbitmq_socket = connection->mp_rabbitmq_socket;
+		mp_rabbitmq_conn = connection->mp_rabbitmq_conn;
+		mp_listen_thread = NULL;
+		mp_reconnect_retry_thread = NULL;
+		m_cloned_connection = true;
+
+		connect();
+	}
     rmqConnection::~rmqConnection() {
         disconnect();
 
@@ -37,7 +58,7 @@ namespace MQ {
                 props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
                 props.content_type = amqp_cstring_bytes("text/plain");
                 props.delivery_mode = 2; // persistent delivery mode
-        amqp_basic_publish(mp_rabbitmq_conn, 1, amqp_cstring_bytes(exchange.c_str()),
+        amqp_basic_publish(mp_rabbitmq_conn, m_channel_id, amqp_cstring_bytes(exchange.c_str()),
             amqp_cstring_bytes(routingKey.c_str()), 0, 0,
             &props, amqp_cstring_bytes(message.c_str()));
 
@@ -46,33 +67,46 @@ namespace MQ {
     void rmqConnection::deleteReciever(std::string exchange, std::string routingKey, std::string queueName) {
 
     }
+	IMQInterface *rmqConnection::clone() {
+		return new rmqConnection(this);
+	}
 
     void rmqConnection::connect() {
         if(mp_rabbitmq_conn != NULL) 
             disconnect();
 		
         //init sender
+		
         m_setup_default_queue = false;
         m_declared_ready = false;
-		mp_rabbitmq_conn = amqp_new_connection();
-		mp_rabbitmq_socket = amqp_tcp_socket_new(mp_rabbitmq_conn);
+
+		if (!m_cloned_connection) {
+			mp_rabbitmq_conn = amqp_new_connection();
+			mp_rabbitmq_socket = amqp_tcp_socket_new(mp_rabbitmq_conn);
+		}
 
         struct timeval timeout;
         memset(&timeout, 0, sizeof(timeout));
         timeout.tv_sec = 5;
 
-		int status = amqp_socket_open_noblock(mp_rabbitmq_socket, m_address.ToString(true).c_str(), m_address.GetPort(), &timeout);
+		int status = AMQP_STATUS_OK;
+		
+		if (!m_cloned_connection) {
+			status = amqp_socket_open_noblock(mp_rabbitmq_socket, m_address.ToString(true).c_str(), m_address.GetPort(), &timeout);
+		}
+		
         if(status != AMQP_STATUS_OK) {
             OS::LogText(OS::ELogLevel_Error, "Error connecting on sender socket");
             disconnect();
             spawnReconnectThread();
         } else {
-		    amqp_login(mp_rabbitmq_conn, m_vhost.c_str(), 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, m_username.c_str(), m_password.c_str());
-		    amqp_channel_open(mp_rabbitmq_conn, 1);
+			if (!m_cloned_connection) {
+				amqp_login(mp_rabbitmq_conn, m_vhost.c_str(), 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, m_username.c_str(), m_password.c_str());
+			}
+		    amqp_channel_open(mp_rabbitmq_conn, m_channel_id);
     		handle_amqp_error(amqp_get_rpc_reply(mp_rabbitmq_conn), "channel open"); //TODO: channel error check
 
             mp_listen_thread = OS::CreateThread(rmqConnection::ListenThread, this, true);
-
         }
     }
     void rmqConnection::spawnReconnectThread() {
@@ -98,11 +132,18 @@ namespace MQ {
             mp_listen_thread = NULL;
         }
 
-		amqp_channel_close(mp_rabbitmq_conn, 1, AMQP_REPLY_SUCCESS);
-		amqp_connection_close(mp_rabbitmq_conn, AMQP_REPLY_SUCCESS);
-		amqp_destroy_connection(mp_rabbitmq_conn);
+		//amqp_channel_close(mp_rabbitmq_conn, m_channel_id, AMQP_REPLY_SUCCESS);
+
+		if (!m_cloned_connection) {
+			amqp_connection_close(mp_rabbitmq_conn, AMQP_REPLY_SUCCESS);
+			amqp_destroy_connection(mp_rabbitmq_conn);
+			mp_rabbitmq_conn = NULL;
+
+			if (m_setup_default_queue) {
+				amqp_bytes_free(m_default_queue);
+			}
+		}
         m_declared_ready = false;
-        mp_rabbitmq_conn = NULL;
     }
 
     bool rmqConnection::handle_amqp_error(amqp_rpc_reply_t x, char const *context) {
@@ -188,7 +229,7 @@ namespace MQ {
             listener->mp_mutex->unlock();
             
             if(rmqlistener != NULL)
-                rmqlistener->handler(message, rmqlistener->extra);            
+                rmqlistener->handler(std::string((char *)envelope.exchange.bytes, envelope.exchange.len), std::string((char *)envelope.routing_key.bytes, envelope.routing_key.len), message, rmqlistener->extra);
 
             //amqp_basic_ack(listener->mp_rabbitmq_conn, envelope.channel, envelope.delivery_tag, false);
 
@@ -206,7 +247,7 @@ namespace MQ {
         //listener->mp_reconnect_retry_thread = NULL;
         return NULL;
     }
-    void rmqConnection::setReciever(std::string exchange, std::string routingKey, _MQMessageHandler handler, std::string queueName, void *extra) {
+    void rmqConnection::setReceiver(std::string exchange, std::string routingKey, _MQMessageHandler handler, std::string queueName, void *extra) {
         rmqListenerData *entry = new rmqListenerData;
         entry->extra = extra;
         entry->handler = handler;
@@ -234,25 +275,18 @@ namespace MQ {
                         queuename = m_queue_map[listenerData->queueName];
                     }                    
             } else {
+				if (m_cloned_connection) {
+					m_default_queue = mp_parentMQConnection->m_default_queue;
+					m_setup_default_queue = true;
+				}
 
                 if(!m_setup_default_queue) {
-                    amqp_queue_declare_ok_t *r = amqp_queue_declare(mp_rabbitmq_conn, 1, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
-                    handle_amqp_error(amqp_get_rpc_reply(mp_rabbitmq_conn), "Declaring queue");
-                    if(!r) {
-                        disconnect();
-                        return;
-                    }
-                    m_default_queue = amqp_bytes_malloc_dup(r->queue);
-                    if (m_default_queue.bytes == NULL) {
-                        fprintf(stderr, "Out of memory while copying queue name");
-                        exit(-1);
-                    }
-                    m_setup_default_queue = true;
+					setupDefaultQueue();
                 }
                 queuename = m_default_queue;
             }
 
-            amqp_queue_bind(mp_rabbitmq_conn, 1, queuename, amqp_cstring_bytes(listenerData->exchange.c_str()),
+            amqp_queue_bind(mp_rabbitmq_conn, m_channel_id, queuename, amqp_cstring_bytes(listenerData->exchange.c_str()),
                             amqp_cstring_bytes(listenerData->routingKey.c_str()), amqp_empty_table);
 
             handle_amqp_error(amqp_get_rpc_reply(mp_rabbitmq_conn), "Binding queue");
@@ -264,7 +298,7 @@ namespace MQ {
         std::map<std::string, amqp_bytes_t>::iterator it2 = m_queue_map.begin();
         while(it2 != m_queue_map.end()) {
             std::pair<std::string, amqp_bytes_t> p = *it2;
-            amqp_basic_consume(mp_rabbitmq_conn, 1, (*it2).second, amqp_empty_bytes, 0, 1, 0,
+            amqp_basic_consume(mp_rabbitmq_conn, m_channel_id, (*it2).second, amqp_empty_bytes, 0, 1, 0,
                 amqp_empty_table);
 
             handle_amqp_error(amqp_get_rpc_reply(mp_rabbitmq_conn), "basic consume");
@@ -272,7 +306,7 @@ namespace MQ {
         }
 
         if(m_setup_default_queue) {
-            amqp_basic_consume(mp_rabbitmq_conn, 1, m_default_queue, amqp_empty_bytes, 0, 1, 0, amqp_empty_table);
+            amqp_basic_consume(mp_rabbitmq_conn, m_channel_id, m_default_queue, amqp_empty_bytes, 0, 1, 0, amqp_empty_table);
 
             handle_amqp_error(amqp_get_rpc_reply(mp_rabbitmq_conn), "basic consume");
         }
@@ -283,4 +317,19 @@ namespace MQ {
         setupRecievers();
         m_declared_ready = true;
     }
+	void rmqConnection::setupDefaultQueue() {
+		if (m_setup_default_queue) return;
+		amqp_queue_declare_ok_t *r = amqp_queue_declare(mp_rabbitmq_conn, m_channel_id, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
+		handle_amqp_error(amqp_get_rpc_reply(mp_rabbitmq_conn), "Declaring queue");
+		if (!r) {
+			disconnect();
+			return;
+		}
+		m_default_queue = amqp_bytes_malloc_dup(r->queue);
+		if (m_default_queue.bytes == NULL) {
+			fprintf(stderr, "Out of memory while copying queue name");
+			exit(-1);
+		}
+		m_setup_default_queue = true;
+	}
 }

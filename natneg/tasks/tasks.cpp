@@ -17,47 +17,15 @@
 namespace NN {
     const char *nn_channel_exchange = "openspy.natneg", *nn_channel_routingkey="natneg.core";
 
-    /*NNThreadData *ThreadDataFactory(TaskScheduler<NNRequestData, NNThreadData> *scheduler, EThreadInitState state, NNThreadData *data) {
-		if(state == EThreadInitState_AllocThreadData) {
-			data = new NNThreadData();
-			std::string rabbitmq_address;
-			OS::g_config->GetVariableString("", "rabbitmq_address", rabbitmq_address);
-
-			std::string rabbitmq_user, rabbitmq_pass;
-			OS::g_config->GetVariableString("", "rabbitmq_user", rabbitmq_user);
-			OS::g_config->GetVariableString("", "rabbitmq_password", rabbitmq_pass);
-
-
-			std::string rabbitmq_vhost;
-			OS::g_config->GetVariableString("", "rabbitmq_vhost", rabbitmq_vhost);
-
-
-			data->mp_mqconnection = (MQ::IMQInterface*)new MQ::rmqConnection(OS::Address(rabbitmq_address), rabbitmq_user, rabbitmq_pass, rabbitmq_vhost);
-
-			struct timeval t;
-			t.tv_usec = 0;
-			t.tv_sec = 60;
-
-			data->mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
-
-			data->server = NULL;
-		} else if(state == EThreadInitState_InitThreadData) {
-			data->mp_mqconnection->declareReady();
-		} else if(state == EThreadInitState_DeallocThreadData) {
-			delete data;
-			data = NULL;
-		}
-        return data;
-    }*/
-    TaskScheduler<NNRequestData, TaskThreadData> *InitTasks() {
-        TaskScheduler<NNRequestData, TaskThreadData> *scheduler = new TaskScheduler<NNRequestData, TaskThreadData>(4);
+    TaskScheduler<NNRequestData, TaskThreadData> *InitTasks(INetServer *server) {
+        TaskScheduler<NNRequestData, TaskThreadData> *scheduler = new TaskScheduler<NNRequestData, TaskThreadData>(4, server);
 
         scheduler->SetThreadDataFactory(TaskScheduler<NNRequestData, TaskThreadData>::DefaultThreadDataFactory);
 
         scheduler->AddRequestHandler(ENNRequestType_SubmitClient, PerformSubmit);
         scheduler->AddRequestHandler(ENNRequestType_PerformERTTest_IPUnsolicited, PerformERTTest);
         scheduler->AddRequestHandler(ENNRequestType_PerformERTTest_IPPortUnsolicited, PerformERTTest);
-        scheduler->AddRequestListener(nn_channel_exchange, nn_channel_routingkey, "send_msg", Handle_SendMsg);
+        scheduler->AddRequestListener(nn_channel_exchange, nn_channel_routingkey, Handle_SendMsg);
 
 		scheduler->DeclareReady();
 

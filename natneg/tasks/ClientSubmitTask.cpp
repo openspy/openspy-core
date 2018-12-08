@@ -21,7 +21,7 @@ extern const char *nn_channel_exchange;
 extern const char *nn_channel_routingkey;
 
 namespace NN {
-    bool PerformSubmit(TaskScheduler<NNRequestData, TaskThreadData> *scheduler, TaskSchedulerRequestType type, NNRequestData request, TaskThreadData  *thread_data) {
+    bool PerformSubmit(NNRequestData request, TaskThreadData  *thread_data) {
 		Redis::Response reply;
 
 		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
@@ -81,7 +81,7 @@ namespace NN {
 				ss.str(""); ss << "\\msg\\final_peer\\cookie\\" << summary.cookie << "\\client_index\\" << opposite_client_index;
 				thread_data->mp_mqconnection->sendMessage(nn_channel_exchange, nn_channel_routingkey, ss.str());
 			}
-			
 		}
+		return true;
 	}
 }

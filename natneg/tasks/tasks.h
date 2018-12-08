@@ -25,15 +25,16 @@ namespace NN {
         public:
             NN::Peer *peer;
             NN::ConnectionSummary summary;
+			TaskSchedulerRequestType type;
     };
     extern const char *nn_channel_exchange;
     extern const char *nn_channel_routingkey;
 
-    bool PerformSubmit(TaskScheduler<NNRequestData, TaskThreadData> *, TaskSchedulerRequestType, NNRequestData, TaskThreadData *);
-    bool PerformERTTest(TaskScheduler<NNRequestData, TaskThreadData> *scheduler, TaskSchedulerRequestType, NNRequestData, TaskThreadData *);
+    bool PerformSubmit(NNRequestData, TaskThreadData *);
+    bool PerformERTTest(NNRequestData, TaskThreadData *);
 
-    bool Handle_SendMsg(TaskScheduler<NNRequestData, TaskThreadData> *scheduler, TaskThreadData *, std::map<std::string, std::string> kv_data);
+    bool Handle_SendMsg(TaskThreadData *, std::map<std::string, std::string> kv_data);
     ConnectionSummary LoadConnectionSummary(Redis::Connection *redis_connection, std::string redis_key);
-    TaskScheduler<NNRequestData, TaskThreadData> * InitTasks();
+    TaskScheduler<NNRequestData, TaskThreadData> * InitTasks(INetServer *server);
 }
 #endif // _NN_TASKS_H

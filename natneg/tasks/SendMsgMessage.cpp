@@ -15,7 +15,7 @@
 #include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 
 namespace NN {
-    bool Handle_SendMsg(TaskScheduler<NNRequestData, TaskThreadData> *scheduler, TaskThreadData  *thread_data, std::map<std::string, std::string> kv_data) {
+    bool Handle_SendMsg(TaskThreadData  *thread_data, std::map<std::string, std::string> kv_data) {
 			NN::Server *server = (NN::Server *)thread_data->server;
 
 			if (kv_data.find("msg") != kv_data.end()) {
@@ -47,5 +47,6 @@ namespace NN {
 				}
 			
 			}
+			return true;
     }
 }

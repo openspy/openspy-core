@@ -9,7 +9,7 @@ namespace NN {
 		mp_task_scheduler = NULL;
 	}
 	void Server::init() {
-		mp_task_scheduler = InitTasks();
+		mp_task_scheduler = InitTasks(this);
 	}
 	void Server::tick() {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
