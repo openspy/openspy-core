@@ -21,6 +21,11 @@ namespace MQ {
         connect();
     }
 	rmqConnection::rmqConnection(rmqConnection *connection) {
+		m_address = connection->m_address;
+		m_username = connection->m_username;
+		m_password = connection->m_password;
+		m_vhost = connection->m_vhost;
+
 		connection->setupDefaultQueue();
 
 		m_channel_id = connection->m_next_channel_id++;
@@ -29,8 +34,8 @@ namespace MQ {
 
 		mp_mutex = OS::CreateMutex();
 
-		mp_rabbitmq_socket = connection->mp_rabbitmq_socket;
-		mp_rabbitmq_conn = connection->mp_rabbitmq_conn;
+		mp_rabbitmq_socket = NULL;
+		mp_rabbitmq_conn = NULL;
 		mp_listen_thread = NULL;
 		mp_reconnect_retry_thread = NULL;
 		m_cloned_connection = true;
@@ -80,10 +85,10 @@ namespace MQ {
         m_setup_default_queue = false;
         m_declared_ready = false;
 
-		if (!m_cloned_connection) {
-			mp_rabbitmq_conn = amqp_new_connection();
-			mp_rabbitmq_socket = amqp_tcp_socket_new(mp_rabbitmq_conn);
-		}
+		//if (!m_cloned_connection) {
+		mp_rabbitmq_conn = amqp_new_connection();
+		mp_rabbitmq_socket = amqp_tcp_socket_new(mp_rabbitmq_conn);
+		//}
 
         struct timeval timeout;
         memset(&timeout, 0, sizeof(timeout));
@@ -91,18 +96,18 @@ namespace MQ {
 
 		int status = AMQP_STATUS_OK;
 		
-		if (!m_cloned_connection) {
-			status = amqp_socket_open_noblock(mp_rabbitmq_socket, m_address.ToString(true).c_str(), m_address.GetPort(), &timeout);
-		}
+		//if (!m_cloned_connection) {
+		status = amqp_socket_open_noblock(mp_rabbitmq_socket, m_address.ToString(true).c_str(), m_address.GetPort(), &timeout);
+		//}
 		
         if(status != AMQP_STATUS_OK) {
             OS::LogText(OS::ELogLevel_Error, "Error connecting on sender socket");
             disconnect();
             spawnReconnectThread();
         } else {
-			if (!m_cloned_connection) {
-				amqp_login(mp_rabbitmq_conn, m_vhost.c_str(), 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, m_username.c_str(), m_password.c_str());
-			}
+			//if (!m_cloned_connection) {
+			amqp_login(mp_rabbitmq_conn, m_vhost.c_str(), 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, m_username.c_str(), m_password.c_str());
+			//}
 		    amqp_channel_open(mp_rabbitmq_conn, m_channel_id);
     		handle_amqp_error(amqp_get_rpc_reply(mp_rabbitmq_conn), "channel open"); //TODO: channel error check
 
@@ -121,7 +126,6 @@ namespace MQ {
         if(mp_rabbitmq_conn) {
             declareReady();
         }
-        
     }
 
     void rmqConnection::disconnect() {
@@ -132,17 +136,17 @@ namespace MQ {
             mp_listen_thread = NULL;
         }
 
-		//amqp_channel_close(mp_rabbitmq_conn, m_channel_id, AMQP_REPLY_SUCCESS);
+		//if (!m_cloned_connection) {
+		amqp_channel_close(mp_rabbitmq_conn, m_channel_id, AMQP_REPLY_SUCCESS);
+		amqp_connection_close(mp_rabbitmq_conn, AMQP_REPLY_SUCCESS);
+		amqp_destroy_connection(mp_rabbitmq_conn);
+		mp_rabbitmq_conn = NULL;
 
-		if (!m_cloned_connection) {
-			amqp_connection_close(mp_rabbitmq_conn, AMQP_REPLY_SUCCESS);
-			amqp_destroy_connection(mp_rabbitmq_conn);
-			mp_rabbitmq_conn = NULL;
-
-			if (m_setup_default_queue) {
-				amqp_bytes_free(m_default_queue);
-			}
+		//if (m_setup_default_queue) {
+		if (m_setup_default_queue && !m_cloned_connection) {
+			amqp_bytes_free(m_default_queue);
 		}
+		//}
         m_declared_ready = false;
     }
 
@@ -218,18 +222,21 @@ namespace MQ {
             }
 
 			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
-
+			std::string exchange = std::string((char *)envelope.exchange.bytes, envelope.exchange.len);
             std::string routing_key = std::string((char *)envelope.routing_key.bytes, envelope.routing_key.len);
             listener->mp_mutex->lock();
             std::map<std::string, rmqListenerData *>::iterator it = listener->m_listener_callbacks.find(routing_key);
             rmqListenerData *rmqlistener = NULL;
-            if(it != listener->m_listener_callbacks.end()) {
+
+            while(it != listener->m_listener_callbacks.end()) {
                 rmqlistener = (*it).second;
+				if (rmqlistener->exchange.compare(exchange) == 0 && rmqlistener->routingKey.compare(routing_key) == 0) {
+					rmqlistener->handler(exchange, routing_key, message, rmqlistener->extra);
+					break;
+				}
+				it++;
             }
             listener->mp_mutex->unlock();
-            
-            if(rmqlistener != NULL)
-                rmqlistener->handler(std::string((char *)envelope.exchange.bytes, envelope.exchange.len), std::string((char *)envelope.routing_key.bytes, envelope.routing_key.len), message, rmqlistener->extra);
 
             //amqp_basic_ack(listener->mp_rabbitmq_conn, envelope.channel, envelope.delivery_tag, false);
 
