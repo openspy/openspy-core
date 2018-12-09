@@ -18,6 +18,8 @@ namespace MQ {
         mp_reconnect_retry_thread = NULL;
 		m_cloned_connection = false;
 
+        mp_parentMQConnection = NULL;
+
         connect();
     }
 	rmqConnection::rmqConnection(rmqConnection *connection) {
@@ -225,7 +227,7 @@ namespace MQ {
 			std::string exchange = std::string((char *)envelope.exchange.bytes, envelope.exchange.len);
             std::string routing_key = std::string((char *)envelope.routing_key.bytes, envelope.routing_key.len);
             listener->mp_mutex->lock();
-            std::map<std::string, rmqListenerData *>::iterator it = listener->m_listener_callbacks.find(routing_key);
+            std::map<std::string, rmqListenerData *>::iterator it = listener->m_listener_callbacks.begin();
             rmqListenerData *rmqlistener = NULL;
 
             while(it != listener->m_listener_callbacks.end()) {

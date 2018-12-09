@@ -4,6 +4,7 @@
 #include <OS/OpenSpy.h>
 #include <OS/Redis.h>
 #include <OS/MessageQueue/MQInterface.h>
+#include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 #include <OS/Net/NetServer.h>
 #include <OS/Task.h>
 #include <stack>
@@ -46,7 +47,6 @@ class TaskScheduler {
 		}
 		~TaskScheduler() {
 			//free tasks
-			delete mp_mutex;
 		}
 		bool AddRequestHandler(TaskSchedulerRequestType type, TaskRequestHandler handler) {
 			RequestHandlerEntry entry;
@@ -70,11 +70,11 @@ class TaskScheduler {
 				ListenerHandlerEntry entry = *itL;
 				mp_mqconnection->setReceiver(entry.exchange, entry.routingKey, MQListenerCallback);
 				itL++;
-			}*/
-			mp_mqconnection->declareReady();
+			}
+			mp_mqconnection->declareReady();*/
 
 			//loop tasks, declaring them ready
-			std::vector<ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData>> *>::iterator it = m_tasks.begin();
+			typename std::vector< ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *>::iterator it = m_tasks.begin();
 			while(it != m_tasks.end()) {
 				ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData>> *task = *it;
 				m_task_data[task] = mp_thread_data_factory(this, EThreadInitState_InitThreadData, m_task_data[task]);
@@ -99,12 +99,13 @@ class TaskScheduler {
 				}
 				it++;
 			}
+			request.type = type;
 			lowest->AddRequest(request);			
 		}
 
 		static ThreadData *DefaultThreadDataFactory(TaskScheduler<ReqClass, ThreadData> *scheduler, EThreadInitState state, ThreadData *data) {
-			std::vector<ListenerHandlerEntry>::iterator it;
-			std::vector<ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *>::iterator it2;
+			typename std::vector<ListenerHandlerEntry>::iterator it;
+			typename std::vector<ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *>::iterator it2;
 			struct timeval t;
 			t.tv_usec = 0;
 			t.tv_sec = 60;
@@ -126,7 +127,7 @@ class TaskScheduler {
 					data->mp_mqconnection->declareReady();
 					it2 = scheduler->m_tasks.begin();
 					while (it2 != scheduler->m_tasks.end()) {
-						ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData>>  *task = *it2;
+						ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> >  *task = *it2;
 						data->mp_thread = OS::CreateThread(ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData>>::TaskThread, task, true);
 						it2++;
 					}
@@ -139,7 +140,7 @@ class TaskScheduler {
 		static void MQListenerCallback(std::string exchange, std::string routingKey, std::string message, void *extra) {
 			ThreadData *thread_data = (ThreadData *)extra;
 			TaskScheduler<ReqClass, ThreadData> *scheduler = (TaskScheduler<ReqClass, ThreadData> *)thread_data->scheduler;
-			std::vector<ListenerHandlerEntry>::iterator it = scheduler->m_listener_handlers.begin();
+			typename std::vector<ListenerHandlerEntry>::iterator it = scheduler->m_listener_handlers.begin();
 			while (it != scheduler->m_listener_handlers.end()) {
 				ListenerHandlerEntry entry = *it;
 				if (entry.exchange.compare(exchange) == 0 && entry.routingKey.compare(routingKey) == 0) {
@@ -149,7 +150,7 @@ class TaskScheduler {
 			}
 		}
 		static void HandleRequestCallback(TaskScheduler<ReqClass, ThreadData> *scheduler,ReqClass request, ThreadData *data) {
-			std::vector<RequestHandlerEntry>::iterator it = scheduler->m_request_handlers.begin();
+			typename std::vector<RequestHandlerEntry>::iterator it = scheduler->m_request_handlers.begin();
 			while (it != scheduler->m_request_handlers.end()) {
 				RequestHandlerEntry entry = *it;
 				if (entry.type == request.type) {

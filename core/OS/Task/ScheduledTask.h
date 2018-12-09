@@ -22,18 +22,20 @@ class TaskScheduler;
 
 template<typename ReqClass, typename ThreadData, typename Scheduler>
 class ScheduledTask : public OS::Task<ReqClass> {
-	typedef void (*HandleRequestCallback)(Scheduler *, ReqClass request, TaskThreadData *data);
+	typedef void (*HandleRequestCallback)(Scheduler *, ReqClass request, ThreadData data);
 	public:
-		ScheduledTask() {
+		ScheduledTask() : OS::Task<ReqClass>() {
 			mp_task_scheduler = NULL;
 			mp_thread_data = NULL;
-			mp_thread = OS::CreateThread(ScheduledTask<ReqClass, TaskThreadData *, TaskScheduler<ReqClass, ThreadData> >::TaskThread, this, true);
+			this->mp_mutex = OS::CreateMutex(); //move this into Task ctor...
+			this->mp_thread = OS::CreateThread(ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> >::TaskThread, this, true);
 		}
 		~ScheduledTask() {
-			mp_thread->SignalExit(true);
-			delete mp_thread;
+			this->mp_thread->SignalExit(true);
+			delete this->mp_thread;
+			delete this->mp_mutex;
         }
-		void SetThreadData(TaskThreadData *data) {
+		void SetThreadData(ThreadData data) {
 			mp_thread_data = data;
 		}
 		void SetRequestCallback(HandleRequestCallback request_callback) {
@@ -43,26 +45,30 @@ class ScheduledTask : public OS::Task<ReqClass> {
 			mp_task_scheduler = scheduler;
 		}
 		static void *TaskThread(OS::CThread *thread) {
-			ScheduledTask<ReqClass, TaskThreadData *, TaskScheduler<ReqClass, ThreadData> > *task = (ScheduledTask<ReqClass, TaskThreadData *, TaskScheduler<ReqClass, ThreadData> > *)thread->getParams();
+			ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *task = (ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *)thread->getParams();
 			while(thread->isRunning()) {
 				task->StallForRequest();
 			}
 			return NULL; 
 		}
 		void StallForRequest() {
-			mp_thread_poller->wait();
-			mp_mutex->lock();
-			ReqClass task_params = m_request_list.front();
-			m_request_list.pop();
-			m_num_tasks--;
-			mp_mutex->unlock();
-			mp_request_callback(mp_task_scheduler, task_params,mp_thread_data);
+			this->mp_thread_poller->wait();
+			this->mp_mutex->lock();
+			bool empty = this->m_request_list.empty();
+			ReqClass task_params;
+			if(!empty) {
+				task_params = this->m_request_list.front();
+				this->m_request_list.pop();
+				this->m_num_tasks--;
+			}
+			this->mp_mutex->unlock();
+			if(!empty)
+				mp_request_callback(mp_task_scheduler, task_params,mp_thread_data);
 
 		}
 	private:
-	TaskThreadData *mp_thread_data;
+	ThreadData mp_thread_data;
 	HandleRequestCallback mp_request_callback;
 	Scheduler *mp_task_scheduler;
-	int m_num_tasks;
 };
 #endif //_SCHEDULEDTASK_H

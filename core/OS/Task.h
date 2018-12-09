@@ -1,6 +1,7 @@
 #ifndef _OS_TASK_H
 #define _OS_TASK_H
 #include <queue>
+#include <OS/Task.h>
 namespace OS {
 	#define TASK_SLEEP_TIME 200
 	template<typename T>
