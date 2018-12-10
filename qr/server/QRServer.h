@@ -2,8 +2,8 @@
 #define _QRSERVER_H
 #include <stdint.h>
 #include <OS/Net/NetServer.h>
-#include <OS/Task.h>
-#include <OS/TaskPool.h>
+
+#include <tasks/tasks.h>
 #define MASTER_PORT 27900
 namespace MM {
 	class MMPushTask;
@@ -18,9 +18,10 @@ namespace QR {
 		void init();
 		void tick();
 		void shutdown();
-		void SetTaskPool(OS::TaskPool<MM::MMPushTask, MM::MMPushRequest> *pool);
 		Peer *find_client(OS::Address address);
+		TaskScheduler<MM::MMPushRequest, TaskThreadData> *getScheduler() { return mp_task_scheduler; };
 	private:
+		TaskScheduler<MM::MMPushRequest, TaskThreadData> *mp_task_scheduler;
 	};
 }
 #endif //_CHCGAMESERVER_H

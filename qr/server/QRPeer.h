@@ -2,7 +2,7 @@
 #define _QRPEER_H
 #include "../main.h"
 #include <OS/Net/NetPeer.h>
-#include "MMPush.h"
+#include "tasks/tasks.h"
 
 #define REQUEST_KEY_LEN 4
 #define CHALLENGE_LEN 20

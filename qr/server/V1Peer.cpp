@@ -268,6 +268,7 @@ namespace QR {
 		}
 		else if(!m_sent_game_query){
 			m_waiting_gamedata = 1;
+			TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(GetDriver()->getServer()))->getScheduler();
 			MM::MMPushRequest req;
 			req.peer = this;
 			req.server = m_server_info;
@@ -276,7 +277,7 @@ namespace QR {
 			m_sent_game_query = true;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
-			MM::m_task_pool->AddRequest(req);
+			scheduler->AddRequest(req.type, req);
 		}
 	}
 	void V1Peer::OnGetGameInfo(OS::GameData game_info, int state) {

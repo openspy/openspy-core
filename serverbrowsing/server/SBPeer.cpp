@@ -1,6 +1,9 @@
+#include "SBServer.h"
 #include "SBPeer.h"
 #include "SBDriver.h"
 #include <OS/OpenSpy.h>
+
+#include <tasks/tasks.h>
 
 namespace SB {
 	Peer::Peer(Driver *driver, INetIOSocket *sd, int version) : INetPeer(driver, sd) {
@@ -32,6 +35,7 @@ namespace SB {
 		return false;
 	}
 	void Peer::AddRequest(MM::MMQueryRequest req) {
+		TaskScheduler<MM::MMQueryRequest, TaskThreadData> *scheduler = ((SBServer *)(GetDriver()->getServer()))->getScheduler();
 		if (req.type != MM::EMMQueryRequestType_GetGameInfoByGameName && req.type != MM::EMMQueryRequestType_GetGameInfoPairByGameName) {
 			if (m_game.secretkey[0] == 0) {
 				m_pending_request_list.push(req);
@@ -42,15 +46,16 @@ namespace SB {
 		req.peer->IncRef();
 		req.driver = mp_driver;
 
-		MM::m_task_pool->AddRequest(req);
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::FlushPendingRequests() {
 		while (!m_pending_request_list.empty()) {
+			TaskScheduler<MM::MMQueryRequest, TaskThreadData> *scheduler = ((SBServer *)(GetDriver()->getServer()))->getScheduler();
 			MM::MMQueryRequest req = m_pending_request_list.front();
 			req.peer = this;
 			req.peer->IncRef();
 			req.driver = mp_driver;
-			MM::m_task_pool->AddRequest(req);
+			scheduler->AddRequest(req.type, req);
 			m_pending_request_list.pop();
 		}
 	}

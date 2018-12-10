@@ -8,7 +8,7 @@
 #include "SBPeer.h"
 #include "V2Peer.h"
 #include "V1Peer.h"
-#include "MMQuery.h"
+#include <tasks/tasks.h>
 
 #include <map>
 #include <queue>

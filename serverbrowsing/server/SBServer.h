@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <OS/Net/NetServer.h>
 #include <OS/TaskPool.h>
-#include "MMQuery.h"
+#include <tasks/tasks.h>
 
 class SBServer : public INetServer {
 public:
@@ -11,10 +11,8 @@ public:
 	~SBServer();
 	void init();
 	void tick();
-	void SetTaskPool(OS::TaskPool<MM::MMQueryTask, MM::MMQueryRequest> *pool);
-
-	void debug_dump();
+	TaskScheduler<MM::MMQueryRequest, TaskThreadData> *getScheduler() { return mp_task_scheduler; };
 private:
-	OS::TaskPool<MM::MMQueryTask, MM::MMQueryRequest> *mp_task_pool;
+	TaskScheduler<MM::MMQueryRequest, TaskThreadData> *mp_task_scheduler;
 };
-#endif //_CHCGAMESERVER_H
+#endif //_SBSERVER_H

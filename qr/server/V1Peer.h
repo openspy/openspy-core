@@ -8,7 +8,7 @@
 #include <OS/gamespy/gsmsalg.h>
 #include <OS/KVReader.h>
 
-#include "MMPush.h"
+#include <tasks/tasks.h>
 
 #define MAX_OUTGOING_REQUEST_SIZE 1024
 #define QR1_PING_TIME 300

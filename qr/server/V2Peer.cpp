@@ -87,6 +87,7 @@ namespace QR {
 		if(strcmp(buffer.ReadNTS().c_str(),challenge_resp) == 0) { //matching challenge
 			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename.c_str());
 			if(m_sent_challenge && !m_server_pushed) {
+				TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(GetDriver()->getServer()))->getScheduler();
 				MM::MMPushRequest req;
 				req.peer = this;
 				req.server = m_dirty_server_info;
@@ -94,7 +95,7 @@ namespace QR {
 				req.peer->IncRef();
 				req.type = MM::EMMPushRequestType_PushServer;
 				m_server_pushed = true;
-				MM::m_task_pool->AddRequest(req);
+				scheduler->AddRequest(req.type, req);
 			}
 			m_sent_challenge = true;
 		}
@@ -200,6 +201,7 @@ namespace QR {
 
 		//register gamename
 		MM::MMPushRequest req;
+		TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(GetDriver()->getServer()))->getScheduler();
 		req.peer = this;
 		if (server_info.m_game.secretkey[0] != 0) {
 			if (m_server_pushed) {
@@ -217,7 +219,7 @@ namespace QR {
 					req.old_server = old_server_info;
 					req.peer->IncRef();
 					req.type = MM::EMMPushRequestType_UpdateServer;
-					MM::m_task_pool->AddRequest(req);
+					scheduler->AddRequest(req.type, req);
 				} else {
 					m_server_info_dirty = true;
 				}
@@ -232,10 +234,11 @@ namespace QR {
 			req.state = 1;
 			req.gamename = server_info.m_keys["gamename"];
 			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
-			MM::m_task_pool->AddRequest(req);
+			scheduler->AddRequest(req.type, req);
 		}
 	}
 	void V2Peer::handle_available(OS::Buffer &buffer) {
+		TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(GetDriver()->getServer()))->getScheduler();
 		MM::MMPushRequest req;
 		req.peer = this;
 		req.peer->IncRef();
@@ -245,7 +248,7 @@ namespace QR {
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got available request: %s", m_sd->address.ToString().c_str(), req.gamename.c_str());
 		req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
-		MM::m_task_pool->AddRequest(req);
+		scheduler->AddRequest(req.type, req);
 	}
 	void V2Peer::OnGetGameInfo(OS::GameData game_info, int state) {
 		if (state == 1) {
@@ -272,13 +275,14 @@ namespace QR {
 				if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME) {
 					m_server_info_dirty = false;
 					gettimeofday(&m_last_heartbeat, NULL);
+					TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(GetDriver()->getServer()))->getScheduler();
 					MM::MMPushRequest req;
 					req.peer = this;
 					m_dirty_server_info = m_server_info;
 					req.server = m_server_info;
 					req.peer->IncRef();
 					req.type = MM::EMMPushRequestType_UpdateServer_NoDiff;
-					MM::m_task_pool->AddRequest(req);
+					scheduler->AddRequest(req.type, req);
 				}
 			}
 		}

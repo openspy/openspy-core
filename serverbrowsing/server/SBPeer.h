@@ -3,7 +3,7 @@
 #include "../main.h"
 #include <OS/Net/NetPeer.h>
 
-#include "MMQuery.h"
+#include <tasks/tasks.h>
 
 //Maximum length for the SQL filter string
 #define MAX_FILTER_LEN 511

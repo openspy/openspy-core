@@ -1,7 +1,7 @@
 #ifndef _V1PEER_H
 #define _V1PEER_H
 #include "../main.h"
-#include "MMQuery.h"
+#include <tasks/tasks.h>
 
 #define MAX_UNPROCESSED_DATA 5000
 

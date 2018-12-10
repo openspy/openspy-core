@@ -6,7 +6,6 @@
 #include <OS/Net/NetServer.h>
 #include "server/SBServer.h"
 #include "server/SBDriver.h"
-#include "server/MMQuery.h"
 INetServer *g_gameserver = NULL;
 bool g_running = true;
 void shutdown();
@@ -15,18 +14,12 @@ void on_exit(void) {
     shutdown();
 }
 
-void debug_dump() {
-    ((SBServer *)g_gameserver)->debug_dump();
-}
 #ifndef _WIN32
 void sig_handler(int signo)
 {
-    if(signo == SIGTERM) {
+    if(signo == SIGTERM || signo == SIGINT) {
         shutdown();    
-    } else if(signo == SIGINT) {
-        debug_dump();
-    }
-    
+    }    
 }
 #endif
 
