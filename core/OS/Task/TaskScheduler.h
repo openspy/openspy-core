@@ -6,6 +6,7 @@
 #include <OS/MessageQueue/MQInterface.h>
 #include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 #include <OS/Net/NetServer.h>
+#include <OS/Cache/GameCache.h>
 #include <OS/Task.h>
 #include <stack>
 #include <string>
@@ -41,6 +42,12 @@ class TaskScheduler {
 			mp_server = server;
 			m_tasks_setup = false;
 			m_num_tasks = num_tasks;
+
+			OS::DataCacheTimeout gameCacheTimeout;
+			gameCacheTimeout.max_keys = 50;
+			gameCacheTimeout.timeout_time_secs = 7200;
+			mp_shared_game_cache = new OS::GameCache(m_num_tasks, gameCacheTimeout);
+
 			mp_thread_data_factory = DefaultThreadDataFactory;
 			setupRootMQConnection();
 			setupTasks();
@@ -171,6 +178,8 @@ class TaskScheduler {
 				task->SetRequestCallback(HandleRequestCallback);
 				m_tasks.push_back(task);
 				m_task_data[task] = mp_thread_data_factory(this, EThreadInitState_AllocThreadData, NULL);
+				m_task_data[task]->id = i;
+				m_task_data[task]->shared_game_cache = mp_shared_game_cache;
 				task->SetThreadData(m_task_data[task]);
 			}
 		}
@@ -202,6 +211,8 @@ class TaskScheduler {
 
 		int m_num_tasks;
 		bool m_tasks_setup;
+
+		OS::GameCache *mp_shared_game_cache;
 };
 
 #endif //_TASKSCHEDULER_H

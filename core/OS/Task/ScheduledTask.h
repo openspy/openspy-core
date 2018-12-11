@@ -15,6 +15,8 @@ class TaskThreadData {
 		INetServer *server;
 		OS::CThread *mp_thread;
 		void *scheduler;
+		int id; //task thread index
+		OS::GameCache *shared_game_cache;
 };
 
 template<typename ReqClass, typename ThreadData>
