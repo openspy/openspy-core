@@ -163,6 +163,22 @@ namespace MM {
 
     bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::string message);
 
+	//shared functions
+	void AppendServerEntry(TaskThreadData *thread_data, std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, const sServerListReq *req);
+	void AppendGroupEntry(TaskThreadData *thread_data, const char *entry_name, ServerListQuery *ret, bool all_keys, const MMQueryRequest *request);
+
+	bool FindAppend_ServKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key);
+	bool FindAppend_PlayerKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key, int index);
+	bool FindAppend_TeamKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key, int index);
+
+	Server *GetServerByKey(TaskThreadData *thread_data, std::string key, bool include_deleted = false);
+	Server *GetServerByIP(TaskThreadData *thread_data, OS::Address address, OS::GameData game);
+
+	ServerListQuery GetServers(TaskThreadData *thread_data, const sServerListReq *req, const MMQueryRequest *request = NULL);
+	ServerListQuery GetGroups(TaskThreadData *thread_data, const sServerListReq *req, const MMQueryRequest *request = NULL);
+
+	void FreeServerListQuery(MM::ServerListQuery *query);
+
 	extern const char *mm_channel_exchange;
 
 	extern const char *mm_client_message_routingkey;
