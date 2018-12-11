@@ -1,16 +1,7 @@
 #include <OS/Config/AppConfig.h>
 #include <OS/Task/TaskScheduler.h>
-#include <algorithm>
-
-#include <OS/TaskPool.h>
-#include <OS/Redis.h>
-
-#include <sstream>
 
 #include "tasks.h"
-
-#include <OS/MessageQueue/rabbitmq/rmqConnection.h>
-#define NATNEG_COOKIE_TIME 30 
 
 
 namespace MM {
