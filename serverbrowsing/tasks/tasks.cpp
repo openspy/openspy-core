@@ -21,20 +21,6 @@ namespace MM {
 
     const char *mp_pk_name = "QRID";
 
-
-    bool PerformGetServers(MMQueryRequest request, TaskThreadData  *thread_data);
-    bool PerformGetGroups(MMQueryRequest request, TaskThreadData  *thread_data);
-    bool PerformGetServerByKey(MMQueryRequest request, TaskThreadData  *thread_data);
-    bool PerformGetServerByIP(MMQueryRequest request, TaskThreadData  *thread_data);
-    bool PerformSubmitData(MMQueryRequest request, TaskThreadData  *thread_data);
-    bool PerformGetGameInfoByGameName(MMQueryRequest request, TaskThreadData  *thread_data);
-    bool PerformGetGameInfoPairByGameName(MMQueryRequest request, TaskThreadData  *thread_data);
-
-    //server update functions
-    bool PerformDeleteMissingKeysAndUpdateChanged(MMQueryRequest request, TaskThreadData  *thread_data);
-
-    bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::map<std::string, std::string> kv_data);
-
     TaskScheduler<MMQueryRequest, TaskThreadData> *InitTasks(INetServer *server) {
         TaskScheduler<MMQueryRequest, TaskThreadData> *scheduler = new TaskScheduler<MMQueryRequest, TaskThreadData>(4, server);
 

@@ -24,7 +24,7 @@ enum EThreadInitState {
 template<typename ReqClass, typename ThreadData>
 class TaskScheduler {
 	typedef bool (*TaskRequestHandler)(ReqClass, ThreadData *);
-	typedef bool (*ListenerRequestHandler)(ThreadData *, std::map<std::string, std::string>);
+	typedef bool (*ListenerRequestHandler)(ThreadData *, std::string);
 	typedef ThreadData *(*ThreadDataFactory)(TaskScheduler<ReqClass, ThreadData> *, EThreadInitState, ThreadData *);
 	typedef struct {
 		TaskSchedulerRequestType type;
@@ -144,7 +144,7 @@ class TaskScheduler {
 			while (it != scheduler->m_listener_handlers.end()) {
 				ListenerHandlerEntry entry = *it;
 				if (entry.exchange.compare(exchange) == 0 && entry.routingKey.compare(routingKey) == 0) {
-					entry.handler(thread_data, OS::KeyStringToMap(message));
+					entry.handler(thread_data, message);
 				}
 				it++;
 			}

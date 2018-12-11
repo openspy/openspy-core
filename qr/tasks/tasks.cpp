@@ -22,17 +22,6 @@ namespace MM {
 
     const char *mp_pk_name = "QRID";
 
-
-    bool PerformPushServer(MMPushRequest request, TaskThreadData  *thread_data);
-    bool PerformUpdateServer(MMPushRequest request, TaskThreadData  *thread_data);
-    bool PerformDeleteServer(MMPushRequest request, TaskThreadData  *thread_data);
-    bool PerformGetGameInfo(MMPushRequest request, TaskThreadData  *thread_data);
-
-    //server update functions
-    bool PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request, TaskThreadData  *thread_data);
-
-    bool Handle_ClientMessage(TaskThreadData *thread_data, std::map<std::string, std::string> kv_data);
-
     TaskScheduler<MMPushRequest, TaskThreadData> *InitTasks(INetServer *server) {
         TaskScheduler<MMPushRequest, TaskThreadData> *scheduler = new TaskScheduler<MMPushRequest, TaskThreadData>(4, server);
 

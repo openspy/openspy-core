@@ -1,6 +1,6 @@
 #include <tasks/tasks.h>
 namespace MM {
-    bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::map<std::string, std::string> kv_data) {
+    bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::string message) {
         return false;
     }
 }

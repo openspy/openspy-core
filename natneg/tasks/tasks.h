@@ -33,7 +33,7 @@ namespace NN {
     bool PerformSubmit(NNRequestData, TaskThreadData *);
     bool PerformERTTest(NNRequestData, TaskThreadData *);
 
-    bool Handle_SendMsg(TaskThreadData *, std::map<std::string, std::string> kv_data);
+    bool Handle_SendMsg(TaskThreadData *, std::string message);
     ConnectionSummary LoadConnectionSummary(Redis::Connection *redis_connection, std::string redis_key);
     TaskScheduler<NNRequestData, TaskThreadData> * InitTasks(INetServer *server);
 }

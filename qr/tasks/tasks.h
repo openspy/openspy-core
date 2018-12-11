@@ -50,16 +50,34 @@ namespace MM {
 		int state;
 	};
     
-    bool PerformPushServer(MMPushRequest request, TaskThreadData  *thread_data);
-    bool PerformUpdateServer(MMPushRequest request, TaskThreadData  *thread_data);
-    bool PerformDeleteServer(MMPushRequest request, TaskThreadData  *thread_data);
-    bool PerformGetGameInfo(MMPushRequest request, TaskThreadData  *thread_data);
+    bool PerformPushServer(MMPushRequest request, TaskThreadData *thread_data);
+    bool PerformUpdateServer(MMPushRequest request, TaskThreadData *thread_data);
+    bool PerformDeleteServer(MMPushRequest request, TaskThreadData *thread_data);
+    bool PerformGetGameInfo(MMPushRequest request, TaskThreadData *thread_data);
 
     //server update functions
-    bool PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request, TaskThreadData  *thread_data);
+    bool PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request, TaskThreadData *thread_data);
 
-    bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::map<std::string, std::string> kv_data);
+    bool Handle_ClientMessage(TaskThreadData *thread_data, std::string message);
 
     TaskScheduler<MMPushRequest, TaskThreadData> *InitTasks(INetServer *server);
+
+	//shared functions
+	void DeleteServer(TaskThreadData *thread_data, ServerInfo server, bool publish);
+	void UpdateServer(TaskThreadData *thread_data, ServerInfo server);
+	int GetServerID(TaskThreadData *thread_data);
+	int PushServer(TaskThreadData *thread_data, ServerInfo server, bool publish, int pk_id = -1);
+	int TryFindServerID(TaskThreadData *thread_data, ServerInfo server);
+
+	extern const char *mm_channel_exchange;
+
+	extern const char *mm_client_message_routingkey;
+	extern const char *mm_server_event_routingkey;
+
+    extern const char *mp_pk_name;
+
+	//#define NUM_MM_PUSH_THREADS 8
+	#define MM_WAIT_MAX_TIME 1500
+	#define MM_PUSH_EXPIRE_TIME 1800
 }
 #endif //_MM_TASKS_H

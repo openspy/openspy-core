@@ -150,5 +150,25 @@ namespace MM {
 
 	TaskScheduler<MMQueryRequest, TaskThreadData> *InitTasks(INetServer *server);
 
+    bool PerformGetServers(MMQueryRequest request, TaskThreadData *thread_data);
+    bool PerformGetGroups(MMQueryRequest request, TaskThreadData *thread_data);
+    bool PerformGetServerByKey(MMQueryRequest request, TaskThreadData *thread_data);
+    bool PerformGetServerByIP(MMQueryRequest request, TaskThreadData *thread_data);
+    bool PerformSubmitData(MMQueryRequest request, TaskThreadData *thread_data);
+    bool PerformGetGameInfoByGameName(MMQueryRequest request, TaskThreadData *thread_data);
+    bool PerformGetGameInfoPairByGameName(MMQueryRequest request, TaskThreadData *thread_data);
+
+    //server update functions
+    bool PerformDeleteMissingKeysAndUpdateChanged(MMQueryRequest request, TaskThreadData *thread_data);
+
+    bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::string message);
+
+	extern const char *mm_channel_exchange;
+
+	extern const char *mm_client_message_routingkey;
+	extern const char *mm_server_event_routingkey;
+
+    extern const char *mp_pk_name;
+
 }
 #endif //_MM_TASKS_H
