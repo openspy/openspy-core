@@ -528,15 +528,11 @@ namespace SB {
 		int natneg_val = 0;
 		if(server->kvFields.find("natneg") != server->kvFields.end()) {
 			natneg_val = atoi(server->kvFields["natneg"].c_str());
-		}
-		else {
-			flags |= CONNECT_NEGOTIATE_FLAG;
-		}
-
-		if(natneg_val == 0) {
-			flags |= UNSOLICITED_UDP_FLAG;
-		} else {
-			flags |= CONNECT_NEGOTIATE_FLAG;
+			if(natneg_val == 0) {
+				flags |= UNSOLICITED_UDP_FLAG;
+			} else {
+				flags |= CONNECT_NEGOTIATE_FLAG;
+			}
 		}
 		
 		if(server->kvFields.find("localip0") != server->kvFields.end()) { //TODO: scan localips??
