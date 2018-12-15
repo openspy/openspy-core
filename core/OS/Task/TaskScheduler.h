@@ -2,6 +2,7 @@
 #define _TASKSCHEDULER_H
 
 #include <OS/OpenSpy.h>
+#include <OS/Config/AppConfig.h>
 #include <OS/Redis.h>
 #include <OS/MessageQueue/MQInterface.h>
 #include <OS/MessageQueue/rabbitmq/rmqConnection.h>
