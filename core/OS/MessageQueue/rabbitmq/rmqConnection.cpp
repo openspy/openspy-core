@@ -327,7 +327,7 @@ namespace MQ {
         m_declared_ready = true;
     }
 	void rmqConnection::setupDefaultQueue() {
-		if (m_setup_default_queue) return;
+		if (m_setup_default_queue || mp_rabbitmq_conn == NULL) return;
 		amqp_queue_declare_ok_t *r = amqp_queue_declare(mp_rabbitmq_conn, m_channel_id, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
 		handle_amqp_error(amqp_get_rpc_reply(mp_rabbitmq_conn), "Declaring queue");
 		if (!r) {

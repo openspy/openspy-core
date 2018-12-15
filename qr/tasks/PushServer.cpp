@@ -1,8 +1,15 @@
 #include <tasks/tasks.h>
+#include <server/QRPeer.h>
 #include <sstream>
 namespace MM {
     bool PerformPushServer(MMPushRequest request, TaskThreadData  *thread_data) {
-        return false;
+		int pk_id = PushServer(thread_data, request.server, true, request.server.id);
+		if (request.server.id != pk_id) {
+			request.peer->OnRegisteredServer(pk_id);
+			return true;
+		}
+		return false;
+		
     }
 	int PushServer(TaskThreadData *thread_data, ServerInfo server, bool publish, int pk_id) {
 		int id = pk_id;

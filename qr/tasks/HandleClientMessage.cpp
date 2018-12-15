@@ -11,10 +11,10 @@ namespace MM {
 		QR::Server *server = (QR::Server *)thread_data->server;
 
 		std::vector<std::string> vec = OS::KeyStringToVector(message);
-		if (vec.size() < 1) return;
+		if (vec.size() < 1) return false;
 		type = vec.at(0);
 		if (!type.compare("send_msg")) {
-			if (vec.size() < 7) return;
+			if (vec.size() < 7) return false;
 			gamename = vec.at(1);
 			from_ip = vec.at(2);
 			from_port = vec.at(3);
@@ -28,7 +28,7 @@ namespace MM {
 			OS::Address address(ss.str().c_str());
 			QR::Peer *peer = server->find_client(address);
 			if (!peer) {
-				return;							
+				return false;							
 			}
 				
 			OS::Base64StrToBin((const char *)data.c_str(), &data_out, data_len);
