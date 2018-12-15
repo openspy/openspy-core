@@ -1,8 +1,12 @@
+#include <server/QRPeer.h>
 #include <tasks/tasks.h>
 #include <sstream>
 namespace MM {
     bool PerformDeleteServer(MMPushRequest request, TaskThreadData  *thread_data) {
         DeleteServer(thread_data, request.server, true);
+		if(request.peer) {
+			request.peer->DecRef();
+		}
         return true;
     }
 	void DeleteServer(TaskThreadData *thread_data, MM::ServerInfo server, bool publish) {

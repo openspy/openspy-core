@@ -9,7 +9,11 @@ namespace MM {
 		if(serv)
 			ret.list.push_back(serv);
 
-		request.peer->OnRetrievedServerInfo(request, ret, request.extra);
+		if(request.peer) {
+			request.peer->OnRetrievedServerInfo(request, ret, request.extra);
+			request.peer->DecRef();
+		}
+		
 
 		FreeServerListQuery(&ret);
         return true;

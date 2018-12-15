@@ -82,6 +82,9 @@ namespace NN {
 				thread_data->mp_mqconnection->sendMessage(nn_channel_exchange, nn_channel_routingkey, ss.str());
 			}
 		}
+		if(request.peer) {
+			request.peer->DecRef();
+		}
 		return true;
 	}
 }

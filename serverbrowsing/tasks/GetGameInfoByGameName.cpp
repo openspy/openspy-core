@@ -7,7 +7,10 @@ namespace MM {
             game_info = OS::GetGameByName(request.gamenames[0].c_str(), thread_data->mp_redis_connection);
             thread_data->shared_game_cache->AddGame(thread_data->id, game_info);
         }
-		request.peer->OnRecievedGameInfo(game_info, request.extra);
+        if(request.peer) {
+            request.peer->OnRecievedGameInfo(game_info, request.extra);
+            request.peer->DecRef();
+        }
         return true;
     }
 }

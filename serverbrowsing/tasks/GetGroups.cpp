@@ -7,6 +7,8 @@
 namespace MM {
     bool PerformGetGroups(MMQueryRequest request, TaskThreadData *thread_data) {
         GetGroups(thread_data, &request.req, &request); //no need to free, because nothing appended to return value
+		if(request.peer)
+			request.peer->DecRef();
         return true;
     }
 	ServerListQuery GetGroups(TaskThreadData *thread_data, const sServerListReq *req, const MMQueryRequest *request) {

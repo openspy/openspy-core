@@ -29,6 +29,10 @@ namespace MM {
 			request.to.GetPort() << "\\" <<
 			b64_string;
 		thread_data->mp_mqconnection->sendMessage(MM::mm_channel_exchange, MM::mm_client_message_routingkey, message.str());
+
+		if(request.peer) {
+			request.peer->DecRef();
+		}
 		return true;
     }
 }

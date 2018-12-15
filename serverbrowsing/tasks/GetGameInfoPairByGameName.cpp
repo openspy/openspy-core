@@ -12,7 +12,10 @@ namespace MM {
             thread_data->shared_game_cache->AddGame(thread_data->id, games[1]);
         }
 		
-		request.peer->OnRecievedGameInfoPair(games[0], games[1], request.extra);
+        if(request.peer) {
+            request.peer->OnRecievedGameInfoPair(games[0], games[1], request.extra);            
+            request.peer->DecRef();
+        }
         return true;
     }
 }

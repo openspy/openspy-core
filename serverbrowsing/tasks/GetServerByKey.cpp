@@ -6,6 +6,8 @@ namespace MM {
 		AppendServerEntry(thread_data, request.key, &ret, true, false, NULL);
 		request.peer->OnRetrievedServerInfo(request, ret, request.extra);
 		FreeServerListQuery(&ret);
+		if(request.peer)
+			request.peer->DecRef();
         return true;
     }
 	Server *GetServerByKey(TaskThreadData *thread_data, std::string key, bool include_deleted) {

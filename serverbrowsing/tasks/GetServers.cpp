@@ -7,6 +7,8 @@
 namespace MM {
     bool PerformGetServers(MMQueryRequest request, TaskThreadData *thread_data) {
 		GetServers(thread_data, &request.req, &request);
+		if(request.peer)
+			request.peer->DecRef();
         return true;
     }
 

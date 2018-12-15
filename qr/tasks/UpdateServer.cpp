@@ -1,6 +1,7 @@
 #include <sstream>
 #include <algorithm>
 #include <tasks/tasks.h>
+#include <server/QRPeer.h>
 namespace MM {
     bool PerformUpdateServer(MMPushRequest request, TaskThreadData  *thread_data) {
 		//find missing keys and push deletes
@@ -188,6 +189,9 @@ namespace MM {
 			std::ostringstream s;
 			s << "\\update\\" << modified_server.m_game.gamename << ":" << modified_server.groupid << ":" << modified_server.id << ":";
 			thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey,s.str());
+		}
+		if(request.peer) {
+			request.peer->DecRef();
 		}
         return true;
     }

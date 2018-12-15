@@ -4,11 +4,15 @@
 namespace MM {
     bool PerformPushServer(MMPushRequest request, TaskThreadData  *thread_data) {
 		int pk_id = PushServer(thread_data, request.server, true, request.server.id);
-		if (request.server.id != pk_id) {
+		bool success = false;
+		if (request.server.id != pk_id && request.peer) {
 			request.peer->OnRegisteredServer(pk_id);
-			return true;
+			success = true;
 		}
-		return false;
+		if(request.peer) {
+			request.peer->DecRef();
+		}
+		return success;
 		
     }
 	int PushServer(TaskThreadData *thread_data, ServerInfo server, bool publish, int pk_id) {
