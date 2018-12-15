@@ -130,7 +130,7 @@ namespace MM {
 
 			}
 
-			EMMQueryRequestType type;
+			int type;
 			//union {
 				sServerListReq req;
 				//submit data

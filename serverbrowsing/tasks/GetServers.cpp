@@ -39,6 +39,8 @@ namespace MM {
 			if (reply.values[0].arr_value.values.size() < 2) {
 				goto error_cleanup;
 			}
+			v = reply.values[0].arr_value.values[0].second;
+			arr = reply.values[0].arr_value.values[1].second;
 
 		 	if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 		 		cursor = atoi(v.value._str.c_str());
