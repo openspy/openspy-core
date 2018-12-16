@@ -148,24 +148,33 @@ class TaskScheduler {
 		static void MQListenerCallback(std::string exchange, std::string routingKey, std::string message, void *extra) {
 			ThreadData *thread_data = (ThreadData *)extra;
 			TaskScheduler<ReqClass, ThreadData> *scheduler = (TaskScheduler<ReqClass, ThreadData> *)thread_data->scheduler;
+			ListenerRequestHandler handler = NULL;
 			typename std::vector<ListenerHandlerEntry>::iterator it = scheduler->m_listener_handlers.begin();
 			while (it != scheduler->m_listener_handlers.end()) {
 				ListenerHandlerEntry entry = *it;
 				if (entry.exchange.compare(exchange) == 0 && entry.routingKey.compare(routingKey) == 0) {
-					entry.handler(thread_data, message);
+					handler = entry.handler;
+					break;
 				}
 				it++;
+			}
+			if(handler) {
+				handler(thread_data, message);
 			}
 		}
 		static void HandleRequestCallback(TaskScheduler<ReqClass, ThreadData> *scheduler,ReqClass request, ThreadData *data) {
 			typename std::vector<RequestHandlerEntry>::iterator it = scheduler->m_request_handlers.begin();
+			TaskRequestHandler handler = NULL;
 			while (it != scheduler->m_request_handlers.end()) {
 				RequestHandlerEntry entry = *it;
 				if (entry.type == request.type) {
-					entry.handler(request, data);
+					handler = entry.handler;
 					break;
 				}
 				it++;
+			}
+			if(handler) {
+				handler(request, data);
 			}
 		}
 	protected:
