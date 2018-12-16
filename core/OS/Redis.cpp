@@ -238,6 +238,7 @@ namespace Redis {
 		while(sReadLineData.recv_loop) {
 			len = recv(conn->sd, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len, MSG_NOSIGNAL); //TODO: check if exeeds max len.. currently set to 1 MB so shouldn't...
 			if (len <= 0) { return len; }
+			conn->read_buff[total_len+len] = 0;
 			while (len--) {
 				switch (sReadLineData.state) {
 				case READ_STATE_READ_OPERATOR:
