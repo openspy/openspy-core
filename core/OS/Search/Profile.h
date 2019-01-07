@@ -65,8 +65,6 @@ namespace OS {
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 			static void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileSearchRequest request);
 	};
-	extern OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *m_profile_search_task_pool;
-	OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *GetProfileTaskPool();
 	void SetupProfileTaskPool(int num_tasks);
 	void ShutdownProfileTaskPool();
 }

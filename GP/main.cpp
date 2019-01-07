@@ -6,7 +6,6 @@
 #include <OS/Config/AppConfig.h>
 #include "server/GPServer.h"
 #include "server/GPDriver.h"
-#include "server/GPBackend.h"
 INetServer *g_gameserver = NULL;
 bool g_running = true;
 
@@ -62,7 +61,6 @@ int main() {
 
     delete g_gameserver;
 
-	GPBackend::ShutdownTaskPool();
     OS::Shutdown();	
     return 0;
 

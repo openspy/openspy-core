@@ -7,7 +7,6 @@
 #include <ctype.h>
 
 namespace OS {
-	OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *m_profile_search_task_pool = NULL;
 	struct curl_data {
 		std::string buffer;
 	};
@@ -27,130 +26,98 @@ namespace OS {
 		std::vector<OS::Profile> results;
 		std::map<int, OS::User> users_map;
 		//build json object
-		json_t *send_obj = json_object();
 
-		switch (request.type) {
-		default:
-		case EProfileSearch_Profiles:
-			json_object_set_new(send_obj, "mode", json_string("profile_search"));
-			break;
-		case EProfileSearch_Buddies:
-			json_object_set_new(send_obj, "mode", json_string("buddies_search"));
-			break;
-		case EProfileSearch_Blocks:
-			json_object_set_new(send_obj, "mode", json_string("blocks_search"));
-			break;
-		case EProfileSearch_Buddies_Reverse:
-			json_object_set_new(send_obj, "mode", json_string("buddies_reverse_search"));
-			break;
-		case EProfileSearch_CreateProfile:
-			json_object_set_new(send_obj, "mode", json_string("create_profile"));
-			break;
-		case EProfileSearch_DeleteProfile:
-			json_object_set_new(send_obj, "mode", json_string("delete_profile"));
-			break;
-		case EProfileSearch_UpdateProfile:
-			json_object_set_new(send_obj, "mode", json_string("update_profile"));
-			break;
+		json_t *profile_obj = json_object();
+		json_t *send_obj = profile_obj;
+		json_t *user_obj = json_object();
+		if (request.profile_search_details.id != 0)
+			json_object_set_new(profile_obj, "id", json_integer(request.profile_search_details.id));
+
+		json_object_set_new(profile_obj, "userid", json_integer(request.profile_search_details.userid));
+
+		//user parameters
+		if (request.user_search_details.email.length()) {
+			json_object_set_new(user_obj, "email", json_string(request.user_search_details.email.c_str()));
+		}			
+
+		if (request.user_search_details.id != 0) {
+			//json_object_set_new(profile_obj, "userid", json_integer(request.user_search_details.id));
+			json_object_set_new(user_obj, "id", json_integer(request.user_search_details.id));
+			
+		}
+
+
+		if(request.user_search_details.partnercode != -1) {
+			json_object_set_new(user_obj, "partnercode", json_integer(request.user_search_details.partnercode));
 		}
 
 
 
-		/*if (request.profile_search_details.id != 0 && request.type != EProfileSearch_UpdateProfile) {
-			json_object_set_new(send_obj, "profileid", json_integer(request.profile_search_details.id));
+		//profile parameters
+		if (request.profile_search_details.nick.length())
+			json_object_set_new(profile_obj, "nick", json_string(request.profile_search_details.nick.c_str()));
+
+		if (request.profile_search_details.uniquenick.length())
+			json_object_set_new(profile_obj, "uniquenick", json_string(request.profile_search_details.uniquenick.c_str()));
+
+		if (request.profile_search_details.firstname.length())
+			json_object_set_new(profile_obj, "firstname", json_string(request.profile_search_details.firstname.c_str()));
+
+		if (request.profile_search_details.lastname.length())
+			json_object_set_new(profile_obj, "lastname", json_string(request.profile_search_details.lastname.c_str()));
+
+		if (request.profile_search_details.icquin)
+			json_object_set_new(profile_obj, "icquin", json_integer(request.profile_search_details.icquin));
+
+		if (request.profile_search_details.zipcode)
+			json_object_set_new(profile_obj, "zipcode", json_integer(request.profile_search_details.zipcode));
+
+
+		if(request.profile_search_details.sex != -1)
+			json_object_set_new(profile_obj, "sex", json_integer(request.profile_search_details.sex));
+
+		if(request.profile_search_details.pic != 0)
+			json_object_set_new(profile_obj, "pic", json_integer(request.profile_search_details.pic));
+		if (request.profile_search_details.ooc != 0)
+			json_object_set_new(profile_obj, "ooc", json_integer(request.profile_search_details.ooc));
+		if (request.profile_search_details.ind!= 0)
+			json_object_set_new(profile_obj, "ind", json_integer(request.profile_search_details.ind));
+		if (request.profile_search_details.mar!= 0)
+			json_object_set_new(profile_obj, "mar", json_integer(request.profile_search_details.mar));
+		if (request.profile_search_details.chc != 0)
+			json_object_set_new(profile_obj, "chc", json_integer(request.profile_search_details.chc));
+		if (request.profile_search_details.i1 != 0)
+			json_object_set_new(profile_obj, "i1", json_integer(request.profile_search_details.i1));
+
+		if (request.profile_search_details.birthday.GetYear() != 0)
+			json_object_set_new(profile_obj, "birthday", request.profile_search_details.birthday.GetJson());
+
+		if(request.profile_search_details.lon)
+			json_object_set_new(profile_obj, "lon", json_real(request.profile_search_details.lon));
+		if(request.profile_search_details.lat)
+			json_object_set_new(profile_obj, "lat", json_real(request.profile_search_details.lat));
+
+
+		if(request.profile_search_details.namespaceid != -1)
+			json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile_search_details.namespaceid));
+
+
+		if (request.namespaceids.size()) {
+			json_t *namespaceids_json = json_array();
+
+			//json_array_append_new(v_array, json_real(v));
+			std::vector<int>::iterator it = request.namespaceids.begin();
+			while (it != request.namespaceids.end()) {
+				int v = *it;
+				json_array_append_new(namespaceids_json, json_integer(v));
+				it++;
+			}
+
+			json_object_set_new(profile_obj, "namespaceids", namespaceids_json);
+
 		}
-		else */ {
-
-			json_t *profile_obj = json_object();
-			json_t *user_obj = json_object();
-
-			if (request.profile_search_details.id != 0)
-				json_object_set_new(profile_obj, "id", json_integer(request.profile_search_details.id));
-
-			//user parameters
-			if (request.user_search_details.email.length()) {
-				json_object_set_new(user_obj, "email", json_string(request.user_search_details.email.c_str()));
-			}			
-
-			if (request.user_search_details.id != 0) {
-				//json_object_set_new(profile_obj, "userid", json_integer(request.user_search_details.id));
-				json_object_set_new(user_obj, "id", json_integer(request.user_search_details.id));
-			}
-
-
-			if(request.user_search_details.partnercode != -1) {
-				json_object_set_new(user_obj, "partnercode", json_integer(request.user_search_details.partnercode));
-			}
-
-
-
-			//profile parameters
-			if (request.profile_search_details.nick.length())
-				json_object_set_new(profile_obj, "nick", json_string(request.profile_search_details.nick.c_str()));
-
-			if (request.profile_search_details.uniquenick.length())
-				json_object_set_new(profile_obj, "uniquenick", json_string(request.profile_search_details.uniquenick.c_str()));
-
-			if (request.profile_search_details.firstname.length())
-				json_object_set_new(profile_obj, "firstname", json_string(request.profile_search_details.firstname.c_str()));
-
-			if (request.profile_search_details.lastname.length())
-				json_object_set_new(profile_obj, "lastname", json_string(request.profile_search_details.lastname.c_str()));
-
-			if (request.profile_search_details.icquin)
-				json_object_set_new(profile_obj, "icquin", json_integer(request.profile_search_details.icquin));
-
-			if (request.profile_search_details.zipcode)
-				json_object_set_new(profile_obj, "zipcode", json_integer(request.profile_search_details.zipcode));
-
-
-			if(request.profile_search_details.sex != -1)
-				json_object_set_new(profile_obj, "sex", json_integer(request.profile_search_details.sex));
-
-			if(request.profile_search_details.pic != 0)
-				json_object_set_new(profile_obj, "pic", json_integer(request.profile_search_details.pic));
-			if (request.profile_search_details.ooc != 0)
-				json_object_set_new(profile_obj, "ooc", json_integer(request.profile_search_details.ooc));
-			if (request.profile_search_details.ind!= 0)
-				json_object_set_new(profile_obj, "ind", json_integer(request.profile_search_details.ind));
-			if (request.profile_search_details.mar!= 0)
-				json_object_set_new(profile_obj, "mar", json_integer(request.profile_search_details.mar));
-			if (request.profile_search_details.chc != 0)
-				json_object_set_new(profile_obj, "chc", json_integer(request.profile_search_details.chc));
-			if (request.profile_search_details.i1 != 0)
-				json_object_set_new(profile_obj, "i1", json_integer(request.profile_search_details.i1));
-
-			if (request.profile_search_details.birthday.GetYear() != 0)
-				json_object_set_new(profile_obj, "birthday", request.profile_search_details.birthday.GetJson());
-
-			if(request.profile_search_details.lon)
-				json_object_set_new(profile_obj, "lon", json_real(request.profile_search_details.lon));
-			if(request.profile_search_details.lat)
-				json_object_set_new(profile_obj, "lat", json_real(request.profile_search_details.lat));
-
-
-			if(request.profile_search_details.namespaceid != -1)
-				json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile_search_details.namespaceid));
-
-
-			if (request.namespaceids.size()) {
-				json_t *namespaceids_json = json_array();
-
-				//json_array_append_new(v_array, json_real(v));
-				std::vector<int>::iterator it = request.namespaceids.begin();
-				while (it != request.namespaceids.end()) {
-					int v = *it;
-					json_array_append_new(namespaceids_json, json_integer(v));
-					it++;
-				}
-
-				json_object_set_new(profile_obj, "namespaceids", namespaceids_json);
-
-			}
-			json_object_set(send_obj, "profile", profile_obj);
-			json_object_set(send_obj, "user", user_obj);
-		}
-
+		//json_object_set(send_obj, "profile", profile_obj);
+		//json_object_set(send_obj, "user", user_obj);
 
 
 		if (request.target_profileids.size()) {
@@ -185,13 +152,12 @@ namespace OS {
 					error = EProfileResponseType_Success;
 					json_t *error_obj = json_object_get(json_data, "error");
 
-					json_t *profiles_obj = json_object_get(json_data, "profiles");
 					if(error_obj) {
 						error = Handle_ProfileWebError(request, error_obj);
-					} else if (profiles_obj) {
-						size_t num_profiles = json_array_size(profiles_obj);
+					} else if (json_is_array(json_data)) {
+						size_t num_profiles = json_array_size(json_data);
 						for (size_t i = 0; i < num_profiles; i++) {
-							json_t *profile_obj = json_array_get(profiles_obj, i);
+							json_t *profile_obj = json_array_get(json_data, i);
 							OS::Profile profile = OS::LoadProfileFromJson(profile_obj);
 							if (users_map.find(profile.userid) == users_map.end()) {
 								json_t *user_obj = json_object_get(profile_obj, "user");
@@ -202,11 +168,8 @@ namespace OS {
 					}
 					else {
 						//check for single profile
-						profiles_obj = json_object_get(json_data, "profile");
-						if (profiles_obj) {
-							OS::Profile profile = OS::LoadProfileFromJson(profiles_obj);
-							results.push_back(profile);
-						}
+						OS::Profile profile = OS::LoadProfileFromJson(json_data);
+						results.push_back(profile);
 					}
 					json_decref(json_data);
 				}
@@ -294,15 +257,6 @@ namespace OS {
 		delete mp_mutex;
 		delete mp_thread;
 	}
-	OS::TaskPool<ProfileSearchTask, ProfileSearchRequest> *GetProfileTaskPool() {
-		return m_profile_search_task_pool;
-	}
-	void SetupProfileTaskPool(int num_tasks) {
-		m_profile_search_task_pool = new OS::TaskPool<ProfileSearchTask, ProfileSearchRequest>(num_tasks);
-	}
-	void ShutdownProfileTaskPool() {
-		delete m_profile_search_task_pool;
-	}
 	void ProfileSearchTask::ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileSearchRequest request) {
 		struct curl_slist *chunk = NULL;
 		std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
@@ -314,7 +268,34 @@ namespace OS {
 		}
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
-		curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_PROFILEMGR_URL);
+		std::string url = OS::g_webServicesURL;
+		switch (request.type) {
+			case EProfileSearch_Profiles:
+				url += "/v1/Profile/lookup";
+				break;
+			case EProfileSearch_CreateProfile:
+			case EProfileSearch_DeleteProfile:
+			case EProfileSearch_UpdateProfile:
+				url += "/v1/Profile";
+				break;
+			case EProfileSearch_Blocks:
+				url += "/v1/Presence/Block";
+				break;
+			case EProfileSearch_Buddies:
+			case EProfileSearch_Buddies_Reverse:
+				url += "/v1/Presence/Buddy";
+				break;
+		}
+		switch (request.type) {
+			case EProfileSearch_CreateProfile:
+				curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+				break;
+			case EProfileSearch_DeleteProfile:
+				curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+				break;
+		}
+		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
 
 		/* set default user agent */

@@ -1,5 +1,6 @@
 #include "SMPeer.h"
 #include "SMDriver.h"
+#include "SMServer.h"
 #include <OS/OpenSpy.h>
 #include <OS/Buffer.h>
 #include <OS/Search/Profile.h>
@@ -11,6 +12,10 @@
 #include <OS/gamespy/gsmsalg.h>
 
 #include <sstream>
+
+#include <OS/Task/TaskScheduler.h>
+#include <OS/SharedTasks/tasks.h>
+
 
 enum { //TODO: move into shared header
 	GP_NEWUSER						= 512, // 0x200, There was an error creating a new user.
@@ -124,26 +129,27 @@ namespace SM {
 
 		gettimeofday(&m_last_recv, NULL);
 	}
-	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer) {
 		int err_code = 0;
-		if(auth_data.response_code != -1) {
-			switch(auth_data.response_code) {
-				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
-					err_code = GP_NEWUSER_UNIQUENICK_INUSE;
-					break;
-				case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
-					err_code = GP_NEWUSER_BAD_PASSWORD;
-					break;
-				case OS::CREATE_RESPONSE_INVALID_NICK:
-					err_code = GP_NEWUSER_BAD_NICK;
+
+		switch(auth_data.user_response_code) {
+			case TaskShared::EUserResponseType_Profile_UniqueNickInUse:
+				err_code = GP_NEWUSER_UNIQUENICK_INUSE;
 				break;
-				case OS::CREATE_RESPONSE_INVALID_UNIQUENICK:
-					err_code = GP_NEWUSER_UNIQUENICK_INVALID;
+			case TaskShared::EUserResponseType_UserExists:
+				err_code = GP_NEWUSER_BAD_PASSWORD;
 				break;
-				default:
-					err_code = GP_NEWUSER;
-				break;
-			}
+			case TaskShared::EUserResponseType_Profile_InvalidNick:
+				err_code = GP_NEWUSER_BAD_NICK;
+			break;
+			case TaskShared::EUserResponseType_Profile_InvalidUniqueNick:
+				err_code = GP_NEWUSER_UNIQUENICK_INVALID;
+			break;
+			case TaskShared::EUserResponseType_Success:
+			break;
+			default:
+				err_code = GP_NEWUSER;
+			break;
 		}
 		std::ostringstream s;
 		s << "\\nur\\" << err_code;
@@ -194,9 +200,24 @@ namespace SM {
 			return;
 		}
 
-		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, 0, this);
+		TaskShared::UserRequest req;
+		req.type = TaskShared::EUserRequestType_Create;
+		req.peer = this;
+		req.peer->IncRef();
+
+		req.profile_params.nick = nick;
+		req.profile_params.uniquenick = uniquenick;
+		req.profile_params.namespaceid = namespaceid;
+		req.search_params.email = email;
+		req.search_params.partnercode = partnercode;
+		req.search_params.password = password;
+		req.registerCallback = m_newuser_cb;
+
+		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetUserTask();
+		scheduler->AddRequest(req.type, req);
+
 	}
-	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		s << "\\cur\\" << (int)success;
 		s << "\\pid\\" << profile.id;
@@ -246,11 +267,29 @@ namespace SM {
 			send_error(GPShared::GP_PARSE);
 			return;
 		}
-	
-		OS::AuthTask::TryAuthNickEmail(nick, email, partnercode, password.c_str(), false, m_nick_email_auth_cb, this, 0, this);
+
+		TaskShared::AuthRequest request;
+		request.type = request.type = TaskShared::EAuthType_NickEmail;
+		request.profile.nick = nick;
+
+		if(data_parser.HasKey("namespaceid"))
+			request.profile.namespaceid = namespaceid;
+
+		request.user.email = email;
+		request.user.password = password;
+
+		if (data_parser.HasKey("partnerid"))
+			request.user.partnercode = data_parser.GetValueInt("partnerid");
+		request.extra = this;
+		request.peer = this;
+		request.callback = m_nick_email_auth_cb;
+		IncRef();
+
+		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetAuthTask();
+		scheduler->AddRequest(request.type, request);
 	}
 	void Peer::handle_search(OS::KVReader data_parser) {
-		OS::ProfileSearchRequest request;
+		TaskShared::ProfileRequest request;
 		
 		request.profile_search_details.id = 0;
 		if(data_parser.HasKey("email")) {
@@ -280,14 +319,16 @@ namespace SM {
 			//TODO: namesiaceids\1,2,3,4,5
 		}
 		*/
-		request.type = OS::EProfileSearch_Profiles;
+
+		request.type = TaskShared::EProfileSearch_Profiles;
 		request.extra = this;
 		request.peer = this;
 		IncRef();
 		request.callback = Peer::m_search_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 	}
-	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_search_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		while(it != results.end()) {
@@ -311,7 +352,7 @@ namespace SM {
 
 		((Peer *)peer)->Delete();
 	}
-	void Peer::m_search_buddies_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_search_buddies_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		s << "\\otherslist\\";
@@ -338,22 +379,23 @@ namespace SM {
 		((Peer *)peer)->Delete();
 	}
 	void Peer::handle_others(OS::KVReader data_parser) {
-		OS::ProfileSearchRequest request;
+		TaskShared::ProfileRequest request;
 		int profileid = data_parser.GetValueInt("profileid");
 		int namespaceid = data_parser.GetValueInt("namespaceid");
 
 		request.profile_search_details.id = profileid;
 		request.namespaceids.push_back(namespaceid);
 
-		request.type = OS::EProfileSearch_Buddies;
+		request.type = request.type = TaskShared::EProfileSearch_Buddies;
 		request.extra = this;
 		request.peer = this;
 		IncRef();
 		request.callback = Peer::m_search_buddies_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 	}
 
-	void Peer::m_search_buddies_reverse_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_search_buddies_reverse_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::vector<OS::Profile>::iterator it = results.begin();
 		s << "\\others\\";
@@ -383,7 +425,7 @@ namespace SM {
 	}
 	void Peer::handle_otherslist(OS::KVReader data_parser) {
 		std::string pid_buffer;
-		OS::ProfileSearchRequest request;
+		TaskShared::ProfileRequest request;
 
 		int profileid = data_parser.GetValueInt("profileid");
 		int namespaceid = data_parser.GetValueInt("namespaceid");
@@ -402,14 +444,15 @@ namespace SM {
 			free((void *)pid_buffer);*/
 		}
 
-		request.type = OS::EProfileSearch_Buddies_Reverse;
+		request.type = TaskShared::EProfileSearch_Buddies_Reverse;
 		request.extra = this;
 		request.peer = this;
 		IncRef();
 		request.callback = Peer::m_search_buddies_reverse_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 	}
-	void Peer::m_search_valid_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer) {
+	void Peer::m_search_valid_callback(TaskShared::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 
 		s << "\\vr\\" << ((results.size() > 0) ? 1 : 0);
@@ -419,8 +462,8 @@ namespace SM {
 		((Peer *)peer)->Delete();
 	}
 	void Peer::handle_valid(OS::KVReader data_parser) {
-		OS::UserSearchRequest request;
-		request.type = OS::EUserRequestType_Search;
+		TaskShared::UserRequest request;
+		request.type = TaskShared::EUserRequestType_Search;
 		if (data_parser.HasKey("userid")) {
 			request.search_params.id = data_parser.GetValueInt("userid");
 		}
@@ -435,16 +478,16 @@ namespace SM {
 		if(data_parser.HasKey("email")) {
 			request.search_params.email = data_parser.GetValue("email");
 		}
-		request.extra = this;
 		request.peer = this;
 		IncRef();
 		request.callback = Peer::m_search_valid_callback;
-		OS::m_user_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetUserTask();
+		scheduler->AddRequest(request.type, request);
 	}
 
 	void Peer::handle_nicks(OS::KVReader data_parser) {
-		OS::ProfileSearchRequest request;
-		request.type = OS::EProfileSearch_Profiles;
+		TaskShared::ProfileRequest request;
+		request.type = TaskShared::EProfileSearch_Profiles;
 		if (data_parser.HasKey("userid")) {
 			request.user_search_details.id = data_parser.GetValueInt("userid");
 		}
@@ -492,9 +535,10 @@ namespace SM {
 		request.peer = this;
 		IncRef();
 		request.callback = Peer::m_nicks_cb;
-		OS::m_profile_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 	}
-	void Peer::m_nicks_cb(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_nicks_cb(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 
 		s << "\\nr\\" << results.size();

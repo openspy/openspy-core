@@ -112,8 +112,6 @@ namespace OS {
 
 		if(request.profile.nick.length())
 			json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
-		if(request.profile.uniquenick.length())
-			json_object_set_new(profile_obj, "uniquenick", json_string(request.profile.uniquenick.c_str()));
 
 		if(request.user.email.length())
 			json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
@@ -121,12 +119,6 @@ namespace OS {
 		json_object_set_new(user_obj, "partnercode", json_integer(request.user.partnercode));
 		json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile.namespaceid));
 		
-		if(request.user.password.length())
-			json_object_set_new(user_obj, "password", json_string(request.user.password.c_str()));
-
-		json_object_set_new(send_obj, "hash_type", json_string("gp_nick_email"));
-		json_object_set_new(send_obj, "set_context", json_string("profile"));
-		json_object_set_new(send_obj, "save_session", request.create_session ? json_true() : json_false());
 
 
 		json_object_set_new(send_obj, "server_challenge", json_string(request.server_challenge.c_str()));
@@ -182,10 +174,6 @@ namespace OS {
 							auth_data.session_key = json_string_value(server_response_json);
 						}
 
-					}
-					json_t *reason_json = json_object_get(json_data, "reason");
-					if(reason_json) {
-						auth_data.response_code = (AuthResponseCode)json_integer_value(reason_json);
 					}
 					json_decref(json_data);
 				}
@@ -753,7 +741,24 @@ namespace OS {
 		}
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
-		curl_easy_setopt(curl, CURLOPT_URL, OPENSPY_AUTH_URL);
+		std::string url = OS::g_webServicesURL;
+		switch (request.type) {
+			case EAuthType_NickEmail_GPHash:
+				url += "/v1/Presence/Auth/NickEmailAuth";
+			break;
+			case EAuthType_Uniquenick_GPHash:
+				url += "/v1/Presence/Auth/UniqueNickAuth";
+				break;
+			case EAuthType_PreAuth_Token:
+				url += "/v1/Presence/Auth/PreAuth";
+				break;
+			default:
+				int *x = (int *)NULL;
+				*x = 1;
+			break;
+		}
+		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
 
 		/* set default user agent */

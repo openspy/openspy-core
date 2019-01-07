@@ -48,7 +48,6 @@ namespace OS {
 			static void *TaskThread(CThread *thread);
 			static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 	};
-	extern OS::TaskPool<UserSearchTask, UserSearchRequest> *m_user_search_task_pool;
 	void SetupUserSearchTaskPool(int num_tasks);
 	void ShutdownUserSearchTaskPool();
 }

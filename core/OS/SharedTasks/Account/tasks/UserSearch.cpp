@@ -1,24 +1,8 @@
-#include <OS/OpenSpy.h>
-#include <OS/Search/User.h>
+#include <OS/SharedTasks/tasks.h>
+#include "../UserTasks.h"
 
-#include <curl/curl.h>
-#include <jansson.h>
-
-namespace OS {
-	struct curl_data {
-		std::string buffer;
-	};
-	/* callback for curl fetch */
-	size_t UserSearchTask::curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
-		if (!contents) {
-			return 0;
-		}
-		size_t realsize = size * nmemb;                             /* calculate buffer size */
-		curl_data *data = (curl_data *)userp;
-		data->buffer += (const char *)contents;
-		return realsize;
-	}
-	void UserSearchTask::PerformRequest(UserSearchRequest request) {
+namespace TaskShared {
+    bool Perform_UserSearch(UserRequest request, TaskThreadData *thread_data) {
 		curl_data recv_data;
 		json_t *root = NULL;
 		std::vector<OS::User> results;
@@ -58,7 +42,7 @@ namespace OS {
 		EUserResponseType resp_type = EUserResponseType_Success;
 
 		if(curl) {
-			std::string url = OS::g_webServicesURL;
+			std::string url = std::string(OS::g_webServicesURL) + "/v1/User/lookup";
 			switch (request.type) {
 			case EUserRequestType_Search:
 				url += "/v1/User/lookup";
@@ -91,7 +75,7 @@ namespace OS {
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &recv_data);
 
 			struct curl_slist *chunk = NULL;
-			std::string apiKey = "APIKey: " + std::string(g_webServicesAPIKey);
+			std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
 			chunk = curl_slist_append(chunk, apiKey.c_str());
 			chunk = curl_slist_append(chunk, "Content-Type: application/json");
 			chunk = curl_slist_append(chunk, std::string(std::string("X-OpenSpy-App: ") + OS::g_appName).c_str());
@@ -132,39 +116,6 @@ namespace OS {
 
 		if(request.callback != NULL)
 			request.callback(resp_type, results, request.extra, request.peer);
-	}
-
-	void *UserSearchTask::TaskThread(CThread *thread) {
-		UserSearchTask *task = (UserSearchTask *)thread->getParams();
-		while (thread->isRunning() && (!task->m_request_list.empty() || task->mp_thread_poller->wait(USER_TASK_WAIT_MAX_TIME)) && thread->isRunning()) {
-			task->mp_mutex->lock();
-			while (!task->m_request_list.empty()) {
-				UserSearchRequest task_params = task->m_request_list.front();
-				task->mp_mutex->unlock();
-				switch(task_params.type) {
-					case EUserRequestType_Update:
-					case EUserRequestType_Search:
-						PerformRequest(task_params);
-					break;	
-				}
-				if (task_params.peer)
-					task_params.peer->DecRef();
-
-				task->mp_mutex->lock();
-				task->m_request_list.pop();
-			}
-			task->mp_mutex->unlock();
-		}
-		return NULL;
-	}
-	UserSearchTask::UserSearchTask(int thread_index) : Task<UserSearchRequest>() {
-		mp_mutex = OS::CreateMutex();
-		mp_thread = OS::CreateThread(UserSearchTask::TaskThread, this, true);
-
-	}
-	UserSearchTask::~UserSearchTask() {
-		mp_thread->SignalExit(true, mp_thread_poller);
-		delete mp_mutex;
-		delete mp_thread;
-	}
+        return true;
+    }
 }

@@ -3,6 +3,9 @@
 #include "SMDriver.h"
 namespace SM {
 	Server::Server() : INetServer(){
+		mp_auth_tasks = TaskShared::InitAuthTasks(this);
+		mp_user_tasks = TaskShared::InitUserTasks(this);
+		mp_profile_tasks = TaskShared::InitProfileTasks(this);
 	}
 	void Server::init() {
 	}

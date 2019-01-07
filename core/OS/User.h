@@ -36,7 +36,7 @@ namespace OS {
 		int publicmask; //appears as user var in GP
 		bool deleted;
 	};
-
+	json_t *UserToJson(User user);
 	User LoadUserFromJson(json_t *obj);
 }
 #endif //_OS_USER_H

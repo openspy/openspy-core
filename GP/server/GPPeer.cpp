@@ -1,5 +1,6 @@
 #include "GPPeer.h"
 #include "GPDriver.h"
+#include "GPServer.h"
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
 
@@ -10,9 +11,8 @@
 #include <sstream>
 #include <algorithm>
 
-#include "GPBackend.h"
-
 #include <OS/gamespy/gamespy.h>
+#include <tasks/tasks.h>
 
 /*
 	TODO: delete/create profile errors
@@ -58,13 +58,15 @@ namespace GP {
 		delete mp_mutex;
 	}
 	void Peer::Delete(bool timeout) {
-		GPBackend::GPBackendRedisRequest req;
-		req.type = GPBackend::EGPRedisRequestType_UpdateStatus;
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_UpdateStatus;
 		req.peer = this;
 		req.peer->IncRef();
 		req.StatusInfo = GPShared::gp_default_status;
 		req.extra = (void *)req.peer;
-		GPBackend::m_task_pool->AddRequest(req);
+
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		scheduler->AddRequest(req.type, req);
 
 		m_delete_flag = true;
 		m_timeout_flag = timeout;
@@ -194,8 +196,15 @@ namespace GP {
 		if (current_time.tv_sec - m_status_refresh.tv_sec > (GP_STATUS_EXPIRE_TIME / 2)) {
 			gettimeofday(&m_status_refresh, NULL);
 			//often called with keep alives
-			if (m_profile.id)
-				GPBackend::GPBackendRedisTask::SetPresenceStatus(m_profile.id, m_status, this);
+			if (m_profile.id) {
+				TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+				GPBackendRedisRequest req;
+				req.type = EGPRedisRequestType_UpdateStatus;
+				req.peer = this;
+				req.peer->IncRef();
+				req.StatusInfo = m_status;
+				scheduler->AddRequest(req.type, req);
+			}
 		}
 	}
 	void Peer::handle_newuser(OS::KVReader data_parser) {
@@ -247,29 +256,46 @@ namespace GP {
 				
 		int id = data_parser.GetValueInt("id");
 
-		OS::AuthTask::TryCreateUser_OrProfile(nick, uniquenick, namespaceid, email, partnercode, password, false, m_newuser_cb, this, id, this, gamename);
+		TaskShared::UserRequest req;
+		req.type = TaskShared::EUserRequestType_Create;
+		req.peer = this;
+		req.peer->IncRef();
+
+		req.profile_params.nick = nick;
+		req.profile_params.uniquenick = uniquenick;
+		req.profile_params.namespaceid = namespaceid;
+		req.search_params.email = email;
+		req.search_params.password = password;
+		req.search_params.partnercode = partnercode;
+		req.registerCallback = m_newuser_cb;
+
+		req.gamename = gamename;
+
+		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetUserTask();
+		scheduler->AddRequest(req.type, req);
 	}
-	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer) {
 		int err_code = 0;
+		int operation_id = (int)extra;
 		std::ostringstream s;
+
 		if (!success) {
 			err_code = (int)GP_NEWUSER_BAD_NICK;
-			switch (auth_data.response_code) {
-				//case OS::CREATE_RESPONE_NICK_IN_USE:
-				case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+			switch (auth_data.user_response_code) {
+				case TaskShared::EUserResponseType_Profile_UniqueNickInUse:
 					err_code = GP_NEWUSER_BAD_NICK;
 					break;
-				case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
+				case TaskShared::EUserResponseType_UserExists:
 					err_code = GP_NEWUSER_BAD_PASSWORD;
 					break;
-				case OS::CREATE_RESPONSE_INVALID_NICK:
+				case TaskShared::EUserResponseType_Profile_InvalidNick:
 					err_code = GP_NEWUSER_BAD_NICK;
 					break;
-				case OS::CREATE_RESPONSE_INVALID_UNIQUENICK:
+				case TaskShared::EUserResponseType_Profile_InvalidUniqueNick:
 					err_code = GP_NEWUSER_UNIQUENICK_INVALID;
 					break;
 				default:
-				case OS::LOGIN_RESPONSE_SERVER_ERROR:
+				case TaskShared::EUserResponseType_GenericError:
 					err_code = GP_DATABASE;
 			}
 			if (profile.id != 0)
@@ -291,7 +317,7 @@ namespace GP {
 		}
 	
 	}
-	void Peer::m_update_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_update_profile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 	}
 	/*
 		Updates profile specific information
@@ -331,28 +357,30 @@ namespace GP {
 		LoadParam("osstring", profile.osstring, data_parser)
 		LoadParam("aim", profile.aim, data_parser)
 
-		OS::ProfileSearchRequest request;
+		TaskShared::ProfileRequest request;
 		request.profile_search_details = profile;
 		request.extra = this;
 		request.peer = this;
 		request.peer->IncRef();
-		request.type = OS::EProfileSearch_UpdateProfile;
+		request.type = TaskShared::EProfileSearch_UpdateProfile;
 		request.callback = Peer::m_update_profile_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 
 		if(send_userupdate) {
-			OS::UserSearchRequest user_request;
+			TaskShared::UserRequest user_request;
 			user_request.search_params = user;
-			user_request.type = OS::EUserRequestType_Update;
+			user_request.type = TaskShared::EUserRequestType_Update;
 			user_request.extra = this;
 			user_request.peer = this;
 			user_request.peer->IncRef();
 			user_request.callback = NULL;
-			OS::m_user_search_task_pool->AddRequest(user_request);
+			TaskScheduler<TaskShared::UserRequest, TaskThreadData> *user_scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetUserTask();
+			user_scheduler->AddRequest(user_request.type, user_request);
 		}
 	}
 	void Peer::handle_updateui(OS::KVReader data_parser) {
-		OS::UserSearchRequest request;
+		TaskShared::UserRequest request;
 
 		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		
@@ -380,11 +408,12 @@ namespace GP {
 		}
 		
 		request.search_params = m_user;
-		request.type = OS::EUserRequestType_Update;
+		request.type = TaskShared::EUserRequestType_Update;
 		request.extra = this;
 		request.callback = NULL;
 		request.search_params = m_user;
-		OS::m_user_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *user_scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetUserTask();
+		user_scheduler->AddRequest(request.type, request);
 	}
 	void Peer::handle_registernick(OS::KVReader data_parser) {
 		
@@ -392,13 +421,13 @@ namespace GP {
 	void Peer::handle_registercdkey(OS::KVReader data_parser) {
 
 	}
-	void Peer::m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_create_profile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		if(response_reason == OS::EProfileResponseType_Success && results.size() > 0) {
 			OS::Profile profile = results.front();
 		}
 	}
 	void Peer::handle_newprofile(OS::KVReader data_parser) {
-		OS::ProfileSearchRequest request;
+		TaskShared::ProfileRequest request;
 		int replace = data_parser.GetValueInt("replace");
 		std::string nick, oldnick;
 		nick = data_parser.GetValue("nick");
@@ -411,25 +440,28 @@ namespace GP {
 		request.extra = this;
 		request.peer = this;
 		request.peer->IncRef();
-		request.type = OS::EProfileSearch_CreateProfile;
+		request.type = TaskShared::EProfileSearch_CreateProfile;
 		request.callback = Peer::m_create_profile_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
+
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 	}
-	void Peer::m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_delete_profile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		
 		s << "\\dpr\\" << (int)(response_reason == OS::EProfileResponseType_Success);
 		((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::handle_delprofile(OS::KVReader data_parser) {
-		OS::ProfileSearchRequest request;
+		TaskShared::ProfileRequest request;
 		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
 		request.peer = this;
 		request.peer->IncRef();
-		request.type = OS::EProfileSearch_DeleteProfile;
+		request.type = TaskShared::EProfileSearch_DeleteProfile;
 		request.callback = Peer::m_delete_profile_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 	}
 	void Peer::handle_login(OS::KVReader data_parser) {
 		int partnercode = data_parser.GetValueInt("partnerid");
@@ -494,10 +526,21 @@ namespace GP {
 		s << "|p|" << productid;
 		s << "|l|" << m_status.location_str;
 		//s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
-		GPBackend::GPBackendRedisTask::SendMessage(this, profileid, GPI_BM_INVITE, s.str().c_str());
+		//GPBackend::GPBackendRedisTask::SendMessage(this, profileid, GPI_BM_INVITE, s.str().c_str());
+
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_BuddyMessage;
+		req.peer = this;
+		req.peer->IncRef();
+		req.BuddyMessage.to_profileid = profileid;
+		req.BuddyMessage.type = GPI_BM_INVITE;
+		req.BuddyMessage.message = s.str();	
+		
+		
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::handle_status(OS::KVReader data_parser) {
-		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("status")) {
 			m_status.status = (GPEnum)data_parser.GetValueInt("status");
 		}
@@ -508,7 +551,13 @@ namespace GP {
 			m_status.location_str = data_parser.GetValue("locstring");
 		}
 
-		GPBackend::GPBackendRedisTask::SetPresenceStatus(m_profile.id, m_status, this);
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_UpdateStatus;
+		req.peer = this;
+		req.peer->IncRef();
+		req.StatusInfo = m_status;
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::handle_statusinfo(OS::KVReader data_parser) {
 
@@ -541,7 +590,16 @@ namespace GP {
 		}
 		mp_mutex->unlock();
 
-		GPBackend::GPBackendRedisTask::MakeBuddyRequest(this, newprofileid, reason);
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_AddBuddy;
+		req.peer = this;
+		req.peer->IncRef();
+		req.BuddyRequest.from_profileid = m_profile.id;
+		req.BuddyRequest.to_profileid = newprofileid;
+		req.BuddyRequest.reason = reason;
+		req.StatusInfo = m_status;
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::send_add_buddy_request(int from_profileid, const char *reason) {
 		////\bm\1\f\157928340\msg\I have authorized your request to add me to your list\final
@@ -553,7 +611,7 @@ namespace GP {
 
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
-	void Peer::m_buddy_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_buddy_list_lookup_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
@@ -578,7 +636,7 @@ namespace GP {
 		}
 		((GP::Peer *)peer)->mp_mutex->unlock();
 	}
-	void Peer::m_block_list_lookup_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_block_list_lookup_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
@@ -596,41 +654,54 @@ namespace GP {
 			str = str.substr(0, str.size()-1);
 			((GP::Peer *)peer)->SendPacket((const uint8_t *)str.c_str(),str.length());
 
-			GPBackend::GPBackendRedisRequest req;
-			req.extra = (void *)peer;
+			GP::Peer *real_peer = (GP::Peer *)peer;
+
+
+			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(real_peer->GetDriver()->getServer()))->GetGPTask();
+			GPBackendRedisRequest req;
+			req.type = EGPRedisRequestType_SendGPBlockStatus;
 			req.peer = (GP::Peer *)peer;
-			peer->IncRef();
-			req.type = GPBackend::EGPRedisRequestType_SendGPBlockStatus;
-			GPBackend::m_task_pool->AddRequest(req);
+			req.peer->IncRef();
+
+			scheduler->AddRequest(req.type, req);
 
 		}
 		((GP::Peer *)peer)->mp_mutex->unlock();
 	}
-	void Peer::send_buddies() {
-		OS::ProfileSearchRequest request;
+/*	void Peer::send_buddies() {
+		TaskShared::ProfileRequest request;
 		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
 		request.peer = this;
 		request.peer->IncRef();
-		request.type = OS::EProfileSearch_Buddies;
+		request.type = TaskShared::EProfileSearch_Buddies;
 		request.callback = Peer::m_buddy_list_lookup_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 	}
 	void Peer::send_blocks() {
-		OS::ProfileSearchRequest request;
+		TaskShared::ProfileRequest request;
 		request.profile_search_details.id = m_profile.id;
 		request.extra = this;
 		request.peer = this;
 		request.peer->IncRef();
-		request.type = OS::EProfileSearch_Blocks;
+		request.type = TaskShared::EProfileSearch_Blocks;
 		request.callback = Peer::m_block_list_lookup_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 	}
+*/
 	void Peer::handle_delbuddy(OS::KVReader data_parser) {
 		if (data_parser.HasKey("delprofileid")) {
 			int delprofileid = data_parser.GetValueInt("delprofileid");
 			if (m_buddies.find(delprofileid) != m_buddies.end()) {
-				GPBackend::GPBackendRedisTask::MakeDelBuddyRequest(this, delprofileid);
+				TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+				GPBackendRedisRequest req;
+				req.type = EGPRedisRequestType_DelBuddy;
+				req.peer = (GP::Peer *)this;
+				req.peer->IncRef();
+				req.ToFromData.from_profileid = m_profile.id;
+				req.ToFromData.to_profileid = delprofileid;
 				m_buddies.erase(delprofileid);
 			}
 		}
@@ -642,7 +713,14 @@ namespace GP {
 	void Peer::handle_revoke(OS::KVReader data_parser) {
 		if (data_parser.HasKey("profileid")) {
 			int delprofileid = data_parser.GetValueInt("profileid");
-			GPBackend::GPBackendRedisTask::MakeRevokeAuthRequest(this, delprofileid);
+			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+			GPBackendRedisRequest req;
+			req.type = EGPRedisRequestType_DelBuddy;
+			req.peer = this;
+			req.peer->IncRef();
+			req.ToFromData.to_profileid = m_profile.id;
+			req.ToFromData.from_profileid = delprofileid;
+			scheduler->AddRequest(req.type, req);
 		} else {
 			send_error(GPShared::GP_PARSE);
 			return;
@@ -652,7 +730,14 @@ namespace GP {
 	void Peer::handle_authadd(OS::KVReader data_parser) {
 		if (data_parser.HasKey("fromprofileid")) {
 			int fromprofileid = data_parser.GetValueInt("fromprofileid");
-			GPBackend::GPBackendRedisTask::MakeAuthorizeBuddyRequest(this, fromprofileid);
+			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+			GPBackendRedisRequest req;
+			req.type = EGPRedisRequestType_AuthorizeAdd;
+			req.peer = this;
+			req.peer->IncRef();
+			req.ToFromData.from_profileid = fromprofileid;
+			req.ToFromData.to_profileid = m_profile.id;
+			scheduler->AddRequest(req.type, req);
 		} else {
 			send_error(GPShared::GP_PARSE);
 			return;
@@ -661,12 +746,12 @@ namespace GP {
 		
 	}
 	void Peer::refresh_buddy_list() {
-		GPBackend::GPBackendRedisRequest req;
-		req.extra = (void *)this;
-		req.peer = (GP::Peer *)this;
-		IncRef();
-		req.type = GPBackend::EGPRedisRequestType_SendGPBuddyStatus;
-		GPBackend::m_task_pool->AddRequest(req);
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_SendGPBuddyStatus;
+		req.peer = this;
+		req.peer->IncRef();
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::send_authorize_add(int profileid, bool silent) {
 		if (!silent) {
@@ -712,7 +797,7 @@ namespace GP {
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::handle_getprofile(OS::KVReader data_parser) {
-		OS::ProfileSearchRequest request;
+		TaskShared::ProfileRequest request;
 		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("profileid") && data_parser.HasKey("id")) {
 			int profileid = data_parser.GetValueInt("profileid");
@@ -722,14 +807,23 @@ namespace GP {
 			request.peer = this;
 			request.peer->IncRef();
 			request.callback = Peer::m_getprofile_callback;
-			request.type = OS::EProfileSearch_Profiles;
-			OS::m_profile_search_task_pool->AddRequest(request);
+			request.type = TaskShared::EProfileSearch_Profiles;
+
+			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
+			scheduler->AddRequest(request.type, request);
 		}
 	}
 	void Peer::handle_addblock(OS::KVReader data_parser) {
 		if (data_parser.HasKey("profileid")) {
 			int profileid = data_parser.GetValueInt("profileid");
-			GPBackend::GPBackendRedisTask::MakeBlockRequest(this, profileid);
+			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+			GPBackendRedisRequest req;
+			req.type = EGPRedisRequestType_AddBuddy;
+			req.peer = this;
+			req.peer->IncRef();
+			req.ToFromData.to_profileid = profileid;
+			req.ToFromData.from_profileid = m_profile.id;
+			scheduler->AddRequest(req.type, req);
 		} else {
 			send_error(GPShared::GP_PARSE);
 			return;
@@ -740,7 +834,14 @@ namespace GP {
 		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("profileid")) {
 			int profileid = data_parser.GetValueInt("profileid");
-			GPBackend::GPBackendRedisTask::MakeRemoveBlockRequest(this, profileid);
+			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+			GPBackendRedisRequest req;
+			req.type = EGPRedisRequestType_DelBlock;
+			req.peer = this;
+			req.peer->IncRef();
+			req.ToFromData.to_profileid = profileid;
+			req.ToFromData.from_profileid = m_profile.id;
+			scheduler->AddRequest(req.type, req);
 		}  else {
 			send_error(GPShared::GP_PARSE);
 			return;
@@ -768,13 +869,21 @@ namespace GP {
 				return;
 			}
 
-			GPBackend::GPBackendRedisTask::SendMessage(this, to_profileid, msg_type, msg.c_str());
+			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+			GPBackendRedisRequest req;
+			req.type = EGPRedisRequestType_BuddyMessage;
+			req.peer = this;
+			req.peer->IncRef();
+			req.BuddyMessage.type = msg_type;
+			req.BuddyMessage.to_profileid = to_profileid;
+			req.BuddyMessage.message = msg;
+			scheduler->AddRequest(req.type, req);
 		}
 		else {
 			send_error(GPShared::GP_PARSE);
 		}
 	}
-	void Peer::m_getprofile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_getprofile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		if(response_reason != OS::EProfileResponseType_Success) {
 			((GP::Peer *)peer)->send_error(GP_GETPROFILE);
 			return;
@@ -913,7 +1022,22 @@ namespace GP {
 		}
 	}
 	void Peer::perform_uniquenick_auth(const char *uniquenick, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
-		OS::AuthTask::TryAuthUniqueNick_GPHash(uniquenick, partnercode, namespaceid, server_challenge, client_challenge, response, m_auth_cb, this, operation_id, peer);
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_Auth_Uniquenick_GPHash;
+		req.profile.uniquenick = uniquenick;
+		req.profile.namespaceid = namespaceid;
+		req.server_challenge = server_challenge;
+		req.client_challenge = client_challenge;
+		req.client_response = response;
+		req.authCallback = m_auth_cb;
+		req.extra = (void *)operation_id;
+		req.user.partnercode = partnercode;
+		req.peer = this;
+		req.peer->IncRef();
+
+		scheduler->AddRequest(req.type, req);
+		//OS::AuthTask::TryAuthUniqueNick_GPHash(uniquenick, partnercode, namespaceid, server_challenge, client_challenge, response, m_auth_cb, this, operation_id, peer);
 	}
 	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
 		const char *email = NULL;
@@ -927,17 +1051,47 @@ namespace GP {
 			}
 			email = first_at+1;
 		}
- 		OS::AuthTask::TryAuthNickEmail_GPHash(nick, email, partnercode, namespaceid, server_challenge, client_challenge, response, m_auth_cb, this, operation_id, this);
+
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_Auth_NickEmail_GPHash;
+		req.profile.nick = nick;
+		req.profile.namespaceid = namespaceid;
+		req.user.email = email;
+		req.server_challenge = server_challenge;
+		req.client_challenge = client_challenge;
+		req.authCallback = m_auth_cb;
+		req.client_response = response;
+		req.extra = (void *)operation_id;
+		req.user.partnercode = partnercode;
+		req.peer = this;
+		req.peer->IncRef();
+		
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::perform_preauth_auth(const char *auth_token, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
-		OS::AuthTask::TryAuthTicket(auth_token, server_challenge, client_challenge, response, m_auth_cb, operation_id, this);
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_Auth_PreAuth_Token_GPHash;
+		req.server_challenge = server_challenge;
+		req.client_challenge = client_challenge;
+		req.authCallback = m_auth_cb;
+		req.client_response = response;
+		req.extra = (void *)operation_id;
+		req.auth_token = auth_token;
+		req.peer = this;
+		req.peer->IncRef();
+
+		scheduler->AddRequest(req.type, req);
 	}
-	void Peer::m_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 		if(!((GP::Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())
 			((GP::Peer *)peer)->m_backend_session_key = auth_data.session_key;
 
 		((GP::Peer *)peer)->m_user = user;
 		((GP::Peer *)peer)->m_profile = profile;
+
+		int operation_id = (int)extra;
 
 		std::ostringstream ss;
 		if(success) {
@@ -955,8 +1109,8 @@ namespace GP {
 			if(auth_data.session_key.length()) {
 				ss << "\\lt\\" << auth_data.session_key;
 			}
-			if(auth_data.hash_proof.length()) {
-				ss << "\\proof\\" << auth_data.hash_proof;
+			if(auth_data.response_proof.length()) {
+				ss << "\\proof\\" << auth_data.response_proof;
 			}
 			ss << "\\id\\" << operation_id;
 
@@ -1034,8 +1188,12 @@ namespace GP {
 		mp_mutex->unlock();
 	}
 	void Peer::send_backend_auth_event() {
-
-		GPBackend::GPBackendRedisTask::SendLoginEvent(this);
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_SendLoginEvent;
+		req.peer = this;
+		req.peer->IncRef();
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::send_error(GPErrorCode code, std::string addon_data) {
 		GPShared::GPErrorData error_data = GPShared::getErrorDataByCode(code);

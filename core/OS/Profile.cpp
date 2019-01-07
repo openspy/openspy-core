@@ -1,6 +1,58 @@
 #include <OS/Profile.h>
 
 namespace OS {
+	json_t *ProfileToJson(Profile profile) {
+		json_t *profile_obj = json_object();
+		json_object_set_new(profile_obj, "id", json_integer(profile.id));
+		//profile parameters
+		if (profile.nick.length())
+			json_object_set_new(profile_obj, "nick", json_string(profile.nick.c_str()));
+
+		if (profile.uniquenick.length())
+			json_object_set_new(profile_obj, "uniquenick", json_string(profile.uniquenick.c_str()));
+
+		if (profile.firstname.length())
+			json_object_set_new(profile_obj, "firstname", json_string(profile.firstname.c_str()));
+
+		if (profile.lastname.length())
+			json_object_set_new(profile_obj, "lastname", json_string(profile.lastname.c_str()));
+
+		if (profile.icquin)
+			json_object_set_new(profile_obj, "icquin", json_integer(profile.icquin));
+
+		if (profile.zipcode)
+			json_object_set_new(profile_obj, "zipcode", json_integer(profile.zipcode));
+
+
+		if (profile.sex != -1)
+			json_object_set_new(profile_obj, "sex", json_integer(profile.sex));
+
+		if (profile.pic != 0)
+			json_object_set_new(profile_obj, "pic", json_integer(profile.pic));
+		if (profile.ooc != 0)
+			json_object_set_new(profile_obj, "ooc", json_integer(profile.ooc));
+		if (profile.ind != 0)
+			json_object_set_new(profile_obj, "ind", json_integer(profile.ind));
+		if (profile.mar != 0)
+			json_object_set_new(profile_obj, "mar", json_integer(profile.mar));
+		if (profile.chc != 0)
+			json_object_set_new(profile_obj, "chc", json_integer(profile.chc));
+		if (profile.i1 != 0)
+			json_object_set_new(profile_obj, "i1", json_integer(profile.i1));
+
+		if (profile.birthday.GetYear() != 0)
+			json_object_set_new(profile_obj, "birthday", profile.birthday.GetJson());
+
+		if (profile.lon)
+			json_object_set_new(profile_obj, "lon", json_real(profile.lon));
+		if (profile.lat)
+			json_object_set_new(profile_obj, "lat", json_real(profile.lat));
+
+
+		if (profile.namespaceid != -1)
+			json_object_set_new(profile_obj, "namespaceid", json_integer(profile.namespaceid));
+		return profile_obj;
+	}
 	Profile LoadProfileFromJson(json_t *obj) {
 		Profile ret;
 		json_t *j;

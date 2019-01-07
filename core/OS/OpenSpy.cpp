@@ -63,16 +63,10 @@ namespace OS {
 		#endif
 
 		mp_redis_internal_connection_mutex = OS::CreateMutex();
-		OS::SetupAuthTaskPool(num_async);
-		OS::SetupUserSearchTaskPool(num_async);
-		OS::SetupProfileTaskPool(num_async);
 		
 		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, webservices: %s)\n", appName, num_async, g_hostName, g_redisAddress, g_webServicesURL);
 	}
 	void Shutdown() {
-		OS::ShutdownAuthTaskPool();
-		OS::ShutdownUserSearchTaskPool();
-		OS::ShutdownProfileTaskPool();
 
 		Redis::Disconnect(redis_internal_connection);
 

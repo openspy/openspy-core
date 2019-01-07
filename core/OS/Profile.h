@@ -9,7 +9,7 @@ namespace OS {
 		Profile() { 
 			id = 0;
 			userid = 0;
-			namespaceid = 0;
+			namespaceid = -1;
 			deleted = false; 
 			icquin = 0;
 			zipcode = 0;
@@ -54,6 +54,7 @@ namespace OS {
 		std::string aim;		
 	};
 
+	json_t *ProfileToJson(Profile profile);
 	Profile LoadProfileFromJson(json_t *obj);
 }
 #endif //_OS_PROFILE_H
