@@ -19,6 +19,7 @@ namespace GP {
 			peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 			if (peer) {
 				peer->send_add_buddy_request(from_profileid, reason.c_str());
+				peer->DecRef();
 			}
 		}
 		else if (msg_type.compare("authorize_add") == 0) {
@@ -27,6 +28,7 @@ namespace GP {
 			peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 			if (peer) {
 				peer->send_authorize_add(from_profileid, reader.GetValueInt("silent"));
+				peer->DecRef();
 			}
 		}
 		else if (msg_type.compare("status_update") == 0) {
@@ -39,7 +41,7 @@ namespace GP {
 			status.quiet_flags = (GPShared::GPEnum)reader.GetValueInt("quiet_flags");
 			reason = reader.GetValue("ip");
 			status.address.ip = htonl(inet_addr(OS::strip_quotes(reason).c_str()));
-			status.address.port = htons(reader.GetValueInt("port"));
+			status.address.port = (reader.GetValueInt("port"));
 			server->InformStatusUpdate(from_profileid, status);
 		}
 		else if (msg_type.compare("del_buddy") == 0) {
@@ -48,6 +50,7 @@ namespace GP {
 			peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 			if (peer) {
 				peer->send_revoke_message(from_profileid, 0);
+				peer->DecRef();
 			}
 		}
 		else if (msg_type.compare("buddy_message") == 0) {
@@ -59,6 +62,7 @@ namespace GP {
 			peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 			if (peer) {
 				peer->send_buddy_message(type, from_profileid, timestamp, reason.c_str());
+				peer->DecRef();
 			}
 		}
 		else if (msg_type.compare("block_buddy") == 0) {
@@ -67,6 +71,7 @@ namespace GP {
 			peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 			if (peer) {
 				peer->send_user_blocked(from_profileid);
+				peer->DecRef();
 			}
 		}
 		else if (msg_type.compare("del_block_buddy") == 0) {
@@ -75,6 +80,7 @@ namespace GP {
 			peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 			if (peer) {
 				peer->send_user_block_deleted(from_profileid);
+				peer->DecRef();
 			}
 		}
         return true;

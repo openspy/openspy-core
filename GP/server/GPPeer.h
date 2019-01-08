@@ -36,8 +36,36 @@
 
 #define MAX_UNPROCESSED_DATA 5000
 
+using namespace GPShared;
+
+#define LoadParamInt(read_name, write_var, var_name) if(var_name.HasKey(read_name)) { \
+		write_var = var_name.GetValueInt(read_name); \
+	} else { \
+		write_var = 0;\
+	}
+
+#define LoadParam(read_name, write_var, var_name) if(var_name.HasKey(read_name)) { \
+		write_var = var_name.GetValue(read_name); \
+	}
+
+
 namespace GP {
 	class Driver;
+
+	class Peer;
+	typedef void(Peer::*CommandCallback)(OS::KVReader);
+	class CommandEntry {
+	public:
+		CommandEntry(std::string name, bool login_required, CommandCallback callback) {
+			this->name = name;
+			this->login_required = login_required;
+			this->callback = callback;
+		}
+		std::string name;
+		bool login_required;
+		CommandCallback callback;
+	};
+
 
 	class Peer : public INetPeer {
 	public:
@@ -58,6 +86,8 @@ namespace GP {
 		void send_login_challenge(int type);
 		void SendPacket(const uint8_t *buff, size_t len, bool attach_final = true);
 
+		void RegisterCommands();
+
 		//event messages
 		void send_add_buddy_request(int from_profileid, const char *reason);
 		void send_authorize_add(int profileid, bool silent = false);
@@ -69,8 +99,9 @@ namespace GP {
 		void send_user_blocked(int from_profileid);
 		void send_user_block_deleted(int from_profileid);
 
+		void send_list_status();
+
 	private:
-		void refresh_buddy_list();
 		//packet handlers
 		void handle_login(OS::KVReader data_parser);
 		void handle_auth(OS::KVReader data_parser); //possibly for unexpected loss of connection to retain existing session
@@ -108,6 +139,7 @@ namespace GP {
 		void handle_updateui(OS::KVReader data_parser);
 
 		void handle_keepalive(OS::KVReader data_parser);
+		void handle_logout(OS::KVReader data_parser);
 		//
 
 		//login
@@ -116,8 +148,8 @@ namespace GP {
 		void perform_preauth_auth(const char *auth_token, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer);
 
 		static void m_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
-		static void m_buddy_list_lookup_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
-		static void m_block_list_lookup_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_buddy_list_lookup_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer);
+		static void m_block_list_lookup_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer);
 		static void m_create_profile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_delete_profile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_update_profile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
@@ -125,6 +157,8 @@ namespace GP {
 
 		void send_buddies();
 		void send_blocks();
+		bool m_got_buddies;
+		bool m_got_blocks;
 		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
 		void send_backend_auth_event();
 
@@ -153,6 +187,8 @@ namespace GP {
 		OS::Profile m_profile;
 
 		OS::CMutex *mp_mutex;
+
+		std::vector<CommandEntry> m_commands;
 	};
 }
 #endif //_GPPEER_H

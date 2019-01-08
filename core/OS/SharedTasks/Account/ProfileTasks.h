@@ -4,6 +4,7 @@
 #include <OS/OpenSpy.h>
 #include <OS/Profile.h>
 #include <OS/User.h>
+#include <OS/GPShared.h>
 namespace TaskShared {
 	enum EProfileResponseType {
 		EProfileResponseType_Success,
@@ -14,6 +15,8 @@ namespace TaskShared {
 		EProfileResponseType_UniqueNick_InUse,
 	};
 	typedef void (*ProfileSearchCallback)(EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+	typedef void (*ProfileSearchBuddyCallback)(EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer);
+
 
 	enum EProfileTaskType {
 		EProfileSearch_Profiles,
@@ -35,6 +38,7 @@ namespace TaskShared {
 		void *extra;
 		INetPeer *peer;
 		ProfileSearchCallback callback;
+		ProfileSearchBuddyCallback buddyCallback;
 		int type;
 	};
 
@@ -42,6 +46,7 @@ namespace TaskShared {
     bool Perform_CreateProfile(ProfileRequest request, TaskThreadData *thread_data);
     bool Perform_DeleteProfile(ProfileRequest request, TaskThreadData *thread_data);
     bool Perform_UpdateProfile(ProfileRequest request, TaskThreadData *thread_data);
+	bool Perform_BuddyRequest(ProfileRequest request, TaskThreadData *thread_data);
 
 	void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileRequest request);
 	EProfileResponseType Handle_ProfileWebError(ProfileRequest req, json_t *error_obj);

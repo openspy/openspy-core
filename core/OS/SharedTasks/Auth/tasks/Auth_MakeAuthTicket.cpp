@@ -61,6 +61,10 @@ namespace TaskShared {
 			free((void *)json_dump);
 		}
 		json_decref(send_obj);
+
+		if (request.peer) {
+			request.peer->DecRef();
+		}
         return false;
     }
 }

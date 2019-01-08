@@ -13,7 +13,7 @@ namespace GP {
 		void init();
 		void tick();
 		void shutdown();
-		INetPeer *findPeerByProfile(int profile_id);
+		INetPeer *findPeerByProfile(int profile_id, bool inc_ref = true);
 		void InformStatusUpdate(int from_profileid, GPShared::GPStatus status);
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *GetAuthTask() { return mp_auth_tasks; };
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *GetUserTask() { return mp_user_tasks; };

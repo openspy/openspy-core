@@ -5,14 +5,16 @@ namespace GP {
 		//build json object
 		json_t *send_obj = json_object(), *to_obj = json_object(), *from_obj = json_object(), *lookup_obj = json_object();
 
-		json_object_set_new(to_obj, "id", json_integer(request.ToFromData.to_profileid));
-		json_object_set_new(from_obj, "id", json_integer(request.ToFromData.from_profileid));
+		json_object_set_new(to_obj, "id", json_integer(request.BuddyMessage.to_profileid));
+		json_object_set_new(from_obj, "id", json_integer(request.peer->GetProfileID()));
 
 		json_object_set(send_obj, "message", json_string(request.BuddyMessage.message.c_str()));
 
 		json_object_set(lookup_obj, "sourceProfile", from_obj);
 		json_object_set(lookup_obj, "targetProfile", to_obj);
 		json_object_set(send_obj, "lookup", lookup_obj);
+
+		json_object_set(send_obj, "type", json_integer(request.BuddyMessage.type));
 
 
 		char *json_dump = json_dumps(send_obj, 0);
@@ -43,6 +45,9 @@ namespace GP {
 			free((void *)json_dump);
 		}
 		json_decref(send_obj);
+
+		if(request.peer)
+			request.peer->DecRef();
 		return true;
     }
 }

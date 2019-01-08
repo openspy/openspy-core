@@ -21,7 +21,7 @@ namespace GP {
 	}
 	void Server::shutdown() {
 	}
-	INetPeer *Server::findPeerByProfile(int profile_id) {
+	INetPeer *Server::findPeerByProfile(int profile_id, bool inc_ref) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		INetPeer *ret;
 		GP::Driver *driver;
@@ -29,6 +29,9 @@ namespace GP {
 			driver = (GP::Driver *)*it;
 			ret = driver->FindPeerByProfileID(profile_id);
 			if (ret) {
+				if (inc_ref) {
+					ret->IncRef();
+				}
 				return ret;
 			}
 			it++;

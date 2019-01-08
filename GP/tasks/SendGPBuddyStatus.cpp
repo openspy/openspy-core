@@ -1,6 +1,6 @@
 #include "tasks.h"
 namespace GP {
-    bool Perform_SendGPBuddyStatus(GPBackendRedisRequest request, TaskThreadData *thread_data) {
+    bool Perform_GetBuddyStatus(GPBackendRedisRequest request, TaskThreadData *thread_data) {
 		TaskShared::curl_data recv_data;
 		//build json object
 		json_t *send_obj = json_object();
@@ -38,6 +38,9 @@ namespace GP {
 			free((void *)json_dump);
 		}
 		json_decref(send_obj);
+
+		if (request.peer)
+			request.peer->DecRef();
 		return true;
     }
 }

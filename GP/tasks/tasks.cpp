@@ -14,11 +14,11 @@ namespace GP {
             scheduler->AddRequestHandler(EGPRedisRequestType_UpdateStatus, Perform_SetPresenceStatus);
             scheduler->AddRequestHandler(EGPRedisRequestType_DelBuddy, Perform_ToFromProfileAction);
             //scheduler->AddRequestHandler(EGPRedisRequestType_RevokeAuth, Perform_ToFromProfileAction);
-            //scheduler->AddRequestHandler(EGPRedisRequestType_SendLoginEvent, Perform_SendLoginEvent);
+            scheduler->AddRequestHandler(EGPRedisRequestType_SendLoginEvent, Perform_SendLoginEvent);
             scheduler->AddRequestHandler(EGPRedisRequestType_BuddyMessage, Perform_SendBuddyMessage);
 
-            scheduler->AddRequestHandler(EGPRedisRequestType_LookupBuddyStatus, Perform_SendGPBuddyStatus);
-			scheduler->AddRequestHandler(EGPRedisRequestType_LookupBlockStatus, Perform_SendGPBuddyStatus);
+            scheduler->AddRequestHandler(EGPRedisRequestType_LookupBuddyStatus, Perform_GetBuddyStatus);
+			scheduler->AddRequestHandler(EGPRedisRequestType_LookupBlockStatus, Perform_GetBuddyStatus);
 			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_PreAuth_Token_GPHash, Perform_Auth_PreAuth_Token_GPHash);
             scheduler->AddRequestListener(gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage);
 			scheduler->DeclareReady();
@@ -119,6 +119,9 @@ namespace GP {
 			}
 
 			if (error_class.compare("common") == 0) {
+				if (error_name.compare("NoSuchUser") == 0) {
+					data.response_code = TaskShared::LOGIN_RESPONSE_USER_NOT_FOUND;
+				}
 				if (error_name.compare("MissingParam") == 0 || error_name.compare("InvalidMode") == 0) {
 					data.response_code = TaskShared::LOGIN_RESPONSE_SERVER_ERROR;
 				}
@@ -134,9 +137,6 @@ namespace GP {
 			else if (error_class.compare("auth") == 0) {
 				if (error_name.compare("InvalidCredentials") == 0) {
 					data.response_code = TaskShared::LOGIN_RESPONSE_INVALID_PASSWORD;
-				}
-				else if (error_name.compare("NoSuchUser") == 0) {
-					data.response_code = TaskShared::LOGIN_RESPONSE_USER_NOT_FOUND;
 				}
 			}
 			else if (error_class.compare("profile") == 0) {

@@ -20,11 +20,10 @@ namespace TaskShared {
             scheduler->AddRequestHandler(EProfileSearch_DeleteProfile, PerformProfileRequest);
             scheduler->AddRequestHandler(EProfileSearch_UpdateProfile, PerformProfileRequest);
 
-			/*
-				EProfileSearch_Buddies,
-				EProfileSearch_Buddies_Reverse,
-				EProfileSearch_Blocks,
-			*/
+			scheduler->AddRequestHandler(EProfileSearch_Buddies, Perform_BuddyRequest);
+			scheduler->AddRequestHandler(EProfileSearch_Buddies_Reverse, Perform_BuddyRequest);
+			scheduler->AddRequestHandler(EProfileSearch_Blocks, Perform_BuddyRequest);
+			
 			scheduler->DeclareReady();
             return scheduler;
         }
@@ -48,6 +47,13 @@ namespace TaskShared {
 			case EProfileSearch_DeleteProfile:
 			case EProfileSearch_UpdateProfile:
 				url += "/v1/Profile";
+				break;
+			case EProfileSearch_Buddies:
+			case EProfileSearch_Buddies_Reverse:
+				url += "/v1/Presence/Status/FindBuddyStatuses";
+				break;
+			case EProfileSearch_Blocks:
+				url += "/v1/Presence/Status/FindBlockStatuses";
 				break;
 			}
 			switch (request.type) {
@@ -130,6 +136,7 @@ namespace TaskShared {
 			if (request.profile_search_details.id != 0)
 				json_object_set_new(profile_obj, "id", json_integer(request.profile_search_details.id));
 
+			if (request.profile_search_details.userid != 0)
 			json_object_set_new(profile_obj, "userid", json_integer(request.profile_search_details.userid));
 
 			//user parameters

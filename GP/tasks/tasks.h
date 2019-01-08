@@ -41,9 +41,10 @@ namespace GP {
 		EGPRedisRequestType_LookupBlockStatus
 	};
     typedef struct {
-
+		//std::vector<GP::Buddy
     } GPBackendRedisResponse;
-    typedef void (*GPBackendRedisCallback)(bool success, GPBackendRedisResponse response_data, void *extra);
+	typedef void(*GPBackendRedisCallback)(bool success, GPBackendRedisResponse response_data, void *extra);
+	typedef void(*BuddyStatusCallback)(TaskShared::EProfileResponseType response_reason, std::map<OS::Profile, GPShared::GPStatus> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 	struct sBuddyRequest {
 		int from_profileid;
@@ -86,6 +87,7 @@ namespace GP {
 		std::string auth_token;
 
 		GPBackendRedisCallback callback;
+		BuddyStatusCallback statusCallback;
 		
 	} GPBackendRedisRequest;
 
@@ -93,9 +95,7 @@ namespace GP {
     bool Perform_SetPresenceStatus(GPBackendRedisRequest request, TaskThreadData *thread_data);
     bool Perform_SendLoginEvent(GPBackendRedisRequest request, TaskThreadData *thread_data);
     bool Perform_SendBuddyMessage(GPBackendRedisRequest request, TaskThreadData *thread_data);
-    bool Perform_BlockBuddy(GPBackendRedisRequest request, TaskThreadData *thread_data);
-    bool Perform_DelBuddyBlock(GPBackendRedisRequest request, TaskThreadData *thread_data);
-	bool Perform_SendGPBuddyStatus(GPBackendRedisRequest request, TaskThreadData *thread_data);
+	bool Perform_GetBuddyStatus(GPBackendRedisRequest request, TaskThreadData *thread_data);
 	bool Perform_Auth_NickEmail_GPHash(GPBackendRedisRequest request, TaskThreadData *thread_data);
 	bool Perform_Auth_Uniquenick_GPHash(GPBackendRedisRequest request, TaskThreadData *thread_data);
 	bool Perform_Auth_PreAuth_Token_GPHash(GPBackendRedisRequest request, TaskThreadData *thread_data);

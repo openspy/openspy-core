@@ -110,6 +110,10 @@ namespace TaskShared {
 
 		if (request.callback != NULL)
 			request.callback(resp_type, results, request.extra, request.peer);
+
+		if (request.peer) {
+			request.peer->DecRef();
+		}
 		return true;
 	}
 }

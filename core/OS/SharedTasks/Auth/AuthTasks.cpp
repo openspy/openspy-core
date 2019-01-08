@@ -20,7 +20,7 @@ namespace TaskShared {
 			}
 			size_t realsize = size * nmemb;                             /* calculate buffer size */
 			TaskShared::curl_data *data = (curl_data *)userp;
-			data->buffer += (const char *)contents;
+			data->buffer += OS::strip_whitespace((const char *)contents).c_str();
 			return realsize;
 		}
 		void AuthReq_InitCurl(void *curl, char *post_data, void *write_data, AuthRequest request) {
