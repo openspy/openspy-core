@@ -22,15 +22,6 @@ namespace GP {
 
 			CURL *curl = curl_easy_init();
 			CURLcode res;
-			OS::Profile profile;
-			OS::User user;
-			user.id = 0;
-			profile.id = 0;
-			TaskShared::AuthData auth_data;
-			bool success = false;
-
-			auth_data.response_code = TaskShared::LOGIN_RESPONSE_SERVER_ERROR;
-
 
 			if (curl) {
 				GPReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
@@ -38,39 +29,10 @@ namespace GP {
 				res = curl_easy_perform(curl);
 
 				if (res == CURLE_OK) {
-					json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
-					if (json_data) {
-						json_t *error_obj = json_object_get(json_data, "error");
-						json_t *success_obj = json_object_get(json_data, "success");
-						if (error_obj) {
-							Handle_WebError(auth_data, error_obj);
-						}
-						else if (success_obj == json_true()) {
-							json_t *profile_json = json_object_get(json_data, "profile");
-							if (profile_json) {
-								profile = OS::LoadProfileFromJson(profile_json);
-								json_t *user_json = json_object_get(profile_json, "user");
-								if (user_json) {
-									user = OS::LoadUserFromJson(user_json);
-									success = true;
-								}
-							}
-							json_t *server_response_json = json_object_get(json_data, "server_response");
-							if (server_response_json) {
-								auth_data.response_proof = json_string_value(server_response_json);
-							}
-							json_t *session_key_json = json_object_get(json_data, "session_key");
-							if (session_key_json) {
-								auth_data.session_key = json_string_value(session_key_json);
-							}
-
-						}
-						json_decref(json_data);
-					}
 				}
 				curl_easy_cleanup(curl);
 			}
-			request.authCallback(success, user, profile, auth_data, request.extra, request.peer);
+
 			if (json_dump) {
 				free((void *)json_dump);
 			}

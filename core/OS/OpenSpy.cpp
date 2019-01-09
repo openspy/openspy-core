@@ -460,15 +460,15 @@ namespace OS {
 	}
 
 	std::string strip_whitespace(std::string s, bool skip_spaces) {
-		std::string ret;
+		std::ostringstream ss;
 		std::string::iterator it = s.begin();
 		while(it != s.end()) {
 			unsigned char ch = *(it++);
 			if(isspace(ch) && (ch != ' ' || (skip_spaces && ch == ' ')))
 				continue;
-			ret += ch;
+			ss << ((char)ch);
 		}
-		return ret;
+		return ss.str();
 	}
 	void Sleep(int time_ms) {
 		#ifdef _WIN32

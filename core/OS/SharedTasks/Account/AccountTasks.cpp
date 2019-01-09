@@ -220,9 +220,6 @@ namespace TaskShared {
 				json_object_set_new(profile_obj, "namespaceids", namespaceids_json);
 
 			}
-			//json_object_set(send_obj, "profile", profile_obj);
-			//json_object_set(send_obj, "user", user_obj);
-
 
 			if (request.target_profileids.size()) {
 				json_t *profileids_json = json_array();
@@ -234,18 +231,22 @@ namespace TaskShared {
 					it++;
 				}
 
-				json_object_set_new(send_obj, "target_profileids", profileids_json);
+				json_object_set_new(profile_obj, "target_profileids", profileids_json);
 			}
+			//json_object_set(send_obj, "profile", profile_obj);
+
+			if(json_object_size(user_obj) > 0)
+				json_object_set(send_obj, "user", user_obj);
 
 
-			char *json_data = json_dumps(send_obj, 0);
+			char *json_string = json_dumps(send_obj, 0);
 
 			CURL *curl = curl_easy_init();
 			CURLcode res;
 			EProfileResponseType error = EProfileResponseType_GenericError;
 			if (curl) {
 
-				ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
+				ProfileReq_InitCurl(curl, json_string, (void *)&recv_data, request);
 				res = curl_easy_perform(curl);
 				if (res == CURLE_OK) {
 					json_t *json_data = NULL;
@@ -285,8 +286,8 @@ namespace TaskShared {
 				curl_easy_cleanup(curl);
 			}
 
-			if (json_data) {
-				free((void *)json_data);
+			if (json_string) {
+				free((void *)json_string);
 			}
 			if (send_obj)
 				json_decref(send_obj);

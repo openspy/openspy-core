@@ -20,7 +20,7 @@ namespace GP {
 			int profileid = data_parser.GetValueInt("profileid");
 			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 			GPBackendRedisRequest req;
-			req.type = EGPRedisRequestType_AddBuddy;
+			req.type = EGPRedisRequestType_AddBlock;
 			req.peer = this;
 			req.peer->IncRef();
 			req.ToFromData.to_profileid = profileid;

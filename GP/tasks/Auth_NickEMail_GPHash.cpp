@@ -54,9 +54,10 @@ namespace GP {
 						json_t *profile_json = json_object_get(json_data, "profile");
 						if (profile_json) {
 							profile = OS::LoadProfileFromJson(profile_json);
-							json_t *user_json = json_object_get(profile_json, "user");
+							json_t *user_json = json_object_get(json_data, "user");
 							if (user_json) {
 								user = OS::LoadUserFromJson(user_json);
+								auth_data.response_code = TaskShared::LOGIN_RESPONSE_SUCCESS;
 								success = true;
 							}
 						}

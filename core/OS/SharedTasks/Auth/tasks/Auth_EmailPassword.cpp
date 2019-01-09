@@ -43,6 +43,7 @@ namespace TaskShared {
 						Handle_AuthWebError(auth_data, error_obj);
 					}
 					else if (success_obj == json_true()) {
+						auth_data.response_code = TaskShared::LOGIN_RESPONSE_SUCCESS;
 						success = true;
 						json_t *session_key_json = json_object_get(json_data, "session_key");
 						if (session_key_json) {

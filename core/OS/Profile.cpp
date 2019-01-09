@@ -88,7 +88,7 @@ namespace OS {
 			ret.firstname = json_string_value(j);
 
 		j = json_object_get(obj, "lastname");
-		if(j && json_is_integer(j))
+		if(j && json_is_string(j))
 			ret.lastname = json_string_value(j);
 
 		j = json_object_get(obj, "homepage");
