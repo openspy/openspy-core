@@ -4,6 +4,7 @@
 #include <sstream>
 namespace GP {
     bool Handle_PresenceMessage(TaskThreadData *thread_data, std::string message) {
+		printf("ASYNC RECV: %s\n", message.c_str());
 		GP::Server *server = (GP::Server *)thread_data->server;
 
 		std::string msg_type, reason;
@@ -25,9 +26,15 @@ namespace GP {
 		else if (msg_type.compare("authorize_add") == 0) {
 			to_profileid = reader.GetValueInt("to_profileid");
 			from_profileid = reader.GetValueInt("from_profileid");
+			peer = (GP::Peer *)server->findPeerByProfile(from_profileid);
+			if (peer) {
+				peer->send_authorize_add(from_profileid, to_profileid, reader.GetValueInt("silent"));
+				peer->DecRef();
+			}
+
 			peer = (GP::Peer *)server->findPeerByProfile(to_profileid);
 			if (peer) {
-				peer->send_authorize_add(from_profileid, reader.GetValueInt("silent"));
+				peer->send_authorize_add(from_profileid, to_profileid, reader.GetValueInt("silent"));
 				peer->DecRef();
 			}
 		}

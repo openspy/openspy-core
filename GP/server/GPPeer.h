@@ -90,7 +90,7 @@ namespace GP {
 
 		//event messages
 		void send_add_buddy_request(int from_profileid, const char *reason);
-		void send_authorize_add(int profileid, bool silent = false);
+		void send_authorize_add(int from_profileid, int to_profileid, bool silent = false);
 
 		void inform_status_update(int profileid, GPShared::GPStatus status, bool no_update = false);
 		void send_revoke_message(int from_profileid, int date_unix_timestamp);
@@ -189,6 +189,9 @@ namespace GP {
 		OS::CMutex *mp_mutex;
 
 		std::vector<CommandEntry> m_commands;
+
+		//used to add someone to your buddy list, after you accepted them. Client sends "authadd" in response to "addbuddyresposne" - allowing the user to be added to the lists
+		std::map<int, timeval> m_authorized_adds;
 	};
 }
 #endif //_GPPEER_H

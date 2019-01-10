@@ -5,12 +5,13 @@ namespace GP {
 		//build json object
 		json_t *send_obj = json_object(), *to_obj = json_object(), *from_obj = json_object();
 
-		json_object_set_new(to_obj, "id", json_integer(request.BuddyRequest.to_profileid));
-		json_object_set_new(from_obj, "id", json_integer(request.BuddyRequest.from_profileid));
-		json_object_set_new(send_obj, "reason", json_string(request.BuddyRequest.reason.c_str()));
+		json_object_set_new(send_obj, "addReason", json_string(request.BuddyRequest.reason.c_str()));
 
 		json_object_set(send_obj, "sourceProfile", from_obj);
 		json_object_set(send_obj, "targetProfile", to_obj);
+
+		json_object_set_new(to_obj, "id", json_integer(request.BuddyRequest.to_profileid));
+		json_object_set_new(from_obj, "id", json_integer(request.BuddyRequest.from_profileid));
 
 
 		char *json_dump = json_dumps(send_obj, 0);

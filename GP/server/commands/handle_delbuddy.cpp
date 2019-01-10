@@ -27,6 +27,7 @@ namespace GP {
 				req.ToFromData.from_profileid = m_profile.id;
 				req.ToFromData.to_profileid = delprofileid;
 				m_buddies.erase(delprofileid);
+				scheduler->AddRequest(req.type, req);
 			}
 		}
 		else {

@@ -96,6 +96,8 @@ namespace SM {
 		void handle_nicks(OS::KVReader data_parser);
 		static void m_nicks_cb(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
+		void handle_searchunique(OS::KVReader data_parser);
+
 		static const char *mp_hidden_str;
 
 		OS::CMutex *mp_mutex;

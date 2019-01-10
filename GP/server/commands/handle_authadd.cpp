@@ -23,31 +23,34 @@ namespace GP {
 			req.type = EGPRedisRequestType_AuthorizeAdd;
 			req.peer = this;
 			req.peer->IncRef();
-			req.ToFromData.from_profileid = fromprofileid;
-			req.ToFromData.to_profileid = m_profile.id;
+			req.ToFromData.to_profileid = fromprofileid;
+			req.ToFromData.from_profileid = m_profile.id;
 			scheduler->AddRequest(req.type, req);
 		} else {
 			send_error(GPShared::GP_PARSE);
 			return;
 		}
 	}
-	void Peer::send_authorize_add(int profileid, bool silent) {
+	void Peer::send_authorize_add(int from_profileid, int to_profileid, bool silent) {
+		std::ostringstream s;
 		if (!silent) {
-			std::ostringstream s;
-			s << "\\addbuddyresponse\\" << GPI_BM_REQUEST; //the addbuddy response might be implemented wrong
-			s << "\\newprofileid\\" << profileid;
-			s << "\\confirmation\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
-			SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
 
-			s.str("");
-			s << "\\bm\\" << GPI_BM_AUTH;
-			s << "\\f\\" << profileid;
-			s << "\\msg\\" << "I have authorized your request to add me to your list";
-			s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+			if (m_profile.id == from_profileid) {
+				s << "\\bm\\" << GPI_BM_AUTH;
+				s << "\\f\\" << to_profileid;
+				s << "\\msg\\" << "I have authorized your request to add me to your list";
+				s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+				mp_mutex->lock();
+				//allow status update
+				m_buddies[to_profileid] = GPShared::gp_default_status;
+				mp_mutex->unlock();
+			}
+			else {
+				s << "\\addbuddyresponse\\" << GPI_BM_REQUEST; //the addbuddy response might be implemented wrong
+				s << "\\newprofileid\\" << from_profileid;
+				s << "\\confirmation\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed;
+			}
 			SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
 		}
-
-		m_buddies[profileid] = GPShared::gp_default_status;
-
 	}
 }

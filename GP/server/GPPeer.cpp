@@ -137,6 +137,8 @@ namespace GP {
 		commands.push_back(CommandEntry("addbuddy", true, &Peer::handle_addbuddy));
 		commands.push_back(CommandEntry("delbuddy", true, &Peer::handle_delbuddy));
 		commands.push_back(CommandEntry("removeblock", true, &Peer::handle_removeblock));
+		commands.push_back(CommandEntry("delblock", true, &Peer::handle_removeblock));
+		commands.push_back(CommandEntry("addblock", true, &Peer::handle_addblock));
 		commands.push_back(CommandEntry("revoke", true, &Peer::handle_revoke));
 		commands.push_back(CommandEntry("authadd", true, &Peer::handle_authadd));
 		commands.push_back(CommandEntry("getprofile", true, &Peer::handle_getprofile));
@@ -154,7 +156,7 @@ namespace GP {
 		OS::KVReader data_parser = OS::KVReader(packet);
 		gettimeofday(&m_last_recv, NULL);
 
-		OS::LogText(OS::ELogLevel_Debug, "[%s] Recv: %s\n", getAddress().ToString().c_str(), packet.c_str());
+		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s\n", getAddress().ToString().c_str(), m_profile.id, packet.c_str());
 
 		std::string command = data_parser.GetKeyByIdx(0);
 
@@ -229,7 +231,7 @@ namespace GP {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
 
-		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s\n", getAddress().ToString().c_str(), std::string((const char *)buff, len).c_str());
+		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s\n", getAddress().ToString().c_str(), m_profile.id, std::string((const char *)buff, len).c_str());
 
 		NetIOCommResp io_resp;
 		io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);

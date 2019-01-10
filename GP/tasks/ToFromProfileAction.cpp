@@ -17,6 +17,10 @@ namespace GP {
 				json_object_set(send_obj, "silent", json_true());
 			}
 
+			if (request.auth_token.length()) {
+				json_object_set(send_obj, "addReason", json_string(request.auth_token.c_str()));
+			}
+
 
 			char *json_dump = json_dumps(send_obj, 0);
 

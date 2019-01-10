@@ -24,11 +24,11 @@ namespace GP {
 			it++;
 		}
 
-		/*it = m_blocked_by.begin();
+		it = m_blocked_by.begin();
 		while (it != m_blocked_by.end()) {
 			all_profileids.push_back((*it));
 			it++;
-		}*/
+		}
 
 		std::map<int, GPShared::GPStatus>::iterator it2 = m_buddies.begin();
 		while (it2 != m_buddies.end()) {

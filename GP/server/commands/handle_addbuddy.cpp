@@ -51,7 +51,6 @@ namespace GP {
 		req.BuddyRequest.from_profileid = m_profile.id;
 		req.BuddyRequest.to_profileid = newprofileid;
 		req.BuddyRequest.reason = reason;
-		req.StatusInfo = m_status;
 		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::send_add_buddy_request(int from_profileid, const char *reason) {

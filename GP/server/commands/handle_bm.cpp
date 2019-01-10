@@ -22,7 +22,7 @@ namespace GP {
 			int msg_type = data_parser.GetValueInt("bm");
 			std::string msg = data_parser.GetValue("msg");
 			
-			switch (msg_type) {
+			/*switch (msg_type) {
 			case GPI_BM_MESSAGE:
 			case GPI_BM_UTM:
 			case GPI_BM_PING:
@@ -30,7 +30,7 @@ namespace GP {
 				break;
 			default:
 				return;
-			}
+			}*/
 
 			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 			GPBackendRedisRequest req;
