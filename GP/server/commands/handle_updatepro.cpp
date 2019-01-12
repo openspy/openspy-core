@@ -55,7 +55,7 @@ namespace GP {
 
 		TaskShared::ProfileRequest request;
 		request.profile_search_details = profile;
-		request.extra = this;
+		request.extra = NULL;
 		request.peer = this;
 		request.peer->IncRef();
 		request.type = TaskShared::EProfileSearch_UpdateProfile;
@@ -67,7 +67,7 @@ namespace GP {
 			TaskShared::UserRequest user_request;
 			user_request.search_params = user;
 			user_request.type = TaskShared::EUserRequestType_Update;
-			user_request.extra = this;
+			user_request.extra = NULL;
 			user_request.peer = this;
 			user_request.peer->IncRef();
 			user_request.callback = NULL;

@@ -145,7 +145,7 @@ namespace TaskShared {
 			}
 
 			if (request.user_search_details.id != 0) {
-				//json_object_set_new(profile_obj, "userid", json_integer(request.user_search_details.id));
+				json_object_set_new(profile_obj, "userid", json_integer(request.user_search_details.id));
 				json_object_set_new(user_obj, "id", json_integer(request.user_search_details.id));
 
 			}
@@ -271,6 +271,9 @@ namespace TaskShared {
 								}
 								results.push_back(profile);
 							}
+						}
+						else if (json_is_true(json_data)) {
+							//success
 						}
 						else {
 							//check for single profile

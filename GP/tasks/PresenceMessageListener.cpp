@@ -4,7 +4,6 @@
 #include <sstream>
 namespace GP {
     bool Handle_PresenceMessage(TaskThreadData *thread_data, std::string message) {
-		printf("ASYNC RECV: %s\n", message.c_str());
 		GP::Server *server = (GP::Server *)thread_data->server;
 
 		std::string msg_type, reason;

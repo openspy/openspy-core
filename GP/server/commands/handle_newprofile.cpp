@@ -18,6 +18,15 @@ namespace GP {
 	void Peer::m_create_profile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		if(response_reason == OS::EProfileResponseType_Success && results.size() > 0) {
 			OS::Profile profile = results.front();
+			std::ostringstream s;
+			s << "\\npr\\1";
+			s << "\\profileid\\" << profile.id;
+			s << "\\id\\" << (int)extra;
+
+			((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
+		}
+		else {
+			((GP::Peer *)peer)->send_error(GPShared::GP_NEWPROFILE);
 		}
 	}
 	void Peer::handle_newprofile(OS::KVReader data_parser) {
@@ -29,9 +38,10 @@ namespace GP {
 		if(replace) { //TODO: figure out replaces functionality
 			oldnick = data_parser.GetValue("oldnick");
 		}
-		request.profile_search_details.id = m_profile.id;
+		//request.profile_search_details.id = m_profile.id;
 		request.profile_search_details.nick = nick;
-		request.extra = this;
+		request.user_search_details.id = m_user.id;
+		request.extra = (void *)data_parser.GetValueInt("id");
 		request.peer = this;
 		request.peer->IncRef();
 		request.type = TaskShared::EProfileSearch_CreateProfile;

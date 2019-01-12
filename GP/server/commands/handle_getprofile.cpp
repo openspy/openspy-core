@@ -20,9 +20,8 @@ namespace GP {
 		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("profileid") && data_parser.HasKey("id")) {
 			int profileid = data_parser.GetValueInt("profileid");
-			m_search_operation_id = data_parser.GetValueInt("id");
 			request.profile_search_details.id = profileid;
-			request.extra = this;
+			request.extra = (void *)data_parser.GetValueInt("id");
 			request.peer = this;
 			request.peer->IncRef();
 			request.callback = Peer::m_getprofile_callback;
@@ -123,7 +122,7 @@ namespace GP {
 			s << "\\osstring\\" << p.osstring;
 
 
-			s << "\\id\\" << ((GP::Peer *)peer)->m_search_operation_id;
+			s << "\\id\\" << (int)extra;
 
 			s << "\\sig\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
 

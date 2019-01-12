@@ -78,7 +78,6 @@ namespace GP {
 		req.peer->IncRef();
 
 		scheduler->AddRequest(req.type, req);
-		//OS::AuthTask::TryAuthUniqueNick_GPHash(uniquenick, partnercode, namespaceid, server_challenge, client_challenge, response, m_auth_cb, this, operation_id, peer);
 	}
 	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
 		const char *email = NULL;

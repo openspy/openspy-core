@@ -45,12 +45,16 @@ namespace GP {
 				m_buddies[to_profileid] = GPShared::gp_default_status;
 				mp_mutex->unlock();
 			}
-			else {
+			/* XXX: enable this for "newer" sdk versions??
 				s << "\\addbuddyresponse\\" << GPI_BM_REQUEST; //the addbuddy response might be implemented wrong
-				s << "\\newprofileid\\" << from_profileid;
+				s << "\\newprofileid\\" << to_profileid;
 				s << "\\confirmation\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed;
+				mp_mutex->lock();
+				//allow status update
+				m_buddies[to_profileid] = GPShared::gp_default_status;
+				mp_mutex->unlock();
 			}
-			SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
+			SendPacket((const uint8_t *)s.str().c_str(), s.str().length());*/
 		}
 	}
 }

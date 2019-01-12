@@ -19,12 +19,13 @@ namespace GP {
 		std::ostringstream s;
 		
 		s << "\\dpr\\" << (int)(response_reason == OS::EProfileResponseType_Success);
+		s << "\\id\\" << (int)extra;
 		((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::handle_delprofile(OS::KVReader data_parser) {
 		TaskShared::ProfileRequest request;
 		request.profile_search_details.id = m_profile.id;
-		request.extra = this;
+		request.extra = (void *)data_parser.GetValueInt("id");
 		request.peer = this;
 		request.peer->IncRef();
 		request.type = TaskShared::EProfileSearch_DeleteProfile;

@@ -122,7 +122,7 @@ namespace TaskShared {
 
 
 		if (request.registerCallback != NULL)
-			request.registerCallback(register_data.user_response_code == EUserResponseType_Success, user, profile, register_data, request.extra, request.peer);
+			request.registerCallback(register_data.user_response_code == EUserResponseType_Success, register_data.user, register_data.profile, register_data, request.extra, request.peer);
 		return true;
     }
 }

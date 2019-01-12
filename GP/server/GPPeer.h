@@ -127,7 +127,6 @@ namespace GP {
 		void handle_newuser(OS::KVReader data_parser);
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer);
 
-		int m_search_operation_id;
 		static void m_getprofile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 		void handle_bm(OS::KVReader data_parser);
