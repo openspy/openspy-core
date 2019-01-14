@@ -42,10 +42,12 @@ namespace GP {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
 
 		OS::gen_random(m_challenge, CHALLENGE_LEN);
+		mp_proto_processor = new KVProcessor();
 
 		send_login_challenge(1);
 	}
 	Peer::~Peer() {
+		delete mp_proto_processor;
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
 	}
@@ -78,38 +80,9 @@ namespace GP {
 				goto end;
 			}
 
-			/*
-			This scans the incoming packets for \\final\\ and splits based on that,
-
-
-			as well as handles incomplete packets -- due to TCP preserving data order, this is possible, and cannot be used on UDP protocols
-			*/
-			std::string recv_buf = m_kv_accumulator;
-			m_kv_accumulator.clear();
-			recv_buf.append((const char *)recv_buffer.GetHead(), len);
-
-			size_t final_pos = 0, last_pos = 0;
-
-			do {
-				final_pos = recv_buf.find("\\final\\", last_pos);
-				if (final_pos == std::string::npos) break;
-
-				std::string partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
-				handle_packet(partial_string);
-
-				last_pos = final_pos + 7; // 7 = strlen of \\final
-			} while (final_pos != std::string::npos);
-
-
-			//check for extra data that didn't have the final string -- incase of incomplete data
-			if (last_pos < (size_t)len) {
-				std::string remaining_str = recv_buf.substr(last_pos);
-				m_kv_accumulator.append(remaining_str);
-			}
-
-			if (m_kv_accumulator.length() > MAX_UNPROCESSED_DATA) {
-				Delete();
-				return;
+			OS::KVReader data_parser;
+			if (mp_proto_processor->ProcessIncoming(recv_buffer, data_parser, this)) {
+				handle_packet(data_parser);
 			}
 		}
 
@@ -152,11 +125,10 @@ namespace GP {
 		commands.push_back(CommandEntry("updateui", true, &Peer::handle_updateui));
 		m_commands = commands;
 	}
-	void Peer::handle_packet(std::string packet) {
-		OS::KVReader data_parser = OS::KVReader(packet);
+	void Peer::handle_packet(OS::KVReader data_parser) {
 		gettimeofday(&m_last_recv, NULL);
 
-		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s\n", getAddress().ToString().c_str(), m_profile.id, packet.c_str());
+		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s\n", getAddress().ToString().c_str(), m_profile.id, data_parser.ToString().c_str());
 
 		std::string command = data_parser.GetKeyByIdx(0);
 
@@ -224,12 +196,10 @@ namespace GP {
 		}
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
-	void Peer::SendPacket(const uint8_t *buff, size_t len, bool attach_final) {
+	void Peer::SendPacket(const uint8_t *buff, size_t len) {
 		OS::Buffer buffer;
 		buffer.WriteBuffer((void *)buff, len);
-		if(attach_final) {
-			buffer.WriteBuffer((void *)"\\final\\", 7);
-		}
+		buffer.WriteBuffer((void *)"\\final\\", 7);
 
 		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s\n", getAddress().ToString().c_str(), m_profile.id, std::string((const char *)buff, len).c_str());
 

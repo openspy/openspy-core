@@ -383,7 +383,7 @@ namespace GSBackend {
 		m_game_cache = new OS::GameCache(NUM_STATS_THREADS + 1, gameCacheTimeout);
 
 		m_task_pool = new OS::TaskPool<PersistBackendTask, PersistBackendRequest>(NUM_STATS_THREADS);
-		server->SetTaskPool(m_task_pool);
+		//server->SetTaskPool(m_task_pool);
 	}
 	void ShutdownTaskPool() {
 		delete m_task_pool;

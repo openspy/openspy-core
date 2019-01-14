@@ -1,3 +1,4 @@
+#include "GSServer.h"
 #include "GSPeer.h"
 #include "GSDriver.h"
 #include <OS/OpenSpy.h>
@@ -10,7 +11,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include "GSBackend.h"
+#include <server/tasks/tasks.h>
 
 #include <OS/GPShared.h>
 
@@ -175,7 +176,7 @@ namespace GS {
 		ss << "\\getpidr\\-1\\lid\\" << operation_id;
 		SendPacket(ss.str());
 	}
-	void Peer::getPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
+	void Peer::getPersistDataCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		//// \\getpdr\\1\\lid\\1\\length\\5\\data\\mydata\\final
 		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
 
@@ -286,10 +287,10 @@ namespace GS {
 		persist_request_data->operation_id = operation_id;
 		persist_request_data->wait_index = m_get_request_index++;
 
-		GSBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList, modified_since);
+		//GSBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList, modified_since);
 	}
 
-	void Peer::setPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
+	void Peer::setPersistDataCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
 
 		std::ostringstream ss;
@@ -383,9 +384,18 @@ namespace GS {
 		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
 		persist_request_data->profileid = 0;
 		persist_request_data->operation_id = local_id;
-		GSBackend::PersistBackendTask::SubmitGetGameInfoByGameName(gamename, this, persist_request_data, onGetGameDataCallback);
+
+		TaskScheduler<GPPersistRequestData, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGPTask();
+		PersistBackendRequest req;
+		req.mp_peer = this;
+		req.mp_extra = persist_request_data;
+		req.type = EPersistRequestType_GetGameInfoByGamename;
+		req.callback = onGetGameDataCallback;
+		req.game_instance_identifier = gamename;
+		IncRef();
+
 	}
-	void Peer::onGetGameDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
+	void Peer::onGetGameDataCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		std::ostringstream ss;
 		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
 		peer->m_game = response_data.gameData;
@@ -403,7 +413,7 @@ namespace GS {
 		ss << "\\lc\\2\\sesskey\\" << peer->m_session_key << "\\proof\\0\\id\\" << persist_request_data->operation_id;
 		peer->SendPacket(ss.str());
 	}
-	void Peer::newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
+	void Peer::newGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		peer->mp_mutex->lock();
 		size_t sesskey = (size_t)extra;
 		peer->m_game_session_backend_identifier_map[sesskey] = response_data.game_instance_identifier;
@@ -427,9 +437,9 @@ namespace GS {
 	}
 	void Peer::handle_newgame(OS::KVReader data_parser) {
 		size_t session_id = (size_t)data_parser.GetValueInt("sesskey"); //identifier, used incase of multiple game sessions happening at once
-		GSBackend::PersistBackendTask::SubmitNewGameSession(this, (void *)session_id, newGameCreateCallback);
+		//GSBackend::PersistBackendTask::SubmitNewGameSession(this, (void *)session_id, newGameCreateCallback);
 	}
-	void Peer::updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
+	void Peer::updateGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 	}
 	void Peer::handle_updgame(OS::KVReader data_parser) {
 		//\updgame\\sesskey\%d\done\%d\gamedata\%s

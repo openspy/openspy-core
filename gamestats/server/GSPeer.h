@@ -16,8 +16,7 @@
 
 #include <OS/GPShared.h>
 
-
-#include "GSBackend.h"
+#include <server/tasks/tasks.h>
 
 #include <OS/KVReader.h>
 
@@ -64,21 +63,21 @@ namespace GS {
 		OS::GameData GetGame() { return m_game; };
 	private:
 		//packet handlers
-		static void newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
+		static void newGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_newgame(OS::KVReader data_parser);
 
-		static void updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
+		static void updateGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_updgame(OS::KVReader data_parser);
 
-		static void onGetGameDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
+		static void onGetGameDataCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_authp(OS::KVReader data_parser);
 		void handle_auth(OS::KVReader data_parser);
 		void handle_getpid(OS::KVReader data_parser);
 
-		static void getPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
+		static void getPersistDataCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_getpd(OS::KVReader data_parser);
 
-		static void setPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra);
+		static void setPersistDataCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra);
 		void handle_setpd(OS::KVReader data_parser);
 
 		//login

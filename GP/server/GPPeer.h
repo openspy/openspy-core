@@ -16,6 +16,7 @@
 
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 #include <OS/SharedTasks/Account/ProfileTasks.h>
+#include <OS/Net/Processors/KVProcessor.h>
 
 // Extended message support
 #define GPI_NEW_AUTH_NOTIFICATION	(1<<0)
@@ -74,7 +75,7 @@ namespace GP {
 		void Delete(bool timeout = false);
 		
 		void think(bool packet_waiting);
-		void handle_packet(std::string packet);
+		void handle_packet(OS::KVReader data_parser);
 
 		int GetProfileID();
 
@@ -84,7 +85,7 @@ namespace GP {
 		void send_ping();
 
 		void send_login_challenge(int type);
-		void SendPacket(const uint8_t *buff, size_t len, bool attach_final = true);
+		void SendPacket(const uint8_t *buff, size_t len);
 
 		void RegisterCommands();
 
@@ -163,6 +164,7 @@ namespace GP {
 
 		OS::GameData m_game;
 		Driver *mp_driver;
+		KVProcessor *mp_proto_processor;
 
 		struct timeval m_last_recv, m_last_ping, m_status_refresh;
 
@@ -174,7 +176,6 @@ namespace GP {
 		GPShared::GPStatus m_status;
 
 		std::string m_backend_session_key; //session key
-		std::string m_kv_accumulator;
 
 		//these are modified by other threads
 		//std::vector<int> m_buddies;

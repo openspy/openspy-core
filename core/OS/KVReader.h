@@ -36,6 +36,7 @@ namespace OS {
 		std::vector<std::pair<std::string, std::string>>::const_iterator FindValue(std::string key);
 		std::vector< std::pair<std::string, std::string> > m_kv_map;
 		char m_delimitor;
+		char m_line_delimitor;
 		std::map<std::string, std::string> m_data_key_map;
 	};
 }
