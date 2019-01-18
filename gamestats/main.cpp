@@ -6,7 +6,6 @@
 #include <OS/Config/AppConfig.h>
 #include "server/GSServer.h"
 #include "server/GSDriver.h"
-#include "server/GSBackend.h"
 INetServer *g_gameserver = NULL;
 bool g_running = true;
 
@@ -60,7 +59,6 @@ int main() {
 	}
     delete g_gameserver;
 
-	GSBackend::ShutdownTaskPool();
     OS::Shutdown();
     
     return 0;

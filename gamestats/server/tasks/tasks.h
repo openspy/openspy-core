@@ -38,6 +38,8 @@ namespace GS {
 		EPersistRequestType_NewGame,
 		EPersistRequestType_UpdateGame,
 		EPersistRequestType_GetGameInfoByGamename,
+		EPersistRequestType_Auth_ProfileID,
+		EPersistRequestType_Auth_AuthTicket,
 	};
 
 	typedef struct {
@@ -52,7 +54,7 @@ namespace GS {
 
 
 	typedef struct {
-		EPersistRequestType type;
+		int type;
 
 		GS::Peer *mp_peer;
 		void* 	  mp_extra;
@@ -60,9 +62,10 @@ namespace GS {
 
 		std::map<std::string, std::string> kvMap;
 		std::vector<std::string> keyList;
-		std::string game_instance_identifier;
+		std::string game_instance_identifier; //also used as auth "response" value
+		std::string auth_token;
 		int profileid;
-		int modified_since;
+		int modified_since; //also used as session key for auth
 
 		persisttype_t data_type;
 		int data_index;
@@ -71,6 +74,8 @@ namespace GS {
 		bool complete;
 
 		OS::KVReader kv_set_data;
+
+		TaskShared::AuthCallback authCallback;
 	} PersistBackendRequest;
 
     bool Perform_GetGameInfo(PersistBackendRequest request, TaskThreadData *thread_data);
@@ -78,6 +83,8 @@ namespace GS {
 	bool Perform_SetUserData(PersistBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_NewGame(PersistBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UpdateGame(PersistBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_ProfileIDAuth(PersistBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_AuthTokenAuth(PersistBackendRequest request, TaskThreadData *thread_data);
 
 	TaskScheduler<PersistBackendRequest, TaskThreadData> *InitTasks(INetServer *server);
 

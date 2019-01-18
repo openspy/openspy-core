@@ -10,5 +10,6 @@ namespace GS {
         }
 		resp_data.gameData = game_info;
 		request.callback(game_info.secretkey[0] != 0, resp_data, request.mp_peer, request.mp_extra);
+		return true;
 	}
 }

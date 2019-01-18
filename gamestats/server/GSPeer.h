@@ -83,7 +83,7 @@ namespace GS {
 		//login
 		void perform_preauth_auth(std::string auth_token, const char *response, int operation_id);
 		void perform_pid_auth(int profileid, const char *response, int operation_id);
-		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
+		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 
 
 		void SendOrWaitBuffer(uint32_t index, WaitBufferCtx &wait_ctx, OS::Buffer buffer);

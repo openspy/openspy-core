@@ -287,7 +287,20 @@ namespace GS {
 		persist_request_data->operation_id = operation_id;
 		persist_request_data->wait_index = m_get_request_index++;
 
-		//GSBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList, modified_since);
+
+		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
+		PersistBackendRequest req;
+		req.mp_peer = this;
+		req.mp_extra = persist_request_data;
+		req.type = EPersistRequestType_GetUserData;
+		req.callback = getPersistDataCallback;
+		req.data_type = persist_type;
+		req.data_index = data_index;
+		req.keyList = keyList;
+		req.profileid = m_profile.id;
+		req.modified_since = modified_since;
+		IncRef();
+		scheduler->AddRequest(req.type, req);
 	}
 
 	void Peer::setPersistDataCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
@@ -321,6 +334,7 @@ namespace GS {
 		int client_data_len = data_parser.GetValueInt("length");
 
 		OS::KVReader save_data;
+		const char *b64_str = NULL;
 
 		if (kv_set) {
 			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it = data_parser.GetHead();
@@ -342,6 +356,9 @@ namespace GS {
 			save_data = data;
 			client_data_len--;
 		}
+		else {
+			b64_str = OS::BinToBase64Str((uint8_t *)data.c_str(), client_data_len);
+		}
 
 		/* Some games send data-1... but its safe now with the new reader
 		if (!data.length() || client_data_len != data.length()) {
@@ -349,15 +366,25 @@ namespace GS {
 			return;
 		}*/
 
-		const char *b64_str = OS::BinToBase64Str((uint8_t *)data.c_str(), client_data_len);
-
 		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
 		persist_request_data->profileid = pid;
 		persist_request_data->operation_id = operation_id;
 		persist_request_data->wait_index = m_set_request_index++;
 
+		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
+		PersistBackendRequest req;
+		req.mp_peer = this;
+		req.mp_extra = persist_request_data;
+		req.type = EPersistRequestType_SetUserData;
+		req.callback = setPersistDataCallback;
+		req.data_type = persist_type;
+		req.data_index = data_index;
+		req.kv_set_data = save_data;
+		req.profileid = m_profile.id;
+		req.game_instance_identifier = b64_str;
+		IncRef();
+		scheduler->AddRequest(req.type, req);
 
-		GSBackend::PersistBackendTask::SubmitSetPersistData(m_profile.id, this, (void *)persist_request_data, setPersistDataCallback, b64_str, persist_type, data_index, kv_set, save_data);
 
 		free((void *)b64_str);
 	}
@@ -385,7 +412,7 @@ namespace GS {
 		persist_request_data->profileid = 0;
 		persist_request_data->operation_id = local_id;
 
-		TaskScheduler<GPPersistRequestData, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGPTask();
+		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = persist_request_data;
@@ -393,6 +420,7 @@ namespace GS {
 		req.callback = onGetGameDataCallback;
 		req.game_instance_identifier = gamename;
 		IncRef();
+		scheduler->AddRequest(req.type, req);
 
 	}
 	void Peer::onGetGameDataCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
@@ -437,7 +465,14 @@ namespace GS {
 	}
 	void Peer::handle_newgame(OS::KVReader data_parser) {
 		size_t session_id = (size_t)data_parser.GetValueInt("sesskey"); //identifier, used incase of multiple game sessions happening at once
-		//GSBackend::PersistBackendTask::SubmitNewGameSession(this, (void *)session_id, newGameCreateCallback);
+		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
+		PersistBackendRequest req;
+		req.mp_peer = this;
+		req.mp_extra = (void *)session_id;
+		req.type = EPersistRequestType_NewGame;
+		req.callback = newGameCreateCallback;
+		IncRef();
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::updateGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 	}
@@ -446,6 +481,8 @@ namespace GS {
 		int sesskey = data_parser.GetValueInt("sesskey");
 		mp_mutex->lock();
 		std::map<int, std::string>::iterator it = m_game_session_backend_identifier_map.find(sesskey);
+
+		//not found... must be a pending request XXX: check into this logic more!!
 		if(it == m_game_session_backend_identifier_map.end()) {
 			m_updgame_sesskey_wait_list[sesskey].push_back(data_parser);
 			this->IncRef();
@@ -469,16 +506,51 @@ namespace GS {
 				gamedata[i] = '\\';
 			}
 		}
+
 		game_data = OS::KeyStringToMap(gamedata);
-		GSBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_game_session_backend_identifier_map[sesskey], updateGameCreateCallback, done);
+		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
+		PersistBackendRequest req;
+		req.mp_peer = this;
+		req.mp_extra = NULL;
+		req.type = EPersistRequestType_UpdateGame;
+		req.callback = updateGameCreateCallback;
+		req.complete = done;
+		req.kvMap = game_data;
+		req.game_instance_identifier = m_game_session_backend_identifier_map[sesskey];
+		IncRef();
+		scheduler->AddRequest(req.type, req);
+
 		mp_mutex->unlock();
 	}
 
 	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {
-		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, NULL, operation_id, this);
+		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
+		PersistBackendRequest req;
+		req.mp_peer = this;
+		req.mp_extra = (void *)operation_id;
+		req.type = EPersistRequestType_Auth_ProfileID;
+		req.callback = getPersistDataCallback;
+		req.profileid = profileid;
+		req.game_instance_identifier = response;
+		req.modified_since = m_session_key;
+		req.authCallback = m_nick_email_auth_cb;
+		IncRef();
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::perform_preauth_auth(std::string auth_token, const char *response, int operation_id) {
-		OS::AuthTask::TryAuth_PreAuth_GStatsSessKey(m_session_key, response, auth_token, m_nick_email_auth_cb, NULL, operation_id, this);
+		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
+		PersistBackendRequest req;
+		req.mp_peer = this;
+		req.mp_extra = (void *)operation_id;
+		req.type = EPersistRequestType_Auth_ProfileID;
+		req.callback = getPersistDataCallback;
+		req.auth_token = auth_token;
+		req.game_instance_identifier = response;
+		req.modified_since = m_session_key;
+		req.data_index = operation_id;
+		req.authCallback = m_nick_email_auth_cb;
+		IncRef();
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::handle_authp(OS::KVReader data_parser) {
 		// TODO: CD KEY AUTH
@@ -506,7 +578,7 @@ namespace GS {
 		}
 
 	}
-	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 
 		if(!((Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())
 			((Peer *)peer)->m_backend_session_key = auth_data.session_key;
@@ -515,6 +587,7 @@ namespace GS {
 		((Peer *)peer)->m_profile = profile;
 
 		std::ostringstream ss;
+		int operation_id = (int)extra;
 
 
 		if(success) {
