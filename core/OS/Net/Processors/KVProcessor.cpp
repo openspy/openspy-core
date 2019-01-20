@@ -1,5 +1,5 @@
 #include "KVProcessor.h"
-KVProcessor::KVProcessor() : INetProcessor() {
+KVProcessor::KVProcessor() : INetProcessor<OS::KVReader>() {
     
 }
 

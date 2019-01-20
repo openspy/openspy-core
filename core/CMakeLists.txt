@@ -16,6 +16,9 @@ file (GLOB NET_EVENTMGR_SRCS "OS/Net/EventMgrs/*.cpp")
 file (GLOB NET_EVENTMGR_HDRS "OS/Net/EventMgrs/*.h")
 file (GLOB NET_IOIFACES_SRCS "OS/Net/IOIfaces/*.cpp")
 file (GLOB NET_IOIFACES_HDRS "OS/Net/IOIfaces/*.h")
+file (GLOB NET_PROCESSORS_SRCS "OS/Net/Processors/*.cpp")
+file (GLOB NET_PROCESSORS_HDRS "OS/Net/Processors/*.h")
+
 
 file (GLOB LEGACY_SRCS "OS/gamespy/*.cpp" "OS/gamespy/*.c")
 file (GLOB LEGACY_HDRS "OS/gamespy/*.h")
@@ -27,11 +30,20 @@ file (GLOB TIMER_SRCS "OS/Timer/*.cpp")
 file (GLOB TIMER_HDRS "OS/Timer/*.h")
 file (GLOB TASK_HDRS "OS/Task/*.h")
 
+file (GLOB SHAREDTASK_ACCOUNT_SRCS "OS/SharedTasks/Account/*.cpp")
+file (GLOB SHAREDTASK_AUTH_SRCS "OS/SharedTasks/Auth/*.cpp")
+file (GLOB SHAREDTASK_ACCOUNT_TASKS_SRCS "OS/SharedTasks/Account/tasks/*.cpp")
+file (GLOB SHAREDTASK_AUTH_TASKS_SRCS "OS/SharedTasks/Auth/tasks/*.cpp")
+file (GLOB SHAREDTASK_HDRS "OS/SharedTasks/*.h")
+file (GLOB SHAREDTASK_ACCOUNT_HDRS "OS/SharedTasks/Account/*.h")
+file (GLOB SHAREDTASK_AUTH_HDRS "OS/SharedTasks/Auth/*.h")
+
+
 file (GLOB MQ_SRCS "OS/MessageQueue/*.cpp" "OS/MessageQueue/rabbitmq/*.cpp")
 file (GLOB MQ_HDRS "OS/MessageQueue/*.h" "OS/MessageQueue/rabbitmq/*.h")
 
 
-set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${MQ_SRCS} ${MQ_HDRS} ${TASK_HDRS})
+set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${NET_PROCESSORS_SRCS} ${NET_PROCESSORS_HDRS} ${MQ_SRCS} ${MQ_HDRS} ${TASK_HDRS} ${SHAREDTASK_ACCOUNT_SRCS} ${SHAREDTASK_AUTH_SRCS} ${SHAREDTASK_ACCOUNT_TASKS_SRCS} ${SHAREDTASK_AUTH_TASKS_SRCS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 

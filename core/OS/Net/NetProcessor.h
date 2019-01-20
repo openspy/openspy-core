@@ -12,16 +12,19 @@ class INetProcessor {
     //typedef bool (*DecryptionHandler)(OS::Buffer &buffer, O *data, INetPeer *peer);
     typedef bool (*DispatchHandler)(O *data, INetPeer *peer);
     public:
-		INetProcessor<O>::INetProcessor() {
+		INetProcessor<O>() {
 
 		}
-		void INetProcessor<O>::SetHandler(DispatchHandler *handler) {
+		virtual ~INetProcessor<O>() {
+			
+		}
+		void SetHandler(DispatchHandler *handler) {
 			mp_handler = handler;
 		}
-		bool INetProcessor<O>::ProcessIncoming(OS::Buffer &buffer, O &output, INetPeer *peer) {
+		bool ProcessIncoming(OS::Buffer &buffer, O &output, INetPeer *peer) {
 			return deserialize_data(buffer, output);
 		}
-		bool INetProcessor<O>::SerializeData(O data, OS::Buffer &buffer) {
+		bool SerializeData(O data, OS::Buffer &buffer) {
 			return serialize_data(data, buffer);
 		}
     protected:
