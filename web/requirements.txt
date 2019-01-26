@@ -1,9 +1,0 @@
-uwsgi
-simplejson
-peewee
-PyJWT
-redis
-PyMySQL
-rsa
-ipaddress
-pymongo
