@@ -40,7 +40,7 @@ namespace GS {
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = (void *)operation_id;
-		req.type = EPersistRequestType_Auth_ProfileID;
+		req.type = EPersistRequestType_Auth_AuthTicket;
 		req.callback = getPersistDataCallback;
 		req.auth_token = auth_token;
 		req.game_instance_identifier = response;

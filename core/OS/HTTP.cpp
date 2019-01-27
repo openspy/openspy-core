@@ -71,6 +71,9 @@ namespace OS {
 				resp.buffer = data.buffer;
 				
 			}
+			else {
+				resp.status_code = 0;
+			}
 			curl_easy_cleanup(curl);
 		}
 

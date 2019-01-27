@@ -270,15 +270,6 @@ namespace GS {
 	    }
 	    return(num);
 	}
-	void Peer::gs_sesskey(int sesskey, char *out) {
-	    int         i = 17;
-		char 		*p;
-
-	    sprintf(out, "%.8x", sesskey ^ 0x38f371e6);
-	    for(p = out; *p; p++, i++) {
-	        *p += i;
-	    }
-	}
 
 	int Peer::GetProfileID() {
 		return m_profile.id;

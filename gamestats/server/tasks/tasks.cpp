@@ -8,6 +8,8 @@ namespace GS {
 			scheduler->AddRequestHandler(EPersistRequestType_NewGame, Perform_NewGame);
 			scheduler->AddRequestHandler(EPersistRequestType_UpdateGame, Perform_UpdateGame);
 			scheduler->AddRequestHandler(EPersistRequestType_GetGameInfoByGamename, Perform_GetGameInfo);
+			scheduler->AddRequestHandler(EPersistRequestType_Auth_ProfileID, Perform_ProfileIDAuth);
+			scheduler->AddRequestHandler(EPersistRequestType_Auth_AuthTicket, Perform_AuthTokenAuth);
 
 			scheduler->DeclareReady();
 
