@@ -2,6 +2,7 @@
 #include <sstream>
 #include <OS/HTTP.h>
 #include <server/GSPeer.h>
+#include <algorithm>
 namespace GS {
 	bool Perform_GetUserKeyedData(PersistBackendRequest request, TaskThreadData *thread_data) {
 		json_t *send_json = json_object(), *profile_obj = json_object(), *game_obj = json_object();
