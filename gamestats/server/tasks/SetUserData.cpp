@@ -45,7 +45,7 @@ namespace GS {
 
 		OS::HTTPResponse resp = client.Post(json_data, request.mp_peer);
 
-		//free(json_data);
+		free(json_data);
 		json_decref(send_json);
 
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
@@ -57,12 +57,17 @@ namespace GS {
 			success = true;
 			resp_data.mod_time = (uint32_t)json_integer_value(success_obj);
 		}
-		else {
-			return false;
+		else if (json_is_array(send_json) && json_array_size(send_json) > 0) {
+			success_obj = json_array_get(send_json, 0);
+			success_obj = json_object_get(success_obj, "modified");
+			if (success_obj) {
+				success = true;
+				resp_data.mod_time = (uint32_t)json_integer_value(success_obj);
+			}			
 		}
 		request.callback(success, resp_data, request.mp_peer, request.mp_extra);
 
 		json_decref(send_json);
-		return false;
+		return true;
 	}
 }
