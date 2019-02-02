@@ -103,6 +103,7 @@ namespace GP {
 
 	void Peer::RegisterCommands() {
 		std::vector<CommandEntry> commands;
+		commands.push_back(CommandEntry("newuser", false, &Peer::handle_newuser));
 		commands.push_back(CommandEntry("login", false, &Peer::handle_login));
 		commands.push_back(CommandEntry("ka", false, &Peer::handle_keepalive));
 		commands.push_back(CommandEntry("logout", false, &Peer::handle_logout));

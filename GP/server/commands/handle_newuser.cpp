@@ -67,6 +67,7 @@ namespace GP {
 		TaskShared::UserRequest req;
 		req.type = TaskShared::EUserRequestType_Create;
 		req.peer = this;
+		req.extra = (void *)id;
 		req.peer->IncRef();
 
 		req.profile_params.nick = nick;
