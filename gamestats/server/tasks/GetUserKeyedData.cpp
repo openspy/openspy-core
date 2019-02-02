@@ -67,16 +67,6 @@ namespace GS {
                 }
             }
 
-            //loop requested keys, filling in null response
-            it = request.keyList.begin();
-            int i = 0;
-            while(it != request.keyList.end()) {
-                std::string s = *it;
-                if(std::find(found_keys.begin(), found_keys.end(), s) == found_keys.end()) {
-                    ss << "\\"  << s << "\\\\";
-                }
-                it++;
-		    }
             resp_data.kv_data = ss.str();
 		}
 

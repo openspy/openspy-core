@@ -11,21 +11,25 @@ namespace OS {
 			FALSE,              // initial state is nonsignaled
 			TEXT(name)  // object name
 		);
+		m_signal_count = 0;
 	}
 	CWin32ThreadPoller::~CWin32ThreadPoller() {
 		CloseHandle(m_handle);
 	}
 	bool CWin32ThreadPoller::wait(uint64_t time_ms) {
 		ResetEvent(m_handle);
-		if(time_ms == 0) {
-			WaitForSingleObject(m_handle, INFINITE);
-		} else {
-			WaitForSingleObject(m_handle, time_ms);
+		if (m_signal_count == 0) {		
+			if(time_ms == 0) {
+				WaitForSingleObject(m_handle, INFINITE);
+			} else {
+				WaitForSingleObject(m_handle, time_ms);
+			}
 		}
-		
+		CMutex::SafeDecr(&m_signal_count);
 		return true;
 	}
 	void CWin32ThreadPoller::signal() {
+		CMutex::SafeIncr(&m_signal_count);
 		SetEvent(m_handle);
 	}
 }
