@@ -32,6 +32,9 @@ namespace GP {
 		}
 	}
 	void Peer::send_revoke_message(int from_profileid, int date_unix_timestamp) {
+		m_buddies.erase(from_profileid);
+		inform_status_update(from_profileid, GPShared::gp_default_status, true);
+		
 		std::ostringstream s;
 		s << "\\bm\\" << GPI_BM_REVOKE;
 		s << "\\f\\" << from_profileid;
@@ -41,6 +44,5 @@ namespace GP {
 			s << "\\date\\" << date_unix_timestamp;
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 
-		//refresh_buddy_list();
 	}
 }

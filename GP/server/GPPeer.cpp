@@ -52,15 +52,17 @@ namespace GP {
 		delete mp_mutex;
 	}
 	void Peer::Delete(bool timeout) {
-		GPBackendRedisRequest req;
-		req.type = EGPRedisRequestType_UpdateStatus;
-		req.peer = this;
-		req.peer->IncRef();
-		req.StatusInfo = GPShared::gp_default_status;
-		req.extra = (void *)req.peer;
+		if(m_profile.id != 0) {
+			GPBackendRedisRequest req;
+			req.type = EGPRedisRequestType_UpdateStatus;
+			req.peer = this;
+			req.peer->IncRef();
+			req.StatusInfo = GPShared::gp_default_status;
+			req.extra = (void *)req.peer;
 
-		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
-		scheduler->AddRequest(req.type, req);
+			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+			scheduler->AddRequest(req.type, req);
+		}
 
 		m_delete_flag = true;
 		m_timeout_flag = timeout;
