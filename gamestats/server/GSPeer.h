@@ -81,9 +81,11 @@ namespace GS {
 		void handle_setpd(OS::KVReader data_parser);
 
 		//login
+		void perform_cdkey_auth(std::string cdkey, std::string response, int operation_id);
 		void perform_preauth_auth(std::string auth_token, const char *response, int operation_id);
 		void perform_pid_auth(int profileid, const char *response, int operation_id);
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
+		static void m_getpid_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 
 
 		void SendOrWaitBuffer(uint32_t index, WaitBufferCtx &wait_ctx, OS::Buffer buffer);
@@ -92,11 +94,16 @@ namespace GS {
 		WaitBufferCtx m_setpd_wait_ctx; //setpd must respond in order of request, as "lid" value is not always used
 		int m_set_request_index;
 
+		int m_getpid_request_index;
+		WaitBufferCtx m_getpid_wait_ctx; //getpid must respond in order of request, as "lid" value is not always used
+
 
 		//incase updgame calls are sent prior to the retrieval of the backend identify, save calls by client provided sesskey
 		#define MAX_SESSKEY_WAIT 10
 		std::map<int, std::vector<OS::KVReader> > m_updgame_sesskey_wait_list;
 		int m_updgame_increfs;
+		int m_last_authp_operation_id;
+		std::vector<int> m_authenticated_profileids;
 
 
 		void send_error(GPShared::GPErrorCode code);

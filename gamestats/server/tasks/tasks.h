@@ -35,11 +35,14 @@ namespace GS {
 	enum EPersistRequestType {
 		EPersistRequestType_SetUserData,
 		EPersistRequestType_GetUserData,
+		EPersistRequestType_GetUserKeyedData,
 		EPersistRequestType_NewGame,
 		EPersistRequestType_UpdateGame,
 		EPersistRequestType_GetGameInfoByGamename,
 		EPersistRequestType_Auth_ProfileID,
 		EPersistRequestType_Auth_AuthTicket,
+		EPersistRequestType_Auth_CDKey,
+		EPersistRequestType_GetProfileIDFromCDKey
 	};
 
 	typedef struct {
@@ -80,11 +83,14 @@ namespace GS {
 
     bool Perform_GetGameInfo(PersistBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_GetUserData(PersistBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_GetUserKeyedData(PersistBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_SetUserData(PersistBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_NewGame(PersistBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UpdateGame(PersistBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_ProfileIDAuth(PersistBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_AuthTokenAuth(PersistBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_CDKeyAuth(PersistBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_GetProfileIDFromCD(PersistBackendRequest request, TaskThreadData *thread_data);
 
 	TaskScheduler<PersistBackendRequest, TaskThreadData> *InitTasks(INetServer *server);
 

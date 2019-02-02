@@ -11,11 +11,10 @@ namespace GS {
 
 		json_object_set_new(send_json, "DataIndex", json_integer(request.data_index));
 		json_object_set_new(send_json, "PersistType", json_integer(request.data_type));
-		json_object_set_new(send_json, "modifiedSince", json_integer(request.modified_since));
 
 		std::string url = std::string(OS::g_webServicesURL);
 
-		if (request.keyList.size() > 0) {
+		if (request.data_kv_set) {
 			url += "/v1/Persist/Storage/SetKVData";
 			json_t *key_obj = json_object();
 			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it = request.kv_set_data.GetHead();
@@ -23,7 +22,9 @@ namespace GS {
 			while (it.first != it.second) {
 				std::pair< std::string, std::string> item = *it.first;
 
-				json_object_set_new(key_obj, item.first.c_str(), json_string(item.second.c_str()));
+				const char *b64_str = OS::BinToBase64Str((uint8_t *)item.second.c_str(), item.second.length());
+				json_object_set_new(key_obj, item.first.c_str(), json_string(b64_str));
+				free((void *)b64_str);
 				it.first++;
 			}
 
@@ -44,7 +45,7 @@ namespace GS {
 
 		OS::HTTPResponse resp = client.Post(json_data, request.mp_peer);
 
-		free(json_data);
+		//free(json_data);
 		json_decref(send_json);
 
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
@@ -55,6 +56,9 @@ namespace GS {
 		if (success_obj) {
 			success = true;
 			resp_data.mod_time = (uint32_t)json_integer_value(success_obj);
+		}
+		else {
+			return false;
 		}
 		request.callback(success, resp_data, request.mp_peer, request.mp_extra);
 

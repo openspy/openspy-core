@@ -3,15 +3,12 @@
 #include <OS/HTTP.h>
 #include <server/GSPeer.h>
 namespace GS {
-	bool Perform_AuthTokenAuth(PersistBackendRequest request, TaskThreadData *thread_data) {
+	bool Perform_GetProfileIDFromCD(PersistBackendRequest request, TaskThreadData *thread_data) {
 		json_t *send_json = json_object(), *profile_obj = json_object();
 
-		json_object_set_new(send_json, "client_response", json_string(request.game_instance_identifier.c_str()));
-		json_object_set_new(send_json, "auth_token", json_string(request.auth_token.c_str()));
+		json_object_set_new(send_json, "cdkey", json_string(request.auth_token.c_str()));
 
-		json_object_set_new(send_json, "session_key", json_integer(request.modified_since));
-
-		std::string url = std::string(OS::g_webServicesURL) + "/v1/Persist/Auth/PreAuth";
+		std::string url = std::string(OS::g_webServicesURL) + "/v1/Persist/Auth/ProfileFromCDKey";
 
 		OS::HTTPClient client(url);
 		PersistBackendResponse resp_data;
@@ -47,6 +44,7 @@ namespace GS {
 			if (profile) {
 				auth_user = OS::LoadUserFromJson(profile);
 			}
+
 		}
 		request.authCallback(success, auth_user, auth_profile, auth_data, request.mp_extra, request.mp_peer);
 		json_decref(send_json);

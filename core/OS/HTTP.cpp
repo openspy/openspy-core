@@ -5,16 +5,14 @@ namespace OS {
 	    std::string buffer;
 	};
 	/* callback for curl fetch */
-	size_t HTTPClient::curl_callback (void *contents, size_t size, size_t nmemb, void *userp) {
-		if(!contents) {
+	size_t HTTPClient::curl_callback(void *contents, size_t size, size_t nmemb, void *userp) {
+		if (!contents) {
 			return 0;
 		}
-	    size_t realsize = size * nmemb;                             /* calculate buffer size */
-	    curl_data *data = (curl_data *)userp;
-		const char *p = (const char *)contents;
-		data->buffer += (p);
-
-	    return realsize;
+		size_t realsize = size * nmemb;                             /* calculate buffer size */
+		curl_data *data = (curl_data *)userp;
+		data->buffer += OS::strip_whitespace((const char *)contents).c_str();
+		return realsize;
 	}
 	HTTPClient::~HTTPClient() {
 

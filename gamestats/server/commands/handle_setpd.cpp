@@ -40,8 +40,11 @@ namespace GS {
 
 		persisttype_t persist_type = (persisttype_t)data_parser.GetValueInt("ptype");
 
+		mp_mutex->lock();
+		bool profile_authenticated = std::find(m_authenticated_profileids.begin(), m_authenticated_profileids.end(), pid) != m_authenticated_profileids.end();
+		mp_mutex->unlock();
 
-		if(pid != m_profile.id || persist_type == pd_public_ro || persist_type == pd_private_ro) {
+		if(!profile_authenticated || persist_type == pd_public_ro || persist_type == pd_private_ro) {
 			send_error(GPShared::GP_NOT_LOGGED_IN);
 			return;
 		}
@@ -55,23 +58,7 @@ namespace GS {
 		const char *b64_str = NULL;
 
 		if (kv_set) {
-			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it = data_parser.GetHead();
-			bool found_end = false;
-			std::ostringstream ss;
-			while (it.first != it.second) {
-				std::pair< std::string, std::string> item = *it.first;
-				
-				if (found_end) {
-					ss << "\\" << item.first << "\\" << item.second;
-				}
-				if (item.first.compare("data") == 0) {
-					found_end = true;
-				}
-				it.first++;
-			}
-
-			data = ss.str();
-			save_data = data;
+			save_data = data_parser.GetValue("data");
 			client_data_len--;
 		}
 		else {
@@ -98,12 +85,17 @@ namespace GS {
 		req.data_type = persist_type;
 		req.data_index = data_index;
 		req.kv_set_data = save_data;
+		req.data_kv_set = kv_set;
 		req.profileid = m_profile.id;
-		req.game_instance_identifier = b64_str;
+		if (b64_str) {
+			req.game_instance_identifier = b64_str;
+			free((void *)b64_str);
+		}
+		
 		IncRef();
 		scheduler->AddRequest(req.type, req);
 
 
-		free((void *)b64_str);
+		
 	}
 }

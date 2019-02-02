@@ -39,6 +39,7 @@ namespace GS {
 			success = false;
 		}
 		else {
+			success = true;
 			auth_data.response_code = TaskShared::LOGIN_RESPONSE_SUCCESS;
 			profile = json_object_get(send_json, "profile");
 			if (profile) {

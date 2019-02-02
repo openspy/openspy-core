@@ -50,6 +50,21 @@ namespace GS {
 		IncRef();
 		scheduler->AddRequest(req.type, req);
 	}
+	void Peer::perform_cdkey_auth(std::string cdkey, std::string response, int operation_id) {
+		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
+		PersistBackendRequest req;
+		req.mp_peer = this;
+		req.mp_extra = (void *)operation_id;
+		req.type = EPersistRequestType_Auth_CDKey;
+		req.callback = getPersistDataCallback;
+		req.auth_token = cdkey;
+		req.game_instance_identifier = response;
+		req.modified_since = m_session_key;
+		req.data_index = operation_id;
+		req.authCallback = m_nick_email_auth_cb;
+		IncRef();
+		scheduler->AddRequest(req.type, req);
+	}
 	void Peer::handle_authp(OS::KVReader data_parser) {
 		// TODO: CD KEY AUTH
 		int pid = data_parser.GetValueInt("pid");
@@ -64,8 +79,14 @@ namespace GS {
 
 		resp = data_parser.GetValue("resp");
 
+		if (operation_id > m_last_authp_operation_id) {
+			m_last_authp_operation_id = operation_id;
+		}
+
 		if(pid != 0) {
 			perform_pid_auth(pid, resp.c_str(), operation_id);
+		} else if(data_parser.HasKey("keyhash")) {
+			perform_cdkey_auth(data_parser.GetValue("keyhash"), resp, operation_id);
 		} else {
 			if (data_parser.HasKey("authtoken")) {
 				std::string auth_token = data_parser.GetValue("authtoken");
@@ -78,14 +99,20 @@ namespace GS {
 	}
 	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 
+		((Peer *)peer)->mp_mutex->lock();
 		if(!((Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())
 			((Peer *)peer)->m_backend_session_key = auth_data.session_key;
 
-		((Peer *)peer)->m_user = user;
-		((Peer *)peer)->m_profile = profile;
 
 		std::ostringstream ss;
 		int operation_id = (int)extra;
+
+		if (operation_id >= ((Peer *)peer)->m_last_authp_operation_id) {
+			((Peer *)peer)->m_user = user;
+			((Peer *)peer)->m_profile = profile;
+		}
+
+		((Peer *)peer)->m_authenticated_profileids.push_back(profile.id);
 
 
 		if(success) {
@@ -136,5 +163,6 @@ namespace GS {
 			ss << "\\lid\\" << operation_id;
 			((Peer *)peer)->SendPacket(ss.str());
 		}
+		((Peer *)peer)->mp_mutex->unlock();
 	}
 }

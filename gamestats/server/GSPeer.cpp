@@ -48,8 +48,13 @@ namespace GS {
 		m_set_request_index = 0;
 		m_setpd_wait_ctx.mutex = OS::CreateMutex();
 
-		m_updgame_increfs = 0;
+		m_getpid_request_index = 0;
+		m_getpid_wait_ctx.wait_index = 0;
+		m_getpid_wait_ctx.top_index = 0;
+		m_getpid_wait_ctx.mutex = OS::CreateMutex();
 
+		m_updgame_increfs = 0;
+		m_last_authp_operation_id = 0;
 		m_xor_index = 0;
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",m_sd->address.ToString().c_str());
@@ -60,6 +65,7 @@ namespace GS {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", m_sd->address.ToString().c_str());
 		delete m_getpd_wait_ctx.mutex;
 		delete m_setpd_wait_ctx.mutex;
+		delete m_getpid_wait_ctx.mutex;
 		delete mp_mutex;
 	}
 	void Peer::send_login_challenge(int type) {

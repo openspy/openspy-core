@@ -51,7 +51,10 @@ namespace GS {
 			std::ostringstream kv_ss;
 			while (it.first != it.second) {
 				std::pair< std::string, std::string> item = *it.first;
-				kv_ss << "\\" << item.first << "\\" << item.second;
+				OS::Base64StrToBin(item.second.c_str(), &data, data_len);
+				kv_ss << "\\" << item.first << "\\" << data;
+				free((void *)data);
+				data = NULL;
 				it.first++;
 			}
 			data_len = kv_ss.str().length();
@@ -92,7 +95,10 @@ namespace GS {
 		persisttype_t persist_type = (persisttype_t)data_parser.GetValueInt("ptype");
 
 		if(persist_type == pd_private_ro || persist_type == pd_private_rw) {
-			if(pid != m_profile.id)	{
+			mp_mutex->lock();
+			bool profile_authenticated = std::find(m_authenticated_profileids.begin(), m_authenticated_profileids.end(), pid) != m_authenticated_profileids.end();
+			mp_mutex->unlock();
+			if (!profile_authenticated) {
 				send_error(GPShared::GP_NOT_LOGGED_IN);
 				return;
 			}
@@ -137,7 +143,7 @@ namespace GS {
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = persist_request_data;
-		req.type = EPersistRequestType_GetUserData;
+		req.type = keyList.size() > 0  ? EPersistRequestType_GetUserKeyedData : EPersistRequestType_GetUserData;
 		req.callback = getPersistDataCallback;
 		req.data_type = persist_type;
 		req.data_index = data_index;
