@@ -148,7 +148,7 @@ namespace GS {
 		req.data_type = persist_type;
 		req.data_index = data_index;
 		req.keyList = keyList;
-		req.profileid = m_profile.id;
+		req.profileid = pid;
 		req.modified_since = modified_since;
 		IncRef();
 		scheduler->AddRequest(req.type, req);
