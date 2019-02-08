@@ -23,8 +23,6 @@ namespace GP {
 		TaskShared::AuthData auth_data;
 		bool success = false;
 
-		auth_data.response_code = TaskShared::LOGIN_RESPONSE_SERVER_ERROR;
-
 
 		if (curl) {
 			GPReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
@@ -34,10 +32,8 @@ namespace GP {
 			if (res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if (json_data) {
-					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if (error_obj) {
-						Handle_WebError(auth_data, error_obj);
+					if (TaskShared::Handle_WebError(json_data, auth_data.error_details)) {
 					}
 					else if (success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
@@ -46,7 +42,6 @@ namespace GP {
 							json_t *user_json = json_object_get(json_data, "user");
 							if (user_json) {
 								user = OS::LoadUserFromJson(user_json);
-								auth_data.response_code = TaskShared::LOGIN_RESPONSE_SUCCESS;
 								success = true;
 							}
 						}

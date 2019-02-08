@@ -1,7 +1,8 @@
 #ifndef _NETEVENTMGR_H
 #define _NETEVENTMGR_H
-#include "NetDriver.h"
 #include <vector>
+class INetDriver;
+class INetPeer;
 class INetEventManager {
 	public:
 		INetEventManager();

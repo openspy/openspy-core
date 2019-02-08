@@ -6,16 +6,8 @@
 #include <OS/User.h>
 #include <OS/GPShared.h>
 namespace TaskShared {
-	enum EProfileResponseType {
-		EProfileResponseType_Success,
-		EProfileResponseType_GenericError,
-		EProfileResponseType_BadNick,
-		EProfileResponseType_Bad_OldNick,
-		EProfileResponseType_UniqueNick_Invalid,
-		EProfileResponseType_UniqueNick_InUse,
-	};
-	typedef void (*ProfileSearchCallback)(EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
-	typedef void (*ProfileSearchBuddyCallback)(EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer);
+	typedef void (*ProfileSearchCallback)(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+	typedef void (*ProfileSearchBuddyCallback)(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer);
 
 
 	enum EProfileTaskType {
@@ -49,7 +41,6 @@ namespace TaskShared {
 	bool Perform_BuddyRequest(ProfileRequest request, TaskThreadData *thread_data);
 
 	void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileRequest request);
-	EProfileResponseType Handle_ProfileWebError(ProfileRequest req, json_t *error_obj);
 	bool PerformProfileRequest(ProfileRequest request, TaskThreadData *thread_data);
 }
 #endif //OS_TASKS_PROFILE_TASKS_H

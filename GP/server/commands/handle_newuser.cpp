@@ -1,6 +1,3 @@
-#include <GP/server/GPPeer.h>
-#include <GP/server/GPDriver.h>
-#include <GP/server/GPServer.h>
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
 
@@ -13,6 +10,10 @@
 
 #include <OS/gamespy/gamespy.h>
 #include <tasks/tasks.h>
+
+#include <GP/server/GPPeer.h>
+#include <GP/server/GPDriver.h>
+#include <GP/server/GPServer.h>
 
 namespace GP {
 	void Peer::handle_newuser(OS::KVReader data_parser) {
@@ -90,21 +91,21 @@ namespace GP {
 
 		if (!success) {
 			err_code = (int)GP_NEWUSER_BAD_NICK;
-			switch (auth_data.user_response_code) {
-				case TaskShared::EUserResponseType_Profile_UniqueNickInUse:
-					err_code = GP_NEWUSER_BAD_NICK;
+			switch (auth_data.error_details.response_code) {
+			case TaskShared::WebErrorCode_UniqueNickInUse:
+					err_code = GP_NEWUSER_UNIQUENICK_INUSE;
 					break;
-				case TaskShared::EUserResponseType_UserExists:
+				case TaskShared::WebErrorCode_AuthInvalidCredentials:
 					err_code = GP_NEWUSER_BAD_PASSWORD;
 					break;
-				case TaskShared::EUserResponseType_Profile_InvalidNick:
+				case TaskShared::WebErrorCode_NickInvalid:
 					err_code = GP_NEWUSER_BAD_NICK;
 					break;
-				case TaskShared::EUserResponseType_Profile_InvalidUniqueNick:
+				case TaskShared::WebErrorCode_UniqueNickInvalid:
 					err_code = GP_NEWUSER_UNIQUENICK_INVALID;
 					break;
 				default:
-				case TaskShared::EUserResponseType_GenericError:
+				case TaskShared::WebErrorCode_BackendError:
 					err_code = GP_DATABASE;
 			}
 			if (profile.id != 0)

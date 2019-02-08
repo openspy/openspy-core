@@ -1,6 +1,3 @@
-#include <GP/server/GPPeer.h>
-#include <GP/server/GPDriver.h>
-#include <GP/server/GPServer.h>
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
 
@@ -12,7 +9,12 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
+#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
+
+#include <GP/server/GPPeer.h>
+#include <GP/server/GPDriver.h>
+#include <GP/server/GPServer.h>
 
 namespace GP {
 	void Peer::send_list_status() {
@@ -48,7 +50,7 @@ namespace GP {
 			it++;
 		}
 	}
-    void Peer::m_block_list_lookup_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer) {
+    void Peer::m_block_list_lookup_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
@@ -70,7 +72,7 @@ namespace GP {
 		((GP::Peer *)peer)->mp_mutex->unlock();
 		((GP::Peer *)peer)->send_list_status();
     }
-    void Peer::m_buddy_list_lookup_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer) {
+    void Peer::m_buddy_list_lookup_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();

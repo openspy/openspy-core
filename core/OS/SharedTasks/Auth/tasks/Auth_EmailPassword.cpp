@@ -1,4 +1,5 @@
 #include <OS/SharedTasks/tasks.h>
+#include <OS/Net/NetPeer.h>
 #include "../AuthTasks.h"
 namespace TaskShared {
     bool PerformAuth_Email_Password(AuthRequest request, TaskThreadData *thread_data) {
@@ -26,7 +27,6 @@ namespace TaskShared {
 		profile.id = 0;
 		TaskShared::AuthData auth_data;
 
-		auth_data.response_code = TaskShared::LOGIN_RESPONSE_SERVER_ERROR;
 		bool success = false;
 		if (curl) {
 
@@ -37,13 +37,11 @@ namespace TaskShared {
 			if (res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if (json_data) {
-					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if (error_obj) {
-						Handle_AuthWebError(auth_data, error_obj);
+					if (Handle_WebError(json_data, auth_data.error_details)) {
+						
 					}
 					else if (success_obj == json_true()) {
-						auth_data.response_code = TaskShared::LOGIN_RESPONSE_SUCCESS;
 						success = true;
 						json_t *session_key_json = json_object_get(json_data, "session_key");
 						if (session_key_json) {

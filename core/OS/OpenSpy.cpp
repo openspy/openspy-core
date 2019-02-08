@@ -4,7 +4,6 @@
 #include <curl/curl.h>
 #include <iomanip>
 
-#include "Auth.h"
 #include "Logger.h"
 
 #ifndef _WIN32
@@ -13,7 +12,6 @@
 	#include "OS/Logger/Win32/Win32Logger.h"
 #endif
 
-#include <OS/Auth.h>
 #include <OS/Search/User.h>
 #include <OS/Search/Profile.h>
 #include <OS/Config/AppConfig.h>

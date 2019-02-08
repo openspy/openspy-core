@@ -1,3 +1,5 @@
+#include <OS/OpenSpy.h>
+#include <OS/Net/NetPeer.h>
 #include <OS/SharedTasks/tasks.h>
 #include "ProfileTasks.h"
 #include "UserTasks.h"
@@ -85,43 +87,6 @@ namespace TaskShared {
 
 			/* Close socket after one use */
 			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
-		}
-		EProfileResponseType Handle_ProfileWebError(ProfileRequest req, json_t *error_obj) {
-			std::string error_class, error_name, param_name;
-			json_t *item = json_object_get(error_obj, "class");
-			if (!item) goto end_error;
-			error_class = json_string_value(item);
-
-			item = json_object_get(error_obj, "name");
-			if (!item) goto end_error;
-			error_name = json_string_value(item);
-
-			item = json_object_get(error_obj, "param");
-			if (item) {
-				param_name = json_string_value(item);
-			}
-
-			if (error_class.compare("common") == 0) {
-				if (error_name.compare("MissingParam") == 0 || error_name.compare("InvalidMode") == 0) {
-					return EProfileResponseType_GenericError;
-				}
-				else if (error_name.compare("InvalidParam") == 0) {
-					if (param_name.compare("UniqueNick") == 0) {
-						return EProfileResponseType_UniqueNick_Invalid;
-					}
-				}
-			}
-			else if (error_class.compare("auth") == 0) {
-				return EProfileResponseType_GenericError;
-			}
-			else if (error_class.compare("profile") == 0) {
-				if (error_name.compare("UniqueNickInUse") == 0) {
-					return EProfileResponseType_UniqueNick_InUse;
-				}
-			}
-		end_error:
-			return EProfileResponseType_GenericError;
-
 		}
 		bool PerformProfileRequest(ProfileRequest request, TaskThreadData *thread_data) {
 			curl_data recv_data;
@@ -243,7 +208,7 @@ namespace TaskShared {
 
 			CURL *curl = curl_easy_init();
 			CURLcode res;
-			EProfileResponseType error = EProfileResponseType_GenericError;
+			TaskShared::WebErrorDetails error_details;
 			if (curl) {
 
 				ProfileReq_InitCurl(curl, json_string, (void *)&recv_data, request);
@@ -254,11 +219,8 @@ namespace TaskShared {
 					json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 
 					if (json_data) {
-						error = EProfileResponseType_Success;
-						json_t *error_obj = json_object_get(json_data, "error");
+						if (Handle_WebError(json_data, error_details)) {
 
-						if (error_obj) {
-							error = Handle_ProfileWebError(request, error_obj);
 						}
 						else if (json_is_array(json_data)) {
 							size_t num_profiles = json_array_size(json_data);
@@ -283,7 +245,7 @@ namespace TaskShared {
 						json_decref(json_data);
 					}
 					else {
-						error = EProfileResponseType_GenericError;
+						error_details.response_code = TaskShared::WebErrorCode_BackendError;
 					}
 				}
 				curl_easy_cleanup(curl);
@@ -295,7 +257,7 @@ namespace TaskShared {
 			if (send_obj)
 				json_decref(send_obj);
 
-			request.callback(error, results, users_map, request.extra, request.peer);
+			request.callback(error_details, results, users_map, request.extra, request.peer);
 			return true;
 		}
 		bool PerformUserRequest(UserRequest request, TaskThreadData *thread_data) {
@@ -309,7 +271,7 @@ namespace TaskShared {
 
 			CURL *curl = curl_easy_init();
 			CURLcode res;
-			EUserResponseType resp_type = EUserResponseType_Success;
+			TaskShared::WebErrorDetails error_details;
 
 			if (curl) {
 				std::string url = std::string(OS::g_webServicesURL) + "/v1/User/lookup";
@@ -363,18 +325,19 @@ namespace TaskShared {
 				if (res == CURLE_OK) {
 					root = json_loads(recv_data.buffer.c_str(), 0, NULL);
 					if (root) {
-						if (json_array_size(root) > 0) {
+						if (Handle_WebError(root, error_details)) {
+
+						} else if (json_array_size(root) > 0) {
 							OS::User user = OS::LoadUserFromJson(json_array_get(root, 0));
 							results.push_back(user);
-							resp_type = EUserResponseType_Success;
 						}
 					}
 					else {
-						resp_type = EUserResponseType_GenericError;
+						error_details.response_code = TaskShared::WebErrorCode_BackendError;
 					}
 				}
 				else {
-					resp_type = EUserResponseType_GenericError;
+					error_details.response_code = TaskShared::WebErrorCode_BackendError;
 				}
 				curl_easy_cleanup(curl);
 			}
@@ -391,7 +354,7 @@ namespace TaskShared {
 
 
 			if (request.callback != NULL)
-				request.callback(resp_type, results, request.extra, request.peer);
+				request.callback(error_details, results, request.extra, request.peer);
 			return true;
 		}
 }

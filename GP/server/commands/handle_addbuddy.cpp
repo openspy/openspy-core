@@ -1,6 +1,4 @@
-#include <GP/server/GPPeer.h>
-#include <GP/server/GPDriver.h>
-#include <GP/server/GPServer.h>
+
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
 
@@ -13,6 +11,10 @@
 
 #include <OS/gamespy/gamespy.h>
 #include <tasks/tasks.h>
+
+#include <GP/server/GPPeer.h>
+#include <GP/server/GPDriver.h>
+#include <GP/server/GPServer.h>
 
 namespace GP {
 	void Peer::handle_addbuddy(OS::KVReader data_parser) {

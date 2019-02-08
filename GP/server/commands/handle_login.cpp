@@ -1,6 +1,3 @@
-#include <GP/server/GPPeer.h>
-#include <GP/server/GPDriver.h>
-#include <GP/server/GPServer.h>
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
 
@@ -13,6 +10,10 @@
 
 #include <OS/gamespy/gamespy.h>
 #include <tasks/tasks.h>
+
+#include <GP/server/GPPeer.h>
+#include <GP/server/GPDriver.h>
+#include <GP/server/GPServer.h>
 
 namespace GP {
     	void Peer::handle_login(OS::KVReader data_parser) {
@@ -161,25 +162,20 @@ namespace GP {
 
 			((GP::Peer *)peer)->send_backend_auth_event();
 		} else {
-			switch(auth_data.response_code) {
-				case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
+			switch(auth_data.error_details.response_code) {
+				case TaskShared::WebErrorCode_NoSuchUser:
 					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_EMAIL);
 				break;
-				case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
+				case TaskShared::WebErrorCode_AuthInvalidCredentials:
 					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_PASSWORD);
 				break;
-				case OS::LOGIN_RESPONSE_INVALID_PROFILE:
+				case TaskShared::WebErrorCode_NickInvalid:
 					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_PROFILE);
 				break;
-				case OS::LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED:
+				case TaskShared::WebErrorCode_UniqueNickInvalid:
 					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_UNIQUENICK);
 				break;
-				case OS::LOGIN_RESPONSE_DB_ERROR:
-					((GP::Peer *)peer)->send_error(GP_DATABASE);
-				break;
-				default:
-				case OS::LOGIN_RESPONSE_SERVERINITFAILED:
-				case OS::LOGIN_RESPONSE_SERVER_ERROR:
+				case TaskShared::WebErrorCode_BackendError:
 					((GP::Peer *)peer)->send_error(GP_NETWORK);
 				break;
 			}

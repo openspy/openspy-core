@@ -1,5 +1,7 @@
+#include <OS/OpenSpy.h>
+#include <OS/Net/NetPeer.h>
 #include <OS/SharedTasks/tasks.h>
-#include "AuthTasks.h"
+
 namespace TaskShared {
         TaskScheduler<AuthRequest, TaskThreadData> *InitAuthTasks(INetServer *server) {
             TaskScheduler<AuthRequest, TaskThreadData> *scheduler = new TaskScheduler<AuthRequest, TaskThreadData>(4, server);
@@ -72,8 +74,17 @@ namespace TaskShared {
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, write_data);
 
 		}
-		void Handle_AuthWebError(TaskShared::AuthData &data, json_t *error_obj) {
-			std::string error_class, error_name, param_name;
+		bool Handle_WebError(json_t *json_body, WebErrorDetails &error_info) {
+			json_t *error_obj = json_object_get(json_body, "error");
+			if (!error_obj) {
+				error_info.response_code = WebErrorCode_Success;
+				return false;
+			}
+			error_info.userid = 0;
+			error_info.profileid = 0;
+			
+			std::string error_class, error_name;
+			json_t *extra = json_object_get(error_obj, "extra");
 			json_t *item = json_object_get(error_obj, "class");
 			if (!item) goto end_error;
 			error_class = json_string_value(item);
@@ -82,43 +93,44 @@ namespace TaskShared {
 			if (!item) goto end_error;
 			error_name = json_string_value(item);
 
-			item = json_object_get(error_obj, "param");
-			if (item) {
-				param_name = json_string_value(item);
+			if(extra) {
+				json_t *profileid_obj = json_object_get(error_obj, "profileid");
+				if(profileid_obj) {
+					error_info.profileid = json_integer_value(profileid_obj);
+				}
+
+				json_t *userid_obj = json_object_get(error_obj, "userid");
+				if(profileid_obj) {
+					error_info.userid = json_integer_value(profileid_obj);
+				}
+
 			}
 
 			if (error_class.compare("common") == 0) {
-				if (error_name.compare("MissingParam") == 0 || error_name.compare("InvalidMode") == 0) {
-					data.response_code = TaskShared::LOGIN_RESPONSE_SERVER_ERROR;
+				if (error_name.compare("NoSuchUser") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_NoSuchUser;
 				}
-				if (error_name.compare("InvalidParam") == 0) {
-					if (param_name.compare("email") == 0) {
-						data.response_code = TaskShared::CREATE_RESPONSE_INVALID_EMAIL;
-					}
-					else if (param_name.compare("password") == 0) {
-						data.response_code = TaskShared::LOGIN_RESPONSE_INVALID_PASSWORD;
-					}
-				}
-			}
-			else if (error_class.compare("auth") == 0) {
+			} else if (error_class.compare("auth") == 0) { 
 				if (error_name.compare("InvalidCredentials") == 0) {
-					data.response_code = TaskShared::LOGIN_RESPONSE_INVALID_PASSWORD;
+					error_info.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
 				}
-				else if (error_name.compare("NoSuchUser") == 0) {
-					data.response_code = TaskShared::LOGIN_RESPONSE_USER_NOT_FOUND;
+			} else if (error_class.compare("profile") == 0) {
+				if (error_name.compare("CannotDeleteLastProfile") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_CannotDeleteLastProfile;
 				}
-			}
-			else if (error_class.compare("profile") == 0) {
-				if (error_name.compare("UniqueNickInUse") == 0) {
-					data.response_code = TaskShared::LOGIN_RESPONSE_INVALID_PROFILE;
+				else if (error_name.compare("NickInUse") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_NickInUse;
 				}
 				else if (error_name.compare("NickInvalid") == 0) {
-					data.response_code = TaskShared::LOGIN_RESPONSE_INVALID_PROFILE;
+					error_info.response_code = TaskShared::WebErrorCode_NickInvalid;
+				}
+				else if (error_name.compare("UniqueNickInUse") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_UniqueNickInUse;
 				}
 			}
-			return;
-		end_error:
-			data.response_code = TaskShared::LOGIN_RESPONSE_SERVER_ERROR;
 
+			return true;
+			end_error:
+			return false;
 		}
 }

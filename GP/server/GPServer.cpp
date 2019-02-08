@@ -1,3 +1,5 @@
+#include <OS/SharedTasks/tasks.h>
+#include <tasks/tasks.h>
 #include "GPPeer.h"
 #include "GPServer.h"
 #include "GPDriver.h"

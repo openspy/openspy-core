@@ -19,9 +19,6 @@ namespace GP {
 		TaskShared::AuthData auth_data;
 		bool success = false;
 
-		auth_data.response_code = TaskShared::LOGIN_RESPONSE_SERVER_ERROR;
-
-
 		if (curl) {
 			GPReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
 

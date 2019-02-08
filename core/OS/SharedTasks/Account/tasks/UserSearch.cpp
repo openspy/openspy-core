@@ -1,3 +1,5 @@
+#include <OS/OpenSpy.h>
+#include <OS/Net/NetPeer.h>
 #include <OS/SharedTasks/tasks.h>
 #include "../UserTasks.h"
 
@@ -5,6 +7,7 @@ namespace TaskShared {
     bool Perform_UserSearch(UserRequest request, TaskThreadData *thread_data) {
 		curl_data recv_data;
 		json_t *root = NULL;
+		TaskShared::WebErrorDetails error_details;
 		std::vector<OS::User> results;
 		//build json object
 		json_t *user_obj = json_object();
@@ -39,7 +42,6 @@ namespace TaskShared {
 
 		CURL *curl = curl_easy_init();
 		CURLcode res;
-		EUserResponseType resp_type = EUserResponseType_Success;
 
 		if(curl) {
 			std::string url = std::string(OS::g_webServicesURL) + "/v1/User/lookup";
@@ -88,17 +90,20 @@ namespace TaskShared {
 
 			if(res == CURLE_OK) {
 				root = json_loads(recv_data.buffer.c_str(), 0, NULL);
+				
 				if(root) {
-					if (json_array_size(root) > 0) {
+					if (Handle_WebError(root, error_details)) {
+
+					} else if (json_array_size(root) > 0) {
 						OS::User user = OS::LoadUserFromJson(json_array_get(root, 0));
 						results.push_back(user);
-						resp_type = EUserResponseType_Success;
+						
 					}
 				} else {
-					resp_type = EUserResponseType_GenericError;
+					error_details.response_code = TaskShared::WebErrorCode_BackendError;
 				}				
 			} else {
-				resp_type = EUserResponseType_GenericError;
+				error_details.response_code = TaskShared::WebErrorCode_BackendError;
 			}
 			curl_easy_cleanup(curl);
 		}
@@ -115,7 +120,7 @@ namespace TaskShared {
 
 
 		if(request.callback != NULL)
-			request.callback(resp_type, results, request.extra, request.peer);
+			request.callback(error_details, results, request.extra, request.peer);
 
 		if (request.peer) {
 			request.peer->DecRef();

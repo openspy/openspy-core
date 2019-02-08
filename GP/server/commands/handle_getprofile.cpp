@@ -1,6 +1,3 @@
-#include <GP/server/GPPeer.h>
-#include <GP/server/GPDriver.h>
-#include <GP/server/GPServer.h>
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
 
@@ -13,6 +10,10 @@
 
 #include <OS/gamespy/gamespy.h>
 #include <tasks/tasks.h>
+
+#include <GP/server/GPPeer.h>
+#include <GP/server/GPDriver.h>
+#include <GP/server/GPServer.h>
 
 namespace GP {
 	void Peer::handle_getprofile(OS::KVReader data_parser) {
@@ -31,8 +32,8 @@ namespace GP {
 			scheduler->AddRequest(request.type, request);
 		}
 	}
-    void Peer::m_getprofile_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
-		if(response_reason != OS::EProfileResponseType_Success) {
+    void Peer::m_getprofile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		if(error_details.response_code != TaskShared::WebErrorCode_Success) {
 			((GP::Peer *)peer)->send_error(GP_GETPROFILE);
 			return;
 		}

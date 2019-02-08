@@ -5,15 +5,7 @@
 #include <OS/Profile.h>
 #include <OS/User.h>
 namespace TaskShared {
-	enum EUserResponseType {
-		EUserResponseType_Success,
-		EUserResponseType_GenericError,
-		EUserResponseType_UserExists,
-		EUserResponseType_Profile_UniqueNickInUse,
-		EUserResponseType_Profile_InvalidNick,
-		EUserResponseType_Profile_InvalidUniqueNick,
-	};
-	typedef void (*UserSearchCallback)(EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer);
+	typedef void (*UserSearchCallback)(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer);
 	
 	enum EUserRequestType {
 		EUserRequestType_Create,
@@ -26,7 +18,7 @@ namespace TaskShared {
 		OS::GameData gamedata;
 		OS::User user;
 		OS::Profile profile;
-		EUserResponseType user_response_code;
+		WebErrorDetails error_details;
 	} UserRegisterData;
 
 	typedef void(*RegisterCallback)(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer);

@@ -1,8 +1,8 @@
-#include "GPDriver.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
-
+#include <OS/SharedTasks/tasks.h>
+#include "GPDriver.h"
 #include "GPServer.h"
 #include "GPPeer.h"
 #include <OS/GPShared.h>

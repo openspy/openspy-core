@@ -1,6 +1,3 @@
-#include "GPPeer.h"
-#include "GPDriver.h"
-#include "GPServer.h"
 #include <OS/OpenSpy.h>
 #include <OS/Search/Profile.h>
 
@@ -12,7 +9,13 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
+#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
+
+
+#include "GPPeer.h"
+#include "GPDriver.h"
+#include "GPServer.h"
 
 /*
 	TODO: delete/create profile errors
@@ -110,6 +113,7 @@ namespace GP {
 		commands.push_back(CommandEntry("ka", false, &Peer::handle_keepalive));
 		commands.push_back(CommandEntry("logout", false, &Peer::handle_logout));
 		commands.push_back(CommandEntry("status", true, &Peer::handle_status));
+		commands.push_back(CommandEntry("statusinfo", true, &Peer::handle_statusinfo));
 		commands.push_back(CommandEntry("addbuddy", true, &Peer::handle_addbuddy));
 		commands.push_back(CommandEntry("delbuddy", true, &Peer::handle_delbuddy));
 		commands.push_back(CommandEntry("removeblock", true, &Peer::handle_removeblock));

@@ -11,7 +11,6 @@
 #include <OS/GPShared.h>
 
 #define GP_STATUS_EXPIRE_TIME 500
-#include <server/GPPeer.h>
 
 #include <OS/SharedTasks/tasks.h>
 #include <OS/SharedTasks/Auth/AuthTasks.h>
@@ -20,6 +19,8 @@
 #include <jansson.h>
 
 #include <OS/SharedTasks/Account/ProfileTasks.h>
+
+#include <server/GPPeer.h>
 
 namespace GP {
     enum EGPRedisRequestType {
@@ -44,7 +45,7 @@ namespace GP {
 		//std::vector<GP::Buddy
     } GPBackendRedisResponse;
 	typedef void(*GPBackendRedisCallback)(bool success, GPBackendRedisResponse response_data, void *extra);
-	typedef void(*BuddyStatusCallback)(TaskShared::EProfileResponseType response_reason, std::map<OS::Profile, GPShared::GPStatus> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+	typedef void(*BuddyStatusCallback)(TaskShared::WebErrorDetails error_details, std::map<OS::Profile, GPShared::GPStatus> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 	struct sBuddyRequest {
 		int from_profileid;
@@ -106,6 +107,5 @@ namespace GP {
 
     TaskScheduler<GPBackendRedisRequest, TaskThreadData> *InitTasks(INetServer *server);
 	void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request);
-	void Handle_WebError(TaskShared::AuthData &data, json_t *error_obj);
 }
 #endif //_MM_TASKS_H
