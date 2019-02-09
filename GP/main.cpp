@@ -4,6 +4,7 @@
 #include <sstream>
 #include <OS/Net/NetServer.h>
 #include <OS/Config/AppConfig.h>
+#include <OS/SharedTasks/tasks.h>
 #include "server/GPServer.h"
 #include "server/GPDriver.h"
 INetServer *g_gameserver = NULL;

@@ -43,29 +43,21 @@ namespace GS {
 			GPShared::GPErrorData error_data;
 			GPShared::GPErrorCode code;
 
-			switch (auth_data.response_code) {
-			case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
+			switch (auth_data.error_details.response_code) {
+			case TaskShared::WebErrorCode_NoSuchUser:
 				//code = GP_LOGIN_BAD_EMAIL;
 				code = GP_LOGIN_BAD_PROFILE;
 				break;
-			case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
+			case TaskShared::WebErrorCode_AuthInvalidCredentials:
 				code = GP_LOGIN_BAD_PASSWORD;
 				break;
-			case OS::LOGIN_RESPONSE_INVALID_PROFILE:
-				code = GP_LOGIN_BAD_PROFILE;
-				break;
-			case OS::LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED:
+			case OS::EProfileResponseType_UniqueNick_Invalid:
 				code = GP_LOGIN_BAD_UNIQUENICK;
 				break;
 			default:
-			case OS::LOGIN_RESPONSE_DB_ERROR:
 				code = GP_DATABASE;
 				break;
-			case OS::LOGIN_RESPONSE_SERVERINITFAILED:
-			case OS::LOGIN_RESPONSE_SERVER_ERROR:
-				code = GP_NETWORK;
 			}
-
 			error_data = GPShared::getErrorDataByCode(code);
 
 			ss << error_data.msg;

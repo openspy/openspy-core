@@ -31,13 +31,10 @@ namespace GS {
 		OS::Profile auth_profile;
 		OS::User auth_user;
 		TaskShared::AuthData auth_data;
-		if (resp.status_code == 0 || error_obj) {
-			auth_data.response_code = TaskShared::LOGIN_RESPONSE_INVALID_PASSWORD;
-			success = false;
+		if (TaskShared::Handle_WebError(send_json, auth_data.error_details)) {
 		}
 		else {
 			success = true;
-			auth_data.response_code = TaskShared::LOGIN_RESPONSE_SUCCESS;
 			profile = json_object_get(send_json, "profile");
 			if (profile) {
 				auth_profile = OS::LoadProfileFromJson(profile);

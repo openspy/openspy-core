@@ -1,6 +1,9 @@
+#include <OS/SharedTasks/tasks.h>
 #include "SMPeer.h"
 #include "SMServer.h"
 #include "SMDriver.h"
+
+
 namespace SM {
 	Server::Server() : INetServer(){
 		mp_auth_tasks = TaskShared::InitAuthTasks(this);

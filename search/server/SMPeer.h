@@ -1,7 +1,6 @@
 #ifndef _GPPEER_H
 #define _GPPEER_H
 #include "../main.h"
-#include <OS/Auth.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
 #include <OS/Search/User.h>
@@ -76,15 +75,15 @@ namespace SM {
 	private:
 
 		void handle_search(OS::KVReader data_parser);
-		static void m_search_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
-		static void m_search_buddies_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_search_buddies_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		void handle_others(OS::KVReader data_parser);
 
-		static void m_search_buddies_reverse_callback(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_search_buddies_reverse_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		void handle_otherslist(OS::KVReader data_parser);
 
-		static void m_search_valid_callback(TaskShared::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer);
+		static void m_search_valid_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer);
 		void handle_valid(OS::KVReader data_parser);
 
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
@@ -94,7 +93,7 @@ namespace SM {
 		void handle_newuser(OS::KVReader data_parser);
 
 		void handle_nicks(OS::KVReader data_parser);
-		static void m_nicks_cb(TaskShared::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_nicks_cb(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 		void handle_searchunique(OS::KVReader data_parser);
 

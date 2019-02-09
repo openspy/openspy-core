@@ -1,9 +1,9 @@
 #include "Win32ThreadPoller.h"
 #include <stdio.h>
 namespace OS {
-	static int cwin32_thread_poller_cnt = 0;
+	static uint32_t cwin32_thread_poller_cnt = 0;
 	CWin32ThreadPoller::CWin32ThreadPoller() {
-		char name[32];
+		CMutex::SafeIncr(&cwin32_thread_poller_cnt);
 		sprintf_s(name, sizeof(name), "OS-Win32Poller-%d", cwin32_thread_poller_cnt++);
 		m_handle = CreateEvent(
 			NULL,               // default security attributes
@@ -25,7 +25,9 @@ namespace OS {
 				WaitForSingleObject(m_handle, time_ms);
 			}
 		}
-		CMutex::SafeDecr(&m_signal_count);
+		else {
+			CMutex::SafeDecr(&m_signal_count);
+		}
 		return true;
 	}
 	void CWin32ThreadPoller::signal() {

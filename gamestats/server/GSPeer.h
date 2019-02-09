@@ -5,7 +5,6 @@
 #include <OS/Net/NetPeer.h>
 #include <OS/Ref.h>
 
-#include <OS/Auth.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
 #include <OS/Mutex.h>

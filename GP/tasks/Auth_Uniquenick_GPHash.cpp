@@ -40,6 +40,10 @@ namespace GP {
 				if (json_data) {
 					json_t *success_obj = json_object_get(json_data, "success");
 					if (TaskShared::Handle_WebError(json_data, auth_data.error_details)) {
+						//remap to correct GP error
+						if (auth_data.error_details.response_code == TaskShared::WebErrorCode_NoSuchUser) {
+							auth_data.error_details.response_code = TaskShared::WebErrorCode_UniqueNickInvalid;
+						}
 					}
 					else if (success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
