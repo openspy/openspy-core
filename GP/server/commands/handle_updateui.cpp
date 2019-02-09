@@ -1,7 +1,4 @@
 #include <OS/OpenSpy.h>
-#include <OS/Search/Profile.h>
-
-#include <OS/Search/User.h>
 
 #include <OS/Buffer.h>
 #include <OS/KVReader.h>
@@ -47,6 +44,8 @@ namespace GP {
 		request.search_params = m_user;
 		request.type = TaskShared::EUserRequestType_Update;
 		request.extra = this;
+		//request.peer = this;
+		//IncRef();
 		request.callback = NULL;
 		request.search_params = m_user;
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *user_scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetUserTask();

@@ -1,11 +1,8 @@
-#include "FESLPeer.h"
-#include "FESLDriver.h"
 #include <OS/OpenSpy.h>
-#include <OS/Search/Profile.h>
-#include <OS/Search/User.h>
-#include <OS/Search/Profile.h>
-#include <OS/Auth.h>
-
+#include <OS/SharedTasks/tasks.h>
+#include "FESLServer.h"
+#include "FESLDriver.h"
+#include "FESLPeer.h"
 #include <sstream>
 
 namespace FESL {
@@ -64,7 +61,20 @@ namespace FESL {
 			s << "\\password\\" << password;
 			m_encrypted_login_info = ((FESL::Driver *)this->GetDriver())->getStringCrypter()->encryptString(s.str());
 		}
-		OS::AuthTask::TryAuthEmailPassword(kv_list.GetValue("nuid"), OS_EA_PARTNER_CODE, kv_list.GetValue("password"), m_nulogin_auth_cb, NULL, 0, this);
+
+		TaskShared::AuthRequest request;
+		request.type = TaskShared::EAuthType_User_EmailPassword;
+		request.callback = m_nulogin_auth_cb;
+		request.peer = this;
+		IncRef();
+
+		request.profile.namespaceid = FESL_ACCOUNT_NAMESPACEID;
+		request.user.partnercode = OS_EA_PARTNER_CODE;
+		request.user.password = kv_list.GetValue("password");
+		request.user.email = kv_list.GetValue("nuid");
+
+		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetAuthTask();
+		scheduler->AddRequest(request.type, request);
 		return true;
 	}
 	bool Peer::m_acct_get_personas(OS::KVReader kv_list) {
@@ -76,7 +86,7 @@ namespace FESL {
 		}
 		return true;
 	}
-	void Peer::m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		if (success) {
 			s << "TXN=NuLogin\n";
@@ -93,17 +103,20 @@ namespace FESL {
 			((Peer *)peer)->m_profile = profile;
 			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
 
-			OS::ProfileSearchRequest request;
-			request.type = OS::EProfileSearch_Profiles;
+			TaskShared::ProfileRequest request;
+			request.type = TaskShared::EProfileSearch_Profiles;
 			request.user_search_details.id = user.id;
+			request.user_search_details.partnercode = OS_EA_PARTNER_CODE;
 			request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
+			request.extra = peer;
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
-			OS::m_profile_search_task_pool->AddRequest(request);
+			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((FESL::Server *)(peer->GetDriver()->getServer()))->GetProfileTask();
+			scheduler->AddRequest(request.type, request);
 		}
 		else {
-			((Peer *)peer)->handle_auth_callback_error(auth_data.response_code, FESL_TYPE_ACCOUNT, "NuLogin");
+			((Peer *)peer)->handle_auth_callback_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "NuLogin");
 		}
 	}
 	bool Peer::m_acct_get_telemetry_token(OS::KVReader kv_list) {

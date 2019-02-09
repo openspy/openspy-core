@@ -1,12 +1,12 @@
 #ifndef _FESLPEER_H
 #define _FESLPEER_H
 #include "../main.h"
-#include <OS/Auth.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
-#include <OS/Search/User.h>
-#include <OS/Search/Profile.h>
 #include <OS/KVReader.h>
+#include <OS/Net/NetPeer.h>
+#include <OS/SharedTasks/Auth/AuthTasks.h>
+#include <OS/SharedTasks/Account/ProfileTasks.h>
 
 #define FESL_READ_SIZE                  (16 * 1024)
 
@@ -146,10 +146,10 @@ namespace FESL {
 		bool m_acct_send_account_name(OS::KVReader kv_list);
 		bool m_acct_send_account_password(OS::KVReader kv_list);
 		
-		static void m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
-		static void m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
-		static void m_update_user_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer);
-		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
+		static void m_create_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_delete_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_update_user_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer);
+		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer);
 
 		void send_memcheck(int type, int salt = 0);
 		void send_subaccounts();
@@ -170,16 +170,13 @@ namespace FESL {
 
 		static CommandHandler m_commands[];
 
+		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
+		static void m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
+		static void m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
+		static void m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
-		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
-		static void m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
-		static void m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
-		static void m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
-
-		void handle_auth_callback_error(OS::AuthResponseCode response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN);
-		void handle_profile_search_callback_error(OS::EProfileResponseType response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN);
-
-
+		void handle_auth_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN);
+		void handle_profile_search_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN);
 	};
 }
 #endif //_FESLPEER_H

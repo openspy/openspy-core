@@ -3,9 +3,6 @@
 #include <server/GSDriver.h>
 #include <OS/OpenSpy.h>
 #include <OS/Buffer.h>
-#include <OS/Search/Profile.h>
-
-#include <OS/Search/User.h>
 
 #include <stddef.h>
 #include <sstream>
@@ -51,7 +48,7 @@ namespace GS {
 			case TaskShared::WebErrorCode_AuthInvalidCredentials:
 				code = GP_LOGIN_BAD_PASSWORD;
 				break;
-			case OS::EProfileResponseType_UniqueNick_Invalid:
+			case TaskShared::WebErrorCode_UniqueNickInvalid:
 				code = GP_LOGIN_BAD_UNIQUENICK;
 				break;
 			default:

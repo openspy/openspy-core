@@ -1,10 +1,10 @@
-#include "FESLPeer.h"
-#include "FESLDriver.h"
 #include <OS/OpenSpy.h>
-#include <OS/Search/Profile.h>
-#include <OS/Search/User.h>
-#include <OS/Search/Profile.h>
-#include <OS/Auth.h>
+
+#include <OS/SharedTasks/tasks.h>
+#include "FESLServer.h"
+#include "FESLDriver.h"
+#include "FESLPeer.h"
+
 
 #include <sstream>
 
@@ -145,7 +145,7 @@ namespace FESL {
 			Delete();
 
 	}
-	void Peer::m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		((Peer *)peer)->mp_mutex->lock();
 		((Peer *)peer)->m_profiles = results;
 		((Peer *)peer)->mp_mutex->unlock();
@@ -245,7 +245,7 @@ namespace FESL {
 		SendPacket(FESL_TYPE_FSYS, s.str(), 0);
 	}
 	bool Peer::m_acct_add_sub_account(OS::KVReader kv_list) {
-		OS::ProfileSearchRequest request;
+		TaskShared::ProfileRequest request;
 		std::string nick, oldnick;
 		nick = kv_list.GetValue("name");
 
@@ -257,20 +257,22 @@ namespace FESL {
 		request.extra = this;
 		request.peer = this;
 		request.peer->IncRef();
-		request.type = OS::EProfileSearch_CreateProfile;
+		request.type = TaskShared::EProfileSearch_CreateProfile;
 		request.callback = Peer::m_create_profile_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
+
+		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetProfileTask();
+		scheduler->AddRequest(request.type, request);
 		
 		return true;
 	}
-	void Peer::m_create_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
-		if (response_reason == OS::EProfileResponseType_Success && results.size() > 0) {
+	void Peer::m_create_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		if (error_details.response_code == TaskShared::WebErrorCode_Success && results.size() > 0) {
 			((Peer *)peer)->mp_mutex->lock();
 			((Peer *)peer)->m_profiles.push_back(results.front());
 			((Peer *)peer)->mp_mutex->unlock();
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_NO_ERROR, "AddSubAccount");
 		} else {
-			((Peer *)peer)->handle_profile_search_callback_error(response_reason, FESL_TYPE_ACCOUNT, "AddSubAccount");
+			((Peer *)peer)->handle_profile_search_callback_error(error_details, FESL_TYPE_ACCOUNT, "AddSubAccount");
 		}
 	}
 	bool Peer::m_acct_disable_sub_account(OS::KVReader kv_list) {
@@ -279,15 +281,16 @@ namespace FESL {
 		while (it != m_profiles.end()) {
 			OS::Profile profile = *it;
 			if (profile.uniquenick.compare(kv_list.GetValue("name")) == 0) {
-				OS::ProfileSearchRequest request;
+				TaskShared::ProfileRequest request;
 				request.profile_search_details.id = profile.id;
 				request.peer = this;
 				request.extra = (void *)((size_t)profile.id);
 				request.peer->IncRef();
-				request.type = OS::EProfileSearch_DeleteProfile;
+				request.type = TaskShared::EProfileSearch_DeleteProfile;
 				request.callback = Peer::m_delete_profile_callback;
 				mp_mutex->unlock();
-				OS::m_profile_search_task_pool->AddRequest(request);
+				TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetProfileTask();
+				scheduler->AddRequest(request.type, request);
 				return true;
 			}
 			it++;
@@ -295,8 +298,8 @@ namespace FESL {
 		mp_mutex->unlock();
 		return true;
 	}
-	void Peer::m_delete_profile_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
-		if (response_reason == OS::EProfileResponseType_Success) {
+	void Peer::m_delete_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		if (error_details.response_code == TaskShared::WebErrorCode_Success) {
 			((Peer *)peer)->mp_mutex->lock();
 			std::vector<OS::Profile>::iterator it = ((Peer *)peer)->m_profiles.begin();
 			while (it != ((Peer *)peer)->m_profiles.end()) {
@@ -317,12 +320,12 @@ namespace FESL {
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)FESL_ERROR_SYSTEM_ERROR, "DisableSubAccount");
 		}
 	}
-	void Peer::m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		if (success) {
 			s << "TXN=GameSpyPreAuth\n";
-			if(auth_data.hash_proof.length())
-				s << "challenge=" << auth_data.hash_proof << "\n";
+			if(auth_data.response_proof.length())
+				s << "challenge=" << auth_data.response_proof << "\n";
 			s << "ticket=" << auth_data.session_key << "\n";
 			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		}
@@ -376,18 +379,29 @@ namespace FESL {
 
 		profile.namespaceid = FESL_ACCOUNT_NAMESPACEID;
 		user.partnercode = OS_EA_PARTNER_CODE;
-		OS::AuthTask::TryCreateUser_OrProfile(user, profile, true, m_newuser_cb, NULL, 0, this);
+
+		TaskShared::UserRequest req;
+		req.type = TaskShared::EUserRequestType_Create;
+		req.peer = this;
+		req.peer->IncRef();
+
+		req.registerCallback = m_newuser_cb;
+
+		req.profile_params = profile;
+		req.search_params = user;
+		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetUserTask();
+		scheduler->AddRequest(req.type, req);
 		
 		return true;
 	}
-	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer) {
 		FESL_ERROR err_code = FESL_ERROR_NO_ERROR;
-		if (auth_data.response_code != -1 && auth_data.response_code != OS::LOGIN_RESPONSE_SUCCESS) {
-			switch (auth_data.response_code) {
-			case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+		if (auth_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
+			switch (auth_data.error_details.response_code) {
+			case TaskShared::WebErrorCode_UniqueNickInUse:
 				err_code = FESL_ERROR_ACCOUNT_EXISTS;
 				break;
-			case OS::CREATE_RESPONSE_INVALID_EMAIL:
+			case TaskShared::WebErrorCode_EmailInvalid:
 				((Peer *)peer)->SendCustomError(FESL_TYPE_ACCOUNT, "AddAccount", "Account.EmailAddress", "The specified email was invalid. Please change it and try again.");
 				return;
 			default:
@@ -436,21 +450,22 @@ namespace FESL {
 		*/
 
 		if (send_userupdate) {
-			OS::UserSearchRequest user_request;
+			TaskShared::UserRequest user_request;
 			user_request.search_params = user;
-			user_request.type = OS::EUserRequestType_Update;
+			user_request.type = TaskShared::EUserRequestType_Update;
 			user_request.extra = NULL;
 			user_request.peer = this;
 			user_request.peer->IncRef();
 			user_request.callback = Peer::m_update_user_callback;
-			OS::m_user_search_task_pool->AddRequest(user_request);
+			TaskScheduler<TaskShared::UserRequest, TaskThreadData> *user_scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetUserTask();
+			user_scheduler->AddRequest(user_request.type, user_request);
 		}
 		return true;
 	}
-	void Peer::m_update_user_callback(OS::EUserResponseType response_reason, std::vector<OS::User> results, void *extra, INetPeer *peer) {
+	void Peer::m_update_user_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		s << "TXN=UpdateAccount\n";
-		if (response_reason == OS::EUserResponseType_Success) {
+		if (error_details.response_code == TaskShared::WebErrorCode_Success) {
 			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		}
 		else {

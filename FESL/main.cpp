@@ -5,6 +5,9 @@
 #include <OS/Net/NetServer.h>
 #include <openssl/ssl.h>
 #include <OS/Config/AppConfig.h>
+#include <OS/SharedTasks/tasks.h>
+
+#include <OS/Net/NetPeer.h>
 #include "server/FESLServer.h"
 #include "server/FESLDriver.h"
 #include <OS/StringCrypter.h>

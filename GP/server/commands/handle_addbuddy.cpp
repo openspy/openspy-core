@@ -1,8 +1,5 @@
 
 #include <OS/OpenSpy.h>
-#include <OS/Search/Profile.h>
-
-#include <OS/Search/User.h>
 
 #include <OS/Buffer.h>
 #include <OS/KVReader.h>

@@ -12,8 +12,6 @@
 	#include "OS/Logger/Win32/Win32Logger.h"
 #endif
 
-#include <OS/Search/User.h>
-#include <OS/Search/Profile.h>
 #include <OS/Config/AppConfig.h>
 
 namespace OS {

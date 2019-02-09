@@ -22,8 +22,6 @@ file (GLOB NET_PROCESSORS_HDRS "OS/Net/Processors/*.h")
 
 file (GLOB LEGACY_SRCS "OS/gamespy/*.cpp" "OS/gamespy/*.c")
 file (GLOB LEGACY_HDRS "OS/gamespy/*.h")
-file (GLOB SEARCH_SRCS "OS/Search/*.cpp")
-file (GLOB SEARCH_HDRS "OS/Search/*.h")
 file (GLOB LOGGER_SRCS "OS/Logger/*.cpp")
 file (GLOB LOGGER_HDRS "OS/Logger/*.h")
 file (GLOB TIMER_SRCS "OS/Timer/*.cpp")
@@ -43,7 +41,7 @@ file (GLOB MQ_SRCS "OS/MessageQueue/*.cpp" "OS/MessageQueue/rabbitmq/*.cpp")
 file (GLOB MQ_HDRS "OS/MessageQueue/*.h" "OS/MessageQueue/rabbitmq/*.h")
 
 
-set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${SEARCH_SRCS} ${SEARCH_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${NET_PROCESSORS_SRCS} ${NET_PROCESSORS_HDRS} ${MQ_SRCS} ${MQ_HDRS} ${TASK_HDRS} ${SHAREDTASK_ACCOUNT_SRCS} ${SHAREDTASK_AUTH_SRCS} ${SHAREDTASK_ACCOUNT_TASKS_SRCS} ${SHAREDTASK_AUTH_TASKS_SRCS})
+set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${NET_PROCESSORS_SRCS} ${NET_PROCESSORS_HDRS} ${MQ_SRCS} ${MQ_HDRS} ${TASK_HDRS} ${SHAREDTASK_ACCOUNT_SRCS} ${SHAREDTASK_AUTH_SRCS} ${SHAREDTASK_ACCOUNT_TASKS_SRCS} ${SHAREDTASK_AUTH_TASKS_SRCS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -51,7 +49,6 @@ source_group("Sources\\OS\\Net" FILES ${NET_SRCS})
 source_group("Sources\\OS\\Net\\EventMgrs" FILES ${NET_EVENTMGR_SRCS})
 source_group("Sources\\OS\\Net\\IOFaces" FILES ${NET_IOIFACES_SRCS})
 source_group("Sources\\OS\\Gamespy" FILES ${LEGACY_SRCS})
-source_group("Sources\\OS\\Search" FILES ${SEARCH_SRCS})
 source_group("Sources\\OS\\Logger" FILES ${LOGGER_SRCS})
 
 
@@ -60,7 +57,6 @@ source_group("Headers\\OS\\Net" FILES ${NET_HDRS})
 source_group("Headers\\OS\\Net\\EventMgrs" FILES ${NET_EVENTMGR_HDRS})
 source_group("Headers\\OS\\Net\\IOFaces" FILES ${NET_IOIFACES_HDRS})
 
-source_group("Sources\\OS\\Search" FILES ${SEARCH_HDRS})
 source_group("Sources\\OS\\Logger" FILES ${LOGGER_HDRS})
 
 

@@ -12,6 +12,7 @@ namespace TaskShared {
             WebErrorCode_UniqueNickInUse,
             WebErrorCode_UniqueNickInvalid,
             WebErrorCode_UserExists,
+            WebErrorCode_EmailInvalid,
             WebErrorCode_BackendError, //fallback error, generic comms problem, etc
     };
     typedef struct _WebErrorDetails {

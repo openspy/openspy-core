@@ -3,11 +3,9 @@
 #include "../main.h"
 #include <OS/User.h>
 #include <OS/Profile.h>
-#include <OS/Search/User.h>
-#include <OS/Search/Profile.h>
 #include <OS/KVReader.h>
 #include <OS/GPShared.h>
-
+#include <OS/Net/NetPeer.h>
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 #include <OS/SharedTasks/Account/UserTasks.h>
 #include <OS/SharedTasks/Account/ProfileTasks.h>

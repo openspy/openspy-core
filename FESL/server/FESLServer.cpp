@@ -1,13 +1,15 @@
-#include "FESLPeer.h"
+#include <OS/SharedTasks/tasks.h>
 #include "FESLServer.h"
 #include "FESLDriver.h"
-#include "FESLBackend.h"
+#include "FESLPeer.h"
 
 namespace FESL {
-	Server::Server() : INetServer(){
+	Server::Server() : INetServer() {
+		mp_auth_tasks = TaskShared::InitAuthTasks(this);
+		mp_user_tasks = TaskShared::InitUserTasks(this);
+		mp_profile_tasks = TaskShared::InitProfileTasks(this);
 	}
 	void Server::init() {
-		FESLBackend::SetupFESLBackend(this);
 	}
 	void Server::tick() {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
@@ -19,7 +21,6 @@ namespace FESL {
 		NetworkTick();
 	}
 	void Server::shutdown() {
-		FESLBackend::ShutdownFESLBackend();
 	}
 	void Server::OnUserAuth(OS::Address remote_address, int userid, int profileid) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

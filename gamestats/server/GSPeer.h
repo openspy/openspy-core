@@ -10,8 +10,6 @@
 #include <OS/Mutex.h>
 
 #include <OS/Buffer.h>
-#include <OS/Search/Profile.h>
-#include <OS/Search/User.h>
 
 #include <OS/GPShared.h>
 

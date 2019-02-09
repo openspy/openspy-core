@@ -1,12 +1,13 @@
-#include "FESLPeer.h"
-#include "FESLDriver.h"
 #include <OS/OpenSpy.h>
-#include <OS/Search/Profile.h>
-#include <OS/Search/User.h>
-#include <OS/Search/Profile.h>
-#include <OS/Auth.h>
+
+#include <OS/SharedTasks/tasks.h>
+#include "FESLServer.h"
+#include "FESLDriver.h"
+#include "FESLPeer.h"
+
 
 #include <sstream>
+
 
 namespace FESL {
 	
@@ -69,30 +70,39 @@ namespace FESL {
 			s << "\\password\\" << password;
 			m_encrypted_login_info = ((FESL::Driver *)this->GetDriver())->getStringCrypter()->encryptString(s.str());
 		}
-		OS::AuthTask::TryAuthUniqueNick_Plain(nick, OS_EA_PARTNER_CODE, FESL_ACCOUNT_NAMESPACEID, password, m_login_auth_cb, NULL, 0, this);
+
+		TaskShared::AuthRequest request;
+		request.type = TaskShared::EAuthType_Uniquenick_Password;
+		request.callback = m_login_auth_cb;
+		request.peer = this;
+		IncRef();
+		request.profile.uniquenick = nick;
+		request.profile.namespaceid = FESL_ACCOUNT_NAMESPACEID;
+		request.user.partnercode = OS_EA_PARTNER_CODE;
+		request.user.password = password;
+
+		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetAuthTask();
+		scheduler->AddRequest(request.type, request);
 		return true;
 	}
-	void Peer::handle_auth_callback_error(OS::AuthResponseCode response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
+	void Peer::handle_auth_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
 		FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
-		switch (response_code) {
-		case OS::CREATE_RESPONE_UNIQUENICK_IN_USE:
+		switch (error_details.response_code) {
+		case TaskShared::WebErrorCode_UniqueNickInUse:
 			error = FESL_ERROR_ACCOUNT_EXISTS;
 			break;
-		case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
+		case TaskShared::WebErrorCode_NoSuchUser:
 			error = FESL_ERROR_ACCOUNT_NOT_FOUND;
 			break;
-		case OS::LOGIN_RESPONSE_INVALID_PROFILE:
+		case TaskShared::WebErrorCode_NickInvalid:
 			error = FESL_ERROR_ACCOUNT_NOT_FOUND;
 			break;
 		default:
-		case OS::LOGIN_RESPONSE_SERVERINITFAILED:
-		case OS::LOGIN_RESPONSE_DB_ERROR:
-		case OS::LOGIN_RESPONSE_SERVER_ERROR:
 			break;
 		}
 		SendError(cmd_type, error, TXN);
 	}
-	void Peer::handle_profile_search_callback_error(OS::EProfileResponseType response_code, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
+	void Peer::handle_profile_search_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
 		/*
 		EProfileResponseType_Success,
 		EProfileResponseType_GenericError,
@@ -102,25 +112,23 @@ namespace FESL {
 		EProfileResponseType_UniqueNick_InUse,
 		*/
 		FESL_ERROR error = FESL_ERROR_SYSTEM_ERROR;
-		switch (response_code) {
-			default:
-			case OS::EProfileResponseType_UniqueNick_Invalid:
-			case OS::EProfileResponseType_Bad_OldNick:
-			case OS::EProfileResponseType_BadNick:
+		switch (error_details.response_code) {
+			case TaskShared::WebErrorCode_UniqueNickInvalid:
+			case TaskShared::WebErrorCode_NickInvalid:
 				SendCustomError(cmd_type, TXN, "Account.ScreenName", "The account name was invalid. Please change and try again.");
 				return;
-			case OS::EProfileResponseType_UniqueNick_InUse:
+			case TaskShared::WebErrorCode_NickInUse:
 				//SendCustomError(cmd_type, TXN, "Account.ScreenName", "The account name is in use. Please choose another name.");
 				error = FESL_ERROR_ACCOUNT_EXISTS;
 				break;
-			case OS::EProfileResponseType_GenericError:
+			default:
 				error = FESL_ERROR_SYSTEM_ERROR;
 			break;
 		}
 		SendError(cmd_type, error, TXN);
 		
 	}
-	void Peer::m_login_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
+	void Peer::m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		if (success) {
 			s << "TXN=Login\n";
@@ -137,20 +145,20 @@ namespace FESL {
 			((Peer *)peer)->m_profile = profile;
 			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
 
-			OS::ProfileSearchRequest request;
-			request.type = OS::EProfileSearch_Profiles;
+			TaskShared::ProfileRequest request;
+			request.type = TaskShared::EProfileSearch_Profiles;
 			request.user_search_details.id = user.id;
 			request.user_search_details.partnercode = OS_EA_PARTNER_CODE;
 			request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
-			request.namespaceids.push_back(request.profile_search_details.namespaceid);
-
+			request.extra = peer;
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
-			OS::m_profile_search_task_pool->AddRequest(request);
+			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((FESL::Server *)(peer->GetDriver()->getServer()))->GetProfileTask();
+			scheduler->AddRequest(request.type, request);
 		}
 		else {
-			((Peer *)peer)->handle_auth_callback_error(auth_data.response_code, FESL_TYPE_ACCOUNT, "Login");
+			((Peer *)peer)->handle_auth_callback_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "Login");
 		}
 	}
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {
@@ -158,7 +166,15 @@ namespace FESL {
 		return true;
 	}
 	bool Peer::m_acct_gamespy_preauth(OS::KVReader kv_list) {
-		OS::AuthTask::TryMakeAuthTicket(m_profile.id, m_create_auth_ticket, NULL, 0, this);
+		TaskShared::AuthRequest request;
+		request.type = TaskShared::EAuthType_MakeAuthTicket;
+		request.callback = m_create_auth_ticket;
+		request.peer = this;
+		IncRef();
+		request.profile = m_profile;
+
+		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetAuthTask();
+		scheduler->AddRequest(request.type, request);
 		return true;
 	}
 	bool Peer::m_acct_send_account_name(OS::KVReader kv_list) {

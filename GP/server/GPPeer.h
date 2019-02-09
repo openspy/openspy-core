@@ -5,9 +5,6 @@
 #include <OS/Profile.h>
 #include <OS/Mutex.h>
 
-#include <OS/Search/Profile.h>
-#include <OS/Search/User.h>
-
 #include <OS/GPShared.h>
 
 #include <OS/Net/NetPeer.h>

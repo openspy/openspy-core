@@ -1,9 +1,12 @@
-#include "FESLDriver.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
 
+#include <OS/OpenSpy.h>
+#include <OS/Net/NetPeer.h>
+#include <OS/SharedTasks/tasks.h>
 #include "FESLServer.h"
+#include "FESLDriver.h"
 #include "FESLPeer.h"
 
 
