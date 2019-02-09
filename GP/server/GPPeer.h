@@ -159,7 +159,6 @@ namespace GP {
 		bool m_got_buddies;
 		bool m_got_blocks;
 		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
-		void send_backend_auth_event();
 
 		OS::GameData m_game;
 		Driver *mp_driver;

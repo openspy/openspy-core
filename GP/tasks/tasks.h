@@ -29,7 +29,6 @@ namespace GP {
 		EGPRedisRequestType_UpdateStatus,
 		EGPRedisRequestType_DelBuddy,
 		//EGPRedisRequestType_RevokeAuth,
-		EGPRedisRequestType_SendLoginEvent,
 		EGPRedisRequestType_BuddyMessage,
 		EGPRedisRequestType_AddBlock,
 		EGPRedisRequestType_DelBlock,

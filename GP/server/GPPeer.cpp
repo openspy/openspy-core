@@ -227,14 +227,6 @@ namespace GP {
 			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
 		}
 	}
-	void Peer::send_backend_auth_event() {
-		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
-		GPBackendRedisRequest req;
-		req.type = EGPRedisRequestType_SendLoginEvent;
-		req.peer = this;
-		req.peer->IncRef();
-		scheduler->AddRequest(req.type, req);
-	}
 	void Peer::send_error(GPErrorCode code, std::string addon_data) {
 		GPShared::GPErrorData error_data = GPShared::getErrorDataByCode(code);
 		if (error_data.msg == NULL) {

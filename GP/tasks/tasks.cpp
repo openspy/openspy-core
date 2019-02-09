@@ -14,7 +14,6 @@ namespace GP {
             scheduler->AddRequestHandler(EGPRedisRequestType_UpdateStatus, Perform_SetPresenceStatus);
             scheduler->AddRequestHandler(EGPRedisRequestType_DelBuddy, Perform_ToFromProfileAction);
             //scheduler->AddRequestHandler(EGPRedisRequestType_RevokeAuth, Perform_ToFromProfileAction);
-            scheduler->AddRequestHandler(EGPRedisRequestType_SendLoginEvent, Perform_SendLoginEvent);
             scheduler->AddRequestHandler(EGPRedisRequestType_BuddyMessage, Perform_SendBuddyMessage);
 
             scheduler->AddRequestHandler(EGPRedisRequestType_LookupBuddyStatus, Perform_GetBuddyStatus);
