@@ -159,8 +159,6 @@ namespace GP {
 
 			((GP::Peer *)peer)->send_buddies();
 			((GP::Peer *)peer)->send_blocks();
-
-			((GP::Peer *)peer)->send_backend_auth_event();
 		} else {
 			switch(auth_data.error_details.response_code) {
 				case TaskShared::WebErrorCode_NoSuchUser:
