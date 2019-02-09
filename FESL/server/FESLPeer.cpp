@@ -111,18 +111,6 @@ namespace FESL {
 			Delete();
 		}
 	}
-	void Peer::send_ping() {
-		//check for timeout
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_ping.tv_sec > FESL_PING_TIME) {
-			gettimeofday(&m_last_ping, NULL);
-			std::ostringstream s;
-			s << "TXN=Ping\n";
-			s << "TID=" << current_time.tv_sec << "\n";
-			SendPacket(FESL_TYPE_FSYS, s.str(), 1);
-		}
-	}
 	void Peer::SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence) {
 		FESL_HEADER header;
 		if (force_sequence == -1) {
@@ -160,82 +148,7 @@ namespace FESL {
 			((Peer *)peer)->send_personas();
 		}
 	}
-	bool Peer::m_acct_get_account(OS::KVReader kv_list) {
-		std::ostringstream s;
-		s << "TXN=GetAccount\n";
-		s << "parentalEmail=parents@ea.com\n";
-		s << "countryCode=US\n";
-		s << "countryDesc=\"United States of America\"\n";
-		s << "thirdPartyMailFlag=0\n";
-		s << "dobDay=" << (int)m_profile.birthday.GetDay() << "\n";
-		s << "dobMonth=" << (int)m_profile.birthday.GetMonth() << "\n";
-		s << "dobYear=" << (int)m_profile.birthday.GetYear() << "\n";
-		s << "name=" << m_profile.nick << "\n";
-		s << "email=" << m_user.email << "\n";
-		s << "profileID=" << m_profile.id << "\n";
-		s << "userId=" << m_user.id<< "\n";
-		s << "zipCode=" << m_profile.zipcode << "\n";
-		s << "gender=" << ((m_profile.sex == 0) ? 'M' : 'F') << "\n";
-		s << "eaMailFlag=0\n";
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-		return true;
-	}
-	bool Peer::m_subs_get_entitlement_by_bundle(OS::KVReader kv_list) {
-		std::string kv_str = "TXN=GetEntitlementByBundle\n"
-			"EntitlementByBundle.[]=0\n";
-		SendPacket(FESL_TYPE_SUBS, kv_str);
-		return true;
-	}
-	void Peer::send_subaccounts() {
-		std::ostringstream s;
-		mp_mutex->lock();
-		std::vector<OS::Profile>::iterator it = m_profiles.begin();
-		int i = 0;
-		s << "TXN=GetSubAccounts\n";
-		s << "subAccounts.[]=" << m_profiles.size() << "\n";
-		while (it != m_profiles.end()) {
-			OS::Profile profile = *it;
-			s << "subAccounts." << i++ << "=\"" << profile.uniquenick << "\"\n";
-			it++;
-		}
-		
-		mp_mutex->unlock();
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-	}
-	void Peer::loginToSubAccount(std::string uniquenick) {
-		std::ostringstream s;
-		mp_mutex->lock();
-		std::vector<OS::Profile>::iterator it = m_profiles.begin();
-		while (it != m_profiles.end()) {
-			OS::Profile profile = *it;
-			if (profile.uniquenick.compare(uniquenick) == 0) {
-				m_profile = profile;
-				s << "TXN=LoginSubAccount\n";
-				s << "lkey=" << m_session_key << "\n";
-				s << "profileId=" << m_profile.id << "\n";
-				s << "userId=" << m_user.id << "\n";
-				SendPacket(FESL_TYPE_ACCOUNT, s.str());
-				break;
-			}
-			it++;
-		}
-		mp_mutex->unlock();
-	}
-	bool Peer::m_acct_get_sub_accounts(OS::KVReader kv_list) {
-		if (!m_got_profiles) {
-			m_pending_subaccounts = true;
-		}
-		else {
-			send_subaccounts();
-		}
-		return true;
-	}
-	bool Peer::m_dobj_get_object_inventory(OS::KVReader kv_list) {
-		std::string kv_str = "TXN=GetObjectInventory\n"
-			"ObjectInventory.[]=0\n";
-		SendPacket(FESL_TYPE_DOBJ, kv_str);
-		return true;
-	}
+
 	void Peer::send_memcheck(int type, int salt) {
 		std::ostringstream s;
 		s << "TXN=MemCheck\n";
@@ -243,95 +156,6 @@ namespace FESL {
 		s << "type=" << type << "\n";
 		s << "salt=" << time(NULL) <<"\n";
 		SendPacket(FESL_TYPE_FSYS, s.str(), 0);
-	}
-	bool Peer::m_acct_add_sub_account(OS::KVReader kv_list) {
-		TaskShared::ProfileRequest request;
-		std::string nick, oldnick;
-		nick = kv_list.GetValue("name");
-
-		request.user_search_details.id = m_user.id;
-		//request.profile_search_details.id = m_profile.id;
-		request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
-		request.profile_search_details.nick = nick;
-		request.profile_search_details.uniquenick = nick;
-		request.extra = this;
-		request.peer = this;
-		request.peer->IncRef();
-		request.type = TaskShared::EProfileSearch_CreateProfile;
-		request.callback = Peer::m_create_profile_callback;
-
-		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetProfileTask();
-		scheduler->AddRequest(request.type, request);
-		
-		return true;
-	}
-	void Peer::m_create_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
-		if (error_details.response_code == TaskShared::WebErrorCode_Success && results.size() > 0) {
-			((Peer *)peer)->mp_mutex->lock();
-			((Peer *)peer)->m_profiles.push_back(results.front());
-			((Peer *)peer)->mp_mutex->unlock();
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_NO_ERROR, "AddSubAccount");
-		} else {
-			((Peer *)peer)->handle_profile_search_callback_error(error_details, FESL_TYPE_ACCOUNT, "AddSubAccount");
-		}
-	}
-	bool Peer::m_acct_disable_sub_account(OS::KVReader kv_list) {
-		mp_mutex->lock();
-		std::vector<OS::Profile>::iterator it = m_profiles.begin();
-		while (it != m_profiles.end()) {
-			OS::Profile profile = *it;
-			if (profile.uniquenick.compare(kv_list.GetValue("name")) == 0) {
-				TaskShared::ProfileRequest request;
-				request.profile_search_details.id = profile.id;
-				request.peer = this;
-				request.extra = (void *)((size_t)profile.id);
-				request.peer->IncRef();
-				request.type = TaskShared::EProfileSearch_DeleteProfile;
-				request.callback = Peer::m_delete_profile_callback;
-				mp_mutex->unlock();
-				TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetProfileTask();
-				scheduler->AddRequest(request.type, request);
-				return true;
-			}
-			it++;
-		}
-		mp_mutex->unlock();
-		return true;
-	}
-	void Peer::m_delete_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
-		if (error_details.response_code == TaskShared::WebErrorCode_Success) {
-			((Peer *)peer)->mp_mutex->lock();
-			std::vector<OS::Profile>::iterator it = ((Peer *)peer)->m_profiles.begin();
-			while (it != ((Peer *)peer)->m_profiles.end()) {
-				OS::Profile profile = *it;
-				if ((size_t)profile.id == (size_t)extra) {
-					((Peer *)peer)->m_profiles.erase(it);
-					break;
-				}
-				it++;
-			}
-			((Peer *)peer)->mp_mutex->unlock();
-
-			std::ostringstream s;
-			s << "TXN=DisableSubAccount\n";
-			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
-		}
-		else {
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)FESL_ERROR_SYSTEM_ERROR, "DisableSubAccount");
-		}
-	}
-	void Peer::m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
-		std::ostringstream s;
-		if (success) {
-			s << "TXN=GameSpyPreAuth\n";
-			if(auth_data.response_proof.length())
-				s << "challenge=" << auth_data.response_proof << "\n";
-			s << "ticket=" << auth_data.session_key << "\n";
-			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
-		}
-		else {
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_AUTH_FAILURE, "GameSpyPreAuth");
-		}
 	}
 
 	void Peer::SendCustomError(FESL_COMMAND_TYPE type, std::string TXN, std::string fieldName, std::string fieldError) {
@@ -354,132 +178,6 @@ namespace FESL {
 		SendPacket(type, s.str());
 	}
 
-	bool Peer::m_acct_get_country_list(OS::KVReader kv_list) {
-		std::ostringstream s;
-		s << "TXN=GetCountryList\n";
-		s << "countryList.0.description=\"North America\"\n";
-		s << "countryList.0.ISOCode=1\n";
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-		return true;
-	}
-	bool Peer::m_acct_add_account(OS::KVReader kv_list) {
-		OS::User user;
-		OS::Profile profile;
-		user.email = kv_list.GetValue("email");
-		user.password = kv_list.GetValue("password");
-		profile.uniquenick = kv_list.GetValue("name");
-		profile.nick = profile.uniquenick;
-
-		if(user.email.length() <= 0) {
-			SendCustomError(FESL_TYPE_ACCOUNT, "AddAccount", "Account.EmailAddress", "The specified email was invalid. Please change it and try again.");
-			return true;
-		}
-
-		profile.birthday = OS::Date(kv_list.GetValueInt("DOBYear"), kv_list.GetValueInt("DOBMonth"), kv_list.GetValueInt("DOBDay"));
-
-		profile.namespaceid = FESL_ACCOUNT_NAMESPACEID;
-		user.partnercode = OS_EA_PARTNER_CODE;
-
-		TaskShared::UserRequest req;
-		req.type = TaskShared::EUserRequestType_Create;
-		req.peer = this;
-		req.peer->IncRef();
-
-		req.registerCallback = m_newuser_cb;
-
-		req.profile_params = profile;
-		req.search_params = user;
-		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetUserTask();
-		scheduler->AddRequest(req.type, req);
-		
-		return true;
-	}
-	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer) {
-		FESL_ERROR err_code = FESL_ERROR_NO_ERROR;
-		if (auth_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
-			switch (auth_data.error_details.response_code) {
-			case TaskShared::WebErrorCode_UniqueNickInUse:
-				err_code = FESL_ERROR_ACCOUNT_EXISTS;
-				break;
-			case TaskShared::WebErrorCode_EmailInvalid:
-				((Peer *)peer)->SendCustomError(FESL_TYPE_ACCOUNT, "AddAccount", "Account.EmailAddress", "The specified email was invalid. Please change it and try again.");
-				return;
-			default:
-				err_code = FESL_ERROR_SYSTEM_ERROR;
-				break;
-			}
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, (FESL_ERROR)err_code, "AddAccount");
-		}
-		else {
-			std::ostringstream s;
-			s << "TXN=AddAccount\n";
-			s << "userId=" << user.id << "\n";
-			s << "profileId=" << profile.id << "\n";
-			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
-
-		}
-	}
-	bool Peer::m_acct_update_account(OS::KVReader kv_list) {
-		/*
-		Got EAMsg(103):
-		TXN=UpdateAccount
-		email=chc@thmods.com
-		parentalEmail=
-		countryCode=1
-		eaMailFlag=1
-		thirdPartyMailFlag=0
-		*/
-
-		OS::Profile profile = m_profile;
-		OS::User user = m_user;
-		bool send_userupdate = false; //, send_profileupdate = false;
-
-		if (kv_list.GetValue("email").compare(m_user.email) == 0) {
-			user.email = kv_list.GetValue("email");
-			send_userupdate = true;
-		}
-		/*
-		OS::ProfileSearchRequest request;
-		request.profile_search_details = m_profile;
-		request.extra = NULL;
-		request.peer = this;
-		request.peer->IncRef();
-		request.type = OS::EProfileSearch_UpdateProfile;
-		request.callback = Peer::m_update_profile_callback;
-		OS::m_profile_search_task_pool->AddRequest(request);
-		*/
-
-		if (send_userupdate) {
-			TaskShared::UserRequest user_request;
-			user_request.search_params = user;
-			user_request.type = TaskShared::EUserRequestType_Update;
-			user_request.extra = NULL;
-			user_request.peer = this;
-			user_request.peer->IncRef();
-			user_request.callback = Peer::m_update_user_callback;
-			TaskScheduler<TaskShared::UserRequest, TaskThreadData> *user_scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetUserTask();
-			user_scheduler->AddRequest(user_request.type, user_request);
-		}
-		return true;
-	}
-	void Peer::m_update_user_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer) {
-		std::ostringstream s;
-		s << "TXN=UpdateAccount\n";
-		if (error_details.response_code == TaskShared::WebErrorCode_Success) {
-			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
-		}
-		else {
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_SYSTEM_ERROR, "UpdateAccount");
-		}
-	}
-	bool Peer::m_acct_gettos_handler(OS::KVReader kv_list) {
-		std::ostringstream s;
-		s << "TXN=GetTos\n";
-		s << "tos=\"" << ((FESL::Driver *)GetDriver())->GetServerInfo().termsOfServiceData << "\"\n";
-
-		SendPacket(FESL_TYPE_FSYS, s.str());
-		return true;
-	}
 	void Peer::Delete(bool timeout) {
 		m_timeout_flag = timeout;
 		m_delete_flag = true;
@@ -496,5 +194,49 @@ namespace FESL {
 		std::string kv_str = "TXN=Goodbye\n";
 		SendPacket(FESL_TYPE_FSYS, kv_str);
 		Delete();
+	}
+
+	void Peer::handle_auth_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
+		FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
+		switch (error_details.response_code) {
+		case TaskShared::WebErrorCode_UniqueNickInUse:
+			error = FESL_ERROR_ACCOUNT_EXISTS;
+			break;
+		case TaskShared::WebErrorCode_NoSuchUser:
+			error = FESL_ERROR_ACCOUNT_NOT_FOUND;
+			break;
+		case TaskShared::WebErrorCode_NickInvalid:
+			error = FESL_ERROR_ACCOUNT_NOT_FOUND;
+			break;
+		default:
+			break;
+		}
+		SendError(cmd_type, error, TXN);
+	}
+	void Peer::handle_profile_search_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
+		/*
+		EProfileResponseType_Success,
+		EProfileResponseType_GenericError,
+		EProfileResponseType_BadNick,
+		EProfileResponseType_Bad_OldNick,
+		EProfileResponseType_UniqueNick_Invalid,
+		EProfileResponseType_UniqueNick_InUse,
+		*/
+		FESL_ERROR error = FESL_ERROR_SYSTEM_ERROR;
+		switch (error_details.response_code) {
+			case TaskShared::WebErrorCode_UniqueNickInvalid:
+			case TaskShared::WebErrorCode_NickInvalid:
+				SendCustomError(cmd_type, TXN, "Account.ScreenName", "The account name was invalid. Please change and try again.");
+				return;
+			case TaskShared::WebErrorCode_NickInUse:
+				//SendCustomError(cmd_type, TXN, "Account.ScreenName", "The account name is in use. Please choose another name.");
+				error = FESL_ERROR_ACCOUNT_EXISTS;
+				break;
+			default:
+				error = FESL_ERROR_SYSTEM_ERROR;
+			break;
+		}
+		SendError(cmd_type, error, TXN);
+		
 	}
 }

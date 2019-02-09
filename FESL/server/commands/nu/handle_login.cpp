@@ -1,50 +1,13 @@
 #include <OS/OpenSpy.h>
-#include <OS/SharedTasks/tasks.h>
-#include "FESLServer.h"
-#include "FESLDriver.h"
-#include "FESLPeer.h"
-#include <sstream>
 
+#include <OS/SharedTasks/tasks.h>
+#include <server/FESLServer.h>
+#include <server/FESLDriver.h>
+#include <server/FESLPeer.h>
+
+
+#include <sstream>
 namespace FESL {
-	void Peer::loginToPersona(std::string uniquenick) {
-		std::ostringstream s;
-		mp_mutex->lock();
-		std::vector<OS::Profile>::iterator it = m_profiles.begin();
-		while (it != m_profiles.end()) {
-			OS::Profile profile = *it;
-			if (profile.uniquenick.compare(uniquenick) == 0) {
-				m_profile = profile;
-				s << "TXN=NuLoginPersona\n";
-				s << "lkey=" << m_session_key << "\n";
-				s << "profileId=" << m_profile.id << "\n";
-				s << "userId=" << m_user.id << "\n";
-				SendPacket(FESL_TYPE_ACCOUNT, s.str());
-				break;
-			}
-			it++;
-		}
-		mp_mutex->unlock();
-	}
-	bool Peer::m_acct_login_persona(OS::KVReader kv_list) {
-		std::ostringstream s;
-		loginToPersona(kv_list.GetValue("name"));
-		return true;
-	}
-	void Peer::send_personas() {
-		std::ostringstream s;
-		mp_mutex->lock();
-		std::vector<OS::Profile>::iterator it = m_profiles.begin();
-		s << "TXN=NuGetPersonas\n";
-		s << "personas.[]=" << m_profiles.size() << "\n";
-		int i = 0;
-		while (it != m_profiles.end()) {
-			OS::Profile profile = *it;
-			s << "personas." << i++ << "=\"" << profile.uniquenick << "\"\n";
-			it++;
-		}
-		mp_mutex->unlock();
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-	}
 	bool Peer::m_acct_nulogin_handler(OS::KVReader kv_list) {
 		std::string nuid, password;
 		if (kv_list.HasKey("encryptedInfo")) {
@@ -77,15 +40,7 @@ namespace FESL {
 		scheduler->AddRequest(request.type, request);
 		return true;
 	}
-	bool Peer::m_acct_get_personas(OS::KVReader kv_list) {
-		if (!m_got_profiles) {
-			m_pending_nuget_personas= true;
-		}
-		else {
-			send_personas();
-		}
-		return true;
-	}
+
 	void Peer::m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		if (success) {
@@ -118,14 +73,5 @@ namespace FESL {
 		else {
 			((Peer *)peer)->handle_auth_callback_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "NuLogin");
 		}
-	}
-	bool Peer::m_acct_get_telemetry_token(OS::KVReader kv_list) {
-		std::ostringstream s;
-		s << "TXN=GetTelemetryToken\n";
-		s << "telemetryToken=\"teleToken\"\n";
-		s << "enabled=0\n";
-		s << "disabled=1\n";
-		SendPacket(FESL_TYPE_ACCOUNT, s.str());
-		return true;
 	}
 }

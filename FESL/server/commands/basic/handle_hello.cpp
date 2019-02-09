@@ -1,0 +1,37 @@
+#include <OS/OpenSpy.h>
+
+#include <OS/SharedTasks/tasks.h>
+#include <server/FESLServer.h>
+#include <server/FESLDriver.h>
+#include <server/FESLPeer.h>
+
+
+#include <sstream>
+namespace FESL {
+	bool Peer::m_fsys_hello_handler(OS::KVReader kv_list) {
+		std::ostringstream ss;
+
+		char timeBuff[128];
+		struct tm *newtime;
+		time_t long_time;
+		time(&long_time);
+		newtime = localtime(&long_time);
+
+		strftime(timeBuff, sizeof(timeBuff), "%h-%e-%g %T %Z", newtime);
+
+		PublicInfo public_info = ((FESL::Driver *)mp_driver)->GetServerInfo();
+		ss << "TXN=Hello\n";
+		ss << "domainPartition.domain=" << public_info.domainPartition << "\n";
+		ss << "messengerIp=" << public_info.messagingHostname << "\n";
+		ss << "messengerPort=" << public_info.messagingPort << "\n";
+		ss << "domationPartition.subDomain=" << public_info.subDomain << "\n";
+		ss << "activityTimeoutSecs=" << FESL_PING_TIME * 2 << "\n";
+		ss << "curTime=\"" << OS::url_encode(timeBuff) << "\"\n";
+		ss << "theaterIp=" << public_info.theaterHostname << "\n";
+		ss << "theaterPort=" << public_info.theaterPort << "\n";
+		SendPacket(FESL_TYPE_FSYS, ss.str());
+
+		send_memcheck(0);
+		return true;
+	}
+}
