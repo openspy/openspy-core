@@ -258,6 +258,10 @@ namespace TaskShared {
 				json_decref(send_obj);
 
 			request.callback(error_details, results, users_map, request.extra, request.peer);
+
+			if (request.peer) {
+				request.peer->DecRef();
+			}
 			return true;
 		}
 		bool PerformUserRequest(UserRequest request, TaskThreadData *thread_data) {
@@ -355,6 +359,10 @@ namespace TaskShared {
 
 			if (request.callback != NULL)
 				request.callback(error_details, results, request.extra, request.peer);
+
+			if (request.peer) {
+				request.peer->DecRef();
+			}
 			return true;
 		}
 }
