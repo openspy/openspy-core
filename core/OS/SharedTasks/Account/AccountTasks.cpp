@@ -217,12 +217,11 @@ namespace TaskShared {
 					json_t *json_data = NULL;
 
 					json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
+					if (Handle_WebError(json_data, error_details)) {
 
-					if (json_data) {
-						if (Handle_WebError(json_data, error_details)) {
-
-						}
-						else if (json_is_array(json_data)) {
+					}
+					else if (json_data) {
+						if (json_is_array(json_data)) {
 							size_t num_profiles = json_array_size(json_data);
 							for (size_t i = 0; i < num_profiles; i++) {
 								json_t *profile_obj = json_array_get(json_data, i);

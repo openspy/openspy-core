@@ -15,11 +15,13 @@ namespace TaskShared {
             WebErrorCode_EmailInvalid,
             WebErrorCode_BackendError, //fallback error, generic comms problem, etc
     };
-    typedef struct _WebErrorDetails {
+    class WebErrorDetails {
+	public:
+			WebErrorDetails() { response_code = WebErrorCode_BackendError; }
             WebErrorCode response_code;
             int profileid;
             int userid;
-    } WebErrorDetails;
+    } ;
     bool Handle_WebError(json_t *json_body, WebErrorDetails &error_info); //in AuthTasks.cpp
 }
 #endif //_WEBERROR_H

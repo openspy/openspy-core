@@ -43,27 +43,25 @@ namespace TaskShared {
 
 			if (res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
-				if (json_data) {
+				if (Handle_WebError(json_data, auth_data.error_details)) {
+
+				}
+				else if (json_data) {
 					json_t *error_obj = json_object_get(json_data, "error");
-					if (Handle_WebError(json_data, auth_data.error_details)) {
-
+					success = true;
+					json_t *session_key_json = json_object_get(json_data, "session_key");
+					if (session_key_json) {
+						auth_data.session_key = json_string_value(session_key_json);
 					}
-					else {
-						success = true;
-						json_t *session_key_json = json_object_get(json_data, "session_key");
-						if (session_key_json) {
-							auth_data.session_key = json_string_value(session_key_json);
-						}
 
-						session_key_json = json_object_get(json_data, "profile");
-						if (session_key_json) {
-							profile = OS::LoadProfileFromJson(session_key_json);
-						}
+					session_key_json = json_object_get(json_data, "profile");
+					if (session_key_json) {
+						profile = OS::LoadProfileFromJson(session_key_json);
+					}
 
-						session_key_json = json_object_get(json_data, "user");
-						if (session_key_json) {
-							user = OS::LoadUserFromJson(session_key_json);
-						}
+					session_key_json = json_object_get(json_data, "user");
+					if (session_key_json) {
+						user = OS::LoadUserFromJson(session_key_json);
 					}
 					json_decref(json_data);
 				}

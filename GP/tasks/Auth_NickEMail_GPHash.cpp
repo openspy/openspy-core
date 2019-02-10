@@ -43,11 +43,11 @@ namespace GP {
 			if (res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
 
-				if (json_data) {
+				if (TaskShared::Handle_WebError(json_data, auth_data.error_details)) {
+				}
+				else if (json_data) {
 					json_t *success_obj = json_object_get(json_data, "success");
-					if (TaskShared::Handle_WebError(json_data, auth_data.error_details)) {
-					}
-					else if (success_obj == json_true()) {
+					if (success_obj == json_true()) {
 						json_t *profile_json = json_object_get(json_data, "profile");
 						if (profile_json) {
 							profile = OS::LoadProfileFromJson(profile_json);

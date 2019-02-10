@@ -75,6 +75,10 @@ namespace TaskShared {
 
 		}
 		bool Handle_WebError(json_t *json_body, WebErrorDetails &error_info) {
+			if (json_body == NULL) {
+				error_info.response_code = WebErrorCode_BackendError;
+				return true;
+			}
 			json_t *error_obj = json_object_get(json_body, "error");
 			if (!error_obj) {
 				error_info.response_code = WebErrorCode_Success;

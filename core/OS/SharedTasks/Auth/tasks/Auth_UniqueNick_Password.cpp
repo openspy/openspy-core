@@ -37,13 +37,13 @@ namespace TaskShared {
 
 			if (res == CURLE_OK) {
 				json_t *json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
-				if (json_data) {
+				if (Handle_WebError(json_data, auth_data.error_details)) {
+
+				}
+				else if (json_data) {
 					json_t *error_obj = json_object_get(json_data, "error");
 					json_t *success_obj = json_object_get(json_data, "success");
-					if (Handle_WebError(json_data, auth_data.error_details)) {
-
-					}
-					else if (success_obj == json_true()) {
+					if (success_obj == json_true()) {
 						success = true;
 						json_t *session_key_json = json_object_get(json_data, "session_key");
 						if (session_key_json) {

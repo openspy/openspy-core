@@ -82,10 +82,11 @@ namespace TaskShared {
 
 			if (res == CURLE_OK) {
 				root = json_loads(recv_data.buffer.c_str(), 0, NULL);
-				if (root) {
-					if (Handle_WebError(root, error_details)) {
+				if (Handle_WebError(root, error_details)) {
 
-					} else if (json_array_size(root) > 0) {
+				}
+				else if (root) {
+					if(json_array_size(root) > 0) {
 						OS::User user = OS::LoadUserFromJson(json_array_get(root, 0));
 						results.push_back(user);
 					}
