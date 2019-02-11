@@ -45,19 +45,41 @@ namespace TaskShared {
 							json_t *array_item = json_array_get(root, i);
 							json_t *profile_item = json_object_get(array_item, "profile");
 							json_t *user_item = json_object_get(array_item, "user");
+							json_t *status_item = NULL;
 							OS::Profile profile = OS::LoadProfileFromJson(profile_item);
 							profiles.push_back(profile);
 							users[profile.id] = OS::LoadUserFromJson(profile_item);
 
-							status.quiet_flags = json_integer_value(json_object_get(array_item, "quietFlags"));
-							status.status = (GPShared::GPEnum)json_integer_value(json_object_get(array_item, "statusFlags"));
-							status.status_str = json_string_value(json_object_get(array_item, "statusText"));
-							status.location_str = json_string_value(json_object_get(array_item, "locationText"));
+							status_item = json_object_get(array_item, "quietFlags");
+							if(status_item && status_item != json_null())
+								status.quiet_flags = json_integer_value(status_item);
+
+							status_item = json_object_get(array_item, "statusFlags");
+							if(status_item && status_item != json_null())
+								status.status = (GPShared::GPEnum)json_integer_value(status_item);
+
+							status_item = json_object_get(array_item, "statusText");
+							if (status_item && status_item != json_null())
+								status.status_str = json_string_value(status_item);
+
+							if (status_item && status_item != json_null())
+								status_item = json_object_get(array_item, "locationText");
+
+							if(status_item && status_item != json_null())
+								status.location_str = json_string_value(status_item);
 
 							std::ostringstream address_ss;
-							address_ss << json_string_value(json_object_get(array_item, "ip")) << ":";
-							address_ss << json_integer_value(json_object_get(array_item, "port"));
-							status.address = OS::Address(address_ss.str());
+							json_t *ip, *port;
+							ip = json_object_get(array_item, "ip");
+							port = json_object_get(array_item, "port");
+
+							if ((ip && port) && (ip != json_null() && port != json_null())) {
+								address_ss << json_string_value(ip) << ":";
+								address_ss << json_integer_value(port);
+								status.address = OS::Address(address_ss.str());
+							}
+
+							
 							status_map[profile.id] = status;
 						}
 					}

@@ -118,11 +118,12 @@ namespace SM {
 			handle_check(data_parser);
 		} else if(!command.compare("newuser")) {
 			handle_newuser(data_parser);
-		} else if(!command.compare("uniquesearch") || !command.compare("searchunique")) {
+		} else if( !command.compare("searchunique")) {
 			handle_searchunique(data_parser);
 		} else if(!command.compare("profilelist")) {
 			
 		}
+		//!command.compare("uniquesearch") ||
 
 		/*
 		[127.0.0.1:50805] Recv: \searchunique\\sesskey\0\profileid\0\uniquenick\gptestc1\namespaces\1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16\gamename\gmtest
@@ -133,6 +134,9 @@ namespace SM {
 	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer) {
 		int err_code = 0;
 
+		if (auth_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
+			profile.id = auth_data.error_details.profileid;
+		}
 		switch(auth_data.error_details.response_code) {
 			case TaskShared::WebErrorCode_UniqueNickInUse:
 				err_code = GP_NEWUSER_UNIQUENICK_INUSE;
@@ -168,6 +172,7 @@ namespace SM {
 		int namespaceid = data_parser.GetValueInt("namespaceid");
 
 		if (!data_parser.HasKey("email") || !data_parser.HasKey("nick")) {
+			send_error(GPShared::GP_PARSE);
 			return;
 		}
 
@@ -283,6 +288,7 @@ namespace SM {
 			request.user.partnercode = data_parser.GetValueInt("partnerid");
 		request.extra = this;
 		request.peer = this;
+		request.create_session = false;
 		request.callback = m_nick_email_auth_cb;
 		IncRef();
 
@@ -293,6 +299,9 @@ namespace SM {
 		TaskShared::ProfileRequest request;
 		
 		request.profile_search_details.id = 0;
+		if (data_parser.HasKey("profileid")) {
+			request.profile_search_details.id = data_parser.GetValueInt("profileid");
+		}
 		if(data_parser.HasKey("email")) {
 			request.user_search_details.email = data_parser.GetValue("email");
 		}
@@ -309,20 +318,24 @@ namespace SM {
 			request.profile_search_details.lastname = data_parser.GetValue("lastname");
 		}
 		
-		int namespace_id = data_parser.GetValueInt("namespaceid");
-		if (namespace_id != 0) {
+		if (data_parser.HasKey("namespaceid")) {
+			int namespace_id = data_parser.GetValueInt("namespaceid");
 			request.namespaceids.push_back(namespace_id);
 		}
 
-		request.user_search_details.partnercode = data_parser.GetValueInt("partnerid");
-		/*
-		if(find_param("namespaceids", (char*)buf, (char*)&temp, GP_REASON_LEN)) {
-			//TODO: namesiaceids\1,2,3,4,5
+		if (data_parser.HasKey("namespaceids")) {
+			std::stringstream ns_ss(data_parser.GetValue("namespaceids"));
+			std::string ns_token;
+			while (std::getline(ns_ss, ns_token, ',')) {
+				request.namespaceids.push_back(atoi(ns_token.c_str()));
+			}
 		}
-		*/
+
+		if (data_parser.HasKey("partnerid")) {
+			request.user_search_details.partnercode = data_parser.GetValueInt("partnerid");
+		}
 
 		request.type = TaskShared::EProfileSearch_Profiles;
-		request.extra = this;
 		request.peer = this;
 		IncRef();
 		request.callback = Peer::m_search_callback;
@@ -354,12 +367,29 @@ namespace SM {
 			request.namespaceids.push_back(namespace_id);
 		}
 
-		request.user_search_details.partnercode = data_parser.GetValueInt("partnerid");
-		/*
-		if(find_param("namespaceids", (char*)buf, (char*)&temp, GP_REASON_LEN)) {
-			//TODO: namesiaceids\1,2,3,4,5
+		if (data_parser.HasKey("partnerid")) {
+			request.user_search_details.partnercode = data_parser.GetValueInt("partnerid");
 		}
-		*/
+		else if (data_parser.HasKey("partnercode")) {
+			request.user_search_details.partnercode = data_parser.GetValueInt("partnercode");
+		}
+		
+
+		if (data_parser.HasKey("namespaceids")) {
+			std::stringstream ns_ss(data_parser.GetValue("namespaceids"));
+			std::string ns_token;
+			while (std::getline(ns_ss, ns_token, ',')) {
+				request.namespaceids.push_back(atoi(ns_token.c_str()));
+			}
+		}
+
+		if (data_parser.HasKey("namespaces")) {
+			std::stringstream ns_ss(data_parser.GetValue("namespaces"));
+			std::string ns_token;
+			while (std::getline(ns_ss, ns_token, ',')) {
+				request.namespaceids.push_back(atoi(ns_token.c_str()));
+			}
+		}
 
 		request.type = TaskShared::EProfileSearch_Profiles;
 		request.extra = this;
@@ -393,10 +423,10 @@ namespace SM {
 
 		((Peer *)peer)->Delete();
 	}
-	void Peer::m_search_buddies_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_search_buddies_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::vector<OS::Profile>::iterator it = results.begin();
-		s << "\\otherslist\\";
+		s << "\\others\\";
 		while(it != results.end()) {
 			OS::Profile p = *it;
 			OS::User u = result_users[p.userid];
@@ -413,7 +443,7 @@ namespace SM {
 			s << "\\namespaceid\\" << p.namespaceid;
 			it++;
 		}
-		s << "\\oldone\\";
+		s << "\\odone\\";
 
 		((Peer *)peer)->SendPacket(s.str().c_str());
 
@@ -431,15 +461,15 @@ namespace SM {
 		request.extra = this;
 		request.peer = this;
 		IncRef();
-		request.callback = Peer::m_search_buddies_callback;
+		request.buddyCallback = Peer::m_search_buddies_callback;
 		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetProfileTask();
 		scheduler->AddRequest(request.type, request);
 	}
 
-	void Peer::m_search_buddies_reverse_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+	void Peer::m_search_buddies_reverse_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::vector<OS::Profile>::iterator it = results.begin();
-		s << "\\others\\";
+		s << "\\otherslist\\";
 		while(it != results.end()) {
 			OS::Profile p = *it;
 			OS::User u = result_users[p.userid];
@@ -458,7 +488,7 @@ namespace SM {
 			}
 			it++;
 		}
-		s << "\\odone\\";
+		s << "\\oldone\\";
 
 		((Peer *)peer)->SendPacket(s.str().c_str());
 
@@ -489,7 +519,7 @@ namespace SM {
 		request.extra = this;
 		request.peer = this;
 		IncRef();
-		request.callback = Peer::m_search_buddies_reverse_callback;
+		request.buddyCallback = Peer::m_search_buddies_reverse_callback;
 		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetProfileTask();
 		scheduler->AddRequest(request.type, request);
 	}
@@ -587,11 +617,10 @@ namespace SM {
 		std::vector<OS::Profile>::iterator it = results.begin();
 		while (it != results.end()) {
 			OS::Profile p = *it;
-			if(p.nick.length())
-				s << "\\nick\\" << p.nick;
-
-			if(p.uniquenick.length())
+			if (p.uniquenick.length())
 				s << "\\uniquenick\\" << p.uniquenick;
+			else if(p.nick.length())
+				s << "\\nick\\" << p.nick;
 			it++;
 		}
 

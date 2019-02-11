@@ -17,7 +17,7 @@ namespace TaskShared {
     };
     class WebErrorDetails {
 	public:
-			WebErrorDetails() { response_code = WebErrorCode_BackendError; }
+			WebErrorDetails() { response_code = WebErrorCode_BackendError; userid = 0; profileid = 0; }
             WebErrorCode response_code;
             int profileid;
             int userid;

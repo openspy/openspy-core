@@ -3,7 +3,9 @@
 namespace OS {
 	json_t *UserToJson(User user) {
 		json_t *user_obj = json_object();
-		json_object_set_new(user_obj, "id", json_integer(user.id));
+
+		if(user.id != 0)
+			json_object_set_new(user_obj, "id", json_integer(user.id));
 
 		if(user.email.length() > 0)
 			json_object_set_new(user_obj, "email", json_string(user.email.c_str()));

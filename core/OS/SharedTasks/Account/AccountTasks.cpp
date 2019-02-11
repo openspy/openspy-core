@@ -277,7 +277,7 @@ namespace TaskShared {
 			TaskShared::WebErrorDetails error_details;
 
 			if (curl) {
-				std::string url = std::string(OS::g_webServicesURL) + "/v1/User/lookup";
+				std::string url = std::string(OS::g_webServicesURL);
 				switch (request.type) {
 				case EUserRequestType_Search:
 					url += "/v1/User/lookup";

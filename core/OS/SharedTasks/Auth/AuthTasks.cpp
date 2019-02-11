@@ -87,6 +87,7 @@ namespace TaskShared {
 			error_info.userid = 0;
 			error_info.profileid = 0;
 			
+			//{"error":{"class":"profile","name":"UniqueNickInUse","extra":{"profileid":2957553,"userid":1}}}
 			std::string error_class, error_name;
 			json_t *extra = json_object_get(error_obj, "extra");
 			json_t *item = json_object_get(error_obj, "class");
@@ -98,14 +99,14 @@ namespace TaskShared {
 			error_name = json_string_value(item);
 
 			if(extra) {
-				json_t *profileid_obj = json_object_get(error_obj, "profileid");
+				json_t *profileid_obj = json_object_get(extra, "profileid");
 				if(profileid_obj) {
 					error_info.profileid = json_integer_value(profileid_obj);
 				}
 
-				json_t *userid_obj = json_object_get(error_obj, "userid");
-				if(profileid_obj) {
-					error_info.userid = json_integer_value(profileid_obj);
+				json_t *userid_obj = json_object_get(extra, "userid");
+				if(userid_obj) {
+					error_info.userid = json_integer_value(userid_obj);
 				}
 
 			}

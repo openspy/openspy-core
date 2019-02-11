@@ -27,7 +27,13 @@ namespace TaskShared {
 
     typedef void (*AuthCallback)(bool success, OS::User user, OS::Profile profile, AuthData auth_data, void *extra, INetPeer *peer);
 
-	typedef struct {
+	class AuthRequest {
+	public:
+		AuthRequest() {
+			create_session = true;
+			extra = NULL;
+			peer = NULL;
+		}
 		int type;
 		bool create_session;
 
@@ -38,7 +44,7 @@ namespace TaskShared {
 
 		INetPeer *peer;
 		std::string gamename;
-	} AuthRequest;
+	};
 
 	void AuthReq_InitCurl(void *curl, char *post_data, void *write_data, AuthRequest request);
 
