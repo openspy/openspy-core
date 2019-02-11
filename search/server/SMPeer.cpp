@@ -168,8 +168,6 @@ namespace SM {
 		std::string nick;
 		std::string uniquenick;
 		std::string email;
-		int partnercode = data_parser.GetValueInt("partnerid");
-		int namespaceid = data_parser.GetValueInt("namespaceid");
 
 		if (!data_parser.HasKey("email") || !data_parser.HasKey("nick")) {
 			send_error(GPShared::GP_PARSE);
@@ -213,9 +211,15 @@ namespace SM {
 
 		req.profile_params.nick = nick;
 		req.profile_params.uniquenick = uniquenick;
-		req.profile_params.namespaceid = namespaceid;
+		if (data_parser.HasKey("namespaceid")) {
+			req.profile_params.namespaceid = data_parser.GetValueInt("namespaceid");;
+		}
+		
 		req.search_params.email = email;
-		req.search_params.partnercode = partnercode;
+		if (data_parser.HasKey("partnerid")) {
+			req.search_params.partnercode = data_parser.GetValueInt("partnerid");
+		}
+		
 		req.search_params.password = password;
 		req.registerCallback = m_newuser_cb;
 
