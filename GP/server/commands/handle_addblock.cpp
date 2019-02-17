@@ -16,6 +16,12 @@ namespace GP {
 	void Peer::handle_addblock(OS::KVReader data_parser) {
 		if (data_parser.HasKey("profileid")) {
 			int profileid = data_parser.GetValueInt("profileid");
+			if (std::find(m_blocks.begin(), m_blocks.end(), profileid) != m_blocks.end()) {
+				send_error(GPShared::GP_ADDBLOCK_ALREADY_BLOCKED);
+				return;
+			}
+
+			m_blocks.push_back(profileid);
 			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 			GPBackendRedisRequest req;
 			req.type = EGPRedisRequestType_AddBlock;

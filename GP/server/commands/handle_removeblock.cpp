@@ -17,6 +17,13 @@ namespace GP {
 		//OS::KVReader data_parser = OS::KVReader(std::string(data));
 		if (data_parser.HasKey("profileid")) {
 			int profileid = data_parser.GetValueInt("profileid");
+			std::vector<int>::iterator it = std::find(m_blocks.begin(), m_blocks.end(), profileid);
+			if (it == m_blocks.end()) {
+				send_error(GPShared::GP_REMOVEBLOCK_NOT_BLOCKED);
+				return;
+			}
+			m_blocks.erase(it);
+
 			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 			GPBackendRedisRequest req;
 			req.type = EGPRedisRequestType_DelBlock;

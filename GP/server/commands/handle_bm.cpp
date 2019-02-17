@@ -19,8 +19,18 @@ namespace GP {
 			int to_profileid = data_parser.GetValueInt("t");
 			int msg_type = data_parser.GetValueInt("bm");
 			std::string msg = data_parser.GetValue("msg");
+
+			if (m_buddies.find(to_profileid) == m_buddies.end()) {
+				send_error(GPShared::GP_BM_NOT_BUDDY);
+				return;
+			}
+
+			if (m_buddies[to_profileid].status == GP_OFFLINE) {
+				send_error(GPShared::GP_BM_BUDDY_OFFLINE);
+				return;
+			}
 			
-			/*switch (msg_type) {
+			switch (msg_type) {
 			case GPI_BM_MESSAGE:
 			case GPI_BM_UTM:
 			case GPI_BM_PING:
@@ -28,7 +38,7 @@ namespace GP {
 				break;
 			default:
 				return;
-			}*/
+			}
 
 			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 			GPBackendRedisRequest req;
