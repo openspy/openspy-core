@@ -38,6 +38,7 @@ namespace GP {
 		}
 		//request.profile_search_details.id = m_profile.id;
 		request.profile_search_details.nick = nick;
+		request.profile_search_details.userid = m_user.id;
 		request.user_search_details.id = m_user.id;
 		request.extra = (void *)data_parser.GetValueInt("id");
 		request.peer = this;

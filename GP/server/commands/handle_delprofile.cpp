@@ -15,10 +15,27 @@
 namespace GP {
 	void Peer::m_delete_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
+
+		switch (error_details.response_code) {
+			case TaskShared::WebErrorCode_Success:
+				break;
+			case TaskShared::WebErrorCode_CannotDeleteLastProfile:
+				((GP::Peer *)peer)->send_error(GPShared::GP_DELPROFILE_LAST_PROFILE);
+				return;
+				break;
+			default:
+				((GP::Peer *)peer)->send_error(GPShared::GP_DELPROFILE);
+				return;
+				break;
+		}
 		
 		s << "\\dpr\\" << (int)(error_details.response_code == TaskShared::WebErrorCode_Success);
 		s << "\\id\\" << (int)extra;
 		((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
+
+		if ((error_details.response_code == TaskShared::WebErrorCode_Success)) {
+			peer->Delete();
+		} 
 	}
 	void Peer::handle_delprofile(OS::KVReader data_parser) {
 		TaskShared::ProfileRequest request;

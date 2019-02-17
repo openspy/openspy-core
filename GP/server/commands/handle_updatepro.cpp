@@ -74,5 +74,11 @@ namespace GP {
 		}
 	}
 	void Peer::m_update_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		/* fake testing response... no real response in GP
+		std::ostringstream s;
+		s << "\\pui\\1";
+		s << "\\result_size\\" << results.size();
+		((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());*/
+		//s << "\\id\\" << (int)extra;
 	}
 }

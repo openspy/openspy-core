@@ -20,7 +20,14 @@ namespace GP {
 		std::string passenc;
 		std::string password;
 		std::string gamename;
-		int partnercode = data_parser.GetValueInt("partnerid");
+		//int partnercode = data_parser.GetValueInt("partnerid");
+		int partnercode = 0;
+		if (data_parser.HasKey("partnerid")) {
+			partnercode = data_parser.GetValueInt("partnerid");
+		}
+		else if (data_parser.HasKey("partnercode")) {
+			partnercode = data_parser.GetValueInt("partnercode");
+		}
 		int namespaceid = data_parser.GetValueInt("namespaceid");
 		if (data_parser.HasKey("email")) {
 			email = data_parser.GetValue("email");
@@ -86,6 +93,9 @@ namespace GP {
 		int operation_id = (int)extra;
 		std::ostringstream s;
 
+		((Peer *)peer)->m_user = user;
+		((Peer *)peer)->m_profile = profile;
+
 		if (!success) {
 			err_code = (int)GP_NEWUSER_BAD_NICK;
 			switch (auth_data.error_details.response_code) {
@@ -111,6 +121,8 @@ namespace GP {
 			((Peer *)peer)->send_error((GPShared::GPErrorCode) err_code, s.str());
 			return;
 		}
+
+		((Peer *)peer)->m_backend_session_key = "new_register"; //TODO: read from backend
 
 		s << "\\nur\\";
 		s << "\\userid\\" << user.id;

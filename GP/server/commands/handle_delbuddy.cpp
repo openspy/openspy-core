@@ -27,6 +27,9 @@ namespace GP {
 				m_buddies.erase(delprofileid);
 				scheduler->AddRequest(req.type, req);
 			}
+			else {
+				send_error(GPShared::GP_DELBUDDY_NOT_BUDDY);
+			}
 		}
 		else {
 			send_error(GPShared::GP_PARSE);
