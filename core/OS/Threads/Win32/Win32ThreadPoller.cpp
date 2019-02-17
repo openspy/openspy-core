@@ -28,6 +28,9 @@ namespace OS {
 		else {
 			CMutex::SafeDecr(&m_signal_count);
 		}
+		if ((int)m_signal_count < 0) {
+			m_signal_count = 0;
+		}
 		return true;
 	}
 	void CWin32ThreadPoller::signal() {
