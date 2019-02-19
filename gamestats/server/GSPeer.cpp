@@ -130,12 +130,13 @@ namespace GS {
 		end:
 		send_ping();
 
-		//check for timeout
+		/*
+		//check for timeout -- Removed: not implemented in most clients
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
 			Delete(true);
-		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
+		} else */if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete();
 		}
 	}
