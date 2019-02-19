@@ -42,17 +42,8 @@ namespace GPShared {
 
 		// Error codes that can occur while creating a new profile.
 		{GP_NEWPROFILE, "There was an error creating a new profile.", false},
-		{GP_NEWPROFILE_BAD_NICK, "The nickname to be replaced does not exist.", false},
-		{GP_NEWPROFILE_BAD_OLD_NICK, "A profile with the nickname provided already exists.", false},
-
-		// Error codes that can occur while updating profile information.
-		{GP_UPDATEPRO, "There was an error updating the profile information. ", false},
-		{GP_UPDATEPRO_BAD_NICK, "A user with the nickname provided already exists.", false},
-
-		// Error codes that can occur while creating a new profile.
-		{GP_NEWPROFILE,"There was an error creating a new profile.", false},
-		{GP_NEWPROFILE_BAD_NICK,"The nickname to be replaced does not exist.", false},
-		{GP_NEWPROFILE_BAD_OLD_NICK,"A profile with the nickname provided already exists.", false},
+		{GP_NEWPROFILE_BAD_NICK, "A profile with the nickname provided already exists.", false},
+		{GP_NEWPROFILE_BAD_OLD_NICK, "The nickname to be replaced does not exist.", false},
 
 		// Error codes that can occur while updating profile information.
 		{GP_UPDATEPRO,"There was an error updating the profile information. ", false},

@@ -239,7 +239,8 @@ namespace TaskShared {
 						else {
 							//check for single profile
 							OS::Profile profile = OS::LoadProfileFromJson(json_data);
-							results.push_back(profile);
+							if(profile.id > 0)
+								results.push_back(profile);
 						}
 						json_decref(json_data);
 					}
