@@ -168,13 +168,6 @@ namespace GP {
 		}
 	}
 
-	void Peer::handle_registernick(OS::KVReader data_parser) {
-		
-	}
-	void Peer::handle_registercdkey(OS::KVReader data_parser) {
-
-	}
-
 	void Peer::handle_statusinfo(OS::KVReader data_parser) {
 
 	}

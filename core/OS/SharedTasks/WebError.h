@@ -12,7 +12,9 @@ namespace TaskShared {
             WebErrorCode_UniqueNickInUse,
             WebErrorCode_UniqueNickInvalid,
             WebErrorCode_UserExists,
-            WebErrorCode_EmailInvalid,
+			WebErrorCode_EmailInvalid,
+			WebErrorCode_BadCdKey,
+			WebErrorCode_CdKeyAlreadyTaken,
             WebErrorCode_BackendError, //fallback error, generic comms problem, etc
     };
     class WebErrorDetails {

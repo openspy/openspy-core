@@ -23,6 +23,8 @@ namespace OS {
 		if (profile.zipcode)
 			json_object_set_new(profile_obj, "zipcode", json_integer(profile.zipcode));
 
+		if (profile.cdkey.length())
+			json_object_set_new(profile_obj, "cdkey", json_string(profile.cdkey.c_str()));
 
 		if (profile.sex != -1)
 			json_object_set_new(profile_obj, "sex", json_integer(profile.sex));
@@ -82,6 +84,10 @@ namespace OS {
 		j = json_object_get(obj, "uniquenick");
 		if(j && json_is_string(j))
 			ret.uniquenick = json_string_value(j);
+
+		j = json_object_get(obj, "cdkey");
+		if(j && json_is_string(j))
+			ret.cdkey = json_string_value(j);
 
 		j = json_object_get(obj, "firstname");
 		if(j && json_is_string(j))
