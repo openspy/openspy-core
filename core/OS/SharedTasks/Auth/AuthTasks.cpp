@@ -133,6 +133,17 @@ namespace TaskShared {
 					error_info.response_code = TaskShared::WebErrorCode_UniqueNickInUse;
 				}
 			}
+			else if (error_class.compare("cdkey") == 0) {
+				if (error_name.compare("AlreadySet") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_CdKeyAlreadySet;
+				}
+				else if (error_name.compare("InUse") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_CdKeyAlreadyTaken;
+				}
+				else if (error_name.compare("BadKey") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_BadCdKey;
+				}
+			}
 
 			return true;
 			end_error:

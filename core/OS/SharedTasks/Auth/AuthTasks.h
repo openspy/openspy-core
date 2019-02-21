@@ -18,12 +18,13 @@ namespace TaskShared {
         EAuthType_NickEmail
     };
 
-	typedef struct {
-		std::string session_key;
-		std::string response_proof;
-		OS::GameData gamedata;
-		WebErrorDetails error_details;
-	} AuthData;
+	class AuthData {
+		public:
+			std::string session_key;
+			std::string response_proof;
+			OS::GameData gamedata;
+			WebErrorDetails error_details;
+	};
 
     typedef void (*AuthCallback)(bool success, OS::User user, OS::Profile profile, AuthData auth_data, void *extra, INetPeer *peer);
 

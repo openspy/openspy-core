@@ -52,7 +52,6 @@ namespace OS {
 		std::string videocardstring[2];
 		std::string osstring; //operating system str
 		std::string aim;
-		std::string cdkey;
 	};
 
 	json_t *ProfileToJson(Profile profile);

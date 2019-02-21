@@ -15,6 +15,7 @@ namespace TaskShared {
 			WebErrorCode_EmailInvalid,
 			WebErrorCode_BadCdKey,
 			WebErrorCode_CdKeyAlreadyTaken,
+			WebErrorCode_CdKeyAlreadySet,
             WebErrorCode_BackendError, //fallback error, generic comms problem, etc
     };
     class WebErrorDetails {

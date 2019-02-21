@@ -39,10 +39,6 @@ namespace GP {
 
         if(data_parser.HasKey("cdkey")) {
             cdkey = data_parser.GetValue("cdkey");
-            if(m_profile.cdkey.length() > 0) {
-                send_error(GPShared::GP_REGISTERUNIQUENICK);
-                return;
-            }
         }
 
         if(data_parser.HasKey("uniquenick")) {
@@ -54,7 +50,7 @@ namespace GP {
 
 		TaskShared::ProfileRequest request;
 		request.profile_search_details = m_profile;
-        request.profile_search_details.cdkey = cdkey;
+        //request.profile_search_details.cdkey = cdkey;
         request.profile_search_details.uniquenick = uniquenick;
 		request.extra = (void *)id;
 		request.peer = this;

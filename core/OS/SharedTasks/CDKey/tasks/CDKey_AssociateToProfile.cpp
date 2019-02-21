@@ -20,7 +20,7 @@ namespace TaskShared {
             
         json_object_set_new(send_obj, "gameLookup", game_obj);
 
-        json_object_set_new(game_obj, "cdkey", json_string(request.cdkey.c_str()));
+        json_object_set_new(send_obj, "cdkey", json_string(request.cdkey.c_str()));
 
         
 		char *json_dump = json_dumps(send_obj, 0);

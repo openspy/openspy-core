@@ -10,6 +10,7 @@ namespace GP {
 		mp_auth_tasks = TaskShared::InitAuthTasks(this);
 		mp_user_tasks = TaskShared::InitUserTasks(this);
 		mp_profile_tasks = TaskShared::InitProfileTasks(this);
+		mp_cdkey_tasks = TaskShared::InitCDKeyTasks(this);
 		mp_gp_tasks = GP::InitTasks(this);
 	}
 	void Server::tick() {
