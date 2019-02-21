@@ -4,7 +4,7 @@
 
 namespace TaskShared {
         TaskScheduler<AuthRequest, TaskThreadData> *InitAuthTasks(INetServer *server) {
-            TaskScheduler<AuthRequest, TaskThreadData> *scheduler = new TaskScheduler<AuthRequest, TaskThreadData>(4, server);
+            TaskScheduler<AuthRequest, TaskThreadData> *scheduler = new TaskScheduler<AuthRequest, TaskThreadData>(OS::g_numAsync, server);
             scheduler->AddRequestHandler(EAuthType_User_EmailPassword, PerformAuth_Email_Password);
             scheduler->AddRequestHandler(EAuthType_Uniquenick_Password, PerformAuth_UniqueNick_Password);
             scheduler->AddRequestHandler(EAuthType_MakeAuthTicket, PerformAuth_MakeAuthTicket);

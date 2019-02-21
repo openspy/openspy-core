@@ -25,15 +25,15 @@ namespace OS {
 	const char *g_redisAddress = NULL;
 	const char *g_webServicesURL = NULL;
 	const char *g_webServicesAPIKey = NULL;
+	int			g_numAsync = 0;
 	CURL	   *g_curl = NULL;
 	void Init(const char *appName, AppConfig *appConfig) {
 
 		OS::g_config = appConfig;
 		OS::g_curl = curl_easy_init();
 
-		int num_async = 0;
 		std::string hostname, redis_address, webservices_url, apikey;
-		OS::g_config->GetVariableInt(appName, "num-async-tasks", num_async);
+		OS::g_config->GetVariableInt(appName, "num-async-tasks", g_numAsync);
 		OS::g_config->GetVariableString(appName, "hostname", hostname);
 		OS::g_config->GetVariableString(appName, "redis-address", redis_address);
 		OS::g_config->GetVariableString(appName, "webservices-url", webservices_url);
@@ -60,7 +60,7 @@ namespace OS {
 
 		mp_redis_internal_connection_mutex = OS::CreateMutex();
 		
-		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, webservices: %s)\n", appName, num_async, g_hostName, g_redisAddress, g_webServicesURL);
+		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, webservices: %s)\n", appName, g_numAsync, g_hostName, g_redisAddress, g_webServicesURL);
 	}
 	void Shutdown() {
 

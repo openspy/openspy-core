@@ -4,14 +4,14 @@
 #include "ProfileTasks.h"
 #include "UserTasks.h"
 namespace TaskShared {
-    bool PerformUserRegisterRequest(UserRequest request, TaskThreadData *thread_data) {
+	bool PerformUserRegisterRequest(UserRequest request, TaskThreadData *thread_data) {
 		curl_data recv_data;
 		json_t *root = NULL;
 		OS::User user;
 		OS::Profile profile;
 		//build json object
 		json_t *send_obj = json_object();
-		
+
 		json_object_set_new(send_obj, "user", OS::UserToJson(request.search_params));
 
 		json_object_set_new(send_obj, "profile", OS::ProfileToJson(request.profile_params));
@@ -23,7 +23,7 @@ namespace TaskShared {
 		CURL *curl = curl_easy_init();
 		CURLcode res;
 		TaskShared::UserRegisterData register_data;
-		
+
 		std::string url = std::string(OS::g_webServicesURL) + "/v1/User/register";
 
 		if (curl) {
@@ -96,5 +96,5 @@ namespace TaskShared {
 		if (request.registerCallback != NULL)
 			request.registerCallback(register_data.error_details.response_code == TaskShared::WebErrorCode_Success, register_data.user, register_data.profile, register_data, request.extra, request.peer);
 		return true;
-    }
+	}
 }

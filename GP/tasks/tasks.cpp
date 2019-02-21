@@ -3,7 +3,7 @@ namespace GP {
         const char *gp_channel_exchange = "presence.core";
         const char *gp_client_message_routingkey = "presence.buddies";
         TaskScheduler<GPBackendRedisRequest, TaskThreadData> *InitTasks(INetServer *server) {
-            TaskScheduler<GPBackendRedisRequest, TaskThreadData> *scheduler = new TaskScheduler<GPBackendRedisRequest, TaskThreadData>(4, server);
+            TaskScheduler<GPBackendRedisRequest, TaskThreadData> *scheduler = new TaskScheduler<GPBackendRedisRequest, TaskThreadData>(OS::g_numAsync, server);
 			scheduler->AddRequestHandler(EGPRedisRequestType_AuthorizeAdd, Perform_ToFromProfileAction);
 			scheduler->AddRequestHandler(EGPRedisRequestType_AddBlock, Perform_ToFromProfileAction);
 			scheduler->AddRequestHandler(EGPRedisRequestType_DelBlock, Perform_ToFromProfileAction);

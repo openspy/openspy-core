@@ -6,7 +6,7 @@
 namespace TaskShared {
 
         TaskScheduler<UserRequest, TaskThreadData> *InitUserTasks(INetServer *server) {
-            TaskScheduler<UserRequest, TaskThreadData> *scheduler = new TaskScheduler<UserRequest, TaskThreadData>(4, server);
+            TaskScheduler<UserRequest, TaskThreadData> *scheduler = new TaskScheduler<UserRequest, TaskThreadData>(OS::g_numAsync, server);
             scheduler->SetThreadDataFactory(TaskScheduler<UserRequest, TaskThreadData>::DefaultThreadDataFactory);
 
             scheduler->AddRequestHandler(EUserRequestType_Search, PerformUserRequest);
@@ -16,7 +16,7 @@ namespace TaskShared {
             return scheduler;
         }
         TaskScheduler<ProfileRequest, TaskThreadData> *InitProfileTasks(INetServer *server) {
-            TaskScheduler<ProfileRequest, TaskThreadData> *scheduler = new TaskScheduler<ProfileRequest, TaskThreadData>(4, server);
+            TaskScheduler<ProfileRequest, TaskThreadData> *scheduler = new TaskScheduler<ProfileRequest, TaskThreadData>(OS::g_numAsync, server);
             scheduler->AddRequestHandler(EProfileSearch_Profiles, PerformProfileRequest);
             scheduler->AddRequestHandler(EProfileSearch_CreateProfile, PerformProfileRequest);
             scheduler->AddRequestHandler(EProfileSearch_DeleteProfile, PerformProfileRequest);

@@ -2,7 +2,7 @@
 #include <server/GSPeer.h>
 namespace GS {
         TaskScheduler<PersistBackendRequest, TaskThreadData> *InitTasks(INetServer *server) {
-            TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = new TaskScheduler<PersistBackendRequest, TaskThreadData>(4, server);
+            TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = new TaskScheduler<PersistBackendRequest, TaskThreadData>(OS::g_numAsync, server);
 			scheduler->AddRequestHandler(EPersistRequestType_SetUserData, Perform_SetUserData);
 			scheduler->AddRequestHandler(EPersistRequestType_GetUserData, Perform_GetUserData);
 			scheduler->AddRequestHandler(EPersistRequestType_GetUserKeyedData, Perform_GetUserKeyedData);
