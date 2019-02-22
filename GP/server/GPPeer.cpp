@@ -179,6 +179,7 @@ namespace GP {
 		//SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
 	void Peer::handle_logout(OS::KVReader data_parser) {
+		delete_session();
 		Delete();
 	}
 	void Peer::send_login_challenge(int type) {
@@ -294,6 +295,21 @@ namespace GP {
 		req.type = TaskShared::EAuthType_MakeAuthSession;
 		req.callback = m_session_renew_callback;
 		req.profile = m_profile;
+		req.extra = (void *)NULL;
+		req.peer = this;
+		req.peer->IncRef();
+
+		scheduler->AddRequest(req.type, req);
+	}
+
+	void Peer::m_session_delete_callback(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
+	}
+	void Peer::delete_session() {
+		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetAuthTask();
+		TaskShared::AuthRequest req;
+		req.type = TaskShared::EAuthType_DeleteAuthSession;
+		req.callback = m_session_delete_callback;
+		req.gamename = m_backend_session_key;
 		req.extra = (void *)NULL;
 		req.peer = this;
 		req.peer->IncRef();

@@ -129,6 +129,7 @@ namespace GP {
 		static void m_set_cdkey_callback(TaskShared::CDKeyData auth_data, void *extra, INetPeer *peer);
 		static void m_update_registernick_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_session_renew_callback(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
+		static void m_session_delete_callback(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 
 		void handle_bm(OS::KVReader data_parser);
 
@@ -162,6 +163,7 @@ namespace GP {
 		void send_buddies();
 		void send_blocks();
 		void refresh_session();
+		void delete_session();
 		bool m_got_buddies;
 		bool m_got_blocks;
 		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
