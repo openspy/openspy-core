@@ -11,9 +11,11 @@ namespace TaskShared {
 		json_object_set_new(send_obj, "id", json_integer(request.profile.id));
 
 		json_object_set_new(send_obj, "profile", profile_obj);
-		
-		json_object_set_new(send_obj, "mode", json_string("make_auth_ticket"));
 
+        if(request.expiresInSecs != 0) {
+            json_object_set_new(send_obj, "expiresIn", json_integer(request.expiresInSecs));
+        }
+		
 		char *json_dump = json_dumps(send_obj, 0);
 
 		CURL *curl = curl_easy_init();

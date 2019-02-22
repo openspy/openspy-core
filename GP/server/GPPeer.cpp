@@ -30,6 +30,7 @@ namespace GP {
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
 		gettimeofday(&m_status_refresh, NULL);
+		m_session_expires_at.tv_sec = 0;
 
 		m_status.status = GP_OFFLINE;
 		m_status.status_str[0] = 0;
@@ -89,7 +90,7 @@ namespace GP {
 		}
 
 	end:
-		send_ping();
+		run_timed_operations();
 
 		//check for timeout
 		struct timeval current_time;
@@ -206,7 +207,7 @@ namespace GP {
 			Delete();
 		}
 	}
-	void Peer::send_ping() {
+	void Peer::run_timed_operations() {
 		//check for timeout
 		
 		struct timeval current_time;
@@ -215,6 +216,10 @@ namespace GP {
 			gettimeofday(&m_last_ping, NULL);
 			std::string ping_packet = "\\ka\\";
 			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
+		}
+		if (m_session_expires_at.tv_sec != 0 && current_time.tv_sec > m_session_expires_at.tv_sec) {
+			m_session_expires_at.tv_sec = 0;
+			refresh_session();
 		}
 	}
 	void Peer::send_error(GPErrorCode code, std::string addon_data) {
@@ -264,5 +269,35 @@ namespace GP {
 	}
 	int Peer::GetProfileID() {
 		return m_profile.id;
+	}
+
+	void Peer::m_session_renew_callback(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
+		if (!success || auth_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
+			((GP::Peer *)peer)->send_error(GPShared::GP_LOGIN_EXPIRED_LOGIN_TICKET);
+			return;
+		}
+		std::ostringstream ss;
+		ss << "\\lt\\" << auth_data.session_key;
+
+		struct timeval time_now;
+		gettimeofday(&time_now, NULL);
+		time_now.tv_sec += auth_data.expiresInSecs - 300;
+		((GP::Peer *)peer)->m_session_expires_at = time_now;
+
+		((GP::Peer *)peer)->m_backend_session_key = auth_data.session_key;
+
+		((GP::Peer *)peer)->SendPacket((const uint8_t *)ss.str().c_str(), ss.str().length());
+	}
+	void Peer::refresh_session() {
+		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetAuthTask();
+		TaskShared::AuthRequest req;
+		req.type = TaskShared::EAuthType_MakeAuthSession;
+		req.callback = m_session_renew_callback;
+		req.profile = m_profile;
+		req.extra = (void *)NULL;
+		req.peer = this;
+		req.peer->IncRef();
+
+		scheduler->AddRequest(req.type, req);
 	}
 }

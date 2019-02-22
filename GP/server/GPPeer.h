@@ -32,6 +32,7 @@
 #define GPI_NEW_CDKEY_REGISTRATION (1<<5)
 
 #define MAX_UNPROCESSED_DATA 5000
+#define SESSION_RENEW_OFFSET 300 //reset 5 mins prior to expiry
 
 using namespace GPShared;
 
@@ -78,7 +79,7 @@ namespace GP {
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 
-		void send_ping();
+		void run_timed_operations();
 
 		void send_login_challenge(int type);
 		void SendPacket(const uint8_t *buff, size_t len);
@@ -127,6 +128,7 @@ namespace GP {
 		static void m_getprofile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_set_cdkey_callback(TaskShared::CDKeyData auth_data, void *extra, INetPeer *peer);
 		static void m_update_registernick_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_session_renew_callback(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 
 		void handle_bm(OS::KVReader data_parser);
 
@@ -159,6 +161,7 @@ namespace GP {
 
 		void send_buddies();
 		void send_blocks();
+		void refresh_session();
 		bool m_got_buddies;
 		bool m_got_blocks;
 		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
@@ -167,7 +170,7 @@ namespace GP {
 		Driver *mp_driver;
 		KVProcessor *mp_proto_processor;
 
-		struct timeval m_last_recv, m_last_ping, m_status_refresh;
+		struct timeval m_last_recv, m_last_ping, m_status_refresh, m_session_expires_at;
 
 		bool m_delete_flag;
 		bool m_timeout_flag;

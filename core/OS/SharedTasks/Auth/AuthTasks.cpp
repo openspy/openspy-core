@@ -9,6 +9,9 @@ namespace TaskShared {
             scheduler->AddRequestHandler(EAuthType_Uniquenick_Password, PerformAuth_UniqueNick_Password);
             scheduler->AddRequestHandler(EAuthType_MakeAuthTicket, PerformAuth_MakeAuthTicket);
             scheduler->AddRequestHandler(EAuthType_NickEmail, PerformAuth_NickEmail);
+			scheduler->AddRequestHandler(EAuthType_NickEmail, PerformAuth_NickEmail);
+			scheduler->AddRequestHandler(EAuthType_MakeAuthSession, PerformAuth_MakeAuthSession);
+			scheduler->AddRequestHandler(EAuthType_DeleteAuthSession, PerformAuth_DeleteAuthSession);			
 			
 			scheduler->DeclareReady();
             return scheduler;
@@ -45,6 +48,14 @@ namespace TaskShared {
 			case EAuthType_Uniquenick_Password:
 			case EAuthType_User_EmailPassword:
 				url += "/v1/Auth/Login";
+				break;
+			case EAuthType_MakeAuthSession:
+				url += "/v1/Auth/Session";
+				curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+				break;
+			case EAuthType_DeleteAuthSession:
+				url += "/v1/Auth/Session";
+				curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
 				break;
 			default:
 				int *x = (int *)NULL;

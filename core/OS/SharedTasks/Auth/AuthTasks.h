@@ -15,12 +15,17 @@ namespace TaskShared {
         EAuthType_User_EmailPassword,
         EAuthType_Uniquenick_Password,
         EAuthType_MakeAuthTicket,
-        EAuthType_NickEmail
+        EAuthType_NickEmail,
+		EAuthType_MakeAuthSession,
+		EAuthType_DeleteAuthSession,
     };
 
 	class AuthData {
 		public:
+			AuthData() { };
 			std::string session_key;
+			uint32_t expiresAt;
+			uint32_t expiresInSecs;
 			std::string response_proof;
 			OS::GameData gamedata;
 			WebErrorDetails error_details;
@@ -34,9 +39,11 @@ namespace TaskShared {
 			create_session = true;
 			extra = NULL;
 			peer = NULL;
+			expiresInSecs = 0;
 		}
 		int type;
 		bool create_session;
+		int expiresInSecs;
 
 		OS::User user;
 		OS::Profile profile;
@@ -53,5 +60,7 @@ namespace TaskShared {
     bool PerformAuth_UniqueNick_Password(AuthRequest request, TaskThreadData *thread_data);
     bool PerformAuth_MakeAuthTicket(AuthRequest request, TaskThreadData *thread_data);
     bool PerformAuth_NickEmail(AuthRequest request, TaskThreadData *thread_data);
+	bool PerformAuth_MakeAuthSession(AuthRequest request, TaskThreadData *thread_data);
+	bool PerformAuth_DeleteAuthSession(AuthRequest request, TaskThreadData *thread_data);
 }
 #endif //OS_TASKSHARED_AUTH_H

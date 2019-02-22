@@ -133,6 +133,11 @@ namespace GP {
 
 		std::ostringstream ss;
 		if(success) {
+			struct timeval time_now;
+			gettimeofday(&time_now, NULL);
+			time_now.tv_sec += auth_data.expiresInSecs - SESSION_RENEW_OFFSET;
+			((GP::Peer *)peer)->m_session_expires_at = time_now;
+
 			ss << "\\lc\\2";
 
 			ss << "\\sesskey\\1";

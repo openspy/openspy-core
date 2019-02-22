@@ -49,9 +49,20 @@ namespace TaskShared {
 				else if (json_data) {
 					json_t *error_obj = json_object_get(json_data, "error");
 					success = true;
-					json_t *session_key_json = json_object_get(json_data, "session_key");
+          json_t *session_obj = json_object_get(json_data, "session");
+					json_t *session_key_json = json_object_get(session_obj, "sessionKey");
 					if (session_key_json) {
 						auth_data.session_key = json_string_value(session_key_json);
+					}
+
+          session_key_json = json_object_get(session_obj, "expiresAt");
+					if (session_key_json) {
+						auth_data.expiresAt = json_integer_value(session_key_json);
+					}
+
+          session_key_json = json_object_get(session_obj, "expiresIn");
+					if (session_key_json) {
+						auth_data.expiresInSecs = json_integer_value(session_key_json);
 					}
 
 					session_key_json = json_object_get(json_data, "profile");
