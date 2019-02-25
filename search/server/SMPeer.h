@@ -101,6 +101,7 @@ namespace SM {
 
 		std::string m_kv_accumulator;
 		std::string m_postregister_cdkey;
+		int m_postregister_gameid;
 
 		OS::Profile m_profile;
 

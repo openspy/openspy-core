@@ -83,6 +83,13 @@ namespace SM {
 				free((void *)dpass);
 		}
 
+		if (data_parser.HasKey("productid")) {
+			m_postregister_gameid = data_parser.GetValueInt("productid");
+		}
+		else if (data_parser.HasKey("gameid")) {
+			m_postregister_gameid = data_parser.GetValueInt("gameid");
+		}
+
 		std::string password;
 
 		if (data_parser.HasKey("passenc")) {
@@ -131,7 +138,7 @@ namespace SM {
 	void Peer::post_register_registercdkey() {
 		TaskShared::CDKeyRequest request;
 
-		request.gameid = -1;
+		request.gameid = m_postregister_gameid;
 		request.cdkey = m_postregister_cdkey;
 		request.profile = m_profile;
 		request.extra = NULL;
