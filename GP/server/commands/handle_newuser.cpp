@@ -66,7 +66,20 @@ namespace GP {
 		else {
 			return;
 		}
-				
+
+		if (data_parser.HasKey("cdkey")) {
+			m_postregister_cdkey = data_parser.GetValue("cdkey");
+		}
+		else if (data_parser.HasKey("cdkeyenc")) {
+			std::string cdkeyenc = data_parser.GetValue("cdkeyenc");
+			int passlen = (int)cdkeyenc.length();
+			char *dpass = (char *)base64_decode((uint8_t *)cdkeyenc.c_str(), &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+			m_postregister_cdkey = dpass;
+			if (dpass)
+				free((void *)dpass);
+		}
+
 		int id = data_parser.GetValueInt("id");
 
 		TaskShared::UserRequest req;
@@ -122,8 +135,6 @@ namespace GP {
 			return;
 		}
 
-		((Peer *)peer)->m_backend_session_key = "new_register"; //TODO: read from backend
-
 		s << "\\nur\\";
 		s << "\\userid\\" << user.id;
 		s << "\\profileid\\" << profile.id;
@@ -134,6 +145,26 @@ namespace GP {
 		if (auth_data.gamedata.secretkey[0] != 0) {
 			((Peer *)peer)->m_game = auth_data.gamedata;
 		}
-	
+		else if (((Peer *)peer)->m_postregister_cdkey.length() == 0) {
+			((Peer *)peer)->send_error(GPShared::GP_GENERAL, "Cannot register CD Key - Invalid game supplied");
+			return;
+		}
+
+		((Peer *)peer)->refresh_session();
+	}
+
+	void Peer::post_register_registercdkey() {
+		TaskShared::CDKeyRequest request;
+		
+		request.gameid = m_game.gameid;
+		request.cdkey = m_postregister_cdkey;
+		request.profile = m_profile;
+		request.extra = NULL;
+		request.peer = this;
+		request.peer->IncRef();
+		request.type = TaskShared::ECDKeyType_AssociateToProfile;
+		request.callback = NULL;
+		TaskScheduler<TaskShared::CDKeyRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetCDKeyTasks();
+		scheduler->AddRequest(request.type, request);
 	}
 }

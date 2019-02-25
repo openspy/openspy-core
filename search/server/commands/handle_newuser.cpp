@@ -44,6 +44,10 @@ namespace SM {
 		s << "\\nur\\" << err_code;
 		s << "\\pid\\" << profile.id;
 
+		((Peer *)peer)->m_profile = profile;
+
+		//((Peer *)peer)->post_register_registercdkey(); //disabled until productids are mapped to gameids
+
 		((Peer *)peer)->SendPacket(s.str().c_str());
 
 		((Peer *)peer)->Delete();
@@ -64,6 +68,19 @@ namespace SM {
 
 		if (data_parser.HasKey("uniquenick")) {
 			uniquenick = data_parser.GetValue("uniquenick");
+		}
+
+		if (data_parser.HasKey("cdkey")) {
+			m_postregister_cdkey = data_parser.GetValue("cdkey");
+		}
+		else if (data_parser.HasKey("cdkeyenc")) {
+			std::string cdkeyenc = data_parser.GetValue("cdkeyenc");
+			int passlen = (int)cdkeyenc.length();
+			char *dpass = (char *)base64_decode((uint8_t *)cdkeyenc.c_str(), &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+			m_postregister_cdkey = dpass;
+			if (dpass)
+				free((void *)dpass);
 		}
 
 		std::string password;
@@ -110,5 +127,19 @@ namespace SM {
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetUserTask();
 		scheduler->AddRequest(req.type, req);
 
+	}
+	void Peer::post_register_registercdkey() {
+		TaskShared::CDKeyRequest request;
+
+		request.gameid = -1;
+		request.cdkey = m_postregister_cdkey;
+		request.profile = m_profile;
+		request.extra = NULL;
+		request.peer = this;
+		request.peer->IncRef();
+		request.type = TaskShared::ECDKeyType_AssociateToProfile;
+		request.callback = NULL;
+		TaskScheduler<TaskShared::CDKeyRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetCDKeyTasks();
+		scheduler->AddRequest(request.type, request);
 	}
 }

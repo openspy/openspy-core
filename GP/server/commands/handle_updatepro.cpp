@@ -77,8 +77,8 @@ namespace GP {
 		/* fake testing response... no real response in GP
 		std::ostringstream s;
 		s << "\\pui\\1";
-		s << "\\result_size\\" << results.size();
-		((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());*/
-		//s << "\\id\\" << (int)extra;
+		s << "\\result_size\\" << results.size();		
+		s << "\\id\\" << (int)extra;
+		((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length()); */
 	}
 }

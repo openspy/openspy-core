@@ -97,6 +97,20 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 					if (len == 0) {
 						ret.disconnect_flag = true;
 					}
+					else {
+						bool wouldBlock = false;
+						#ifdef _WIN32
+						int wsaerr = WSAGetLastError();
+						wouldBlock = wsaerr == WSAEWOULDBLOCK;
+						#else
+						int err = errno;
+						wouldBlock = err == WOULDBLOCK;
+						#endif
+						if (!wouldBlock) {
+							ret.disconnect_flag = true;
+							ret.error_flag = true;
+						}
+					}
 					goto end;
 				}
 				ret.comm_len += len;

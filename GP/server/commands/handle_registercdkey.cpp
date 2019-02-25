@@ -40,9 +40,16 @@ namespace GP {
 
         if(data_parser.HasKey("cdkey")) {
             cdkey = data_parser.GetValue("cdkey");
-        }
-
-		
+		}
+		else if (data_parser.HasKey("cdkeyenc")) {
+			std::string cdkeyenc = data_parser.GetValue("cdkeyenc");
+			int passlen = (int)cdkeyenc.length();
+			char *dpass = (char *)base64_decode((uint8_t *)cdkeyenc.c_str(), &passlen);
+			passlen = gspassenc((uint8_t *)dpass);
+			cdkey = dpass;
+			if (dpass)
+				free((void *)dpass);
+		}
 
 		TaskShared::CDKeyRequest request;
 		if (data_parser.HasKey("gameid")) {

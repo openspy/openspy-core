@@ -164,6 +164,8 @@ namespace GP {
 		void send_blocks();
 		void refresh_session();
 		void delete_session();
+		void post_register_registercdkey();
+
 		bool m_got_buddies;
 		bool m_got_blocks;
 		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
@@ -182,6 +184,7 @@ namespace GP {
 		GPShared::GPStatus m_status;
 
 		std::string m_backend_session_key; //session key
+		std::string m_postregister_cdkey;
 
 		//these are modified by other threads
 		//std::vector<int> m_buddies;

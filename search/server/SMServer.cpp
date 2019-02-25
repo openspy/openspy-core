@@ -9,6 +9,7 @@ namespace SM {
 		mp_auth_tasks = TaskShared::InitAuthTasks(this);
 		mp_user_tasks = TaskShared::InitUserTasks(this);
 		mp_profile_tasks = TaskShared::InitProfileTasks(this);
+		mp_cdkey_tasks = TaskShared::InitCDKeyTasks(this);
 	}
 	void Server::init() {
 	}

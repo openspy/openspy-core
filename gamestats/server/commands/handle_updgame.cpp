@@ -20,6 +20,10 @@ using namespace GPShared;
 namespace GS {
 
 	void Peer::updateGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
+		peer->mp_mutex->lock();
+		int sesskey = (int)extra;
+		peer->m_updgame_sesskey_wait_list.erase(sesskey);
+		peer->mp_mutex->unlock();
 	}
 	void Peer::handle_updgame(OS::KVReader data_parser) {
 		//\updgame\\sesskey\%d\done\%d\gamedata\%s
