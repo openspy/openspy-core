@@ -36,6 +36,9 @@ namespace GP {
 		else if (data_parser.HasKey("uniquenick")) {
 			type = 3;
 		}
+		else if (data_parser.HasKey("lt")) {
+			type = 4;
+		}
 		else {
 			send_error(GPShared::GP_LOGIN_CONNECTION_FAILED);
 			return;
@@ -58,6 +61,10 @@ namespace GP {
 		else if (type == 3) {
 			std::string uniquenick = data_parser.GetValue("uniquenick");
 			perform_uniquenick_auth(uniquenick.c_str(), partnercode, namespaceid, m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
+		}
+		else if (type == 4) {
+			std::string lt = data_parser.GetValue("lt");
+			perform_loginticket_auth(lt.c_str(), m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
 		}
 	}
 	void Peer::perform_uniquenick_auth(const char *uniquenick, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
@@ -122,6 +129,21 @@ namespace GP {
 
 		scheduler->AddRequest(req.type, req);
 	}
+	void Peer::perform_loginticket_auth(const char *login_ticket, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
+		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+		GPBackendRedisRequest req;
+		req.type = EGPRedisRequestType_Auth_LoginTicket;
+		req.server_challenge = server_challenge;
+		req.client_challenge = client_challenge;
+		req.authCallback = m_auth_cb;
+		req.client_response = response;
+		req.extra = (void *)operation_id;
+		req.auth_token = login_ticket;
+		req.peer = this;
+		req.peer->IncRef();
+		scheduler->AddRequest(req.type, req);
+	}
+	
 	void Peer::m_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 		if(!((GP::Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())
 			((GP::Peer *)peer)->m_backend_session_key = auth_data.session_key;

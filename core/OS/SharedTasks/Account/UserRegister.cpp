@@ -64,15 +64,20 @@ namespace TaskShared {
 			if (res == CURLE_OK) {
 				root = json_loads(recv_data.buffer.c_str(), 0, NULL);
 				if (!Handle_WebError(root, register_data.error_details)) {
-					json_t *json_obj;
-					json_obj = json_object_get(root, "user");
-					if (json_obj) {
-						register_data.user = OS::LoadUserFromJson(json_obj);
+					json_t *json_obj, *profile_obj;
+					profile_obj = json_object_get(root, "profile");
+					if (profile_obj) {
+						register_data.profile = OS::LoadProfileFromJson(profile_obj);
 					}
 
-					json_obj = json_object_get(root, "profile");
-					if (json_obj) {
-						register_data.profile = OS::LoadProfileFromJson(json_obj);
+					json_obj = json_object_get(root, "user");
+					if (json_obj && json_obj != json_null()) {
+						register_data.user = OS::LoadUserFromJson(json_obj);
+					}
+					else if (profile_obj) {
+						json_obj = json_object_get(profile_obj, "user");
+						if(json_obj)
+							register_data.user = OS::LoadUserFromJson(json_obj);
 					}
 				}
 			}
@@ -92,6 +97,9 @@ namespace TaskShared {
 		if (send_obj)
 			json_decref(send_obj);
 
+		if (request.peer != NULL) {
+			request.peer->DecRef();
+		}
 
 		if (request.registerCallback != NULL)
 			request.registerCallback(register_data.error_details.response_code == TaskShared::WebErrorCode_Success, register_data.user, register_data.profile, register_data, request.extra, request.peer);

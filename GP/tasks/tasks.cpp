@@ -8,7 +8,7 @@ namespace GP {
 			scheduler->AddRequestHandler(EGPRedisRequestType_AddBlock, Perform_ToFromProfileAction);
 			scheduler->AddRequestHandler(EGPRedisRequestType_DelBlock, Perform_ToFromProfileAction);
 			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_NickEmail_GPHash, Perform_Auth_NickEmail_GPHash);
-			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_Uniquenick_GPHash, Perform_Auth_Uniquenick_GPHash);
+			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_Uniquenick_GPHash, Perform_Auth_Uniquenick_GPHash);			
 
             scheduler->AddRequestHandler(EGPRedisRequestType_AddBuddy, Perform_BuddyRequest);
             scheduler->AddRequestHandler(EGPRedisRequestType_UpdateStatus, Perform_SetPresenceStatus);
@@ -19,6 +19,7 @@ namespace GP {
             scheduler->AddRequestHandler(EGPRedisRequestType_LookupBuddyStatus, Perform_GetBuddyStatus);
 			scheduler->AddRequestHandler(EGPRedisRequestType_LookupBlockStatus, Perform_GetBuddyStatus);
 			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_PreAuth_Token_GPHash, Perform_Auth_PreAuth_Token_GPHash);
+			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_LoginTicket, Perform_Auth_LoginTicket_GPHash);
             scheduler->AddRequestListener(gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage);
 			scheduler->DeclareReady();
 
@@ -46,6 +47,9 @@ namespace GP {
 				break;
 			case EGPRedisRequestType_Auth_PreAuth_Token_GPHash:
 				url += "/v1/Presence/Auth/PreAuth";
+				break;
+			case EGPRedisRequestType_Auth_LoginTicket:
+				url += "/v1/Presence/Auth/LoginTicketAuth";
 				break;
 			case EGPRedisRequestType_AddBlock:
 				url += "/v1/Presence/List/Block";

@@ -32,6 +32,10 @@ namespace GP {
 		if (data_parser.HasKey("email")) {
 			email = data_parser.GetValue("email");
 		}
+		else {
+			send_error(GP_PARSE);
+			return;
+		}
 		if (data_parser.HasKey("nick")) {
 			nick = data_parser.GetValue("nick");
 		}
@@ -64,6 +68,7 @@ namespace GP {
 			password = data_parser.GetValue("password");
 		}
 		else {
+			send_error(GP_PARSE);
 			return;
 		}
 
@@ -145,7 +150,7 @@ namespace GP {
 		if (auth_data.gamedata.secretkey[0] != 0) {
 			((Peer *)peer)->m_game = auth_data.gamedata;
 		}
-		else if (((Peer *)peer)->m_postregister_cdkey.length() == 0) {
+		else if (((Peer *)peer)->m_postregister_cdkey.length() > 0) {
 			((Peer *)peer)->send_error(GPShared::GP_GENERAL, "Cannot register CD Key - Invalid game supplied");
 			return;
 		}

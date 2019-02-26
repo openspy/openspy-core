@@ -31,6 +31,7 @@ namespace GP {
 		}
 		std::ostringstream s;
 		s << "\\rc\\1";
+		s << "\\id\\" << (int)extra;
 
 		gppeer->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
 	}

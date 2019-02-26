@@ -37,6 +37,7 @@ namespace GP {
 		EGPRedisRequestType_Auth_NickEmail_GPHash,
 		EGPRedisRequestType_Auth_Uniquenick_GPHash,
 		EGPRedisRequestType_Auth_PreAuth_Token_GPHash,
+		EGPRedisRequestType_Auth_LoginTicket,
 		EGPRedisRequestType_LookupBuddyStatus,
 		EGPRedisRequestType_LookupBlockStatus
 	};
@@ -99,6 +100,7 @@ namespace GP {
 	bool Perform_Auth_NickEmail_GPHash(GPBackendRedisRequest request, TaskThreadData *thread_data);
 	bool Perform_Auth_Uniquenick_GPHash(GPBackendRedisRequest request, TaskThreadData *thread_data);
 	bool Perform_Auth_PreAuth_Token_GPHash(GPBackendRedisRequest request, TaskThreadData *thread_data);
+	bool Perform_Auth_LoginTicket_GPHash(GPBackendRedisRequest request, TaskThreadData *thread_data);
 	bool Handle_PresenceMessage(TaskThreadData *thread_data, std::string message);
 
 	//authorizeadd, blockbuddy, addbuddy
