@@ -33,6 +33,7 @@ namespace GP {
 			GPReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
 
 			res = curl_easy_perform(curl);
+			curl_easy_cleanup(curl);
 		}
 
 		//no callback yet..
