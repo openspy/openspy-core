@@ -68,6 +68,7 @@ namespace GS {
 		request.callback(success, resp_data, request.mp_peer, request.mp_extra);
 
 		json_decref(send_json);
+		request.mp_peer->DecRef();
 		return true;
 	}
 }

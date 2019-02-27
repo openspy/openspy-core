@@ -1,3 +1,4 @@
+#include <server/GSPeer.h>
 #include "tasks.h"
 
 namespace GS {
@@ -10,6 +11,7 @@ namespace GS {
         }
 		resp_data.gameData = game_info;
 		request.callback(game_info.secretkey[0] != 0, resp_data, request.mp_peer, request.mp_extra);
+		request.mp_peer->DecRef();
 		return true;
 	}
 }
