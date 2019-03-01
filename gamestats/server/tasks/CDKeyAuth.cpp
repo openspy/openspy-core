@@ -4,7 +4,13 @@
 #include <server/GSPeer.h>
 namespace GS {
 	bool Perform_CDKeyAuth(PersistBackendRequest request, TaskThreadData *thread_data) {
-		json_t *send_json = json_object(), *profile_obj = json_object();
+		json_t *send_json = json_object(), *profile_obj = json_object(), *game_obj = json_object();
+
+		json_object_set_new(profile_obj, "nick", json_string(request.profile_nick.c_str()));
+		json_object_set_new(send_json, "profileLookup", profile_obj);
+
+		json_object_set_new(game_obj, "id", json_integer(request.profileid));
+		json_object_set_new(send_json, "gameLookup", game_obj);
 
 		json_object_set_new(send_json, "cdkey", json_string(request.auth_token.c_str()));
 

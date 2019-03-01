@@ -12,7 +12,7 @@ namespace GS {
 			scheduler->AddRequestHandler(EPersistRequestType_Auth_ProfileID, Perform_ProfileIDAuth);
 			scheduler->AddRequestHandler(EPersistRequestType_Auth_AuthTicket, Perform_AuthTokenAuth);
 			scheduler->AddRequestHandler(EPersistRequestType_Auth_CDKey, Perform_CDKeyAuth);
-			scheduler->AddRequestHandler(EPersistRequestType_GetProfileIDFromCDKey, Perform_CDKeyAuth);
+			scheduler->AddRequestHandler(EPersistRequestType_GetProfileIDFromCDKey, Perform_GetProfileIDFromCD);
 
 			scheduler->DeclareReady();
 

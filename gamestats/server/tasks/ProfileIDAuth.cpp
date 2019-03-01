@@ -14,7 +14,7 @@ namespace GS {
 
 		json_object_set_new(send_json, "session_key", json_integer(request.modified_since));
 
-		std::string url = std::string(OS::g_webServicesURL) + "/v1/Persist/Auth/SessionKeyAuth";
+		std::string url = std::string(OS::g_webServicesURL) + "/v1/Persist/Auth/ProfileIDAuth";
 
 		OS::HTTPClient client(url);
 		PersistBackendResponse resp_data;

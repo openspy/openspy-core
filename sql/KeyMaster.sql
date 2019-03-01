@@ -2,6 +2,7 @@ use keymaster;
 create table cdkeys ( 
 	id int auto_increment PRIMARY KEY,
 	cdkey text NOT NULL,
+	cdkeyMD5Hash text NOT NULL,
     inserted_by_user tinyint(1) not null,
 	gameid int not null
 );

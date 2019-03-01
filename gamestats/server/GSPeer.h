@@ -78,7 +78,7 @@ namespace GS {
 		void handle_setpd(OS::KVReader data_parser);
 
 		//login
-		void perform_cdkey_auth(std::string cdkey, std::string response, int operation_id);
+		void perform_cdkey_auth(std::string cdkey, std::string response, std::string nick, int operation_id);
 		void perform_preauth_auth(std::string auth_token, const char *response, int operation_id);
 		void perform_pid_auth(int profileid, const char *response, int operation_id);
 		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);

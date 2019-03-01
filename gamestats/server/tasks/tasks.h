@@ -67,7 +67,10 @@ namespace GS {
 		std::vector<std::string> keyList;
 		std::string game_instance_identifier; //also used as auth "response" value
 		std::string auth_token;
-		int profileid;
+
+		std::string profile_nick;
+		int profileid; //and gameid
+
 		int modified_since; //also used as session key for auth
 
 		persisttype_t data_type;

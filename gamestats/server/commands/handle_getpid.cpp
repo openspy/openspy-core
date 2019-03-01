@@ -41,6 +41,9 @@ namespace GS {
 			GPShared::GPErrorCode code;
 
 			switch (auth_data.error_details.response_code) {
+			case TaskShared::WebErrorCode_BadCdKey:
+				code = GP_REGISTERCDKEY_BAD_KEY;
+			break;
 			case TaskShared::WebErrorCode_NoSuchUser:
 				//code = GP_LOGIN_BAD_EMAIL;
 				code = GP_LOGIN_BAD_PROFILE;
@@ -104,7 +107,8 @@ namespace GS {
 		req.type = EPersistRequestType_GetProfileIDFromCDKey;
 		req.authCallback = m_getpid_cb;
 		req.auth_token = data_parser.GetValue("keyhash");
-		req.game_instance_identifier = data_parser.GetValue("nick");
+		req.profile_nick = data_parser.GetValue("nick");
+		req.profileid = m_game.gameid;
 
 		IncRef();
 		scheduler->AddRequest(req.type, req);

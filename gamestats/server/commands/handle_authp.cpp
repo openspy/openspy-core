@@ -47,7 +47,7 @@ namespace GS {
 		IncRef();
 		scheduler->AddRequest(req.type, req);
 	}
-	void Peer::perform_cdkey_auth(std::string cdkey, std::string response, int operation_id) {
+	void Peer::perform_cdkey_auth(std::string cdkey, std::string response, std::string nick, int operation_id) {
 		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
@@ -55,6 +55,8 @@ namespace GS {
 		req.type = EPersistRequestType_Auth_CDKey;
 		req.callback = getPersistDataCallback;
 		req.auth_token = cdkey;
+		req.profile_nick = nick;
+		req.profileid = m_game.gameid;
 		req.game_instance_identifier = response;
 		req.modified_since = m_session_key;
 		req.data_index = operation_id;
@@ -82,8 +84,8 @@ namespace GS {
 
 		if(pid != 0) {
 			perform_pid_auth(pid, resp.c_str(), operation_id);
-		} else if(data_parser.HasKey("keyhash")) {
-			perform_cdkey_auth(data_parser.GetValue("keyhash"), resp, operation_id);
+		} else if(data_parser.HasKey("keyhash") && data_parser.HasKey("nick")) {
+			perform_cdkey_auth(data_parser.GetValue("keyhash"), resp, data_parser.GetValue("nick"), operation_id);
 		} else {
 			if (data_parser.HasKey("authtoken")) {
 				std::string auth_token = data_parser.GetValue("authtoken");

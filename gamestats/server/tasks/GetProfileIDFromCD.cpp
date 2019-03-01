@@ -4,7 +4,13 @@
 #include <server/GSPeer.h>
 namespace GS {
 	bool Perform_GetProfileIDFromCD(PersistBackendRequest request, TaskThreadData *thread_data) {
-		json_t *send_json = json_object(), *profile_obj = json_object();
+		json_t *send_json = json_object(), *profile_obj = json_object(), *game_obj = json_object();
+
+		json_object_set_new(profile_obj, "nick", json_string(request.profile_nick.c_str()));
+		json_object_set_new(send_json, "profileLookup", profile_obj);
+
+		json_object_set_new(game_obj, "id", json_integer(request.profileid));
+		json_object_set_new(send_json, "gameLookup", game_obj);
 
 		json_object_set_new(send_json, "cdkey", json_string(request.auth_token.c_str()));
 
@@ -23,7 +29,6 @@ namespace GS {
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
 		bool success = false;
-		json_t *error_obj = json_object_get(send_json, "error");
 		json_t *profile;
 		OS::Profile auth_profile;
 		OS::User auth_user;
