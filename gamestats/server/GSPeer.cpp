@@ -231,7 +231,6 @@ namespace GS {
 	}
 
 	void Peer::gamespy3dxor(char *data, int len) {
-		return;
 	    static const char gamespy[] = "GameSpy3D\0";
 	    char  *gs;
 
