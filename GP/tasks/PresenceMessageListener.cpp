@@ -3,6 +3,24 @@
 #include <tasks/tasks.h>
 #include <sstream>
 namespace GP {
+	bool Handle_AuthEvent(TaskThreadData *thread_data, std::string message) {
+		GP::Server *server = (GP::Server *)thread_data->server;
+		OS::KVReader reader = OS::KVReader(message);
+		std::string msg_type = reader.GetValue("type");
+		if (msg_type.compare("auth_event") == 0) {
+			std::string appName = reader.GetValue("app_name");
+			if (appName.compare("GP") == 0) {
+				int profileid = reader.GetValueInt("profileid");
+				GP::Peer *peer = (GP::Peer *)server->findPeerByProfile(profileid);
+				if (peer) {
+					std::string session_key = reader.GetValue("session_key");
+					peer->OnAuth(session_key);
+					peer->DecRef();
+				}
+			}
+		}
+		return true;
+	}
     bool Handle_PresenceMessage(TaskThreadData *thread_data, std::string message) {
 		GP::Server *server = (GP::Server *)thread_data->server;
 

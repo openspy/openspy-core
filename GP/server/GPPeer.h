@@ -85,6 +85,7 @@ namespace GP {
 		void SendPacket(const uint8_t *buff, size_t len);
 
 		void RegisterCommands();
+		bool OnAuth(std::string session_key);
 
 		//event messages
 		void send_add_buddy_request(int from_profileid, const char *reason);

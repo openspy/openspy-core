@@ -102,6 +102,7 @@ namespace GP {
 	bool Perform_Auth_PreAuth_Token_GPHash(GPBackendRedisRequest request, TaskThreadData *thread_data);
 	bool Perform_Auth_LoginTicket_GPHash(GPBackendRedisRequest request, TaskThreadData *thread_data);
 	bool Handle_PresenceMessage(TaskThreadData *thread_data, std::string message);
+	bool Handle_AuthEvent(TaskThreadData *thread_data, std::string message);
 
 	//authorizeadd, blockbuddy, addbuddy
 	bool Perform_ToFromProfileAction(GPBackendRedisRequest request, TaskThreadData *thread_data);

@@ -67,17 +67,7 @@ namespace GS {
 		}
 	}
 
-	//\getpid\\nick\crt\keyhash\00000a308fd86a7eb92cbc8322b03a36\lid\1
     void Peer::handle_getpid(OS::KVReader data_parser) {
-		/*
-				Send error response until implemented
-		*/
-		/*int operation_id = data_parser.GetValueInt("lid");
-		//int pid = data_parser.GetValueInt("pid");
-		std::ostringstream ss;
-		ss << "\\getpidr\\-1\\lid\\" << operation_id;
-		SendPacket(ss.str());*/
-
 		std::string nick, cdkey;
 
 		if (!data_parser.HasKey("nick")) {

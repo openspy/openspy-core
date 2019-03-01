@@ -316,4 +316,12 @@ namespace GP {
 
 		scheduler->AddRequest(req.type, req);
 	}
+	bool Peer::OnAuth(std::string session_key) {
+		if (session_key.compare(m_backend_session_key) != 0) {
+			send_error(GP_FORCED_DISCONNECT);
+			Delete();
+			return false;
+		}
+		return true;
+	}
 }

@@ -21,6 +21,7 @@ namespace GP {
 			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_PreAuth_Token_GPHash, Perform_Auth_PreAuth_Token_GPHash);
 			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_LoginTicket, Perform_Auth_LoginTicket_GPHash);
             scheduler->AddRequestListener(gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage);
+			scheduler->AddRequestListener("openspy.core", "auth.events", Handle_AuthEvent);
 			scheduler->DeclareReady();
 
             return scheduler;
