@@ -120,6 +120,7 @@ namespace FESL {
 		bool GetAuthCredentials(OS::User &user, OS::Profile &profile);
 
 		void DuplicateLoginExit();
+		std::string getSessionKey() { return m_session_key; };
 	private:
 		bool m_fsys_hello_handler(OS::KVReader kv_list);
 		bool m_fsys_ping_handler(OS::KVReader kv_list);

@@ -14,7 +14,7 @@ namespace FESL {
 		void init();
 		void tick();
 		void shutdown();
-		void OnUserAuth(OS::Address remote_address, int userid, int profileid);
+		void OnUserAuth(std::string session_key, int userid, int profileid);
 
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *GetAuthTask() { return mp_auth_tasks; };
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *GetUserTask() { return mp_user_tasks; };

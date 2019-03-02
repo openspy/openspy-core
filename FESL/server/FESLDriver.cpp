@@ -139,7 +139,7 @@ namespace FESL {
 	SSLNetIOIFace::SSLNetIOInterface *Driver::getSSL_Socket_Interface() {
 		return mp_socket_interface;
 	}
-	void Driver::OnUserAuth(OS::Address remote_address, int userid, int profileid) {
+	void Driver::OnUserAuth(std::string session_key, int userid, int profileid) {
 		mp_mutex->lock();
 		std::vector<Peer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
@@ -147,7 +147,7 @@ namespace FESL {
 			OS::User user;
 			OS::Profile profile;
 			if(peer->GetAuthCredentials(user, profile)) {
-				if(user.id == userid && peer->getAddress() != remote_address) {
+				if(user.id == userid && profile.id == profileid && peer->getSessionKey().compare(session_key) == 0) {
 					peer->DuplicateLoginExit();
 				}
 			}

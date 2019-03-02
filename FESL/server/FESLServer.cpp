@@ -22,11 +22,11 @@ namespace FESL {
 	}
 	void Server::shutdown() {
 	}
-	void Server::OnUserAuth(OS::Address remote_address, int userid, int profileid) {
+	void Server::OnUserAuth(std::string session_key, int userid, int profileid) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {
 			FESL::Driver *driver = (FESL::Driver *) *it;
-			driver->OnUserAuth(remote_address, userid, profileid);
+			driver->OnUserAuth(session_key, userid, profileid);
 			it++;
 		}
 	}
