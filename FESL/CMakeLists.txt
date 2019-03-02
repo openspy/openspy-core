@@ -23,11 +23,13 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 source_group("Sources" FILES ${MAIN_SRCS})
 source_group("Sources\\Server" FILES ${SERVER_SRCS})
+source_group("Sources\\Tasks" FILES ${SERVER_TASKS_SRCS})
 source_group("Sources\\Server\\commands\\basic" FILES ${SERVER_BASIC_COMMANDS_SRCS})
 source_group("Sources\\Server\\commands\\nu" FILES ${SERVER_NU_COMMANDS_SRCS})
 
 source_group("Headers" FILES ${MAIN_HDRS})
 source_group("Headers\\Server" FILES ${SERVER_HDRS})
+source_group("Headers\\Tasks" FILES ${SERVER_TASKS_HDRS})
 source_group("Headers\\Server\\commands\\basic" FILES ${SERVER_BASIC_COMMANDS_HDRS})
 source_group("Headers\\Server\\commands\\nu" FILES ${SERVER_NU_COMMANDS_HDRS})
 add_executable (FESL ${ALL_SRCS})

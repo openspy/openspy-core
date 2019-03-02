@@ -40,19 +40,21 @@ namespace TaskShared {
 
 				}
 				else if (json_data) {
-					json_t *error_obj = json_object_get(json_data, "error");
-					json_t *success_obj = json_object_get(json_data, "success");
-					 if (success_obj == json_true()) {
-						success = true;
-						json_t *session_key_json = json_object_get(json_data, "ticket");
-						if (session_key_json) {
-							auth_data.session_key = json_string_value(session_key_json);
-						}
+					success = true;
+					json_t *session_key_json = json_object_get(json_data, "token");
+					if (session_key_json) {
+						auth_data.session_key = json_string_value(session_key_json);
+					}
+					else {
+						success = false;
+					}
 
-						session_key_json = json_object_get(json_data, "challenge");
-						if (session_key_json) {
-							auth_data.response_proof = json_string_value(session_key_json);
-						}
+					session_key_json = json_object_get(json_data, "challenge");
+					if (session_key_json) {
+						auth_data.response_proof = json_string_value(session_key_json);
+					}
+					else {
+						success = false;
 					}
 					json_decref(json_data);
 				}
