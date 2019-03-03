@@ -15,6 +15,8 @@ namespace FESL {
 		user.password = kv_list.GetValue("password");
 		profile.uniquenick = kv_list.GetValue("name");
 		profile.nick = profile.uniquenick;
+		profile.countrycode = kv_list.GetValue("countryCode");
+		profile.zipcode = kv_list.GetValueInt("zipCode");
 
 		if(user.email.length() <= 0) {
 			SendCustomError(FESL_TYPE_ACCOUNT, "AddAccount", "Account.EmailAddress", "The specified email was invalid. Please change it and try again.");

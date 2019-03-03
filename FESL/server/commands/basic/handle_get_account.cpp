@@ -10,10 +10,26 @@
 namespace FESL {
 	bool Peer::m_acct_get_account(OS::KVReader kv_list) {
 		std::ostringstream s;
+
+		FESL::Server *server = (FESL::Server *) GetDriver()->getServer();
+		std::vector<TaskShared::CountryRegion>::const_iterator begin, end, it;
+		server->GetCountries(begin, end);
+
+		TaskShared::CountryRegion region;
+		while (it != end) {
+			TaskShared::CountryRegion country = *it;
+			if (country.countrycode.compare(m_profile.countrycode) == 0) {
+				country = region;
+				break;
+			}
+			it++;
+		}
+		
+		//m_profile.countrycode
 		s << "TXN=GetAccount\n";
 		s << "parentalEmail=parents@ea.com\n";
-		s << "countryCode=US\n";
-		s << "countryDesc=\"United States of America\"\n";
+		s << "countryCode=" << m_profile.countrycode << "\n";
+		s << "countryDesc=\"" << region.countryname << "\"\n";
 		s << "thirdPartyMailFlag=0\n";
 		s << "dobDay=" << (int)m_profile.birthday.GetDay() << "\n";
 		s << "dobMonth=" << (int)m_profile.birthday.GetMonth() << "\n";
