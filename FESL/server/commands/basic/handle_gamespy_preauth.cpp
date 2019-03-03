@@ -13,8 +13,8 @@ namespace FESL {
 		if (success) {
 			s << "TXN=GameSpyPreAuth\n";
 			if(auth_data.response_proof.length())
-				s << "challenge=" << auth_data.response_proof << "\n";
-			s << "ticket=" << auth_data.session_key << "\n";
+				s << "challenge=" << OS::url_encode(auth_data.response_proof) << "\n";
+			s << "ticket=" << OS::url_encode(auth_data.session_key) << "\n";
 			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		}
 		else {
