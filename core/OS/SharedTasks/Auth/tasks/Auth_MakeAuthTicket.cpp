@@ -8,7 +8,7 @@ namespace TaskShared {
 		//build json object
 		json_t *send_obj = json_object(), *profile_obj = json_object();
 
-		json_object_set_new(send_obj, "id", json_integer(request.profile.id));
+		json_object_set_new(profile_obj, "id", json_integer(request.profile.id));
 
 		json_object_set_new(send_obj, "profile", profile_obj);
 

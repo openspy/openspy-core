@@ -14,9 +14,14 @@ namespace TaskShared {
 		if(request.profile.namespaceid != -1)
 			json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile.namespaceid));
 
+		json_object_set_new(profile_obj, "partnercode", json_integer(request.user.partnercode));
+
 		json_object_set_new(send_obj, "profileLookup", profile_obj);
 
 		json_object_set_new(send_obj, "password", json_string(request.user.password.c_str()));
+
+
+		
 
 		char *json_dump = json_dumps(send_obj, 0);
 
@@ -41,35 +46,31 @@ namespace TaskShared {
 
 				}
 				else if (json_data) {
-					json_t *error_obj = json_object_get(json_data, "error");
-					json_t *success_obj = json_object_get(json_data, "success");
-					if (success_obj == json_true()) {
-						success = true;
-                        json_t *session_obj = json_object_get(json_data, "session");
-                        json_t *session_key_json = json_object_get(session_obj, "sessionKey");
-                        if (session_key_json) {
-                            auth_data.session_key = json_string_value(session_key_json);
-                        }
+					success = true;
+                    json_t *session_obj = json_object_get(json_data, "session");
+                    json_t *session_key_json = json_object_get(session_obj, "sessionKey");
+                    if (session_key_json) {
+                        auth_data.session_key = json_string_value(session_key_json);
+                    }
 
-                        session_key_json = json_object_get(session_obj, "expiresAt");
-                        if (session_key_json) {
-                            auth_data.expiresAt = json_integer_value(session_key_json);
-                        }
+                    session_key_json = json_object_get(session_obj, "expiresAt");
+                    if (session_key_json) {
+                        auth_data.expiresAt = json_integer_value(session_key_json);
+                    }
 
-                        session_key_json = json_object_get(session_obj, "expiresIn");
-                        if (session_key_json) {
-                            auth_data.expiresInSecs = json_integer_value(session_key_json);
-                        }
+                    session_key_json = json_object_get(session_obj, "expiresIn");
+                    if (session_key_json) {
+                        auth_data.expiresInSecs = json_integer_value(session_key_json);
+                    }
 
-						session_key_json = json_object_get(json_data, "profile");
-						if (session_key_json) {
-							profile = OS::LoadProfileFromJson(session_key_json);
-						}
+					session_key_json = json_object_get(json_data, "profile");
+					if (session_key_json) {
+						profile = OS::LoadProfileFromJson(session_key_json);
+					}
 
-						session_key_json = json_object_get(json_data, "user");
-						if (session_key_json) {
-							user = OS::LoadUserFromJson(session_key_json);
-						}
+					session_key_json = json_object_get(json_data, "user");
+					if (session_key_json) {
+						user = OS::LoadUserFromJson(session_key_json);
 					}
 					json_decref(json_data);
 				}

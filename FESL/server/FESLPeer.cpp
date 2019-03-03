@@ -75,7 +75,7 @@ namespace FESL {
 
 			gettimeofday(&m_last_recv, NULL);
 
-			size_t buf_len = len - sizeof(FESL_HEADER);
+			int buf_len = len - sizeof(FESL_HEADER);
 
 			if (buf_len < 0) {
 				goto end;
@@ -84,7 +84,7 @@ namespace FESL {
 			OS::KVReader kv_data(std::string((const char *)recv_buffer.GetReadCursor(), buf_len), '=', '\n');
 			char *type;
 			for (size_t i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
-				if (Peer::m_commands[i].type == htonl(header.type)) {
+				if (Peer::m_commands[i].type == ntohl(header.type)) {
 					if (Peer::m_commands[i].command.compare(kv_data.GetValue("TXN")) == 0) {
 						type = (char *)&Peer::m_commands[i].type;
 						OS::LogText(OS::ELogLevel_Info, "[%s] Got Command: %c%c%c%c %s", m_sd->address.ToString().c_str(), type[3], type[2], type[1], type[0], Peer::m_commands[i].command.c_str());
@@ -93,7 +93,7 @@ namespace FESL {
 					}
 				}
 			}
-			header.type = htonl(header.type);
+			header.type = ntohl(header.type);
 			type = (char *)&header.type;
 			OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", m_sd->address.ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
 		}

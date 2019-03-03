@@ -74,9 +74,9 @@ CREATE TABLE `persist_data` (
   `profileid` int(11) DEFAULT NULL,
   `gameid` int(11) NOT NULL,
   foreign key fk_pd_profile(profileid)
-  references profiles(id)
+  references profiles(id),
   PRIMARY KEY (`id`)
-)
+);
 
 
 
@@ -90,6 +90,6 @@ CREATE TABLE `persist_keyed_data` (
   `data_index` int(11) DEFAULT NULL,
   `modified` datetime DEFAULT NULL,
   foreign key fk_pkd_profile(profileid)
-  references profiles(id)
+  references profiles(id),
   PRIMARY KEY (`id`)
 )

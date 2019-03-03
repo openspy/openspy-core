@@ -11,6 +11,7 @@ namespace FESL {
 	void Peer::loginToSubAccount(std::string uniquenick) {
 		std::ostringstream s;
 		mp_mutex->lock();
+		bool loggedIn = false;
 		std::vector<OS::Profile>::iterator it = m_profiles.begin();
 		while (it != m_profiles.end()) {
 			OS::Profile profile = *it;
@@ -21,9 +22,13 @@ namespace FESL {
 				s << "profileId=" << m_profile.id << "\n";
 				s << "userId=" << m_user.id << "\n";
 				SendPacket(FESL_TYPE_ACCOUNT, s.str());
+				loggedIn = true;
 				break;
 			}
 			it++;
+		}
+		if (!loggedIn) {
+			SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_ACCOUNT_NOT_FOUND, "LoginSubAccount");
 		}
 		mp_mutex->unlock();
 	}

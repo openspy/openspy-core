@@ -28,6 +28,7 @@ namespace FESL {
 			}
 			it++;
 		}
+		SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_ACCOUNT_NOT_FOUND, "DisableSubAccount");
 		mp_mutex->unlock();
 		return true;
 	}
