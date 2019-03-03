@@ -104,7 +104,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 						wouldBlock = wsaerr == WSAEWOULDBLOCK;
 						#else
 						int err = errno;
-						wouldBlock = err == WOULDBLOCK;
+						wouldBlock = err == EWOULDBLOCK;
 						#endif
 						if (!wouldBlock) {
 							ret.disconnect_flag = true;
