@@ -21,7 +21,7 @@ namespace GS {
 
 		char *json_data = json_dumps(send_json, 0);
 
-		OS::HTTPResponse resp = client.Post(json_data, request.mp_peer);
+		OS::HTTPResponse resp = client.Put(json_data, request.mp_peer);
 
 		free(json_data);
 		json_decref(send_json);

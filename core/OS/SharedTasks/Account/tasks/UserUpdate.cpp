@@ -98,6 +98,7 @@ namespace TaskShared {
 			else {
 				error_details.response_code = TaskShared::WebErrorCode_Success;
 			}
+			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
 		}
 

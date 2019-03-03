@@ -25,7 +25,6 @@ namespace FESL {
 			it++;
 		}
 		
-		//m_profile.countrycode
 		s << "TXN=GetAccount\n";
 		s << "parentalEmail=parents@ea.com\n";
 		s << "countryCode=" << m_profile.countrycode << "\n";

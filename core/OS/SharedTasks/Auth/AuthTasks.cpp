@@ -30,7 +30,7 @@ namespace TaskShared {
 				data->buffer += input.c_str();
 			return realsize;
 		}
-		void AuthReq_InitCurl(void *curl, char *post_data, void *write_data, AuthRequest request) {
+		void AuthReq_InitCurl(void *curl, char *post_data, void *write_data, AuthRequest request, struct curl_slist **out_list) {
 			struct curl_slist *chunk = NULL;
 			std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
 			chunk = curl_slist_append(chunk, apiKey.c_str());
@@ -85,6 +85,10 @@ namespace TaskShared {
 
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, TaskShared::curl_callback);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, write_data);
+
+			if(out_list != NULL) {
+				*out_list = chunk;
+			}
 
 		}
 		bool Handle_WebError(json_t *json_body, WebErrorDetails &error_info) {

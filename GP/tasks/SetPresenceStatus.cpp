@@ -30,9 +30,12 @@ namespace GP {
 		bool success = false;
 
 		if (curl) {
-			GPReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
+			struct curl_slist *chunk = NULL;
+			GPReq_InitCurl(curl, json_dump, (void *)&recv_data, request, &chunk);
 
 			res = curl_easy_perform(curl);
+
+			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
 		}
 

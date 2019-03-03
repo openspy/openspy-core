@@ -59,6 +59,7 @@ namespace GS {
 		game_data = OS::KeyStringToMap(gamedata);
 		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
+		req.profileid = m_profile.id;
 		req.mp_peer = this;
 		req.mp_extra = NULL;
 		req.type = EPersistRequestType_UpdateGame;

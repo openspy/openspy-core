@@ -28,7 +28,8 @@ namespace TaskShared {
 		TaskShared::WebErrorDetails error_details;
 
 		if (curl) {
-			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request);
+			struct curl_slist *chunk = NULL;
+			ProfileReq_InitCurl(curl, json_data, (void *)&recv_data, request, &chunk);
 
 			res = curl_easy_perform(curl);
 
@@ -91,6 +92,7 @@ namespace TaskShared {
 			else {
 				error_details.response_code = TaskShared::WebErrorCode_BackendError;
 			}
+			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
 		}
 

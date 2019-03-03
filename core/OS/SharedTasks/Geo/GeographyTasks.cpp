@@ -11,7 +11,7 @@ namespace TaskShared {
 		scheduler->DeclareReady();
 		return scheduler;
 	}
-	void GeoReq_InitCurl(void *curl, char *post_data, void *write_data, GeoRequest request) {
+	void GeoReq_InitCurl(void *curl, char *post_data, void *write_data, GeoRequest request, struct curl_slist **out_list) {
 		struct curl_slist *chunk = NULL;
 		std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
 		chunk = curl_slist_append(chunk, apiKey.c_str());
@@ -51,5 +51,9 @@ namespace TaskShared {
 
 		/* Close socket after one use */
 		curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
+
+		if(out_list) {
+			*out_list = chunk;
+		}
 	}
 }

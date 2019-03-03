@@ -46,6 +46,7 @@ namespace GS {
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = (void *)session_id;
+		req.profileid = m_profile.id;
 		req.type = EPersistRequestType_NewGame;
 		req.callback = newGameCreateCallback;
 		IncRef();

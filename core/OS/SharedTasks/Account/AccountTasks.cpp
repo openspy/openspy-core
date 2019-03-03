@@ -29,7 +29,7 @@ namespace TaskShared {
 			scheduler->DeclareReady();
             return scheduler;
         }
-		void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileRequest request) {
+		void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileRequest request, struct curl_slist **out_list) {
 			struct curl_slist *chunk = NULL;
 			std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
 			chunk = curl_slist_append(chunk, apiKey.c_str());
@@ -87,6 +87,10 @@ namespace TaskShared {
 
 			/* Close socket after one use */
 			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
+
+			if(out_list != NULL) {
+				*out_list = chunk;
+			}
 		}
 		bool PerformProfileRequest(ProfileRequest request, TaskThreadData *thread_data) {
 			curl_data recv_data;
@@ -208,10 +212,11 @@ namespace TaskShared {
 
 			CURL *curl = curl_easy_init();
 			CURLcode res;
+			struct curl_slist *chunk = NULL;
 			TaskShared::WebErrorDetails error_details;
 			if (curl) {
 
-				ProfileReq_InitCurl(curl, json_string, (void *)&recv_data, request);
+				ProfileReq_InitCurl(curl, json_string, (void *)&recv_data, request, &chunk);
 				res = curl_easy_perform(curl);
 				if (res == CURLE_OK) {
 					json_t *json_data = NULL;
@@ -248,6 +253,7 @@ namespace TaskShared {
 						error_details.response_code = TaskShared::WebErrorCode_BackendError;
 					}
 				}
+				curl_slist_free_all(chunk);
 				curl_easy_cleanup(curl);
 			}
 

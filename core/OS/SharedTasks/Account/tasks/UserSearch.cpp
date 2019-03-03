@@ -99,6 +99,7 @@ namespace TaskShared {
 					}
 				}		
 			}
+			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
 		}
 		

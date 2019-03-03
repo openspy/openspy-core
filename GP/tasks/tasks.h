@@ -108,6 +108,6 @@ namespace GP {
 	bool Perform_ToFromProfileAction(GPBackendRedisRequest request, TaskThreadData *thread_data);
 
     TaskScheduler<GPBackendRedisRequest, TaskThreadData> *InitTasks(INetServer *server);
-	void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request);
+	void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request, struct curl_slist **out_list);
 }
 #endif //_MM_TASKS_H

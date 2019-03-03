@@ -84,6 +84,7 @@ namespace TaskShared {
 			else {
 				register_data.error_details.response_code = TaskShared::WebErrorCode_BackendError;
 			}
+			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
 		}
 

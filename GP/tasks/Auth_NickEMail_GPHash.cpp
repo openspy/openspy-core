@@ -36,7 +36,8 @@ namespace GP {
 		TaskShared::AuthData auth_data;
 
 		if (curl) {
-			GPReq_InitCurl(curl, json_data_str, (void *)&recv_data, request);
+			struct curl_slist *chunk = NULL;
+			GPReq_InitCurl(curl, json_data_str, (void *)&recv_data, request, &chunk);
 
 			res = curl_easy_perform(curl);
 
@@ -81,6 +82,7 @@ namespace GP {
 					json_decref(json_data);
 				}
 			}
+			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
 			request.authCallback(success, user, profile, auth_data, request.extra, request.peer);
 			if (json_data_str) {

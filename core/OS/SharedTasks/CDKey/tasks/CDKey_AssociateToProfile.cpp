@@ -35,8 +35,8 @@ namespace TaskShared {
 
 		bool success = false;
 		if (curl) {
-
-			CDKeyReq_InitCurl(curl, json_dump, (void *)&recv_data, request);
+			struct curl_slist *chunk = NULL;
+			CDKeyReq_InitCurl(curl, json_dump, (void *)&recv_data, request, &chunk);
 
 			res = curl_easy_perform(curl);
 
@@ -51,6 +51,7 @@ namespace TaskShared {
 					json_decref(json_data);
 				}
 			}
+			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
 		}
 		request.callback(cdkey_data, request.extra, request.peer);

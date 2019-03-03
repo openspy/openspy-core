@@ -54,7 +54,7 @@ namespace TaskShared {
 		std::string gamename;
 	};
 
-	void AuthReq_InitCurl(void *curl, char *post_data, void *write_data, AuthRequest request);
+	void AuthReq_InitCurl(void *curl, char *post_data, void *write_data, AuthRequest request, struct curl_slist **out_list);
 
     bool PerformAuth_Email_Password(AuthRequest request, TaskThreadData *thread_data);
     bool PerformAuth_UniqueNick_Password(AuthRequest request, TaskThreadData *thread_data);

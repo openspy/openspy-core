@@ -16,8 +16,8 @@ namespace TaskShared {
 		TaskShared::GeoTaskData geo_data;
 		
 		if (curl) {
-
-			GeoReq_InitCurl(curl, NULL, (void *)&recv_data, request);
+			struct curl_slist *chunk = NULL;
+			GeoReq_InitCurl(curl, NULL, (void *)&recv_data, request, &chunk);
 
 			res = curl_easy_perform(curl);
 
@@ -45,6 +45,7 @@ namespace TaskShared {
 					json_decref(json_data);
 				}
 			}
+			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
 		}
 		request.callback(geo_data, request.extra, request.peer);

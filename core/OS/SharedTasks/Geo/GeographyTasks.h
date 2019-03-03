@@ -69,7 +69,7 @@ namespace TaskShared {
 			INetPeer *peer;
 	};
 
-	void GeoReq_InitCurl(void *curl, char *post_data, void *write_data, GeoRequest request);
+	void GeoReq_InitCurl(void *curl, char *post_data, void *write_data, GeoRequest request, struct curl_slist **out_list);
     bool PerformGeo_GetCountries(GeoRequest request, TaskThreadData *thread_data);
 }
 #endif //OS_TASKSHARED_GEOGRAPHY_H

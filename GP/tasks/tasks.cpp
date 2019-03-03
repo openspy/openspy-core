@@ -13,7 +13,6 @@ namespace GP {
             scheduler->AddRequestHandler(EGPRedisRequestType_AddBuddy, Perform_BuddyRequest);
             scheduler->AddRequestHandler(EGPRedisRequestType_UpdateStatus, Perform_SetPresenceStatus);
             scheduler->AddRequestHandler(EGPRedisRequestType_DelBuddy, Perform_ToFromProfileAction);
-            //scheduler->AddRequestHandler(EGPRedisRequestType_RevokeAuth, Perform_ToFromProfileAction);
             scheduler->AddRequestHandler(EGPRedisRequestType_BuddyMessage, Perform_SendBuddyMessage);
 
             scheduler->AddRequestHandler(EGPRedisRequestType_LookupBuddyStatus, Perform_GetBuddyStatus);
@@ -27,7 +26,7 @@ namespace GP {
             return scheduler;
         }
 
-		void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request) {
+		void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request, struct curl_slist **out_list) {
 			struct curl_slist *chunk = NULL;
 			std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
 			chunk = curl_slist_append(chunk, apiKey.c_str());
@@ -105,6 +104,10 @@ namespace GP {
 
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, TaskShared::curl_callback);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, write_data);
+
+			if(out_list != NULL) {
+				*out_list = chunk;
+			}
 
 		}
 }
