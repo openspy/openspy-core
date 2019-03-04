@@ -32,10 +32,11 @@ namespace TaskShared {
 
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
+		if(post_data != NULL)
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
 
 		/* set default user agent */
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSCDKey");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "OSGeo");
 
 		/* set timeout */
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
