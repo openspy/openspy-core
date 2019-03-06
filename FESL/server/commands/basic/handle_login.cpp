@@ -22,7 +22,7 @@ namespace FESL {
 			}
 			((Peer *)peer)->m_logged_in = true;
 			((Peer *)peer)->m_user = user;
-			((Peer *)peer)->m_profile = profile;
+			((Peer *)peer)->m_account_profile = profile;
 			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
 
 			TaskShared::ProfileRequest request;
@@ -38,7 +38,7 @@ namespace FESL {
 			scheduler->AddRequest(request.type, request);
 		}
 		else {
-			((Peer *)peer)->handle_auth_callback_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "Login");
+			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "Login");
 		}
 	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {

@@ -15,6 +15,8 @@ namespace FESL {
 		std::vector<TaskShared::CountryRegion>::const_iterator begin, end, it;
 		server->GetCountries(begin, end);
 
+		it = begin;
+
 		TaskShared::CountryRegion region;
 		while (it != end) {
 			TaskShared::CountryRegion country = *it;

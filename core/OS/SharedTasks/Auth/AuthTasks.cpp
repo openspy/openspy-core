@@ -135,6 +135,10 @@ namespace TaskShared {
 			} else if (error_class.compare("auth") == 0) { 
 				if (error_name.compare("InvalidCredentials") == 0) {
 					error_info.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
+				} else if (error_name.compare("AccountBanned") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_AuthAccountBanned;
+				} else if (error_name.compare("AccountDisabled") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_AuthAccountDisabled;
 				}
 			} else if (error_class.compare("profile") == 0) {
 				if (error_name.compare("CannotDeleteLastProfile") == 0) {
@@ -148,6 +152,9 @@ namespace TaskShared {
 				}
 				else if (error_name.compare("UniqueNickInUse") == 0) {
 					error_info.response_code = TaskShared::WebErrorCode_UniqueNickInUse;
+				}
+				else if (error_name.compare("EmailInUse") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_EmailInUse;
 				}
 			}
 			else if (error_class.compare("cdkey") == 0) {

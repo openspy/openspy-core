@@ -5,6 +5,8 @@ namespace TaskShared {
     enum WebErrorCode {
 			WebErrorCode_Success,
             WebErrorCode_AuthInvalidCredentials,
+			WebErrorCode_AuthAccountBanned,
+			WebErrorCode_AuthAccountDisabled,
             WebErrorCode_CannotDeleteLastProfile,
             WebErrorCode_NickInUse,
             WebErrorCode_NickInvalid,
@@ -13,6 +15,7 @@ namespace TaskShared {
             WebErrorCode_UniqueNickInvalid,
             WebErrorCode_UserExists,
 			WebErrorCode_EmailInvalid,
+			WebErrorCode_EmailInUse,
 			WebErrorCode_BadCdKey,
 			WebErrorCode_CdKeyAlreadyTaken,
 			WebErrorCode_CdKeyAlreadySet,

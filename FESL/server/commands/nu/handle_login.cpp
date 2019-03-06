@@ -71,7 +71,7 @@ namespace FESL {
 			scheduler->AddRequest(request.type, request);
 		}
 		else {
-			((Peer *)peer)->handle_auth_callback_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "NuLogin");
+			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "NuLogin");
 		}
 	}
 }

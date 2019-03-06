@@ -151,14 +151,17 @@ namespace FESL {
 		static void m_delete_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_update_user_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer);
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer);
+		static void m_update_user_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 		void send_memcheck(int type, int salt = 0);
 		void send_subaccounts();
 		void send_personas();
 
+		
 		OS::CMutex *mp_mutex;
 		int m_sequence_id;
 		OS::User m_user;
+		OS::Profile m_account_profile; //main user profile
 		OS::Profile m_profile;
 		bool m_logged_in;
 		bool m_pending_subaccounts;
@@ -176,8 +179,7 @@ namespace FESL {
 		static void m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
-		void handle_auth_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN);
-		void handle_profile_search_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN);
+		void handle_web_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN);
 	};
 }
 #endif //_FESLPEER_H

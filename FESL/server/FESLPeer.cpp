@@ -80,8 +80,9 @@ namespace FESL {
 			if (buf_len < 0) {
 				goto end;
 			}
-
-			OS::KVReader kv_data(std::string((const char *)recv_buffer.GetReadCursor(), buf_len), '=', '\n');
+			std::string request_data = std::string((const char *)recv_buffer.GetReadCursor(), buf_len);
+			printf("Recv: %s\n", request_data.c_str());
+			OS::KVReader kv_data(request_data, '=', '\n');
 			char *type;
 			for (size_t i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
 				if (Peer::m_commands[i].type == ntohl(header.type)) {
@@ -129,6 +130,8 @@ namespace FESL {
 
 		NetIOCommResp io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamSend(m_sd, send_buf);
 
+		printf("Send: %s\n", data.c_str());
+
 		if (io_resp.disconnect_flag || io_resp.error_flag)
 			Delete();
 
@@ -150,6 +153,7 @@ namespace FESL {
 	}
 
 	void Peer::send_memcheck(int type, int salt) {
+		return;
 		std::ostringstream s;
 		s << "TXN=MemCheck\n";
 		s << "memcheck.[]=0\n";
@@ -196,8 +200,10 @@ namespace FESL {
 		Delete();
 	}
 
-	void Peer::handle_auth_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
+	void Peer::handle_web_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
 		FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
+		std::string fieldName;
+		std::string fieldError;
 		switch (error_details.response_code) {
 		case TaskShared::WebErrorCode_UniqueNickInUse:
 			error = FESL_ERROR_ACCOUNT_EXISTS;
@@ -205,38 +211,38 @@ namespace FESL {
 		case TaskShared::WebErrorCode_NoSuchUser:
 			error = FESL_ERROR_ACCOUNT_NOT_FOUND;
 			break;
-		case TaskShared::WebErrorCode_NickInvalid:
-			error = FESL_ERROR_ACCOUNT_NOT_FOUND;
+		case TaskShared::WebErrorCode_AuthInvalidCredentials:
+			error = FESL_ERROR_AUTH_FAILURE;
 			break;
+		case TaskShared::WebErrorCode_EmailInUse:
+			error = FESL_ERROR_CUSTOM;
+			fieldName = "Account.EmailAddress";
+			fieldError = "The specified email was in use.";
+		break;
+		case TaskShared::WebErrorCode_EmailInvalid:
+			error = FESL_ERROR_CUSTOM;
+			fieldName = "Account.EmailAddress";
+			fieldError = "The specified email was invalid.";
+			break;
+			case TaskShared::WebErrorCode_BackendError:
+			error = FESL_ERROR_SYSTEM_ERROR;
+			break;
+		case TaskShared::WebErrorCode_UniqueNickInvalid:
+		case TaskShared::WebErrorCode_NickInvalid:
+			error = FESL_ERROR_CUSTOM;
+			fieldName = "Account.ScreenName";
+			fieldError = "The account name was invalid. Please change and try again.";
+		break;
 		default:
 			break;
 		}
-		SendError(cmd_type, error, TXN);
-	}
-	void Peer::handle_profile_search_callback_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
-		/*
-		EProfileResponseType_Success,
-		EProfileResponseType_GenericError,
-		EProfileResponseType_BadNick,
-		EProfileResponseType_Bad_OldNick,
-		EProfileResponseType_UniqueNick_Invalid,
-		EProfileResponseType_UniqueNick_InUse,
-		*/
-		FESL_ERROR error = FESL_ERROR_SYSTEM_ERROR;
-		switch (error_details.response_code) {
-			case TaskShared::WebErrorCode_UniqueNickInvalid:
-			case TaskShared::WebErrorCode_NickInvalid:
-				SendCustomError(cmd_type, TXN, "Account.ScreenName", "The account name was invalid. Please change and try again.");
-				return;
-			case TaskShared::WebErrorCode_NickInUse:
-				//SendCustomError(cmd_type, TXN, "Account.ScreenName", "The account name is in use. Please choose another name.");
-				error = FESL_ERROR_ACCOUNT_EXISTS;
-				break;
-			default:
-				error = FESL_ERROR_SYSTEM_ERROR;
-			break;
+
+		if (error == FESL_ERROR_CUSTOM) {
+			SendCustomError(cmd_type, TXN, fieldName, fieldError);
 		}
-		SendError(cmd_type, error, TXN);
+		else {
+			SendError(cmd_type, error, TXN);
+		}
 		
 	}
 }

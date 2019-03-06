@@ -42,6 +42,10 @@ namespace OS {
 		if (profile.birthday.GetYear() != 0)
 			json_object_set_new(profile_obj, "birthday", profile.birthday.GetJson());
 
+		if (profile.countrycode.length() > 0) {
+			json_object_set_new(profile_obj, "countrycode", json_string(profile.countrycode.c_str()));
+		}
+
 		if (profile.lon)
 			json_object_set_new(profile_obj, "lon", json_real(profile.lon));
 		if (profile.lat)

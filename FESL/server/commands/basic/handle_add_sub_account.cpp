@@ -36,7 +36,7 @@ namespace FESL {
 			((Peer *)peer)->mp_mutex->unlock();
 			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_NO_ERROR, "AddSubAccount");
 		} else {
-			((Peer *)peer)->handle_profile_search_callback_error(error_details, FESL_TYPE_ACCOUNT, "AddSubAccount");
+			((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_ACCOUNT, "AddSubAccount");
 		}
 	}
 }

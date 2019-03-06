@@ -99,7 +99,7 @@ namespace TaskShared {
 			std::map<int, OS::User> users_map;
 			//build json object
 
-			json_t *profile_obj = json_object();
+			json_t *profile_obj = OS::ProfileToJson(request.profile_search_details);
 			json_t *send_obj = profile_obj;
 			json_t *user_obj = json_object();
 			if (request.profile_search_details.id != 0)
@@ -169,6 +169,9 @@ namespace TaskShared {
 				json_object_set_new(profile_obj, "lon", json_real(request.profile_search_details.lon));
 			if (request.profile_search_details.lat)
 				json_object_set_new(profile_obj, "lat", json_real(request.profile_search_details.lat));
+
+			if (request.profile_search_details.countrycode.length() > 0)
+				json_object_set_new(profile_obj, "countryCode", json_string(request.profile_search_details.countrycode.c_str()));
 
 
 			if (request.profile_search_details.namespaceid != -1)
