@@ -99,7 +99,7 @@ namespace TaskShared {
 			std::map<int, OS::User> users_map;
 			//build json object
 
-			json_t *profile_obj = OS::ProfileToJson(request.profile_search_details);
+			json_t *profile_obj = json_object();
 			json_t *send_obj = profile_obj;
 			json_t *user_obj = json_object();
 			if (request.profile_search_details.id != 0)

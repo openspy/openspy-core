@@ -71,6 +71,10 @@ namespace FESL {
 			profile_request.callback = Peer::m_update_user_profile_callback;
 			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *profile_scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetProfileTask();
 			profile_scheduler->AddRequest(profile_request.type, profile_request);
+		} else {
+			std::ostringstream s;
+			s << "TXN=UpdateAccount\n";
+			SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		}
 		return true;
 	}
