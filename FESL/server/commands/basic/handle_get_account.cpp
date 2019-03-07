@@ -21,7 +21,7 @@ namespace FESL {
 		while (it != end) {
 			TaskShared::CountryRegion country = *it;
 			if (country.countrycode.compare(m_account_profile.countrycode) == 0) {
-				country = region;
+				region = country;
 				break;
 			}
 			it++;
