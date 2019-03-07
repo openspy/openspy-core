@@ -81,7 +81,6 @@ namespace FESL {
 				goto end;
 			}
 			std::string request_data = std::string((const char *)recv_buffer.GetReadCursor(), buf_len);
-			printf("Recv: %s\n", request_data.c_str());
 			OS::KVReader kv_data(request_data, '=', '\n');
 			char *type;
 			for (size_t i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
@@ -130,8 +129,6 @@ namespace FESL {
 
 		NetIOCommResp io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamSend(m_sd, send_buf);
 
-		printf("Send: %s\n", data.c_str());
-
 		if (io_resp.disconnect_flag || io_resp.error_flag)
 			Delete();
 
@@ -153,7 +150,6 @@ namespace FESL {
 	}
 
 	void Peer::send_memcheck(int type, int salt) {
-		return;
 		std::ostringstream s;
 		s << "TXN=MemCheck\n";
 		s << "memcheck.[]=0\n";

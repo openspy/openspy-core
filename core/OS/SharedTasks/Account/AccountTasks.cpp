@@ -171,7 +171,7 @@ namespace TaskShared {
 				json_object_set_new(profile_obj, "lat", json_real(request.profile_search_details.lat));
 
 			if (request.profile_search_details.countrycode.length() > 0)
-				json_object_set_new(profile_obj, "countryCode", json_string(request.profile_search_details.countrycode.c_str()));
+				json_object_set_new(profile_obj, "countrycode", json_string(request.profile_search_details.countrycode.c_str()));
 
 
 			if (request.profile_search_details.namespaceid != -1)

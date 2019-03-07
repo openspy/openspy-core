@@ -79,7 +79,9 @@ namespace FESL {
 		update_info->profile_response = error_details;
 		std::ostringstream s;
 
-		if (update_info->profile_response.response_code == TaskShared::WebErrorCode_Success && update_info->user_response.response_code == TaskShared::WebErrorCode_Success) {
+		if (update_info->profile_response.response_code == TaskShared::WebErrorCode_Success && (!update_info->user_update || update_info->user_response.response_code == TaskShared::WebErrorCode_Success)) {
+			((FESL::Peer *)peer)->m_user = update_info->user;
+			((FESL::Peer *)peer)->m_account_profile = update_info->profile;
 			s << "TXN=UpdateAccount\n";
 			((Peer *)peer)->SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		}

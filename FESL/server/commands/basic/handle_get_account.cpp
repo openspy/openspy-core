@@ -20,7 +20,7 @@ namespace FESL {
 		TaskShared::CountryRegion region;
 		while (it != end) {
 			TaskShared::CountryRegion country = *it;
-			if (country.countrycode.compare(m_profile.countrycode) == 0) {
+			if (country.countrycode.compare(m_account_profile.countrycode) == 0) {
 				country = region;
 				break;
 			}
@@ -29,18 +29,18 @@ namespace FESL {
 		
 		s << "TXN=GetAccount\n";
 		s << "parentalEmail=parents@ea.com\n";
-		s << "countryCode=" << m_profile.countrycode << "\n";
+		s << "countryCode=" << m_account_profile.countrycode << "\n";
 		s << "countryDesc=\"" << region.countryname << "\"\n";
 		s << "thirdPartyMailFlag=0\n";
-		s << "dobDay=" << (int)m_profile.birthday.GetDay() << "\n";
-		s << "dobMonth=" << (int)m_profile.birthday.GetMonth() << "\n";
-		s << "dobYear=" << (int)m_profile.birthday.GetYear() << "\n";
-		s << "name=" << m_profile.nick << "\n";
+		s << "dobDay=" << (int)m_account_profile.birthday.GetDay() << "\n";
+		s << "dobMonth=" << (int)m_account_profile.birthday.GetMonth() << "\n";
+		s << "dobYear=" << (int)m_account_profile.birthday.GetYear() << "\n";
+		s << "name=" << m_account_profile.nick << "\n";
 		s << "email=" << m_user.email << "\n";
-		s << "profileID=" << m_profile.id << "\n";
+		s << "profileID=" << m_account_profile.id << "\n";
 		s << "userId=" << m_user.id<< "\n";
-		s << "zipCode=" << m_profile.zipcode << "\n";
-		s << "gender=" << ((m_profile.sex == 0) ? 'M' : 'F') << "\n";
+		s << "zipCode=" << m_account_profile.zipcode << "\n";
+		s << "gender=" << ((m_account_profile.sex == 0) ? 'M' : 'F') << "\n";
 		s << "eaMailFlag=0\n";
 		SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		return true;
