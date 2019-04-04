@@ -13,7 +13,7 @@
 			SelectNetEventManager();
 			~SelectNetEventManager();
 
-			void RegisterSocket(INetPeer *peer);
+			void RegisterSocket(INetPeer *peer, bool notify_driver_only = false);
 			void UnregisterSocket(INetPeer *peer);
 			void run();
 

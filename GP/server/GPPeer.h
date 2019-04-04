@@ -69,6 +69,8 @@ namespace GP {
 	public:
 		Peer(Driver *driver, INetIOSocket *sd);
 		~Peer();
+
+		void OnConnectionReady();
 		void Delete(bool timeout = false);
 		
 		void think(bool packet_waiting);

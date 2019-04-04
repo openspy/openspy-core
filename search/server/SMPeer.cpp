@@ -22,10 +22,13 @@ namespace SM {
 		mp_mutex = OS::CreateMutex();
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
+		
+	}
+	void Peer::OnConnectionReady() {
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
 	}
 	void Peer::think(bool packet_waiting) {

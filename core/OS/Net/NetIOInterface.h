@@ -83,5 +83,7 @@ class INetIOInterface {
 		virtual void flushSocketFromSendQueue(INetIOSocket *socket) = 0;
 
 		virtual S *createSocket() = 0;
+
+		virtual bool ReadProxyAddress(INetIOSocket *socket, OS::Address &source_address, OS::Address &) = 0;
 };
 #endif //_NET_IO_INTERFACE_H

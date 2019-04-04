@@ -53,17 +53,18 @@ namespace GS {
 		m_updgame_increfs = 0;
 		m_last_authp_operation_id = 0;
 		m_xor_index = 0;
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",m_sd->address.ToString().c_str());
-
-		send_login_challenge(1);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", m_sd->address.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", getAddress().ToString().c_str());
 		delete m_getpd_wait_ctx.mutex;
 		delete m_setpd_wait_ctx.mutex;
 		delete m_getpid_wait_ctx.mutex;
 		delete mp_mutex;
+	}
+	void Peer::OnConnectionReady() {
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",getAddress().ToString().c_str());
+
+		send_login_challenge(1);
 	}
 	void Peer::send_login_challenge(int type) {
 		std::ostringstream s;

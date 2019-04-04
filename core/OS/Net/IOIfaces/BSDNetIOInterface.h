@@ -5,6 +5,8 @@
 #include <vector>
 #include <algorithm>
 
+#include <OS/KVReader.h>
+
 template<typename S = INetIOSocket>
 class BSDNetIOInterface : public INetIOInterface<S> {
 	public:
@@ -85,6 +87,32 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				ret.push_back(incoming_socket);
 			}
 			return ret;
+		}
+		bool ReadProxyAddress(INetIOSocket *socket, OS::Address &source_address, OS::Address &proxy_server_address) {
+			bool read_proxy_address = false;
+			char recvbuf[108];
+			char *p = (char *)recvbuf;
+			while (true) {
+				int len = recv(socket->sd, p, 1, 0);
+				if (len <= 0 || *p == '\n') {
+					*(++p) = 0;
+					break;
+				}
+				read_proxy_address = true;
+				p++;
+			}
+			if(read_proxy_address) {
+				OS::KVReader kv_reader(recvbuf, ' ');
+				std::pair<std::string, std::string> ip_info = kv_reader.GetPairByIdx(1);
+				std::pair<std::string, std::string> port_info = kv_reader.GetPairByIdx(2);
+
+				std::string ip_string = ip_info.first + ":" + port_info.first;
+				source_address = OS::Address(ip_string);
+
+				ip_string = ip_info.second + ":" + port_info.second;
+				proxy_server_address = OS::Address(ip_string);
+			}
+			return read_proxy_address;
 		}
 		NetIOCommResp streamRecv(INetIOSocket *socket, OS::Buffer &buffer) {
 			NetIOCommResp ret;

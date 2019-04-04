@@ -40,16 +40,17 @@ namespace GP {
 
 		RegisterCommands();
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
+		mp_proto_processor = new KVProcessor();
+	}
+	void Peer::OnConnectionReady() {
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());
 
 		OS::gen_random(m_challenge, CHALLENGE_LEN);
-		mp_proto_processor = new KVProcessor();
-
 		send_login_challenge(1);
 	}
 	Peer::~Peer() {
 		delete mp_proto_processor;
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
 	}
 	void Peer::Delete(bool timeout) {

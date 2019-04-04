@@ -30,8 +30,8 @@ void INetServer::tick() {
 void INetServer::NetworkTick() {
 	mp_net_event_mgr->run();
 }
-void INetServer::RegisterSocket(INetPeer *peer) {
-	mp_net_event_mgr->RegisterSocket(peer);
+void INetServer::RegisterSocket(INetPeer *peer, bool notify_driver_only) {
+	mp_net_event_mgr->RegisterSocket(peer, notify_driver_only);
 }
 void INetServer::UnregisterSocket(INetPeer *peer) {
 	mp_net_event_mgr->UnregisterSocket(peer);

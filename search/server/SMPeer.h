@@ -60,6 +60,7 @@ namespace SM {
 		Peer(Driver *driver, INetIOSocket *sd);
 		~Peer();
 		
+		void OnConnectionReady();
 		void think(bool packet_waiting);
 		void handle_packet(std::string data);
 

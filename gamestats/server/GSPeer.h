@@ -58,6 +58,8 @@ namespace GS {
 		void SendPacket(OS::Buffer &buffer, bool attach_final = true);
 
 		OS::GameData GetGame() { return m_game; };
+
+		void OnConnectionReady();
 	private:
 		//packet handlers
 		static void newGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra);

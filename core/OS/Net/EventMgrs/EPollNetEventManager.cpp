@@ -21,6 +21,7 @@
 		close(m_epollfd);
 	}
 	void EPollNetEventManager::run() {
+		INetDriver *driver = NULL;
 		if(!m_added_drivers) {
 			setupDrivers();
 		}
@@ -31,10 +32,16 @@
 				INetPeer *peer = (INetPeer *)data->ptr;
 				std::map<void *, EPollDataInfo *>::iterator it = m_datainfo_map.find(peer);
 				if(it != m_datainfo_map.end()) {
-					peer->think(true);
+					if(data->is_peer_notify_driver) {
+						driver = peer->GetDriver();
+						driver->OnPeerMessage(peer);
+					} else {
+						peer->think(true);
+					}
+					
 				}
 			} else {
-				INetDriver *driver = (INetDriver *)data->ptr;
+				driver = (INetDriver *)data->ptr;
 				driver->think(true);
 			}
 		}
@@ -51,7 +58,7 @@
 		}
 		flushSendQueue();
 	}
-	void EPollNetEventManager::RegisterSocket(INetPeer *peer) {
+	void EPollNetEventManager::RegisterSocket(INetPeer *peer, bool notify_driver_only) {
 		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {
 			EPollDataInfo *data_info = (EPollDataInfo *)malloc(sizeof(EPollDataInfo));
 
@@ -61,6 +68,7 @@
 
 			data_info->ptr = peer;
 			data_info->is_peer = true;
+			data_info->is_peer_notify_driver = notify_driver_only;
 
 			m_datainfo_map[peer] = data_info;
 

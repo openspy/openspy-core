@@ -12,6 +12,7 @@
 
 		typedef struct {
 			bool is_peer;
+			bool is_peer_notify_driver;
 			void *ptr;
 		} EPollDataInfo;
 		class EPollNetEventManager : public INetEventManager, public BSDNetIOInterface<> {
@@ -19,7 +20,7 @@
 			EPollNetEventManager();
 			~EPollNetEventManager();
 
-			void RegisterSocket(INetPeer *peer);
+			void RegisterSocket(INetPeer *peer, bool notify_driver_only = false);
 			void UnregisterSocket(INetPeer *peer);
 			void run();
 		private:
