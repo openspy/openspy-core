@@ -13,7 +13,7 @@
 
 class TCPDriver : public INetDriver {
     public:
-		TCPDriver(INetServer *server, const char *host, uint16_t port);
+		TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
 		~TCPDriver();
 		void think(bool packet_waiting);
 

@@ -19,7 +19,7 @@ namespace SM {
 
 	class Driver : public TCPDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port);
+		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
 	protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket);
 	};

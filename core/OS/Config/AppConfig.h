@@ -12,7 +12,7 @@ class AppConfig {
 		bool GetVariableString(std::string driverName , std::string name, std::string &out);
 		bool GetVariableInt(std::string driverName, std::string name, int &out);
 
-		std::vector<OS::Address> GetDriverAddresses(std::string driverName);
+		std::vector<OS::Address> GetDriverAddresses(std::string driverName, bool &proxyFlag);
 
 	private:
 		std::string GetVariableValue(OS::ConfigNode node);

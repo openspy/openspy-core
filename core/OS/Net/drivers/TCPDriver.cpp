@@ -1,7 +1,7 @@
 #include <algorithm>
 #include "TCPDriver.h"
 
-TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
+TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : INetDriver(server) {
     OS::Address bind_address(0, port);
     mp_socket = server->getNetIOInterface()->BindTCP(bind_address);
 
@@ -10,7 +10,7 @@ TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port) : INet
     mp_mutex = OS::CreateMutex();
     mp_thread = OS::CreateThread(TCPDriver::TaskThread, this, true);
 
-    m_proxy_headers = true;
+    m_proxy_headers = proxyHeaders;
 }
 TCPDriver::~TCPDriver() {
     mp_thread->SignalExit(true);
@@ -35,8 +35,11 @@ void TCPDriver::think(bool listener_waiting) {
 
             mp_mutex->lock();
 
+            peer->SetAddress(sda->address);
 
             m_server->RegisterSocket(peer, m_proxy_headers);
+            if(!m_proxy_headers)
+                peer->OnConnectionReady();
             
             m_connections.push_back(peer);
             

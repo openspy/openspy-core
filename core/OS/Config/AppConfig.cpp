@@ -150,7 +150,7 @@ std::string AppConfig::GetVariableValue(OS::ConfigNode node) {
 	end:
 	return ret;
 }
-std::vector<OS::Address> AppConfig::GetDriverAddresses(std::string driverName) {
+std::vector<OS::Address> AppConfig::GetDriverAddresses(std::string driverName, bool &proxyFlag) {
 	std::vector<OS::Address> ret;
 	OS::Address address;
 	OS::ConfigNode node;
@@ -172,11 +172,14 @@ std::vector<OS::Address> AppConfig::GetDriverAddresses(std::string driverName) {
 					while (it3 != address_info_nodes.end()) {
 						OS::ConfigNode node3 = *it3;
 						std::vector<OS::ConfigNode> address_detail_nodes = node3.GetArrayChildren();
+						printf("node key: %s\n", node3.GetKey().c_str());
 						if (node3.GetKey().compare("ip") == 0) {
 							ip = node3.GetValue();
 						}
 						else if (node3.GetKey().compare("port") == 0) {
 							port = node3.GetValueInt();
+						} else if(node3.GetKey().compare("proxyHeaders") == 0) {
+							proxyFlag = atoi(node3.GetValue().c_str()) != 0;
 						}
 						it3++;
 					}

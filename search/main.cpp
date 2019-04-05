@@ -40,9 +40,10 @@ int main() {
 		std::vector<std::string>::iterator it = drivers.begin();
 		while (it != drivers.end()) {
 			std::string s = *it;
-			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+			bool proxyHeaders = false;
+			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyHeaders);
 			OS::Address address = addresses.front();
-			SM::Driver *driver = new SM::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort());
+			SM::Driver *driver = new SM::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), proxyHeaders);
 			OS::LogText(OS::ELogLevel_Info, "Adding SM Driver: %s:%d\n", address.ToString(true).c_str(), address.GetPort());
 			g_gameserver->addNetworkDriver(driver);
 			it++;

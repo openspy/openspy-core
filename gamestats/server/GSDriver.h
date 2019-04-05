@@ -21,7 +21,7 @@ namespace GS {
 	class Driver;
 	class Driver : public TCPDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port);
+		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
 		Peer *FindPeerByProfileID(int profileid);
 		
 	protected:
