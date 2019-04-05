@@ -50,9 +50,8 @@ int main() {
 			bool proxyFlag = false;
 			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 			OS::Address address = addresses.front();
-			printf("proxy flag: %d\n", proxyFlag);
 			GP::Driver *driver = new GP::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), proxyFlag);
-			OS::LogText(OS::ELogLevel_Info, "Adding GP Driver: %s:%d\n", address.ToString(true).c_str(), address.GetPort());
+			OS::LogText(OS::ELogLevel_Info, "Adding GP Driver: %s:%d proxy: %d\n", address.ToString(true).c_str(), address.GetPort(), proxyFlag);
 			g_gameserver->addNetworkDriver(driver);
 			it++;
 	}

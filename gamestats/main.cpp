@@ -46,11 +46,11 @@ int main() {
 		std::vector<std::string>::iterator it = drivers.begin();
 		while (it != drivers.end()) {
 			std::string s = *it;
-			bool proxyHeaders = false;
-			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyHeaders);
+			bool proxyFlag = false;
+			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 			OS::Address address = addresses.front();
-			GS::Driver *driver = new GS::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), proxyHeaders);
-			OS::LogText(OS::ELogLevel_Info, "Adding GS Driver: %s:%d\n", address.ToString(true).c_str(), address.GetPort());
+			GS::Driver *driver = new GS::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), proxyFlag);
+			OS::LogText(OS::ELogLevel_Info, "Adding GS Driver: %s:%d proxy: %d\n", address.ToString(true).c_str(), address.GetPort(), proxyFlag);
 			g_gameserver->addNetworkDriver(driver);
 			it++;
 	}
