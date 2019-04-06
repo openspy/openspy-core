@@ -172,7 +172,6 @@ std::vector<OS::Address> AppConfig::GetDriverAddresses(std::string driverName, b
 					while (it3 != address_info_nodes.end()) {
 						OS::ConfigNode node3 = *it3;
 						std::vector<OS::ConfigNode> address_detail_nodes = node3.GetArrayChildren();
-						printf("node key: %s\n", node3.GetKey().c_str());
 						if (node3.GetKey().compare("ip") == 0) {
 							ip = node3.GetValue();
 						}
