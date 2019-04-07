@@ -24,7 +24,8 @@ class TCPDriver : public INetDriver {
     protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket) = 0;
 		static void *TaskThread(OS::CThread *thread);
-		void TickConnections();
+		virtual void TickConnections();
+		void DeleteClients();
 
 		std::vector<INetPeer *> m_connections;
 

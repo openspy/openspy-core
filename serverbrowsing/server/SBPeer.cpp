@@ -17,11 +17,15 @@ namespace SB {
 		
 		mp_mutex = OS::CreateMutex();
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version %d",m_sd->address.ToString().c_str(), m_version);
+		
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
+	}
+
+	void Peer::OnConnectionReady() {
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version %d",getAddress().ToString().c_str(), m_version);
 	}
 
 	bool Peer::serverMatchesLastReq(MM::Server *server, bool require_push_flag) {

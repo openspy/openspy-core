@@ -50,10 +50,11 @@ int main() {
 		app_config->GetVariableInt(s, "protocol-version", version);
 
 		
-		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+		bool proxyFlag = false;
+		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 		OS::Address address = addresses.front();
-		SB::Driver *driver = new SB::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), version);
-		OS::LogText(OS::ELogLevel_Info, "Adding SB Driver: %s Version: (%d)\n", address.ToString().c_str(), version);
+		SB::Driver *driver = new SB::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), version, proxyFlag);
+		OS::LogText(OS::ELogLevel_Info, "Adding SB Driver: %s Version: (%d) proxy: %d\n", address.ToString().c_str(), version, proxyFlag);
 		g_gameserver->addNetworkDriver(driver);
 		it++;
 	}

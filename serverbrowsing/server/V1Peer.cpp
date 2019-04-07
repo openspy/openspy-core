@@ -151,7 +151,7 @@ namespace SB {
 			}
 			resp << "\\error\\" << str;
 
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", m_sd->address.ToString().c_str(), str);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", getAddress().ToString().c_str(), str);
 			SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), true);
 
 			if (disconnect) {
@@ -204,11 +204,11 @@ namespace SB {
 			else if (strcmp(command.c_str(), "list") == 0) {
 				handle_list(data);
 			} else if(strcmp(command.c_str(), "queryid") == 0) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Ignore queryid %s", m_sd->address.ToString().c_str(), data.c_str());
+				OS::LogText(OS::ELogLevel_Info, "[%s] Ignore queryid %s", getAddress().ToString().c_str(), data.c_str());
 			}
 			else {
 				//send_error(true, "Cannot handle request");
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", m_sd->address.ToString().c_str(), command.c_str());
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", getAddress().ToString().c_str(), command.c_str());
 			}
 		}
 		void V1Peer::OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
@@ -301,7 +301,7 @@ namespace SB {
 				return;
 			}
 
-			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", m_sd->address.ToString().c_str(), req.req.m_from_game.gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
+			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", getAddress().ToString().c_str(), req.req.m_from_game.gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
 
 			req.extra = (void *)1;
 			m_last_list_req = req.req;

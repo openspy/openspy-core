@@ -17,12 +17,7 @@ TCPDriver::~TCPDriver() {
     delete mp_mutex;
     delete mp_thread;
 
-    std::vector<INetPeer *>::iterator it = m_connections.begin();
-    while (it != m_connections.end()) {
-        INetPeer *peer = *it;
-        delete peer;
-        it++;
-    }
+    DeleteClients();
 }
 void TCPDriver::think(bool listener_waiting) {
     if (listener_waiting) {
@@ -133,5 +128,14 @@ void TCPDriver::OnPeerMessage(INetPeer *peer) {
         m_server->RegisterSocket(peer);
         peer->SetAddress(source_address);
         peer->OnConnectionReady();
-    }    
+    }
+}
+void TCPDriver::DeleteClients() {
+    std::vector<INetPeer *>::iterator it = m_connections.begin();
+    while (it != m_connections.end()) {
+        INetPeer *peer = *it;
+        m_server->UnregisterSocket(peer);
+        delete peer;
+        it++;
+    }
 }

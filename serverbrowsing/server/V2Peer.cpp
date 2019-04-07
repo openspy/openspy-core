@@ -59,18 +59,18 @@ namespace SB {
 					break_flag = true;
 				break;
 				case MAPLOOP_REQUEST:
-					OS::LogText(OS::ELogLevel_Info, "[%s] Got map request", m_sd->address.ToString().c_str(), request_type);
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got map request", getAddress().ToString().c_str(), request_type);
 					break_flag = true;
 				break;
 				case PLAYERSEARCH_REQUEST:
-					OS::LogText(OS::ELogLevel_Info, "[%s] Got playersearch request", m_sd->address.ToString().c_str(), request_type);
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got playersearch request", getAddress().ToString().c_str(), request_type);
 					break_flag = true;
 				break;
 				case SERVER_INFO_REQUEST:
 					ProcessInfoRequest(buffer);
 				break;
 				default:
-					OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d", m_sd->address.ToString().c_str(), request_type);
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d", getAddress().ToString().c_str(), request_type);
 					break_flag = true;
 					break;
 			}
@@ -141,7 +141,7 @@ namespace SB {
 		}
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: (%d %d %d), gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s, fields4all: %d, no_srv_list: %d, no_list_cache: %d, updates: %d, options: %d", m_sd->address.ToString().c_str(), req.protocol_version, req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), key_list.c_str(), req.filter.c_str(), req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str(), req.send_fields_for_all, req.no_server_list, req.no_list_cache, req.push_updates, options);
+		OS::LogText(OS::ELogLevel_Info, "[%s] List Request: Version: (%d %d %d), gamenames: (%s) - (%s), fields: %s, filter: %s  is_group: %d, limit: %d, alt_src: %s, fields4all: %d, no_srv_list: %d, no_list_cache: %d, updates: %d, options: %d", getAddress().ToString().c_str(), req.protocol_version, req.encoding_version, req.game_version, req.m_from_gamename.c_str(), req.m_for_gamename.c_str(), key_list.c_str(), req.filter.c_str(), req.send_groups, req.max_results, OS::Address(req.source_ip, 0).ToString().c_str(), req.send_fields_for_all, req.no_server_list, req.no_list_cache, req.push_updates, options);
 		return req;
 
 	}
@@ -162,12 +162,12 @@ namespace SB {
 		#endif
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", m_sd->address.ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", getAddress().ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
 		if (buffer.readRemaining() > 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), buffer.readRemaining());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", getAddress().ToString().c_str(), buffer.readRemaining());
 			MM::MMQueryRequest req;
 			req.type = MM::EMMQueryRequestType_SubmitData;
-			req.from = m_sd->address;
+			req.from = getAddress();
 			req.to = m_send_msg_to;
 			req.buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
 			req.req.m_for_game = m_game;
@@ -237,7 +237,7 @@ namespace SB {
 			buffer.WriteInt(list_req.source_ip);
 		}
 		else {
-			buffer.WriteInt(m_sd->address.GetInAddr().sin_addr.s_addr);
+			buffer.WriteInt(getAddress().GetInAddr().sin_addr.s_addr);
 		}
 		
 		buffer.WriteShort(htons(list_req.m_from_game.queryport));
@@ -369,7 +369,7 @@ namespace SB {
 
 		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
 		if(io_resp.disconnect_flag || io_resp.error_flag) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d %d", m_sd->address.ToString().c_str(), io_resp.disconnect_flag, io_resp.error_flag);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d %d", getAddress().ToString().c_str(), io_resp.disconnect_flag, io_resp.error_flag);
 			Delete();
 		}
 	}
@@ -451,7 +451,7 @@ namespace SB {
 
 		req.type = MM::EMMQueryRequestType_GetServerByIP;
 		req.address = address;
-		OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", m_sd->address.ToString().c_str(), req.address.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", getAddress().ToString().c_str(), req.address.ToString().c_str());
 
 		req.req.m_for_game = m_game;
 		AddRequest(req);
@@ -486,10 +486,10 @@ namespace SB {
 			}
 
 			if(m_next_packet_send_msg) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", m_sd->address.ToString().c_str(), len);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", getAddress().ToString().c_str(), len);
 				MM::MMQueryRequest req;
 				req.type = MM::EMMQueryRequestType_SubmitData;
-				req.from = m_sd->address;
+				req.from = getAddress();
 				req.to = m_send_msg_to;
 				req.buffer.WriteBuffer(recv_buffer.GetHead(), len);
 				req.req.m_for_game = m_game;
@@ -747,7 +747,7 @@ namespace SB {
 		OS::Buffer buffer((void *)&send_str, len);
 
 		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", m_sd->address.ToString().c_str(), send_str, die);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", getAddress().ToString().c_str(), send_str, die);
 		if (io_resp.disconnect_flag || io_resp.error_flag || die)
 			Delete();
 	}
