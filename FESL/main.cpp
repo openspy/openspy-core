@@ -91,7 +91,8 @@ int main() {
 	while (it != drivers.end()) {
 		std::string s = *it;
 
-		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+		bool proxyFlag = false;
+		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 		OS::Address address = addresses.front();
 
 		SSLNetIOIFace::ESSL_Type ssl_version = getSSLVersion(s, app_config);
@@ -125,8 +126,8 @@ int main() {
 
 		server_info.termsOfServiceData = get_file_contents(tos_path);
 
-		FESL::Driver *driver = new FESL::Driver(g_gameserver, address, server_info, stringCrypterPKey, x509_path.c_str(), rsa_path.c_str(), ssl_version);
-		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s (ssl: %d)\n", address.ToString().c_str(), ssl_version != SSLNetIOIFace::ESSL_None);
+		FESL::Driver *driver = new FESL::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), server_info, stringCrypterPKey, x509_path.c_str(), rsa_path.c_str(), ssl_version, proxyFlag);
+		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s (ssl: %d) proxy flag: %d\n", address.ToString().c_str(), ssl_version != SSLNetIOIFace::ESSL_None, proxyFlag);
 		g_gameserver->addNetworkDriver(driver);
 		it++;
 	}

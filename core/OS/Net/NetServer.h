@@ -18,9 +18,6 @@ public:
 
 	void RegisterSocket(INetPeer *peer, bool notify_driver_only = false);
 	void UnregisterSocket(INetPeer *peer);
-
-	INetIOInterface<> *getNetIOInterface();
-	void setNetIOInterface(INetIOInterface<> *iface);
 protected:
 	void NetworkTick(); //fires the INetEventMgr
 //private:

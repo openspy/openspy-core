@@ -367,7 +367,7 @@ namespace SB {
 
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.bytesWritten() - header_len);
 
-		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		NetIOCommResp io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
 		if(io_resp.disconnect_flag || io_resp.error_flag) {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d %d", getAddress().ToString().c_str(), io_resp.disconnect_flag, io_resp.error_flag);
 			Delete();
@@ -477,7 +477,7 @@ namespace SB {
 		if (m_delete_flag) return;
 		if (waiting_packet) {
 			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
+			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 			
 			int len = io_resp.comm_len;
 
@@ -746,7 +746,7 @@ namespace SB {
 
 		OS::Buffer buffer((void *)&send_str, len);
 
-		NetIOCommResp io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		NetIOCommResp io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", getAddress().ToString().c_str(), send_str, die);
 		if (io_resp.disconnect_flag || io_resp.error_flag || die)
 			Delete();

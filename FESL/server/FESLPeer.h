@@ -118,6 +118,7 @@ namespace FESL {
 		void Delete(bool timeout = false);
 
 		bool GetAuthCredentials(OS::User &user, OS::Profile &profile);
+		void OnConnectionReady();
 
 		void DuplicateLoginExit();
 		std::string getSessionKey() { return m_session_key; };

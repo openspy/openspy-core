@@ -37,7 +37,7 @@ namespace SM {
 
 		if (packet_waiting) {
 			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
+			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 
 			int len = io_resp.comm_len;
 
@@ -157,7 +157,7 @@ namespace SM {
 			buffer.WriteBuffer((void *)"\\final\\", 7);
 		}
 		NetIOCommResp io_resp;
-		io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
 		if (io_resp.disconnect_flag || io_resp.error_flag) {
 			Delete();
 		}

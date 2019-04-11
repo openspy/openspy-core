@@ -7,7 +7,7 @@
 class INetPeer : public OS::Ref {
 	public:
 		INetPeer(INetDriver *driver, INetIOSocket *sd) : OS::Ref() { mp_driver = driver; m_sd = sd;  m_address = m_sd->address; };
-		virtual ~INetPeer() { GetDriver()->getServer()->getNetIOInterface()->closeSocket(m_sd); }
+		virtual ~INetPeer() { GetDriver()->getNetIOInterface()->closeSocket(m_sd); }
 
 		void SetAddress(OS::Address address) { m_address = address; }
 		virtual void OnConnectionReady() = 0;

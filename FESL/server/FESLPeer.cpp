@@ -50,11 +50,14 @@ namespace FESL {
 
 		mp_mutex = OS::CreateMutex();
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", m_sd->address.ToString().c_str());
+		
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
+	}
+	void Peer::OnConnectionReady() {
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());
 	}
 	void Peer::think(bool packet_waiting) {
 		NetIOCommResp io_resp;
@@ -62,7 +65,7 @@ namespace FESL {
 		if (packet_waiting) {
 			OS::Buffer recv_buffer;
 
-			io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamRecv(m_sd, recv_buffer);
+			io_resp = ((FESL::Driver *)GetDriver())->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 
 			int len = io_resp.comm_len;
 
@@ -87,7 +90,7 @@ namespace FESL {
 				if (Peer::m_commands[i].type == ntohl(header.type)) {
 					if (Peer::m_commands[i].command.compare(kv_data.GetValue("TXN")) == 0) {
 						type = (char *)&Peer::m_commands[i].type;
-						OS::LogText(OS::ELogLevel_Info, "[%s] Got Command: %c%c%c%c %s", m_sd->address.ToString().c_str(), type[3], type[2], type[1], type[0], Peer::m_commands[i].command.c_str());
+						OS::LogText(OS::ELogLevel_Info, "[%s] Got Command: %c%c%c%c %s", getAddress().ToString().c_str(), type[3], type[2], type[1], type[0], Peer::m_commands[i].command.c_str());
 						(*this.*Peer::m_commands[i].mpFunc)(kv_data);
 						return;
 					}
@@ -95,7 +98,7 @@ namespace FESL {
 			}
 			header.type = ntohl(header.type);
 			type = (char *)&header.type;
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", m_sd->address.ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", getAddress().ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
 		}
 
 		end:
@@ -127,7 +130,7 @@ namespace FESL {
 		send_buf.WriteBuffer((void *)&header, sizeof(header));
 		send_buf.WriteNTS(data);
 
-		NetIOCommResp io_resp = ((FESL::Driver *)GetDriver())->getSSL_Socket_Interface()->streamSend(m_sd, send_buf);
+		NetIOCommResp io_resp = ((FESL::Driver *)GetDriver())->getNetIOInterface()->streamSend(m_sd, send_buf);
 
 		if (io_resp.disconnect_flag || io_resp.error_flag)
 			Delete();

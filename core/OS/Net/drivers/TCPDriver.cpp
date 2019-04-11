@@ -1,9 +1,14 @@
 #include <algorithm>
 #include "TCPDriver.h"
 
-TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : INetDriver(server) {
+TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders, const char *x509_path = NULL, const char *rsa_priv_path = NULL, SSLNetIOIFace::ESSL_Type ssl_version = SSLNetIOIFace::ESSL_None) : INetDriver(server) {
     OS::Address bind_address(0, port);
-    mp_socket = server->getNetIOInterface()->BindTCP(bind_address);
+    if(x509_path != NULL && rsa_priv_path != NULL  && ssl_version != SSLNetIOIFace::ESSL_None) {
+        mp_net_io_interface = (INetIOInterface<> *)new SSLNetIOIFace::SSLNetIOInterface(ssl_version, rsa_priv_path, x509_path);
+    } else {
+        mp_net_io_interface = new BSDNetIOInterface<>();
+    }
+    mp_socket = getNetIOInterface()->BindTCP(bind_address);
 
     gettimeofday(&m_server_start, NULL);
 
@@ -21,7 +26,7 @@ TCPDriver::~TCPDriver() {
 }
 void TCPDriver::think(bool listener_waiting) {
     if (listener_waiting) {
-        std::vector<INetIOSocket *> sockets = getServer()->getNetIOInterface()->TCPAccept(mp_socket);
+        std::vector<INetIOSocket *> sockets = getNetIOInterface()->TCPAccept(mp_socket);
         std::vector<INetIOSocket *>::iterator it = sockets.begin();
         while (it != sockets.end()) {
             INetIOSocket *sda = *it;
@@ -121,7 +126,7 @@ void TCPDriver::TickConnections() {
 }
 void TCPDriver::OnPeerMessage(INetPeer *peer) {
     OS::Address source_address, proxy_server_address;
-    bool success = getServer()->getNetIOInterface()->ReadProxyAddress(peer->GetSocket(), source_address, proxy_server_address);
+    bool success = getNetIOInterface()->ReadProxyAddress(peer->GetSocket(), source_address, proxy_server_address);
 
     if(success) {
         m_server->UnregisterSocket(peer);

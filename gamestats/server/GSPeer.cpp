@@ -85,7 +85,7 @@ namespace GS {
 		if (m_delete_flag) return;
 		if (packet_waiting) {
 			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
+			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 			int len = io_resp.comm_len;
 
 			if (len <= 0) {
@@ -195,7 +195,7 @@ namespace GS {
 		buffer.resetReadCursor();
 
 		NetIOCommResp io_resp;
-		io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, send_buffer);
+		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, send_buffer);
 		if (io_resp.disconnect_flag || io_resp.error_flag) {
 			Delete();
 		}
