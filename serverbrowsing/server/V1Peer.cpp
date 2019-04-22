@@ -35,9 +35,9 @@ namespace SB {
 
 		}
 		void V1Peer::OnConnectionReady() {
-				if(!m_sent_validation) {
-					send_validation();
-				}
+			if(!m_sent_validation) {
+				send_validation();
+			}
 		}
 		void V1Peer::send_validation() {
 			std::ostringstream s;
@@ -430,6 +430,8 @@ namespace SB {
 			if(attach_final) {
 				buffer.WriteBuffer((void*)"\\final\\", 7);
 			}
+			if(m_game.secretkey.length() == 0)
+				skip_encryption = true;
 			if (!skip_encryption) {
 				switch (m_enctype) {
 				case 2:
