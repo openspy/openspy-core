@@ -114,9 +114,6 @@ namespace GS {
 		
 		struct timeval m_last_recv, m_last_ping;
 
-		bool m_delete_flag;
-		bool m_timeout_flag;
-
 		char m_challenge[CHALLENGE_LEN + 1];
 		int m_session_key;
 		int m_xor_index;

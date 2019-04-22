@@ -62,8 +62,6 @@ namespace NN {
 
 		struct timeval m_last_recv, m_last_ping, m_init_time, m_ert_test_time, m_last_connect_attempt;
 
-		bool m_delete_flag;
-		bool m_timeout_flag;
 		bool m_got_init;
 
 		NNCookieType m_cookie;

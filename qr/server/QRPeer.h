@@ -45,9 +45,6 @@ namespace QR {
 
 		struct timeval m_last_recv, m_last_ping, m_last_heartbeat;
 
-		bool m_delete_flag;
-		bool m_timeout_flag;
-
 		int m_version;
 
 		bool m_server_pushed;

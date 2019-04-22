@@ -51,9 +51,6 @@ namespace SB {
 
 		struct timeval m_last_recv, m_last_ping;
 
-		bool m_delete_flag;
-		bool m_timeout_flag;
-
 		MM::sServerListReq m_last_list_req;
 
 		void AddRequest(MM::MMQueryRequest req);

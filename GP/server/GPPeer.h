@@ -180,9 +180,6 @@ namespace GP {
 
 		struct timeval m_last_recv, m_last_ping, m_status_refresh, m_session_expires_at;
 
-		bool m_delete_flag;
-		bool m_timeout_flag;
-
 		char m_challenge[CHALLENGE_LEN + 1];
 
 		GPShared::GPStatus m_status;
