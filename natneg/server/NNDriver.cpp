@@ -5,10 +5,11 @@
 
 #include "NNPeer.h"
 #include "NNDriver.h"
-
+#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 namespace NN {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		OS::Address bind_address(0, port);
+		mp_net_io_interface = new BSDNetIOInterface<>();
 		mp_socket = getNetIOInterface()->BindUDP(bind_address);
 
 		gettimeofday(&m_server_start, NULL);

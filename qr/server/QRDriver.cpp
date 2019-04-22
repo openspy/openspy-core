@@ -7,9 +7,12 @@
 #include "QRDriver.h"
 #include "V1Peer.h"
 #include "V2Peer.h"
+#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
+
 namespace QR {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		OS::Address bind_address(0, port);
+		mp_net_io_interface = new BSDNetIOInterface<>();
 		mp_socket = getNetIOInterface()->BindUDP(bind_address);
 
 		gettimeofday(&m_server_start, NULL);
