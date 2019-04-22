@@ -28,11 +28,14 @@ namespace NN {
 		memset(&m_ert_test_time, 0, sizeof(m_ert_test_time));
 		memset(&m_init_time, 0, sizeof(m_init_time));
 		memset(&m_last_connect_attempt, 0, sizeof(m_last_connect_attempt));
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",sd->address.ToString().c_str());
+		
 
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
+	}
+	void Peer::OnConnectionReady() {
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",getAddress().ToString().c_str());
 	}
 	void Peer::think(bool waiting_packet) {
 		if (m_delete_flag) return;
@@ -104,7 +107,7 @@ namespace NN {
 				handleNatifyPacket(packet);
 			break;
 			case NN_CONNECT_ACK:
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got connection ACK", m_sd->address.ToString().c_str());
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got connection ACK", getAddress().ToString().c_str());
 				m_got_connect_ack = true;
 				if (m_client_version <= 2) {
 					Delete();
@@ -115,7 +118,7 @@ namespace NN {
 				Delete();
 			break;
 			default:
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d, version: %d", m_sd->address.ToString().c_str(), packet->packettype, packet->version);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d, version: %d", getAddress().ToString().c_str(), packet->packettype, packet->version);
 			break;
 		}
 	}
@@ -135,7 +138,7 @@ namespace NN {
 		m_use_gameport = packet->Packet.Init.usegameport;
 		m_private_address = OS::Address(packet->Packet.Init.localip, ntohs(packet->Packet.Init.localport));
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, porttype: %d, use_gameport: %d, private: %s, game: %s", m_sd->address.ToString().c_str(), packet->version, m_client_index, m_cookie, m_port_type, m_use_gameport, m_private_address.ToString().c_str(), m_gamename.c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got init - version: %d, client idx: %d, cookie: %d, porttype: %d, use_gameport: %d, private: %s, game: %s", getAddress().ToString().c_str(), packet->version, m_client_index, m_cookie, m_port_type, m_use_gameport, m_private_address.ToString().c_str(), m_gamename.c_str());
 
 		if (!m_got_init) {
 			SubmitClient();
@@ -162,7 +165,7 @@ namespace NN {
 
 		TaskScheduler<NNRequestData, TaskThreadData> *scheduler = ((NN::Server *)(GetDriver()->getServer()))->getScheduler();
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got ERTTest type %d", m_sd->address.ToString().c_str(), packet->Packet.Init.porttype);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got ERTTest type %d", getAddress().ToString().c_str(), packet->Packet.Init.porttype);
 		switch (packet->Packet.Init.porttype) {
 			//case NN_PT_GP: //??
 			case NN_PT_NN1: //solicited ERT reply
@@ -182,15 +185,15 @@ namespace NN {
 		}
 	}
 	void Peer::handleReportPacket(NatNegPacket *packet) {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got report- client idx: %d, cookie: %d, game: %s, port type: %d, neg result: %d, neg type: %d, nat mapping scheme: %d", m_sd->address.ToString().c_str(), m_client_index, m_cookie, packet->Packet.Report.gamename, packet->Packet.Report.porttype, packet->Packet.Report.negResult, packet->Packet.Report.natType, packet->Packet.Report.natMappingScheme);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got report- client idx: %d, cookie: %d, game: %s, port type: %d, neg result: %d, neg type: %d, nat mapping scheme: %d", getAddress().ToString().c_str(), m_client_index, m_cookie, packet->Packet.Report.gamename, packet->Packet.Report.porttype, packet->Packet.Report.negResult, packet->Packet.Report.natType, packet->Packet.Report.natMappingScheme);
 		packet->packettype = NN_REPORT_ACK;
 		sendPacket(packet);
 
 	}
 	void Peer::handleAddressCheckPacket(NatNegPacket *packet) {
 		packet->packettype = NN_ADDRESS_REPLY;
-		packet->Packet.Init.localip = m_sd->address.GetInAddr().sin_addr.s_addr;
-		packet->Packet.Init.localport = m_sd->address.GetInAddr().sin_port;
+		packet->Packet.Init.localip = getAddress().GetInAddr().sin_addr.s_addr;
+		packet->Packet.Init.localport = getAddress().GetInAddr().sin_port;
 		sendPacket(packet);
 	}
 	int Peer::packetSizeFromType(uint8_t type) {
@@ -230,7 +233,7 @@ namespace NN {
 		OS::Buffer buffer(size);
 		buffer.WriteBuffer(packet, size);
 
-		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
+		NetIOCommResp resp = GetDriver()->getNetIOInterface()->datagramSend(m_sd, buffer);
 		if (resp.disconnect_flag || resp.error_flag) {
 			Delete();
 		}
@@ -268,7 +271,7 @@ namespace NN {
 		p.Packet.Connect.remotePort = 0;
 		p.Packet.Connect.finished = error;
 		sendPacket(&p);
-		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", m_sd->address.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Sending init timeout", getAddress().ToString().c_str());
 	}
 	void Peer::SendConnectPacket(OS::Address address) {
 		gettimeofday(&m_last_connect_attempt, NULL);
@@ -285,7 +288,7 @@ namespace NN {
 
 		sendPacket(&p);
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s), NAT mapping scheme: %s", m_sd->address.ToString().c_str(), address.ToString().c_str(), NN::GetNatMappingSchemeString(m_nat));
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s), NAT mapping scheme: %s", getAddress().ToString().c_str(), address.ToString().c_str(), NN::GetNatMappingSchemeString(m_nat));
 
 		if (m_num_connect_resends++ > NN_CONNECT_MAX_RESENDS) {
 			Delete();

@@ -42,6 +42,8 @@ namespace NN {
 		int NumRequiredAddresses() const;
 
 		NN::ConnectionSummary GetSummary() const;
+
+		void OnConnectionReady();
 	protected:
 		static int packetSizeFromType(uint8_t type);
 

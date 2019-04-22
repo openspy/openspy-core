@@ -35,6 +35,7 @@ namespace QR {
 		void SubmitDirtyServer();
 
 		void DeleteServer();
+		void OnConnectionReady();
 	protected:
 
 		bool isTeamString(const char *string);

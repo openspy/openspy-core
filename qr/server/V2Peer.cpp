@@ -31,7 +31,7 @@ namespace QR {
 	}
 
 	void V2Peer::SendPacket(OS::Buffer &buffer) {
-		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
+		NetIOCommResp resp = GetDriver()->getNetIOInterface()->datagramSend(m_sd, buffer);
 		if (resp.disconnect_flag || resp.error_flag) {
 			Delete();
 		}
@@ -50,7 +50,7 @@ namespace QR {
 
 		if(m_recv_instance_key) {
 			if(memcmp((uint8_t *)&instance_key, (uint8_t *)&m_instance_key, sizeof(instance_key)) != 0) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet, keys: %d %d", m_sd->address.ToString().c_str(), *(uint32_t *)&m_instance_key, *(uint32_t *)&instance_key);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Instance key mismatch/possible spoofed packet, keys: %d %d", getAddress().ToString().c_str(), *(uint32_t *)&m_instance_key, *(uint32_t *)&instance_key);
 				return;
 			}
 		}
@@ -85,7 +85,7 @@ namespace QR {
 		}
 		gsseckey((unsigned char *)&challenge_resp, (unsigned char *)&m_challenge, (const unsigned char *)m_server_info.m_game.secretkey.c_str(), 0);
 		if(strcmp(buffer.ReadNTS().c_str(),challenge_resp) == 0) { //matching challenge
-			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename.c_str());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Server pushed, gamename: %s", getAddress().ToString().c_str(), m_server_info.m_game.gamename.c_str());
 			if(m_sent_challenge && !m_server_pushed) {
 				TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(GetDriver()->getServer()))->getScheduler();
 				MM::MMPushRequest req;
@@ -100,7 +100,7 @@ namespace QR {
 			m_sent_challenge = true;
 		}
 		else {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Incorrect challenge for gamename: %s", m_sd->address.ToString().c_str(), m_server_info.m_game.gamename.c_str());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Incorrect challenge for gamename: %s", getAddress().ToString().c_str(), m_server_info.m_game.gamename.c_str());
 		}
 	}
 	void V2Peer::handle_keepalive(OS::Buffer &buffer) {
@@ -144,7 +144,7 @@ namespace QR {
 			i++;
 		}
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", m_sd->address.ToString().c_str(), ss.str().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", getAddress().ToString().c_str(), ss.str().c_str());
 		ss.str("");
 
 
@@ -194,7 +194,7 @@ namespace QR {
 		}
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", m_sd->address.ToString().c_str(), ss.str().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", getAddress().ToString().c_str(), ss.str().c_str());
 		ss.str("");
 
 		m_dirty_server_info = server_info;
@@ -246,7 +246,7 @@ namespace QR {
 
 		req.gamename = buffer.ReadNTS();
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got available request: %s", m_sd->address.ToString().c_str(), req.gamename.c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got available request: %s", getAddress().ToString().c_str(), req.gamename.c_str());
 		req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
 		scheduler->AddRequest(req.type, req);
 	}
@@ -309,7 +309,7 @@ namespace QR {
 			key_found = true;
 			m_resend_count = 0;
 		}
-		OS::LogText(OS::ELogLevel_Info, "[%s] Client Message ACK, key: %d, found: %d", m_sd->address.ToString().c_str(), key, key_found);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Client Message ACK, key: %d, found: %d", getAddress().ToString().c_str(), key, key_found);
 	}
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
 
@@ -330,7 +330,7 @@ namespace QR {
 		buffer.WriteNTS(vsbuff);
 
 		SendPacket(buffer);
-		OS::LogText(OS::ELogLevel_Info, "[%s] Error:", m_sd->address.ToString().c_str(), vsbuff);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Error:", getAddress().ToString().c_str(), vsbuff);
 		if(die) {
 			Delete();
 		}
@@ -423,7 +423,7 @@ namespace QR {
 		gettimeofday(&m_last_msg_resend, NULL); //blocks resending of recent messages
 		mp_mutex->unlock();
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Recv client message: key: %d - len: %d, resend: %d", m_sd->address.ToString().c_str(), key, buffer.readRemaining(), no_insert);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Recv client message: key: %d - len: %d, resend: %d", getAddress().ToString().c_str(), key, buffer.readRemaining(), no_insert);
 		SendPacket(send_buff);
 	}
 	void V2Peer::OnRegisteredServer(int pk_id) {

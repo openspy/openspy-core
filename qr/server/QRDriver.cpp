@@ -10,7 +10,7 @@
 namespace QR {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		OS::Address bind_address(0, port);
-		mp_socket = server->getNetIOInterface()->BindUDP(bind_address);
+		mp_socket = getNetIOInterface()->BindUDP(bind_address);
 
 		gettimeofday(&m_server_start, NULL);
 
@@ -30,7 +30,7 @@ namespace QR {
 			delete peer;
 			it++;
 		}
-		getServer()->getNetIOInterface()->closeSocket(mp_socket);
+		getNetIOInterface()->closeSocket(mp_socket);
 	}
 	void *Driver::TaskThread(OS::CThread *thread) {
 		Driver *driver = (Driver *)thread->getParams();
@@ -74,7 +74,7 @@ namespace QR {
 		if (listener_waiting) {
 
 			std::vector<INetIODatagram> datagrams;
-			getServer()->getNetIOInterface()->datagramRecv(mp_socket, datagrams);
+			getNetIOInterface()->datagramRecv(mp_socket, datagrams);
 			std::vector<INetIODatagram>::iterator it = datagrams.begin();
 			while (it != datagrams.end()) {
 				INetIODatagram dgram = *it;
@@ -135,6 +135,7 @@ namespace QR {
 		m_server->RegisterSocket(ret);
 		mp_mutex->lock();
 		m_connections.push_back(ret);
+		ret->OnConnectionReady();
 		mp_mutex->unlock();
 		return ret;
 	}
@@ -169,5 +170,8 @@ namespace QR {
 		}
 		mp_mutex->unlock();
 		return peers;
+	}
+	void Driver::OnPeerMessage(INetPeer *peer) {
+
 	}
 }

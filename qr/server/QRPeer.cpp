@@ -21,12 +21,13 @@ namespace QR {
 		mp_mutex = OS::CreateMutex();
 
 		memset(&m_last_heartbeat,0,sizeof(m_last_heartbeat));
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version: %d",m_sd->address.ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
+	}
+	void Peer::OnConnectionReady() {
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version: %d",getAddress().ToString().c_str(), m_version);
 	}
 	bool Peer::isTeamString(const char *string) {
 		size_t len = strlen(string);

@@ -9,7 +9,7 @@
 namespace NN {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
 		OS::Address bind_address(0, port);
-		mp_socket = server->getNetIOInterface()->BindUDP(bind_address);
+		mp_socket = getNetIOInterface()->BindUDP(bind_address);
 
 		gettimeofday(&m_server_start, NULL);
 
@@ -66,7 +66,7 @@ namespace NN {
 		TickConnections();
 		if (listener_waiting) {
 			std::vector<INetIODatagram> datagrams;
-			getServer()->getNetIOInterface()->datagramRecv(mp_socket, datagrams);
+			getNetIOInterface()->datagramRecv(mp_socket, datagrams);
 			std::vector<INetIODatagram>::iterator it = datagrams.begin();
 			while (it != datagrams.end()) {
 				INetIODatagram dgram = *it;
@@ -172,6 +172,7 @@ namespace NN {
 
 		Peer *ret = new Peer(this, client_socket);
 		m_connections.push_back(ret);
+		ret->OnConnectionReady();
 		mp_mutex->unlock();
 		return ret;
 	}
@@ -207,5 +208,11 @@ namespace NN {
 		std::vector<INetIOSocket *> ret;
 		ret.push_back(mp_socket);
 		return ret;
+	}
+	INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
+		return NULL;
+	}
+	void Driver::OnPeerMessage(INetPeer *peer) {
+
 	}
 }
