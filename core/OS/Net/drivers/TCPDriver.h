@@ -10,7 +10,7 @@
 
 #include <OS/Net/IOIfaces/SSLIOInterface.h>
 
-#define TCO_PING_TIME (60)
+#define TCP_PING_TIME (60)
 #define DRIVER_THREAD_TIME 1000
 
 class TCPDriver : public INetDriver {
