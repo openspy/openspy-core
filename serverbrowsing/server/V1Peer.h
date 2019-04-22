@@ -23,6 +23,7 @@ namespace SB {
 		void informDeleteServers(MM::Server *server);
 		void informNewServers(MM::Server *server);
 		void informUpdateServers(MM::Server *server);
+		void OnConnectionReady();
 	protected:
 
 		void OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra);

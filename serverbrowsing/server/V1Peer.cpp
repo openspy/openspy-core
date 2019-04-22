@@ -34,6 +34,11 @@ namespace SB {
 		V1Peer::~V1Peer() {
 
 		}
+		void V1Peer::OnConnectionReady() {
+				if(!m_sent_validation) {
+					send_validation();
+				}
+		}
 		void V1Peer::send_validation() {
 			std::ostringstream s;
 			s << "\\basic\\\\secure\\" << m_challenge;
@@ -110,10 +115,6 @@ namespace SB {
 				}
 
 				
-			} else {
-				if(!m_sent_validation) {
-					send_validation();
-				}
 			}
 
 			end:

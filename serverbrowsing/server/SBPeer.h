@@ -22,7 +22,7 @@ namespace SB {
 		Peer(Driver *driver, INetIOSocket *sd, int version);
 		virtual ~Peer();
 		
-		void OnConnectionReady();
+		virtual void OnConnectionReady();
 		
 		virtual void think(bool packet_waiting) = 0;
 
