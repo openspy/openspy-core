@@ -33,11 +33,12 @@ namespace GP {
 		std::ostringstream s;
 		if (!silent) {
 
-			if (m_profile.id == from_profileid) {
+			if (m_profile.id == to_profileid) {
 				s << "\\bm\\" << GPI_BM_AUTH;
-				s << "\\f\\" << to_profileid;
+				s << "\\f\\" << from_profileid;
 				s << "\\msg\\" << "I have authorized your request to add me to your list";
 				s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
+				SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
 				mp_mutex->lock();
 				//allow status update
 				m_buddies[to_profileid] = GPShared::gp_default_status;

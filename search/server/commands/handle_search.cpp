@@ -44,9 +44,6 @@ namespace SM {
 		TaskShared::ProfileRequest request;
 		
 		request.profile_search_details.id = 0;
-		if (data_parser.HasKey("profileid")) {
-			request.profile_search_details.id = data_parser.GetValueInt("profileid");
-		}
 		if(data_parser.HasKey("email")) {
 			request.user_search_details.email = data_parser.GetValue("email");
 		}
