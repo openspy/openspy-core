@@ -47,6 +47,7 @@ create table profiles (
 );
 
 create table buddies (
+	`id` int(11) NOT NULL AUTO_INCREMENT,
 	to_profileid int,
 	from_profileid int,
 	foreign key fk_buddies_to_profileid(to_profileid)
@@ -56,6 +57,7 @@ create table buddies (
 );
 
 create table blocks (
+	`id` int(11) NOT NULL AUTO_INCREMENT,
 	to_profileid int,
 	from_profileid int,
 	foreign key fk_blocks_to_profileid(to_profileid)
