@@ -111,8 +111,9 @@ namespace GP {
 		int operation_id = (int)extra;
 		std::ostringstream s;
 
-		((Peer *)peer)->m_user = user;
-		((Peer *)peer)->m_profile = profile;
+		//disabled due to session log-out conflict when games \login\ after \newuser\ 
+		//((Peer *)peer)->m_user = user;
+		//((Peer *)peer)->m_profile = profile;
 
 		if (!success) {
 			err_code = (int)GP_NEWUSER_BAD_NICK;
@@ -155,7 +156,7 @@ namespace GP {
 			return;
 		}
 
-		((Peer *)peer)->refresh_session();
+		//((Peer *)peer)->refresh_session();
 	}
 
 	void Peer::post_register_registercdkey() {
