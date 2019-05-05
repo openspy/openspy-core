@@ -84,9 +84,13 @@ namespace GP {
 				goto end;
 			}
 
-			OS::KVReader data_parser;
-			if (mp_proto_processor->ProcessIncoming(recv_buffer, data_parser, this)) {
-				handle_packet(data_parser);
+			std::vector<OS::KVReader> data_parser;
+			if (mp_proto_processor->ProcessIncoming(recv_buffer, data_parser)) {
+				std::vector<OS::KVReader>::iterator it = data_parser.begin();
+				while(it != data_parser.end()) {
+					handle_packet(*it);
+					it++;
+				}				
 			}
 		}
 

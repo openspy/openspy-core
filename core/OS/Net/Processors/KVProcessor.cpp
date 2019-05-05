@@ -6,7 +6,7 @@ KVProcessor::KVProcessor() : INetProcessor<OS::KVReader>() {
 KVProcessor::~KVProcessor() {
 
 }
-bool KVProcessor::deserialize_data(OS::Buffer &buffer, OS::KVReader &output) {
+bool KVProcessor::deserialize_data(OS::Buffer &buffer, std::vector<OS::KVReader> &output) {
         /*
         This scans the incoming packets for \\final\\ and splits based on that,
 
@@ -24,7 +24,7 @@ bool KVProcessor::deserialize_data(OS::Buffer &buffer, OS::KVReader &output) {
             if (final_pos == std::string::npos) break;
 
             std::string partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
-			output = OS::KVReader(partial_string);
+			output.push_back(OS::KVReader(partial_string));
             last_pos = final_pos + 7; // 7 = strlen of \\final
         } while (final_pos != std::string::npos);
 
@@ -43,8 +43,5 @@ bool KVProcessor::deserialize_data(OS::Buffer &buffer, OS::KVReader &output) {
 }
 bool KVProcessor::serialize_data(OS::KVReader &output, OS::Buffer &buffer) {
 	std::string s = output.ToString();
-	return true;
-}
-bool KVProcessor::dispatch_to_peer(OS::KVReader &output, INetPeer *peer) {
 	return true;
 }

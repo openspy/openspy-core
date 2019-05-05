@@ -34,15 +34,16 @@ namespace GP {
 		if (!silent) {
 
 			if (m_profile.id == to_profileid) {
+				mp_mutex->lock();
+				//allow status update
+				m_buddies[to_profileid] = GPShared::gp_default_status;
+				mp_mutex->unlock();
+				
 				s << "\\bm\\" << GPI_BM_AUTH;
 				s << "\\f\\" << from_profileid;
 				s << "\\msg\\" << "I have authorized your request to add me to your list";
 				s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
 				SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
-				mp_mutex->lock();
-				//allow status update
-				m_buddies[to_profileid] = GPShared::gp_default_status;
-				mp_mutex->unlock();
 			}
 			/* XXX: enable this for "newer" sdk versions??
 				s << "\\addbuddyresponse\\" << GPI_BM_REQUEST; //the addbuddy response might be implemented wrong
