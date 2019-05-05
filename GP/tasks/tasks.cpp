@@ -74,9 +74,11 @@ namespace GP {
 				url += "/v1/Presence/List/SendMessage";
 				break;
 			case EGPRedisRequestType_SendGPBuddyStatus:
+			case EGPRedisRequestType_LookupBuddyStatus:
 				url += "/v1/Presence/Status/FindBuddyStatuses";
 				break;
 			case EGPRedisRequestType_SendGPBlockStatus:
+			case EGPRedisRequestType_LookupBlockStatus:
 				url += "/v1/Presence/Status/FindBlockStatuses";
 				break;
 			case EGPRedisRequestType_UpdateStatus:

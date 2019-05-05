@@ -133,6 +133,7 @@ namespace GP {
 		static void m_update_registernick_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_session_renew_callback(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_session_delete_callback(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
+		static void m_session_handle_update(TaskShared::WebErrorDetails error_details, std::map<int, GPShared::GPStatus> results, void *extra, INetPeer *peer); //handles updates for status requests... not async updates
 
 		void handle_bm(OS::KVReader data_parser);
 

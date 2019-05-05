@@ -74,4 +74,12 @@ namespace GP {
 		}
 		mp_mutex->unlock();
 	}
+	void Peer::m_session_handle_update(TaskShared::WebErrorDetails error_details, std::map<int, GPShared::GPStatus> results, void *extra, INetPeer *peer)  {
+		std::map<int, GPShared::GPStatus>::iterator it = results.begin();
+		while(it != results.end()) {
+			std::pair<int, GPShared::GPStatus> p = *it;
+			((Peer *)peer)->inform_status_update(p.first, p.second, false);
+			it++;
+		}
+	}
 }

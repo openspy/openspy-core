@@ -45,7 +45,7 @@ namespace GP {
 		//std::vector<GP::Buddy
     } GPBackendRedisResponse;
 	typedef void(*GPBackendRedisCallback)(bool success, GPBackendRedisResponse response_data, void *extra);
-	typedef void(*BuddyStatusCallback)(TaskShared::WebErrorDetails error_details, std::map<OS::Profile, GPShared::GPStatus> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+	typedef void(*BuddyStatusCallback)(TaskShared::WebErrorDetails error_details, std::map<int, GPShared::GPStatus> results, void *extra, INetPeer *peer);
 
 	struct sBuddyRequest {
 		int from_profileid;

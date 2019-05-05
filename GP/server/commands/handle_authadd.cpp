@@ -36,8 +36,17 @@ namespace GP {
 			if (m_profile.id == to_profileid) {
 				mp_mutex->lock();
 				//allow status update
-				m_buddies[to_profileid] = GPShared::gp_default_status;
+				m_buddies[from_profileid] = GPShared::gp_default_status;
 				mp_mutex->unlock();
+
+				//request all buddy statuses again
+				TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+				GPBackendRedisRequest req;
+				req.type = EGPRedisRequestType_LookupBuddyStatus;
+				req.peer = this;
+				req.peer->IncRef();
+				req.statusCallback = m_session_handle_update;
+				scheduler->AddRequest(req.type, req);
 				
 				s << "\\bm\\" << GPI_BM_AUTH;
 				s << "\\f\\" << from_profileid;
