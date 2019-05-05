@@ -46,6 +46,7 @@ namespace GP {
 				req.peer = this;
 				req.peer->IncRef();
 				req.statusCallback = m_session_handle_update;
+				req.profile.id = from_profileid;
 				scheduler->AddRequest(req.type, req);
 				
 				s << "\\bm\\" << GPI_BM_AUTH;
