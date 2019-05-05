@@ -145,7 +145,7 @@ namespace GP {
 	}
 	
 	void Peer::m_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
-		if(!((GP::Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())
+		if(auth_data.session_key.length())
 			((GP::Peer *)peer)->m_backend_session_key = auth_data.session_key;
 
 		((GP::Peer *)peer)->m_user = user;
