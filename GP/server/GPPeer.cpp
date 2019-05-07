@@ -287,7 +287,7 @@ namespace GP {
 
 		struct timeval time_now;
 		gettimeofday(&time_now, NULL);
-		time_now.tv_sec += auth_data.expiresInSecs - 300;
+		time_now.tv_sec += auth_data.expiresInSecs - SESSION_RENEW_OFFSET;
 		((GP::Peer *)peer)->m_session_expires_at = time_now;
 
 		((GP::Peer *)peer)->m_backend_session_key = auth_data.session_key;
