@@ -10,7 +10,10 @@ TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool p
     }
     mp_socket = getNetIOInterface()->BindTCP(bind_address);
 
+    m_connections.clear();
+
     gettimeofday(&m_server_start, NULL);
+    gettimeofday(&m_last_connection_resize, NULL);
 
     mp_mutex = OS::CreateMutex();
     mp_thread = OS::CreateThread(TCPDriver::TaskThread, this, true);
@@ -31,7 +34,7 @@ void TCPDriver::think(bool listener_waiting) {
         while (it != sockets.end()) {
             INetIOSocket *sda = *it;
             if (sda == NULL) return;
-            INetPeer *peer = CreatePeer(sda);//new INetPeer(this, sda);
+            INetPeer *peer = CreatePeer(sda);
 
             mp_mutex->lock();
 
@@ -52,9 +55,10 @@ void TCPDriver::think(bool listener_waiting) {
 const std::vector<INetPeer *> TCPDriver::getPeers(bool inc_ref = false) {
     mp_mutex->lock();
     std::vector<INetPeer *> peers;
-    std::vector<INetPeer *>::iterator it = m_connections.begin();
+    std::deque<INetPeer *>::iterator it = m_connections.begin();
     while (it != m_connections.end()) {
         INetPeer * p = (INetPeer *)*it;
+        if(p == NULL) break;
         peers.push_back(p);
         if (inc_ref)
             p->IncRef();
@@ -69,9 +73,10 @@ INetIOSocket *TCPDriver::getListenerSocket() const {
 const std::vector<INetIOSocket *> TCPDriver::getSockets() const {
     std::vector<INetIOSocket *> sockets;
     mp_mutex->lock();
-    std::vector<INetPeer *>::const_iterator it = m_connections.begin();
+    std::deque<INetPeer *>::const_iterator it = m_connections.begin();
     while (it != m_connections.end()) {
         INetPeer *p = *it;
+        if(p == NULL) break;
         sockets.push_back(p->GetSocket());
         it++;
     }
@@ -83,44 +88,59 @@ void *TCPDriver::TaskThread(OS::CThread *thread) {
     TCPDriver *driver = (TCPDriver *)thread->getParams();
     while (thread->isRunning()) {
         driver->mp_mutex->lock();
-        std::vector<INetPeer *>::iterator it = driver->m_connections.begin();
+        std::deque<INetPeer *>::iterator it = driver->m_connections.begin();
         while (it != driver->m_connections.end()) {
             INetPeer *peer = *it;
-            if (peer->ShouldDelete() && std::find(driver->m_peers_to_delete.begin(), driver->m_peers_to_delete.end(), peer) == driver->m_peers_to_delete.end()) {
+            if(peer == NULL) break;
+            if (peer->ShouldDelete() && peer->GetRefCount() >= 1) {
                 //marked for delection, dec reference and delete when zero
-                it = driver->m_connections.erase(it);
                 peer->DecRef();
-
                 driver->m_server->UnregisterSocket(peer);
-
-                driver->m_peers_to_delete.push_back(peer);
-                continue;
             }
             it++;
         }
-
-        it = driver->m_peers_to_delete.begin();
-        while (it != driver->m_peers_to_delete.end()) {
-            INetPeer *p = *it;
-            if (p->GetRefCount() == 0) {
-                delete p;
-                it = driver->m_peers_to_delete.erase(it);
-                continue;
-            }
-            it++;
-        }
-
+        driver->CleanClientQueue();
         driver->TickConnections();
         driver->mp_mutex->unlock();
         OS::Sleep(DRIVER_THREAD_TIME);
     }
     return NULL;
 }
+void TCPDriver::CleanClientQueue() {
+    if(m_connections.empty()) return;
+    INetPeer *peer = NULL;
+    std::deque<INetPeer *> output_queue;
+    while (!m_connections.empty()) {
+        peer = m_connections.front();
+        m_connections.pop_front();
+
+        if(peer->ShouldDelete() && peer->GetRefCount() == 0) {
+            delete peer;
+        } else {
+            if(peer->ShouldDelete()) {
+                output_queue.push_front(peer);
+            } else {
+                output_queue.push_back(peer);
+            }
+        }
+    }
+
+    m_connections.swap(output_queue);
+
+    struct timeval current_time;
+    gettimeofday(&current_time, NULL);
+    if(current_time.tv_sec - m_last_connection_resize.tv_sec > DRIVER_QUEUE_RESIZE_TIME) {
+        m_connections.shrink_to_fit();
+        gettimeofday(&m_last_connection_resize, NULL);
+    }
+}
 void TCPDriver::TickConnections() {
-    std::vector<INetPeer *>::iterator it = m_connections.begin();
+    std::deque<INetPeer *>::iterator it = m_connections.begin();
     while (it != m_connections.end()) {
         INetPeer *p = *it;
-        p->think(false);
+        if(p == NULL) break;
+        if(!p->ShouldDelete())
+            p->think(false);
         it++;
     }
 }
@@ -136,11 +156,10 @@ void TCPDriver::OnPeerMessage(INetPeer *peer) {
     }
 }
 void TCPDriver::DeleteClients() {
-    std::vector<INetPeer *>::iterator it = m_connections.begin();
-    while (it != m_connections.end()) {
-        INetPeer *peer = *it;
+    while(!m_connections.empty()) {
+        INetPeer *peer = m_connections.back();
         m_server->UnregisterSocket(peer);
         delete peer;
-        it++;
+        m_connections.pop_back();
     }
 }

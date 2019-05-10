@@ -8,8 +8,9 @@ class KVProcessor : public INetProcessor<OS::KVReader> {
         KVProcessor();
         ~KVProcessor();
     protected:
-		bool deserialize_data(OS::Buffer &buffer, std::vector<OS::KVReader> &output);
-		bool serialize_data(OS::KVReader &output, OS::Buffer &buffer);
+      bool deserialize_data(OS::Buffer &buffer, std::vector<OS::KVReader> &output);
+      bool serialize_data(OS::KVReader &output, OS::Buffer &buffer);
+      std::string skip_queryid(std::string s);
     private:
         std::string m_kv_accumulator;
 };

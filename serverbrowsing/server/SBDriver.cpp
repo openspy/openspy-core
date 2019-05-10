@@ -36,26 +36,32 @@ namespace SB {
 		}
 	}
 	void Driver::SendDeleteServer(MM::Server *server) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		std::deque<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = (Peer *)*it;
-			p->informDeleteServers(server);
+			if(p == NULL) break;
+			if(!p->ShouldDelete())
+				p->informDeleteServers(server);
 			it++;
 		}
 	}
 	void Driver::SendNewServer(MM::Server *server) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		std::deque<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = (Peer *)*it;
-			p->informNewServers(server);
+			if(p == NULL) break;
+			if(!p->ShouldDelete())
+				p->informNewServers(server);
 			it++;
 		}
 	}
 	void Driver::SendUpdateServer(MM::Server *server) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		std::deque<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = *it;
-			p->informUpdateServers(server);
+			if(p == NULL) break;
+			if(!p->ShouldDelete())
+				p->informUpdateServers(server);
 			it++;
 		}
 	}

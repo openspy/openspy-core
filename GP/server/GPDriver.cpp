@@ -12,10 +12,11 @@ namespace GP {
 	}
 
 	Peer *Driver::FindPeerByProfileID(int profileid) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		std::deque<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = (Peer *)*it;
-			if(p->GetProfileID() == profileid) {
+			if(p == NULL) break;
+			if(!p->ShouldDelete() && p->GetProfileID() == profileid) {
 				return p;
 			}
 			it++;
@@ -23,10 +24,12 @@ namespace GP {
 		return NULL;
 	}
 	void Driver::InformStatusUpdate(int from_profileid, GPShared::GPStatus status) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		std::deque<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *p = (Peer *)*it;
-			p->inform_status_update(from_profileid, status);
+			if(p == NULL) break;
+			if(!p->ShouldDelete())
+				p->inform_status_update(from_profileid, status);
 			it++;
 		}
 	}
