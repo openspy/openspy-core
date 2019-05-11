@@ -130,7 +130,7 @@ void TCPDriver::CleanClientQueue() {
     struct timeval current_time;
     gettimeofday(&current_time, NULL);
     if(current_time.tv_sec - m_last_connection_resize.tv_sec > DRIVER_QUEUE_RESIZE_TIME) {
-        m_connections.shrink_to_fit();
+        //m_connections.shrink_to_fit();
         gettimeofday(&m_last_connection_resize, NULL);
     }
 }
