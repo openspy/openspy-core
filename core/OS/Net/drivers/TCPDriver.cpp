@@ -23,6 +23,9 @@ TCPDriver::~TCPDriver() {
     delete mp_thread;
 
     DeleteClients();
+
+    delete mp_socket;
+    delete mp_net_io_interface;
 }
 void TCPDriver::think(bool listener_waiting) {
     if (listener_waiting) {

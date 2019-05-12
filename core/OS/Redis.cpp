@@ -55,7 +55,7 @@ namespace Redis {
 		uint16_t port;
 		get_server_address_port(constr, address, port);
 
-		ret->connect_address = std::string(constr);
+		ret->connect_address = strdup(constr);
 		ret->command_recursion_depth = 0;
 		ret->reconnect_recursion_depth = 0;
 
@@ -71,7 +71,7 @@ namespace Redis {
 	void Reconnect(Connection *connection) {
 		char address[64];
 		uint16_t port;
-		get_server_address_port(connection->connect_address.c_str(), address, port);
+		get_server_address_port(connection->connect_address, address, port);
 
 		close(connection->sd);
 		OS::Sleep(RECONNECT_SLEEP_TIME);
@@ -352,11 +352,11 @@ namespace Redis {
 		}
 	}
 	void Disconnect(Connection *connection) {
-
 		free(connection->read_buff);
 		if(connection->sd != 0)
 			close(connection->sd);
 
+		free((void *)connection->connect_address);
 		free((void *)connection);
 	}
 	void CancelLooping(Connection *connection) {

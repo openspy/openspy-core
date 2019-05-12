@@ -41,7 +41,7 @@ namespace Redis {
 		int command_recursion_depth;
 		int reconnect_recursion_depth;
 		bool runLoop;
-		std::string connect_address;
+		char *connect_address;
 	} Connection;
 
 	typedef struct {

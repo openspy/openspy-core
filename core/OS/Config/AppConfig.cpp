@@ -5,7 +5,7 @@ AppConfig::AppConfig(OS::Config *cfg, std::string appName) {
 	m_app_name = appName;
 }
 AppConfig::~AppConfig() {
-
+	delete mp_config;
 }
 
 std::vector<std::string> AppConfig::getDriverNames() {
