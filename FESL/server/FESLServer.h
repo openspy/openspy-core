@@ -26,7 +26,7 @@ namespace FESL {
 		}
 	private:
 		std::vector<TaskShared::CountryRegion> m_countries;
-		static void Server::GetCountriesCallback(TaskShared::GeoTaskData auth_data, void *extra, INetPeer *peer);
+		static void GetCountriesCallback(TaskShared::GeoTaskData auth_data, void *extra, INetPeer *peer);
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *mp_auth_tasks;
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *mp_user_tasks;
 		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *mp_profile_tasks;
