@@ -33,13 +33,12 @@ namespace FESL {
 	}
 	void Driver::OnUserAuth(std::string session_key, int userid, int profileid) {
 		mp_mutex->lock();
-		std::deque<INetPeer *>::iterator it = m_connections.begin();
+		std::vector<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = (Peer*)*it;
-			if(peer == NULL) break;
 			OS::User user;
 			OS::Profile profile;
-			if(!peer->ShouldDelete() && peer->GetAuthCredentials(user, profile)) {
+			if(peer->GetAuthCredentials(user, profile)) {
 				if(user.id == userid && profile.id == profileid && peer->getSessionKey().compare(session_key) == 0) {
 					peer->DuplicateLoginExit();
 				}

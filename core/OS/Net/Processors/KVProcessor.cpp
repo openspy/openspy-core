@@ -23,8 +23,6 @@ bool KVProcessor::deserialize_data(OS::Buffer &buffer, std::vector<OS::KVReader>
             final_pos = recv_buf.find("\\final\\", last_pos);
             if (final_pos == std::string::npos) break;
 
-            recv_buf = skip_queryid(recv_buf);
-
             std::string partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
 			output.push_back(OS::KVReader(partial_string));
             last_pos = final_pos + 7; // 7 = strlen of \\final
@@ -46,17 +44,4 @@ bool KVProcessor::deserialize_data(OS::Buffer &buffer, std::vector<OS::KVReader>
 bool KVProcessor::serialize_data(OS::KVReader &output, OS::Buffer &buffer) {
 	std::string s = output.ToString();
 	return true;
-}
-std::string KVProcessor::skip_queryid(std::string s) {
-    if (s.substr(0, 9).compare("\\queryid\\") == 0) {
-        s = s.substr(9);
-        size_t queryid_offset = s.find("\\");
-        if (queryid_offset != std::string::npos) {
-            if (s.length() > queryid_offset) {
-                queryid_offset++;
-            }
-            s = s.substr(queryid_offset);
-        }
-    }
-    return s;
 }

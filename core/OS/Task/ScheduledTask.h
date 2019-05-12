@@ -7,7 +7,7 @@
 #include <OS/Task.h>
 #include <string>
 #include <map>
-#define SCHEDULE_WAKE_TIME 500
+
 class TaskThreadData {
 	public:
 		MQ::IMQInterface *mp_mqconnection;
@@ -54,7 +54,7 @@ class ScheduledTask : public OS::Task<ReqClass> {
 			return NULL; 
 		}
 		void StallForRequest() {
-			this->mp_thread_poller->wait(SCHEDULE_WAKE_TIME);
+			this->mp_thread_poller->wait();
 			this->mp_mutex->lock();
 			bool empty = this->m_request_list.empty();
 			ReqClass task_params;
