@@ -272,7 +272,7 @@ namespace OS {
 		return ret;
 
 	}
-	std::vector<std::string> KeyStringToVector(std::string input, bool skip_null) {
+	std::vector<std::string> KeyStringToVector(std::string input, bool skip_null, char delimator) {
 		if(skip_null)
 			input = input.substr(1);
 
@@ -282,7 +282,7 @@ namespace OS {
 
 		std::string token;
 
-		while (std::getline(ss, token, '\\')) {
+		while (std::getline(ss, token, delimator)) {
 			if (!token.length() && !skip_null)
 				continue;
 			ret.push_back(token);

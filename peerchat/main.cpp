@@ -2,19 +2,19 @@
 #include <map>
 #include <string>
 #include <sstream>
-#include <OS/socketlib/socketlib.h>
 #include <OS/Net/NetServer.h>
-#include "server/ChatDriver.h"
-#include "server/ChatServer.h"
+#include <OS/Config/AppConfig.h>
+#include <OS/SharedTasks/tasks.h>
+#include "server/Server.h"
+#include "server/Driver.h"
 INetServer *g_gameserver = NULL;
-Chat::Driver *g_driver;
 bool g_running = true;
+
 void shutdown();
 
 void on_exit(void) {
     shutdown();
 }
-
 
 void sig_handler(int signo)
 {
@@ -28,60 +28,48 @@ int main() {
        exit(EXIT_FAILURE);
     }
 
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
+	#ifndef _WIN32
+		signal(SIGINT, sig_handler);
+		signal(SIGTERM, sig_handler);
+	#else
+		WSADATA wsdata;
+		WSAStartup(MAKEWORD(1, 0), &wsdata);
+	#endif
 
-	OS::Init("peerchat");
-    Socket::Init();
+		OS::Config *cfg = new OS::Config("openspy.xml");
+		AppConfig *app_config = new AppConfig(cfg, "peerchat");
+		OS::Init("peerchat", app_config);
 
-	g_gameserver = new ChatServer();
-    g_driver = new Chat::Driver(g_gameserver, "0.0.0.0", 6667);
+		g_gameserver = new Peerchat::Server();
 
-    g_gameserver->addNetworkDriver(g_driver);
+
+		std::vector<std::string> drivers = app_config->getDriverNames();
+		std::vector<std::string>::iterator it = drivers.begin();
+		while (it != drivers.end()) {
+			std::string s = *it;
+			bool proxyFlag = false;
+			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
+			OS::Address address = addresses.front();
+			Peerchat::Driver *driver = new Peerchat::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), proxyFlag);
+			OS::LogText(OS::ELogLevel_Info, "Adding peerchat Driver: %s:%d proxy: %d\n", address.ToString(true).c_str(), address.GetPort(), proxyFlag);
+			g_gameserver->addNetworkDriver(driver);
+			it++;
+	}
 
 	g_gameserver->init();
 	while(g_running) {
 		g_gameserver->tick();
 	}
 
-    printf("Shutting down!\n");
-
     delete g_gameserver;
-    delete g_driver;
 
-    OS::Shutdown();
-
+    OS::Shutdown();	
     return 0;
+
 }
 
 void shutdown() {
     if(g_running) {
-        g_gameserver->flagExit();
         g_running = false;
     }
 }
-
-#ifdef _WIN32
-
-int gettimeofday(struct timeval * tp, struct timezone * tzp)
-{
-    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
-    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
-
-    SYSTEMTIME  system_time;
-    FILETIME    file_time;
-    uint64_t    time;
-
-    GetSystemTime( &system_time );
-    SystemTimeToFileTime( &system_time, &file_time );
-    time =  ((uint64_t)file_time.dwLowDateTime )      ;
-    time += ((uint64_t)file_time.dwHighDateTime) << 32;
-
-    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
-    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
-    return 0;
-}
-
-
-#endif
-

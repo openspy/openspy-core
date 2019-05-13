@@ -12,6 +12,7 @@
 
 #define TCP_PING_TIME (60)
 #define DRIVER_THREAD_TIME 1000
+#define CONNECTIONS_RESERVE_SIZE 1024
 
 class TCPDriver : public INetDriver {
     public:

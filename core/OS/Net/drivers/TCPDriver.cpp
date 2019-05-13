@@ -12,10 +12,12 @@ TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool p
 
     gettimeofday(&m_server_start, NULL);
 
+    m_proxy_headers = proxyHeaders;
+
+    m_connections.reserve(CONNECTIONS_RESERVE_SIZE);
+
     mp_mutex = OS::CreateMutex();
     mp_thread = OS::CreateThread(TCPDriver::TaskThread, this, true);
-
-    m_proxy_headers = proxyHeaders;
 }
 TCPDriver::~TCPDriver() {
     mp_thread->SignalExit(true);

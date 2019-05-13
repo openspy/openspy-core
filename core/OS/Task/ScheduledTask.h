@@ -56,7 +56,8 @@ class ScheduledTask : public OS::Task<ReqClass> {
 			return NULL; 
 		}
 		void StallForRequest() {
-			this->mp_thread_poller->wait(SCHEDULED_TASK_WAIT_TIME);
+			if(this->m_request_list.empty())
+				this->mp_thread_poller->wait(SCHEDULED_TASK_WAIT_TIME);
 			this->mp_mutex->lock();
 			bool empty = this->m_request_list.empty();
 			ReqClass task_params;
