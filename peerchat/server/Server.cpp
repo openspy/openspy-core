@@ -6,7 +6,6 @@ namespace Peerchat {
       mp_user_tasks = TaskShared::InitUserTasks(this);
       mp_profile_tasks = TaskShared::InitProfileTasks(this);
       mp_peerchat_tasks = Peerchat::InitTasks(this);
-      //TaskScheduler<PeerchatBackendRequest, TaskThreadData> *mp_peerchat_tasks;
     }
     void Server::init() {
 

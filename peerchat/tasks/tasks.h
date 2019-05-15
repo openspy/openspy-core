@@ -21,12 +21,18 @@
 
 namespace Peerchat {
   enum EPeerchatRequestType {
-			EPeerchatRequestType_ReserveNickname,
+			EPeerchatRequestType_ReserveNickname, //try reserve nickname
+			EPeerchatRequestType_SetUserDetails, //send user details (from /user cmd), get unique peerchat id
+			EPeerchatRequestType_SendMessageToTarget, //send client/channel message
+			EPeerchatRequestType_LookupUserDetails, //get user/realname/ip/gameid by nick
 	};
 
   class TaskResponse {
-			public:
-				TaskShared::WebErrorDetails error_details;
+		public:
+			TaskShared::WebErrorDetails error_details;
+			OS::Profile profile;
+			OS::User user;
+			UserSummary summary;
   };
 	typedef void(*TaskCallback)(TaskResponse response_data, INetPeer *peer);
 
@@ -34,12 +40,17 @@ namespace Peerchat {
 		public:
 			int type;
 			Peer *peer;
-			std::string nick;
+
+			OS::User user;
+			OS::Profile profile;
+
+			UserSummary summary;
 
 			TaskCallback callback;
 	};
 
 	bool Perform_ReserveNickname(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_SetUserDetails(PeerchatBackendRequest request, TaskThreadData *thread_data);
 
   TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server);
 }

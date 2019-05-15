@@ -13,6 +13,7 @@ namespace Peerchat {
 		void init();
 		void tick();
 		void shutdown();
+		std::string getServerName() {  return "s"; };
 		INetPeer *findPeerByProfile(int profile_id, bool inc_ref = true);
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *GetAuthTask() { return mp_auth_tasks; };
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *GetUserTask() { return mp_user_tasks; };
