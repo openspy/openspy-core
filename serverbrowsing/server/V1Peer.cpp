@@ -35,6 +35,7 @@ namespace SB {
 
 		}
 		void V1Peer::OnConnectionReady() {
+			Peer::OnConnectionReady();
 			if(!m_sent_validation) {
 				send_validation();
 			}

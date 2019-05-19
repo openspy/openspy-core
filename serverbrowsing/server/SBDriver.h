@@ -19,7 +19,7 @@
 #include <sys/time.h>
 #endif
 
-#define SB_PING_TIME 30
+#define SB_PING_TIME 15
 #define DRIVER_THREAD_TIME 1000
 
 namespace SB {
@@ -39,7 +39,6 @@ namespace SB {
 		INetPeer *CreatePeer(INetIOSocket *socket);
 	private:
 		int m_version;
-		int m_sb_version;
 
 
 		//safe for now, until pointers one day get added
