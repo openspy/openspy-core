@@ -8,7 +8,6 @@ namespace OS {
 	class Task {
 	public:
 		Task() {
-			m_num_tasks = 0;
 			mp_thread_poller = OS::CreateThreadPoller();
 		}
 		~Task() {
@@ -16,21 +15,23 @@ namespace OS {
 		}
 		void AddRequest(T data) {
 			mp_mutex->lock();
-			m_num_tasks++;
 			m_request_list.push(data);
 			mp_mutex->unlock();
 			
 			mp_thread_poller->signal();
 		}
 		int GetListSize() {
-			return (int)m_num_tasks;
+			int size = 0;
+			mp_mutex->lock();
+			size = m_request_list.size();
+			mp_mutex->unlock();
+			return size;
 		}
 	protected:
 		CThreadPoller *mp_thread_poller;
 		CThread	*mp_thread;
 		CMutex *mp_mutex;
 		std::queue<T> m_request_list;
-		int m_num_tasks;
 	};
 }
 #endif //_OS_TASK_H

@@ -40,18 +40,24 @@ namespace Peerchat {
 		public:
 			int type;
 			Peer *peer;
-
 			OS::User user;
 			OS::Profile profile;
-
 			UserSummary summary;
-
 			TaskCallback callback;
+
+			std::string message_type;
+			std::string message_target;
+			std::string message;
 	};
 
 	bool Perform_ReserveNickname(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_SetUserDetails(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_SendMessageToTarget(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Handle_Message(TaskThreadData *thread_data, std::string message);
 
-  TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server);
+  	TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server);
+
+	extern const char *peerchat_channel_exchange;
+    extern const char *peerchat_client_message_routingkey;
 }
 #endif //_MM_TASKS_H

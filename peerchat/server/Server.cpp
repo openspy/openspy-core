@@ -1,4 +1,5 @@
 #include "Server.h"
+#include "Driver.h"
 #include <tasks/tasks.h>
 namespace Peerchat {
     Server::Server() {
@@ -24,5 +25,16 @@ namespace Peerchat {
     }
     INetPeer *Server::findPeerByProfile(int profile_id, bool inc_ref) {
         return NULL;
+    }
+    void Server::OnUserMessage(std::string type, std::string from, std::string to, std::string message) {
+      std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
+      while (it != m_net_drivers.end()) {
+        Peerchat::Driver *driver = (Peerchat::Driver *)*it;
+        Peerchat::Peer *peer = driver->FindPeerByUserSummary(to);
+        if(peer) {
+          peer->OnRecvDirectMsg(from, message, type);
+        }
+        it++;
+      }
     }
 }

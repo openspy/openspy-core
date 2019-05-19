@@ -66,7 +66,6 @@ namespace Peerchat {
 							if(m_user.id == 0) break;
 						}
 						command_found = true;
-						printf("cmd: %s\n", command_upper.c_str());
 						(*this.*entry.callback)(command_items);
 						break;
 					}
@@ -108,7 +107,7 @@ namespace Peerchat {
 		OS::Buffer buffer;
 		buffer.WriteBuffer((void *)data.c_str(), data.length());
 
-		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s", getAddress().ToString().c_str(), m_profile.id, data.c_str());
+		//OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s", getAddress().ToString().c_str(), m_profile.id, data.c_str());
 
 		NetIOCommResp io_resp;
 		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
@@ -123,6 +122,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("USER", false, &Peer::handle_user));
 		commands.push_back(CommandEntry("PING", false, &Peer::handle_ping));
 		commands.push_back(CommandEntry("OPER", false, &Peer::handle_oper));
+		commands.push_back(CommandEntry("PRIVMSG", false, &Peer::handle_privmsg));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name) {
@@ -213,5 +213,8 @@ namespace Peerchat {
 		req.peer->IncRef();
 		req.callback = OnUserRegistered;
 		scheduler->AddRequest(req.type, req);
+	}
+	void Peer::OnRecvDirectMsg(std::string from, std::string msg, std::string type) {
+		send_message(type, msg, from, m_user_details.nick);	
 	}
 }

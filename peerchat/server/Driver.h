@@ -21,6 +21,7 @@ namespace Peerchat {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
 		Peer *FindPeerByProfileID(int profileid);		
+		Peer *FindPeerByUserSummary(std::string summary_string);
 	protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket);
 	};

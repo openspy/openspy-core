@@ -64,7 +64,6 @@ class ScheduledTask : public OS::Task<ReqClass> {
 			if(!empty) {
 				task_params = this->m_request_list.front();
 				this->m_request_list.pop();
-				this->m_num_tasks--;
 			}
 			this->mp_mutex->unlock();
 			if(!empty)

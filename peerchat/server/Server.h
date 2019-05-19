@@ -19,6 +19,8 @@ namespace Peerchat {
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *GetUserTask() { return mp_user_tasks; };
 		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *GetProfileTask() { return mp_profile_tasks; };
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *GetPeerchatTask() { return mp_peerchat_tasks; };
+
+		void OnUserMessage(std::string type, std::string from, std::string to, std::string message);
 	private:
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *mp_auth_tasks;
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *mp_user_tasks;
