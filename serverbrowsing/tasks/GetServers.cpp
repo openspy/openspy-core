@@ -6,10 +6,10 @@
 
 namespace MM {
     bool PerformGetServers(MMQueryRequest request, TaskThreadData *thread_data) {
-			GetServers(thread_data, &request.req, &request);
-			if(request.peer)
-				request.peer->DecRef();
-					return true;
+		GetServers(thread_data, &request.req, &request);
+		if(request.peer)
+			request.peer->DecRef();
+		return true;
     }
 
 	ServerListQuery GetServers(TaskThreadData *thread_data, const sServerListReq *req, const MMQueryRequest *request) {
@@ -97,7 +97,7 @@ namespace MM {
 		int idx = 0;
 
 		std::string key;
-		std::ostringstream s;
+		std::ostringstream s;		
 
 		Redis::Value v, arr;
 
