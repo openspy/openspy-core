@@ -101,7 +101,6 @@ class TaskScheduler {
 			while (it != m_tasks.end()) {
 				task = *it;
 				size = task->GetListSize();
-				printf("size: %d\n", size);
 				if (size < lowest_count) {
 					lowest_count = size;
 					lowest = task;
@@ -109,7 +108,6 @@ class TaskScheduler {
 				it++;
 			}
 			request.type = type;
-			printf("add request: %p\n", lowest);
 			lowest->AddRequest(request);			
 		}
 
