@@ -2,7 +2,11 @@
 #include <tasks/tasks.h>
 #include <sstream>
 namespace MM {
-    bool PerformSubmitData(MMQueryRequest request, TaskThreadData  *thread_data) {
+	bool PerformSubmitData(MMQueryRequest request, TaskThreadData  *thread_data) {
+		std::string b64_string;
+		const char *base64;
+		std::ostringstream message;
+		std::string src_ip, dst_ip;
 		#if HACKER_PATCH_MSG_FORCE_NATNEG_ONLY
 				request.buffer.resetReadCursor();
 				if (request.buffer.readRemaining() != 10) {
@@ -15,14 +19,14 @@ namespace MM {
 				}
 		#endif
 
-		const char *base64 = OS::BinToBase64Str((uint8_t *)request.buffer.GetReadCursor(), request.buffer.readRemaining());
-		std::string b64_string = base64;
+		base64 = OS::BinToBase64Str((uint8_t *)request.buffer.GetReadCursor(), request.buffer.readRemaining());
+		b64_string = base64;
 		free((void *)base64);
 
-		std::string src_ip = request.from.ToString(true), dst_ip = request.to.ToString(true);
+		src_ip = request.from.ToString(true), dst_ip = request.to.ToString(true);
 
 
-		std::ostringstream message;
+
 		message << "\\send_msg\\REMOVED\\" << src_ip << "\\" <<
 			request.from.GetPort() << "\\" <<
 			dst_ip << "\\" <<
@@ -31,9 +35,9 @@ namespace MM {
 		thread_data->mp_mqconnection->sendMessage(MM::mm_channel_exchange, MM::mm_client_message_routingkey, message.str());
 
 		exit_clean:
-			if(request.peer) {
-				request.peer->DecRef();
-			}
-			return true;
-    }
+		if(request.peer) {
+			request.peer->DecRef();
+		}
+		return true;
+	}
 }
