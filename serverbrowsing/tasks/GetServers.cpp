@@ -20,7 +20,7 @@ namespace MM {
 
 		ret.requested_fields = req->field_list;
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		
 		int cursor = 0;
 		bool sent_servers = false;
@@ -107,9 +107,7 @@ namespace MM {
 		XXX: add redis error checks, cleanup on error, etc
 		*/
 
-
-		//freeReplyObject(redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_QR));
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 
 		//skip deleted servers
 		if (!include_deleted) {
@@ -142,7 +140,7 @@ namespace MM {
 				server->game = OS::GetGameByID(gameid, thread_data->mp_redis_connection);			
 			}
 			
-			Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+			Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		}
 
 		server->key = entry_name;
@@ -394,6 +392,6 @@ namespace MM {
 	error_cleanup:
 			delete server;
 	true_exit:
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
     }
 }

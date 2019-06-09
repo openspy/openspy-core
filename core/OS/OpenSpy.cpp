@@ -89,7 +89,7 @@ namespace OS {
 			mp_redis_internal_connection_mutex->lock();
 		}
 
-		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
+		Redis::SelectDb(redis_ctx, ERedisDB_Game);
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s gameid", key);
 		if (Redis::CheckError(reply)) {
@@ -197,7 +197,7 @@ namespace OS {
 			redis_ctx = OS::redis_internal_connection;
 			mp_redis_internal_connection_mutex->lock();
 		}
-		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
+		Redis::SelectDb(redis_ctx, ERedisDB_Game);
 
 		reply = Redis::Command(redis_ctx, 0, "GET %s",from_gamename);
 		if (Redis::CheckError(reply)) {
@@ -228,7 +228,7 @@ namespace OS {
 			redis_ctx = OS::redis_internal_connection;
 			mp_redis_internal_connection_mutex->lock();
 		}
-		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
+		Redis::SelectDb(redis_ctx, ERedisDB_Game);
 
 		reply = Redis::Command(redis_ctx, 0, "GET gameid_%d",gameid);
 		if (Redis::CheckError(reply)) {

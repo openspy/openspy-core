@@ -33,7 +33,7 @@ namespace MM {
 		s << server.m_game.gamename << ":" << groupid << ":" << id << ":";
 		std::string server_key = s.str();
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 
 		if(pk_id == -1) {
 			Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), server.m_game.gameid);
@@ -122,7 +122,7 @@ namespace MM {
 		}
 		i=0;
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		if (publish) {
 			Redis::Command(thread_data->mp_redis_connection, 0, "ZADD %s %d \"%s\"", server.m_game.gamename.c_str(), pk_id, server_key.c_str());
 

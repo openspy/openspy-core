@@ -24,7 +24,7 @@ namespace NN {
     bool PerformSubmit(NNRequestData request, TaskThreadData  *thread_data) {
 		Redis::Response reply;
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_NatNeg);
 
 		NN::ConnectionSummary summary = request.summary;
 

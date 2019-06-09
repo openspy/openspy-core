@@ -18,7 +18,7 @@ namespace MM {
 		std::string entry_name = ss.str();
 
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		Redis::Command(thread_data->mp_redis_connection, 0, "ZREM %s \"%s:%d:%d:\"", server.m_game.gamename.c_str(), server.m_game.gamename.c_str(), server.groupid, server.id);
 		if (publish) {
 			Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s deleted", entry_name.c_str());

@@ -53,7 +53,7 @@ namespace MM {
 
 
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		it3 = missing_keys.begin();
 		while(it3 != missing_keys.end()) {
 			std::string s = *it3;

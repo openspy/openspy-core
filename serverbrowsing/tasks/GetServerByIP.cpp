@@ -25,7 +25,7 @@ namespace MM {
 		Redis::Response reply;
 		Redis::Value v;
 		
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 
 		s << "GET IPMAP_" << address.ToString(true) << "-" << address.GetPort();
 		std::string cmd = s.str();

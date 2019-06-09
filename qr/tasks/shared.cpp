@@ -2,7 +2,7 @@
 #include <sstream>
 namespace MM {
 	int GetServerID(TaskThreadData *thread_data) {
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;
 		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "INCR %s", mp_pk_name);
 		Redis::Value v = resp.values.front();
@@ -18,7 +18,7 @@ namespace MM {
 		std::string ip = server.m_address.ToString(true);
 		std::stringstream map;
 		map << "IPMAP_" << ip << "-" << server.m_address.GetPort();
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_QR);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS %s", map.str().c_str());
 		Redis::Value v = resp.values.front();
 		int ret = -1;

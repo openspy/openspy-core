@@ -19,7 +19,7 @@ namespace MM {
 
 		ret.requested_fields = req->field_list;
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_SBGroups);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_SBGroups);
 
 		int cursor = 0;
 		bool sent_servers = false;
@@ -89,7 +89,7 @@ namespace MM {
 		std::vector<std::string>::iterator it = ret->requested_fields.begin();
 		Server *server = new MM::Server();
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_SBGroups);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_SBGroups);
 
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s gameid", entry_name);
 		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
@@ -104,7 +104,7 @@ namespace MM {
 			server->game = OS::GetGameByID(atoi((v.value._str).c_str()), thread_data->mp_redis_connection);
 		}
 		
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_SBGroups); //change context back to SB db id
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_SBGroups); //change context back to SB db id
 
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s groupid", entry_name);
 		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)

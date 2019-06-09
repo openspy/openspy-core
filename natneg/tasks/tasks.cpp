@@ -27,7 +27,7 @@ namespace NN {
 	ConnectionSummary LoadConnectionSummary(Redis::Connection *redis_connection, std::string redis_key) {
 		int address_counter = 0;
 		ConnectionSummary connection_summary;
-		Redis::Command(redis_connection, 0, "SELECT %d", OS::ERedisDB_NatNeg);
+		Redis::SelectDb(redis_connection, OS::ERedisDB_NatNeg);
 
 		Redis::Response reply;
 

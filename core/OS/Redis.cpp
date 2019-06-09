@@ -77,10 +77,18 @@ namespace Redis {
 		OS::Sleep(RECONNECT_SLEEP_TIME);
 		performAddressConnect(connection, address, port);
 		connection->reconnect_recursion_depth = 0;
+
+		SelectDb(connection, connection->selectedDb); //select last db
 	}
 	void performAddressConnect(Connection *connection, const char *address, uint16_t port) {
 		connection->sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		//setsockopt(ret->sd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+
+		//set timeout, due to intermittent redis hanging
+		struct timeval tv;
+		memset(&tv, 0, sizeof(tv));
+		tv.tv_sec = 5;		
+		setsockopt(connection->sd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+
 		uint32_t ip = resolv(address);
 
 		sockaddr_in addr;
@@ -320,7 +328,7 @@ namespace Redis {
 		parse_response(conn->read_buff, diff, &resp, NULL);
 		return resp;
 	}
-	void LoopingCommand(Connection *conn, time_t sleepMS, void(*mpFunc)(Connection *, Response, void *), void *extra, const char *fmt, ...) {
+	/*void LoopingCommand(Connection *conn, time_t sleepMS, void(*mpFunc)(Connection *, Response, void *), void *extra, const char *fmt, ...) {
 		//TODO: handle sleep/big msgs
 		int diff = 0;
 		Response resp;
@@ -350,7 +358,7 @@ namespace Redis {
 			diff = 0;
 			resp.values.clear();
 		}
-	}
+	}*/
 	void Disconnect(Connection *connection) {
 		free(connection->read_buff);
 		if(connection->sd != 0)
@@ -367,5 +375,9 @@ namespace Redis {
 	}
 	bool CheckError(Response r) {
 		return r.values.size() == 0 || r.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR;
+	}
+	void SelectDb(Connection *connection, int db) {
+		connection->selectedDb = db;
+		Command(connection, 0, "SELECT %d", db);
 	}
 }

@@ -3,7 +3,7 @@
 namespace Peerchat {
     const char *mp_pk_name = "PEERCHATID";
 	int GetPeerchatUserID(TaskThreadData *thread_data) {
-		Redis::Command(thread_data->mp_redis_connection, 0, "SELECT %d", OS::ERedisDB_Chat);
+        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 		int ret = -1;
 		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "INCR %s", mp_pk_name);
 		Redis::Value v = resp.values.front();
