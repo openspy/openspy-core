@@ -8,8 +8,6 @@
 #include "QRDriver.h"
 #include "V2Peer.h"
 
-#include <OS/gamespy/enctypex_decoder.h>
-
 namespace QR {
 	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : Peer(driver,sd,2) {
 		m_recv_instance_key = false;

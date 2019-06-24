@@ -1,6 +1,7 @@
 #ifndef _V1PEER_H
 #define _V1PEER_H
 #include "../main.h"
+#include "gutil.h"
 #include <tasks/tasks.h>
 
 #define MAX_UNPROCESSED_DATA 5000
@@ -49,8 +50,7 @@ namespace SB {
 		std::string m_validation;
 		uint8_t m_challenge[7];
 		uint8_t m_enctype;
-		unsigned int m_cryptkey_enctype2[326];
-		unsigned char *m_keyptr;
+		crypt_key m_crypt_key_enctype2;
 		bool m_validated;
 
 

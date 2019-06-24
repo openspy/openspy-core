@@ -2,7 +2,6 @@
 #include "QRDriver.h"
 #include "QRServer.h"
 #include <tasks/tasks.h>
-#include <OS/gamespy/enctypex_decoder.h>
 
 namespace QR {
 	Peer::Peer(Driver *driver, INetIOSocket *sd, int version) : INetPeer(driver, sd) {
