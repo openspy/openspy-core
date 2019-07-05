@@ -15,35 +15,27 @@
 #define MAX_DATA_SIZE 1400
 #define DRIVER_THREAD_TIME 1000
 namespace NN {
-	class Peer;
-
 	class Driver : public INetDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
 		void think(bool packet_waiting);
 
-		Peer *find_client(OS::Address address, NNCookieType cookie = 0, bool use_client_info = false);
-		Peer *find_client(NNCookieType cookie, int client_idx);
-		std::vector<Peer *> find_clients(NNCookieType cookie, int client_idx, bool inc_ref = false);
-		Peer *find_or_create(OS::Address address, INetIOSocket *socket, NNCookieType cookie);
-
-		void get_packet_cookie(INetIODatagram dgram, NNCookieType &cookie);
-
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
 		void OnPeerMessage(INetPeer *peer);
+		void SendPacket(OS::Address to, NatNegPacket *packet);
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
 
-		INetPeer *CreatePeer(INetIOSocket *socket);
+		int packetSizeFromType(uint8_t type);
+		void handle_init_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
+		void handle_connect_ack_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
+		void handle_address_check_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
+		void handle_report_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
 
-		int m_sd;
-
-		std::vector<Peer *> m_connections;
-		std::vector<Peer *> m_peers_to_delete;
 
 		struct timeval m_server_start;
 

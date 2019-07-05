@@ -5,7 +5,6 @@
 #include <OS/Config/AppConfig.h>
 #include <OS/Net/NetServer.h>
 #include "server/NNServer.h"
-#include "server/NNPeer.h"
 #include "server/NNDriver.h"
 
 INetServer *g_gameserver = NULL;

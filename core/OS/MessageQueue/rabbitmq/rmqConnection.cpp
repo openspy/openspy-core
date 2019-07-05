@@ -1,4 +1,5 @@
 #include "rmqConnection.h"
+
 #define RMQSENDER_WAIT_MAX_TIME 1500
 namespace MQ {
 
@@ -51,6 +52,61 @@ namespace MQ {
             mp_reconnect_retry_thread->SignalExit(true);
             delete mp_reconnect_retry_thread;
         }
+    }
+    void rmqConnection::sendMessage(MQMessageProperties properties, std::string message) {
+        if(mp_rabbitmq_conn == NULL) {
+            reconnect();
+            if(mp_rabbitmq_conn != NULL) {
+                sendMessage(properties, message);
+            }
+            return;
+        }
+        
+
+        amqp_basic_properties_t props;
+        props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
+        props.content_type = amqp_cstring_bytes("text/plain");
+        props.delivery_mode = 2; // persistent delivery mode
+
+        std::map<char *, char *> header_values;
+
+        if(properties.headers.size() > 0) {
+            props._flags |= AMQP_BASIC_HEADERS_FLAG;
+            props.headers.num_entries=properties.headers.size();
+            props.headers.entries = (amqp_table_entry_t*)calloc(props.headers.num_entries, sizeof(amqp_table_entry_t));
+
+            std::map<std::string, std::string>::iterator it = properties.headers.begin();
+            
+            int i =0;
+            while(it != properties.headers.end()) {
+                std::pair<std::string, std::string> p = *it;
+                char *s[2];
+                s[0] = strdup(p.first.c_str());
+                s[1] = strdup(p.second.c_str());
+
+                header_values[s[0]] = s[1];
+
+                props.headers.entries[i].key = amqp_cstring_bytes(s[0]);
+                props.headers.entries[i].value.value.bytes = amqp_cstring_bytes(s[1]);
+                props.headers.entries[i].value.kind = AMQP_FIELD_KIND_UTF8;
+                i++;
+                it++;
+            }
+        }
+
+        amqp_basic_publish(mp_rabbitmq_conn, m_channel_id, amqp_cstring_bytes(properties.exchange.c_str()),
+            amqp_cstring_bytes(properties.routingKey.c_str()), 0, 0,
+            &props, amqp_cstring_bytes(message.c_str()));
+
+        std::map<char *, char *>::iterator it2 = header_values.begin();
+        while(it2 != header_values.end()) {
+            std::pair<char *, char *> p = *it2;
+            free(p.first);
+            free(p.second);
+            it2++;
+        }
+
+        handle_amqp_error(amqp_get_rpc_reply(mp_rabbitmq_conn), "basic publish"); //TODO: channel error check
     }
     void rmqConnection::sendMessage(std::string exchange, std::string routingKey, std::string message) {
         if(mp_rabbitmq_conn == NULL) {

@@ -173,13 +173,14 @@ namespace NN {
 			port_type = 0;
 			required_addresses = 0;
 			address_hits = 0;
+			version = 0;
 		}
 		bool usegameport;
 		NNCookieType cookie;
-		int index;
 		int port_type;
 		int address_hits;
 		int required_addresses;
+		int version;
 		uint16_t gameport;
 		std::map<int, OS::Address> m_port_type_addresses;
 		OS::Address private_address;
