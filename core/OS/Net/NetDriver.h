@@ -16,7 +16,11 @@ public:
 	virtual const std::vector<INetIOSocket *> getSockets() const = 0;
 	INetServer *getServer() { return m_server; }
 	virtual const std::vector<INetPeer *> getPeers(bool inc_ref = false) = 0;
+	virtual void OnPeerMessage(INetPeer *peer) = 0; //only used for "notify_driver_only registered peer" messages, currently incompatible with regular "registered peer"
+	INetIOInterface<> *getNetIOInterface();
+	void setNetIOInterface(INetIOInterface<> *iface);
 protected:
 	INetServer *m_server;
+	INetIOInterface<> *mp_net_io_interface;
 };
 #endif //_NETDRIVER_H

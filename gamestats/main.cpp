@@ -6,7 +6,6 @@
 #include <OS/Config/AppConfig.h>
 #include "server/GSServer.h"
 #include "server/GSDriver.h"
-#include "server/GSBackend.h"
 INetServer *g_gameserver = NULL;
 bool g_running = true;
 
@@ -47,10 +46,11 @@ int main() {
 		std::vector<std::string>::iterator it = drivers.begin();
 		while (it != drivers.end()) {
 			std::string s = *it;
-			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+			bool proxyFlag = false;
+			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 			OS::Address address = addresses.front();
-			GS::Driver *driver = new GS::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort());
-			OS::LogText(OS::ELogLevel_Info, "Adding GS Driver: %s:%d\n", address.ToString(true).c_str(), address.GetPort());
+			GS::Driver *driver = new GS::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), proxyFlag);
+			OS::LogText(OS::ELogLevel_Info, "Adding GS Driver: %s:%d proxy: %d\n", address.ToString(true).c_str(), address.GetPort(), proxyFlag);
 			g_gameserver->addNetworkDriver(driver);
 			it++;
 	}
@@ -60,7 +60,6 @@ int main() {
 	}
     delete g_gameserver;
 
-	GSBackend::ShutdownTaskPool();
     OS::Shutdown();
     
     return 0;

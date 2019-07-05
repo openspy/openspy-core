@@ -2,8 +2,10 @@
 #define _QRSERVER_H
 #include <stdint.h>
 #include <OS/OpenSpy.h>
-#include <OS/TaskPool.h>
+#include <OS/Task/TaskScheduler.h>
 #include <OS/Net/NetServer.h>
+
+#include <tasks/tasks.h>
 
 #include "structs.h"
 
@@ -19,9 +21,10 @@ namespace NN {
 			void init();
 			void tick();
 			void shutdown();
-			void SetTaskPool(OS::TaskPool<NN::NNQueryTask, NN::NNBackendRequest> *pool);
 			std::vector<NN::Peer *> FindConnections(NNCookieType cookie, int client_idx, bool inc_ref = false);
+			TaskScheduler<NNRequestData, TaskThreadData> *getScheduler() { return mp_task_scheduler; };
 		private:
+			TaskScheduler<NNRequestData, TaskThreadData> *mp_task_scheduler;
 	};
 }
 #endif //_CHCGAMESERVER_H

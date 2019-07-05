@@ -93,7 +93,7 @@ socktype_t SelectNetEventManager::setup_fdset() {
 		return m_hsock;
 	}
 }
-void SelectNetEventManager::RegisterSocket(INetPeer *peer) {
+void SelectNetEventManager::RegisterSocket(INetPeer *peer, bool notify_driver_only) {
 	mp_mutex->lock();
 	m_dirty_fdset = true;
 	m_peers.push_back(peer);

@@ -8,7 +8,7 @@ namespace GS {
 	Server::Server() : INetServer(){
 	}
 	void Server::init() {
-		GSBackend::SetupTaskPool(this);
+		mp_gamestats_tasks = GS::InitTasks(this);
 	}
 	void Server::tick() {
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
@@ -21,19 +21,5 @@ namespace GS {
 	}
 	void Server::shutdown() {
 
-	}
-	void Server::SetTaskPool(OS::TaskPool<GSBackend::PersistBackendTask, GSBackend::PersistBackendRequest> *pool) {
-		const std::vector<GSBackend::PersistBackendTask *> task_list = pool->getTasks();
-		std::vector<GSBackend::PersistBackendTask *>::const_iterator it = task_list.begin();
-		while (it != task_list.end()) {
-			GSBackend::PersistBackendTask *task = *it;
-			std::vector<INetDriver *>::iterator it2 = m_net_drivers.begin();
-			while (it2 != m_net_drivers.end()) {
-				GS::Driver *driver = (GS::Driver *)*it2;
-				task->AddDriver(driver);
-				it2++;
-			}
-			it++;
-		}
 	}
 }

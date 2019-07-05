@@ -6,7 +6,6 @@
 #include <OS/Net/NetServer.h>
 #include "server/SBServer.h"
 #include "server/SBDriver.h"
-#include "server/MMQuery.h"
 INetServer *g_gameserver = NULL;
 bool g_running = true;
 void shutdown();
@@ -15,18 +14,12 @@ void on_exit(void) {
     shutdown();
 }
 
-void debug_dump() {
-    ((SBServer *)g_gameserver)->debug_dump();
-}
 #ifndef _WIN32
 void sig_handler(int signo)
 {
-    if(signo == SIGTERM) {
+    if(signo == SIGTERM || signo == SIGINT) {
         shutdown();    
-    } else if(signo == SIGINT) {
-        debug_dump();
-    }
-    
+    }    
 }
 #endif
 
@@ -57,10 +50,11 @@ int main() {
 		app_config->GetVariableInt(s, "protocol-version", version);
 
 		
-		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+		bool proxyFlag = false;
+		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 		OS::Address address = addresses.front();
-		SB::Driver *driver = new SB::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), version);
-		OS::LogText(OS::ELogLevel_Info, "Adding SB Driver: %s Version: (%d)\n", address.ToString().c_str(), version);
+		SB::Driver *driver = new SB::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), version, proxyFlag);
+		OS::LogText(OS::ELogLevel_Info, "Adding SB Driver: %s Version: (%d) proxy: %d\n", address.ToString().c_str(), version, proxyFlag);
 		g_gameserver->addNetworkDriver(driver);
 		it++;
 	}

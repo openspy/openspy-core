@@ -5,7 +5,7 @@ AppConfig::AppConfig(OS::Config *cfg, std::string appName) {
 	m_app_name = appName;
 }
 AppConfig::~AppConfig() {
-
+	delete mp_config;
 }
 
 std::vector<std::string> AppConfig::getDriverNames() {
@@ -150,7 +150,7 @@ std::string AppConfig::GetVariableValue(OS::ConfigNode node) {
 	end:
 	return ret;
 }
-std::vector<OS::Address> AppConfig::GetDriverAddresses(std::string driverName) {
+std::vector<OS::Address> AppConfig::GetDriverAddresses(std::string driverName, bool &proxyFlag) {
 	std::vector<OS::Address> ret;
 	OS::Address address;
 	OS::ConfigNode node;
@@ -177,6 +177,8 @@ std::vector<OS::Address> AppConfig::GetDriverAddresses(std::string driverName) {
 						}
 						else if (node3.GetKey().compare("port") == 0) {
 							port = node3.GetValueInt();
+						} else if(node3.GetKey().compare("proxyHeaders") == 0) {
+							proxyFlag = atoi(node3.GetValue().c_str()) != 0;
 						}
 						it3++;
 					}

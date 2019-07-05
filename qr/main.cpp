@@ -50,8 +50,11 @@ int main() {
 	while (it != drivers.end()) {
 		std::string s = *it;
 
-		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+
+		bool proxyFlag = false;
+		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 		OS::Address address = addresses.front();
+		
 		QR::Driver *driver = new QR::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort());
 
 		OS::LogText(OS::ELogLevel_Info, "Adding QR Driver: %s:%d\n", address.ToString(true).c_str(), address.GetPort());

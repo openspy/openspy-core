@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "../main.h"
 #include <OS/StringCrypter.h>
-#include <OS/Net/NetDriver.h>
+#include <OS/Net/drivers/TCPDriver.h>
 #include <OS/Net/IOIfaces/SSLIOInterface.h>
 #include "FESLPeer.h"
 
@@ -33,44 +33,24 @@ namespace FESL {
 
 	class Peer;
 
-	class Driver : public INetDriver {
+	class Driver : public TCPDriver {
 	public:
-		Driver(INetServer *server, OS::Address address, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path = NULL, const char *rsa_priv_path = NULL, SSLNetIOIFace::ESSL_Type ssl_version = SSLNetIOIFace::ESSL_None);
+		Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path = NULL, const char *rsa_priv_path = NULL, SSLNetIOIFace::ESSL_Type ssl_version = SSLNetIOIFace::ESSL_None, bool proxyFlag = false);
 		~Driver();
-		void think(bool listener_waiting);
-
-		INetIOSocket *getListenerSocket() const;
-		const std::vector<INetIOSocket *> getSockets() const;
-
-		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 
 		PublicInfo GetServerInfo() { return m_server_info; };
 
-		SSLNetIOIFace::SSLNetIOInterface *getSSL_Socket_Interface();
-
 		OS::StringCrypter *getStringCrypter() const { return mp_string_crypter; };
 
-		void OnUserAuth(OS::Address remote_address, int userid, int profileid);
+		void OnUserAuth(std::string session_key, int userid, int profileid);
+
+		INetPeer *CreatePeer(INetIOSocket *socket);
 	private:
-		static void *TaskThread(OS::CThread *thread);
-		void TickConnections();
-
-		std::vector<FESL::Peer *> m_peers_to_delete;
-
-		std::vector<Peer *> m_connections;
-
-		OS::CMutex *mp_mutex;
-		OS::CThread *mp_thread;
-
 		RSA *m_encrypted_login_info_key;
 
 		PublicInfo m_server_info;
 
-		INetIOSocket *mp_socket;
-
 		OS::StringCrypter *mp_string_crypter;
-
-		SSLNetIOIFace::SSLNetIOInterface *mp_socket_interface;
 	};
 }
 #endif //_SBDRIVER_H

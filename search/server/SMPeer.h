@@ -1,13 +1,15 @@
 #ifndef _GPPEER_H
 #define _GPPEER_H
 #include "../main.h"
-#include <OS/Auth.h>
 #include <OS/User.h>
 #include <OS/Profile.h>
-#include <OS/Search/User.h>
-#include <OS/Search/Profile.h>
 #include <OS/KVReader.h>
 #include <OS/GPShared.h>
+#include <OS/Net/NetPeer.h>
+#include <OS/SharedTasks/Auth/AuthTasks.h>
+#include <OS/SharedTasks/Account/UserTasks.h>
+#include <OS/SharedTasks/Account/ProfileTasks.h>
+
 
 #define GPI_READ_SIZE                  (16 * 1024)
 
@@ -58,6 +60,7 @@ namespace SM {
 		Peer(Driver *driver, INetIOSocket *sd);
 		~Peer();
 		
+		void OnConnectionReady();
 		void think(bool packet_waiting);
 		void handle_packet(std::string data);
 
@@ -71,31 +74,37 @@ namespace SM {
 	private:
 
 		void handle_search(OS::KVReader data_parser);
-		static void m_search_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
-		static void m_search_buddies_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_search_buddies_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer);
 		void handle_others(OS::KVReader data_parser);
 
-		static void m_search_buddies_reverse_callback(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_search_buddies_reverse_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer);
 		void handle_otherslist(OS::KVReader data_parser);
 
-		static void m_search_valid_callback(OS::EUserResponseType response_type, std::vector<OS::User> results, void *extra, INetPeer *peer);
+		static void m_search_valid_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer);
 		void handle_valid(OS::KVReader data_parser);
 
-		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
+		static void m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		void handle_check(OS::KVReader data_parser);
 
-		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer);
+		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer);
 		void handle_newuser(OS::KVReader data_parser);
 
 		void handle_nicks(OS::KVReader data_parser);
-		static void m_nicks_cb(OS::EProfileResponseType response_reason, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_nicks_cb(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
+		void handle_searchunique(OS::KVReader data_parser);
+		void post_register_registercdkey();
 		static const char *mp_hidden_str;
 
 		OS::CMutex *mp_mutex;
 
 		std::string m_kv_accumulator;
+		std::string m_postregister_cdkey;
+		int m_postregister_gameid;
+
+		OS::Profile m_profile;
 
 	};
 }

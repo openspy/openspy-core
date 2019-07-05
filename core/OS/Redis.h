@@ -41,7 +41,8 @@ namespace Redis {
 		int command_recursion_depth;
 		int reconnect_recursion_depth;
 		bool runLoop;
-		std::string connect_address;
+		char *connect_address;
+		int selectedDb;
 	} Connection;
 
 	typedef struct {
@@ -54,7 +55,10 @@ namespace Redis {
 
 	Connection *Connect(const char *hostname, struct timeval tv);
 	Response Command(Connection *conn, time_t sleepMS, const char *fmt, ...);
-	void LoopingCommand(Connection *conn, time_t sleepMS, void(*mpFunc)(Connection *, Response, void *), void *extra, const char *fmt, ...); //for SUBSCRIBE/DEBUGGER, etc
+
+	//for SUBSCRIBE/DEBUGGER, etc -- REMOVED due to not used anymore... and we set recv timeout, which would cause this to do a reconnect loop as currently implemented
+	//void LoopingCommand(Connection *conn, time_t sleepMS, void(*mpFunc)(Connection *, Response, void *), void *extra, const char *fmt, ...); 
+	void SelectDb(Connection *connection, int db);
 	void Disconnect(Connection *connection);
 	void CancelLooping(Connection *connection);
 	void parse_response(std::string resp_str, int &diff, Redis::Response *resp, Redis::ArrayValue *arr_val);

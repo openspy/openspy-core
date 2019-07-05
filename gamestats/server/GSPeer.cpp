@@ -1,16 +1,14 @@
+#include "GSServer.h"
 #include "GSPeer.h"
 #include "GSDriver.h"
 #include <OS/OpenSpy.h>
 #include <OS/Buffer.h>
-#include <OS/Search/Profile.h>
-
-#include <OS/Search/User.h>
 
 #include <stddef.h>
 #include <sstream>
 #include <algorithm>
 
-#include "GSBackend.h"
+#include <server/tasks/tasks.h>
 
 #include <OS/GPShared.h>
 
@@ -40,19 +38,33 @@ namespace GS {
 		m_getpd_wait_ctx.wait_index = 0;
 		m_getpd_wait_ctx.top_index = 0;
 		m_get_request_index = 0;
-		m_updgame_increfs = 0;
 		m_getpd_wait_ctx.mutex = OS::CreateMutex();
 
+		m_setpd_wait_ctx.wait_index = 0;
+		m_setpd_wait_ctx.top_index = 0;
+		m_set_request_index = 0;
+		m_setpd_wait_ctx.mutex = OS::CreateMutex();
+
+		m_getpid_request_index = 0;
+		m_getpid_wait_ctx.wait_index = 0;
+		m_getpid_wait_ctx.top_index = 0;
+		m_getpid_wait_ctx.mutex = OS::CreateMutex();
+
+		m_updgame_increfs = 0;
+		m_last_authp_operation_id = 0;
 		m_xor_index = 0;
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",m_sd->address.ToString().c_str());
-
-		send_login_challenge(1);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", m_sd->address.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", getAddress().ToString().c_str());
 		delete m_getpd_wait_ctx.mutex;
+		delete m_setpd_wait_ctx.mutex;
+		delete m_getpid_wait_ctx.mutex;
 		delete mp_mutex;
+	}
+	void Peer::OnConnectionReady() {
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",getAddress().ToString().c_str());
+
+		send_login_challenge(1);
 	}
 	void Peer::send_login_challenge(int type) {
 		std::ostringstream s;
@@ -73,7 +85,7 @@ namespace GS {
 		if (m_delete_flag) return;
 		if (packet_waiting) {
 			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
+			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 			int len = io_resp.comm_len;
 
 			if (len <= 0) {
@@ -117,14 +129,15 @@ namespace GS {
 			}
 		}
 		end:
-		send_ping();
+		//send_ping();
 
-		//check for timeout
+		/*
+		//check for timeout -- Removed: not implemented in most clients
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
 			Delete(true);
-		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
+		} else */if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete();
 		}
 	}
@@ -165,398 +178,6 @@ namespace GS {
 		}
 	}
 
-	void Peer::handle_getpid(OS::KVReader data_parser) {
-		/*
-				Send error response until implemented
-		*/
-		int operation_id = data_parser.GetValueInt("lid");
-		//int pid = data_parser.GetValueInt("pid");
-		std::ostringstream ss;
-		ss << "\\getpidr\\-1\\lid\\" << operation_id;
-		SendPacket(ss.str());
-	}
-	void Peer::getPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-		//// \\getpdr\\1\\lid\\1\\length\\5\\data\\mydata\\final
-		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
-
-		std::ostringstream ss;
-
-		uint8_t *data = NULL;
-		size_t data_len = 0;
-		
-		ss << "\\getpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid;
-
-		if(response_data.mod_time != 0) {
-			 ss << "\\mod\\" << response_data.mod_time;
-		}
-
-		OS::Buffer buffer;
-		buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
-		if (response_data.game_instance_identifier.length() > 0) {
-
-			OS::Base64StrToBin(response_data.game_instance_identifier.c_str(), &data, data_len);
-			ss.str("");
-			ss << "\\length\\" << data_len << "\\data\\";
-			buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
-			buffer.WriteBuffer(data, data_len);
-		}
-		else {
-			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it = response_data.kv_data.GetHead();
-			std::ostringstream kv_ss;
-			while (it.first != it.second) {
-				std::pair< std::string, std::string> item = *it.first;
-				kv_ss << "\\" << item.first << "\\" << item.second;
-				it.first++;
-			}
-			data_len = kv_ss.str().length();
-
-			ss.str("");
-			ss << "\\length\\" << data_len << "\\data\\";
-			buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
-
-			std::string kv_str = kv_ss.str();
-
-			//don't serialize in same format as recieved....
-			/*for (int i = 0; i < kv_str.length(); i++) {
-				if (kv_str[i] == '\\') {
-					buffer.WriteByte(1);
-				}
-				else {
-					buffer.WriteByte(kv_str[i]);
-				}				
-			}*/
-			buffer.WriteBuffer((void *)kv_str.c_str(), kv_str.length());			
-		}
-
-
-		peer->SendOrWaitBuffer(persist_request_data->wait_index, peer->m_getpd_wait_ctx, buffer);
-		//peer->SendPacket(buffer);
-
-		if(data)
-			free((void *)data);
-		free((void *)persist_request_data);
-	}
-	void Peer::handle_getpd(OS::KVReader data_parser) {
-		int operation_id = data_parser.GetValueInt("lid");
-		int pid = data_parser.GetValueInt("pid");
-		int data_index = data_parser.GetValueInt("dindex");
-
-		int modified_since = data_parser.GetValueInt("mod");
-
-		persisttype_t persist_type = (persisttype_t)data_parser.GetValueInt("ptype");
-
-		if(persist_type == pd_private_ro || persist_type == pd_private_rw) {
-			if(pid != m_profile.id)	{
-				send_error(GPShared::GP_NOT_LOGGED_IN);
-				return;
-			}
-		}
-		switch(persist_type) {
-			case pd_private_ro:
-			case pd_private_rw:
-				if(pid != m_profile.id)	{
-					send_error(GPShared::GP_NOT_LOGGED_IN);
-					return;
-				}
-			break;
-
-			case pd_public_rw:
-			case pd_public_ro:
-			break;
-
-			default:
-			return;
-		}
-
-		std::string keys;
-		std::vector<std::string> keyList;
-
-		if (data_parser.HasKey("keys")) {
-			keys = data_parser.GetValue("keys");
-			for (size_t i = 0; i<keys.length(); i++) {
-				if (keys[i] == '\x01') {
-					keys[i] = '\\';
-				}
-			}
-			keyList = OS::KeyStringToVector(keys);
-		}
-
-		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
-		persist_request_data->profileid = pid;
-		persist_request_data->operation_id = operation_id;
-		persist_request_data->wait_index = m_get_request_index++;
-
-		GSBackend::PersistBackendTask::SubmitGetPersistData(pid, this, (void *)persist_request_data, getPersistDataCallback, persist_type, data_index, keyList, modified_since);
-	}
-
-	void Peer::setPersistDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
-
-		std::ostringstream ss;
-		ss << "\\setpdr\\" << success << "\\lid\\" << persist_request_data->operation_id << "\\pid\\" << persist_request_data->profileid << "\\mod\\" << response_data.mod_time;
-		OS::Buffer buffer;
-		buffer.WriteBuffer((void *)ss.str().c_str(), ss.str().length());
-		peer->SendOrWaitBuffer(persist_request_data->wait_index, peer->m_setpd_wait_ctx, buffer);
-
-		free((void *)persist_request_data);
-	}
-
-	void Peer::handle_setpd(OS::KVReader data_parser) {
-		int operation_id = data_parser.GetValueInt("lid");
-		int pid = data_parser.GetValueInt("pid");
-		int data_index = data_parser.GetValueInt("dindex");
-
-		persisttype_t persist_type = (persisttype_t)data_parser.GetValueInt("ptype");
-
-
-		if(pid != m_profile.id || persist_type == pd_public_ro || persist_type == pd_private_ro) {
-			send_error(GPShared::GP_NOT_LOGGED_IN);
-			return;
-		}
-
-		bool kv_set = data_parser.GetValueInt("kv") != 0;
-
-		std::string data = data_parser.GetValue("data");
-		int client_data_len = data_parser.GetValueInt("length");
-
-		OS::KVReader save_data;
-
-		if (kv_set) {
-			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it = data_parser.GetHead();
-			bool found_end = false;
-			std::ostringstream ss;
-			while (it.first != it.second) {
-				std::pair< std::string, std::string> item = *it.first;
-				
-				if (found_end) {
-					ss << "\\" << item.first << "\\" << item.second;
-				}
-				if (item.first.compare("data") == 0) {
-					found_end = true;
-				}
-				it.first++;
-			}
-
-			data = ss.str();
-			save_data = data;
-			client_data_len--;
-		}
-
-		/* Some games send data-1... but its safe now with the new reader
-		if (!data.length() || client_data_len != data.length()) {
-			send_error(GPShared::GP_PARSE);
-			return;
-		}*/
-
-		const char *b64_str = OS::BinToBase64Str((uint8_t *)data.c_str(), client_data_len);
-
-		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
-		persist_request_data->profileid = pid;
-		persist_request_data->operation_id = operation_id;
-		persist_request_data->wait_index = m_set_request_index++;
-
-
-		GSBackend::PersistBackendTask::SubmitSetPersistData(m_profile.id, this, (void *)persist_request_data, setPersistDataCallback, b64_str, persist_type, data_index, kv_set, save_data);
-
-		free((void *)b64_str);
-	}
-
-	void Peer::handle_auth(OS::KVReader data_parser) {
-		std::string gamename;
-		std::string response;
-		int local_id = data_parser.GetValueInt("id");
-		m_game_port = data_parser.GetValueInt("port");
-
-		if (!data_parser.HasKey("gamename")) {
-			send_error(GPShared::GP_PARSE);
-			return;
-		}
-		gamename = data_parser.GetValue("gamename");
-
-		if (!data_parser.HasKey("response")) {
-			send_error(GPShared::GP_PARSE);
-			return;
-		}
-		m_response = data_parser.GetValue("response");
-
-
-		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)malloc(sizeof(GPPersistRequestData));
-		persist_request_data->profileid = 0;
-		persist_request_data->operation_id = local_id;
-		GSBackend::PersistBackendTask::SubmitGetGameInfoByGameName(gamename, this, persist_request_data, onGetGameDataCallback);
-	}
-	void Peer::onGetGameDataCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-		std::ostringstream ss;
-		GPPersistRequestData *persist_request_data = (GPPersistRequestData *)extra;
-		peer->m_game = response_data.gameData;
-		if(peer->m_game.secretkey[0] == 0) {
-			peer->send_error(GPShared::GP_CONNECTION_CLOSED);
-			return;
-		}
-
-		if(!peer->IsResponseValid(peer->m_response.c_str())) {
-			peer->send_error(GPShared::GP_CONNECTION_CLOSED);
-			peer->Delete();
-			return;
-		}
-
-		ss << "\\lc\\2\\sesskey\\" << peer->m_session_key << "\\proof\\0\\id\\" << persist_request_data->operation_id;
-		peer->SendPacket(ss.str());
-	}
-	void Peer::newGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-		peer->mp_mutex->lock();
-		size_t sesskey = (size_t)extra;
-		peer->m_game_session_backend_identifier_map[sesskey] = response_data.game_instance_identifier;
-		
-		
-		
-		std::map<int, std::vector<OS::KVReader> >::iterator it = peer->m_updgame_sesskey_wait_list.find(sesskey);
-		if (it != peer->m_updgame_sesskey_wait_list.end()) {
-			std::pair<int, std::vector<OS::KVReader> > p = *it;
-			std::vector<OS::KVReader>::iterator it2 = p.second.begin();
-			while (it2 != p.second.end()) {
-				peer->handle_updgame(*it2);
-				peer->DecRef();
-				peer->m_updgame_increfs--;
-				it2++;
-			}
-			peer->m_updgame_sesskey_wait_list.erase(it);
-		}
-		peer->mp_mutex->unlock();
-
-	}
-	void Peer::handle_newgame(OS::KVReader data_parser) {
-		size_t session_id = (size_t)data_parser.GetValueInt("sesskey"); //identifier, used incase of multiple game sessions happening at once
-		GSBackend::PersistBackendTask::SubmitNewGameSession(this, (void *)session_id, newGameCreateCallback);
-	}
-	void Peer::updateGameCreateCallback(bool success, GSBackend::PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-	}
-	void Peer::handle_updgame(OS::KVReader data_parser) {
-		//\updgame\\sesskey\%d\done\%d\gamedata\%s
-		int sesskey = data_parser.GetValueInt("sesskey");
-		mp_mutex->lock();
-		std::map<int, std::string>::iterator it = m_game_session_backend_identifier_map.find(sesskey);
-		if(it == m_game_session_backend_identifier_map.end()) {
-			m_updgame_sesskey_wait_list[sesskey].push_back(data_parser);
-			this->IncRef();
-			m_updgame_increfs++;
-			if (m_updgame_sesskey_wait_list[sesskey].size() > MAX_SESSKEY_WAIT || m_updgame_sesskey_wait_list.size() > MAX_SESSKEY_WAIT) {				
-				for (int i = 0; i < m_updgame_increfs; i++) {
-					this->DecRef();
-				}
-				send_error(GPShared::GP_BAD_SESSKEY);
-			}
-			mp_mutex->unlock();
-			return;
-		}
-		std::map<std::string,std::string> game_data;
-		std::string gamedata = data_parser.GetValue("gamedata");
-
-		bool done = data_parser.GetValueInt("done");
-
-		for(size_t i=0;i<gamedata.length();i++) {
-			if(gamedata[i] == '\x1') {
-				gamedata[i] = '\\';
-			}
-		}
-		game_data = OS::KeyStringToMap(gamedata);
-		GSBackend::PersistBackendTask::SubmitUpdateGameSession(game_data, this, NULL, m_game_session_backend_identifier_map[sesskey], updateGameCreateCallback, done);
-		mp_mutex->unlock();
-	}
-
-	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {
-		OS::AuthTask::TryAuthPID_GStatsSessKey(profileid, m_session_key, response, m_nick_email_auth_cb, NULL, operation_id, this);
-	}
-	void Peer::perform_preauth_auth(std::string auth_token, const char *response, int operation_id) {
-		OS::AuthTask::TryAuth_PreAuth_GStatsSessKey(m_session_key, response, auth_token, m_nick_email_auth_cb, NULL, operation_id, this);
-	}
-	void Peer::handle_authp(OS::KVReader data_parser) {
-		// TODO: CD KEY AUTH
-		int pid = data_parser.GetValueInt("pid");
-
-		int operation_id = data_parser.GetValueInt("lid");
-
-		std::string resp;
-		if (!data_parser.HasKey("resp")) {
-			send_error(GPShared::GP_PARSE);
-			return;
-		}
-
-		resp = data_parser.GetValue("resp");
-
-		if(pid != 0) {
-			perform_pid_auth(pid, resp.c_str(), operation_id);
-		} else {
-			if (data_parser.HasKey("authtoken")) {
-				std::string auth_token = data_parser.GetValue("authtoken");
-				perform_preauth_auth(auth_token, resp.c_str(), operation_id);
-				return;
-			}
-			send_error(GPShared::GP_PARSE);
-		}
-
-	}
-	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, OS::AuthData auth_data, void *extra, int operation_id, INetPeer *peer) {
-
-		if(!((Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())
-			((Peer *)peer)->m_backend_session_key = auth_data.session_key;
-
-		((Peer *)peer)->m_user = user;
-		((Peer *)peer)->m_profile = profile;
-
-		std::ostringstream ss;
-
-
-		if(success) {
-			ss << "\\pauthr\\" << profile.id;
-
-			if(auth_data.session_key.length()) {
-				ss << "\\lt\\" << auth_data.session_key;
-			}
-			ss << "\\lid\\" << operation_id;
-
-			((Peer *)peer)->m_profile = profile;
-			((Peer *)peer)->m_user = user;
-
-			((Peer *)peer)->SendPacket(ss.str());
-
-		} else {
-			ss << "\\pauthr\\-1\\errmsg\\";
-			GPShared::GPErrorData error_data;
-			GPShared::GPErrorCode code;
-
-			switch(auth_data.response_code) {
-				case OS::LOGIN_RESPONSE_USER_NOT_FOUND:
-					//code = GP_LOGIN_BAD_EMAIL;
-					code = GP_LOGIN_BAD_PROFILE;
-					break;
-				case OS::LOGIN_RESPONSE_INVALID_PASSWORD:
-					code = GP_LOGIN_BAD_PASSWORD;
-				break;
-				case OS::LOGIN_RESPONSE_INVALID_PROFILE:
-					code = GP_LOGIN_BAD_PROFILE;
-				break;
-				case OS::LOGIN_RESPONSE_UNIQUE_NICK_EXPIRED:
-					code = GP_LOGIN_BAD_UNIQUENICK;
-				break;
-				default:
-				case OS::LOGIN_RESPONSE_DB_ERROR:
-					code = GP_DATABASE;
-				break;
-				case OS::LOGIN_RESPONSE_SERVERINITFAILED:
-				case OS::LOGIN_RESPONSE_SERVER_ERROR:
-					code = GP_NETWORK;
-			}
-
-			error_data = GPShared::getErrorDataByCode(code);
-
-			ss << error_data.msg;
-
-			ss << "\\lid\\" << operation_id;
-			((Peer *)peer)->SendPacket(ss.str());
-		}
-	}
-
 	void Peer::SendPacket(std::string str, bool attach_final) {
 		OS::Buffer buffer(str.length());
 		buffer.WriteBuffer((void *)str.c_str(), str.length());
@@ -574,7 +195,7 @@ namespace GS {
 		buffer.resetReadCursor();
 
 		NetIOCommResp io_resp;
-		io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, send_buffer);
+		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, send_buffer);
 		if (io_resp.disconnect_flag || io_resp.error_flag) {
 			Delete();
 		}
@@ -653,15 +274,6 @@ namespace GS {
 	        challenge++;
 	    }
 	    return(num);
-	}
-	void Peer::gs_sesskey(int sesskey, char *out) {
-	    int         i = 17;
-		char 		*p;
-
-	    sprintf(out, "%.8x", sesskey ^ 0x38f371e6);
-	    for(p = out; *p; p++, i++) {
-	        *p += i;
-	    }
 	}
 
 	int Peer::GetProfileID() {

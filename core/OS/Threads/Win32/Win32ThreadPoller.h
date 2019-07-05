@@ -12,6 +12,8 @@ namespace OS {
 		void signal();
 	private:
 		HANDLE m_handle;
+		uint32_t m_signal_count;
+		char name[32];
 	};
 }
 #endif //_CWIN32MUTEX_H

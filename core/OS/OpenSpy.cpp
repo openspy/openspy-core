@@ -4,7 +4,6 @@
 #include <curl/curl.h>
 #include <iomanip>
 
-#include "Auth.h"
 #include "Logger.h"
 
 #ifndef _WIN32
@@ -13,9 +12,6 @@
 	#include "OS/Logger/Win32/Win32Logger.h"
 #endif
 
-#include <OS/Auth.h>
-#include <OS/Search/User.h>
-#include <OS/Search/Profile.h>
 #include <OS/Config/AppConfig.h>
 
 namespace OS {
@@ -29,15 +25,15 @@ namespace OS {
 	const char *g_redisAddress = NULL;
 	const char *g_webServicesURL = NULL;
 	const char *g_webServicesAPIKey = NULL;
+	int			g_numAsync = 0;
 	CURL	   *g_curl = NULL;
 	void Init(const char *appName, AppConfig *appConfig) {
 
 		OS::g_config = appConfig;
 		OS::g_curl = curl_easy_init();
 
-		int num_async = 0;
 		std::string hostname, redis_address, webservices_url, apikey;
-		OS::g_config->GetVariableInt(appName, "num-async-tasks", num_async);
+		OS::g_config->GetVariableInt(appName, "num-async-tasks", g_numAsync);
 		OS::g_config->GetVariableString(appName, "hostname", hostname);
 		OS::g_config->GetVariableString(appName, "redis-address", redis_address);
 		OS::g_config->GetVariableString(appName, "webservices-url", webservices_url);
@@ -63,16 +59,10 @@ namespace OS {
 		#endif
 
 		mp_redis_internal_connection_mutex = OS::CreateMutex();
-		OS::SetupAuthTaskPool(num_async);
-		OS::SetupUserSearchTaskPool(num_async);
-		OS::SetupProfileTaskPool(num_async);
 		
-		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, webservices: %s)\n", appName, num_async, g_hostName, g_redisAddress, g_webServicesURL);
+		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, webservices: %s)\n", appName, g_numAsync, g_hostName, g_redisAddress, g_webServicesURL);
 	}
 	void Shutdown() {
-		OS::ShutdownAuthTaskPool();
-		OS::ShutdownUserSearchTaskPool();
-		OS::ShutdownProfileTaskPool();
 
 		Redis::Disconnect(redis_internal_connection);
 
@@ -81,6 +71,11 @@ namespace OS {
 		delete OS::g_config;
 		curl_easy_cleanup(OS::g_curl);
 		curl_global_cleanup();
+
+		free((void *)g_hostName);
+		free((void *)g_webServicesURL);
+		free((void *)g_webServicesAPIKey);
+		free((void *)g_redisAddress);
 	}
 	OS::GameData GetGameByRedisKey(const char *key, Redis::Connection *redis_ctx = NULL) {
 		GameData game;
@@ -94,7 +89,7 @@ namespace OS {
 			mp_redis_internal_connection_mutex->lock();
 		}
 
-		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
+		Redis::SelectDb(redis_ctx, ERedisDB_Game);
 
 		reply = Redis::Command(redis_ctx, 0, "HGET %s gameid", key);
 		if (Redis::CheckError(reply)) {
@@ -202,7 +197,7 @@ namespace OS {
 			redis_ctx = OS::redis_internal_connection;
 			mp_redis_internal_connection_mutex->lock();
 		}
-		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
+		Redis::SelectDb(redis_ctx, ERedisDB_Game);
 
 		reply = Redis::Command(redis_ctx, 0, "GET %s",from_gamename);
 		if (Redis::CheckError(reply)) {
@@ -233,7 +228,7 @@ namespace OS {
 			redis_ctx = OS::redis_internal_connection;
 			mp_redis_internal_connection_mutex->lock();
 		}
-		Redis::Command(redis_ctx, 0, "SELECT %d", ERedisDB_Game);
+		Redis::SelectDb(redis_ctx, ERedisDB_Game);
 
 		reply = Redis::Command(redis_ctx, 0, "GET gameid_%d",gameid);
 		if (Redis::CheckError(reply)) {
@@ -277,7 +272,7 @@ namespace OS {
 		return ret;
 
 	}
-	std::vector<std::string> KeyStringToVector(std::string input, bool skip_null) {
+	std::vector<std::string> KeyStringToVector(std::string input, bool skip_null, char delimator) {
 		if(skip_null)
 			input = input.substr(1);
 
@@ -287,7 +282,7 @@ namespace OS {
 
 		std::string token;
 
-		while (std::getline(ss, token, '\\')) {
+		while (std::getline(ss, token, delimator)) {
 			if (!token.length() && !skip_null)
 				continue;
 			ret.push_back(token);
@@ -466,15 +461,15 @@ namespace OS {
 	}
 
 	std::string strip_whitespace(std::string s, bool skip_spaces) {
-		std::string ret;
+		std::ostringstream ss;
 		std::string::iterator it = s.begin();
 		while(it != s.end()) {
 			unsigned char ch = *(it++);
 			if(isspace(ch) && (ch != ' ' || (skip_spaces && ch == ' ')))
 				continue;
-			ret += ch;
+			ss << ((char)ch);
 		}
-		return ret;
+		return ss.str();
 	}
 	void Sleep(int time_ms) {
 		#ifdef _WIN32

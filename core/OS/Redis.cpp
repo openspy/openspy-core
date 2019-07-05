@@ -55,7 +55,7 @@ namespace Redis {
 		uint16_t port;
 		get_server_address_port(constr, address, port);
 
-		ret->connect_address = std::string(constr);
+		ret->connect_address = strdup(constr);
 		ret->command_recursion_depth = 0;
 		ret->reconnect_recursion_depth = 0;
 
@@ -71,16 +71,24 @@ namespace Redis {
 	void Reconnect(Connection *connection) {
 		char address[64];
 		uint16_t port;
-		get_server_address_port(connection->connect_address.c_str(), address, port);
+		get_server_address_port(connection->connect_address, address, port);
 
 		close(connection->sd);
 		OS::Sleep(RECONNECT_SLEEP_TIME);
 		performAddressConnect(connection, address, port);
 		connection->reconnect_recursion_depth = 0;
+
+		SelectDb(connection, connection->selectedDb); //select last db
 	}
 	void performAddressConnect(Connection *connection, const char *address, uint16_t port) {
 		connection->sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		//setsockopt(ret->sd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+
+		//set timeout, due to intermittent redis hanging
+		struct timeval tv;
+		memset(&tv, 0, sizeof(tv));
+		tv.tv_sec = 5;		
+		setsockopt(connection->sd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+
 		uint32_t ip = resolv(address);
 
 		sockaddr_in addr;
@@ -238,6 +246,7 @@ namespace Redis {
 		while(sReadLineData.recv_loop) {
 			len = recv(conn->sd, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len, MSG_NOSIGNAL); //TODO: check if exeeds max len.. currently set to 1 MB so shouldn't...
 			if (len <= 0) { return len; }
+			conn->read_buff[total_len+len] = 0;
 			while (len--) {
 				switch (sReadLineData.state) {
 				case READ_STATE_READ_OPERATOR:
@@ -319,7 +328,7 @@ namespace Redis {
 		parse_response(conn->read_buff, diff, &resp, NULL);
 		return resp;
 	}
-	void LoopingCommand(Connection *conn, time_t sleepMS, void(*mpFunc)(Connection *, Response, void *), void *extra, const char *fmt, ...) {
+	/*void LoopingCommand(Connection *conn, time_t sleepMS, void(*mpFunc)(Connection *, Response, void *), void *extra, const char *fmt, ...) {
 		//TODO: handle sleep/big msgs
 		int diff = 0;
 		Response resp;
@@ -349,13 +358,13 @@ namespace Redis {
 			diff = 0;
 			resp.values.clear();
 		}
-	}
+	}*/
 	void Disconnect(Connection *connection) {
-
 		free(connection->read_buff);
 		if(connection->sd != 0)
 			close(connection->sd);
 
+		free((void *)connection->connect_address);
 		free((void *)connection);
 	}
 	void CancelLooping(Connection *connection) {
@@ -366,5 +375,9 @@ namespace Redis {
 	}
 	bool CheckError(Response r) {
 		return r.values.size() == 0 || r.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR;
+	}
+	void SelectDb(Connection *connection, int db) {
+		connection->selectedDb = db;
+		Command(connection, 0, "SELECT %d", db);
 	}
 }

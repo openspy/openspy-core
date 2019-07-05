@@ -1,7 +1,8 @@
 #ifndef _NETEVENTMGR_H
 #define _NETEVENTMGR_H
-#include "NetDriver.h"
 #include <vector>
+class INetDriver;
+class INetPeer;
 class INetEventManager {
 	public:
 		INetEventManager();
@@ -9,7 +10,7 @@ class INetEventManager {
 		virtual void run() = 0;
 		void addNetworkDriver(INetDriver *driver);
 
-		virtual void RegisterSocket(INetPeer *peer) = 0;
+		virtual void RegisterSocket(INetPeer *peer, bool notify_driver_only = false) = 0;
 		virtual void UnregisterSocket(INetPeer *peer) = 0;
 	protected:
 		std::vector<INetDriver *> m_net_drivers;

@@ -1,6 +1,7 @@
 #include "QRPeer.h"
 #include "QRDriver.h"
-#include <OS/gamespy/enctypex_decoder.h>
+#include "QRServer.h"
+#include <tasks/tasks.h>
 
 namespace QR {
 	Peer::Peer(Driver *driver, INetIOSocket *sd, int version) : INetPeer(driver, sd) {
@@ -19,12 +20,13 @@ namespace QR {
 		mp_mutex = OS::CreateMutex();
 
 		memset(&m_last_heartbeat,0,sizeof(m_last_heartbeat));
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version: %d",m_sd->address.ToString().c_str(), m_version);
 	}
 	Peer::~Peer() {
-		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", m_sd->address.ToString().c_str(), m_timeout_flag);
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
 		delete mp_mutex;
+	}
+	void Peer::OnConnectionReady() {
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection version: %d",getAddress().ToString().c_str(), m_version);
 	}
 	bool Peer::isTeamString(const char *string) {
 		size_t len = strlen(string);
@@ -41,6 +43,7 @@ namespace QR {
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if (current_time.tv_sec - m_last_heartbeat.tv_sec > HB_THROTTLE_TIME) {
+			TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(GetDriver()->getServer()))->getScheduler();
 			MM::MMPushRequest req;
 			req.old_server = m_server_info;
 			m_server_info = m_dirty_server_info;
@@ -57,7 +60,7 @@ namespace QR {
 				req.type = MM::EMMPushRequestType_UpdateServer;
 			}
 
-			MM::m_task_pool->AddRequest(req);
+			scheduler->AddRequest(req.type, req);
 		}
 	}
 	void Peer::Delete(bool timeout) {
@@ -67,13 +70,14 @@ namespace QR {
 	}
 	void Peer::DeleteServer() {
 		if (m_server_pushed) {
+			TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(GetDriver()->getServer()))->getScheduler();
 			MM::MMPushRequest req;
 			m_server_pushed = false;
 			req.peer = this;
 			req.server = m_server_info;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_DeleteServer;
-			MM::m_task_pool->AddRequest(req);
+			scheduler->AddRequest(MM::EMMPushRequestType_DeleteServer, req);
 		}
 		m_sent_game_query = false;
 		

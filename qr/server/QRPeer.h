@@ -2,7 +2,7 @@
 #define _QRPEER_H
 #include "../main.h"
 #include <OS/Net/NetPeer.h>
-#include "MMPush.h"
+#include "tasks/tasks.h"
 
 #define REQUEST_KEY_LEN 4
 #define CHALLENGE_LEN 20
@@ -35,6 +35,7 @@ namespace QR {
 		void SubmitDirtyServer();
 
 		void DeleteServer();
+		void OnConnectionReady();
 	protected:
 
 		bool isTeamString(const char *string);
@@ -43,9 +44,6 @@ namespace QR {
 		OS::CMutex *mp_mutex;
 
 		struct timeval m_last_recv, m_last_ping, m_last_heartbeat;
-
-		bool m_delete_flag;
-		bool m_timeout_flag;
 
 		int m_version;
 

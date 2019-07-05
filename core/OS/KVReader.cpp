@@ -10,6 +10,7 @@ namespace OS {
 	}
 	KVReader::KVReader(std::string kv_pair, char delim, char line_delim, std::map<std::string, std::string> data_map) {
 		m_delimitor = delim;
+		m_line_delimitor = line_delim;
 		m_data_key_map = data_map;
 		std::string token, key, value, line;
 		int i = 0;
@@ -146,11 +147,14 @@ namespace OS {
 		return ret;
 	}
 	std::string KVReader::ToString() const {
-		std::string ret = "" + m_delimitor;
+		std::string ret;
 		std::vector<std::pair<std::string, std::string>>::const_iterator it = m_kv_map.cbegin();
 		while (it != m_kv_map.cend()) {
 			std::pair<std::string, std::string> p = *it;
 			ret += m_delimitor + p.first + m_delimitor + p.second;
+			if (m_line_delimitor != 0) {
+				ret += m_line_delimitor;
+			}
 			it++;
 		}
 		return ret;

@@ -33,9 +33,12 @@ namespace NN {
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
+		void OnPeerMessage(INetPeer *peer);
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();
+
+		INetPeer *CreatePeer(INetIOSocket *socket);
 
 		int m_sd;
 

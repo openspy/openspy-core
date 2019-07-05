@@ -141,7 +141,7 @@ namespace QR {
 			ss << "(" << p.first << ", " << p.second << ") ";
 			it++;
 		}
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", m_sd->address.ToString().c_str(), ss.str().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", getAddress().ToString().c_str(), ss.str().c_str());
 	}
 	void V1Peer::parse_players(OS::KVReader data_parser) {
 		std::stringstream ss;
@@ -168,7 +168,7 @@ namespace QR {
 		}
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", m_sd->address.ToString().c_str(), ss.str().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", getAddress().ToString().c_str(), ss.str().c_str());
 	}
 	void V1Peer::handle_ready_query_state(OS::KVReader data_parser) {
 		std::ostringstream s;
@@ -260,7 +260,7 @@ namespace QR {
 
 		gamename = data_parser.GetValue("gamename");
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] HB(%d): %s", m_sd->address.ToString().c_str(), query_port, data_parser.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB(%d): %s", getAddress().ToString().c_str(), query_port, data_parser.ToString().c_str());
 		//m_server_info.m_game = OS::GetGameByName(gamename.c_str());
 
 		if (m_server_info.m_game.secretkey[0] != 0) {
@@ -268,6 +268,7 @@ namespace QR {
 		}
 		else if(!m_sent_game_query){
 			m_waiting_gamedata = 1;
+			TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(GetDriver()->getServer()))->getScheduler();
 			MM::MMPushRequest req;
 			req.peer = this;
 			req.server = m_server_info;
@@ -276,7 +277,7 @@ namespace QR {
 			m_sent_game_query = true;
 			req.peer->IncRef();
 			req.type = MM::EMMPushRequestType_GetGameInfoByGameName;
-			MM::m_task_pool->AddRequest(req);
+			scheduler->AddRequest(req.type, req);
 		}
 	}
 	void V1Peer::OnGetGameInfo(OS::GameData game_info, int state) {
@@ -311,7 +312,7 @@ namespace QR {
 
 		validation = OS::strip_whitespace(data_parser.GetValue("echo"), true);
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Echo: %s", m_sd->address.ToString().c_str(), data_parser.ToString().c_str());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Echo: %s", getAddress().ToString().c_str(), data_parser.ToString().c_str());
 
 		if (memcmp(validation.c_str(), m_challenge, sizeof(m_challenge)) == 0) {
 			gettimeofday(&m_last_recv, NULL);
@@ -353,7 +354,7 @@ namespace QR {
 		}
 		buffer.WriteBuffer((void *)send_str.c_str(), send_str.length());
 
-		NetIOCommResp resp = GetDriver()->getServer()->getNetIOInterface()->datagramSend(m_sd, buffer);
+		NetIOCommResp resp = GetDriver()->getNetIOInterface()->datagramSend(m_sd, buffer);
 		if (resp.disconnect_flag || resp.error_flag) {
 			Delete();
 		}

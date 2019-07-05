@@ -1,7 +1,5 @@
 #include <OS/OpenSpy.h>
-#include <OS/gamespy/enctypex_decoder.h>
 #include <OS/gamespy/gsmsalg.h>
-#include <OS/gamespy/enctype_shared.h>
 #include <sstream>
 #include "SBDriver.h"
 #include "SBPeer.h"
@@ -25,7 +23,6 @@ namespace SB {
 			m_enctype = 0;
 			m_waiting_gamedata = 0;
 			m_validated = false;
-			m_keyptr = NULL;
 
 			m_sent_validation = false;
 
@@ -33,6 +30,12 @@ namespace SB {
 		}
 		V1Peer::~V1Peer() {
 
+		}
+		void V1Peer::OnConnectionReady() {
+			Peer::OnConnectionReady();
+			if(!m_sent_validation) {
+				send_validation();
+			}
 		}
 		void V1Peer::send_validation() {
 			std::ostringstream s;
@@ -62,7 +65,7 @@ namespace SB {
 			}
 			if (packet_waiting) {
 				OS::Buffer recv_buffer;
-				io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
+				io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 
 				int len = io_resp.comm_len;
 				if (len <= 0) {
@@ -110,10 +113,6 @@ namespace SB {
 				}
 
 				
-			} else {
-				if(!m_sent_validation) {
-					send_validation();
-				}
 			}
 
 			end:
@@ -151,8 +150,8 @@ namespace SB {
 			}
 			resp << "\\error\\" << str;
 
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", m_sd->address.ToString().c_str(), str);
-			SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), true);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", getAddress().ToString().c_str(), str);
+			//SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), true);
 
 			if (disconnect) {
 				Delete();
@@ -204,11 +203,11 @@ namespace SB {
 			else if (strcmp(command.c_str(), "list") == 0) {
 				handle_list(data);
 			} else if(strcmp(command.c_str(), "queryid") == 0) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Ignore queryid %s", m_sd->address.ToString().c_str(), data.c_str());
+				OS::LogText(OS::ELogLevel_Info, "[%s] Ignore queryid %s", getAddress().ToString().c_str(), data.c_str());
 			}
 			else {
 				//send_error(true, "Cannot handle request");
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", m_sd->address.ToString().c_str(), command.c_str());
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown request %s", getAddress().ToString().c_str(), command.c_str());
 			}
 		}
 		void V1Peer::OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
@@ -251,12 +250,14 @@ namespace SB {
 				}
 				m_game = game_data;
 				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (const unsigned char *)m_game.secretkey.c_str(), m_enctype);
-				if(strcmp(realvalidate,m_validation.c_str()) == 0) {
-					send_crypt_header(m_enctype);
-					m_validated = true;
-				} else {
-					send_error(true, "Validation error");
-					return;
+				if(!m_validated) {
+					if(strcmp(realvalidate,m_validation.c_str()) == 0) {
+						send_crypt_header(m_enctype);
+						m_validated = true;
+					} else {
+						send_error(true, "Validation error");
+						return;
+					}
 				}
 			}
 			FlushPendingRequests();
@@ -301,7 +302,7 @@ namespace SB {
 				return;
 			}
 
-			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", m_sd->address.ToString().c_str(), req.req.m_from_game.gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
+			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", getAddress().ToString().c_str(), req.req.m_from_game.gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
 
 			req.extra = (void *)1;
 			m_last_list_req = req.req;
@@ -429,16 +430,18 @@ namespace SB {
 			if(attach_final) {
 				buffer.WriteBuffer((void*)"\\final\\", 7);
 			}
+			if(m_game.secretkey.length() == 0)
+				skip_encryption = true;
 			if (!skip_encryption) {
 				switch (m_enctype) {
 				case 2:
-					m_keyptr = encshare1((unsigned int *)&m_cryptkey_enctype2, (unsigned char *)buffer.GetHead(), (int)buffer.bytesWritten(), m_keyptr);
+					crypt_docrypt(&m_crypt_key_enctype2, (unsigned char *)buffer.GetHead(), (int)buffer.bytesWritten());
 					break;
 				}
 			}
 
 			NetIOCommResp io_resp;
-			io_resp = this->GetDriver()->getServer()->getNetIOInterface()->streamSend(m_sd, buffer);
+			io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
 			if(io_resp.disconnect_flag || io_resp.error_flag) {
 				Delete();
 			}
@@ -451,7 +454,7 @@ namespace SB {
 				for(unsigned int x=0;x<sizeof(cryptkey);x++) {
 					cryptkey[x] = (uint8_t)rand();
 				}
-				encshare4((unsigned char *)&cryptkey, sizeof(cryptkey),(unsigned int *)&m_cryptkey_enctype2);
+				init_crypt_key((unsigned char *)&cryptkey, sizeof(cryptkey),&m_crypt_key_enctype2);
 				for(size_t i=0;i< secretkeylen;i++) {
 					cryptkey[i] ^= m_game.secretkey[i];
 				}

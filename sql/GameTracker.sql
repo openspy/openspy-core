@@ -47,6 +47,7 @@ create table profiles (
 );
 
 create table buddies (
+	`id` int(11) NOT NULL AUTO_INCREMENT,
 	to_profileid int,
 	from_profileid int,
 	foreign key fk_buddies_to_profileid(to_profileid)
@@ -56,6 +57,7 @@ create table buddies (
 );
 
 create table blocks (
+	`id` int(11) NOT NULL AUTO_INCREMENT,
 	to_profileid int,
 	from_profileid int,
 	foreign key fk_blocks_to_profileid(to_profileid)
@@ -74,9 +76,9 @@ CREATE TABLE `persist_data` (
   `profileid` int(11) DEFAULT NULL,
   `gameid` int(11) NOT NULL,
   foreign key fk_pd_profile(profileid)
-  references profiles(id)
+  references profiles(id),
   PRIMARY KEY (`id`)
-)
+);
 
 
 
@@ -90,6 +92,6 @@ CREATE TABLE `persist_keyed_data` (
   `data_index` int(11) DEFAULT NULL,
   `modified` datetime DEFAULT NULL,
   foreign key fk_pkd_profile(profileid)
-  references profiles(id)
+  references profiles(id),
   PRIMARY KEY (`id`)
 )

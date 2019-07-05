@@ -18,14 +18,15 @@ namespace MQ {
     };
 
     class rmqConnection : public IMQInterface {
-        friend class rmqSenderTask;
         public:
             rmqConnection(OS::Address address, std::string username, std::string password, std::string vhost);
+			rmqConnection(rmqConnection *connection);
             ~rmqConnection();
             void sendMessage(std::string exchange, std::string routingKey, std::string message);
-            void setReciever(std::string exchange, std::string routingKey, _MQMessageHandler handler, std::string queueName = "", void *extra = NULL);
+            void setReceiver(std::string exchange, std::string routingKey, _MQMessageHandler handler, std::string queueName = "", void *extra = NULL);
             void declareReady();
             void deleteReciever(std::string exchange, std::string routingKey, std::string queueName = "");
+			IMQInterface *clone();
             static void *ListenThread(OS::CThread *thread);
             static void *ReconnectRetryThread(OS::CThread *thread);
         private:
@@ -34,8 +35,7 @@ namespace MQ {
             void reconnect();
             void spawnReconnectThread();
             void setupRecievers();
-
-            void initConsumers();
+			
             bool handle_amqp_error(amqp_rpc_reply_t x, char const *context);
 
 
@@ -61,6 +61,12 @@ namespace MQ {
             std::map<std::string, amqp_bytes_t> m_queue_map;
 
             bool m_setup_recievers;
+
+			bool m_cloned_connection;
+			amqp_channel_t m_channel_id;
+			amqp_channel_t m_next_channel_id;
+			rmqConnection *mp_parentMQConnection;
+			void setupDefaultQueue();
             
     };
 }

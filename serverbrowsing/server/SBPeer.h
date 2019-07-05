@@ -3,7 +3,7 @@
 #include "../main.h"
 #include <OS/Net/NetPeer.h>
 
-#include "MMQuery.h"
+#include <tasks/tasks.h>
 
 //Maximum length for the SQL filter string
 #define MAX_FILTER_LEN 511
@@ -21,6 +21,8 @@ namespace SB {
 	public:
 		Peer(Driver *driver, INetIOSocket *sd, int version);
 		virtual ~Peer();
+		
+		virtual void OnConnectionReady();
 		
 		virtual void think(bool packet_waiting) = 0;
 
@@ -48,9 +50,6 @@ namespace SB {
 		Driver *mp_driver;
 
 		struct timeval m_last_recv, m_last_ping;
-
-		bool m_delete_flag;
-		bool m_timeout_flag;
 
 		MM::sServerListReq m_last_list_req;
 

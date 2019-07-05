@@ -14,6 +14,7 @@ namespace OS {
 		~HTTPClient();
 		//(GP_PERSIST_BACKEND_URL, GP_PERSIST_BACKEND_CRYPTKEY, send_json)
 		HTTPResponse Post(std::string send, INetPeer *peer); //synchronous HTTP post
+		HTTPResponse Put(std::string send, INetPeer *peer); //synchronous HTTP put
 
 	private:
 		static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);

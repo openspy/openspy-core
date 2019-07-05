@@ -1,3 +1,0 @@
-serverbrowsing.service /lib/systemd/system
-serverbrowsing.conf /etc/init/
-serverbrowsing /etc/init.d/

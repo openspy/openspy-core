@@ -9,7 +9,7 @@
 
 #include <OS/gamespy/gsmsalg.h>
 
-#include "MMPush.h"
+#include <tasks/tasks.h>
 
 #include <time.h>
 

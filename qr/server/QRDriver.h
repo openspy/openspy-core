@@ -36,6 +36,7 @@ namespace QR {
 
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
+		void OnPeerMessage(INetPeer *peer);
 	private:
 		static void *TaskThread(OS::CThread *thread);
 		void TickConnections();

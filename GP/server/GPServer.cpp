@@ -1,3 +1,5 @@
+#include <OS/SharedTasks/tasks.h>
+#include <tasks/tasks.h>
 #include "GPPeer.h"
 #include "GPServer.h"
 #include "GPDriver.h"
@@ -5,7 +7,11 @@ namespace GP {
 	Server::Server() : INetServer() {
 	}
 	void Server::init() {
-		GPBackend::SetupTaskPool(this);
+		mp_auth_tasks = TaskShared::InitAuthTasks(this);
+		mp_user_tasks = TaskShared::InitUserTasks(this);
+		mp_profile_tasks = TaskShared::InitProfileTasks(this);
+		mp_cdkey_tasks = TaskShared::InitCDKeyTasks(this);
+		mp_gp_tasks = GP::InitTasks(this);
 	}
 	void Server::tick() {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
@@ -17,23 +23,8 @@ namespace GP {
 		NetworkTick();
 	}
 	void Server::shutdown() {
-		GPBackend::ShutdownTaskPool();
 	}
-	void Server::SetTaskPool(OS::TaskPool<GPBackend::GPBackendRedisTask, GPBackend::GPBackendRedisRequest> *pool) {
-		const std::vector<GPBackend::GPBackendRedisTask *> task_list = pool->getTasks();
-		std::vector<GPBackend::GPBackendRedisTask *>::const_iterator it = task_list.begin();
-		while (it != task_list.end()) {
-			GPBackend::GPBackendRedisTask *task = *it;
-			std::vector<INetDriver *>::iterator it2 = m_net_drivers.begin();
-			while (it2 != m_net_drivers.end()) {
-				GP::Driver *driver = (GP::Driver *)*it2;
-				task->AddDriver(driver);
-				it2++;
-			}
-			it++;
-		}
-	}
-	INetPeer *Server::findPeerByProfile(int profile_id) {
+	INetPeer *Server::findPeerByProfile(int profile_id, bool inc_ref) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		INetPeer *ret;
 		GP::Driver *driver;
@@ -41,6 +32,9 @@ namespace GP {
 			driver = (GP::Driver *)*it;
 			ret = driver->FindPeerByProfileID(profile_id);
 			if (ret) {
+				if (inc_ref) {
+					ret->IncRef();
+				}
 				return ret;
 			}
 			it++;

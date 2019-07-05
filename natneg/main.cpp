@@ -7,7 +7,7 @@
 #include "server/NNServer.h"
 #include "server/NNPeer.h"
 #include "server/NNDriver.h"
-#include "server/NNBackend.h"
+
 INetServer *g_gameserver = NULL;
 bool g_running = true;
 
@@ -48,8 +48,9 @@ int main() {
 	std::vector<std::string>::iterator it = drivers.begin();
 	while (it != drivers.end()) {
 		std::string s = *it;
+		bool proxyFlag = false;
 
-		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s);
+		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 		OS::Address address = addresses.front();
 		NN::Driver *driver = new NN::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort());
 		OS::LogText(OS::ELogLevel_Info, "Adding NN Driver: %s\n", address.ToString().c_str());
@@ -63,7 +64,6 @@ int main() {
 	}
     
     delete g_gameserver;
-    NN::NNQueryTask::Shutdown();
 	OS::Shutdown();
     return 0;
 }
