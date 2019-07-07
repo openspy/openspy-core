@@ -108,8 +108,11 @@ namespace NN {
 
 			if(next_public_address == to_address) {
 				connect_address = next_private_address;
+				if(connect_address.GetPort() == 0) {
+					connect_address.port = next_public_address.port;
+				}
 			} else {
-				connect_address = next_private_address;
+				connect_address = next_public_address;
 			}
 			packet.version = summary.version;;
 			packet.cookie = htonl(summary.cookie);
