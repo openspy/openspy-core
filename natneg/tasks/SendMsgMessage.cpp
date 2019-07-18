@@ -106,7 +106,8 @@ namespace NN {
 			NN::DetermineNatType(nat);
 			NN::DetermineNextAddress(nat, next_public_address, next_private_address);
 
-			if(next_public_address == to_address) {
+
+			if(next_public_address.ip == to_address.ip) {
 				connect_address = next_private_address;
 				if(connect_address.GetPort() == 0) {
 					connect_address.port = next_public_address.port;
