@@ -1,5 +1,4 @@
 #include "NNServer.h"
-#include "NNPeer.h"
 #include "NNDriver.h"
 #include <tasks/tasks.h>
 #include <iterator>
@@ -23,16 +22,15 @@ namespace NN {
 	void Server::shutdown() {
 
 	}
-
-	std::vector<NN::Peer *> Server::FindConnections(NNCookieType cookie, int client_idx, bool inc_ref) {
-		std::vector<NN::Peer *> peers;
+	NN::Driver *Server::findDriverByAddress(OS::Address address) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {
-			NN::Driver *driver = (NN::Driver *)*it;
-			std::vector<NN::Peer *> driver_peers = driver->find_clients(cookie, client_idx, inc_ref);
-			peers.insert(peers.end(), driver_peers.begin(), driver_peers.end());
+			INetDriver *driver = *it;
+			if(driver->getListenerSocket()->address == address) {
+				return (NN::Driver *)driver;
+			}
 			it++;
 		}
-		return peers;
+		return NULL;
 	}
 }

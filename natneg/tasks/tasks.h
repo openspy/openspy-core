@@ -17,23 +17,19 @@ namespace NN {
     class Server;
     class Peer;
     enum ENNRequestType {
-        ENNRequestType_SubmitClient,
-        ENNRequestType_PerformERTTest_IPUnsolicited,
-        ENNRequestType_PerformERTTest_IPPortUnsolicited
+        ENNRequestType_SubmitJson
     };
     class NNRequestData {
         public:
-            NN::Peer *peer;
-            NN::ConnectionSummary summary;
+            std::string send_string;
 			TaskSchedulerRequestType type;
     };
     extern const char *nn_channel_exchange;
     extern const char *nn_channel_routingkey;
 
-    bool PerformSubmit(NNRequestData, TaskThreadData *);
-    bool PerformERTTest(NNRequestData, TaskThreadData *);
+    bool PerformSubmitJson(NNRequestData, TaskThreadData *);
 
-    bool Handle_SendMsg(TaskThreadData *, std::string message);
+    bool Handle_HandleRecvMessage(TaskThreadData *, std::string message);
     ConnectionSummary LoadConnectionSummary(Redis::Connection *redis_connection, std::string redis_key);
     TaskScheduler<NNRequestData, TaskThreadData> * InitTasks(INetServer *server);
 }

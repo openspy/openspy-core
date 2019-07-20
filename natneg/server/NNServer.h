@@ -11,18 +11,15 @@
 
 #define NATNEG_PORT 27901
 namespace NN {
-	class NNQueryTask;
-	class Peer;
-	class NNConnectionSummary;
-	class NNBackendRequest;
+	class Driver;
 	class Server : public INetServer {
 		public:
 			Server();
 			void init();
 			void tick();
 			void shutdown();
-			std::vector<NN::Peer *> FindConnections(NNCookieType cookie, int client_idx, bool inc_ref = false);
 			TaskScheduler<NNRequestData, TaskThreadData> *getScheduler() { return mp_task_scheduler; };
+			NN::Driver *findDriverByAddress(OS::Address address);
 		private:
 			TaskScheduler<NNRequestData, TaskThreadData> *mp_task_scheduler;
 	};

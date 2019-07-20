@@ -22,6 +22,7 @@ namespace MQ {
             rmqConnection(OS::Address address, std::string username, std::string password, std::string vhost);
 			rmqConnection(rmqConnection *connection);
             ~rmqConnection();
+            void sendMessage(MQMessageProperties properties, std::string message);
             void sendMessage(std::string exchange, std::string routingKey, std::string message);
             void setReceiver(std::string exchange, std::string routingKey, _MQMessageHandler handler, std::string queueName = "", void *extra = NULL);
             void declareReady();

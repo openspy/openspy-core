@@ -12,8 +12,11 @@ file (GLOB SERVER_HDRS "server/*.h")
 file (GLOB TASKS_HDRS "tasks/*.h")
 file (GLOB TASKS_SRCS "tasks/*.cpp")
 
+file (GLOB HANDLERS_HDRS "server/handlers/*.h")
+file (GLOB HANDLERS_SRCS "server/handlers/*.cpp")
 
-set (ALL_SRCS ${MAIN_SRCS} ${MAIN_HDRS} ${SERVER_SRCS} ${SERVER_HDRS} ${TASKS_SRCS} ${TASKS_HDRS})
+
+set (ALL_SRCS ${MAIN_SRCS} ${MAIN_HDRS} ${SERVER_SRCS} ${SERVER_HDRS} ${TASKS_SRCS} ${TASKS_HDRS} ${HANDLERS_SRCS} ${HANDLERS_HDRS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 

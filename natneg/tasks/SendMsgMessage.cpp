@@ -1,7 +1,7 @@
 #include <OS/Config/AppConfig.h>
 #include <OS/Task/TaskScheduler.h>
 #include <server/NNServer.h>
-#include <server/NNPeer.h>
+#include <server/NNDriver.h>
 #include <server/NATMapper.h>
 #include <algorithm>
 
@@ -14,41 +14,141 @@
 
 #include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 
+#include <jansson.h>
+
 namespace NN {
-    bool Handle_SendMsg(TaskThreadData  *thread_data, std::string message) {
-			NN::Server *server = (NN::Server *)thread_data->server;
+	/*
+	{"type":"connect","to_address":"127.0.0.1:51652",
+	"data":
+	[
+		{"from_address":"127.0.0.1:58435","driver_address":"0.0.0.0:27901","hostname":"OS-dev","gamename":"gmtest","version":4,"type":"init","cookie":666,
+		
+		"data":{"porttype":0,"clientindex":0,"usegameport":1,"private_address":"127.0.1.1:0"}}
+		,{"from_address":"127.0.0.1:52566","driver_address":"0.0.0.0:27901","hostname":"OS-dev","gamename":"gmtest","version":4,"type":"init","cookie":666,
+		
+		"data":{"porttype":1,"clientindex":0,"usegameport":1,"private_address":"127.0.1.1:0"}}
+		,{"from_address":"127.0.0.1:52566","driver_address":"0.0.0.0:27901","hostname":"OS-dev","gamename":"gmtest","version":4,"type":"init","cookie":666,
+		
+		"data":{"porttype":2,"clientindex":0,"usegameport":1,"private_address":"127.0.1.1:58435"}}
+		,{"from_address":"127.0.0.1:52566","driver_address":"0.0.0.0:27901","hostname":"OS-dev","gamename":"gmtest","version":4,"type":"init","cookie":666,
+		
+		"data":{"porttype":3,"clientindex":0,"usegameport":1,"private_address":"127.0.1.1:58435"}}]}
+	*/
+	ConnectionSummary LoadSummaryFromJson(json_t *data) {
+		json_t *j = NULL;
+		json_t *first_item = json_array_get(data, 0);
+		json_t *last_item;
+		ConnectionSummary summary;
 
-			std::map<std::string, std::string> kv_data = OS::KeyStringToMap(message);
+		j = json_object_get(first_item, "cookie");
+		summary.cookie = json_integer_value(j);
 
-			if (kv_data.find("msg") != kv_data.end()) {
-				std::string msg = kv_data["msg"];
-				if (msg.compare("final_peer") == 0) {
-					NNCookieType cookie = (NNCookieType)atoi(kv_data["cookie"].c_str());
-					int client_idx = atoi(kv_data["client_index"].c_str());
-					int opposite_client_idx = client_idx == 0 ? 1 : 0;
-					std::vector<NN::Peer *> peer_list = server->FindConnections(cookie, opposite_client_idx, true);
+		j = json_object_get(first_item, "version");
+		summary.version = json_integer_value(j);
 
-					std::ostringstream nn_key_ss;
-					nn_key_ss << "nn_client_" << client_idx << "_" << cookie;
+		summary.address_hits = json_array_size(data);
+		summary.required_addresses = summary.address_hits; //XXX: remove this
+		last_item = json_array_get(data, summary.address_hits - 1);
 
-					ConnectionSummary summary = LoadConnectionSummary(thread_data->mp_redis_connection, nn_key_ss.str());
-					NAT nat;
-					OS::Address next_public_address, next_private_address;
-					NN::LoadSummaryIntoNAT(summary, nat);
-					NN::DetermineNatType(nat);
-					NN::DetermineNextAddress(nat, next_public_address, next_private_address);
+		j = json_object_get(first_item, "usegameport");
+		summary.usegameport = json_integer_value(j);
 
-					std::vector<NN::Peer *>::iterator it = peer_list.begin();
+		j = json_object_get(last_item, "data");
+		j = json_object_get(j, "private_address");
+		summary.private_address = OS::Address(json_string_value(j));
 
-					while (it != peer_list.end()) {
-						NN::Peer *peer = *it;
-						peer->OnGotPeerAddress(next_public_address, next_private_address, nat);
-						peer->DecRef();
-						it++;
-					}
-				}
-			
+		for(int i=0;i<summary.address_hits;i++) {
+			j = json_array_get(data, i);
+			if(j != NULL) {
+				j = json_object_get(j, "from_address");
+				summary.m_port_type_addresses[i] = OS::Address(json_string_value(j));
 			}
-			return true;
-    }
+		}
+
+		return summary;
+	}
+	void Handle_ConnectPacket(json_t *root, NN::Driver *driver) {
+		json_t *to_address_json = json_object_get(root, "to_address");
+		OS::Address to_address(json_string_value(to_address_json));
+
+		
+
+		json_t *data = json_object_get(root, "data");
+		json_t *error = json_object_get(data, "finished");
+
+		NatNegPacket packet;
+		memcpy(&packet.magic, NNMagicData, NATNEG_MAGIC_LEN);
+		
+		packet.packettype = NN_CONNECT;
+
+		if(error != NULL) {
+			json_t *j = json_object_get(data, "cookie");
+			if(j != NULL) {
+				packet.cookie = htonl(json_integer_value(j));
+			} else {
+				packet.cookie = 0;
+			}
+				
+			j = json_object_get(root, "version");
+			packet.version = json_integer_value(j);
+			packet.Packet.Connect.finished = json_integer_value(error);
+			packet.Packet.Connect.gotyourdata = 0;
+			packet.Packet.Connect.remoteIP = 0;
+			packet.Packet.Connect.remotePort = 0;
+			driver->SendPacket(to_address, &packet);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Send Connection Error: %d", to_address.ToString().c_str(), packet.Packet.Connect.finished);
+		} else {
+			ConnectionSummary summary = LoadSummaryFromJson(data);
+
+			NAT nat;
+			OS::Address next_public_address, next_private_address, connect_address;
+			NN::LoadSummaryIntoNAT(summary, nat);
+			NN::DetermineNatType(nat);
+			NN::DetermineNextAddress(nat, next_public_address, next_private_address);
+
+
+			if(next_public_address.ip == to_address.ip) {
+				connect_address = next_private_address;
+				if(connect_address.GetPort() == 0) {
+					connect_address.port = next_public_address.port;
+				}
+			} else {
+				connect_address = next_public_address;
+			}
+			packet.version = summary.version;;
+			packet.cookie = htonl(summary.cookie);
+			packet.Packet.Connect.remoteIP = connect_address.GetIP();
+			packet.Packet.Connect.remotePort = htons(connect_address.GetPort());
+
+			packet.Packet.Connect.finished = 0;
+			packet.Packet.Connect.gotyourdata = 0;
+
+			driver->SendPacket(to_address, &packet);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s)", to_address.ToString().c_str(), connect_address.ToString().c_str());
+		}
+	}
+	bool Handle_HandleRecvMessage(TaskThreadData  *thread_data, std::string message) {
+		NN::Server *server = (NN::Server *)thread_data->server;
+		json_t *root = json_loads(message.c_str(), 0, NULL);
+		if(!root) return false;
+
+		json_t *type = json_object_get(root, "type");
+		if(type) {
+			const char *type_str = json_string_value(type);
+			json_t *driver_address_json = json_object_get(root, "driver_address");
+			json_t *to_address_json = json_object_get(root, "to_address");
+
+			OS::Address driver_address;
+			driver_address = OS::Address(json_string_value(driver_address_json));
+			
+
+			NN::Driver *driver = server->findDriverByAddress(driver_address);
+			if(stricmp(type_str, "connect") == 0) {
+				Handle_ConnectPacket(root, driver);
+			}
+		}
+
+		json_decref(root);
+		return true;
+	}
 }
