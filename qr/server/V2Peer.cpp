@@ -102,13 +102,14 @@ namespace QR {
 		}
 	}
 	void V2Peer::handle_keepalive(OS::Buffer &buffer) {
-		uint32_t key = buffer.ReadInt();
-		if (key == *(uint32_t *)&m_instance_key) {
-			buffer.WriteByte(QR_MAGIC_1);
-			buffer.WriteByte(QR_MAGIC_2);
-			buffer.WriteInt(key);
-			SendPacket(buffer);
-		}
+		OS::Buffer send_buffer;
+		struct timeval current_time;
+		send_buffer.WriteByte(QR_MAGIC_1);
+		send_buffer.WriteByte(QR_MAGIC_2);
+		send_buffer.WriteByte(PACKET_KEEPALIVE);
+		send_buffer.WriteBuffer((uint8_t *)&m_instance_key, sizeof(m_instance_key));
+		send_buffer.WriteInt(current_time.tv_sec);
+		SendPacket(send_buffer);
 	}
 	void V2Peer::handle_heartbeat(OS::Buffer &buffer) {
 		unsigned int i = 0;
@@ -325,6 +326,7 @@ namespace QR {
 
 		buffer.WriteByte(PACKET_ADDERROR);
 		buffer.WriteBuffer((uint8_t *)&m_instance_key, sizeof(m_instance_key));
+		buffer.WriteByte((char)die);
 		buffer.WriteNTS(vsbuff);
 
 		SendPacket(buffer);
