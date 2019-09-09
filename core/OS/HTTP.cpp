@@ -11,7 +11,8 @@ namespace OS {
 		}
 		size_t realsize = size * nmemb;                             /* calculate buffer size */
 		curl_data *data = (curl_data *)userp;
-		data->buffer += OS::strip_whitespace((const char *)contents).c_str();
+		std::string buffer = std::string((const char *)contents, realsize);
+		data->buffer += OS::strip_whitespace(buffer.c_str()).c_str();
 		return realsize;
 	}
 	HTTPClient::~HTTPClient() {
