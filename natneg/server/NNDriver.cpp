@@ -43,36 +43,77 @@ namespace NN {
 					//log error??
 				}
 				else {
-					std::string gamename;
-					NatNegPacket *packet = (NatNegPacket *)dgram.buffer.GetHead();
-					if(memcmp(&NNMagicData,&packet->magic, NATNEG_MAGIC_LEN) != 0) {
-						//skip invalid packet
-						it++;
-						continue;
-					}
-					//PROCESS PACKET HERE
-					int packetSize = packetSizeFromType(packet->packettype);
+					NatNegPacket packet;
 
-					size_t len = dgram.buffer.readRemaining();
-					
-					if (((char *)dgram.buffer.GetHead())[len-1] == 0) {
-						gamename = (const char *)&((char *)dgram.buffer.GetHead())[packetSize];
-					}
-					switch(packet->packettype) {
-						case NN_INIT:
-							handle_init_packet(dgram.address, packet, gamename);
-						break;
-						case NN_CONNECT_ACK:
-							handle_connect_ack_packet(dgram.address, packet, gamename);
-						break;
-						case NN_ADDRESS_CHECK:
-							handle_address_check_packet(dgram.address, packet, gamename);
-						break;
-						case NN_REPORT:
-							handle_report_packet(dgram.address, packet, gamename);
-						break;
-					}
-					
+					/*
+	typedef struct _NatNegPacket {
+		// Base members:
+		uint8_t magic[NATNEG_MAGIC_LEN];
+		uint8_t version;
+		uint8_t packettype;
+		uint32_t cookie;
+
+		union
+		{
+			InitPacket Init;
+			ConnectPacket Connect;
+			ReportPacket Report;
+			PreinitPacket Preinit;
+		} Packet;
+
+	} NatNegPacket;
+					*/
+					dgram.buffer.resetReadCursor();
+					//PROCESS PACKET HERE
+					do {
+						void *begin = dgram.buffer.GetReadCursor();
+						dgram.buffer.ReadBuffer(&packet.magic, NATNEG_MAGIC_LEN);
+						if(memcmp(&NNMagicData,&packet.magic, NATNEG_MAGIC_LEN) != 0) {
+							//skip invalid packet
+							printf("INVALID PACKET\n");
+							break;
+						}
+						packet.version = dgram.buffer.ReadByte();
+						packet.packettype = dgram.buffer.ReadByte();
+						packet.cookie = dgram.buffer.ReadInt();
+
+						int packetSize = packetSizeFromType(packet.packettype);
+						
+
+						std::string gamename = "";
+						size_t new_pos = 0;
+						switch(packet.packettype) {
+							case NN_INIT:
+								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+								gamename = dgram.buffer.ReadNTS();
+								handle_init_packet(dgram.address, &packet, gamename);
+							break;
+							case NN_CONNECT_ACK:
+								handle_connect_ack_packet(dgram.address, &packet, gamename);
+							break;
+							case NN_ADDRESS_CHECK:
+								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+								new_pos = ((size_t)begin-(size_t)dgram.buffer.GetHead());
+								new_pos += sizeof(packet);
+								dgram.buffer.SetReadCursor(new_pos);
+								handle_address_check_packet(dgram.address, &packet, gamename);
+							break;
+							case NN_REPORT:
+								handle_report_packet(dgram.address, &packet, gamename);
+							break;
+							case NN_NATIFY_REQUEST:
+								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+								new_pos = ((size_t)begin-(size_t)dgram.buffer.GetHead());
+								new_pos += sizeof(packet);
+								dgram.buffer.SetReadCursor(new_pos);
+								handle_natify_packet(dgram.address, &packet, gamename);
+							break;
+							case NN_ERTACK:
+								handle_ert_ack_packet(dgram.address, &packet, gamename);
+							break;
+						}
+
+					} while(dgram.buffer.readRemaining() > 0);
 				}
 				it++;
 			}
@@ -121,6 +162,7 @@ namespace NN {
 				size = REPORTPACKET_SIZE;
 				break;
 		}
+		size -= BASEPACKET_SIZE;
 		return size;
 	}
 	void Driver::SendPacket(OS::Address to,NatNegPacket *packet) {
@@ -128,7 +170,7 @@ namespace NN {
 		client_socket.address = to;
 		client_socket.shared_socket = true;
 
-		int size = packetSizeFromType(packet->packettype);
+		int size = packetSizeFromType(packet->packettype) + BASEPACKET_SIZE;
 		memcpy(&packet->magic, NNMagicData, NATNEG_MAGIC_LEN);
 
 		OS::Buffer buffer(size);

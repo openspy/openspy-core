@@ -53,7 +53,8 @@ create table buddies (
 	foreign key fk_buddies_to_profileid(to_profileid)
 	references profiles(id),
 	foreign key fk_buddies_from_profileid(from_profileid)
-	references profiles(id)
+	references profiles(id),
+  PRIMARY KEY (`id`)
 );
 
 create table blocks (
@@ -63,7 +64,8 @@ create table blocks (
 	foreign key fk_blocks_to_profileid(to_profileid)
 	references profiles(id),
 	foreign key fk_blocks_from_profileid(from_profileid)
-	references profiles(id)
+	references profiles(id),
+  PRIMARY KEY (`id`)
 );
 
 

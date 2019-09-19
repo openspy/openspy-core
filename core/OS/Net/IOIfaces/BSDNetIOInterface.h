@@ -237,7 +237,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				}
 
 				dgram.address = in_addr;
-				dgram.buffer = OS::Buffer(len);
+				//dgram.buffer = OS::Buffer(len);
 				dgram.buffer.WriteBuffer(recvbuf, len);
 
 				dgram.buffer.resetReadCursor();

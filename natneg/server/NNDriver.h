@@ -35,6 +35,9 @@ namespace NN {
 		void handle_connect_ack_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
 		void handle_address_check_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
 		void handle_report_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
+		void handle_preinit_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
+		void handle_natify_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
+		void handle_ert_ack_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
 
 
 		struct timeval m_server_start;
