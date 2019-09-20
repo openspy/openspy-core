@@ -45,24 +45,6 @@ namespace NN {
 				else {
 					NatNegPacket packet;
 
-					/*
-	typedef struct _NatNegPacket {
-		// Base members:
-		uint8_t magic[NATNEG_MAGIC_LEN];
-		uint8_t version;
-		uint8_t packettype;
-		uint32_t cookie;
-
-		union
-		{
-			InitPacket Init;
-			ConnectPacket Connect;
-			ReportPacket Report;
-			PreinitPacket Preinit;
-		} Packet;
-
-	} NatNegPacket;
-					*/
 					dgram.buffer.resetReadCursor();
 					//PROCESS PACKET HERE
 					do {
@@ -89,6 +71,7 @@ namespace NN {
 								handle_init_packet(dgram.address, &packet, gamename);
 							break;
 							case NN_CONNECT_ACK:
+								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
 								handle_connect_ack_packet(dgram.address, &packet, gamename);
 							break;
 							case NN_ADDRESS_CHECK:
@@ -99,6 +82,7 @@ namespace NN {
 								handle_address_check_packet(dgram.address, &packet, gamename);
 							break;
 							case NN_REPORT:
+								dgram.buffer.ReadBuffer(&packet.Packet.Report, packetSize);
 								handle_report_packet(dgram.address, &packet, gamename);
 							break;
 							case NN_NATIFY_REQUEST:
@@ -109,6 +93,7 @@ namespace NN {
 								handle_natify_packet(dgram.address, &packet, gamename);
 							break;
 							case NN_ERTACK:
+								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
 								handle_ert_ack_packet(dgram.address, &packet, gamename);
 							break;
 						}
