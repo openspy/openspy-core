@@ -14,17 +14,9 @@ namespace NN {
 		gettimeofday(&m_server_start, NULL);
 
 		mp_mutex = OS::CreateMutex();
-		mp_thread = OS::CreateThread(Driver::TaskThread, this, true);
 	}
 	Driver::~Driver() {
-		delete mp_thread;
 		delete mp_mutex;
-	}
-	void *Driver::TaskThread(OS::CThread *thread) {
-		Driver *driver = (Driver *)thread->getParams();
-		for (;;) {
-			OS::Sleep(DRIVER_THREAD_TIME);
-		}
 	}
 	void Driver::think(bool listener_waiting) {
 		mp_mutex->lock();

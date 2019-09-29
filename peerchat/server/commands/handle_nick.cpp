@@ -16,17 +16,23 @@
 namespace Peerchat {
     void Peer::OnNickReserve(TaskResponse response_data, Peer *peer) {
         if(response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
-            printf("VALID NICK - %s\n", response_data.profile.uniquenick.c_str());
-            peer->m_user_details.nick = response_data.profile.uniquenick;
-            peer->OnUserMaybeRegistered();
+            if(peer->m_sent_client_init) {
+                Server *server = (Server *)peer->mp_driver->getServer();
+                server->SendUserMessageToVisibleUsers(peer->GetUserDetails().ToString(), "NICK", response_data.profile.uniquenick);
+                peer->m_user_details.nick = response_data.profile.uniquenick;
+            } else {
+                peer->m_user_details.nick = response_data.profile.uniquenick;
+                peer->OnUserMaybeRegistered();
+            }
+            
         } else {
-            printf("INVALID NICK\n");
+            peer->send_numeric(433,"Nickname is already in use", false, response_data.profile.uniquenick);
         }
     }
     void Peer::handle_nick(std::vector<std::string> data_parser) {
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
-        req.type = EPeerchatRequestType_ReserveNickname;
+        req.type = EPeerchatRequestType_SetUserDetails;
         req.peer = this;
         req.profile.uniquenick = data_parser.at(1);
         req.peer->IncRef();

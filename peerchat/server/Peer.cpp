@@ -56,6 +56,7 @@ namespace Peerchat {
 
 				std::string command = command_items.at(0);
 
+				command_upper = "";
 				std::transform(command.begin(),command.end(),std::back_inserter(command_upper),toupper);
 				
 				std::vector<CommandEntry>::iterator it2 = m_commands.begin();
@@ -66,6 +67,7 @@ namespace Peerchat {
 							if(m_user.id == 0) break;
 						}
 						command_found = true;
+						printf("found command: %s\n", entry.name.c_str());
 						(*this.*entry.callback)(command_items);
 						break;
 					}
@@ -123,6 +125,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("PING", false, &Peer::handle_ping));
 		commands.push_back(CommandEntry("OPER", false, &Peer::handle_oper));
 		commands.push_back(CommandEntry("PRIVMSG", false, &Peer::handle_privmsg));
+		commands.push_back(CommandEntry("JOIN", false, &Peer::handle_join));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name) {
@@ -133,7 +136,11 @@ namespace Peerchat {
 		}
 
 		if(target_name.size()) {
-			name = target_name;
+			std::string nick = "*";
+			if(m_user_details.nick.length()) {
+				nick = m_user_details.nick;
+			}
+			name = nick + " " + target_name;
 		}
 		
 		s << ":" << ((Peerchat::Server *)GetDriver()->getServer())->getServerName() << " " << std::setfill('0') << std::setw(3) << num << " " << name << " ";

@@ -43,7 +43,6 @@ namespace NN {
 		struct timeval m_server_start;
 
 		OS::CMutex *mp_mutex;
-		OS::CThread *mp_thread;
 
 		INetIOSocket *mp_socket;
 	};

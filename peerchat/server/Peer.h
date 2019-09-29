@@ -74,6 +74,10 @@ namespace Peerchat {
 		void OnUserMaybeRegistered();
 		UserSummary GetUserDetails() { return m_user_details; };
 		void OnRecvDirectMsg(std::string from, std::string msg, std::string type);
+		int GetBackendId() { return m_user_details.id; };
+
+		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "");
+		void send_message(std::string messageType, std::string messageContent, std::string from = "", std::string to = "");
 	private:
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void OnNickReserve(TaskResponse response_data, Peer *peer);
@@ -83,12 +87,10 @@ namespace Peerchat {
 		void handle_ping(std::vector<std::string> data_parser);		
 		void handle_oper(std::vector<std::string> data_parser);		
 		void handle_privmsg(std::vector<std::string> data_parser);
+		void handle_join(std::vector<std::string> data_parser);
 
-		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "");
-		void send_message(std::string messageType, std::string messageContent, std::string from = "", std::string to = "");
 
 		OS::GameData m_game;
-		Driver *mp_driver;
 		
 		struct timeval m_last_recv, m_last_ping;
 

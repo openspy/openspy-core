@@ -21,6 +21,11 @@ namespace Peerchat {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *GetPeerchatTask() { return mp_peerchat_tasks; };
 
 		void OnUserMessage(std::string type, std::string from, std::string to, std::string message);
+		void OnChannelMessage(std::string type, std::string from, std::string to, std::string message);
+
+		//send 1 time message to anyone who is in a at least 1 channel with a user
+		// :CHC!~CHC@unaffiliated/chc NICK :test611
+		void SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf = true);
 	private:
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *mp_auth_tasks;
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *mp_user_tasks;

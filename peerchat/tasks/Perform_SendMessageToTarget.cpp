@@ -18,7 +18,6 @@ namespace Peerchat {
     }
     
     bool Perform_SendMessageToTarget(PeerchatBackendRequest request, TaskThreadData *thread_data) {
-        OS::Sleep(1000);
         printf("** SEND MSG: %s\n", request.message.c_str());
 		const char *base64 = OS::BinToBase64Str((uint8_t *)request.message.c_str(), request.message.length());
 		std::string b64_string = base64;
