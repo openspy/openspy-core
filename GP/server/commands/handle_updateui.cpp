@@ -40,11 +40,14 @@ namespace GP {
 			if(dpass)
 				free((void *)dpass);
 		}
+		else if (data_parser.HasKey("password")) {
+			m_user.password = data_parser.GetValue("password");
+		}
 		
 		request.search_params = m_user;
 		request.type = TaskShared::EUserRequestType_Update;
-		request.extra = this;
-		//request.peer = this;
+		request.extra = NULL;
+		request.peer = this;
 		//IncRef();
 		request.callback = NULL;
 		request.search_params = m_user;
