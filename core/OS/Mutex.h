@@ -1,6 +1,9 @@
 #ifndef _OS_MUTEX_H
 #define _OS_MUTEX_H
 #include <stdint.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 namespace OS {
 	class CMutex {
 		public:

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include "TCPDriver.h"
 
-TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders, const char *x509_path = NULL, const char *rsa_priv_path = NULL, SSLNetIOIFace::ESSL_Type ssl_version = SSLNetIOIFace::ESSL_None) : INetDriver(server) {
+TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders, const char *x509_path, const char *rsa_priv_path, SSLNetIOIFace::ESSL_Type ssl_version) : INetDriver(server) {
     OS::Address bind_address(0, port);
     if(x509_path != NULL && rsa_priv_path != NULL  && ssl_version != SSLNetIOIFace::ESSL_None) {
         mp_net_io_interface = (INetIOInterface<> *)new SSLNetIOIFace::SSLNetIOInterface(ssl_version, rsa_priv_path, x509_path);
@@ -54,7 +54,7 @@ void TCPDriver::think(bool listener_waiting) {
     }
 }
 
-const std::vector<INetPeer *> TCPDriver::getPeers(bool inc_ref = false) {
+const std::vector<INetPeer *> TCPDriver::getPeers(bool inc_ref) {
     mp_mutex->lock();
     std::vector<INetPeer *> peers;
     std::vector<INetPeer *>::iterator it = m_connections.begin();
