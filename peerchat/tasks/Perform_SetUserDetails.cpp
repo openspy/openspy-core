@@ -52,6 +52,7 @@ namespace Peerchat {
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d nick %s", response.summary.id, request.summary.nick.c_str());
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d realname %s", response.summary.id, request.summary.realname.c_str());
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d hostname %s", response.summary.id, request.summary.hostname.c_str());
+                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d address %s", response.summary.id, request.peer->getAddress().ToString(true));
 
                 if(request.profile.uniquenick.length() != 0) {
                     Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());

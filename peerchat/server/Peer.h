@@ -44,7 +44,7 @@ namespace Peerchat {
 			OS::Address address;
 			int gameid;
 			std::string ToString() {
-				return nick;
+				return nick + "!" + username + "@" + address.ToString(true);
 			};
 	};
 

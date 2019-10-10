@@ -27,11 +27,17 @@ namespace Peerchat {
 			EPeerchatRequestType_LookupChannelDetails,
 			EPeerchatRequestType_UserJoinChannel,
 	};
-  	class ChannelSummary {
+	class ChannelSummary {
 		public:
 		std::string channel_name;
 		int channel_id;
 		struct timeval created_at;
+	};
+	class ChannelUserSummary {
+		public:
+		int channel_id;
+		int user_id;
+		UserSummary userSummary;
 	};
   class TaskResponse {
 		public:
@@ -67,6 +73,20 @@ namespace Peerchat {
 	bool Handle_ChannelMessage(TaskThreadData *thread_data, std::string message);
 
   	TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server);
+
+	//user
+	UserSummary LookupUserById(TaskThreadData *thread_data, int user_id);
+	//
+
+	//channel
+	int GetPeerchatChannelID(TaskThreadData *thread_data);
+	ChannelSummary LookupChannelById(TaskThreadData *thread_data, int channel_id);
+	ChannelSummary CreateChannel(TaskThreadData *thread_data, std::string name);
+	ChannelSummary GetChannelSummaryByName(TaskThreadData *thread_data, std::string name);
+	void AddUserToChannel(TaskThreadData *thread_data, int user_id, int channel_id);
+	std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id);
+	extern const char *mp_pk_channel_name;
+	//
 
 	extern const char *peerchat_channel_exchange;
     extern const char *peerchat_client_message_routingkey;

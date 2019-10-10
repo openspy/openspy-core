@@ -112,6 +112,9 @@ namespace MM {
 		//skip deleted servers
 		if (!include_deleted) {
 			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s deleted", entry_name.c_str());
+			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+				return;
+			}
 			v = reply.values[0];
 			if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) {
 				return;
