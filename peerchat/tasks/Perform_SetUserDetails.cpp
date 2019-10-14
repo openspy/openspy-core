@@ -29,7 +29,7 @@ namespace Peerchat {
             nick_update = true;
         }
 
-        Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS usernick_%s", request.profile.uniquenick.c_str());
+        Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS usernick_%s", request.summary.nick.c_str());
         Redis::Value v;
 
         bool nick_exists = false;
@@ -42,35 +42,39 @@ namespace Peerchat {
             }
         }
 
+        if(request.summary.nick.compare(userDetails.nick) == 0) {
+            nick_exists = false;
+        }
+
         if(!nick_exists) {
+            response.summary.nick = request.summary.nick;
             if(nick_update) {
                 Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());
 
-                Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", request.profile.uniquenick.c_str(), response.summary.id);
+                Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", request.summary.nick.c_str(), response.summary.id);
             } else {
+                response.summary.nick = userDetails.nick;
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d username %s", response.summary.id, request.summary.username.c_str());
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d nick %s", response.summary.id, request.summary.nick.c_str());
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d realname %s", response.summary.id, request.summary.realname.c_str());
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d hostname %s", response.summary.id, request.summary.hostname.c_str());
-                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d address %s", response.summary.id, request.peer->getAddress().ToString(true));
+                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d address %s", response.summary.id, request.peer->getAddress().ToString(true).c_str());
 
-                if(request.profile.uniquenick.length() != 0) {
+                if(request.summary.nick.length() != 0) {
                     Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());
-                    Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", request.profile.uniquenick.c_str(), response.summary.id);
+                    Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", request.summary.nick.c_str(), response.summary.id);
                 }
             }
 
             Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE user_%d %d", response.summary.id, USER_EXPIRE_TIME);
 
-            if(request.profile.uniquenick.length() != 0)
-                Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE usernick_%s %d", request.profile.uniquenick.c_str(), USER_EXPIRE_TIME);
+            if(request.summary.nick.length() != 0)
+                Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE usernick_%s %d", request.summary.nick.c_str(), USER_EXPIRE_TIME);
 
             response.error_details.response_code = TaskShared::WebErrorCode_Success;
         } else {
             response.error_details.response_code = TaskShared::WebErrorCode_UniqueNickInUse;
         }
-
-        response.profile.uniquenick = request.profile.uniquenick;
         
         if(request.callback)
             request.callback(response, request.peer);

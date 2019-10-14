@@ -16,6 +16,7 @@
 namespace Peerchat {
 	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		m_sent_client_init = false;
+		m_user_details.id = 0;
 		RegisterCommands();
 	}
 	Peer::~Peer() {
@@ -77,6 +78,7 @@ namespace Peerchat {
 			}
 			if(!command_found) {
 				std::ostringstream s;
+				printf("NOT FOUND command: %s\n", command_upper.c_str());
 				s << command_upper << " :Unknown Command";
 				send_numeric(421, s.str(), true);
 			}
@@ -126,6 +128,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("OPER", false, &Peer::handle_oper));
 		commands.push_back(CommandEntry("PRIVMSG", false, &Peer::handle_privmsg));
 		commands.push_back(CommandEntry("JOIN", false, &Peer::handle_join));
+		commands.push_back(CommandEntry("NAMES", false, &Peer::handle_names));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name) {

@@ -17,6 +17,7 @@ namespace Peerchat {
             user_id = kvReader.GetValueInt("user_id");
             summary = LookupUserById(thread_data, user_id);
             channel_summary = LookupChannelById(thread_data, channel_id);
+
             server->OnChannelMessage("JOIN", summary.ToString(), channel_summary.channel_name, "");
         }
         return true;

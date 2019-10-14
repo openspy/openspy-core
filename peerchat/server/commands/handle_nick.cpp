@@ -16,15 +16,15 @@
 namespace Peerchat {
     void Peer::OnNickReserve(TaskResponse response_data, Peer *peer) {
         if(response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
+            peer->m_user_details.id = response_data.summary.id;
             if(peer->m_sent_client_init) {
                 Server *server = (Server *)peer->mp_driver->getServer();
                 server->SendUserMessageToVisibleUsers(peer->GetUserDetails().ToString(), "NICK", response_data.profile.uniquenick);
-                peer->m_user_details.nick = response_data.profile.uniquenick;
+                peer->m_user_details.nick = response_data.summary.nick;
             } else {
-                peer->m_user_details.nick = response_data.profile.uniquenick;
+                peer->m_user_details.nick = response_data.summary.nick;
                 peer->OnUserMaybeRegistered();
-            }
-            
+            }            
         } else {
             peer->send_numeric(433,"Nickname is already in use", false, response_data.profile.uniquenick);
         }
@@ -34,7 +34,8 @@ namespace Peerchat {
         PeerchatBackendRequest req;
         req.type = EPeerchatRequestType_SetUserDetails;
         req.peer = this;
-        req.profile.uniquenick = data_parser.at(1);
+        req.summary = GetUserDetails();
+        req.summary.nick = data_parser.at(1);
         req.peer->IncRef();
         req.callback = OnNickReserve;
         scheduler->AddRequest(req.type, req);

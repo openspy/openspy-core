@@ -27,17 +27,18 @@ namespace Peerchat {
 			EPeerchatRequestType_LookupChannelDetails,
 			EPeerchatRequestType_UserJoinChannel,
 	};
-	class ChannelSummary {
-		public:
-		std::string channel_name;
-		int channel_id;
-		struct timeval created_at;
-	};
 	class ChannelUserSummary {
 		public:
 		int channel_id;
 		int user_id;
 		UserSummary userSummary;
+	};
+	class ChannelSummary {
+		public:
+		std::string channel_name;
+		int channel_id;
+		struct timeval created_at;
+		std::vector<ChannelUserSummary> users;
 	};
   class TaskResponse {
 		public:
@@ -69,6 +70,8 @@ namespace Peerchat {
 	bool Perform_SetUserDetails(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_SendMessageToTarget(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UserJoinChannel(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_LookupChannelDetails(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	
 	bool Handle_Message(TaskThreadData *thread_data, std::string message);
 	bool Handle_ChannelMessage(TaskThreadData *thread_data, std::string message);
 

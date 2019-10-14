@@ -29,6 +29,8 @@ namespace Peerchat {
         summary.channel_name = reply.values[0].value._str;
         summary.channel_id = channel_id;
 
+        summary.users = GetChannelUsers(thread_data, channel_id);
+
         error_end:
             return summary;
     }
@@ -48,15 +50,33 @@ namespace Peerchat {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d name %s", channel_id, name.c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d %d", channel_id, CHANNEL_EXPIRE_TIME);
 
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET channelname_%s %d", name.c_str(), channel_id);
+        Redis::Command(thread_data->mp_redis_connection, 0, "SET channelname_%s %d", name.c_str(), channel_id);
         Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channelname_%s %d", name.c_str(), CHANNEL_EXPIRE_TIME);
         return summary;        
     }
 
+    int GetChannelIdByName(TaskThreadData *thread_data, std::string name) {
+		Redis::Value v;
+        Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET channelname_%s", name.c_str());
+        if (Redis::CheckError(reply))
+            return 0;
+        if(reply.values.size() < 1)
+            return 0;
+        v = reply.values[0];
 
+        int id = 0;
+        if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+            id = atoi(v.value._str.c_str());
+        } else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+            id = v.value._int;
+        }        
+        return id;
+    }
     ChannelSummary GetChannelSummaryByName(TaskThreadData *thread_data, std::string name) {
-        //XXX: lookup channel
-
+        int id = GetChannelIdByName(thread_data, name);
+        if(id != 0) {
+            return LookupChannelById(thread_data, id);
+        }
         //doesn't exist, create
 
         return CreateChannel(thread_data, name);

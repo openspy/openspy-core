@@ -82,12 +82,14 @@ namespace Peerchat {
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void OnNickReserve(TaskResponse response_data, Peer *peer);
 		static void OnUserRegistered(TaskResponse response_data, Peer *peer);
+		static void OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer);
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
 		void handle_ping(std::vector<std::string> data_parser);		
 		void handle_oper(std::vector<std::string> data_parser);		
 		void handle_privmsg(std::vector<std::string> data_parser);
 		void handle_join(std::vector<std::string> data_parser);
+		void handle_names(std::vector<std::string> data_parser);
 
 
 		OS::GameData m_game;
