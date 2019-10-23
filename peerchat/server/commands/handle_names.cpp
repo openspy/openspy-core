@@ -15,6 +15,17 @@
 #include <server/Peer.h>
 namespace Peerchat {
     void Peer::OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer) {
+		std::vector<ChannelUserSummary>::iterator it = response_data.channel_summary.users.begin();
+
+		std::ostringstream s;
+		std::string target = "= " + response_data.channel_summary.channel_name;
+		while (it != response_data.channel_summary.users.end()) {
+			ChannelUserSummary user = *it;
+			s << user.userSummary.nick << " ";
+			it++;
+		}
+		peer->send_numeric(353, s.str(), false, target);
+		peer->send_numeric(366, "End of /NAMES list.");
     }
     void Peer::handle_names(std::vector<std::string> data_parser) {
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();

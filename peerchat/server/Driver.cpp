@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <peerchat/tasks/tasks.h>
 #include <OS/SharedTasks/tasks.h>
 #include "Driver.h"
 namespace Peerchat {
@@ -27,7 +28,7 @@ namespace Peerchat {
     INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
         return new Peer(this, socket);
     }
-	void Driver::SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf = true) {
+	void Driver::SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf) {
 		mp_mutex->lock();
 		std::vector<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
@@ -42,12 +43,14 @@ namespace Peerchat {
 		}
 		mp_mutex->unlock();
 	}
-	void Driver::OnChannelMessage(std::string type, std::string from, std::string to, std::string message) {
+	void Driver::OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message) {
 		mp_mutex->lock();
 		std::vector<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = (Peer *)*it;
-			peer->send_message(type, message,from, to);
+			if(peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_IsInChannel) {
+				peer->send_message(type, message,from, channel.channel_name);
+			}
 			it++;
 		}
 		mp_mutex->unlock();

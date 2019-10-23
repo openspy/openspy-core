@@ -19,7 +19,7 @@ namespace Peerchat {
         Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
         TaskResponse response;
         response.summary = request.summary;
-        //UserSummary GetUserDetails
+
         UserSummary userDetails = request.peer->GetUserDetails();
         bool nick_update = false;
         if(userDetails.id != 0) {
@@ -46,6 +46,8 @@ namespace Peerchat {
             nick_exists = false;
         }
 
+		request.summary.address = request.peer->getAddress();
+		response.summary.address = request.summary.address;
         if(!nick_exists) {
             response.summary.nick = request.summary.nick;
             if(nick_update) {
@@ -58,7 +60,7 @@ namespace Peerchat {
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d nick %s", response.summary.id, request.summary.nick.c_str());
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d realname %s", response.summary.id, request.summary.realname.c_str());
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d hostname %s", response.summary.id, request.summary.hostname.c_str());
-                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d address %s", response.summary.id, request.peer->getAddress().ToString(true).c_str());
+                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d address %s", response.summary.id, request.summary.address.ToString(true).c_str());
 
                 if(request.summary.nick.length() != 0) {
                     Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());

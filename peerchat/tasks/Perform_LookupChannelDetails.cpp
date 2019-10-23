@@ -5,10 +5,24 @@
 namespace Peerchat {
 
     bool Perform_LookupChannelDetails(PeerchatBackendRequest request, TaskThreadData *thread_data) {
-        //ChannelSummary GetChannelSummaryByName(TaskThreadData *thread_data, std::string name)
+		TaskResponse response;
 
-        ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name);
-        printf("LOOKUP CHANNEL DETAILS %s - %d\n", request.channel_summary.channel_name.c_str(), summary.users.size());
+        ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
+		if (summary.channel_id != 0) {
+			response.error_details.response_code = TaskShared::WebErrorCode_Success;
+		}
+		else {
+			response.error_details.response_code = TaskShared::WebErrorCode_NoSuchUser;
+		}
+
+		
+		response.channel_summary = summary;
+		if (request.callback) {
+			request.callback(response, request.peer);
+		}
+		if (request.peer) {
+			request.peer->DecRef();
+		}
         return true;
     }
 }

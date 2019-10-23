@@ -15,11 +15,9 @@
 #include <server/Peer.h>
 
 namespace Peerchat {
-    void Peer::handle_ping(std::vector<std::string> data_parser) {
-        std::string end = data_parser.at(1);
-/*        if(end[0] == ':') {
-            end = end.substr(1);
-        }*/
-        send_message("PONG", end);
-    }
+	void Peer::handle_userhost(std::vector<std::string> data_parser) {
+		std::ostringstream ss;
+		ss << m_user_details.nick << "=+" << m_user_details.username << "@" << m_user_details.hostname;
+		send_numeric(302, ss.str());
+	}
 }

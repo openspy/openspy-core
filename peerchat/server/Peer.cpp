@@ -17,17 +17,23 @@ namespace Peerchat {
 	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		m_sent_client_init = false;
 		m_user_details.id = 0;
+		mp_mutex = OS::CreateMutex();
 		RegisterCommands();
 	}
 	Peer::~Peer() {
-			
+		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
+		delete mp_mutex;
 	}
 
 	void Peer::OnConnectionReady() {
-			
+		m_user_details.address = getAddress();
+		m_user_details.hostname = m_user_details.address.ToString(true);
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());
 	}
-	void Peer::Delete(bool timeout = false) {
-			
+	void Peer::Delete(bool timeout) {
+		m_delete_flag = true;
+		m_timeout_flag = timeout;
 	}
 	
 	void Peer::think(bool packet_waiting) {
@@ -101,7 +107,7 @@ namespace Peerchat {
 	}
 
 	int Peer::GetProfileID() {
-
+		return m_profile.id;
 	}
 
 	void Peer::run_timed_operations() {
@@ -127,8 +133,16 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("PING", false, &Peer::handle_ping));
 		commands.push_back(CommandEntry("OPER", false, &Peer::handle_oper));
 		commands.push_back(CommandEntry("PRIVMSG", false, &Peer::handle_privmsg));
+		commands.push_back(CommandEntry("NOTICE", false, &Peer::handle_notice));
+		commands.push_back(CommandEntry("UTM", false, &Peer::handle_utm));
+		commands.push_back(CommandEntry("ATM", false, &Peer::handle_atm));
 		commands.push_back(CommandEntry("JOIN", false, &Peer::handle_join));
+		commands.push_back(CommandEntry("PART", false, &Peer::handle_part));
+		commands.push_back(CommandEntry("MODE", false, &Peer::handle_mode));
 		commands.push_back(CommandEntry("NAMES", false, &Peer::handle_names));
+		commands.push_back(CommandEntry("USRIP", false, &Peer::handle_userhost));
+		commands.push_back(CommandEntry("USERHOST", false, &Peer::handle_userhost));
+		commands.push_back(CommandEntry("TOPIC", false, &Peer::handle_topic));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name) {
@@ -166,7 +180,7 @@ namespace Peerchat {
 			s << " " << to;
 		}
 		if(messageContent.length() > 0) {
-			s << " :" << messageContent;
+			s << " " << messageContent;
 		}
 		s << std::endl;
 		SendPacket(s.str());
@@ -226,5 +240,17 @@ namespace Peerchat {
 	}
 	void Peer::OnRecvDirectMsg(std::string from, std::string msg, std::string type) {
 		send_message(type, msg, from, m_user_details.nick);	
+	}
+	void Peer::send_no_such_target_error(std::string channel) {
+		send_numeric(401, "No such nick/channel", false, channel);
+	}
+	int Peer::GetChannelFlags(int channel_id) {
+		int flags = 0;
+		mp_mutex->lock();
+		if (m_channel_flags.find(channel_id) != m_channel_flags.end()) {
+			flags = m_channel_flags[channel_id];
+		}		
+		mp_mutex->unlock();
+		return flags;
 	}
 }

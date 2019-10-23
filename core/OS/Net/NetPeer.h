@@ -6,7 +6,7 @@
 #include <OS/Net/NetServer.h>
 class INetPeer : public OS::Ref {
 	public:
-		INetPeer(INetDriver *driver, INetIOSocket *sd) : OS::Ref() { mp_driver = driver; m_sd = sd;  m_address = m_sd->address; };
+		INetPeer(INetDriver* driver, INetIOSocket* sd) : OS::Ref() { mp_driver = driver; m_sd = sd;  m_address = m_sd->address; m_delete_flag = false; m_timeout_flag = false; };
 		virtual ~INetPeer() { GetDriver()->getNetIOInterface()->closeSocket(m_sd); }
 
 		void SetAddress(OS::Address address) { m_address = address; }

@@ -23,7 +23,7 @@ namespace Peerchat {
 		Peer *FindPeerByProfileID(int profileid);		
 		Peer *FindPeerByUserSummary(std::string summary_string);
 		void SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf = true);
-		void OnChannelMessage(std::string type, std::string from, std::string to, std::string message);
+		void OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message);
 	protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket);
 	};

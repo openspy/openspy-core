@@ -37,7 +37,7 @@ namespace Peerchat {
         it++;
       }
     }
-    void Server::SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf = true) {
+    void Server::SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf) {
       std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
       while (it != m_net_drivers.end()) {
         Peerchat::Driver *driver = (Peerchat::Driver *)*it;
@@ -45,11 +45,11 @@ namespace Peerchat {
         it++;
       }
     }
-    void Server::OnChannelMessage(std::string type, std::string from, std::string to, std::string message) {
+    void Server::OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message) {
       std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
       while (it != m_net_drivers.end()) {
         Peerchat::Driver *driver = (Peerchat::Driver *)*it;
-        driver->OnChannelMessage(type, from, to, message);
+        driver->OnChannelMessage(type, from, channel, message);
         it++;
       }
     }
