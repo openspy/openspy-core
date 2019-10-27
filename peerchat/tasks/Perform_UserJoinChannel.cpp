@@ -42,23 +42,25 @@ namespace Peerchat {
 
     bool Perform_UserJoinChannel(PeerchatBackendRequest request, TaskThreadData *thread_data) {
         ChannelSummary channel = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, true);
-
+		
         TaskResponse response;
+		response.channel_summary = channel;
 
         if(!CheckUserCanJoinChannel(channel, request.peer, request.channel_summary.password)) {
             response.error_details.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
         } else {
-            AddUserToChannel(thread_data, request.peer->GetBackendId(), channel.channel_id);
             response.error_details.response_code = TaskShared::WebErrorCode_Success;
+			response.summary.id = EUserChannelFlag_IsInChannel;
         }
-
-        //
-        
-
 		
-		response.channel_summary = channel;
         if(request.callback)
             request.callback(response, request.peer);
+
+		//needs to be after callback, due to IsInChannel flag needing to be set on user, for them to see their join message
+		if (response.error_details.response_code == TaskShared::WebErrorCode_Success) {
+			AddUserToChannel(thread_data, request.peer->GetBackendId(), channel.channel_id, response.summary.id);
+		}
+
 		if (request.peer)
 			request.peer->DecRef();
         return true;

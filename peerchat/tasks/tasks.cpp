@@ -25,8 +25,10 @@ namespace Peerchat {
             scheduler->AddRequestHandler(EPeerchatRequestType_SendMessageToTarget, Perform_SendMessageToTarget);
             scheduler->AddRequestHandler(EPeerchatRequestType_UserJoinChannel, Perform_UserJoinChannel);
             scheduler->AddRequestHandler(EPeerchatRequestType_UserPartChannel, Perform_UserPartChannel);
-            scheduler->AddRequestHandler(EPeerchatRequestType_LookupChannelDetails, Perform_LookupChannelDetails);
-            scheduler->AddRequestHandler(EPeerchatRequestType_UpdateChannelModes, Perform_UpdateChannelModes);
+			scheduler->AddRequestHandler(EPeerchatRequestType_LookupChannelDetails, Perform_LookupChannelDetails);
+			scheduler->AddRequestHandler(EPeerchatRequestType_LookupUserDetailsByName, Perform_LookupUserDetailsByName);
+			scheduler->AddRequestHandler(EPeerchatRequestType_UpdateChannelModes, Perform_UpdateChannelModes);
+			scheduler->AddRequestHandler(EPeerchatRequestType_ListChannels, Perform_ListChannels);
 
 			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_Message);
             scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_channel_message_routingkey, Handle_ChannelMessage);

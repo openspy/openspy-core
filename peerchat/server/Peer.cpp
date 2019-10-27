@@ -143,6 +143,8 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("USRIP", false, &Peer::handle_userhost));
 		commands.push_back(CommandEntry("USERHOST", false, &Peer::handle_userhost));
 		commands.push_back(CommandEntry("TOPIC", false, &Peer::handle_topic));
+		commands.push_back(CommandEntry("LIST", false, &Peer::handle_list));
+		commands.push_back(CommandEntry("WHOIS", false, &Peer::handle_whois));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name) {

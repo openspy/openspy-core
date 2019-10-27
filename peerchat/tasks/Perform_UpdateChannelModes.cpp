@@ -3,7 +3,61 @@
 #include <server/Server.h>
 
 namespace Peerchat {
+	void HandleSetUsermodes(TaskThreadData* thread_data, PeerchatBackendRequest request, std::ostringstream &ss, bool unset) {
+		std::map<std::string, int>::iterator it = request.channel_modify.set_usermodes.begin();
+		if (unset)
+			it = request.channel_modify.unset_usermodes.begin();
+		std::ostringstream user_ss;
+		while (it != (unset ? request.channel_modify.unset_usermodes.end() : request.channel_modify.set_usermodes.end())) {
+			std::pair<std::string, int> p = *(it++);
+			std::string name = p.first;
+			int modes = p.second;
 
+			UserSummary summary = GetUserSummaryByName(thread_data, name);
+
+			if (summary.id == 0) continue;
+
+			if (modes & EUserChannelFlag_Voice) {
+				ss << "v";
+				user_ss << name;
+			}
+
+			if (modes & EUserChannelFlag_Op || modes & EUserChannelFlag_HalfOp || modes & EUserChannelFlag_Owner) {
+				ss << "o";
+				user_ss << name;
+			}
+
+			Redis::Response reply;
+			Redis::Value v;
+
+
+			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d_user_%d modeflags", request.channel_summary.channel_id, summary.id);
+			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+				goto error_end;
+			}
+			v = reply.values[0];
+
+			int modeflags = 0;
+			if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+				modeflags = atoi(v.value._str.c_str());
+			}
+			else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+				modeflags = v.value._int;
+			}
+			if(unset) {
+				modeflags &= ~modes;
+			}
+			else {
+				modeflags |= modes;
+			}
+			
+			Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", request.channel_summary.channel_id, summary.id, modeflags);
+
+		}
+		error_end:
+
+		ss << " " << user_ss.str();
+	}
     bool Perform_UpdateChannelModes(PeerchatBackendRequest request, TaskThreadData *thread_data) {
 
 		std::string target;
@@ -12,12 +66,15 @@ namespace Peerchat {
 		}
 
 		ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 
 		TaskResponse response;
 
 		std::ostringstream mode_message;
 
-		if (request.channel_modify.set_mode_flags != 0 || request.channel_modify.update_password || request.channel_modify.update_limit) {
+		request.channel_summary = summary;
+
+		if (request.channel_modify.set_mode_flags != 0 || request.channel_modify.update_password || request.channel_modify.update_limit || request.channel_modify.set_usermodes.size()) {
 			bool added_mode = false;
 			for (int i = 0; i < num_mode_flags; i++) {
 				if (request.channel_modify.set_mode_flags & mode_flag_map[i].flag) {
@@ -32,6 +89,15 @@ namespace Peerchat {
 					}
 				}
 			}
+
+			if (request.channel_modify.set_usermodes.size()) {
+				if (added_mode == false) {
+					mode_message << "+";
+					added_mode = true;
+				}
+				HandleSetUsermodes(thread_data, request, mode_message, false);
+			}
+
 			if (request.channel_modify.update_password && request.channel_modify.password.length() != 0) {
 				if (added_mode == false) {
 					mode_message << "+";
@@ -46,6 +112,14 @@ namespace Peerchat {
 					added_mode = true;
 				}
 				mode_message << "l";
+			}
+
+			if (request.channel_modify.update_password && request.channel_modify.password.length() != 0) {
+				mode_message << " " << request.channel_modify.password;
+			}
+
+			if (request.channel_modify.update_limit && request.channel_modify.limit != 0) {
+				mode_message << " " << request.channel_modify.limit;
 			}
 		}
 
@@ -80,16 +154,16 @@ namespace Peerchat {
 				mode_message << "l";
 			}
 
-			if (request.channel_modify.update_password && request.channel_modify.password.length() != 0) {
-				mode_message << " " << request.channel_modify.password;
-			}
-
-			if (request.channel_modify.update_limit && request.channel_modify.limit != 0) {
-				mode_message << " " << request.channel_modify.limit;
+			if (request.channel_modify.unset_usermodes.size()) {
+				if (removed_mode == false) {
+					mode_message << "-";
+					removed_mode = true;
+				}
+				HandleSetUsermodes(thread_data, request, mode_message, true);
 			}
 		}
 
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat); 
+		
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d modeflags %d", summary.channel_id, summary.basic_mode_flags);
 
 		if (request.channel_modify.update_limit && request.channel_modify.limit != 0) {

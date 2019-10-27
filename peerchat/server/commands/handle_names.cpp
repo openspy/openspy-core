@@ -21,6 +21,12 @@ namespace Peerchat {
 		std::string target = "= " + response_data.channel_summary.channel_name;
 		while (it != response_data.channel_summary.users.end()) {
 			ChannelUserSummary user = *it;
+			if (user.modeflags & (EUserChannelFlag_Owner | EUserChannelFlag_Op | EUserChannelFlag_HalfOp)) {
+				s << "@";
+			}
+			else if (user.modeflags & EUserChannelFlag_Voice) {
+				s << "+";
+			}
 			s << user.userSummary.nick << " ";
 			it++;
 		}

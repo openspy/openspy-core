@@ -181,13 +181,16 @@ namespace Peerchat {
 			return summary;
 		}
     }
-    void AddUserToChannel(TaskThreadData *thread_data, int user_id, int channel_id) {
+    void AddUserToChannel(TaskThreadData *thread_data, int user_id, int channel_id, int initial_flags) {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-        Redis::Command(thread_data->mp_redis_connection, 0, "ZINCRBY channel_%d_users 1 \"%d\"", channel_id, user_id);
-        Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_users %d", channel_id, CHANNEL_EXPIRE_TIME);
+		Redis::Command(thread_data->mp_redis_connection, 0, "ZINCRBY channel_%d_users 1 \"%d\"", channel_id, user_id);
+		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_users %d", channel_id, CHANNEL_EXPIRE_TIME);
+
+		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", channel_id, user_id, initial_flags);
+		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_user_%d %d", channel_id, CHANNEL_EXPIRE_TIME);
 
         std::ostringstream message;
-		message << "\\type\\JOIN\\channel_id\\" << channel_id << "\\user_id\\" << user_id;
+		message << "\\type\\JOIN\\channel_id\\" << channel_id << "\\user_id\\" << user_id << "\\modeflags\\" << initial_flags;
         thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_channel_message_routingkey, message.str().c_str());
     }
 
@@ -199,6 +202,26 @@ namespace Peerchat {
 		message << "\\type\\" << type << "\\channel_id\\" << channel_id << "\\user_id\\" << user_id;
         thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_channel_message_routingkey, message.str().c_str());
     }
+	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {
+		Redis::Response reply;
+		Redis::Value v;
+
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d_user_%d modeflags", channel_id, user_id);
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+			return 0;
+		}
+		v = reply.values[0];
+
+		int modeflags = 0;
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			modeflags = atoi(v.value._str.c_str());
+		}
+		else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+			modeflags = v.value._int;
+		}
+		return modeflags;
+	}
     std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id) {
         std::vector<ChannelUserSummary> result;
         Redis::Response reply;
@@ -224,6 +247,7 @@ namespace Peerchat {
                 summary.channel_id = channel_id;
                 summary.user_id = atoi(user_id.c_str());
 				summary.userSummary = LookupUserById(thread_data, summary.user_id);
+				summary.modeflags = LookupUserChannelModeFlags(thread_data, channel_id, summary.user_id);
                 result.push_back(summary);
             }
         } while(cursor != 0);

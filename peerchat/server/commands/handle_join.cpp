@@ -18,7 +18,7 @@ namespace Peerchat {
 	void Peer::OnJoinChannel(TaskResponse response_data, Peer* peer) {
 		if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
 			peer->mp_mutex->lock();
-			peer->m_channel_flags[response_data.channel_summary.channel_id] |= EUserChannelFlag_IsInChannel;
+			peer->m_channel_flags[response_data.channel_summary.channel_id] = response_data.summary.id;
 			peer->mp_mutex->unlock();
 		}
 	}

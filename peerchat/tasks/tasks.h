@@ -54,11 +54,12 @@ namespace Peerchat {
   enum EPeerchatRequestType {
 			EPeerchatRequestType_SetUserDetails, //send user details (from /user cmd), get unique peerchat id
 			EPeerchatRequestType_SendMessageToTarget, //send client/channel message
-			EPeerchatRequestType_LookupUserDetails, //get user/realname/ip/gameid by nick
+			EPeerchatRequestType_LookupUserDetailsByName, //get user/realname/ip/gameid by nick
 			EPeerchatRequestType_LookupChannelDetails,
 			EPeerchatRequestType_UserJoinChannel,
 			EPeerchatRequestType_UserPartChannel,
 			EPeerchatRequestType_UpdateChannelModes,
+			EPeerchatRequestType_ListChannels,
 	};
 
   enum EUserChannelFlag {
@@ -82,6 +83,7 @@ namespace Peerchat {
 		public:
 		int channel_id;
 		int user_id;
+		int modeflags;
 		UserSummary userSummary;
 	};
 	class ChannelSummary {
@@ -106,6 +108,7 @@ namespace Peerchat {
 			OS::User user;
 			UserSummary summary;
 			ChannelSummary channel_summary;
+			std::vector<ChannelSummary> channel_summaries;
   };
   typedef void(*TaskCallback)(TaskResponse response_data, Peer *peer);
 
@@ -127,6 +130,9 @@ namespace Peerchat {
 
 		bool update_topic;
 		std::string topic;
+
+		std::map<std::string, int> set_usermodes;
+		std::map<std::string, int> unset_usermodes;
   };
 
 	class PeerchatBackendRequest {
@@ -147,13 +153,14 @@ namespace Peerchat {
 	};
 	
 
-	bool Perform_ReserveNickname(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_SetUserDetails(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_SendMessageToTarget(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UserJoinChannel(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UserPartChannel(PeerchatBackendRequest request, TaskThreadData *thread_data);
-	bool Perform_LookupChannelDetails(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_LookupChannelDetails(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_LookupUserDetailsByName(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_UpdateChannelModes(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_ListChannels(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	
 	bool Handle_Message(TaskThreadData *thread_data, std::string message);
 	bool Handle_ChannelMessage(TaskThreadData *thread_data, std::string message);
@@ -169,7 +176,7 @@ namespace Peerchat {
 	ChannelSummary LookupChannelById(TaskThreadData *thread_data, int channel_id);
 	ChannelSummary CreateChannel(TaskThreadData *thread_data, std::string name);
 	ChannelSummary GetChannelSummaryByName(TaskThreadData *thread_data, std::string name, bool create);
-	void AddUserToChannel(TaskThreadData *thread_data, int user_id, int channel_id);
+	void AddUserToChannel(TaskThreadData *thread_data, int user_id, int channel_id, int initial_flags);
 	void RemoveUserFromChannel(TaskThreadData *thread_data, int user_id, int channel_id, std::string type);
 	std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id);
 
