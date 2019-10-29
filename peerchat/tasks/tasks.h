@@ -60,6 +60,8 @@ namespace Peerchat {
 			EPeerchatRequestType_UserPartChannel,
 			EPeerchatRequestType_UpdateChannelModes,
 			EPeerchatRequestType_ListChannels,
+			EPeerchatRequestType_SetChannelKeys,
+			EPeerchatRequestType_GetChannelKeys,
 	};
 
   enum EUserChannelFlag {
@@ -109,6 +111,7 @@ namespace Peerchat {
 			UserSummary summary;
 			ChannelSummary channel_summary;
 			std::vector<ChannelSummary> channel_summaries;
+			std::map<std::string,std::string> kv_data;
   };
   typedef void(*TaskCallback)(TaskResponse response_data, Peer *peer);
 
@@ -133,6 +136,8 @@ namespace Peerchat {
 
 		std::map<std::string, int> set_usermodes;
 		std::map<std::string, int> unset_usermodes;
+
+		std::map<std::string,std::string> kv_data;
   };
 
 	class PeerchatBackendRequest {
@@ -161,6 +166,8 @@ namespace Peerchat {
 	bool Perform_LookupUserDetailsByName(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_UpdateChannelModes(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_ListChannels(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_SetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_GetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
 	bool Handle_Message(TaskThreadData *thread_data, std::string message);
 	bool Handle_ChannelMessage(TaskThreadData *thread_data, std::string message);

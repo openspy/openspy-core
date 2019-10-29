@@ -21,7 +21,7 @@ namespace Peerchat {
 				ss << "v";
 				user_ss << name;
 			}
-
+			
 			if (modes & EUserChannelFlag_Op || modes & EUserChannelFlag_HalfOp || modes & EUserChannelFlag_Owner) {
 				ss << "o";
 				user_ss << name;

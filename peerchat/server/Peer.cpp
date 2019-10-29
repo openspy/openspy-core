@@ -145,6 +145,8 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("TOPIC", false, &Peer::handle_topic));
 		commands.push_back(CommandEntry("LIST", false, &Peer::handle_list));
 		commands.push_back(CommandEntry("WHOIS", false, &Peer::handle_whois));
+		commands.push_back(CommandEntry("SETCKEY", false, &Peer::handle_setckey));
+		commands.push_back(CommandEntry("GETCKEY", false, &Peer::handle_getckey));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name) {
