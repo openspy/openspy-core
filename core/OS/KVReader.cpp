@@ -63,6 +63,9 @@ namespace OS {
 				break;
 			}
 		}
+		if (key.length()) {
+			m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
+		}
 	}
 	bool KVReader::IsDataKey(std::string key) {
 		return m_data_key_map.find(key) != m_data_key_map.end();

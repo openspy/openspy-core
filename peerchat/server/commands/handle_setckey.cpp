@@ -34,8 +34,6 @@ namespace Peerchat {
 				kv_string = kv_string.append(" ").append(data_parser.at(i));
 			}
 		}
-		std::map<std::string, std::string> kv_data = OS::KeyStringToMap(kv_string);
-
 
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
@@ -43,7 +41,7 @@ namespace Peerchat {
         req.peer = this;
 		req.channel_summary.channel_name = channel_target;
 		req.summary.username = user_target;
-		req.channel_modify.kv_data = kv_data;
+		req.channel_modify.kv_data = kv_string;
         
         req.peer->IncRef();
         req.callback = OnSetCKey;

@@ -111,7 +111,7 @@ namespace Peerchat {
 			UserSummary summary;
 			ChannelSummary channel_summary;
 			std::vector<ChannelSummary> channel_summaries;
-			std::map<std::string,std::string> kv_data;
+			OS::KVReader kv_data;
   };
   typedef void(*TaskCallback)(TaskResponse response_data, Peer *peer);
 
@@ -137,7 +137,7 @@ namespace Peerchat {
 		std::map<std::string, int> set_usermodes;
 		std::map<std::string, int> unset_usermodes;
 
-		std::map<std::string,std::string> kv_data;
+		OS::KVReader kv_data;
   };
 
 	class PeerchatBackendRequest {

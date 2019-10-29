@@ -21,7 +21,7 @@ namespace Peerchat {
 	*/
 	void Peer::OnGetCKey(TaskResponse response_data, Peer* peer) {
 		std::ostringstream ss;
-		ss << response_data.summary.nick << " " << response_data.profile.uniquenick << " :" << OS::MapToKVString(response_data.kv_data);
+		ss << response_data.summary.nick << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString();
 		peer->send_numeric(702, ss.str(), true, response_data.channel_summary.channel_name);
 
 
@@ -41,15 +41,17 @@ namespace Peerchat {
 		if (kv_string.length() > 1 && kv_string[0] == ':') {
 			kv_string = kv_string.substr(1);
 		}
-		std::vector<std::string> kv_data = OS::KeyStringToVector(kv_string);
-		std::map<std::string, std::string> kv_data_map;
-
-		std::vector<std::string>::iterator it = kv_data.begin();
-		while (it != kv_data.end()) {
-			std::string s = *it;
-			kv_data_map[s] = "";
-			it++;
+		OS::KVReader kv_data;
+		std::ostringstream ss;
+		std::vector<std::string> key_list = OS::KeyStringToVector(kv_string);
+		std::vector<std::string>::iterator it = key_list.begin();
+		while (it != key_list.end()) {
+			ss << "\\" << *(it++) << "\\stub";
 		}
+
+		kv_data = ss.str();
+
+
 
 
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
@@ -58,7 +60,7 @@ namespace Peerchat {
         req.peer = this;
 		req.channel_summary.channel_name = channel_target;
 		req.summary.username = user_target;
-		req.channel_modify.kv_data = kv_data_map;
+		req.channel_modify.kv_data = kv_data;
 
 		req.profile.uniquenick = numeric;
         
