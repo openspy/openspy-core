@@ -19,6 +19,16 @@ namespace Peerchat {
 					Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d \"custkey_%s\" \"%s\"", summary.channel_id, user_summary.id, p.first.c_str(), p.second.c_str());
 					it++;
 				}
+
+				const char* base64 = OS::BinToBase64Str((uint8_t*)request.channel_modify.kv_data.ToString().c_str(), request.channel_modify.kv_data.ToString().length());
+
+				
+
+				std::ostringstream message;
+				message << "\\type\\SETCKEY\\to\\" << summary.channel_name << "\\user_id\\" << user_summary.id << "\\keys\\" << base64;
+				thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());
+
+				free((void*)base64);
 			}
 			else { //not in channel
 				response.error_details.response_code = TaskShared::WebErrorCode_NoSuchUser;

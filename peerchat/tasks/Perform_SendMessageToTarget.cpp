@@ -4,7 +4,7 @@
 
 #define USER_EXPIRE_TIME 300
 namespace Peerchat {
-    bool Handle_Message(TaskThreadData *thread_data, std::string message) {
+    bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message) {
         uint8_t *data_out;
 		size_t data_len;
 

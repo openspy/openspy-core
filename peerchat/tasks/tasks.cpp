@@ -1,8 +1,14 @@
 #include "tasks.h"
+
+#include <server/Server.h>
 namespace Peerchat {
         const char *peerchat_channel_exchange = "openspy.core";
+
+		/*
+			this queue is used for PRIVMSG,NOTICE,ATM,UTM,MODE,TOPIC, JOIN, PART
+		*/
         const char *peerchat_client_message_routingkey = "peerchat.client-messages";
-        const char *peerchat_channel_message_routingkey = "peerchat.channel-messages";
+		const char *peerchat_key_updates_routingkey = "peerchat.keyupdate-messages";
 
 		ModeFlagMap *mode_flag_map = NULL;
 		int num_mode_flags;
@@ -32,10 +38,28 @@ namespace Peerchat {
 			scheduler->AddRequestHandler(EPeerchatRequestType_SetChannelKeys, Perform_SetChannelKeys);
 			scheduler->AddRequestHandler(EPeerchatRequestType_GetChannelKeys, Perform_GetChannelKeys);
 
-			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_Message);
-            scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_channel_message_routingkey, Handle_ChannelMessage);
+			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg);
+			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates);
+			
 			scheduler->DeclareReady();
 
             return scheduler;
         }
+
+		bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message) {
+			Peerchat::Server* server = (Peerchat::Server*)thread_data->server;
+			OS::KVReader reader = message;
+			if (reader.GetValue("type").compare("SETCKEY") == 0) {
+				uint8_t* data_out;
+				size_t data_len;
+				OS::Base64StrToBin((const char*)reader.GetValue("keys").c_str(), &data_out, data_len);
+				std::string send_message = std::string((const char*)data_out, data_len);
+				free((void*)data_out);
+				OS::KVReader keys = send_message;
+				ChannelSummary summary = GetChannelSummaryByName(thread_data, reader.GetValue("to"), false);
+				UserSummary user_summary = LookupUserById(thread_data, reader.GetValueInt("user_id"));
+				server->OnSetUserChannelKeys(summary, user_summary, keys);
+			}
+			return false;
+		}
 }

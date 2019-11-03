@@ -53,4 +53,12 @@ namespace Peerchat {
         it++;
       }
     }
+    void Server::OnSetUserChannelKeys(ChannelSummary summary, UserSummary user_summary, OS::KVReader keys) {
+      std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
+      while (it != m_net_drivers.end()) {
+        Peerchat::Driver *driver = (Peerchat::Driver *)*it;
+        driver->OnSetUserChannelKeys(summary, user_summary, keys);
+        it++;
+      }
+    }
 }

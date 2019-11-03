@@ -76,7 +76,7 @@ namespace Peerchat {
 		void OnRecvDirectMsg(std::string from, std::string msg, std::string type);
 		int GetBackendId() { return m_user_details.id; };
 
-		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "");
+		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "", bool append_name = true);
 		void send_message(std::string messageType, std::string messageContent, std::string from = "", std::string to = "");
 
 		int GetChannelFlags(int channel_id);

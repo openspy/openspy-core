@@ -149,7 +149,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("GETCKEY", false, &Peer::handle_getckey));
 		m_commands = commands;
 	}
-	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name) {
+	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name) {
 		std::ostringstream s;
 		std::string name = "*";
 		if(m_user_details.nick.size() > 0) {
@@ -161,7 +161,13 @@ namespace Peerchat {
 			if(m_user_details.nick.length()) {
 				nick = m_user_details.nick;
 			}
-			name = nick + " " + target_name;
+			if (append_name) {
+				name = nick + " " + target_name;
+			}
+			else {
+				name = target_name;
+			}
+			
 		}
 		
 		s << ":" << ((Peerchat::Server *)GetDriver()->getServer())->getServerName() << " " << std::setfill('0') << std::setw(3) << num << " " << name << " ";

@@ -24,6 +24,7 @@ namespace Peerchat {
 		Peer *FindPeerByUserSummary(std::string summary_string);
 		void SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf = true);
 		void OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message);
+		void OnSetUserChannelKeys(ChannelSummary summary, UserSummary user_summary, OS::KVReader keys);
 	protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket);
 	};

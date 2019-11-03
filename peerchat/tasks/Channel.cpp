@@ -181,26 +181,26 @@ namespace Peerchat {
 			return summary;
 		}
     }
-    void AddUserToChannel(TaskThreadData *thread_data, int user_id, int channel_id, int initial_flags) {
+    void AddUserToChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, int initial_flags) {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-		Redis::Command(thread_data->mp_redis_connection, 0, "ZINCRBY channel_%d_users 1 \"%d\"", channel_id, user_id);
-		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_users %d", channel_id, CHANNEL_EXPIRE_TIME);
+		Redis::Command(thread_data->mp_redis_connection, 0, "ZINCRBY channel_%d_users 1 \"%d\"", channel.channel_id, user.id);
+		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_users %d", channel.channel_id, CHANNEL_EXPIRE_TIME);
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", channel_id, user_id, initial_flags);
-		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_user_%d %d", channel_id, CHANNEL_EXPIRE_TIME);
+		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", channel.channel_id, user.id, initial_flags);
+		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_user_%d %d", channel.channel_id, CHANNEL_EXPIRE_TIME);
 
         std::ostringstream message;
-		message << "\\type\\JOIN\\channel_id\\" << channel_id << "\\user_id\\" << user_id << "\\modeflags\\" << initial_flags;
-        thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_channel_message_routingkey, message.str().c_str());
+		message << "\\type\\JOIN\\to\\" << channel.channel_name << "\\from\\" << user.ToString() << "\\modeflags\\" << initial_flags;
+        thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
     }
 
-    void RemoveUserFromChannel(TaskThreadData *thread_data, int user_id, int channel_id, std::string type) {
+    void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type) {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-        Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel_id, user_id);
+        Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
 
         std::ostringstream message;
-		message << "\\type\\" << type << "\\channel_id\\" << channel_id << "\\user_id\\" << user_id;
-        thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_channel_message_routingkey, message.str().c_str());
+		message << "\\type\\" << type << "\\to\\" << channel.channel_name << "\\from\\" << user.ToString();
+        thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
     }
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {
 		Redis::Response reply;

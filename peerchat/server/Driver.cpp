@@ -4,6 +4,8 @@
 #include <peerchat/tasks/tasks.h>
 #include <OS/SharedTasks/tasks.h>
 #include "Driver.h"
+
+#include <sstream>
 namespace Peerchat {
     Driver::Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
 
@@ -50,6 +52,21 @@ namespace Peerchat {
 			Peer *peer = (Peer *)*it;
 			if(peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_IsInChannel) {
 				peer->send_message(type, message,from, channel.channel_name);
+			}
+			it++;
+		}
+		mp_mutex->unlock();
+	}
+
+	void Driver::OnSetUserChannelKeys(ChannelSummary summary, UserSummary user_summary, OS::KVReader keys) {
+		mp_mutex->lock();
+		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		std::ostringstream ss;
+		ss << summary.channel_name << " " << user_summary.nick << " BCAST :" << keys.ToString();
+		while (it != m_connections.end()) {
+			Peer *peer = (Peer *)*it;
+			if(peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_IsInChannel) {
+				peer->send_numeric(702,ss.str(), true, summary.channel_name, false);
 			}
 			it++;
 		}

@@ -5,22 +5,6 @@
 #define CHANNEL_EXPIRE_TIME 300
 namespace Peerchat {
 
-
-    bool Handle_ChannelMessage(TaskThreadData *thread_data, std::string message) {
-        OS::KVReader kvReader(message);
-        Peerchat::Server *server = (Peerchat::Server *)thread_data->server;
-        int channel_id = 0, user_id = 0;
-        ChannelSummary channel_summary;
-        UserSummary summary;
-		channel_id = kvReader.GetValueInt("channel_id");
-		user_id = kvReader.GetValueInt("user_id");
-		summary = LookupUserById(thread_data, user_id);
-		channel_summary = LookupChannelById(thread_data, channel_id);
-
-		server->OnChannelMessage(kvReader.GetValue("type"), summary.ToString(), channel_summary, "");
-        return true;
-    }
-
 	bool CheckUserCanJoinChannel(ChannelSummary channel, Peer *peer, std::string password) {
 		if (channel.basic_mode_flags & EChannelMode_InviteOnly) {
 			if (~peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_Invited) {
@@ -58,7 +42,7 @@ namespace Peerchat {
 
 		//needs to be after callback, due to IsInChannel flag needing to be set on user, for them to see their join message
 		if (response.error_details.response_code == TaskShared::WebErrorCode_Success) {
-			AddUserToChannel(thread_data, request.peer->GetBackendId(), channel.channel_id, response.summary.id);
+			AddUserToChannel(thread_data, request.peer->GetUserDetails(), channel, response.summary.id);
 		}
 
 		if (request.peer)
