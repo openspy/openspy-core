@@ -37,7 +37,7 @@ namespace Peerchat {
 
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
-        req.type = EPeerchatRequestType_SetChannelKeys;
+        req.type = EPeerchatRequestType_SetChannelUserKeys;
         req.peer = this;
 		req.channel_summary.channel_name = channel_target;
 		req.summary.username = user_target;

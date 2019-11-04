@@ -60,8 +60,8 @@ namespace Peerchat {
 			EPeerchatRequestType_UserPartChannel,
 			EPeerchatRequestType_UpdateChannelModes,
 			EPeerchatRequestType_ListChannels,
-			EPeerchatRequestType_SetChannelKeys,
-			EPeerchatRequestType_GetChannelKeys,
+			EPeerchatRequestType_SetChannelUserKeys,
+			EPeerchatRequestType_GetChannelUserKeys,
 	};
 
   enum EUserChannelFlag {
@@ -166,8 +166,8 @@ namespace Peerchat {
 	bool Perform_LookupUserDetailsByName(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_UpdateChannelModes(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_ListChannels(PeerchatBackendRequest request, TaskThreadData *thread_data);
-	bool Perform_SetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
-	bool Perform_GetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_SetChannelUserKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_GetChannelUserKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
 	bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message);
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message);

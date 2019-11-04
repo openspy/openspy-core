@@ -4,7 +4,7 @@
 
 namespace Peerchat {
 
-	void Handle_GetChannelKeys_SingleUser(PeerchatBackendRequest request, TaskThreadData* thread_data) {
+	void Handle_GetChannelUserKeys_SingleUser(PeerchatBackendRequest request, TaskThreadData* thread_data) {
 		TaskResponse response;
 
 		ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
@@ -50,7 +50,7 @@ namespace Peerchat {
 			request.peer->DecRef();
 		}
 	}
-	void Handle_GetChannelKeys_AllUsers(PeerchatBackendRequest request, TaskThreadData* thread_data) {
+	void Handle_GetChannelUserKeys_AllUsers(PeerchatBackendRequest request, TaskThreadData* thread_data) {
 		TaskResponse response;
 
 		ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
@@ -113,12 +113,12 @@ namespace Peerchat {
 		}
 	}
 
-    bool Perform_GetChannelKeys(PeerchatBackendRequest request, TaskThreadData *thread_data) {
+    bool Perform_GetChannelUserKeys(PeerchatBackendRequest request, TaskThreadData *thread_data) {
 		if (request.summary.username.compare("*") == 0) { //scan all users
-			Handle_GetChannelKeys_AllUsers(request, thread_data);
+			Handle_GetChannelUserKeys_AllUsers(request, thread_data);
 		}
 		else {
-			Handle_GetChannelKeys_SingleUser(request, thread_data);
+			Handle_GetChannelUserKeys_SingleUser(request, thread_data);
 		}
 		
         return true;

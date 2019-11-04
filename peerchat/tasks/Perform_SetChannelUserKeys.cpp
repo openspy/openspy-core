@@ -4,7 +4,7 @@
 
 namespace Peerchat {
 
-	bool Perform_SetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data) {
+	bool Perform_SetChannelUserKeys(PeerchatBackendRequest request, TaskThreadData* thread_data) {
 		TaskResponse response;
 
 		ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);

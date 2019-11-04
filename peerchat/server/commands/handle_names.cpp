@@ -17,10 +17,16 @@ namespace Peerchat {
     void Peer::OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer) {
 		std::vector<ChannelUserSummary>::iterator it = response_data.channel_summary.users.begin();
 
+		bool see_invisible = false; //XXX: get invisible operflag
+		
+
 		std::ostringstream s;
 		std::string target = "= " + response_data.channel_summary.channel_name;
 		while (it != response_data.channel_summary.users.end()) {
-			ChannelUserSummary user = *it;
+			ChannelUserSummary user = *(it++);
+			if ((user.modeflags & EUserChannelFlag_Invisible) && !see_invisible) {
+				continue;
+			}
 			if (user.modeflags & (EUserChannelFlag_Owner | EUserChannelFlag_Op | EUserChannelFlag_HalfOp)) {
 				s << "@";
 			}
@@ -28,7 +34,6 @@ namespace Peerchat {
 				s << "+";
 			}
 			s << user.userSummary.nick << " ";
-			it++;
 		}
 		peer->send_numeric(353, s.str(), false, target);
 		peer->send_numeric(366, "End of /NAMES list.");

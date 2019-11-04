@@ -16,8 +16,8 @@
 
 namespace Peerchat {
 	/*
-<- :s 702 CHC #STAFF CHC 3 :\1
-<- :s 703 CHC #STAFF 3 :End of GETCKEY
+		<- :s 702 CHC #STAFF CHC 3 :\1
+		<- :s 703 CHC #STAFF 3 :End of GETCKEY
 	*/
 	void Peer::OnGetCKey(TaskResponse response_data, Peer* peer) {
 		std::ostringstream ss;
@@ -31,6 +31,7 @@ namespace Peerchat {
 			peer->send_numeric(703, ss.str(), true, response_data.channel_summary.channel_name);
 		}
 	}
+
 	// getckey $chan $me 3 002 :\b_test
     void Peer::handle_getckey(std::vector<std::string> data_parser) {
         std::string channel_target = data_parser.at(1);
@@ -52,11 +53,9 @@ namespace Peerchat {
 		kv_data = ss.str();
 
 
-
-
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
-        req.type = EPeerchatRequestType_GetChannelKeys;
+        req.type = EPeerchatRequestType_GetChannelUserKeys;
         req.peer = this;
 		req.channel_summary.channel_name = channel_target;
 		req.summary.username = user_target;
