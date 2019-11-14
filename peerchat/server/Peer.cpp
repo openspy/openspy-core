@@ -147,6 +147,10 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("WHOIS", false, &Peer::handle_whois));
 		commands.push_back(CommandEntry("SETCKEY", false, &Peer::handle_setckey));
 		commands.push_back(CommandEntry("GETCKEY", false, &Peer::handle_getckey));
+		commands.push_back(CommandEntry("SETCHANKEY", false, &Peer::handle_setchankey));
+		commands.push_back(CommandEntry("GETCHANKEY", false, &Peer::handle_getchankey));
+		commands.push_back(CommandEntry("SETKEY", false, &Peer::handle_setkey));
+		commands.push_back(CommandEntry("GETKEY", false, &Peer::handle_getkey));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name) {

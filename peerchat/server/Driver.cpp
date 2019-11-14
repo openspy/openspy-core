@@ -72,4 +72,18 @@ namespace Peerchat {
 		}
 		mp_mutex->unlock();
 	}
+	void Driver::OnSetChannelKeys(ChannelSummary summary, OS::KVReader keys) {
+		mp_mutex->lock();
+		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		std::ostringstream ss;
+		ss << summary.channel_name << " BCAST :" << keys.ToString();
+		while (it != m_connections.end()) {
+			Peer *peer = (Peer *)*it;
+			if(peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_IsInChannel) {
+				peer->send_numeric(704,ss.str(), true, summary.channel_name, false);
+			}
+			it++;
+		}
+		mp_mutex->unlock();
+	}
 }

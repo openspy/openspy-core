@@ -92,6 +92,10 @@ namespace Peerchat {
 		static void OnWhois_FetchUser(TaskResponse response_data, Peer* peer);
 		static void OnSetCKey(TaskResponse response_data, Peer* peer);
 		static void OnGetCKey(TaskResponse response_data, Peer* peer);
+		static void OnSetKey(TaskResponse response_data, Peer* peer);
+		static void OnGetKey(TaskResponse response_data, Peer* peer);
+		static void OnSetChanKey(TaskResponse response_data, Peer* peer);
+		static void OnGetChanKey(TaskResponse response_data, Peer* peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -111,6 +115,10 @@ namespace Peerchat {
 		void handle_whois(std::vector<std::string> data_parser);
 		void handle_setckey(std::vector<std::string> data_parser);
 		void handle_getckey(std::vector<std::string> data_parser);
+		void handle_setkey(std::vector<std::string> data_parser);
+		void handle_getkey(std::vector<std::string> data_parser);
+		void handle_setchankey(std::vector<std::string> data_parser);
+		void handle_getchankey(std::vector<std::string> data_parser);
 
 		void send_no_such_target_error(std::string channel);
 		void send_topic(std::string channel);

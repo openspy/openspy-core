@@ -23,6 +23,7 @@ namespace Peerchat {
 		void OnUserMessage(std::string type, std::string from, std::string to, std::string message);
 		void OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message);
 		void OnSetUserChannelKeys(ChannelSummary summary, UserSummary user_summary, OS::KVReader keys);
+		void OnSetChannelKeys(ChannelSummary summary, OS::KVReader keys);
 
 		//send 1 time message to anyone who is in a at least 1 channel with a user
 		// :CHC!~CHC@unaffiliated/chc NICK :test611
