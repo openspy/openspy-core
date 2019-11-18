@@ -44,7 +44,10 @@ namespace Peerchat {
 
         if(request.summary.nick.compare(userDetails.nick) == 0) {
             nick_exists = false;
-        }
+		}
+		else {
+			nick_update = true;
+		}
 
 		request.summary.address = request.peer->getAddress();
 		response.summary.address = request.summary.address;
@@ -52,6 +55,8 @@ namespace Peerchat {
             response.summary.nick = request.summary.nick;
             if(nick_update) {
                 Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());
+
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d nick %s", response.summary.id, request.summary.nick.c_str());
 
                 Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", request.summary.nick.c_str(), response.summary.id);
             } else {

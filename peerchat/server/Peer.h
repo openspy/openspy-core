@@ -24,13 +24,15 @@ namespace Peerchat {
 	typedef void(Peer::*CommandCallback)(std::vector<std::string>);
 	class CommandEntry {
 	public:
-		CommandEntry(std::string name, bool login_required, CommandCallback callback) {
+		CommandEntry(std::string name, bool login_required, int minimum_args, CommandCallback callback) {
 			this->name = name;
 			this->login_required = login_required;
 			this->callback = callback;
+			this->minimum_args = minimum_args;
 		}
 		std::string name;
-		bool login_required;
+		int login_required;
+		bool minimum_args;
 		CommandCallback callback;
 	};
 
@@ -77,9 +79,11 @@ namespace Peerchat {
 		int GetBackendId() { return m_user_details.id; };
 
 		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "", bool append_name = true);
-		void send_message(std::string messageType, std::string messageContent, std::string from = "", std::string to = "");
+		void send_message(std::string messageType, std::string messageContent, std::string from = "", std::string to = "", std::string target = "");
 
 		int GetChannelFlags(int channel_id);
+
+		void SendNickUpdate(std::string newNick);
 	private:
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void OnNickReserve(TaskResponse response_data, Peer *peer);
@@ -96,6 +100,7 @@ namespace Peerchat {
 		static void OnGetKey(TaskResponse response_data, Peer* peer);
 		static void OnSetChanKey(TaskResponse response_data, Peer* peer);
 		static void OnGetChanKey(TaskResponse response_data, Peer* peer);
+		static void OnKickCallback(TaskResponse response_data, Peer* peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -107,12 +112,14 @@ namespace Peerchat {
 		void handle_atm(std::vector<std::string> data_parser);
 		void handle_join(std::vector<std::string> data_parser);
 		void handle_part(std::vector<std::string> data_parser);
+		void handle_kick(std::vector<std::string> data_parser);
 		void handle_topic(std::vector<std::string> data_parser);
 		void handle_names(std::vector<std::string> data_parser);
 		void handle_mode(std::vector<std::string> data_parser);
 		void handle_userhost(std::vector<std::string> data_parser);
 		void handle_list(std::vector<std::string> data_parser);
 		void handle_whois(std::vector<std::string> data_parser);
+		void handle_quit(std::vector<std::string> data_parser);
 		void handle_setckey(std::vector<std::string> data_parser);
 		void handle_getckey(std::vector<std::string> data_parser);
 		void handle_setkey(std::vector<std::string> data_parser);

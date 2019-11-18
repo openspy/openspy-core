@@ -2,7 +2,6 @@
 #include <sstream>
 #include <server/Server.h>
 
-#define CHANNEL_EXPIRE_TIME 300
 namespace Peerchat {
 
 	bool CheckUserCanJoinChannel(ChannelSummary channel, Peer *peer, std::string password) {

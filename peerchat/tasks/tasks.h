@@ -65,7 +65,10 @@ namespace Peerchat {
 			EPeerchatRequestType_SetUserKeys,
 			EPeerchatRequestType_GetUserKeys,
 			EPeerchatRequestType_SetChannelKeys,
-			EPeerchatRequestType_GetChannelKeys
+			EPeerchatRequestType_GetChannelKeys,
+			EPeerchatRequestType_UserKickChannel,
+			EPeerchatRequestType_SetBroadcastToVisibleUsers,
+			EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource,
 	};
 
   enum EUserChannelFlag {
@@ -140,7 +143,6 @@ namespace Peerchat {
 
 		std::map<std::string, int> set_usermodes;
 		std::map<std::string, int> unset_usermodes;
-
 		OS::KVReader kv_data;
   };
 
@@ -159,6 +161,8 @@ namespace Peerchat {
 			std::string message_type;
 			std::string message_target;
 			std::string message;
+
+			std::vector<int> channel_id_list;
 	};
 	
 
@@ -166,6 +170,7 @@ namespace Peerchat {
 	bool Perform_SendMessageToTarget(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UserJoinChannel(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UserPartChannel(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_UserKickChannel(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_LookupChannelDetails(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_LookupUserDetailsByName(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_UpdateChannelModes(PeerchatBackendRequest request, TaskThreadData *thread_data);
@@ -176,9 +181,11 @@ namespace Peerchat {
 	bool Perform_GetUserKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_SetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_GetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_SetBroadcastToVisibleUsers(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
 	bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message);
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message);
+	bool Handle_Broadcast(TaskThreadData *thread_data, std::string message);
 
   	TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server);
 
@@ -192,7 +199,7 @@ namespace Peerchat {
 	ChannelSummary CreateChannel(TaskThreadData *thread_data, std::string name);
 	ChannelSummary GetChannelSummaryByName(TaskThreadData *thread_data, std::string name, bool create);
 	void AddUserToChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, int initial_flags);
-	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type);
+	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target = UserSummary());
 	std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id);
 
 	UserSummary GetUserSummaryByName(TaskThreadData *thread_data, std::string name);
@@ -202,5 +209,6 @@ namespace Peerchat {
 	extern const char *peerchat_channel_exchange;
     extern const char *peerchat_client_message_routingkey;
 	extern const char *peerchat_key_updates_routingkey;
+	extern const char *peerchat_broadcast_routingkey;
 }
 #endif //_MM_TASKS_H

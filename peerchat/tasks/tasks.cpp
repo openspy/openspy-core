@@ -1,5 +1,5 @@
 #include "tasks.h"
-
+#include <sstream>
 #include <server/Server.h>
 namespace Peerchat {
         const char *peerchat_channel_exchange = "openspy.core";
@@ -8,7 +8,8 @@ namespace Peerchat {
 			this queue is used for PRIVMSG,NOTICE,ATM,UTM,MODE,TOPIC, JOIN, PART
 		*/
         const char *peerchat_client_message_routingkey = "peerchat.client-messages";
-		const char *peerchat_key_updates_routingkey = "peerchat.keyupdate-messages";
+		const char* peerchat_key_updates_routingkey = "peerchat.keyupdate-messages";
+		const char* peerchat_broadcast_routingkey = "peerchat.client-broadcasts";
 
 		ModeFlagMap *mode_flag_map = NULL;
 		int num_mode_flags;
@@ -30,7 +31,8 @@ namespace Peerchat {
             scheduler->AddRequestHandler(EPeerchatRequestType_SetUserDetails, Perform_SetUserDetails);
             scheduler->AddRequestHandler(EPeerchatRequestType_SendMessageToTarget, Perform_SendMessageToTarget);
             scheduler->AddRequestHandler(EPeerchatRequestType_UserJoinChannel, Perform_UserJoinChannel);
-            scheduler->AddRequestHandler(EPeerchatRequestType_UserPartChannel, Perform_UserPartChannel);
+			scheduler->AddRequestHandler(EPeerchatRequestType_UserPartChannel, Perform_UserPartChannel);
+			scheduler->AddRequestHandler(EPeerchatRequestType_UserKickChannel, Perform_UserKickChannel);			
 			scheduler->AddRequestHandler(EPeerchatRequestType_LookupChannelDetails, Perform_LookupChannelDetails);
 			scheduler->AddRequestHandler(EPeerchatRequestType_LookupUserDetailsByName, Perform_LookupUserDetailsByName);
 			scheduler->AddRequestHandler(EPeerchatRequestType_UpdateChannelModes, Perform_UpdateChannelModes);
@@ -42,13 +44,50 @@ namespace Peerchat {
 			scheduler->AddRequestHandler(EPeerchatRequestType_SetChannelKeys, Perform_SetChannelKeys);
 			scheduler->AddRequestHandler(EPeerchatRequestType_GetChannelKeys, Perform_GetChannelKeys);
 
+			scheduler->AddRequestHandler(EPeerchatRequestType_SetBroadcastToVisibleUsers, Perform_SetBroadcastToVisibleUsers);
+			scheduler->AddRequestHandler(EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource, Perform_SetBroadcastToVisibleUsers);
+
 			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg);
 			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates);
+			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_broadcast_routingkey, Handle_Broadcast);
 			
 			scheduler->DeclareReady();
 
             return scheduler;
         }
+
+
+		bool Handle_Broadcast(TaskThreadData *thread_data, std::string message) {
+			Peerchat::Server* server = (Peerchat::Server*)thread_data->server;
+
+			OS::KVReader reader = message;
+			
+			uint8_t* data_out;
+			size_t data_len;
+			OS::Base64StrToBin((const char*)reader.GetValue("message").c_str(), &data_out, data_len);
+			std::string send_message = std::string((const char*)data_out, data_len);
+			free((void*)data_out);
+
+			std::string type = reader.GetValue("type");
+			std::string target = reader.GetValue("source");
+
+			std::string channels = reader.GetValue("channels");
+
+			bool includeSelf = reader.GetValueInt("includeSelf");
+
+			std::vector<int> channel_list;
+
+			std::istringstream input;
+			input.str(channels);
+			std::string s;
+			while(std::getline(input, s, ',')) {
+				channel_list.push_back(atoi(s.c_str()));
+			}
+
+			server->OnChannelBroadcast(type, target, channel_list, send_message, includeSelf);
+
+			return true;
+		}
 
 		bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message) {
 			Peerchat::Server* server = (Peerchat::Server*)thread_data->server;

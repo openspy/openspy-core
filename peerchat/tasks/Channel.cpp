@@ -194,13 +194,22 @@ namespace Peerchat {
         thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
     }
 
-    void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type) {
+    void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target) {
+
+		const char* base64 = OS::BinToBase64Str((uint8_t*)remove_message.c_str(), remove_message.length());
+
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
         Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
 
         std::ostringstream message;
-		message << "\\type\\" << type << "\\to\\" << channel.channel_name << "\\from\\" << user.ToString();
+		message << "\\type\\" << type << "\\to\\" << channel.channel_name << "\\from\\" << user.ToString() << "\\message\\" << base64;
+
+		if (target.id != 0) {
+			message << "\\target\\" << target.nick;
+		}
         thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
+
+		free((void*)base64);
     }
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {
 		Redis::Response reply;

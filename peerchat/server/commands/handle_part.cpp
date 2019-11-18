@@ -15,15 +15,32 @@
 #include <server/Peer.h>
 
 namespace Peerchat {
+	/*
+-> s PART #test :hello there
+<- :CHC!CHC@99.243.125.215 PART #test :hello there
+	*/
 	void Peer::handle_part(std::vector<std::string> data_parser) {
+		std::string message = data_parser.at(2);
 		std::string target = data_parser.at(1);
+
+		bool do_combine = false;
+		if (message[0] == ':') {
+			do_combine = true;
+			message = message.substr(1);
+		}
+
+		if (do_combine) {
+			for (int i = 3; i < data_parser.size(); i++) {
+				message = message.append(" ").append(data_parser.at(i));
+			}
+		}
 
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_UserPartChannel;
 		req.peer = this;
 		req.channel_summary.channel_name = target;
-
+		req.message = message;
 		req.peer->IncRef();
 		req.callback = NULL;
 		scheduler->AddRequest(req.type, req);

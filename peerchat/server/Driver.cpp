@@ -45,13 +45,13 @@ namespace Peerchat {
 		}
 		mp_mutex->unlock();
 	}
-	void Driver::OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message) {
+	void Driver::OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message, std::string target) {
 		mp_mutex->lock();
 		std::vector<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = (Peer *)*it;
 			if(peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_IsInChannel) {
-				peer->send_message(type, message,from, channel.channel_name);
+				peer->send_message(type, message,from, channel.channel_name, target);
 			}
 			it++;
 		}
@@ -83,6 +83,26 @@ namespace Peerchat {
 				peer->send_numeric(704,ss.str(), true, summary.channel_name, false);
 			}
 			it++;
+		}
+		mp_mutex->unlock();
+	}
+	void Driver::OnChannelBroadcast(std::string type, std::string target, std::vector<int> channel_list, std::string message, bool includeSelf) {
+		mp_mutex->lock();
+		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		while (it != m_connections.end()) {
+			Peer *peer = (Peer *)*(it++);
+			if (includeSelf && peer->GetUserDetails().ToString().compare(target) == 0) {
+				peer->send_message(type, message, target);
+				continue;
+			}
+			std::vector<int>::iterator it2 = channel_list.begin();
+			while(it2 != channel_list.end()) {
+				if(peer->GetChannelFlags(*it2) & EUserChannelFlag_IsInChannel) {
+					peer->send_message(type, message,target);
+					break;
+				}
+				it2++;
+			}
 		}
 		mp_mutex->unlock();
 	}

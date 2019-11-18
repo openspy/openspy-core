@@ -74,8 +74,13 @@ namespace Peerchat {
 							if(m_user.id == 0) break;
 						}
 						command_found = true;
-						printf("found command: %s\n", entry.name.c_str());
-						(*this.*entry.callback)(command_items);
+
+						if (command_items.size() >= entry.minimum_args+1) {
+							(*this.*entry.callback)(command_items);
+						}
+						else {
+							send_numeric(461, command_upper + " :Not enough parameters", true);
+						}
 						break;
 					}
 					it2++;
@@ -84,7 +89,6 @@ namespace Peerchat {
 			}
 			if(!command_found) {
 				std::ostringstream s;
-				printf("NOT FOUND command: %s\n", command_upper.c_str());
 				s << command_upper << " :Unknown Command";
 				send_numeric(421, s.str(), true);
 			}
@@ -128,29 +132,30 @@ namespace Peerchat {
 
 	void Peer::RegisterCommands() {
 		std::vector<CommandEntry> commands;
-		commands.push_back(CommandEntry("NICK", false, &Peer::handle_nick));
-		commands.push_back(CommandEntry("USER", false, &Peer::handle_user));
-		commands.push_back(CommandEntry("PING", false, &Peer::handle_ping));
-		commands.push_back(CommandEntry("OPER", false, &Peer::handle_oper));
-		commands.push_back(CommandEntry("PRIVMSG", false, &Peer::handle_privmsg));
-		commands.push_back(CommandEntry("NOTICE", false, &Peer::handle_notice));
-		commands.push_back(CommandEntry("UTM", false, &Peer::handle_utm));
-		commands.push_back(CommandEntry("ATM", false, &Peer::handle_atm));
-		commands.push_back(CommandEntry("JOIN", false, &Peer::handle_join));
-		commands.push_back(CommandEntry("PART", false, &Peer::handle_part));
-		commands.push_back(CommandEntry("MODE", false, &Peer::handle_mode));
-		commands.push_back(CommandEntry("NAMES", false, &Peer::handle_names));
-		commands.push_back(CommandEntry("USRIP", false, &Peer::handle_userhost));
-		commands.push_back(CommandEntry("USERHOST", false, &Peer::handle_userhost));
-		commands.push_back(CommandEntry("TOPIC", false, &Peer::handle_topic));
-		commands.push_back(CommandEntry("LIST", false, &Peer::handle_list));
-		commands.push_back(CommandEntry("WHOIS", false, &Peer::handle_whois));
-		commands.push_back(CommandEntry("SETCKEY", false, &Peer::handle_setckey));
-		commands.push_back(CommandEntry("GETCKEY", false, &Peer::handle_getckey));
-		commands.push_back(CommandEntry("SETCHANKEY", false, &Peer::handle_setchankey));
-		commands.push_back(CommandEntry("GETCHANKEY", false, &Peer::handle_getchankey));
-		commands.push_back(CommandEntry("SETKEY", false, &Peer::handle_setkey));
-		commands.push_back(CommandEntry("GETKEY", false, &Peer::handle_getkey));
+		commands.push_back(CommandEntry("NICK", false, 2 ,&Peer::handle_nick));
+		commands.push_back(CommandEntry("USER", false, 4, &Peer::handle_user));
+		commands.push_back(CommandEntry("PING", false, 1, &Peer::handle_ping));
+		commands.push_back(CommandEntry("OPER", false, 3, &Peer::handle_oper));
+		commands.push_back(CommandEntry("PRIVMSG", false, 2, &Peer::handle_privmsg));
+		commands.push_back(CommandEntry("NOTICE", false, 2, &Peer::handle_notice));
+		commands.push_back(CommandEntry("UTM", false, 2, &Peer::handle_utm));
+		commands.push_back(CommandEntry("ATM", false, 2, &Peer::handle_atm));
+		commands.push_back(CommandEntry("JOIN", false, 1, &Peer::handle_join));
+		commands.push_back(CommandEntry("PART", false, 1, &Peer::handle_part));
+		commands.push_back(CommandEntry("MODE", false, 1, &Peer::handle_mode));
+		commands.push_back(CommandEntry("NAMES", false, 1, &Peer::handle_names));
+		commands.push_back(CommandEntry("USRIP", false, 0, &Peer::handle_userhost));
+		commands.push_back(CommandEntry("USERHOST", false, 0, &Peer::handle_userhost));
+		commands.push_back(CommandEntry("TOPIC", false, 2, &Peer::handle_topic));
+		commands.push_back(CommandEntry("LIST", false, 1, &Peer::handle_list));
+		commands.push_back(CommandEntry("WHOIS", false, 2, &Peer::handle_whois));
+		commands.push_back(CommandEntry("SETCKEY", false, 5, &Peer::handle_setckey));
+		commands.push_back(CommandEntry("GETCKEY", false, 5, &Peer::handle_getckey));
+		commands.push_back(CommandEntry("SETCHANKEY", false, 4, &Peer::handle_setchankey));
+		commands.push_back(CommandEntry("GETCHANKEY", false, 4, &Peer::handle_getchankey));
+		commands.push_back(CommandEntry("SETKEY", false, 4, &Peer::handle_setkey));
+		commands.push_back(CommandEntry("GETKEY", false, 4, &Peer::handle_getkey));
+		commands.push_back(CommandEntry("KICK", false, 2, &Peer::handle_kick));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name) {
@@ -181,7 +186,7 @@ namespace Peerchat {
 		s << str << std::endl;
 		SendPacket(s.str());
 	}
-	void Peer::send_message(std::string messageType, std::string messageContent, std::string from, std::string to) {
+	void Peer::send_message(std::string messageType, std::string messageContent, std::string from, std::string to, std::string target) {
 		std::ostringstream s;
 
 		if(from.length() == 0) {
@@ -193,8 +198,11 @@ namespace Peerchat {
 		if(to.length() > 0) {
 			s << " " << to;
 		}
+		if(target.length() > 0) {
+			s << " " << target;
+		}
 		if(messageContent.length() > 0) {
-			s << " " << messageContent;
+			s << " :" << messageContent;
 		}
 		s << std::endl;
 		SendPacket(s.str());

@@ -19,7 +19,11 @@ namespace Peerchat {
 		if (to.length() > 0 && to[0] == '#') {
 			ChannelSummary summary = GetChannelSummaryByName(thread_data, to, false);
 			if (summary.channel_id) {
-				server->OnChannelMessage(reader.GetValue("type"), reader.GetValue("from"), summary, send_message);
+				std::string target = "";
+				if (reader.HasKey("target")) {
+					target = reader.GetValue("target");
+				}
+				server->OnChannelMessage(reader.GetValue("type"), reader.GetValue("from"), summary, send_message, target);
 			}
 			
 		}
@@ -44,7 +48,7 @@ namespace Peerchat {
 	}
     
     bool Perform_SendMessageToTarget(PeerchatBackendRequest request, TaskThreadData *thread_data) {
-		std::string message = ":" + request.message;
+		std::string message = request.message;
 		const char *base64 = OS::BinToBase64Str((uint8_t *)message.c_str(), message.length());
 		std::string b64_string = base64;
 		free((void *)base64);

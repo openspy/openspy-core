@@ -14,12 +14,31 @@
 #include <server/Server.h>
 #include <server/Peer.h>
 namespace Peerchat {
+	void Peer::SendNickUpdate(std::string newNick) {
+		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
+		PeerchatBackendRequest req;
+		req.type = EPeerchatRequestType_SetBroadcastToVisibleUsers;
+		req.peer = this;
+		req.summary = GetUserDetails();
+		req.message = newNick;
+		req.message_type = "NICK";
+
+		std::map<int, int>::iterator it = m_channel_flags.begin();
+		while (it != m_channel_flags.end()) {
+			std::pair<int, int> p = *it;
+			req.channel_id_list.push_back(p.first);
+			it++;
+		}
+
+		req.peer->IncRef();
+		req.callback = NULL;
+		scheduler->AddRequest(req.type, req);
+	}
     void Peer::OnNickReserve(TaskResponse response_data, Peer *peer) {
         if(response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
             peer->m_user_details.id = response_data.summary.id;
             if(peer->m_sent_client_init) {
-                Server *server = (Server *)peer->mp_driver->getServer();
-                server->SendUserMessageToVisibleUsers(peer->GetUserDetails().ToString(), "NICK", response_data.profile.uniquenick);
+				peer->SendNickUpdate(response_data.summary.nick);
                 peer->m_user_details.nick = response_data.summary.nick;
             } else {
                 peer->m_user_details.nick = response_data.summary.nick;
@@ -35,7 +54,12 @@ namespace Peerchat {
         req.type = EPeerchatRequestType_SetUserDetails;
         req.peer = this;
         req.summary = GetUserDetails();
-        req.summary.nick = data_parser.at(1);
+
+		std::string nick = data_parser.at(1);
+		if (nick[0] == ':') {
+			nick = nick.substr(1);
+		}
+        req.summary.nick = nick;
         req.peer->IncRef();
         req.callback = OnNickReserve;
         scheduler->AddRequest(req.type, req);
