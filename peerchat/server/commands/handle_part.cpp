@@ -20,20 +20,25 @@ namespace Peerchat {
 <- :CHC!CHC@99.243.125.215 PART #test :hello there
 	*/
 	void Peer::handle_part(std::vector<std::string> data_parser) {
-		std::string message = data_parser.at(2);
 		std::string target = data_parser.at(1);
 
-		bool do_combine = false;
-		if (message[0] == ':') {
-			do_combine = true;
-			message = message.substr(1);
-		}
+		std::string message = "";
+		if (data_parser.size() > 2) {
+			message = data_parser.at(2);
 
-		if (do_combine) {
-			for (int i = 3; i < data_parser.size(); i++) {
-				message = message.append(" ").append(data_parser.at(i));
+			bool do_combine = false;
+			if (message[0] == ':') {
+				do_combine = true;
+				message = message.substr(1);
+			}
+
+			if (do_combine) {
+				for (int i = 3; i < data_parser.size(); i++) {
+					message = message.append(" ").append(data_parser.at(i));
+				}
 			}
 		}
+		
 
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;

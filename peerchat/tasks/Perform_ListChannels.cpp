@@ -37,22 +37,37 @@ namespace Peerchat {
 
 					key = key.substr(12);
 					summary = GetChannelSummaryByName(thread_data, key, false);
-					if (summary.channel_id != 0)
-						channels.push_back(summary);
+
+					if (summary.channel_id != 0) {
+						
+
+						Redis::Response reply;
+						Redis::Value v;
+
+						reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d custkey_GROUP", summary.channel_id);
+						if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+							continue;
+						}
+						v = reply.values[0];
+
+						std::string group = v.value._str;
+						if (request.channel_summary.channel_name.compare(group) == 0 || match2(request.channel_summary.channel_name.c_str(), summary.channel_name.c_str()) == 0) {
+							channels.push_back(summary);
+						}
+					}
 				}
 			}
 			else break;
-
-        } while(cursor != 0);
+        } while(cursor != 0 && (channels.size() < request.channel_summary.limit || request.channel_summary.limit == 0));
 	error_cleanup:
 		return channels;
     }
 
     bool Perform_ListChannels(PeerchatBackendRequest request, TaskThreadData *thread_data) {
 		TaskResponse response;
+		response.summary.id = request.channel_summary.channel_id; //used for "specialinfo" (/list k)
 
         response.channel_summaries = ListChannels(request, thread_data);
-		
 		if (request.callback) {
 			request.callback(response, request.peer);
 		}

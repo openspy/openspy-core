@@ -6,6 +6,8 @@
 #include <OS/Task/TaskScheduler.h>
 #include <OS/SharedTasks/tasks.h>
 
+int match(const char* mask, const char* name);
+int match2(const char* mask, const char* name);
 namespace Peerchat {
 	class Server : public INetServer {
 	public:
@@ -21,7 +23,7 @@ namespace Peerchat {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *GetPeerchatTask() { return mp_peerchat_tasks; };
 
 		void OnUserMessage(std::string type, std::string from, std::string to, std::string message);
-		void OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message, std::string target);
+		void OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message, std::string target, bool includeSelf);
 
 		//send 1 time message to anyone who is in a at least 1 channel with a user
 		void OnChannelBroadcast(std::string type, std::string target, std::vector<int> channel_list, std::string message, bool includeSelf);

@@ -71,6 +71,12 @@ namespace Peerchat {
         }
         summary.address = reply.values[0].value._str;
 
+        reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET user_%d modeflags", user_id);
+        if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+            goto error_end;
+        }
+        summary.modeflags = atoi(reply.values[0].value._str.c_str());
+
         summary.id = user_id;
 
         error_end:

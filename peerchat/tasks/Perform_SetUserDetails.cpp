@@ -1,5 +1,4 @@
 #include "tasks.h"
-#define USER_EXPIRE_TIME 300
 namespace Peerchat {
     const char *mp_pk_name = "PEERCHATID";
 	int GetPeerchatUserID(TaskThreadData *thread_data) {
@@ -66,6 +65,7 @@ namespace Peerchat {
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d realname %s", response.summary.id, request.summary.realname.c_str());
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d hostname %s", response.summary.id, request.summary.hostname.c_str());
                 Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d address %s", response.summary.id, request.summary.address.ToString(true).c_str());
+                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d modeflags 0", response.summary.id);
 
                 if(request.summary.nick.length() != 0) {
                     Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());

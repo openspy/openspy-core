@@ -14,7 +14,7 @@ namespace Peerchat {
         
         OS::Base64StrToBin((const char *)reader.GetValue("message").c_str(), &data_out, data_len);
 		std::string to = reader.GetValue("to");
-		
+		bool includeSelf = (bool)reader.GetValueInt("includeSelf");
 		std::string send_message = std::string((const char*)data_out, data_len);
 		if (to.length() > 0 && to[0] == '#') {
 			ChannelSummary summary = GetChannelSummaryByName(thread_data, to, false);
@@ -23,7 +23,7 @@ namespace Peerchat {
 				if (reader.HasKey("target")) {
 					target = reader.GetValue("target");
 				}
-				server->OnChannelMessage(reader.GetValue("type"), reader.GetValue("from"), summary, send_message, target);
+				server->OnChannelMessage(reader.GetValue("type"), reader.GetValue("from"), summary, send_message, target, includeSelf);
 			}
 			
 		}

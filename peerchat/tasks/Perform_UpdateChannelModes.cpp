@@ -64,11 +64,22 @@ namespace Peerchat {
 		if (request.channel_summary.channel_name.length() > 0) {
 			target = request.channel_summary.channel_name;
 		}
+		TaskResponse response;
 
 		ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
+		if (summary.channel_id == 0) {
+			response.error_details.response_code = TaskShared::WebErrorCode_NoSuchUser;
+			if (request.callback) {
+				request.callback(response, request.peer);
+			}
+			if (request.peer) {
+				request.peer->DecRef();
+			}
+			return true;
+		}
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 
-		TaskResponse response;
+		
 
 		std::ostringstream mode_message;
 
@@ -76,15 +87,15 @@ namespace Peerchat {
 
 		if (request.channel_modify.set_mode_flags != 0 || request.channel_modify.update_password || request.channel_modify.update_limit || request.channel_modify.set_usermodes.size()) {
 			bool added_mode = false;
-			for (int i = 0; i < num_mode_flags; i++) {
-				if (request.channel_modify.set_mode_flags & mode_flag_map[i].flag) {
-					if (~summary.basic_mode_flags & mode_flag_map[i].flag) {
+			for (int i = 0; i < num_channel_mode_flags; i++) {
+				if (request.channel_modify.set_mode_flags & channel_mode_flag_map[i].flag) {
+					if (~summary.basic_mode_flags & channel_mode_flag_map[i].flag) {
 						if (added_mode == false) {
 							mode_message << "+";
 							added_mode = true;
 						}
-						mode_message << mode_flag_map[i].character;
-						summary.basic_mode_flags |= mode_flag_map[i].flag;
+						mode_message << channel_mode_flag_map[i].character;
+						summary.basic_mode_flags |= channel_mode_flag_map[i].flag;
 						
 					}
 				}
@@ -126,15 +137,15 @@ namespace Peerchat {
 
 		if (request.channel_modify.unset_mode_flags != 0 || request.channel_modify.update_password || request.channel_modify.update_limit) {
 			bool removed_mode = false;
-			for (int i = 0; i < num_mode_flags; i++) {
-				if (request.channel_modify.unset_mode_flags & mode_flag_map[i].flag) {
-					if (summary.basic_mode_flags & mode_flag_map[i].flag) {
+			for (int i = 0; i < num_channel_mode_flags; i++) {
+				if (request.channel_modify.unset_mode_flags & channel_mode_flag_map[i].flag) {
+					if (summary.basic_mode_flags & channel_mode_flag_map[i].flag) {
 						if (removed_mode == false) {
 							mode_message << "-";
 							removed_mode = true;
 						}
-						mode_message << mode_flag_map[i].character;
-						summary.basic_mode_flags &= ~mode_flag_map[i].flag;
+						mode_message << channel_mode_flag_map[i].character;
+						summary.basic_mode_flags &= ~channel_mode_flag_map[i].flag;
 					}
 				}
 			}

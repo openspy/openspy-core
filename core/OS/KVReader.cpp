@@ -60,6 +60,7 @@ namespace OS {
 				i++;
 			}
 			if (line_delim == 0) {
+				value = "";
 				break;
 			}
 		}

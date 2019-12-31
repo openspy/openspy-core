@@ -32,8 +32,22 @@ namespace Peerchat {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());
 	}
 	void Peer::Delete(bool timeout) {
+		Delete(false, "Client Exited");
+	}
+	void Peer::Delete(bool timeout, std::string reason) {
+		send_quit(reason);
 		m_delete_flag = true;
 		m_timeout_flag = timeout;
+
+		if (m_user_details.id != 0) {
+			TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
+			PeerchatBackendRequest req;
+			req.type = EPeerchatRequestType_DeleteUser;
+			req.peer = this;
+			req.peer->IncRef();
+			req.callback = NULL;
+			scheduler->AddRequest(req.type, req);
+		}
 	}
 	
 	void Peer::think(bool packet_waiting) {
@@ -71,11 +85,11 @@ namespace Peerchat {
 					CommandEntry entry = *it2;
 					if (command_upper.compare(entry.name) == 0) {
 						if (entry.login_required) {
-							if(m_user.id == 0) break;
+							if(m_user_details.id == 0) break;
 						}
 						command_found = true;
 
-						if (command_items.size() >= entry.minimum_args+1) {
+						if (((int)command_items.size()) >= entry.minimum_args+1) {
 							(*this.*entry.callback)(command_items);
 						}
 						else {
@@ -101,9 +115,9 @@ namespace Peerchat {
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIME * 2) {
-			Delete(true);
+			Delete(true, "Ping Timeout");
 		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
-			Delete();
+			Delete(false, "Connection severed");
 		}
 	}
 	void Peer::handle_packet(OS::KVReader data_parser) {
@@ -126,36 +140,40 @@ namespace Peerchat {
 		NetIOCommResp io_resp;
 		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
 		if (io_resp.disconnect_flag || io_resp.error_flag) {
-			Delete();
+			Delete(false, "Connection severed");
 		}
 	}
 
 	void Peer::RegisterCommands() {
 		std::vector<CommandEntry> commands;
-		commands.push_back(CommandEntry("NICK", false, 2 ,&Peer::handle_nick));
+		commands.push_back(CommandEntry("NICK", false, 1 ,&Peer::handle_nick));
 		commands.push_back(CommandEntry("USER", false, 4, &Peer::handle_user));
 		commands.push_back(CommandEntry("PING", false, 1, &Peer::handle_ping));
 		commands.push_back(CommandEntry("OPER", false, 3, &Peer::handle_oper));
-		commands.push_back(CommandEntry("PRIVMSG", false, 2, &Peer::handle_privmsg));
-		commands.push_back(CommandEntry("NOTICE", false, 2, &Peer::handle_notice));
-		commands.push_back(CommandEntry("UTM", false, 2, &Peer::handle_utm));
-		commands.push_back(CommandEntry("ATM", false, 2, &Peer::handle_atm));
-		commands.push_back(CommandEntry("JOIN", false, 1, &Peer::handle_join));
-		commands.push_back(CommandEntry("PART", false, 1, &Peer::handle_part));
-		commands.push_back(CommandEntry("MODE", false, 1, &Peer::handle_mode));
-		commands.push_back(CommandEntry("NAMES", false, 1, &Peer::handle_names));
+		commands.push_back(CommandEntry("PRIVMSG", true, 2, &Peer::handle_privmsg));
+		commands.push_back(CommandEntry("NOTICE", true, 2, &Peer::handle_notice));
+		commands.push_back(CommandEntry("UTM", true, 2, &Peer::handle_utm));
+		commands.push_back(CommandEntry("ATM", true, 2, &Peer::handle_atm));
+		commands.push_back(CommandEntry("JOIN", true, 1, &Peer::handle_join));
+		commands.push_back(CommandEntry("PART", true, 1, &Peer::handle_part));
+		commands.push_back(CommandEntry("QUIT", false, 1, &Peer::handle_quit));
+		commands.push_back(CommandEntry("MODE", true, 1, &Peer::handle_mode));
+		commands.push_back(CommandEntry("NAMES", true, 1, &Peer::handle_names));
 		commands.push_back(CommandEntry("USRIP", false, 0, &Peer::handle_userhost));
 		commands.push_back(CommandEntry("USERHOST", false, 0, &Peer::handle_userhost));
-		commands.push_back(CommandEntry("TOPIC", false, 2, &Peer::handle_topic));
-		commands.push_back(CommandEntry("LIST", false, 1, &Peer::handle_list));
-		commands.push_back(CommandEntry("WHOIS", false, 2, &Peer::handle_whois));
-		commands.push_back(CommandEntry("SETCKEY", false, 5, &Peer::handle_setckey));
-		commands.push_back(CommandEntry("GETCKEY", false, 5, &Peer::handle_getckey));
-		commands.push_back(CommandEntry("SETCHANKEY", false, 4, &Peer::handle_setchankey));
-		commands.push_back(CommandEntry("GETCHANKEY", false, 4, &Peer::handle_getchankey));
-		commands.push_back(CommandEntry("SETKEY", false, 4, &Peer::handle_setkey));
-		commands.push_back(CommandEntry("GETKEY", false, 4, &Peer::handle_getkey));
-		commands.push_back(CommandEntry("KICK", false, 2, &Peer::handle_kick));
+		commands.push_back(CommandEntry("TOPIC", true, 2, &Peer::handle_topic));
+		commands.push_back(CommandEntry("LIST", true, 1, &Peer::handle_list));
+		commands.push_back(CommandEntry("LISTLIMIT", true, 2, &Peer::handle_listlimit));
+		commands.push_back(CommandEntry("WHOIS", true, 2, &Peer::handle_whois));
+		commands.push_back(CommandEntry("WHO", true, 1, &Peer::handle_who));
+		commands.push_back(CommandEntry("SETCKEY", true, 5, &Peer::handle_setckey));
+		commands.push_back(CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey));
+		commands.push_back(CommandEntry("SETCHANKEY", true, 4, &Peer::handle_setchankey));
+		commands.push_back(CommandEntry("GETCHANKEY", true, 4, &Peer::handle_getchankey));
+		commands.push_back(CommandEntry("SETKEY", true, 4, &Peer::handle_setkey));
+		commands.push_back(CommandEntry("GETKEY", true, 4, &Peer::handle_getkey));
+		commands.push_back(CommandEntry("KICK", true, 2, &Peer::handle_kick));
+		commands.push_back(CommandEntry("SETGROUP", true, 2, &Peer::handle_setgroup));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name) {
@@ -181,7 +199,7 @@ namespace Peerchat {
 		
 		s << ":" << ((Peerchat::Server *)GetDriver()->getServer())->getServerName() << " " << std::setfill('0') << std::setw(3) << num << " " << name << " ";
 		if(!no_colon) {
-				s << ":";
+			s << ":";
 		}
 		s << str << std::endl;
 		SendPacket(s.str());
@@ -206,6 +224,14 @@ namespace Peerchat {
 		}
 		s << std::endl;
 		SendPacket(s.str());
+
+		if (messageType.compare("JOIN") == 0 && from.compare(GetUserDetails().ToString()) == 0) {
+			//send names automatically
+			std::vector<std::string> params;
+			params.push_back("NAMES");
+			params.push_back(to);
+			handle_names(params);
+		}
 	}
 	void Peer::OnUserRegistered(TaskResponse response_data, Peer *peer)  {
 		std::ostringstream s;
@@ -274,5 +300,17 @@ namespace Peerchat {
 		}		
 		mp_mutex->unlock();
 		return flags;
+	}
+	std::vector<int> Peer::GetChannels() {
+		std::vector<int> channels;
+		mp_mutex->lock();
+		std::map<int, int>::iterator it = m_channel_flags.begin();
+		while (it != m_channel_flags.end()) {
+			std::pair<int, int> p = *it;
+			channels.push_back(p.first);
+			it++;
+		}
+		mp_mutex->unlock();
+		return channels;
 	}
 }

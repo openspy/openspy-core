@@ -36,7 +36,7 @@ namespace Peerchat {
 			s << user.userSummary.nick << " ";
 		}
 		peer->send_numeric(353, s.str(), false, target);
-		peer->send_numeric(366, "End of /NAMES list.");
+		peer->send_numeric(366, "End of /NAMES list.", false, response_data.channel_summary.channel_name);
     }
     void Peer::handle_names(std::vector<std::string> data_parser) {
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();

@@ -12,6 +12,9 @@
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 #include <OS/SharedTasks/Account/ProfileTasks.h>
 
+#include <sstream>
+#include <algorithm>
+
 
 #define PEERCHAT_PING_TIME 300
 
@@ -19,6 +22,7 @@ namespace Peerchat {
 	class Driver;
 
 	class TaskResponse;
+	class ChannelSummary;
 
 	class Peer;
 	typedef void(Peer::*CommandCallback)(std::vector<std::string>);
@@ -31,8 +35,8 @@ namespace Peerchat {
 			this->minimum_args = minimum_args;
 		}
 		std::string name;
-		int login_required;
-		bool minimum_args;
+		bool login_required;
+		int minimum_args;
 		CommandCallback callback;
 	};
 
@@ -45,6 +49,7 @@ namespace Peerchat {
 			std::string realname;
 			OS::Address address;
 			int gameid;
+			int modeflags;
 			std::string ToString() {
 				return nick + "!" + username + "@" + address.ToString(true);
 			};
@@ -58,7 +63,8 @@ namespace Peerchat {
 		~Peer();
 
 		void OnConnectionReady();
-		void Delete(bool timeout = false);
+		void Delete(bool timeout = false, std::string reason = "");
+		void Peer::Delete(bool timeout = false);
 		
 		void think(bool packet_waiting);
 		void handle_packet(OS::KVReader data_parser);
@@ -82,6 +88,7 @@ namespace Peerchat {
 		void send_message(std::string messageType, std::string messageContent, std::string from = "", std::string to = "", std::string target = "");
 
 		int GetChannelFlags(int channel_id);
+		std::vector<int> GetChannels();
 
 		void SendNickUpdate(std::string newNick);
 	private:
@@ -90,6 +97,8 @@ namespace Peerchat {
 		static void OnUserRegistered(TaskResponse response_data, Peer *peer);
 		static void OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer);
 		static void OnMode_FetchChannelInfo(TaskResponse response_data, Peer* peer);
+		static void OnMode_FetchUserInfo(TaskResponse response_data, Peer* peer);
+		static void OnMode_UpdateUserMode(TaskResponse response_data, Peer* peer);
 		static void OnTopic_FetchChannelInfo(TaskResponse response_data, Peer* peer);
 		static void OnJoinChannel(TaskResponse response_data, Peer* peer);
 		static void OnListChannels(TaskResponse response_data, Peer* peer);
@@ -101,6 +110,9 @@ namespace Peerchat {
 		static void OnSetChanKey(TaskResponse response_data, Peer* peer);
 		static void OnGetChanKey(TaskResponse response_data, Peer* peer);
 		static void OnKickCallback(TaskResponse response_data, Peer* peer);
+		static void OnSetGroup(TaskResponse response_data, Peer* peer);
+		static void OnWho_FetchChannelInfo(TaskResponse response_data, Peer *peer);
+		static void OnWho_FetchUserInfo(TaskResponse response_data, Peer *peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -118,6 +130,7 @@ namespace Peerchat {
 		void handle_mode(std::vector<std::string> data_parser);
 		void handle_userhost(std::vector<std::string> data_parser);
 		void handle_list(std::vector<std::string> data_parser);
+		void handle_listlimit(std::vector<std::string> data_parser);
 		void handle_whois(std::vector<std::string> data_parser);
 		void handle_quit(std::vector<std::string> data_parser);
 		void handle_setckey(std::vector<std::string> data_parser);
@@ -126,11 +139,19 @@ namespace Peerchat {
 		void handle_getkey(std::vector<std::string> data_parser);
 		void handle_setchankey(std::vector<std::string> data_parser);
 		void handle_getchankey(std::vector<std::string> data_parser);
+		void handle_setgroup(std::vector<std::string> data_parser);
+		void handle_who(std::vector<std::string> data_parser);
+
+
+		void handle_channel_mode_command(std::vector<std::string> data_parser);
+		void handle_user_mode_command(std::vector<std::string> data_parser);
 
 		void send_no_such_target_error(std::string channel);
 		void send_topic(std::string channel);
 
 		void handle_message_command(std::string type, std::vector<std::string> data_parser);
+		void send_quit(std::string reason);
+		static void getChannelSpecialInfo(std::ostringstream &ss, ChannelSummary summary);
 
 
 		OS::GameData m_game;

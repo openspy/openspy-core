@@ -11,9 +11,9 @@ namespace Peerchat {
 		const char* peerchat_key_updates_routingkey = "peerchat.keyupdate-messages";
 		const char* peerchat_broadcast_routingkey = "peerchat.client-broadcasts";
 
-		ModeFlagMap *mode_flag_map = NULL;
-		int num_mode_flags;
-		ModeFlagMap local_mode_flag_map[] = {
+		ModeFlagMap* channel_mode_flag_map = NULL;
+		int num_channel_mode_flags;
+		ModeFlagMap local_channel_mode_flag_map[] = {
 			{EChannelMode_NoOutsideMessages, 'n'},
 			{EChannelMode_TopicProtect, 't'},
 			{EChannelMode_Moderated, 'm'},
@@ -22,11 +22,24 @@ namespace Peerchat {
 			{EChannelMode_InviteOnly, 'i'},
 			{EChannelMode_StayOpen, 'z'},
 			{EChannelMode_Registered, 'r'},
-			{EChannelMode_OpsObeyChannelLimit, 'e'}
+			{EChannelMode_OpsObeyChannelLimit, 'e'},
+			{EChannelMode_Auditorium, 'u'},
+			{EChannelMode_AuditoriumVOP, 'q'}
+		};
+
+		ModeFlagMap* user_mode_flag_map = NULL;
+		int num_user_mode_flags;
+		ModeFlagMap local_user_mode_flag_map[] = {
+			{EUserMode_Quiet, 'q'},
+			{EUserMode_Invisible, 'i'},
 		};
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server) {
-			mode_flag_map = (ModeFlagMap*)&local_mode_flag_map;
-			num_mode_flags = sizeof(local_mode_flag_map) / sizeof(ModeFlagMap);
+			channel_mode_flag_map = (ModeFlagMap*)&local_channel_mode_flag_map;
+			num_channel_mode_flags = sizeof(local_channel_mode_flag_map) / sizeof(ModeFlagMap);
+
+			user_mode_flag_map = (ModeFlagMap*)&local_user_mode_flag_map;
+			num_user_mode_flags = sizeof(local_user_mode_flag_map) / sizeof(ModeFlagMap);
+
             TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = new TaskScheduler<PeerchatBackendRequest, TaskThreadData>(OS::g_numAsync, server);
             scheduler->AddRequestHandler(EPeerchatRequestType_SetUserDetails, Perform_SetUserDetails);
             scheduler->AddRequestHandler(EPeerchatRequestType_SendMessageToTarget, Perform_SendMessageToTarget);
@@ -36,6 +49,7 @@ namespace Peerchat {
 			scheduler->AddRequestHandler(EPeerchatRequestType_LookupChannelDetails, Perform_LookupChannelDetails);
 			scheduler->AddRequestHandler(EPeerchatRequestType_LookupUserDetailsByName, Perform_LookupUserDetailsByName);
 			scheduler->AddRequestHandler(EPeerchatRequestType_UpdateChannelModes, Perform_UpdateChannelModes);
+			scheduler->AddRequestHandler(EPeerchatRequestType_UpdateUserModes, Perform_UpdateUserModes);
 			scheduler->AddRequestHandler(EPeerchatRequestType_ListChannels, Perform_ListChannels);
 			scheduler->AddRequestHandler(EPeerchatRequestType_SetChannelUserKeys, Perform_SetChannelUserKeys);
 			scheduler->AddRequestHandler(EPeerchatRequestType_GetChannelUserKeys, Perform_GetChannelUserKeys);
@@ -47,9 +61,13 @@ namespace Peerchat {
 			scheduler->AddRequestHandler(EPeerchatRequestType_SetBroadcastToVisibleUsers, Perform_SetBroadcastToVisibleUsers);
 			scheduler->AddRequestHandler(EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource, Perform_SetBroadcastToVisibleUsers);
 
+			scheduler->AddRequestHandler(EPeerchatRequestType_DeleteUser, Perform_DeleteUser);
+			scheduler->AddRequestHandler(EPeerchatRequestType_KeepaliveUser, Perform_KeepaliveUser);
+
 			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg);
 			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates);
 			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_broadcast_routingkey, Handle_Broadcast);
+
 			
 			scheduler->DeclareReady();
 

@@ -23,7 +23,7 @@ namespace Peerchat {
 		Peer *FindPeerByProfileID(int profileid);		
 		Peer *FindPeerByUserSummary(std::string summary_string);
 		void SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf = true);
-		void OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message, std::string target);
+		void OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message, std::string target, bool includeSelf);
 		void OnSetUserChannelKeys(ChannelSummary summary, UserSummary user_summary, OS::KVReader keys);
 		void OnSetChannelKeys(ChannelSummary summary, OS::KVReader keys);
 		void OnChannelBroadcast(std::string type, std::string target, std::vector<int> channel_list, std::string message, bool includeSelf);

@@ -25,8 +25,20 @@ namespace Peerchat {
     void Peer::handle_join(std::vector<std::string> data_parser) {
         std::string target = data_parser.at(1);
 
+
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
+
+        if (data_parser.size() > 2) {
+            req.channel_summary.password = data_parser.at(2);
+        }
+
+        if (data_parser.size() > 3) { //desired user mode flags
+            //i = invisible
+            //q = quiet
+            //iq = invisible+quiet
+        }
+
         req.type = EPeerchatRequestType_UserJoinChannel;
         req.peer = this;
         req.channel_summary.channel_name = target;

@@ -17,9 +17,18 @@
 namespace Peerchat {
     void Peer::handle_ping(std::vector<std::string> data_parser) {
         std::string end = data_parser.at(1);
-/*        if(end[0] == ':') {
+        if(end[0] == ':') {
             end = end.substr(1);
-        }*/
-        send_message("PONG", end);
+        }
+        send_message("PONG", end, "", ((Peerchat::Server*)GetDriver()->getServer())->getServerName());
+
+		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
+		PeerchatBackendRequest req;
+		req.type = EPeerchatRequestType_KeepaliveUser;
+		req.summary = GetUserDetails();
+		req.peer = this;
+		req.peer->IncRef();
+		req.callback = NULL;
+		scheduler->AddRequest(req.type, req);
     }
 }

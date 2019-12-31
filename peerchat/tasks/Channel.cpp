@@ -128,6 +128,8 @@ namespace Peerchat {
         summary.channel_id = channel_id;
         summary.channel_name = name;
 		summary.limit = 0;
+		summary.basic_mode_flags = 0;
+
         struct timeval curtime;
         gettimeofday(&curtime, NULL);
         summary.created_at = curtime;
@@ -190,11 +192,11 @@ namespace Peerchat {
 		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_user_%d %d", channel.channel_id, CHANNEL_EXPIRE_TIME);
 
         std::ostringstream message;
-		message << "\\type\\JOIN\\to\\" << channel.channel_name << "\\from\\" << user.ToString() << "\\modeflags\\" << initial_flags;
+		message << "\\type\\JOIN\\to\\" << channel.channel_name << "\\from\\" << user.ToString() << "\\modeflags\\" << initial_flags << "\\includeSelf\\1";
         thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
     }
 
-    void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target) {
+    void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target, bool silent) {
 
 		const char* base64 = OS::BinToBase64Str((uint8_t*)remove_message.c_str(), remove_message.length());
 
@@ -239,7 +241,7 @@ namespace Peerchat {
 
         do {
 			reply = Redis::Command(thread_data->mp_redis_connection, 0, "ZSCAN channel_%d_users %d", channel_id, cursor);
-			if (Redis::CheckError(reply))
+			if (Redis::CheckError(reply) || reply.values.size() == 0 || reply.values[0].arr_value.values.size() < 2)
 				goto error_cleanup;
 
 			v = reply.values[0].arr_value.values[0].second;

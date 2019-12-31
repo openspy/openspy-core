@@ -19,6 +19,8 @@
 
 #include <server/Peer.h>
 
+#define USER_EXPIRE_TIME 300
+
 namespace Peerchat {
 	enum EOperPrivileges {
 		OPERPRIVS_NONE = 0,
@@ -48,7 +50,14 @@ namespace Peerchat {
 		EChannelMode_InviteOnly = 1 << 5, // +i
 		EChannelMode_StayOpen = 1 << 6, //+z??
 		EChannelMode_Registered = 1 << 7, //+r 
-		EChannelMode_OpsObeyChannelLimit = 1 << 8, //+e -- maybe "ops part of channel limit"?
+		EChannelMode_OpsObeyChannelLimit = 1 << 8, //+e -- maybe "ops obey channel limit"?
+		EChannelMode_Auditorium = 1 << 9, //+u
+		EChannelMode_Auditorium_ShowVOP = 1 << 10, //+q
+		//
+	};
+	enum EUserModes {
+		EUserMode_Quiet = 1 << 0, //+q
+		EUserMode_Invisible = 1 << 1, // +i
 		//
 	};
   enum EPeerchatRequestType {
@@ -59,6 +68,7 @@ namespace Peerchat {
 			EPeerchatRequestType_UserJoinChannel,
 			EPeerchatRequestType_UserPartChannel,
 			EPeerchatRequestType_UpdateChannelModes,
+			EPeerchatRequestType_UpdateUserModes,
 			EPeerchatRequestType_ListChannels,
 			EPeerchatRequestType_SetChannelUserKeys,
 			EPeerchatRequestType_GetChannelUserKeys,
@@ -69,6 +79,8 @@ namespace Peerchat {
 			EPeerchatRequestType_UserKickChannel,
 			EPeerchatRequestType_SetBroadcastToVisibleUsers,
 			EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource,
+			EPeerchatRequestType_DeleteUser,
+			EPeerchatRequestType_KeepaliveUser,
 	};
 
   enum EUserChannelFlag {
@@ -86,8 +98,12 @@ namespace Peerchat {
 		int flag;
 		char character;
 	} _ModeFlagMap;
-	extern int num_mode_flags;
-	extern ModeFlagMap *mode_flag_map;
+
+	extern ModeFlagMap* channel_mode_flag_map;
+	extern int num_channel_mode_flags;
+	extern ModeFlagMap* user_mode_flag_map;
+	extern int num_user_mode_flags;
+
 	class ChannelUserSummary {
 		public:
 		int channel_id;
@@ -174,6 +190,7 @@ namespace Peerchat {
 	bool Perform_LookupChannelDetails(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_LookupUserDetailsByName(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_UpdateChannelModes(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_UpdateUserModes(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_ListChannels(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_SetChannelUserKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_GetChannelUserKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
@@ -182,6 +199,8 @@ namespace Peerchat {
 	bool Perform_SetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_GetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_SetBroadcastToVisibleUsers(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_DeleteUser(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_KeepaliveUser(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
 	bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message);
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message);
@@ -199,7 +218,7 @@ namespace Peerchat {
 	ChannelSummary CreateChannel(TaskThreadData *thread_data, std::string name);
 	ChannelSummary GetChannelSummaryByName(TaskThreadData *thread_data, std::string name, bool create);
 	void AddUserToChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, int initial_flags);
-	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target = UserSummary());
+	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target = UserSummary(), bool silent = false);
 	std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id);
 
 	UserSummary GetUserSummaryByName(TaskThreadData *thread_data, std::string name);

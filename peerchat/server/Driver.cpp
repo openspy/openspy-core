@@ -45,12 +45,12 @@ namespace Peerchat {
 		}
 		mp_mutex->unlock();
 	}
-	void Driver::OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message, std::string target) {
+	void Driver::OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message, std::string target, bool includeSelf) {
 		mp_mutex->lock();
 		std::vector<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
 			Peer *peer = (Peer *)*it;
-			if(peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_IsInChannel) {
+			if(peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_IsInChannel || (includeSelf && peer->GetUserDetails().ToString().compare(from) == 0)) {
 				peer->send_message(type, message,from, channel.channel_name, target);
 			}
 			it++;
