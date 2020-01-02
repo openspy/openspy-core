@@ -24,7 +24,7 @@ namespace Peerchat {
 			{EChannelMode_Registered, 'r'},
 			{EChannelMode_OpsObeyChannelLimit, 'e'},
 			{EChannelMode_Auditorium, 'u'},
-			{EChannelMode_AuditoriumVOP, 'q'}
+			{EChannelMode_Auditorium_ShowVOP, 'q'}
 		};
 
 		ModeFlagMap* user_mode_flag_map = NULL;

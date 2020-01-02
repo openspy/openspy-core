@@ -67,8 +67,15 @@ namespace Peerchat {
 		TaskResponse response;
 
 		ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
-		if (summary.channel_id == 0) {
-			response.error_details.response_code = TaskShared::WebErrorCode_NoSuchUser;
+		int from_mode_flags = LookupUserChannelModeFlags(thread_data, summary.channel_id, request.peer->GetBackendId());
+		if (summary.channel_id == 0 || !CheckActionPermissions(request.peer, request.channel_summary.channel_name, from_mode_flags, 0, (int)EUserChannelFlag_HalfOp) || !CheckChannelUserModeChange(thread_data, request.peer, request.channel_summary.channel_name, from_mode_flags, request.channel_modify.set_usermodes, request.channel_modify.unset_usermodes)) {
+			if (summary.channel_id == 0) {
+				response.error_details.response_code = TaskShared::WebErrorCode_NoSuchUser;
+			}
+			else {
+				response.error_details.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
+			}
+			
 			if (request.callback) {
 				request.callback(response, request.peer);
 			}
@@ -78,8 +85,6 @@ namespace Peerchat {
 			return true;
 		}
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-
-		
 
 		std::ostringstream mode_message;
 

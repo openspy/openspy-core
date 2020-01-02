@@ -91,6 +91,12 @@ namespace Peerchat {
 		std::vector<int> GetChannels();
 
 		void SendNickUpdate(std::string newNick);
+
+		///
+		/// This block is public for use in async tasks
+		///
+		void send_no_such_target_error(std::string channel);
+		///
 	private:
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void OnNickReserve(TaskResponse response_data, Peer *peer);
@@ -116,8 +122,9 @@ namespace Peerchat {
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
-		void handle_ping(std::vector<std::string> data_parser);		
-		void handle_oper(std::vector<std::string> data_parser);		
+		void handle_ping(std::vector<std::string> data_parser);
+		void handle_oper(std::vector<std::string> data_parser);
+		void handle_login(std::vector<std::string> data_parser);
 		void handle_privmsg(std::vector<std::string> data_parser);
 		void handle_notice(std::vector<std::string> data_parser);
 		void handle_utm(std::vector<std::string> data_parser);
@@ -146,7 +153,6 @@ namespace Peerchat {
 		void handle_channel_mode_command(std::vector<std::string> data_parser);
 		void handle_user_mode_command(std::vector<std::string> data_parser);
 
-		void send_no_such_target_error(std::string channel);
 		void send_topic(std::string channel);
 
 		void handle_message_command(std::string type, std::vector<std::string> data_parser);

@@ -265,4 +265,79 @@ namespace Peerchat {
         error_cleanup:
         return result;
     }
+	int GetUserModeLevel(int modeflags) {
+		if (modeflags & EUserChannelFlag_Owner) {
+			return 4;
+		}
+		if (modeflags & EUserChannelFlag_Op) {
+			return 3;
+		}
+		if (modeflags & EUserChannelFlag_HalfOp) {
+			return 2;
+		}
+		if (modeflags & EUserChannelFlag_Voice) {
+			return 1;
+		}
+		return 0;
+	}
+	bool CheckActionPermissions(Peer *peer, std::string channel, int from_mode_flags, int to_mode_flags, int min_mode_flags) {
+		if (GetUserModeLevel(min_mode_flags) > GetUserModeLevel(from_mode_flags)) {
+			peer->send_numeric(482, "You're not channel operator (Does not meet minimum rank)", false, channel);
+			return false;
+		}
+		if (GetUserModeLevel(to_mode_flags) > GetUserModeLevel(from_mode_flags)) {
+			peer->send_numeric(482, "You're not channel operator (Target user ranked higher)", false, channel);
+			return false;
+		}
+		return true;
+	}
+	EUserChannelFlag GetMinimumModeFlagsFromUpdateSet(int update_mode_flags) {
+		if (update_mode_flags & EUserChannelFlag_Owner) {
+			return EUserChannelFlag_Owner;
+		}
+		if (update_mode_flags & EUserChannelFlag_Op) {
+			return EUserChannelFlag_Op;
+		}
+		if (update_mode_flags & EUserChannelFlag_HalfOp) {
+			return EUserChannelFlag_HalfOp;
+		}
+		if (update_mode_flags & EUserChannelFlag_Voice) {
+			return EUserChannelFlag_Voice;
+		}
+		return EUserChannelFlag_Owner;
+	}
+	bool TestChannelUserModeChangeItem(TaskThreadData* thread_data, Peer* peer, ChannelSummary channel_summary, std::string target_username, int from_mode_flags, int update_flags) {
+		UserSummary target_summary = GetUserSummaryByName(thread_data, target_username);
+		if(target_summary.id == 0) {
+			peer->send_no_such_target_error(target_username);
+			return false;
+		}
+		int to_mode_flags = LookupUserChannelModeFlags(thread_data, channel_summary.channel_id, target_summary.id);
+		if(!CheckActionPermissions(peer, channel_summary.channel_name, from_mode_flags, to_mode_flags, (int)GetMinimumModeFlagsFromUpdateSet(to_mode_flags))) {
+			return false;
+		}
+		return true;
+	}
+	bool CheckChannelUserModeChange(TaskThreadData* thread_data, Peer *peer, std::string channel, int from_mode_flags, std::map<std::string, int> set_usermodes, std::map<std::string, int> unset_usermodes) {
+		ChannelSummary channel_summary = GetChannelSummaryByName(thread_data, channel, false);
+
+		std::map<std::string, int>::iterator it = set_usermodes.begin();
+		while (it != set_usermodes.end()) {
+			std::pair<std::string, int> p = *it;
+			if (!TestChannelUserModeChangeItem(thread_data, peer, channel_summary, p.first, from_mode_flags, p.second)) {
+				return false;
+			}
+			it++;
+		}
+
+		it = unset_usermodes.begin();
+		while (it != unset_usermodes.end()) {
+			std::pair<std::string, int> p = *it;
+			if (!TestChannelUserModeChangeItem(thread_data, peer, channel_summary, p.first, from_mode_flags, p.second)) {
+				return false;
+			}
+			it++;
+		}
+		return true;
+	}
 }

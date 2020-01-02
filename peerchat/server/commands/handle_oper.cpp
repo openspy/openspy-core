@@ -33,11 +33,8 @@ namespace Peerchat {
         request.user.email = data_parser.at(2);
         request.user.password = data_parser.at(3);
 
-
-        //temp
-        request.user.partnercode = 20;
+        request.user.partnercode = OS_GAMESPY_PARTNER_CODE;
         request.profile.namespaceid = 1;
-        //
 
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetAuthTask();
 		scheduler->AddRequest(request.type, request);

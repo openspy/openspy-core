@@ -18,6 +18,7 @@ namespace Peerchat {
 		if (channel.password.length() != 0) {
 			if (channel.password.compare(password) != 0) {
 				peer->send_numeric(475, "Cannot join channel (+k)", false, channel.channel_name);
+				return false;
 			}
 		}
 		return true;
@@ -37,7 +38,7 @@ namespace Peerchat {
         }
 		
 		if (response.error_details.response_code == TaskShared::WebErrorCode_Success) {
-			AddUserToChannel(thread_data, request.peer->GetUserDetails(), channel, response.summary.id);
+			AddUserToChannel(thread_data, request.peer->GetUserDetails(), channel, (int)EUserChannelFlag_IsInChannel);
 		}
 
 		if (request.callback)

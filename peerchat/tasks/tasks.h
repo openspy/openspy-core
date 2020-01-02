@@ -106,25 +106,25 @@ namespace Peerchat {
 
 	class ChannelUserSummary {
 		public:
-		int channel_id;
-		int user_id;
-		int modeflags;
-		UserSummary userSummary;
+			int channel_id;
+			int user_id;
+			int modeflags;
+			UserSummary userSummary;
 	};
 	class ChannelSummary {
 		public:
-		std::string channel_name;
-		int channel_id;
-		int basic_mode_flags;
-		std::string password;
-		int limit;
-		struct timeval created_at;
+			std::string channel_name;
+			int channel_id;
+			int basic_mode_flags;
+			std::string password;
+			int limit;
+			struct timeval created_at;
 
-		std::string topic;
-		struct timeval topic_time;
-		std::string topic_user_summary;
+			std::string topic;
+			struct timeval topic_time;
+			std::string topic_user_summary;
 
-		std::vector<ChannelUserSummary> users;
+			std::vector<ChannelUserSummary> users;
 	};
   class TaskResponse {
 		public:
@@ -220,9 +220,16 @@ namespace Peerchat {
 	void AddUserToChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, int initial_flags);
 	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target = UserSummary(), bool silent = false);
 	std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id);
+	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id);
 
 	UserSummary GetUserSummaryByName(TaskThreadData *thread_data, std::string name);
 	extern const char *mp_pk_channel_name;
+
+	//channel perms
+	bool CheckActionPermissions(Peer *peer, std::string channel, int from_mode_flags, int to_mode_flags, int min_mode_flags);
+	bool CheckChannelUserModeChange(TaskThreadData* thread_data, Peer *peer, std::string channel, int from_mode_flags, std::map<std::string, int> set_usermodes, std::map<std::string, int> unset_usermodes);
+	bool TestChannelUserModeChangeItem(TaskThreadData* thread_data, Peer* peer, ChannelSummary channel_summary, std::string target_username, int from_mode_flags, int update_flags);
+	EUserChannelFlag GetMinimumModeFlagsFromUpdateSet(int update_mode_flags);
 	//
 
 	extern const char *peerchat_channel_exchange;
