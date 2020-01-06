@@ -17,7 +17,7 @@ namespace Peerchat {
     void Peer::OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer) {
 		std::vector<ChannelUserSummary>::iterator it = response_data.channel_summary.users.begin();
 
-		bool see_invisible = false; //XXX: get invisible operflag
+		bool see_invisible = peer->GetOperFlags() & OPERPRIVS_INVISIBLE; //XXX: get invisible operflag
 		
 
 		std::ostringstream s;

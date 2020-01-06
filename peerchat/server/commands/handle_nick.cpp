@@ -35,16 +35,18 @@ namespace Peerchat {
 		scheduler->AddRequest(req.type, req);
 	}
     void Peer::OnNickReserve(TaskResponse response_data, Peer *peer) {
-        if(response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
+        if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
             peer->m_user_details.id = response_data.summary.id;
-            if(peer->m_sent_client_init) {
-				peer->SendNickUpdate(response_data.summary.nick);
+            if (peer->m_sent_client_init) {
+                peer->SendNickUpdate(response_data.summary.nick);
                 peer->m_user_details.nick = response_data.summary.nick;
-            } else {
+            }
+            else {
                 peer->m_user_details.nick = response_data.summary.nick;
                 peer->OnUserMaybeRegistered();
-            }            
-        } else {
+            }
+        } 
+        else if (response_data.error_details.response_code == TaskShared::WebErrorCode_UniqueNickInUse) {
             peer->send_numeric(433,"Nickname is already in use", false, response_data.profile.uniquenick);
         }
     }

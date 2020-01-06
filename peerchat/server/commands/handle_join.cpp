@@ -34,9 +34,12 @@ namespace Peerchat {
         }
 
         if (data_parser.size() > 3) { //desired user mode flags
-            //i = invisible
-            //q = quiet
-            //iq = invisible+quiet
+            std::string mode_string = data_parser.at(3);
+            for (int i = 0; i < num_user_mode_flags; i++) {
+                if (mode_string.find(user_mode_flag_map[i].character) != std::string::npos) {
+                    req.channel_modify.set_mode_flags |= user_mode_flag_map[i].flag;
+                }
+            }
         }
 
         req.type = EPeerchatRequestType_UserJoinChannel;

@@ -38,6 +38,9 @@ namespace Peerchat {
 
 			peer->send_numeric(318, "End of WHOIS list");
 		}
+		else {
+			peer->send_no_such_target_error(response_data.profile.uniquenick);
+		}
 	}
     void Peer::handle_whois(std::vector<std::string> data_parser) {
         std::string target = data_parser.at(1);

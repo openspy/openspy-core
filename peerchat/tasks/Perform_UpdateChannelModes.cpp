@@ -199,7 +199,7 @@ namespace Peerchat {
 			Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d topic \"%s\"", summary.channel_id, request.channel_modify.topic.c_str());
 			struct timeval now;
 			gettimeofday(&now, NULL);
-			Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d topic_time %d", now.tv_sec);
+			Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d topic_time %d", summary.channel_id, now.tv_sec);
 			Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d topic_user \"%s\"", summary.channel_id, request.peer->GetUserDetails().ToString().c_str());
 		} else if(request.channel_modify.update_topic) {
 			Redis::Command(thread_data->mp_redis_connection, 0, "HDEL channel_%d topic", summary.channel_id);
@@ -214,20 +214,19 @@ namespace Peerchat {
 
 		if (mode_message.str().size()) {
 			std::ostringstream mq_message;
-			mq_message << "\\type\\MODE\\to\\" << target << "\\message\\" << b64_string << "\\from\\" << request.summary.ToString();
+			mq_message << "\\type\\MODE\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\1";
 
 			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
 		}
 
 		if (request.channel_modify.topic.size()) {
-			request.channel_modify.topic = ":" + request.channel_modify.topic;
 			const char* base64 = OS::BinToBase64Str((uint8_t*)request.channel_modify.topic.c_str(), request.channel_modify.topic.length());
 			b64_string = base64;
 			free((void*)base64);
 
 
 			std::ostringstream mq_message;
-			mq_message << "\\type\\TOPIC\\to\\" << target << "\\message\\" << b64_string << "\\from\\" << request.summary.ToString();
+			mq_message << "\\type\\TOPIC\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\1";
 
 			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
 		}

@@ -63,7 +63,6 @@ namespace Peerchat {
 			req.peer->IncRef();
 			req.callback = NULL;
 			scheduler->AddRequest(req.type, req);
-			printf("SET TOPIC: %s\n", message.c_str());
 		}
 		
     }

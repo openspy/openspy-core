@@ -50,6 +50,7 @@ namespace Peerchat {
 			OS::Address address;
 			int gameid;
 			int modeflags;
+			int operflags;
 			std::string ToString() {
 				return nick + "!" + username + "@" + address.ToString(true);
 			};
@@ -81,7 +82,7 @@ namespace Peerchat {
 
 		void OnUserMaybeRegistered();
 		UserSummary GetUserDetails() { return m_user_details; };
-		void OnRecvDirectMsg(std::string from, std::string msg, std::string type);
+		void OnRecvDirectMsg(UserSummary from, std::string msg, std::string type);
 		int GetBackendId() { return m_user_details.id; };
 
 		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "", bool append_name = true);
@@ -91,6 +92,7 @@ namespace Peerchat {
 		std::vector<int> GetChannels();
 
 		void SendNickUpdate(std::string newNick);
+		int GetOperFlags() { return m_oper_flags; };
 
 		///
 		/// This block is public for use in async tasks
@@ -119,6 +121,7 @@ namespace Peerchat {
 		static void OnSetGroup(TaskResponse response_data, Peer* peer);
 		static void OnWho_FetchChannelInfo(TaskResponse response_data, Peer *peer);
 		static void OnWho_FetchUserInfo(TaskResponse response_data, Peer *peer);
+		static void OnUsrip_FetchUser(TaskResponse response_data, Peer* peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -174,6 +177,7 @@ namespace Peerchat {
 		std::vector<CommandEntry> m_commands;
 
 		bool m_sent_client_init;
+		int m_oper_flags;
 
 		std::map<int, int> m_channel_flags;
 	};

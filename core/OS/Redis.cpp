@@ -307,7 +307,14 @@ namespace Redis {
 			OS::Sleep((int)sleepMS);
 		int len = Recv(conn);
 		if (len <= 0) {
+			
 			OS::LogText(OS::ELogLevel_Critical, "redis recv error: %d", len);
+
+			#ifdef _WIN32
+			int err = WSAGetLastError();
+			OS::LogText(OS::ELogLevel_Critical, "redis recv win32 err: %d", err);
+			#endif
+			
 			Reconnect(conn);
 			if (conn->command_recursion_depth < REDIS_MAX_RECONNECT_RECURSION_DEPTH) {
 				conn->command_recursion_depth++;

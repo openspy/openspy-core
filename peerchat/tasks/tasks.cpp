@@ -87,22 +87,39 @@ namespace Peerchat {
 			free((void*)data_out);
 
 			std::string type = reader.GetValue("type");
-			std::string target = reader.GetValue("source");
+
+			UserSummary from;
+			if (reader.HasKey("fromUserId")) {
+				from = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
+			}
 
 			std::string channels = reader.GetValue("channels");
+			std::string channel_modes = reader.GetValue("channel_modes");
 
 			bool includeSelf = reader.GetValueInt("includeSelf");
 
 			std::vector<int> channel_list;
-
 			std::istringstream input;
 			input.str(channels);
 			std::string s;
-			while(std::getline(input, s, ',')) {
+			while (std::getline(input, s, ',')) {
 				channel_list.push_back(atoi(s.c_str()));
 			}
 
-			server->OnChannelBroadcast(type, target, channel_list, send_message, includeSelf);
+			std::vector<int> channel_modes_list;
+			input = std::istringstream(channel_modes);
+			while (std::getline(input, s, ',')) {
+				channel_modes_list.push_back(atoi(s.c_str()));
+			}
+
+			std::map<int, int> channel_mode_map;
+
+			int num_items = channel_list.size();
+			for (int i = 0; i < num_items; i++) {
+				channel_mode_map[channel_list.at(i)] = channel_modes_list.at(i);
+			}
+
+			server->OnChannelBroadcast(type, from, channel_mode_map, send_message, includeSelf);
 
 			return true;
 		}
@@ -129,5 +146,33 @@ namespace Peerchat {
 				server->OnSetChannelKeys(summary, keys);
 			}
 			return false;
+		}
+
+		void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base, bool show_private) {
+			if(user_base.length() > 0) {
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %susername %s", base_key.c_str(), user_base.c_str(), userSummary.username.c_str());
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %snick %s", base_key.c_str(), user_base.c_str(), userSummary.nick.c_str());
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %srealname %s", base_key.c_str(), user_base.c_str(), userSummary.realname.c_str());
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sgameid %d", base_key.c_str(), user_base.c_str(), userSummary.gameid);
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %shostname %s", base_key.c_str(), user_base.c_str(), userSummary.hostname.c_str());
+
+				if(show_private) {
+					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %saddress %s", base_key.c_str(), user_base.c_str(), userSummary.address.ToString(true).c_str());
+					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %smodeflags %d", base_key.c_str(), user_base.c_str(), userSummary.modeflags);
+					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %operflags %d", base_key.c_str(), user_base.c_str(), userSummary.operflags);
+				}
+			} else {
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s username %s", base_key.c_str(), userSummary.username.c_str());
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s nick %s", base_key.c_str(), userSummary.nick.c_str());
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s realname %s", base_key.c_str(), userSummary.realname.c_str());
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", base_key.c_str(), userSummary.gameid);
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s hostname %s", base_key.c_str(), userSummary.hostname.c_str());
+				if(show_private) {
+					
+					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s address %s", base_key.c_str(), userSummary.address.ToString(true).c_str());
+					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s modeflags %d", base_key.c_str(), userSummary.modeflags);
+					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s operflags %d", base_key.c_str(), userSummary.operflags);
+				}
+			}
 		}
 }

@@ -9,7 +9,7 @@ namespace Peerchat {
 
 		UserSummary summary = GetUserSummaryByName(thread_data, request.summary.username);
         response.summary = summary;
-        
+		response.profile.uniquenick = request.summary.username;
 
 		if (summary.id != 0) {
 			response.error_details.response_code = TaskShared::WebErrorCode_Success;

@@ -13,22 +13,27 @@ namespace Peerchat {
 
         
         OS::Base64StrToBin((const char *)reader.GetValue("message").c_str(), &data_out, data_len);
-		std::string to = reader.GetValue("to");
+
 		bool includeSelf = (bool)reader.GetValueInt("includeSelf");
 		std::string send_message = std::string((const char*)data_out, data_len);
-		if (to.length() > 0 && to[0] == '#') {
-			ChannelSummary summary = GetChannelSummaryByName(thread_data, to, false);
+		if (reader.HasKey("toChannelId")) {
+			ChannelSummary summary = LookupChannelById(thread_data, reader.GetValueInt("toChannelId"));
 			if (summary.channel_id) {
-				std::string target = "";
-				if (reader.HasKey("target")) {
-					target = reader.GetValue("target");
-				}
-				server->OnChannelMessage(reader.GetValue("type"), reader.GetValue("from"), summary, send_message, target, includeSelf);
+				UserSummary from_user_summary = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
+				ChannelUserSummary from;
+				from.userSummary = from_user_summary;
+				from.user_id = from_user_summary.id;
+				from.channel_id = summary.channel_id;
+				from.modeflags = LookupUserChannelModeFlags(thread_data, from.channel_id, from.user_id);
+
+				ChannelUserSummary target; //target seems unused...
+				server->OnChannelMessage(reader.GetValue("type"), from, summary, send_message, target, includeSelf);
 			}
-			
 		}
 		else {
-			server->OnUserMessage(reader.GetValue("type"), reader.GetValue("from"), to, send_message);
+			UserSummary from_user_summary = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
+			UserSummary to_user_summary = LookupUserById(thread_data, reader.GetValueInt("toUserId"));
+			server->OnUserMessage(reader.GetValue("type"), from_user_summary, to_user_summary, send_message);
 		}
         
         free(data_out);
@@ -53,28 +58,31 @@ namespace Peerchat {
 		std::string b64_string = base64;
 		free((void *)base64);
 
+		std::ostringstream mq_message;
+
 		std::string target;
 		if (request.message_target.length() > 0 && request.message_target[0] == '#') {
 			target = request.message_target;
 			//moderated check
 			ChannelSummary summary = GetChannelSummaryByName(thread_data, target, false);
-			if (!CheckUserCanSendMessage(summary, request.peer)) {
-				request.peer->send_numeric(404, "Cannot send to channel", false, target);
-				request.peer->DecRef();
+			if (summary.channel_id == 0 || !CheckUserCanSendMessage(summary, request.peer)) {
+				if (summary.channel_id != 0) {
+					request.peer->send_numeric(404, "Cannot send to channel", false, target);
+					request.peer->DecRef();
+				}
+				else {
+					request.peer->send_no_such_target_error(target);
+					request.peer->DecRef();
+				}
 				return true;
-
 			}
+			mq_message << "\\type\\" << request.message_type.c_str() << "\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id;
 		}
 		else {
-			UserSummary to_summary = GetUserSummaryByName(thread_data, request.message_target);
-			target = to_summary.ToString();
+			UserSummary to_summary = GetUserSummaryByName(thread_data, request.message_target);			
+			mq_message << "\\type\\" << request.message_type.c_str() << "\\toUserId\\" << to_summary.id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id;
 		}
-		
-
-		std::ostringstream mq_message;
-		mq_message << "\\type\\" << request.message_type.c_str() << "\\to\\" << target << "\\message\\" << b64_string << "\\from\\" << request.summary.ToString();
-
-
+	 	
         thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
 
 		if (request.peer) {

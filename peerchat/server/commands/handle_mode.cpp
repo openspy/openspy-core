@@ -18,6 +18,9 @@ namespace Peerchat {
 		if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
 			peer->m_user_details.modeflags = response_data.summary.modeflags;
 		}
+		else if (response_data.error_details.response_code == TaskShared::WebErrorCode_NoSuchUser) {
+			peer->send_no_such_target_error(response_data.profile.uniquenick);
+		}
 	}
 	void Peer::OnMode_FetchChannelInfo(TaskResponse response_data, Peer* peer) {
 		std::ostringstream s;

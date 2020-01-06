@@ -18,6 +18,7 @@ namespace Peerchat {
         if(auth_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
             ((Peer *)peer)->m_profile = profile;
             ((Peer *)peer)->m_user = user;
+            ((Peer*)peer)->m_oper_flags = -1;
             ((Peer *)peer)->send_message("NOTICE", "RIGHTS GRANTED", "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
         } else {
             printf("LOG IN FAILED\n");

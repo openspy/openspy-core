@@ -92,6 +92,7 @@ namespace Peerchat {
 	  EUserChannelFlag_Invisible = 1 << 5,
 	  EUserChannelFlag_Gagged = 1 << 6,
 	  EUserChannelFlag_Invited = 1 << 7,
+	  EUserChannelFlag_Quiet = 1 << 8,
   };
 
 	typedef struct ModeFlagMap {
@@ -221,6 +222,8 @@ namespace Peerchat {
 	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target = UserSummary(), bool silent = false);
 	std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id);
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id);
+
+	void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base = "", bool show_private = false);
 
 	UserSummary GetUserSummaryByName(TaskThreadData *thread_data, std::string name);
 	extern const char *mp_pk_channel_name;

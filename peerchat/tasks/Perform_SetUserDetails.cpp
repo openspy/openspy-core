@@ -19,6 +19,8 @@ namespace Peerchat {
         TaskResponse response;
         response.summary = request.summary;
 
+        response.profile.uniquenick = request.summary.nick;
+
         UserSummary userDetails = request.peer->GetUserDetails();
         bool nick_update = false;
         if(userDetails.id != 0) {
@@ -60,12 +62,13 @@ namespace Peerchat {
                 Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", request.summary.nick.c_str(), response.summary.id);
             } else {
                 response.summary.nick = userDetails.nick;
-                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d username %s", response.summary.id, request.summary.username.c_str());
-                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d nick %s", response.summary.id, request.summary.nick.c_str());
-                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d realname %s", response.summary.id, request.summary.realname.c_str());
-                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d hostname %s", response.summary.id, request.summary.hostname.c_str());
-                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d address %s", response.summary.id, request.summary.address.ToString(true).c_str());
-                Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d modeflags 0", response.summary.id);
+
+                std::ostringstream ss;
+                ss << "user_" << response.summary.id;
+                request.summary.modeflags = 0;
+                request.summary.gameid = 0;
+                ApplyUserKeys(thread_data, ss.str(), request.summary, "", true);
+                ApplyUserKeys(thread_data, ss.str(), request.summary, "custkey_");
 
                 if(request.summary.nick.length() != 0) {
                     Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());

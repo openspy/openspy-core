@@ -12,6 +12,20 @@ namespace Peerchat {
 
 		if (summary.channel_id != 0) {
 			response.error_details.response_code = TaskShared::WebErrorCode_Success;
+
+			int from_mode_flags = LookupUserChannelModeFlags(thread_data, summary.channel_id, request.peer->GetBackendId());
+			if (!CheckActionPermissions(request.peer, request.channel_summary.channel_name, from_mode_flags, 0, (int)EUserChannelFlag_Op)) {
+				
+				response.channel_summary = summary;
+				if (request.callback) {
+					request.callback(response, request.peer);
+				}
+				if (request.peer) {
+					request.peer->DecRef();
+				}
+				return true;
+				
+			}
 			if (request.peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_IsInChannel) {
 				std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> iterators = request.channel_modify.kv_data.GetHead();
 				std::vector<std::pair< std::string, std::string> >::const_iterator it = iterators.first;

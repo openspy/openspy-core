@@ -22,11 +22,11 @@ namespace Peerchat {
 		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *GetProfileTask() { return mp_profile_tasks; };
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *GetPeerchatTask() { return mp_peerchat_tasks; };
 
-		void OnUserMessage(std::string type, std::string from, std::string to, std::string message);
-		void OnChannelMessage(std::string type, std::string from, ChannelSummary channel, std::string message, std::string target, bool includeSelf);
+		void OnUserMessage(std::string type, UserSummary from, UserSummary to, std::string message);
+		void OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf);
 
 		//send 1 time message to anyone who is in a at least 1 channel with a user
-		void OnChannelBroadcast(std::string type, std::string target, std::vector<int> channel_list, std::string message, bool includeSelf);
+		void OnChannelBroadcast(std::string type, UserSummary target, std::map<int, int> channel_list, std::string message, bool includeSelf);
 		void OnSetUserChannelKeys(ChannelSummary summary, UserSummary user_summary, OS::KVReader keys);
 		void OnSetChannelKeys(ChannelSummary summary, OS::KVReader keys);
 

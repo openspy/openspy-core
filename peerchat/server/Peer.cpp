@@ -17,6 +17,7 @@ namespace Peerchat {
 	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		m_sent_client_init = false;
 		m_user_details.id = 0;
+		m_oper_flags = 0;
 		mp_mutex = OS::CreateMutex();
 		RegisterCommands();
 	}
@@ -148,7 +149,7 @@ namespace Peerchat {
 		std::vector<CommandEntry> commands;
 		commands.push_back(CommandEntry("NICK", false, 1 ,&Peer::handle_nick));
 		commands.push_back(CommandEntry("USER", false, 4, &Peer::handle_user));
-		commands.push_back(CommandEntry("PING", false, 1, &Peer::handle_ping));
+		commands.push_back(CommandEntry("PING", false, 0, &Peer::handle_ping));
 		commands.push_back(CommandEntry("OPER", false, 3, &Peer::handle_oper));
 		commands.push_back(CommandEntry("PRIVMSG", true, 2, &Peer::handle_privmsg));
 		commands.push_back(CommandEntry("NOTICE", true, 2, &Peer::handle_notice));
@@ -161,10 +162,10 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("NAMES", true, 1, &Peer::handle_names));
 		commands.push_back(CommandEntry("USRIP", false, 0, &Peer::handle_userhost));
 		commands.push_back(CommandEntry("USERHOST", false, 0, &Peer::handle_userhost));
-		commands.push_back(CommandEntry("TOPIC", true, 2, &Peer::handle_topic));
+		commands.push_back(CommandEntry("TOPIC", true, 1, &Peer::handle_topic));
 		commands.push_back(CommandEntry("LIST", true, 1, &Peer::handle_list));
 		commands.push_back(CommandEntry("LISTLIMIT", true, 2, &Peer::handle_listlimit));
-		commands.push_back(CommandEntry("WHOIS", true, 2, &Peer::handle_whois));
+		commands.push_back(CommandEntry("WHOIS", true, 1, &Peer::handle_whois));
 		commands.push_back(CommandEntry("WHO", true, 1, &Peer::handle_who));
 		commands.push_back(CommandEntry("SETCKEY", true, 5, &Peer::handle_setckey));
 		commands.push_back(CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey));
@@ -205,6 +206,9 @@ namespace Peerchat {
 		SendPacket(s.str());
 	}
 	void Peer::send_message(std::string messageType, std::string messageContent, std::string from, std::string to, std::string target) {
+		if (m_user_details.modeflags & EUserMode_Quiet) {
+			return;
+		}
 		std::ostringstream s;
 
 		if(from.length() == 0) {
@@ -286,8 +290,8 @@ namespace Peerchat {
 		req.callback = OnUserRegistered;
 		scheduler->AddRequest(req.type, req);
 	}
-	void Peer::OnRecvDirectMsg(std::string from, std::string msg, std::string type) {
-		send_message(type, msg, from, m_user_details.nick);	
+	void Peer::OnRecvDirectMsg(UserSummary from, std::string msg, std::string type) {
+		send_message(type, msg, from.ToString(), m_user_details.nick);	
 	}
 	void Peer::send_no_such_target_error(std::string channel) {
 		send_numeric(401, "No such nick/channel", false, channel);
