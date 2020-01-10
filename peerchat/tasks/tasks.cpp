@@ -12,7 +12,7 @@ namespace Peerchat {
 		const char* peerchat_broadcast_routingkey = "peerchat.client-broadcasts";
 
 		ModeFlagMap* channel_mode_flag_map = NULL;
-		int num_channel_mode_flags;
+		int num_channel_mode_flags = 0;
 		ModeFlagMap local_channel_mode_flag_map[] = {
 			{EChannelMode_NoOutsideMessages, 'n'},
 			{EChannelMode_TopicProtect, 't'},
@@ -28,17 +28,35 @@ namespace Peerchat {
 		};
 
 		ModeFlagMap* user_mode_flag_map = NULL;
-		int num_user_mode_flags;
+		int num_user_mode_flags = 0;
 		ModeFlagMap local_user_mode_flag_map[] = {
 			{EUserMode_Quiet, 'q'},
 			{EUserMode_Invisible, 'i'},
 		};
+
+		ModeFlagMap* user_join_chan_flag_map = NULL;
+		int num_user_join_chan_flags = 0;
+		ModeFlagMap local_user_join_chan_flag_map[] = {
+			{EUserChannelFlag_Quiet, 'q'},
+			{EUserChannelFlag_Invisible, 'i'},
+			{EUserChannelFlag_Gagged, 'g'},
+			{EUserChannelFlag_Invited, 'I'},
+			{EUserChannelFlag_Voice, 'v'},
+			{EUserChannelFlag_HalfOp, 'h'},
+			{EUserChannelFlag_Op, 'o'},
+			{EUserChannelFlag_Owner, 'O'},
+			{EUserChannelFlag_Banned, 'b'}
+		};
+
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server) {
 			channel_mode_flag_map = (ModeFlagMap*)&local_channel_mode_flag_map;
 			num_channel_mode_flags = sizeof(local_channel_mode_flag_map) / sizeof(ModeFlagMap);
 
 			user_mode_flag_map = (ModeFlagMap*)&local_user_mode_flag_map;
 			num_user_mode_flags = sizeof(local_user_mode_flag_map) / sizeof(ModeFlagMap);
+
+			user_join_chan_flag_map = (ModeFlagMap*)&local_user_join_chan_flag_map;
+			num_user_join_chan_flags = sizeof(local_user_join_chan_flag_map) / sizeof(ModeFlagMap);
 
             TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = new TaskScheduler<PeerchatBackendRequest, TaskThreadData>(OS::g_numAsync, server);
             scheduler->AddRequestHandler(EPeerchatRequestType_SetUserDetails, Perform_SetUserDetails);

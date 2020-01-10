@@ -23,7 +23,7 @@ namespace Peerchat {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *GetPeerchatTask() { return mp_peerchat_tasks; };
 
 		void OnUserMessage(std::string type, UserSummary from, UserSummary to, std::string message);
-		void OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf);
+		void OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf, int requiredChanFlags, int requiredOperFlags);
 
 		//send 1 time message to anyone who is in a at least 1 channel with a user
 		void OnChannelBroadcast(std::string type, UserSummary target, std::map<int, int> channel_list, std::string message, bool includeSelf);

@@ -25,7 +25,6 @@ namespace Peerchat {
     void Peer::handle_join(std::vector<std::string> data_parser) {
         std::string target = data_parser.at(1);
 
-
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
 
@@ -35,9 +34,9 @@ namespace Peerchat {
 
         if (data_parser.size() > 3) { //desired user mode flags
             std::string mode_string = data_parser.at(3);
-            for (int i = 0; i < num_user_mode_flags; i++) {
-                if (mode_string.find(user_mode_flag_map[i].character) != std::string::npos) {
-                    req.channel_modify.set_mode_flags |= user_mode_flag_map[i].flag;
+            for (int i = 0; i < num_user_join_chan_flags; i++) {
+                if (mode_string.find(user_join_chan_flag_map[i].character) != std::string::npos) {
+                    req.channel_modify.set_mode_flags |= user_join_chan_flag_map[i].flag;
                 }
             }
         }

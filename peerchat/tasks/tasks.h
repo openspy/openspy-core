@@ -93,6 +93,7 @@ namespace Peerchat {
 	  EUserChannelFlag_Gagged = 1 << 6,
 	  EUserChannelFlag_Invited = 1 << 7,
 	  EUserChannelFlag_Quiet = 1 << 8,
+	  EUserChannelFlag_Banned = 1 << 9,
   };
 
 	typedef struct ModeFlagMap {
@@ -104,6 +105,9 @@ namespace Peerchat {
 	extern int num_channel_mode_flags;
 	extern ModeFlagMap* user_mode_flag_map;
 	extern int num_user_mode_flags;
+
+	extern ModeFlagMap* user_join_chan_flag_map;
+	extern int num_user_join_chan_flags;
 
 	class ChannelUserSummary {
 		public:

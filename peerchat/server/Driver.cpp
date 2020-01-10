@@ -45,7 +45,7 @@ namespace Peerchat {
 		}
 		mp_mutex->unlock();
 	}
-	void Driver::OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf) {
+	void Driver::OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf, int requiredChanUserModes, int requiredOperFlags) {
 		mp_mutex->lock();
 		std::vector<INetPeer *>::iterator it = m_connections.begin();
 		while (it != m_connections.end()) {
@@ -56,9 +56,10 @@ namespace Peerchat {
 					continue;
 				}
 			}
-			bool in_channel = peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_IsInChannel;
+			bool in_channel = peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_IsInChannel && (peer->GetChannelFlags(channel.channel_id) & requiredChanUserModes || requiredChanUserModes == 0);
+			int has_oper = peer->GetOperFlags() & requiredOperFlags || requiredOperFlags == 0;
 			bool selfMatch = (includeSelf && from.user_id == peer->GetBackendId()) || (from.user_id != peer->GetBackendId());
-			if(in_channel && selfMatch) {
+			if(in_channel && selfMatch && has_oper) {
 				peer->send_message(type, message,from.userSummary.ToString(), channel.channel_name, target.userSummary.nick);
 			}
 			it++;

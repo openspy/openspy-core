@@ -4,9 +4,9 @@
 
 namespace Peerchat {
 
-	bool CheckUserCanJoinChannel(ChannelSummary channel, Peer *peer, std::string password) {
+	bool CheckUserCanJoinChannel(ChannelSummary channel, Peer *peer, std::string password, int initial_flags) {
 		if (channel.basic_mode_flags & EChannelMode_InviteOnly) {
-			if (~peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_Invited) {
+			if (~peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_Invited || initial_flags & EUserChannelFlag_Invited) {
 				peer->send_numeric(473, "Cannot join channel (+i)", false, channel.channel_name);
 				return false;
 			}
@@ -21,6 +21,10 @@ namespace Peerchat {
 				return false;
 			}
 		}
+		if(initial_flags & EUserChannelFlag_Banned) {
+			peer->send_numeric(474, "Cannot join channel (+b)", false, channel.channel_name);
+			return false;
+		}
 		return true;
 	}
 
@@ -31,15 +35,9 @@ namespace Peerchat {
 		response.channel_summary = channel;
 
 		int initial_flags = EUserChannelFlag_IsInChannel;
+		initial_flags |= request.channel_modify.set_mode_flags;
 
-		if (request.channel_modify.set_mode_flags & EUserMode_Quiet) {
-			initial_flags |= EUserChannelFlag_Quiet;
-		}
-		if (request.channel_modify.set_mode_flags & EUserMode_Invisible) {
-			initial_flags |= EUserChannelFlag_Invisible;
-		}
-
-        if(!CheckUserCanJoinChannel(channel, request.peer, original_password)) {
+        if(!CheckUserCanJoinChannel(channel, request.peer, original_password, initial_flags)) {
             response.error_details.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
         } else {
             response.error_details.response_code = TaskShared::WebErrorCode_Success;
@@ -56,8 +54,28 @@ namespace Peerchat {
 				std::string b64_string = base64;
 				free((void*)base64);
 
-				mq_message << "\\type\\NOTICE\\toChannelId\\" << channel.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.peer->GetBackendId() << "\\requiredChanUserModes\\" << EUserChannelFlag_Invisible << "\\includeSelf\\1";
+				mq_message << "\\type\\NOTICE\\toChannelId\\" << channel.channel_id << "\\message\\" << b64_string << "\\fromUserId\\-1\\requiredOperFlags\\" << OPERPRIVS_INVISIBLE << "\\includeSelf\\1";
 				thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
+			}
+			if (initial_flags & EUserChannelFlag_Voice) {
+				std::string message = "+v " + request.peer->GetUserDetails().nick;
+				const char* base64 = OS::BinToBase64Str((uint8_t*)message.c_str(), message.length());
+				std::string b64_string = base64;
+				free((void*)base64);
+
+				std::ostringstream mode_message;
+				mode_message << "\\type\\MODE\\toChannelId\\" << channel.channel_id << "\\message\\" << b64_string << "\\fromUserId\\-1\\includeSelf\\1";
+				thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mode_message.str().c_str());
+			}
+			if (initial_flags & EUserChannelFlag_HalfOp || initial_flags & EUserChannelFlag_Op || initial_flags & EUserChannelFlag_Owner) {
+				std::string message = "+o " + request.peer->GetUserDetails().nick;
+				const char* base64 = OS::BinToBase64Str((uint8_t*)message.c_str(), message.length());
+				std::string b64_string = base64;
+				free((void*)base64);
+
+				std::ostringstream mode_message;
+				mode_message << "\\type\\MODE\\toChannelId\\" << channel.channel_id << "\\message\\" << b64_string << "\\fromUserId\\-1\\includeSelf\\1";
+				thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mode_message.str().c_str());
 			}
 		}
 

@@ -15,6 +15,8 @@ namespace Peerchat {
         OS::Base64StrToBin((const char *)reader.GetValue("message").c_str(), &data_out, data_len);
 
 		bool includeSelf = (bool)reader.GetValueInt("includeSelf");
+		int requiredChanFlags = reader.GetValueInt("requiredChanUserModes");
+		int requiredOperFlags = reader.GetValueInt("requiredOperFlags");
 		std::string send_message = std::string((const char*)data_out, data_len);
 		if (reader.HasKey("toChannelId")) {
 			ChannelSummary summary = LookupChannelById(thread_data, reader.GetValueInt("toChannelId"));
@@ -27,7 +29,7 @@ namespace Peerchat {
 				from.modeflags = LookupUserChannelModeFlags(thread_data, from.channel_id, from.user_id);
 
 				ChannelUserSummary target; //target seems unused...
-				server->OnChannelMessage(reader.GetValue("type"), from, summary, send_message, target, includeSelf);
+				server->OnChannelMessage(reader.GetValue("type"), from, summary, send_message, target, includeSelf, requiredChanFlags, requiredOperFlags);
 			}
 		}
 		else {
@@ -41,13 +43,18 @@ namespace Peerchat {
     }
 
 	bool CheckUserCanSendMessage(ChannelSummary channel, Peer *peer) {
-		if (channel.basic_mode_flags & EChannelMode_Moderated) {
+		int chan_user_flags = peer->GetChannelFlags(channel.channel_id);
+		int has_vop = chan_user_flags & EUserChannelFlag_Voice || chan_user_flags & EUserChannelFlag_HalfOp || chan_user_flags & EUserChannelFlag_Op || chan_user_flags & EUserChannelFlag_Owner;
+		if (channel.basic_mode_flags & EChannelMode_Moderated && !has_vop) {
 			return false;
 		}
 		if (channel.basic_mode_flags & EChannelMode_NoOutsideMessages) {
-			if (~peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_IsInChannel) {
+			if (~chan_user_flags & EUserChannelFlag_IsInChannel) {
 				return false;
 			}
+		}
+		if (chan_user_flags & EUserChannelFlag_Gagged) {
+			return false;
 		}
 		return true;
 	}

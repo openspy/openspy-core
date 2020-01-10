@@ -38,6 +38,16 @@ namespace Peerchat {
     }
     UserSummary LookupUserById(TaskThreadData *thread_data, int user_id) {
         UserSummary summary;
+        if (user_id == -1) {
+            summary.address = OS::Address("0.0.0.0:0");
+            summary.nick = "SERVER";
+            summary.username = "SERVER";
+            summary.hostname = "*";
+            summary.realname = "SERVER";
+            summary.operflags = 0;
+            summary.id = -1;
+            return summary;
+        }
         Redis::Response reply;
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
         reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET user_%d username", user_id);
