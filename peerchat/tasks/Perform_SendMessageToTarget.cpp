@@ -28,7 +28,11 @@ namespace Peerchat {
 				from.channel_id = summary.channel_id;
 				from.modeflags = LookupUserChannelModeFlags(thread_data, from.channel_id, from.user_id);
 
-				ChannelUserSummary target; //target seems unused...
+				ChannelUserSummary target;
+				target.user_id = reader.GetValueInt("toUserId");
+				target.userSummary = LookupUserById(thread_data, reader.GetValueInt("toUserId"));
+				target.channel_id = summary.channel_id;
+				target.modeflags = LookupUserChannelModeFlags(thread_data, from.channel_id, target.user_id);
 				server->OnChannelMessage(reader.GetValue("type"), from, summary, send_message, target, includeSelf, requiredChanFlags, requiredOperFlags);
 			}
 		}

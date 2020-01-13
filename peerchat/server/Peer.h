@@ -49,6 +49,7 @@ namespace Peerchat {
 			std::string realname;
 			OS::Address address;
 			int gameid;
+			int profileid;
 			int modeflags;
 			int operflags;
 			std::string ToString() {
@@ -87,6 +88,7 @@ namespace Peerchat {
 
 		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "", bool append_name = true);
 		void send_message(std::string messageType, std::string messageContent, std::string from = "", std::string to = "", std::string target = "");
+		void handle_channel_join_events(ChannelSummary channel);
 
 		int GetChannelFlags(int channel_id);
 		std::vector<int> GetChannels();
@@ -122,6 +124,9 @@ namespace Peerchat {
 		static void OnWho_FetchChannelInfo(TaskResponse response_data, Peer *peer);
 		static void OnWho_FetchUserInfo(TaskResponse response_data, Peer *peer);
 		static void OnUsrip_FetchUser(TaskResponse response_data, Peer* peer);
+		static void OnSetUserMode(TaskResponse response_data, Peer* peer);
+		static void OnListUserModes(TaskResponse response_data, Peer* peer);
+		static void OnDeleteUserMode(TaskResponse response_data, Peer* peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -151,7 +156,9 @@ namespace Peerchat {
 		void handle_getchankey(std::vector<std::string> data_parser);
 		void handle_setgroup(std::vector<std::string> data_parser);
 		void handle_who(std::vector<std::string> data_parser);
-
+		void handle_setusermode(std::vector<std::string> data_parser);
+		void handle_listusermodes(std::vector<std::string> data_parser);
+		void handle_delusermode(std::vector<std::string> data_parser);
 
 		void handle_channel_mode_command(std::vector<std::string> data_parser);
 		void handle_user_mode_command(std::vector<std::string> data_parser);

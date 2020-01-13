@@ -81,6 +81,13 @@ namespace Peerchat {
 			EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource,
 			EPeerchatRequestType_DeleteUser,
 			EPeerchatRequestType_KeepaliveUser,
+			EPeerchatRequestType_UserJoinEvents, //send invisible msg, do automatic modes etc
+			EPeerchatRequestType_CreateUserMode,
+			EPeerchatRequestType_ListUserModes,
+			EPeerchatRequestType_DeleteUserMode,
+			EPeerchatRequestType_SetChanProps,
+			EPeerchatRequestType_ListChanProps,
+			EPeerchatRequestType_DeleteChanProps,
 	};
 
   enum EUserChannelFlag {
@@ -131,6 +138,20 @@ namespace Peerchat {
 
 			std::vector<ChannelUserSummary> users;
 	};
+	class UsermodeRecord {
+		public:
+			int usermodeid;
+			std::string chanmask;
+			std::string hostmask;
+			std::string comment;
+			std::string machineid;
+			int profileid;
+			int modeflags; //EUserChannelFlag
+			bool isGlobal; //save to db, or only redis
+			struct timeval expires_at; //or "expires in secs" when setting
+			struct timeval set_at; //or "expires in secs" when setting
+			UserSummary setByUserSummary;
+	};
   class TaskResponse {
 		public:
 			TaskShared::WebErrorDetails error_details;
@@ -140,6 +161,12 @@ namespace Peerchat {
 			ChannelSummary channel_summary;
 			std::vector<ChannelSummary> channel_summaries;
 			OS::KVReader kv_data;
+
+			std::vector<UsermodeRecord> usermodes;
+
+			bool is_start;
+			bool is_end;
+
   };
   typedef void(*TaskCallback)(TaskResponse response_data, Peer *peer);
 
@@ -184,12 +211,15 @@ namespace Peerchat {
 			std::string message;
 
 			std::vector<int> channel_id_list;
+
+			UsermodeRecord usermodeRecord;
 	};
 	
 
 	bool Perform_SetUserDetails(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_SendMessageToTarget(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UserJoinChannel(PeerchatBackendRequest request, TaskThreadData *thread_data);
+	bool Perform_UserJoinEvents(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UserPartChannel(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_UserKickChannel(PeerchatBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_LookupChannelDetails(PeerchatBackendRequest request, TaskThreadData* thread_data);
@@ -206,6 +236,9 @@ namespace Peerchat {
 	bool Perform_SetBroadcastToVisibleUsers(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_DeleteUser(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_KeepaliveUser(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_SetUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_ListUsermodes(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_DeleteUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
 	bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message);
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message);
@@ -238,6 +271,9 @@ namespace Peerchat {
 	bool TestChannelUserModeChangeItem(TaskThreadData* thread_data, Peer* peer, ChannelSummary channel_summary, std::string target_username, int from_mode_flags, int update_flags);
 	EUserChannelFlag GetMinimumModeFlagsFromUpdateSet(int update_mode_flags);
 	//
+
+	int channelUserModesStringToFlags(std::string mode_string);
+	std::string modeFlagsToModeString(int modeflags);
 
 	extern const char *peerchat_channel_exchange;
     extern const char *peerchat_client_message_routingkey;

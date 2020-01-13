@@ -31,6 +31,26 @@ namespace Peerchat {
 			}
 		}
 
+        bool block_message = false;
+        if(message.length() > 0 && ~GetOperFlags() & OPERPRIVS_CTCP) {
+            if(message[0] == 0x01) { //possible ctcp
+                if(type.compare("PRIVMSG") == 0) {
+                    block_message = true;
+                    //ACTION
+                    if(message.length() >= 7) {
+                        std::string action = message.substr(1,6);
+                        if(action.compare("ACTION") == 0) {
+                            block_message = false;
+                        }                        
+                    }
+                }
+            }
+        }
+
+        if(block_message) {
+            return;
+        }
+
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
         req.type = EPeerchatRequestType_SendMessageToTarget;

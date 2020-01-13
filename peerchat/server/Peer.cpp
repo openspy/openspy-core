@@ -175,6 +175,11 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("GETKEY", true, 4, &Peer::handle_getkey));
 		commands.push_back(CommandEntry("KICK", true, 2, &Peer::handle_kick));
 		commands.push_back(CommandEntry("SETGROUP", true, 2, &Peer::handle_setgroup));
+
+
+		commands.push_back(CommandEntry("SETUSERMODE", true, 2, &Peer::handle_setusermode));
+		commands.push_back(CommandEntry("DELUSERMODE", true, 1, &Peer::handle_delusermode));
+		commands.push_back(CommandEntry("LISTUSERMODES", true, 1, &Peer::handle_listusermodes));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name) {

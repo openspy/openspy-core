@@ -19,7 +19,9 @@ namespace Peerchat {
             ((Peer *)peer)->m_profile = profile;
             ((Peer *)peer)->m_user = user;
             ((Peer*)peer)->m_oper_flags = -1;
-            ((Peer *)peer)->send_message("NOTICE", "RIGHTS GRANTED", "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
+            ((Peer *)peer)->m_user_details.profileid = profile.id;
+            ((Peer *)peer)->send_message("NOTICE", "Authenticated", "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
+            ((Peer *)peer)->send_message("NOTICE", "Rights Granted", "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
         } else {
             printf("LOG IN FAILED\n");
         }

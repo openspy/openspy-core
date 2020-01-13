@@ -19,6 +19,7 @@ namespace Peerchat {
         if(auth_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
             ((Peer *)peer)->m_profile = profile;
             ((Peer *)peer)->m_user = user;
+            ((Peer *)peer)->m_user_details.profileid = profile.id;
             s << user.id << " " << profile.id;
             ((Peer *)peer)->send_numeric(707, s.str());
         } else {

@@ -81,6 +81,12 @@ namespace Peerchat {
 
 			scheduler->AddRequestHandler(EPeerchatRequestType_DeleteUser, Perform_DeleteUser);
 			scheduler->AddRequestHandler(EPeerchatRequestType_KeepaliveUser, Perform_KeepaliveUser);
+			scheduler->AddRequestHandler(EPeerchatRequestType_UserJoinEvents, Perform_UserJoinEvents);
+
+			scheduler->AddRequestHandler(EPeerchatRequestType_CreateUserMode, Perform_SetUsermode);
+			scheduler->AddRequestHandler(EPeerchatRequestType_ListUserModes, Perform_ListUsermodes);
+			scheduler->AddRequestHandler(EPeerchatRequestType_DeleteUserMode, Perform_DeleteUsermode);
+			
 
 			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg);
 			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates);
@@ -173,6 +179,7 @@ namespace Peerchat {
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %srealname %s", base_key.c_str(), user_base.c_str(), userSummary.realname.c_str());
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sgameid %d", base_key.c_str(), user_base.c_str(), userSummary.gameid);
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %shostname %s", base_key.c_str(), user_base.c_str(), userSummary.hostname.c_str());
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sprofileid %d", base_key.c_str(), user_base.c_str(), userSummary.profileid);
 
 				if(show_private) {
 					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %saddress %s", base_key.c_str(), user_base.c_str(), userSummary.address.ToString(true).c_str());
@@ -185,6 +192,7 @@ namespace Peerchat {
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s realname %s", base_key.c_str(), userSummary.realname.c_str());
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", base_key.c_str(), userSummary.gameid);
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s hostname %s", base_key.c_str(), userSummary.hostname.c_str());
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s profileid %d", base_key.c_str(), userSummary.profileid);
 				if(show_private) {
 					
 					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s address %s", base_key.c_str(), userSummary.address.ToString(true).c_str());
@@ -192,5 +200,24 @@ namespace Peerchat {
 					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s operflags %d", base_key.c_str(), userSummary.operflags);
 				}
 			}
+		}
+
+		int channelUserModesStringToFlags(std::string mode_string) {
+			int flags = 0;
+			for (int i = 0; i < num_user_join_chan_flags; i++) {
+				if (mode_string.find(user_join_chan_flag_map[i].character) != std::string::npos) {
+					flags |= user_join_chan_flag_map[i].flag;
+				}
+			}
+			return flags;
+		}
+		std::string modeFlagsToModeString(int modeflags) {
+			std::ostringstream ss;
+			for (int i = 0; i < num_user_join_chan_flags; i++) {
+				if (modeflags & user_join_chan_flag_map[i].flag) {
+					ss << user_join_chan_flag_map[i].character;
+				}
+			}
+			return ss.str();
 		}
 }

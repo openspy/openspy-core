@@ -61,6 +61,10 @@ namespace Peerchat {
 			bool selfMatch = (includeSelf && from.user_id == peer->GetBackendId()) || (from.user_id != peer->GetBackendId());
 			if(in_channel && selfMatch && has_oper) {
 				peer->send_message(type, message,from.userSummary.ToString(), channel.channel_name, target.userSummary.nick);
+
+				if (type.compare("JOIN") == 0 && from.user_id == peer->GetBackendId()) {
+					peer->handle_channel_join_events(channel);
+				}
 			}
 			it++;
 		}

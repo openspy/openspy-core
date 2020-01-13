@@ -45,6 +45,7 @@ namespace Peerchat {
             summary.hostname = "*";
             summary.realname = "SERVER";
             summary.operflags = 0;
+            summary.profileid = 0;
             summary.id = -1;
             return summary;
         }
@@ -92,6 +93,12 @@ namespace Peerchat {
             goto error_end;
         }
         summary.operflags = atoi(reply.values[0].value._str.c_str());
+
+        reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET user_%d profileid", user_id);
+        if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+            goto error_end;
+        }
+        summary.profileid = atoi(reply.values[0].value._str.c_str());
 
         summary.id = user_id;
 

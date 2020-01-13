@@ -216,10 +216,10 @@ namespace Peerchat {
 		if(!silent) {
 			const char* base64 = OS::BinToBase64Str((uint8_t*)remove_message.c_str(), remove_message.length());
 			std::ostringstream message;
-			message << "\\type\\" << type << "\\toChannelId\\" << channel.channel_id << "\\fromUserId\\" << user.id << "\\message\\" << base64;
+			message << "\\type\\" << type << "\\toChannelId\\" << channel.channel_id << "\\fromUserId\\" << user.id << "\\message\\" << base64 << "\\includeSelf\\1";
 
 			if (target.id != 0) {
-				message << "\\target\\" << target.nick;
+				message << "\\toUserId\\" << target.id;
 			}
 			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
 			free((void*)base64);
