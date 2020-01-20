@@ -18,7 +18,6 @@ namespace Peerchat {
         Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
         TaskResponse response;
         response.summary = request.summary;
-
         response.profile.uniquenick = request.summary.nick;
 
         UserSummary userDetails = request.peer->GetUserDetails();

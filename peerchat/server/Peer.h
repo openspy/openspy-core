@@ -23,6 +23,7 @@ namespace Peerchat {
 
 	class TaskResponse;
 	class ChannelSummary;
+	class UsermodeRecord;
 
 	class Peer;
 	typedef void(Peer::*CommandCallback)(std::vector<std::string>);
@@ -103,6 +104,7 @@ namespace Peerchat {
 		///
 	private:
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
+		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void* extra, INetPeer* peer);
 		static void OnNickReserve(TaskResponse response_data, Peer *peer);
 		static void OnUserRegistered(TaskResponse response_data, Peer *peer);
 		static void OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer);
@@ -168,7 +170,7 @@ namespace Peerchat {
 		void handle_message_command(std::string type, std::vector<std::string> data_parser);
 		void send_quit(std::string reason);
 		static void getChannelSpecialInfo(std::ostringstream &ss, ChannelSummary summary);
-
+		static void SerializeUsermodeRecord(UsermodeRecord record, std::ostringstream& ss);
 
 		OS::GameData m_game;
 		

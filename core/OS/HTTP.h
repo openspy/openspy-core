@@ -15,8 +15,10 @@ namespace OS {
 		//(GP_PERSIST_BACKEND_URL, GP_PERSIST_BACKEND_CRYPTKEY, send_json)
 		HTTPResponse Post(std::string send, INetPeer *peer); //synchronous HTTP post
 		HTTPResponse Put(std::string send, INetPeer *peer); //synchronous HTTP put
+		HTTPResponse Delete(std::string send, INetPeer *peer); //synchronous HTTP delete
 
 	private:
+		HTTPResponse PerformMethod(std::string send, std::string method, INetPeer *peer);
 		static size_t curl_callback (void *contents, size_t size, size_t nmemb, void *userp);
 		std::string m_url;
 	};

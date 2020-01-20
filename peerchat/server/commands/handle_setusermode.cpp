@@ -16,7 +16,20 @@
 
 namespace Peerchat {
 	void Peer::OnSetUserMode(TaskResponse response_data, Peer* peer) {
-		printf("setusermode\n");
+		if (response_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
+			((Peer*)peer)->send_message("PRIVMSG", "Failed to set usermode", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+			return;
+		}
+
+		std::ostringstream ss;
+		ss << "SETUSERMODE ";
+		SerializeUsermodeRecord(response_data.usermode, ss);
+
+		((Peer*)peer)->send_message("PRIVMSG", ss.str(), "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+
+		if (response_data.is_end) {
+			((Peer*)peer)->send_message("PRIVMSG", "SETUSERMODE \\final\\1", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+		}
 	}
 
     void Peer::handle_setusermode(std::vector<std::string> data_parser) {
@@ -38,6 +51,7 @@ namespace Peerchat {
 
 		UsermodeRecord usermodeRecord;
 		usermodeRecord.chanmask = channel_target;
+		usermodeRecord.modeflags = channelUserModesStringToFlags(usermode_properties.GetValue("modeflags"));
 		if (usermode_properties.HasKey("hostmask")) {
 			usermodeRecord.hostmask = usermode_properties.GetValue("hostmask");
 		}

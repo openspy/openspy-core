@@ -16,7 +16,12 @@
 
 namespace Peerchat {
 	void Peer::OnDeleteUserMode(TaskResponse response_data, Peer* peer) {
-		printf("deleteusermode\n");
+		if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
+			((Peer*)peer)->send_message("PRIVMSG", "Usermode deleted", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+		}
+		else {
+			((Peer*)peer)->send_message("PRIVMSG", "Failed to delete usermode", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+		}
 	}
 
     void Peer::handle_delusermode(std::vector<std::string> data_parser) {

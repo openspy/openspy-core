@@ -1,6 +1,3 @@
-#ifdef _WIN32
-	#include <openssl/applink.c>
-#endif
 #include "StringCrypter.h"
 #include <OS/OpenSpy.h>
 #include <openssl/pem.h>

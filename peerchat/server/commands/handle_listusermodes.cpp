@@ -15,68 +15,69 @@
 #include <server/Peer.h>
 
 namespace Peerchat {
-	void Peer::OnListUserModes(TaskResponse response_data, Peer* peer) {
+    void Peer::SerializeUsermodeRecord(UsermodeRecord record, std::ostringstream& ss) {
+        time_t time;
         char timestr[256];
+        ss << "\\usermodeid\\" << record.usermodeid;
+        ss << "\\chanmask\\" << record.chanmask;
+        ss << "\\modeflags\\" << modeFlagsToModeString(record.modeflags);
 
-        std::vector<UsermodeRecord>::iterator it = response_data.usermodes.begin();
-        while(it != response_data.usermodes.end()) {
-            time_t time;
-            UsermodeRecord u = *it;
-            std::ostringstream ss;
-            ss << "LISTUSERMODE ";
-            ss << "\\usermodeid\\" << u.usermodeid;
-            ss << "\\chanmask\\" << u.chanmask;
-            ss << "\\modeflags\\" << modeFlagsToModeString(u.modeflags);
+        if (record.hostmask.length() != 0)
+            ss << "\\hostmask\\" << record.hostmask;
+        if (record.machineid.length() != 0)
+            ss << "\\machineid\\" << record.machineid;
+        if (record.profileid != 0)
+            ss << "\\profileid\\" << record.profileid;
+        ss << "\\isGlobal\\" << record.isGlobal;
 
-            if(u.hostmask.length() != 0)
-                ss << "\\hostmask\\" << u.hostmask;
-            if(u.machineid.length() != 0)
-                ss << "\\machineid\\" << u.machineid;
-            if(u.profileid != 0)
-                ss << "\\profileid\\" << u.profileid;
-            ss << "\\isGlobal\\" << u.isGlobal;
-
-            if(u.expires_at.tv_sec != 0) {
-                struct tm * timeinfo;
-                time = u.expires_at.tv_sec;
-                timeinfo = localtime ( &time );
-                if (timeinfo != NULL) {
-                    strftime(timestr, sizeof(timestr), "%m/%d/%Y %H:%M", timeinfo);
-                    ss << "\\expires\\" << timestr;
-                }
+        if (record.expires_at.tv_sec != 0) {
+            struct tm* timeinfo;
+            time = record.expires_at.tv_sec;
+            timeinfo = localtime(&time);
+            if (timeinfo != NULL) {
+                strftime(timestr, sizeof(timestr), "%m/%d/%Y %H:%M", timeinfo);
+                ss << "\\expires\\" << timestr;
             }
-
-            if(u.setByUserSummary.nick.length() != 0)
-                ss << "\\setbynick\\" << u.setByUserSummary.nick;
-            if(u.setByUserSummary.profileid != 0)
-                ss << "\\setbypid\\" << u.setByUserSummary.profileid;
-            if(u.setByUserSummary.hostname.length() != 0)
-                ss << "\\setbyhost\\" << u.setByUserSummary.hostname;
-            
-            if(u.comment.length() != 0)
-                ss << "\\comment\\" << u.comment;
-
-            if(u.set_at.tv_sec != 0) {
-                time = u.set_at.tv_sec;
-                struct tm * timeinfo;
-                timeinfo = localtime ( &time );   
-                if (timeinfo != NULL) {
-                    strftime(timestr, sizeof(timestr), "%m/%d/%Y %H:%M", timeinfo);
-                    ss << "\\setondate\\" << timestr;
-                }
-
-            }
-                
-            ((Peer *)peer)->send_message("PRIVMSG", ss.str(), "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
-            it++;
         }
+
+        if (record.setByUserSummary.nick.length() != 0)
+            ss << "\\setbynick\\" << record.setByUserSummary.nick;
+        if (record.setByUserSummary.profileid != 0)
+            ss << "\\setbypid\\" << record.setByUserSummary.profileid;
+        if (record.setByUserSummary.hostname.length() != 0)
+            ss << "\\setbyhost\\" << record.setByUserSummary.hostname;
+
+        if (record.comment.length() != 0)
+            ss << "\\comment\\" << record.comment;
+
+        if (record.set_at.tv_sec != 0) {
+            time = record.set_at.tv_sec;
+            struct tm* timeinfo;
+            timeinfo = localtime(&time);
+            if (timeinfo != NULL) {
+                strftime(timestr, sizeof(timestr), "%m/%d/%Y %H:%M", timeinfo);
+                ss << "\\setondate\\" << timestr;
+            }
+
+        }
+    }
+	void Peer::OnListUserModes(TaskResponse response_data, Peer* peer) {
+
+        if (response_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
+            ((Peer*)peer)->send_message("PRIVMSG", "Failed to list usermodes", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+            return;
+        }
+
+        std::ostringstream ss;
+        ss << "LISTUSERMODE ";
+        SerializeUsermodeRecord(response_data.usermode, ss);
+
+        ((Peer*)peer)->send_message("PRIVMSG", ss.str(), "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
 
         if(response_data.is_end) {
             ((Peer *)peer)->send_message("PRIVMSG", "LISTUSERMODE \\final\\1", "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
         }
-
-        //sendToClient(":SERVER!SERVER@* PRIVMSG %s :LISTUSERMODE \\final\\1",nick);
-	}
+    }
 
     void Peer::handle_listusermodes(std::vector<std::string> data_parser) {
         std::string chanmask = data_parser.at(1);

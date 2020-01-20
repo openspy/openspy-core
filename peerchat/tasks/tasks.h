@@ -140,6 +140,12 @@ namespace Peerchat {
 	};
 	class UsermodeRecord {
 		public:
+			UsermodeRecord() {
+				usermodeid = 0;
+				isGlobal = false;
+				profileid = 0;
+				modeflags = 0;
+			}
 			int usermodeid;
 			std::string chanmask;
 			std::string hostmask;
@@ -162,7 +168,7 @@ namespace Peerchat {
 			std::vector<ChannelSummary> channel_summaries;
 			OS::KVReader kv_data;
 
-			std::vector<UsermodeRecord> usermodes;
+			UsermodeRecord usermode;
 
 			bool is_start;
 			bool is_end;
@@ -274,6 +280,8 @@ namespace Peerchat {
 
 	int channelUserModesStringToFlags(std::string mode_string);
 	std::string modeFlagsToModeString(int modeflags);
+
+	UsermodeRecord GetUsermodeFromJson(json_t* item);
 
 	extern const char *peerchat_channel_exchange;
     extern const char *peerchat_client_message_routingkey;
