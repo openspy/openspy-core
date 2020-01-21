@@ -101,6 +101,7 @@ namespace Peerchat {
 		bool success = false;
 
 		TaskResponse response;
+		response.channel_summary.channel_name = request.usermodeRecord.chanmask;
 
 		if (TaskShared::Handle_WebError(send_json, response.error_details)) {
 			if (request.callback)

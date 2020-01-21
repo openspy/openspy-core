@@ -111,6 +111,7 @@ namespace Peerchat {
 		static void OnMode_FetchChannelInfo(TaskResponse response_data, Peer* peer);
 		static void OnMode_FetchUserInfo(TaskResponse response_data, Peer* peer);
 		static void OnMode_UpdateUserMode(TaskResponse response_data, Peer* peer);
+		static void OnMode_FetchBanInfo(TaskResponse response_data, Peer* peer);
 		static void OnTopic_FetchChannelInfo(TaskResponse response_data, Peer* peer);
 		static void OnJoinChannel(TaskResponse response_data, Peer* peer);
 		static void OnListChannels(TaskResponse response_data, Peer* peer);

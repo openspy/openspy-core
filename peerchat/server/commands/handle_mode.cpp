@@ -57,9 +57,25 @@ namespace Peerchat {
 			peer->send_no_such_target_error(response_data.channel_summary.channel_name);
 		}
 	}
+	void Peer::OnMode_FetchBanInfo(TaskResponse response_data, Peer* peer) {
+		std::ostringstream ss;
+		if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
+			if (response_data.usermode.usermodeid != 0 && response_data.usermode.modeflags & EUserChannelFlag_Banned && response_data.usermode.hostmask.length() > 0) {
+				ss << "*@" << response_data.usermode.hostmask << " " << response_data.usermode.setByUserSummary.nick << " " << response_data.usermode.set_at.tv_sec;
+				peer->send_numeric(367, ss.str(), true, response_data.channel_summary.channel_name);
+			}
+			if (response_data.is_end) {
+				peer->send_numeric(368, "End of Channel Ban List", false, response_data.channel_summary.channel_name);
+			}
+		}
+		else if (response_data.error_details.response_code == TaskShared::WebErrorCode_NoSuchUser) {
+			peer->send_no_such_target_error(response_data.channel_summary.channel_name);
+		}
+	}
 	void Peer::handle_channel_mode_command(std::vector<std::string> data_parser) {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
+		bool includeBanLookup = false;
 		if (data_parser.size() == 2) {
 			//lookup
 			req.type = EPeerchatRequestType_LookupChannelDetails;
@@ -83,13 +99,21 @@ namespace Peerchat {
 				else if (mode_string[i] == '-') {
 					set = false;
 				}
+				else if (mode_string[i] == 'b') {
+					last_offset++;
+					if (data_parser.size()-1 < last_offset) {
+						includeBanLookup = true;
+					}
+					else {
+						//make seperate set usermode call if set... otherwise try unset
+					}
+				}
 				else if (mode_string[i] == 'k') {
 					req.channel_modify.update_password = true;
 					if (set) {
 						last_offset++;
-						if (data_parser.size() <= last_offset) {
-							send_numeric(666, "PARSE ERROR");
-							return;
+						if (data_parser.size()-1 < last_offset) {
+							continue;
 						}
 						req.channel_modify.password = data_parser.at(last_offset);
 					}
@@ -101,9 +125,8 @@ namespace Peerchat {
 					req.channel_modify.update_limit = true;
 					if (set) {
 						last_offset++;
-						if (data_parser.size() <= last_offset) {
-							send_numeric(666, "PARSE ERROR");
-							return;
+						if (data_parser.size()-1 < last_offset) {
+							continue;
 						}
 						req.channel_modify.limit = atoi(data_parser.at(last_offset).c_str());
 					}
@@ -113,9 +136,8 @@ namespace Peerchat {
 				}
 				else if (mode_string[i] == 'v') {
 					last_offset++;
-					if (data_parser.size() <= last_offset) {
-						send_numeric(666, "PARSE ERROR");
-						return;
+					if (data_parser.size()-1 < last_offset) {
+						continue;
 					}
 					if (set) {
 						req.channel_modify.set_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_Voice;
@@ -126,9 +148,8 @@ namespace Peerchat {
 				}
 				else if (mode_string[i] == 'h') {
 					last_offset++;
-					if (data_parser.size() <= last_offset) {
-						send_numeric(666, "PARSE ERROR");
-						return;
+					if (data_parser.size()-1 < last_offset) {
+						continue;
 					}
 					if (set) {
 						req.channel_modify.set_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_HalfOp;
@@ -139,9 +160,8 @@ namespace Peerchat {
 				}
 				else if (mode_string[i] == 'o') {
 					last_offset++;
-					if (data_parser.size() <= last_offset) {
-						send_numeric(666, "PARSE ERROR");
-						return;
+					if (data_parser.size()-1 < last_offset) {
+						continue;
 					}
 					if (set) {
 						req.channel_modify.set_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_Op;
@@ -152,9 +172,8 @@ namespace Peerchat {
 				}
 				else if (mode_string[i] == 'O') {
 					last_offset++;
-					if (data_parser.size() <= last_offset) {
-						send_numeric(666, "PARSE ERROR");
-						return;
+					if (data_parser.size()-1 < last_offset) {
+						continue;
 					}
 					if (set) {
 						req.channel_modify.set_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_Owner;
@@ -194,6 +213,16 @@ namespace Peerchat {
 			req.peer->IncRef();
 			req.callback = OnMode_FetchChannelInfo;
 			scheduler->AddRequest(req.type, req);
+
+
+			if (includeBanLookup) {
+				req.type = EPeerchatRequestType_ListUserModes;
+				req.peer = this;
+				req.usermodeRecord.chanmask = data_parser.at(1);
+				req.peer->IncRef();
+				req.callback = OnMode_FetchBanInfo;
+				scheduler->AddRequest(req.type, req);
+			}
 		}
 	}
 	void Peer::handle_user_mode_command(std::vector<std::string> data_parser) {
