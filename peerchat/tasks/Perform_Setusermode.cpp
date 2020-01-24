@@ -52,6 +52,9 @@ namespace Peerchat {
 			UsermodeRecord record = GetUsermodeFromJson(send_json);
 			response.usermode = record;
 		}
+
+		if(send_json)
+			json_decref(send_json);
 		
 		if (request.callback)
 			request.callback(response, request.peer);

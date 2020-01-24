@@ -220,4 +220,16 @@ namespace Peerchat {
 			}
 			return ss.str();
 		}
+		json_t* GetJsonFromUserSummary(UserSummary summary) {
+			json_t* item = json_object();
+			json_object_set_new(item, "id", json_integer(summary.id));
+			json_object_set_new(item, "nick", json_string(summary.nick.c_str()));
+			json_object_set_new(item, "username", json_string(summary.username.c_str()));
+			json_object_set_new(item, "realname", json_string(summary.realname.c_str()));
+			json_object_set_new(item, "hostname", json_string(summary.hostname.c_str()));
+			json_object_set_new(item, "address", json_string(summary.address.ToString().c_str()));
+			json_object_set_new(item, "gameid", json_integer(summary.gameid));
+			json_object_set_new(item, "profileid", json_integer(summary.profileid));
+			return item;
+		}
 }

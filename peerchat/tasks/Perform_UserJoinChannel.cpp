@@ -37,6 +37,10 @@ namespace Peerchat {
 		int initial_flags = EUserChannelFlag_IsInChannel;
 		initial_flags |= request.channel_modify.set_mode_flags;
 
+		UserSummary userSummary = request.peer->GetUserDetails();
+
+		initial_flags |= getEffectiveUsermode(channel.channel_name, userSummary, request.peer);
+
         if(!CheckUserCanJoinChannel(channel, request.peer, original_password, initial_flags)) {
             response.error_details.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
         } else {
@@ -45,7 +49,7 @@ namespace Peerchat {
         }
 		
 		if (response.error_details.response_code == TaskShared::WebErrorCode_Success) {
-			AddUserToChannel(thread_data, request.peer->GetUserDetails(), channel, initial_flags);
+			AddUserToChannel(thread_data, userSummary, channel, initial_flags);
 		}
 
 		if (request.callback)

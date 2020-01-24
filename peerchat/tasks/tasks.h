@@ -283,6 +283,9 @@ namespace Peerchat {
 
 	UsermodeRecord GetUsermodeFromJson(json_t* item);
 
+	int getEffectiveUsermode(std::string channelName, UserSummary summary, Peer* peer);
+	json_t* GetJsonFromUserSummary(UserSummary summary);
+
 	extern const char *peerchat_channel_exchange;
     extern const char *peerchat_client_message_routingkey;
 	extern const char *peerchat_key_updates_routingkey;

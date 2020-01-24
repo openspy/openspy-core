@@ -124,8 +124,43 @@ namespace Peerchat {
 			}
 		}
 
+		if(send_json)
+			json_decref(send_json);
+
 		if (request.peer)
 			request.peer->DecRef();
 		return true;
+	}
+
+	int getEffectiveUsermode(std::string channelName, UserSummary summary, Peer *peer) {
+		json_t* send_json = json_object();
+		json_object_set_new(send_json, "channelName", json_string(channelName.c_str()));
+		json_object_set_new(send_json, "userSummary", GetJsonFromUserSummary(summary));
+
+		std::string url = std::string(OS::g_webServicesURL) + "/v1/Usermode/GetEffectiveUsermode";
+
+		OS::HTTPClient client(url);
+
+		char* json_data = json_dumps(send_json, 0);
+
+		OS::HTTPResponse resp = client.Post(json_data, peer);
+
+		free(json_data);
+		json_decref(send_json);
+
+		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
+
+		if (!send_json) {
+			return 0;
+		}
+
+		int modeflags = 0;
+
+		UsermodeRecord record = GetUsermodeFromJson(send_json);
+		modeflags = record.modeflags;
+
+		json_decref(send_json);
+
+		return modeflags;
 	}
 }

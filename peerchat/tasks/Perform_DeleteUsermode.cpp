@@ -34,6 +34,9 @@ namespace Peerchat {
 				}
 			}
 		}
+
+		if(send_json)
+			json_decref(send_json);
 		
 		if (request.callback)
 			request.callback(response, request.peer);
