@@ -143,7 +143,7 @@ namespace Peerchat {
 						req.channel_modify.set_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_Voice;
 					}
 					else {
-						req.channel_modify.unset_usermodes[data_parser.at(last_offset)] &= ~EUserChannelFlag_Voice;
+						req.channel_modify.unset_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_Voice;
 					}
 				}
 				else if (mode_string[i] == 'h') {
@@ -155,7 +155,7 @@ namespace Peerchat {
 						req.channel_modify.set_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_HalfOp;
 					}
 					else {
-						req.channel_modify.unset_usermodes[data_parser.at(last_offset)] &= ~EUserChannelFlag_HalfOp;
+						req.channel_modify.unset_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_HalfOp;
 					}
 				}
 				else if (mode_string[i] == 'o') {
@@ -167,7 +167,7 @@ namespace Peerchat {
 						req.channel_modify.set_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_Op;
 					}
 					else {
-						req.channel_modify.unset_usermodes[data_parser.at(last_offset)] &= ~EUserChannelFlag_Op;
+						req.channel_modify.unset_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_Op;
 					}
 				}
 				else if (mode_string[i] == 'O') {
@@ -179,7 +179,7 @@ namespace Peerchat {
 						req.channel_modify.set_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_Owner;
 					}
 					else {
-						req.channel_modify.unset_usermodes[data_parser.at(last_offset)] &= ~EUserChannelFlag_Owner;
+						req.channel_modify.unset_usermodes[data_parser.at(last_offset)] |= EUserChannelFlag_Owner;
 					}
 				}
 				else {

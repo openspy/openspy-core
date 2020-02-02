@@ -135,7 +135,7 @@ namespace Peerchat {
 		gettimeofday(&curtime, NULL);
 		summary.created_at = curtime;
 
-
+		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channels \"%s\" %d", name.c_str(), channel_id);
 
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d name \"%s\"", channel_id, name.c_str());
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d modeflags 0", channel_id);
@@ -212,6 +212,7 @@ namespace Peerchat {
 
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 		Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
+		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_user%d", channel.channel_id, user.id);
 
 		if(!silent) {
 			const char* base64 = OS::BinToBase64Str((uint8_t*)remove_message.c_str(), remove_message.length());
@@ -224,6 +225,8 @@ namespace Peerchat {
 			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
 			free((void*)base64);
 		}
+
+		///XXX: delete channel if empty & not "stay open" mode
 
 		
     }

@@ -140,7 +140,7 @@ namespace Peerchat {
 		}
 
 
-		if (request.channel_modify.unset_mode_flags != 0 || request.channel_modify.update_password || request.channel_modify.update_limit) {
+		if (request.channel_modify.unset_mode_flags != 0 || request.channel_modify.update_password || request.channel_modify.update_limit || request.channel_modify.unset_usermodes.size()) {
 			bool removed_mode = false;
 			for (int i = 0; i < num_channel_mode_flags; i++) {
 				if (request.channel_modify.unset_mode_flags & channel_mode_flag_map[i].flag) {
@@ -212,7 +212,7 @@ namespace Peerchat {
 		free((void *)base64);
 
 
-		if (mode_message.str().size()) {
+		if (mode_message.str().size()) {0
 			std::ostringstream mq_message;
 			mq_message << "\\type\\MODE\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\1";
 
