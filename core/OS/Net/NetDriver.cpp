@@ -5,6 +5,7 @@
 INetDriver::INetDriver(INetServer *server) {
 	m_server = server;
     mp_head = NULL;
+    mp_net_io_interface = NULL;
 
 }
 INetDriver::~INetDriver() {

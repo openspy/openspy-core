@@ -54,67 +54,13 @@ void TCPDriver::think(bool listener_waiting) {
     }
 }
 
-const std::vector<INetPeer *> TCPDriver::getPeers(bool inc_ref) {
-    mp_mutex->lock();
-    std::vector<INetPeer *> peers;
-    if (mp_head != NULL) {
-        INetPeer* p = mp_head;
-        do {
-            peers.push_back(p);
-            if (inc_ref)
-                p->IncRef();
-        } while ((p = p->GetNext()) != NULL);
-    }
-    mp_mutex->unlock();
-    return peers;
-}
 INetIOSocket *TCPDriver::getListenerSocket() const {
     return mp_socket;
 }
-const std::vector<INetIOSocket *> TCPDriver::getSockets() const {
-    std::vector<INetIOSocket *> sockets;
-    mp_mutex->lock();
-    if (mp_head != NULL) {
-        INetPeer* p = mp_head;
-        do {
-            sockets.push_back(p->GetSocket());
-        } while ((p = p->GetNext()) != NULL);
-    }
-    mp_mutex->unlock();
-    return sockets;
-}
-
 void *TCPDriver::TaskThread(OS::CThread *thread) {
     TCPDriver *driver = (TCPDriver *)thread->getParams();
     while (thread->isRunning()) {
         driver->mp_mutex->lock();
-        /*
-        std::vector<INetPeer *>::iterator it = driver->m_connections.begin();
-        while (it != driver->m_connections.end()) {
-            INetPeer *peer = *it;
-            if (peer->ShouldDelete() && std::find(driver->m_peers_to_delete.begin(), driver->m_peers_to_delete.end(), peer) == driver->m_peers_to_delete.end()) {
-                //marked for delection, dec reference and delete when zero
-                it = driver->m_connections.erase(it);
-                peer->DecRef();
-
-                driver->m_server->UnregisterSocket(peer);
-
-                driver->m_peers_to_delete.push_back(peer);
-                continue;
-            }
-            it++;
-        }*/
-
-        /*it = driver->m_peers_to_delete.begin();
-        while (it != driver->m_peers_to_delete.end()) {
-            INetPeer *p = *it;
-            if (p->GetRefCount() == 0) {
-                delete p;
-                it = driver->m_peers_to_delete.erase(it);
-                continue;
-            }
-            it++;
-        }*/
 
         driver->TickConnections();
         driver->mp_mutex->unlock();

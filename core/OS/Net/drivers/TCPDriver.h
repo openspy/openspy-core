@@ -20,9 +20,7 @@ class TCPDriver : public INetDriver {
 		~TCPDriver();
 		void think(bool packet_waiting);
 
-		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		INetIOSocket *getListenerSocket() const;
-		const std::vector<INetIOSocket *> getSockets() const;
 		void OnPeerMessage(INetPeer *peer);
     protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket) = 0;
