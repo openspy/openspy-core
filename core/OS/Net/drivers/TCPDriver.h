@@ -30,11 +30,8 @@ class TCPDriver : public INetDriver {
 		virtual void TickConnections();
 		void DeleteClients();
 
-		std::vector<INetPeer *> m_connections;
-
 		struct timeval m_server_start;
 
-		std::vector<INetPeer *> m_peers_to_delete;
 		OS::CMutex *mp_mutex;
 		OS::CThread *mp_thread;
 

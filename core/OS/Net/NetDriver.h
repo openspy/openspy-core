@@ -19,8 +19,11 @@ public:
 	virtual void OnPeerMessage(INetPeer *peer) = 0; //only used for "notify_driver_only registered peer" messages, currently incompatible with regular "registered peer"
 	INetIOInterface<> *getNetIOInterface();
 	void setNetIOInterface(INetIOInterface<> *iface);
+	void addPeerToList(INetPeer* peer);
+	INetPeer* GetHead() { return mp_head; };
 protected:
 	INetServer *m_server;
 	INetIOInterface<> *mp_net_io_interface;
+	INetPeer* mp_head;
 };
 #endif //_NETDRIVER_H

@@ -11,7 +11,7 @@
 
 
 namespace FESL {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path, const char *rsa_priv_path, SSLNetIOIFace::ESSL_Type ssl_version, bool proxyFlag = false) : TCPDriver(server, host, port, proxyFlag, x509_path, rsa_priv_path, ssl_version) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path, const char *rsa_priv_path, SSLNetIOIFace::ESSL_Type ssl_version, bool proxyFlag) : TCPDriver(server, host, port, proxyFlag, x509_path, rsa_priv_path, ssl_version) {
 
 		//setup config vars
 		m_server_info.domainPartition = public_info.domainPartition;
@@ -33,17 +33,17 @@ namespace FESL {
 	}
 	void Driver::OnUserAuth(std::string session_key, int userid, int profileid) {
 		mp_mutex->lock();
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = (Peer*)*it;
-			OS::User user;
-			OS::Profile profile;
-			if(peer->GetAuthCredentials(user, profile)) {
-				if(user.id == userid && profile.id == profileid && peer->getSessionKey().compare(session_key) == 0) {
-					peer->DuplicateLoginExit();
+		Peer* peer = (Peer*)GetHead();
+		if (peer != NULL) {
+			do {
+				OS::User user;
+				OS::Profile profile;
+				if (peer->GetAuthCredentials(user, profile)) {
+					if (user.id == userid && profile.id == profileid && peer->getSessionKey().compare(session_key) == 0) {
+						peer->DuplicateLoginExit();
+					}
 				}
-			}
-			it++;
+			} while ((peer = (Peer*)peer->GetNext()) != NULL);
 		}
 		mp_mutex->unlock();
 	}

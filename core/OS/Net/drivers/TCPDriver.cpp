@@ -14,10 +14,10 @@ TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool p
 
     m_proxy_headers = proxyHeaders;
 
-    m_connections.reserve(CONNECTIONS_RESERVE_SIZE);
-
     mp_mutex = OS::CreateMutex();
     mp_thread = OS::CreateThread(TCPDriver::TaskThread, this, true);
+
+    mp_head = NULL;
 }
 TCPDriver::~TCPDriver() {
     mp_thread->SignalExit(true);
@@ -46,7 +46,7 @@ void TCPDriver::think(bool listener_waiting) {
             if(!m_proxy_headers)
                 peer->OnConnectionReady();
             
-            m_connections.push_back(peer);
+            addPeerToList(peer);
             
             mp_mutex->unlock();
             it++;
@@ -57,13 +57,13 @@ void TCPDriver::think(bool listener_waiting) {
 const std::vector<INetPeer *> TCPDriver::getPeers(bool inc_ref) {
     mp_mutex->lock();
     std::vector<INetPeer *> peers;
-    std::vector<INetPeer *>::iterator it = m_connections.begin();
-    while (it != m_connections.end()) {
-        INetPeer * p = (INetPeer *)*it;
-        peers.push_back(p);
-        if (inc_ref)
-            p->IncRef();
-        it++;
+    if (mp_head != NULL) {
+        INetPeer* p = mp_head;
+        do {
+            peers.push_back(p);
+            if (inc_ref)
+                p->IncRef();
+        } while ((p = p->GetNext()) != NULL);
     }
     mp_mutex->unlock();
     return peers;
@@ -74,11 +74,11 @@ INetIOSocket *TCPDriver::getListenerSocket() const {
 const std::vector<INetIOSocket *> TCPDriver::getSockets() const {
     std::vector<INetIOSocket *> sockets;
     mp_mutex->lock();
-    std::vector<INetPeer *>::const_iterator it = m_connections.begin();
-    while (it != m_connections.end()) {
-        INetPeer *p = *it;
-        sockets.push_back(p->GetSocket());
-        it++;
+    if (mp_head != NULL) {
+        INetPeer* p = mp_head;
+        do {
+            sockets.push_back(p->GetSocket());
+        } while ((p = p->GetNext()) != NULL);
     }
     mp_mutex->unlock();
     return sockets;
@@ -88,6 +88,7 @@ void *TCPDriver::TaskThread(OS::CThread *thread) {
     TCPDriver *driver = (TCPDriver *)thread->getParams();
     while (thread->isRunning()) {
         driver->mp_mutex->lock();
+        /*
         std::vector<INetPeer *>::iterator it = driver->m_connections.begin();
         while (it != driver->m_connections.end()) {
             INetPeer *peer = *it;
@@ -102,9 +103,9 @@ void *TCPDriver::TaskThread(OS::CThread *thread) {
                 continue;
             }
             it++;
-        }
+        }*/
 
-        it = driver->m_peers_to_delete.begin();
+        /*it = driver->m_peers_to_delete.begin();
         while (it != driver->m_peers_to_delete.end()) {
             INetPeer *p = *it;
             if (p->GetRefCount() == 0) {
@@ -113,7 +114,7 @@ void *TCPDriver::TaskThread(OS::CThread *thread) {
                 continue;
             }
             it++;
-        }
+        }*/
 
         driver->TickConnections();
         driver->mp_mutex->unlock();
@@ -122,11 +123,28 @@ void *TCPDriver::TaskThread(OS::CThread *thread) {
     return NULL;
 }
 void TCPDriver::TickConnections() {
-    std::vector<INetPeer *>::iterator it = m_connections.begin();
-    while (it != m_connections.end()) {
-        INetPeer *p = *it;
-        p->think(false);
-        it++;
+    if (mp_head != NULL) {
+        INetPeer* p = mp_head;
+        do {
+            if (p->ShouldDelete()) {
+                INetPeer* next = NULL;
+                if (p->GetRefCount() == 1) { //only 1 reference (the drivers reference)
+                    if (p == mp_head) {
+                        mp_head = NULL;
+                    }
+                    else if (p->GetNext() != NULL) {
+                        next = p->GetNext();
+                        p->GetNext()->SetNext(next->GetNext());
+                    }
+                    p->DecRef();
+                    delete p;
+                    p = next;
+                }
+            }
+            else {
+                p->think(false);
+            }
+        } while (p && (p = p->GetNext()) != NULL);
     }
 }
 void TCPDriver::OnPeerMessage(INetPeer *peer) {
@@ -141,11 +159,12 @@ void TCPDriver::OnPeerMessage(INetPeer *peer) {
     }
 }
 void TCPDriver::DeleteClients() {
-    std::vector<INetPeer *>::iterator it = m_connections.begin();
-    while (it != m_connections.end()) {
-        INetPeer *peer = *it;
-        m_server->UnregisterSocket(peer);
-        delete peer;
-        it++;
+    if (mp_head != NULL) {
+        INetPeer* p = mp_head;
+        do {
+            m_server->UnregisterSocket(p);
+            delete p;
+        } while ((p = p->GetNext()) != NULL);
     }
+
 }

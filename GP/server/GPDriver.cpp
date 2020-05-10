@@ -12,22 +12,22 @@ namespace GP {
 	}
 
 	Peer *Driver::FindPeerByProfileID(int profileid) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = (Peer *)*it;
-			if(p->GetProfileID() == profileid) {
-				return p;
-			}
-			it++;
+		Peer* peer = (Peer*)GetHead();
+		if (peer != NULL) {
+			do {
+				if (peer->GetProfileID() == profileid) {
+					return peer;
+				}
+			} while ((peer = (Peer*)peer->GetNext()) != NULL);
 		}
 		return NULL;
 	}
 	void Driver::InformStatusUpdate(int from_profileid, GPShared::GPStatus status) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = (Peer *)*it;
-			p->inform_status_update(from_profileid, status);
-			it++;
+		Peer* peer = (Peer*)GetHead();
+		if (peer != NULL) {
+			do {
+				peer->inform_status_update(from_profileid, status);
+			} while ((peer = (Peer*)peer->GetNext()) != NULL);
 		}
 	}
 	INetPeer *Driver::CreatePeer(INetIOSocket *socket) {

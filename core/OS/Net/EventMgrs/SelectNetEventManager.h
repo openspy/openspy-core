@@ -21,11 +21,7 @@
 			socktype_t setup_fdset();
 			fd_set  m_fdset;
 
-			bool m_dirty_fdset;
-			std::vector<socktype_t> m_cached_sockets;
 			socktype_t m_hsock;
-
-			std::vector<INetPeer *> m_peers;
 			OS::CMutex *mp_mutex;
 		};
 	#endif

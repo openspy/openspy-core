@@ -36,27 +36,30 @@ namespace SB {
 		}
 	}
 	void Driver::SendDeleteServer(MM::Server *server) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = (Peer *)*it;
-			p->informDeleteServers(server);
-			it++;
+		if (mp_head != NULL) {
+			INetPeer* p = mp_head;
+			while (p->GetNext() != NULL) {
+				((Peer*)p)->informDeleteServers(server);
+				p = p->GetNext();
+			}
 		}
 	}
 	void Driver::SendNewServer(MM::Server *server) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = (Peer *)*it;
-			p->informNewServers(server);
-			it++;
+		if (mp_head != NULL) {
+			INetPeer* p = mp_head;
+			while (p->GetNext() != NULL) {
+				((Peer*)p)->informNewServers(server);
+				p = p->GetNext();
+			}
 		}
 	}
 	void Driver::SendUpdateServer(MM::Server *server) {
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *p = *it;
-			p->informUpdateServers(server);
-			it++;
+		if (mp_head != NULL) {
+			INetPeer* p = mp_head;
+			while (p->GetNext() != NULL) {
+				((Peer*)p)->informUpdateServers(server);
+				p = p->GetNext();
+			}
 		}
 	}
 	void Driver::AddDeleteServer(MM::Server serv) {
