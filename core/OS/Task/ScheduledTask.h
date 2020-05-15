@@ -25,10 +25,10 @@ template<typename ReqClass, typename ThreadData>
 class TaskScheduler;
 
 template<typename ReqClass, typename ThreadData, typename Scheduler>
-class ScheduledTask : public OS::Task<ReqClass> {
+class ScheduledTask : public OS::Task<ReqClass>, public OS::LinkedList<ScheduledTask<ReqClass, ThreadData, Scheduler> *> {
 	typedef void (*HandleRequestCallback)(Scheduler *, ReqClass request, ThreadData data);
 	public:
-		ScheduledTask() : OS::Task<ReqClass>() {
+		ScheduledTask() : OS::Task<ReqClass>(), OS::LinkedList<ScheduledTask<ReqClass, ThreadData, Scheduler>*>() {
 			mp_task_scheduler = NULL;
 			mp_thread_data = NULL;
 			this->mp_mutex = OS::CreateMutex(); //move this into Task ctor...

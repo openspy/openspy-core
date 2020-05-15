@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "TCPDriver.h"
 
 TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders, const char *x509_path, const char *rsa_priv_path, SSLNetIOIFace::ESSL_Type ssl_version) : INetDriver(server) {
@@ -16,8 +15,6 @@ TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool p
 
     mp_mutex = OS::CreateMutex();
     mp_thread = OS::CreateThread(TCPDriver::TaskThread, this, true);
-
-    mp_head = NULL;
 }
 TCPDriver::~TCPDriver() {
     mp_thread->SignalExit(true);
@@ -46,7 +43,7 @@ void TCPDriver::think(bool listener_waiting) {
             if(!m_proxy_headers)
                 peer->OnConnectionReady();
             
-            addPeerToList(peer);
+            mp_peers->AddToList(peer);
             
             mp_mutex->unlock();
             it++;
@@ -69,29 +66,22 @@ void *TCPDriver::TaskThread(OS::CThread *thread) {
     return NULL;
 }
 void TCPDriver::TickConnections() {
-    if (mp_head != NULL) {
-        INetPeer* p = mp_head;
-        do {
-            if (p->ShouldDelete()) {
-                INetPeer* next = NULL;
-                if (p->GetRefCount() == 1) { //only 1 reference (the drivers reference)
-                    if (p == mp_head) {
-                        mp_head = NULL;
-                    }
-                    else if (p->GetNext() != NULL) {
-                        next = p->GetNext();
-                        p->GetNext()->SetNext(next->GetNext());
-                    }
-                    p->DecRef();
-                    delete p;
-                    p = next;
-                }
-            }
-            else {
-                p->think(false);
-            }
-        } while (p && (p = p->GetNext()) != NULL);
+    OS::LinkedListIterator<INetPeer*, TCPDriver*> iterator(mp_peers);
+    iterator.Iterate(LLIterator_TickOrDeleteClient, this);
+}
+bool TCPDriver::LLIterator_TickOrDeleteClient(INetPeer* peer, TCPDriver* driver) {
+    if (peer->ShouldDelete()) {
+        INetPeer* next = peer->GetNext();
+        if (peer->GetRefCount() == 1) { //only 1 reference (the drivers reference)
+            driver->mp_peers->RemoveFromList(peer);
+            peer->DecRef();
+            delete peer;
+        }
     }
+    else {
+        peer->think(false);
+    }
+    return true;
 }
 void TCPDriver::OnPeerMessage(INetPeer *peer) {
     OS::Address source_address, proxy_server_address;
@@ -104,13 +94,13 @@ void TCPDriver::OnPeerMessage(INetPeer *peer) {
         peer->OnConnectionReady();
     }
 }
+bool TCPDriver::LLIterator_DeleteAllClients(INetPeer* peer, TCPDriver* driver) {
+    //no need to remove from linked list, since this method is *only* called on TCPDriver delete
+    driver->m_server->UnregisterSocket(peer);
+    delete peer;
+    return true;
+}
 void TCPDriver::DeleteClients() {
-    if (mp_head != NULL) {
-        INetPeer* p = mp_head;
-        do {
-            m_server->UnregisterSocket(p);
-            delete p;
-        } while ((p = p->GetNext()) != NULL);
-    }
-
+    OS::LinkedListIterator<INetPeer*, TCPDriver*> iterator(mp_peers);
+    iterator.Iterate(LLIterator_DeleteAllClients, this);
 }

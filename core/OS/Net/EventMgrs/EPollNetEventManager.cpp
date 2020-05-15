@@ -1,5 +1,5 @@
-#include <OS/OpenSpy.h>
 #if EVTMGR_USE_EPOLL
+	#include <OS/OpenSpy.h>
 	#include "EPollNetEventManager.h"
 	#include <stdio.h>
 	#include <OS/Net/NetServer.h>

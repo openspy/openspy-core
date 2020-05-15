@@ -22,6 +22,11 @@ class TCPDriver : public INetDriver {
 
 		INetIOSocket *getListenerSocket() const;
 		void OnPeerMessage(INetPeer *peer);
+
+		//Linked List iterators
+		static bool LLIterator_DeleteAllClients(INetPeer* peer, TCPDriver* driver);
+		static bool LLIterator_TickOrDeleteClient(INetPeer* peer, TCPDriver* driver);
+		//
     protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket) = 0;
 		static void *TaskThread(OS::CThread *thread);

@@ -3,11 +3,13 @@
 #include <OS/SharedTasks/tasks.h>
 #include "GeographyTasks.h"
 namespace TaskShared {
+	TaskScheduler<GeoRequest, TaskThreadData>::RequestHandlerEntry GeoTask_HandlerTable[] = {
+		{EGeoTaskType_GetCountries, PerformGeo_GetCountries},
+		{NULL, NULL}
+	};
 	TaskScheduler<GeoRequest, TaskThreadData> *InitGeoTasks(INetServer *server) {
-		TaskScheduler<GeoRequest, TaskThreadData> *scheduler = new TaskScheduler<GeoRequest, TaskThreadData>(OS::g_numAsync, server);
+		TaskScheduler<GeoRequest, TaskThreadData> *scheduler = new TaskScheduler<GeoRequest, TaskThreadData>(OS::g_numAsync, server, GeoTask_HandlerTable, NULL);
 		scheduler->SetThreadDataFactory(TaskScheduler<GeoRequest, TaskThreadData>::DefaultThreadDataFactory);
-
-		scheduler->AddRequestHandler(EGeoTaskType_GetCountries, PerformGeo_GetCountries);
 		scheduler->DeclareReady();
 		return scheduler;
 	}

@@ -3,8 +3,9 @@
 #include "NetPeer.h"
 
 INetDriver::INetDriver(INetServer *server) {
+
+    mp_peers = new OS::LinkedListHead<INetPeer*>();
 	m_server = server;
-    mp_head = NULL;
     mp_net_io_interface = NULL;
 
 }
@@ -16,16 +17,4 @@ INetIOInterface<> *INetDriver::getNetIOInterface() {
 }
 void INetDriver::setNetIOInterface(INetIOInterface<> *iface) {
 	mp_net_io_interface = iface;
-}
-void INetDriver::addPeerToList(INetPeer* peer) {
-    if (mp_head == NULL) {
-        mp_head = peer;
-    }
-    else {
-        INetPeer* p = mp_head;
-        while (p->GetNext() != NULL) {
-            p = p->GetNext();
-        }
-        p->SetNext(peer);
-    }
 }

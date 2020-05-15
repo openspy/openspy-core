@@ -40,6 +40,9 @@ namespace SB {
 	private:
 		int m_version;
 
+		static bool LLIterator_SendDeleteServer(INetPeer* peer, MM::Server* server);
+		static bool LLIterator_SendNewServer(INetPeer* peer, MM::Server* server);
+		static bool LLIterator_SendUpdateServer(INetPeer* peer, MM::Server* server);
 
 		//safe for now, until pointers one day get added
 		std::queue<MM::Server> m_server_delete_queue;

@@ -5,27 +5,32 @@
 #include "UserTasks.h"
 namespace TaskShared {
 
+		TaskScheduler<UserRequest, TaskThreadData>::RequestHandlerEntry UserTasks_requestTable[] = {
+			{EUserRequestType_Search, PerformUserRequest},
+			{EUserRequestType_Update, PerformUserRequest},
+			{EUserRequestType_Create, PerformUserRegisterRequest},
+			{NULL, NULL}
+		};
         TaskScheduler<UserRequest, TaskThreadData> *InitUserTasks(INetServer *server) {
-            TaskScheduler<UserRequest, TaskThreadData> *scheduler = new TaskScheduler<UserRequest, TaskThreadData>(OS::g_numAsync, server);
+            TaskScheduler<UserRequest, TaskThreadData> *scheduler = new TaskScheduler<UserRequest, TaskThreadData>(OS::g_numAsync, server, UserTasks_requestTable, NULL);
             scheduler->SetThreadDataFactory(TaskScheduler<UserRequest, TaskThreadData>::DefaultThreadDataFactory);
-
-            scheduler->AddRequestHandler(EUserRequestType_Search, PerformUserRequest);
-            scheduler->AddRequestHandler(EUserRequestType_Update, PerformUserRequest);
-			scheduler->AddRequestHandler(EUserRequestType_Create, PerformUserRegisterRequest);
 			scheduler->DeclareReady();
             return scheduler;
         }
-        TaskScheduler<ProfileRequest, TaskThreadData> *InitProfileTasks(INetServer *server) {
-            TaskScheduler<ProfileRequest, TaskThreadData> *scheduler = new TaskScheduler<ProfileRequest, TaskThreadData>(OS::g_numAsync, server);
-            scheduler->AddRequestHandler(EProfileSearch_Profiles, PerformProfileRequest);
-            scheduler->AddRequestHandler(EProfileSearch_CreateProfile, PerformProfileRequest);
-            scheduler->AddRequestHandler(EProfileSearch_DeleteProfile, PerformProfileRequest);
-            scheduler->AddRequestHandler(EProfileSearch_UpdateProfile, PerformProfileRequest);
+		TaskScheduler<ProfileRequest, TaskThreadData>::RequestHandlerEntry ProfileTasks_requestTable[] = {
+			{EProfileSearch_Profiles, PerformProfileRequest},
+			{EProfileSearch_CreateProfile, PerformProfileRequest},
+			{EProfileSearch_DeleteProfile, PerformProfileRequest},
+			{EProfileSearch_UpdateProfile, PerformProfileRequest},
 
-			scheduler->AddRequestHandler(EProfileSearch_Buddies, Perform_BuddyRequest);
-			scheduler->AddRequestHandler(EProfileSearch_Buddies_Reverse, Perform_BuddyRequest);
-			scheduler->AddRequestHandler(EProfileSearch_Blocks, Perform_BuddyRequest);
-			
+			{EProfileSearch_Buddies, Perform_BuddyRequest},
+			{EProfileSearch_Buddies_Reverse, Perform_BuddyRequest},
+			{EProfileSearch_Blocks, Perform_BuddyRequest},
+			{NULL, NULL}
+		};
+        TaskScheduler<ProfileRequest, TaskThreadData> *InitProfileTasks(INetServer *server) {
+            TaskScheduler<ProfileRequest, TaskThreadData> *scheduler = new TaskScheduler<ProfileRequest, TaskThreadData>(OS::g_numAsync, server, ProfileTasks_requestTable, NULL);
+
 			scheduler->DeclareReady();
             return scheduler;
         }

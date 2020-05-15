@@ -3,15 +3,17 @@
 #include <OS/SharedTasks/tasks.h>
 
 namespace TaskShared {
+		TaskScheduler<AuthRequest, TaskThreadData>::RequestHandlerEntry AuthTask_HandlerTable[] = {
+			{EAuthType_User_EmailPassword, PerformAuth_Email_Password},
+			{EAuthType_Uniquenick_Password, PerformAuth_UniqueNick_Password},
+			{EAuthType_MakeAuthTicket, PerformAuth_MakeAuthTicket},
+			{EAuthType_NickEmail, PerformAuth_NickEmail},
+			{EAuthType_MakeAuthSession, PerformAuth_MakeAuthSession},
+			{EAuthType_DeleteAuthSession, PerformAuth_DeleteAuthSession},
+			{NULL, NULL}
+		};
         TaskScheduler<AuthRequest, TaskThreadData> *InitAuthTasks(INetServer *server) {
-            TaskScheduler<AuthRequest, TaskThreadData> *scheduler = new TaskScheduler<AuthRequest, TaskThreadData>(OS::g_numAsync, server);
-            scheduler->AddRequestHandler(EAuthType_User_EmailPassword, PerformAuth_Email_Password);
-            scheduler->AddRequestHandler(EAuthType_Uniquenick_Password, PerformAuth_UniqueNick_Password);
-            scheduler->AddRequestHandler(EAuthType_MakeAuthTicket, PerformAuth_MakeAuthTicket);
-            scheduler->AddRequestHandler(EAuthType_NickEmail, PerformAuth_NickEmail);
-			scheduler->AddRequestHandler(EAuthType_MakeAuthSession, PerformAuth_MakeAuthSession);
-			scheduler->AddRequestHandler(EAuthType_DeleteAuthSession, PerformAuth_DeleteAuthSession);			
-			
+            TaskScheduler<AuthRequest, TaskThreadData> *scheduler = new TaskScheduler<AuthRequest, TaskThreadData>(OS::g_numAsync, server, AuthTask_HandlerTable, NULL);
 			scheduler->DeclareReady();
             return scheduler;
         }

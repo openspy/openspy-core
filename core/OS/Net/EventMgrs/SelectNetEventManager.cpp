@@ -32,7 +32,7 @@ void SelectNetEventManager::run() {
 		if (FD_ISSET(driver->getListenerSocket()->sd, &m_fdset))
 			driver->think(true);
 
-		INetPeer* peer = driver->GetHead();
+		INetPeer* peer = driver->GetPeerList()->GetHead();
 		if (peer != NULL) {
 			do {
 				INetIOSocket* sd = peer->GetSocket();
@@ -61,7 +61,7 @@ socktype_t SelectNetEventManager::setup_fdset() {
 			hsock = sd->sd;
 		}
 
-		INetPeer* peer = driver->GetHead();
+		INetPeer* peer = driver->GetPeerList()->GetHead();
 		if (peer != NULL) {
 			do {
 				INetIOSocket* sd = peer->GetSocket();

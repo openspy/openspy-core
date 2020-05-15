@@ -35,32 +35,29 @@ namespace SB {
 			SendUpdateServer(&serv);
 		}
 	}
+	bool Driver::LLIterator_SendDeleteServer(INetPeer* peer, MM::Server* server) {
+		((Peer*)peer)->informDeleteServers(server);
+		return true;
+	}
+	bool Driver::LLIterator_SendNewServer(INetPeer* peer, MM::Server* server) {
+		((Peer*)peer)->informNewServers(server);
+		return true;
+	}
+	bool Driver::LLIterator_SendUpdateServer(INetPeer* peer, MM::Server* server) {
+		((Peer*)peer)->informUpdateServers(server);
+		return true;
+	}
 	void Driver::SendDeleteServer(MM::Server *server) {
-		if (mp_head != NULL) {
-			INetPeer* p = mp_head;
-			while (p->GetNext() != NULL) {
-				((Peer*)p)->informDeleteServers(server);
-				p = p->GetNext();
-			}
-		}
+		OS::LinkedListIterator<INetPeer*, MM::Server*> iterator(GetPeerList());
+		iterator.Iterate(LLIterator_SendDeleteServer, server);
 	}
 	void Driver::SendNewServer(MM::Server *server) {
-		if (mp_head != NULL) {
-			INetPeer* p = mp_head;
-			while (p->GetNext() != NULL) {
-				((Peer*)p)->informNewServers(server);
-				p = p->GetNext();
-			}
-		}
+		OS::LinkedListIterator<INetPeer*, MM::Server*> iterator(GetPeerList());
+		iterator.Iterate(LLIterator_SendNewServer, server);
 	}
 	void Driver::SendUpdateServer(MM::Server *server) {
-		if (mp_head != NULL) {
-			INetPeer* p = mp_head;
-			while (p->GetNext() != NULL) {
-				((Peer*)p)->informUpdateServers(server);
-				p = p->GetNext();
-			}
-		}
+		OS::LinkedListIterator<INetPeer*, MM::Server*> iterator(GetPeerList());
+		iterator.Iterate(LLIterator_SendUpdateServer, server);
 	}
 	void Driver::AddDeleteServer(MM::Server serv) {
 		mp_mutex->lock();

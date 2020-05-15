@@ -8,6 +8,7 @@
 #include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 #include <OS/Net/NetServer.h>
 #include <OS/Cache/GameCache.h>
+#include <OS/LinkedList.h>
 #include <OS/Task.h>
 #include <stack>
 #include <string>
@@ -25,24 +26,34 @@ enum EThreadInitState {
 
 template<typename ReqClass, typename ThreadData>
 class TaskScheduler {
-	typedef bool (*TaskRequestHandler)(ReqClass, ThreadData *);
-	typedef bool (*ListenerRequestHandler)(ThreadData *, std::string);
-	typedef ThreadData *(*ThreadDataFactory)(TaskScheduler<ReqClass, ThreadData> *, EThreadInitState, ThreadData *);
-	typedef struct {
-		TaskSchedulerRequestType type;
-		TaskRequestHandler handler;
-	} RequestHandlerEntry;
-	typedef struct {
-		std::string exchange;
-		std::string routingKey;
-		ListenerRequestHandler handler;
-	} ListenerHandlerEntry;
 	public:
-		TaskScheduler(int num_tasks, INetServer *server) {
+		typedef bool (*TaskRequestHandler)(ReqClass, ThreadData *);
+		typedef bool (*ListenerRequestHandler)(ThreadData *, std::string);
+		typedef ThreadData *(*ThreadDataFactory)(TaskScheduler<ReqClass, ThreadData> *, EThreadInitState, ThreadData *);
+		typedef struct {
+			TaskSchedulerRequestType type;
+			TaskRequestHandler handler;
+		} RequestHandlerEntry;
+		typedef struct {
+			const char* exchange;
+			const char *routingKey;
+			ListenerRequestHandler handler;
+		} ListenerHandlerEntry;
+		typedef struct {
+			ScheduledTask < ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >* lowest_task;
+			unsigned int lowest_count;
+		} AddRequestState;
+	
+		TaskScheduler(int num_tasks, INetServer *server, RequestHandlerEntry *requestHandlerTable, ListenerHandlerEntry *listenerHandlerTable) {
 			//allocate tasks
 			mp_server = server;
 			m_tasks_setup = false;
 			m_num_tasks = num_tasks;
+
+			mp_tasks = new OS::LinkedListHead<ScheduledTask<ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >*>();
+
+			mp_request_handlers = requestHandlerTable;
+			mp_listener_handlers = listenerHandlerTable;
 
 			OS::DataCacheTimeout gameCacheTimeout;
 			gameCacheTimeout.max_keys = 50;
@@ -56,67 +67,52 @@ class TaskScheduler {
 		~TaskScheduler() {
 			//free tasks
 		}
-		bool AddRequestHandler(TaskSchedulerRequestType type, TaskRequestHandler handler) {
-			RequestHandlerEntry entry;
-			entry.type = type;
-			entry.handler = handler;
-			m_request_handlers.push_back(entry);
-			return true;
-		}
-		bool AddRequestListener(std::string exchange, std::string routingKey, ListenerRequestHandler handler) {
-			ListenerHandlerEntry entry;
-			entry.exchange = exchange;
-			entry.routingKey = routingKey;
-			entry.handler = handler;
-			m_listener_handlers.push_back(entry);
+
+		static bool LLIterator_Task_InitThreadData(ScheduledTask < ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> > *task, TaskScheduler<ReqClass, ThreadData> *scheduler) {
+			scheduler->m_task_data[task] = scheduler->mp_thread_data_factory(scheduler, EThreadInitState_InitThreadData, scheduler->m_task_data[task]);
 			return true;
 		}
 		void DeclareReady() {
-			/*std::vector<ListenerHandlerEntry>::iterator itL;
-			itL = m_listener_handlers.begin();
-			while (itL != m_listener_handlers.end()) {
-				ListenerHandlerEntry entry = *itL;
-				mp_mqconnection->setReceiver(entry.exchange, entry.routingKey, MQListenerCallback);
-				itL++;
-			}
-			mp_mqconnection->declareReady();*/
-
 			//loop tasks, declaring them ready
-			typename std::vector< ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *>::iterator it = m_tasks.begin();
-			while(it != m_tasks.end()) {
-				ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData>> *task = *it;
-				m_task_data[task] = mp_thread_data_factory(this, EThreadInitState_InitThreadData, m_task_data[task]);
-				it++;
-			}
+			OS::LinkedListIterator<ScheduledTask<ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >*, TaskScheduler<ReqClass, ThreadData>*> iterator(mp_tasks);
+			iterator.Iterate(LLIterator_Task_InitThreadData, this);
 
 		}
 		void SetThreadDataFactory(ThreadDataFactory threadDataFactoryFunc) {
 			mp_thread_data_factory = threadDataFactoryFunc;
 		}
 
-		void AddRequest(TaskSchedulerRequestType type, ReqClass request) {
-			ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData>>  *lowest = NULL, *task;
-			typename std::vector< ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData>>  *>::iterator it = m_tasks.begin();
-			unsigned int lowest_count = UINT_MAX, size;
-			while (it != m_tasks.end()) {
-				task = *it;
-				size = task->GetListSize();
-				if (size < lowest_count) {
-					lowest_count = size;
-					lowest = task;
-				}
-				it++;
+
+
+		static bool LLIterator_Task_AddRequest(ScheduledTask < ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >* task, AddRequestState* state) {
+			unsigned int size = task->GetListSize();
+			if (size < state->lowest_count) {
+				state->lowest_task = task;
+				state->lowest_count = size;
 			}
-			request.type = type;
-			lowest->AddRequest(request);			
+			return true;
+		}
+		void AddRequest(TaskSchedulerRequestType type, ReqClass request) {
+			AddRequestState state;
+			state.lowest_count = UINT_MAX;
+			state.lowest_task = NULL;
+
+			OS::LinkedListIterator<ScheduledTask<ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >*, AddRequestState*> iterator(mp_tasks);
+			
+			iterator.Iterate(LLIterator_Task_AddRequest, (AddRequestState *)&state);
+
+			if (state.lowest_task != NULL) {
+				request.type = type;
+				state.lowest_task->AddRequest(request);
+			}
 		}
 
 		static ThreadData *DefaultThreadDataFactory(TaskScheduler<ReqClass, ThreadData> *scheduler, EThreadInitState state, ThreadData *data) {
-			typename std::vector<ListenerHandlerEntry>::iterator it;
-			typename std::vector<ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *>::iterator it2;
 			struct timeval t;
 			t.tv_usec = 0;
 			t.tv_sec = 60;
+			int i = 0;
+			OS::LinkedListIterator<ScheduledTask<ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >*, ThreadData*> iterator(scheduler->mp_tasks);
 			switch(state) {
 				case EThreadInitState_AllocThreadData:					
 					data = new ThreadData;
@@ -126,54 +122,55 @@ class TaskScheduler {
 					data->server = scheduler->mp_server;
 				break;
 				case EThreadInitState_InitThreadData:
-					it = scheduler->m_listener_handlers.begin();
-					while(it != scheduler->m_listener_handlers.end()) {
-						ListenerHandlerEntry entry = *it;
-						data->mp_mqconnection->setReceiver(entry.exchange, entry.routingKey, MQListenerCallback, "", data);
-						it++;
+					
+					if (scheduler->mp_listener_handlers[i].handler != NULL) {
+						do {
+							data->mp_mqconnection->setReceiver(scheduler->mp_listener_handlers[i].exchange, scheduler->mp_listener_handlers[i].routingKey, MQListenerCallback, "", data);
+						} while (scheduler->mp_listener_handlers[++i].handler != NULL);
 					}
 					data->mp_mqconnection->declareReady();
-					it2 = scheduler->m_tasks.begin();
-					while (it2 != scheduler->m_tasks.end()) {
-						ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> >  *task = *it2;
-						data->mp_thread = OS::CreateThread(ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData>>::TaskThread, task, true);
-						it2++;
-					}
+
+					iterator.Iterate(LLIterator_InitTaskThreadData, data);
+
 				break;
 				case EThreadInitState_DeallocThreadData:
 				break;
 			}
 			return data;
 		}
+		static bool LLIterator_InitTaskThreadData(ScheduledTask<ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >* task, ThreadData* data) {
+			data->mp_thread = OS::CreateThread(ScheduledTask<ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData>>::TaskThread, task, true);
+			return true;
+		}
 		static void MQListenerCallback(std::string exchange, std::string routingKey, std::string message, void *extra) {
 			ThreadData *thread_data = (ThreadData *)extra;
 			TaskScheduler<ReqClass, ThreadData> *scheduler = (TaskScheduler<ReqClass, ThreadData> *)thread_data->scheduler;
 			ListenerRequestHandler handler = NULL;
-			typename std::vector<ListenerHandlerEntry>::iterator it = scheduler->m_listener_handlers.begin();
-			while (it != scheduler->m_listener_handlers.end()) {
-				ListenerHandlerEntry entry = *it;
-				if (entry.exchange.compare(exchange) == 0 && entry.routingKey.compare(routingKey) == 0) {
-					handler = entry.handler;
-					break;
-				}
-				it++;
+			int i = 0;
+			if (scheduler->mp_listener_handlers[i].handler != NULL) {
+				do {
+					if (strcmp(scheduler->mp_listener_handlers[i].exchange, exchange.c_str()) == 0 && strcmp(scheduler->mp_listener_handlers[i].routingKey, routingKey.c_str()) == 0) {
+						handler = scheduler->mp_listener_handlers[i].handler;
+						break;
+					}
+				} while (scheduler->mp_listener_handlers[++i].handler != NULL);
 			}
 			if(handler) {
 				handler(thread_data, message);
 			}
 		}
 		static void HandleRequestCallback(TaskScheduler<ReqClass, ThreadData> *scheduler,ReqClass request, ThreadData *data) {
-			typename std::vector<RequestHandlerEntry>::iterator it = scheduler->m_request_handlers.begin();
 			TaskRequestHandler handler = NULL;
-			while (it != scheduler->m_request_handlers.end()) {
-				RequestHandlerEntry entry = *it;
-				if (entry.type == request.type) {
-					handler = entry.handler;
-					break;
-				}
-				it++;
+			int i = 0;
+			if (scheduler->mp_request_handlers[i].handler != NULL) {
+				do {
+					if (scheduler->mp_request_handlers[i].type == request.type) {
+						handler = scheduler->mp_request_handlers[i].handler;
+						break;
+					}
+				} while (scheduler->mp_request_handlers[++i].handler != NULL);
 			}
-			if(handler) {
+			if (handler) {
 				handler(request, data);
 			}
 		}
@@ -186,7 +183,7 @@ class TaskScheduler {
 				ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *task = new ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> >();
 				task->SetScheduler(this);
 				task->SetRequestCallback(HandleRequestCallback);
-				m_tasks.push_back(task);
+				mp_tasks->AddToList(task);
 				m_task_data[task] = mp_thread_data_factory(this, EThreadInitState_AllocThreadData, NULL);
 				m_task_data[task]->id = i;
 				m_task_data[task]->shared_game_cache = mp_shared_game_cache;
@@ -210,11 +207,11 @@ class TaskScheduler {
 		}
 
 		ThreadDataFactory mp_thread_data_factory;
-		std::vector<RequestHandlerEntry> m_request_handlers;
-		std::vector<ListenerHandlerEntry> m_listener_handlers;
+		RequestHandlerEntry* mp_request_handlers;
+		ListenerHandlerEntry* mp_listener_handlers;
 		MQ::IMQInterface* mp_mqconnection;
 
-		std::vector<ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> >  *> m_tasks;
+		OS::LinkedListHead<ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *>* mp_tasks;
 		std::map<ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData>> *, ThreadData *> m_task_data;
 
 		INetServer *mp_server;
@@ -223,6 +220,7 @@ class TaskScheduler {
 		bool m_tasks_setup;
 
 		OS::GameCache *mp_shared_game_cache;
+
 };
 
 #endif //_TASKSCHEDULER_H

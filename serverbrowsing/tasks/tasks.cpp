@@ -12,19 +12,26 @@ namespace MM {
 
     const char *mp_pk_name = "QRID";
 
+	TaskScheduler<MMQueryRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
+		{EMMQueryRequestType_GetServers, PerformGetServers},
+		{EMMQueryRequestType_GetGroups, PerformGetGroups},
+		{EMMQueryRequestType_GetServerByKey, PerformGetServerByKey},
+		{EMMQueryRequestType_GetServerByIP, PerformGetServerByIP},
+		{EMMQueryRequestType_SubmitData, PerformSubmitData},
+		{EMMQueryRequestType_GetGameInfoByGameName, PerformGetGameInfoByGameName},
+		{EMMQueryRequestType_GetGameInfoPairByGameName, PerformGetGameInfoPairByGameName},
+		{NULL, NULL}
+	};
+
+	TaskScheduler<MMQueryRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
+		{mm_channel_exchange, mm_server_event_routingkey, Handle_ServerEventMsg},
+		{NULL, NULL, NULL}
+	};
+
     TaskScheduler<MMQueryRequest, TaskThreadData> *InitTasks(INetServer *server) {
-        TaskScheduler<MMQueryRequest, TaskThreadData> *scheduler = new TaskScheduler<MMQueryRequest, TaskThreadData>(4, server);
+        TaskScheduler<MMQueryRequest, TaskThreadData> *scheduler = new TaskScheduler<MMQueryRequest, TaskThreadData>(4, server, requestTable, listenerTable);
 
         scheduler->SetThreadDataFactory(TaskScheduler<MMQueryRequest, TaskThreadData>::DefaultThreadDataFactory);
-
-        scheduler->AddRequestHandler(EMMQueryRequestType_GetServers, PerformGetServers);
-        scheduler->AddRequestHandler(EMMQueryRequestType_GetGroups, PerformGetGroups);
-        scheduler->AddRequestHandler(EMMQueryRequestType_GetServerByKey, PerformGetServerByKey);
-        scheduler->AddRequestHandler(EMMQueryRequestType_GetServerByIP, PerformGetServerByIP);
-        scheduler->AddRequestHandler(EMMQueryRequestType_SubmitData, PerformSubmitData);
-        scheduler->AddRequestHandler(EMMQueryRequestType_GetGameInfoByGameName, PerformGetGameInfoByGameName);
-        scheduler->AddRequestHandler(EMMQueryRequestType_GetGameInfoPairByGameName, PerformGetGameInfoPairByGameName);
-        scheduler->AddRequestListener(mm_channel_exchange, mm_server_event_routingkey, Handle_ServerEventMsg);
 
 		scheduler->DeclareReady();
 
