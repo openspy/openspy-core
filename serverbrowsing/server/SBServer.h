@@ -2,7 +2,6 @@
 #define _SBSERVER_H
 #include <stdint.h>
 #include <OS/Net/NetServer.h>
-#include <OS/TaskPool.h>
 #include <tasks/tasks.h>
 
 class SBServer : public INetServer {

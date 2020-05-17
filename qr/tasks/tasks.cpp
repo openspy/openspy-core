@@ -13,18 +13,25 @@ namespace MM {
 
     const char *mp_pk_name = "QRID";
 
+	TaskScheduler<MMPushRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
+		{EMMPushRequestType_PushServer, PerformPushServer},
+		{EMMPushRequestType_UpdateServer, PerformUpdateServer},
+		{EMMPushRequestType_UpdateServer_NoDiff, PerformDeleteMissingKeysAndUpdateChanged},
+		{EMMPushRequestType_DeleteServer, PerformDeleteServer},
+		{EMMPushRequestType_GetGameInfoByGameName, PerformGetGameInfo},
+		{NULL, NULL}
+	};
+
+	TaskScheduler<MMPushRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
+		{mm_channel_exchange, mm_server_event_routingkey, Handle_ClientMessage},
+		{NULL, NULL, NULL}
+	};
+
     TaskScheduler<MMPushRequest, TaskThreadData> *InitTasks(INetServer *server) {
-        TaskScheduler<MMPushRequest, TaskThreadData> *scheduler = new TaskScheduler<MMPushRequest, TaskThreadData>(4, server);
+        TaskScheduler<MMPushRequest, TaskThreadData> *scheduler = new TaskScheduler<MMPushRequest, TaskThreadData>(4, server, requestTable, listenerTable);
 
         scheduler->SetThreadDataFactory(TaskScheduler<MMPushRequest, TaskThreadData>::DefaultThreadDataFactory);
-
-        scheduler->AddRequestHandler(EMMPushRequestType_PushServer, PerformPushServer);
-        scheduler->AddRequestHandler(EMMPushRequestType_UpdateServer, PerformUpdateServer);
-        scheduler->AddRequestHandler(EMMPushRequestType_UpdateServer_NoDiff, PerformDeleteMissingKeysAndUpdateChanged);
-        scheduler->AddRequestHandler(EMMPushRequestType_DeleteServer, PerformDeleteServer);
-        scheduler->AddRequestHandler(EMMPushRequestType_GetGameInfoByGameName, PerformGetGameInfo);
-        scheduler->AddRequestListener(mm_channel_exchange, mm_client_message_routingkey, Handle_ClientMessage);
-
+		
 		scheduler->DeclareReady();
 
         return scheduler;

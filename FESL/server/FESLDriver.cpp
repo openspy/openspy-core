@@ -33,7 +33,7 @@ namespace FESL {
 	}
 	void Driver::OnUserAuth(std::string session_key, int userid, int profileid) {
 		mp_mutex->lock();
-		Peer* peer = (Peer*)GetHead();
+		Peer* peer = (Peer*)GetPeerList()->GetHead();
 		if (peer != NULL) {
 			do {
 				OS::User user;

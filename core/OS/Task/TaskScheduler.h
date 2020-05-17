@@ -61,7 +61,9 @@ class TaskScheduler {
 			mp_shared_game_cache = new OS::GameCache(m_num_tasks, gameCacheTimeout);
 
 			mp_thread_data_factory = DefaultThreadDataFactory;
-			setupRootMQConnection();
+
+			if(listenerHandlerTable != NULL)
+				setupRootMQConnection();
 			setupTasks();
 		}
 		~TaskScheduler() {
@@ -123,13 +125,14 @@ class TaskScheduler {
 				break;
 				case EThreadInitState_InitThreadData:
 					
-					if (scheduler->mp_listener_handlers[i].handler != NULL) {
-						do {
-							data->mp_mqconnection->setReceiver(scheduler->mp_listener_handlers[i].exchange, scheduler->mp_listener_handlers[i].routingKey, MQListenerCallback, "", data);
-						} while (scheduler->mp_listener_handlers[++i].handler != NULL);
+					if (scheduler->mp_listener_handlers != NULL) {
+						if (scheduler->mp_listener_handlers[i].handler != NULL) {
+							do {
+								data->mp_mqconnection->setReceiver(scheduler->mp_listener_handlers[i].exchange, scheduler->mp_listener_handlers[i].routingKey, MQListenerCallback, "", data);
+							} while (scheduler->mp_listener_handlers[++i].handler != NULL);
+						}
+						data->mp_mqconnection->declareReady();
 					}
-					data->mp_mqconnection->declareReady();
-
 					iterator.Iterate(LLIterator_InitTaskThreadData, data);
 
 				break;
@@ -162,7 +165,7 @@ class TaskScheduler {
 		static void HandleRequestCallback(TaskScheduler<ReqClass, ThreadData> *scheduler,ReqClass request, ThreadData *data) {
 			TaskRequestHandler handler = NULL;
 			int i = 0;
-			if (scheduler->mp_request_handlers[i].handler != NULL) {
+			if (scheduler->mp_request_handlers != NULL && scheduler->mp_request_handlers[i].handler != NULL) {
 				do {
 					if (scheduler->mp_request_handlers[i].type == request.type) {
 						handler = scheduler->mp_request_handlers[i].handler;

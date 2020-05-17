@@ -2,25 +2,33 @@
 namespace GP {
         const char *gp_channel_exchange = "presence.core";
         const char *gp_client_message_routingkey = "presence.buddies";
+		TaskScheduler<GPBackendRedisRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
+			{EGPRedisRequestType_AuthorizeAdd, Perform_ToFromProfileAction},
+			{EGPRedisRequestType_AddBlock, Perform_ToFromProfileAction},
+			{EGPRedisRequestType_DelBlock, Perform_ToFromProfileAction},
+			{EGPRedisRequestType_Auth_NickEmail_GPHash, Perform_Auth_NickEmail_GPHash},
+			{EGPRedisRequestType_Auth_Uniquenick_GPHash, Perform_Auth_Uniquenick_GPHash},
+
+			{EGPRedisRequestType_AddBuddy, Perform_BuddyRequest},
+			{EGPRedisRequestType_UpdateStatus, Perform_SetPresenceStatus},
+			{EGPRedisRequestType_DelBuddy, Perform_ToFromProfileAction},
+			{EGPRedisRequestType_BuddyMessage, Perform_SendBuddyMessage},
+
+			{EGPRedisRequestType_LookupBuddyStatus, Perform_GetBuddyStatus},
+			{EGPRedisRequestType_LookupBlockStatus, Perform_GetBuddyStatus},
+			{EGPRedisRequestType_Auth_PreAuth_Token_GPHash, Perform_Auth_PreAuth_Token_GPHash},
+			{EGPRedisRequestType_Auth_LoginTicket, Perform_Auth_LoginTicket_GPHash},
+			{NULL, NULL}
+		};
+
+		TaskScheduler<GPBackendRedisRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
+			{gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage},
+			{"openspy.core", "auth.events", Handle_AuthEvent},
+			{NULL, NULL, NULL}
+		};
         TaskScheduler<GPBackendRedisRequest, TaskThreadData> *InitTasks(INetServer *server) {
-            TaskScheduler<GPBackendRedisRequest, TaskThreadData> *scheduler = new TaskScheduler<GPBackendRedisRequest, TaskThreadData>(OS::g_numAsync, server);
-			scheduler->AddRequestHandler(EGPRedisRequestType_AuthorizeAdd, Perform_ToFromProfileAction);
-			scheduler->AddRequestHandler(EGPRedisRequestType_AddBlock, Perform_ToFromProfileAction);
-			scheduler->AddRequestHandler(EGPRedisRequestType_DelBlock, Perform_ToFromProfileAction);
-			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_NickEmail_GPHash, Perform_Auth_NickEmail_GPHash);
-			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_Uniquenick_GPHash, Perform_Auth_Uniquenick_GPHash);			
+            TaskScheduler<GPBackendRedisRequest, TaskThreadData> *scheduler = new TaskScheduler<GPBackendRedisRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, listenerTable);
 
-            scheduler->AddRequestHandler(EGPRedisRequestType_AddBuddy, Perform_BuddyRequest);
-            scheduler->AddRequestHandler(EGPRedisRequestType_UpdateStatus, Perform_SetPresenceStatus);
-            scheduler->AddRequestHandler(EGPRedisRequestType_DelBuddy, Perform_ToFromProfileAction);
-            scheduler->AddRequestHandler(EGPRedisRequestType_BuddyMessage, Perform_SendBuddyMessage);
-
-            scheduler->AddRequestHandler(EGPRedisRequestType_LookupBuddyStatus, Perform_GetBuddyStatus);
-			scheduler->AddRequestHandler(EGPRedisRequestType_LookupBlockStatus, Perform_GetBuddyStatus);
-			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_PreAuth_Token_GPHash, Perform_Auth_PreAuth_Token_GPHash);
-			scheduler->AddRequestHandler(EGPRedisRequestType_Auth_LoginTicket, Perform_Auth_LoginTicket_GPHash);
-            scheduler->AddRequestListener(gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage);
-			scheduler->AddRequestListener("openspy.core", "auth.events", Handle_AuthEvent);
 			scheduler->DeclareReady();
 
             return scheduler;

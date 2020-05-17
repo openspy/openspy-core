@@ -12,7 +12,7 @@ namespace GS {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
 	}
 	Peer *Driver::FindPeerByProfileID(int profileid) {
-		Peer* peer = (Peer *)GetHead();
+		Peer* peer = (Peer *)GetPeerList()->GetHead();
 		if (peer != NULL) {
 			do {
 				if (peer->GetProfileID() == profileid) {

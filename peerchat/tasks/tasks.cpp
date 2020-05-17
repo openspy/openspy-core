@@ -48,6 +48,44 @@ namespace Peerchat {
 			{EUserChannelFlag_Banned, 'b'}
 		};
 
+		TaskScheduler<PeerchatBackendRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
+			{EPeerchatRequestType_SetUserDetails, Perform_SetUserDetails},
+			{EPeerchatRequestType_SendMessageToTarget, Perform_SendMessageToTarget},
+			{EPeerchatRequestType_UserJoinChannel, Perform_UserJoinChannel},
+			{EPeerchatRequestType_UserPartChannel, Perform_UserPartChannel},
+			{EPeerchatRequestType_UserKickChannel, Perform_UserKickChannel},
+			{EPeerchatRequestType_LookupChannelDetails, Perform_LookupChannelDetails},
+			{EPeerchatRequestType_LookupUserDetailsByName, Perform_LookupUserDetailsByName},
+			{EPeerchatRequestType_UpdateChannelModes, Perform_UpdateChannelModes},
+			{EPeerchatRequestType_UpdateUserModes, Perform_UpdateUserModes},
+			{EPeerchatRequestType_ListChannels, Perform_ListChannels},
+			{EPeerchatRequestType_SetChannelUserKeys, Perform_SetChannelUserKeys},
+			{EPeerchatRequestType_GetChannelUserKeys, Perform_GetChannelUserKeys},
+			{EPeerchatRequestType_SetUserKeys, Perform_SetUserKeys},
+			{EPeerchatRequestType_GetUserKeys, Perform_GetUserKeys},
+			{EPeerchatRequestType_SetChannelKeys, Perform_SetChannelKeys},
+			{EPeerchatRequestType_GetChannelKeys, Perform_GetChannelKeys},
+
+			{EPeerchatRequestType_SetBroadcastToVisibleUsers, Perform_SetBroadcastToVisibleUsers},
+			{EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource, Perform_SetBroadcastToVisibleUsers},
+
+			{EPeerchatRequestType_DeleteUser, Perform_DeleteUser},
+			{EPeerchatRequestType_KeepaliveUser, Perform_KeepaliveUser},
+			{EPeerchatRequestType_UserJoinEvents, Perform_UserJoinEvents},
+
+			{EPeerchatRequestType_CreateUserMode, Perform_SetUsermode},
+			{EPeerchatRequestType_ListUserModes, Perform_ListUsermodes},
+			{EPeerchatRequestType_DeleteUserMode, Perform_DeleteUsermode},
+			{NULL, NULL}
+		};
+
+		TaskScheduler<PeerchatBackendRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
+			{peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg},
+			{peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates},
+			{peerchat_channel_exchange, peerchat_broadcast_routingkey, Handle_Broadcast},
+			{NULL, NULL, NULL}
+		};
+
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server) {
 			channel_mode_flag_map = (ModeFlagMap*)&local_channel_mode_flag_map;
 			num_channel_mode_flags = sizeof(local_channel_mode_flag_map) / sizeof(ModeFlagMap);
@@ -58,39 +96,7 @@ namespace Peerchat {
 			user_join_chan_flag_map = (ModeFlagMap*)&local_user_join_chan_flag_map;
 			num_user_join_chan_flags = sizeof(local_user_join_chan_flag_map) / sizeof(ModeFlagMap);
 
-            TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = new TaskScheduler<PeerchatBackendRequest, TaskThreadData>(OS::g_numAsync, server);
-            scheduler->AddRequestHandler(EPeerchatRequestType_SetUserDetails, Perform_SetUserDetails);
-            scheduler->AddRequestHandler(EPeerchatRequestType_SendMessageToTarget, Perform_SendMessageToTarget);
-            scheduler->AddRequestHandler(EPeerchatRequestType_UserJoinChannel, Perform_UserJoinChannel);
-			scheduler->AddRequestHandler(EPeerchatRequestType_UserPartChannel, Perform_UserPartChannel);
-			scheduler->AddRequestHandler(EPeerchatRequestType_UserKickChannel, Perform_UserKickChannel);			
-			scheduler->AddRequestHandler(EPeerchatRequestType_LookupChannelDetails, Perform_LookupChannelDetails);
-			scheduler->AddRequestHandler(EPeerchatRequestType_LookupUserDetailsByName, Perform_LookupUserDetailsByName);
-			scheduler->AddRequestHandler(EPeerchatRequestType_UpdateChannelModes, Perform_UpdateChannelModes);
-			scheduler->AddRequestHandler(EPeerchatRequestType_UpdateUserModes, Perform_UpdateUserModes);
-			scheduler->AddRequestHandler(EPeerchatRequestType_ListChannels, Perform_ListChannels);
-			scheduler->AddRequestHandler(EPeerchatRequestType_SetChannelUserKeys, Perform_SetChannelUserKeys);
-			scheduler->AddRequestHandler(EPeerchatRequestType_GetChannelUserKeys, Perform_GetChannelUserKeys);
-			scheduler->AddRequestHandler(EPeerchatRequestType_SetUserKeys, Perform_SetUserKeys);
-			scheduler->AddRequestHandler(EPeerchatRequestType_GetUserKeys, Perform_GetUserKeys);
-			scheduler->AddRequestHandler(EPeerchatRequestType_SetChannelKeys, Perform_SetChannelKeys);
-			scheduler->AddRequestHandler(EPeerchatRequestType_GetChannelKeys, Perform_GetChannelKeys);
-
-			scheduler->AddRequestHandler(EPeerchatRequestType_SetBroadcastToVisibleUsers, Perform_SetBroadcastToVisibleUsers);
-			scheduler->AddRequestHandler(EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource, Perform_SetBroadcastToVisibleUsers);
-
-			scheduler->AddRequestHandler(EPeerchatRequestType_DeleteUser, Perform_DeleteUser);
-			scheduler->AddRequestHandler(EPeerchatRequestType_KeepaliveUser, Perform_KeepaliveUser);
-			scheduler->AddRequestHandler(EPeerchatRequestType_UserJoinEvents, Perform_UserJoinEvents);
-
-			scheduler->AddRequestHandler(EPeerchatRequestType_CreateUserMode, Perform_SetUsermode);
-			scheduler->AddRequestHandler(EPeerchatRequestType_ListUserModes, Perform_ListUsermodes);
-			scheduler->AddRequestHandler(EPeerchatRequestType_DeleteUserMode, Perform_DeleteUsermode);
-			
-
-			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg);
-			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates);
-			scheduler->AddRequestListener(peerchat_channel_exchange, peerchat_broadcast_routingkey, Handle_Broadcast);
+            TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = new TaskScheduler<PeerchatBackendRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, listenerTable);
 
 			
 			scheduler->DeclareReady();

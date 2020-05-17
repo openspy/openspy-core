@@ -159,8 +159,6 @@ namespace MM {
     bool PerformGetGameInfoPairByGameName(MMQueryRequest request, TaskThreadData *thread_data);
 
     //server update functions
-    bool PerformDeleteMissingKeysAndUpdateChanged(MMQueryRequest request, TaskThreadData *thread_data);
-
     bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::string message);
 
 	//shared functions

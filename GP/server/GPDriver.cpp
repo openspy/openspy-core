@@ -12,7 +12,7 @@ namespace GP {
 	}
 
 	Peer *Driver::FindPeerByProfileID(int profileid) {
-		Peer* peer = (Peer*)GetHead();
+		Peer* peer = (Peer*)GetPeerList()->GetHead();
 		if (peer != NULL) {
 			do {
 				if (peer->GetProfileID() == profileid) {
@@ -23,7 +23,7 @@ namespace GP {
 		return NULL;
 	}
 	void Driver::InformStatusUpdate(int from_profileid, GPShared::GPStatus status) {
-		Peer* peer = (Peer*)GetHead();
+		Peer* peer = (Peer*)GetPeerList()->GetHead();
 		if (peer != NULL) {
 			do {
 				peer->inform_status_update(from_profileid, status);

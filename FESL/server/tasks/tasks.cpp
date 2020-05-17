@@ -2,9 +2,13 @@
 namespace FESL {
 	const char *auth_channel_exchange = "presence.core";
 	const char *auth_routingkey = "presence.buddies";
+	TaskScheduler<FESLRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
+	{"openspy.core", "auth.events", Handle_AuthEvent},
+	{NULL, NULL, NULL}
+	};
 	TaskScheduler<FESLRequest, TaskThreadData> *InitTasks(INetServer *server) {
-		TaskScheduler<FESLRequest, TaskThreadData> *scheduler = new TaskScheduler<FESLRequest, TaskThreadData>(OS::g_numAsync, server);
-		scheduler->AddRequestListener("openspy.core", "auth.events", Handle_AuthEvent);
+		TaskScheduler<FESLRequest, TaskThreadData> *scheduler = new TaskScheduler<FESLRequest, TaskThreadData>(OS::g_numAsync, server, NULL, listenerTable);
+		
 		scheduler->DeclareReady();
 		return scheduler;
 	}

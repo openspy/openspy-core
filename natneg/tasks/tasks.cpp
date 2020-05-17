@@ -8,13 +8,20 @@
 namespace NN {
     const char *nn_channel_exchange = "openspy.natneg", *nn_channel_routingkey="natneg.core";
 
+	TaskScheduler<NNRequestData, TaskThreadData>::RequestHandlerEntry requestTable[] = {
+		{ENNRequestType_SubmitJson, PerformSubmitJson},
+		{NULL, NULL}
+	};
+
+	TaskScheduler<NNRequestData, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
+		{nn_channel_exchange, nn_channel_routingkey, Handle_HandleRecvMessage},
+		{NULL, NULL, NULL}
+	};
+
     TaskScheduler<NNRequestData, TaskThreadData> *InitTasks(INetServer *server) {
-        TaskScheduler<NNRequestData, TaskThreadData> *scheduler = new TaskScheduler<NNRequestData, TaskThreadData>(4, server);
+        TaskScheduler<NNRequestData, TaskThreadData> *scheduler = new TaskScheduler<NNRequestData, TaskThreadData>(4, server, requestTable, listenerTable);
 
         scheduler->SetThreadDataFactory(TaskScheduler<NNRequestData, TaskThreadData>::DefaultThreadDataFactory);
-
-        scheduler->AddRequestHandler(ENNRequestType_SubmitJson, PerformSubmitJson);
-        scheduler->AddRequestListener(nn_channel_exchange, nn_channel_routingkey, Handle_HandleRecvMessage);
 
 		scheduler->DeclareReady();
 
