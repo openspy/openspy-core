@@ -20,7 +20,6 @@ namespace NN {
 	}
 	void Driver::think(bool listener_waiting) {
 		mp_mutex->lock();
-		TickConnections();
 		if (listener_waiting) {
 			std::vector<INetIODatagram> datagrams;
 			getNetIOInterface()->datagramRecv(mp_socket, datagrams);
@@ -97,9 +96,6 @@ namespace NN {
 		}
 		mp_mutex->unlock();
 	}
-	void Driver::TickConnections() {
-	}
-
 	const std::vector<INetPeer *> Driver::getPeers(bool inc_ref) {
 		return std::vector<INetPeer *>();
 	}

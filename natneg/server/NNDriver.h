@@ -28,7 +28,6 @@ namespace NN {
 		void SendPacket(OS::Address to, NatNegPacket *packet);
 	private:
 		static void *TaskThread(OS::CThread *thread);
-		void TickConnections();
 
 		int packetSizeFromType(uint8_t type);
 		void handle_init_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
