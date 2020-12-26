@@ -379,6 +379,10 @@ namespace MQ {
         m_setup_recievers = true;
     }
     void rmqConnection::declareReady() {
+        if(mp_rabbitmq_conn == NULL) {
+            OS::LogText(OS::ELogLevel_Critical, "rmqConnection: unable to declare ready while connection is not established\n");
+            exit(-1);
+        }
         setupRecievers();
         m_declared_ready = true;
     }

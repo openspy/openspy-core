@@ -300,7 +300,7 @@ namespace Redis {
 		vsprintf(conn->read_buff, fmt, args);
 
 		std::string cmd = conn->read_buff + std::string("\r\n");
-		send(conn->sd, cmd.c_str(), (int)cmd.length(), 0);
+		send(conn->sd, cmd.c_str(), (int)cmd.length(), MSG_NOSIGNAL);
 		va_end(args);
 
 		if (sleepMS != 0)
