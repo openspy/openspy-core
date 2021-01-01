@@ -76,16 +76,12 @@ namespace FESL {
 
 		char *json_data = json_dumps(send_json, 0);
 
-		printf("send: %s\n", json_data);
-
 		OS::HTTPResponse resp = client.Post(json_data, request.peer);
 
 		free(json_data);
 		json_decref(send_json);
 
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
-
-        printf("resp: %s\n", resp.buffer.c_str());
 
 		TaskShared::WebErrorDetails error_details;
 

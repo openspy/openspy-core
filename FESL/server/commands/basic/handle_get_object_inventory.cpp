@@ -27,8 +27,8 @@ namespace FESL {
 				struct tm *newtime;
 				newtime = localtime((time_t *)&item.DateEntitled);
 
-				strftime(timeBuff, sizeof(timeBuff), "%h-%e-%g %T %Z", newtime);
-				s << "entitlements." << idx << "dateEntitled=" << timeBuff << "\n";
+				strftime(timeBuff, sizeof(timeBuff), FESL_DATE_FORMAT, newtime);
+				s << "entitlements." << idx << "dateEntitled=" << OS::url_encode(timeBuff) << "\n";
 				
 				
 				s << "entitlements." << idx << "useCount=" << item.UseCount << "\n";

@@ -33,9 +33,9 @@ namespace FESL {
 
 					char timeBuff[128];
 					struct tm *newtime;
-					newtime = localtime((time_t *)&feature.EntitlementExpirationDate);
+					newtime = gmtime((time_t *)&feature.EntitlementExpirationDate);
 
-					strftime(timeBuff, sizeof(timeBuff), "%h-%e-%g %T %Z", newtime);
+					strftime(timeBuff, sizeof(timeBuff), FESL_DATE_FORMAT, newtime);
 
 					 s << "entitledGameFeatureWrappers." << idx << ".gameFeatureId=" << feature.GameFeatureId << "\n";
 					 s << "entitledGameFeatureWrappers." << idx << ".status=" << feature.Status << "\n";

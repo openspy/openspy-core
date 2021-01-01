@@ -15,9 +15,9 @@ namespace FESL {
 		struct tm *newtime;
 		time_t long_time;
 		time(&long_time);
-		newtime = localtime(&long_time);
+		newtime = gmtime(&long_time);
 
-		strftime(timeBuff, sizeof(timeBuff), "%h-%e-%g %T %Z", newtime);
+		strftime(timeBuff, sizeof(timeBuff), FESL_DATE_FORMAT, newtime);
 
 		PublicInfo public_info = ((FESL::Driver *)mp_driver)->GetServerInfo();
 		ss << "TXN=Hello\n";

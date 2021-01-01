@@ -89,6 +89,7 @@ enum FESL_ERROR {
 //FESL uses 2 namespace ids, because EA had a master account with a username, but gamespy does not, by doing this, we are able to have a hidden profile that is the "master account"
 #define FESL_ACCOUNT_NAMESPACEID 1
 #define FESL_PROFILE_NAMESPACEID 2
+#define FESL_DATE_FORMAT "%h-%e-%g %T %Z"
 namespace FESL {
 	class Peer;
 	typedef struct _CommandHandler {
