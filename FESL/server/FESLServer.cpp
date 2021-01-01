@@ -9,6 +9,7 @@ namespace FESL {
 		mp_user_tasks = TaskShared::InitUserTasks(this);
 		mp_profile_tasks = TaskShared::InitProfileTasks(this);
 		mp_geo_tasks = TaskShared::InitGeoTasks(this);
+		mp_fesl_tasks = FESL::InitTasks(this);
 	}
 	void Server::init() {
 		TaskShared::GeoRequest request;

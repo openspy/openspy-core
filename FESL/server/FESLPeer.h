@@ -98,6 +98,9 @@ namespace FESL {
 	} CommandHandler;
 
 	class Driver;
+	
+    class EntitledGameFeature;
+    class ObjectInventoryItem;
 	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, INetIOSocket *sd);
@@ -153,6 +156,7 @@ namespace FESL {
 		static void m_update_user_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer);
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer);
 		static void m_update_user_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_get_object_inventory_callback(TaskShared::WebErrorDetails error_details, std::vector<ObjectInventoryItem> results, INetPeer *peer);
 
 		void send_memcheck(int type, int salt = 0);
 		void send_subaccounts();
@@ -176,6 +180,7 @@ namespace FESL {
 		static CommandHandler m_commands[];
 
 		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
+		static void m_login_fetched_game_entitlements_auth_cb(TaskShared::WebErrorDetails error_details, std::vector<EntitledGameFeature> results, INetPeer *peer);
 		static void m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);

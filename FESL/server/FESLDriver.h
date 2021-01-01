@@ -28,6 +28,7 @@ namespace FESL {
 		std::string theaterHostname;
 		uint16_t  theaterPort;
 		std::string termsOfServiceData;
+		int gameid; //OpenSpy gameid
 	} PublicInfo;
 
 

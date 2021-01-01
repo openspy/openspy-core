@@ -5,9 +5,10 @@
 #include <OS/Net/IOIfaces/SSLIOInterface.h>
 #include <OS/Task/TaskScheduler.h>
 #include <OS/SharedTasks/tasks.h>
-#define FESL_SERVER_PORT 18300
+#include <server/tasks/tasks.h>
 
 namespace FESL {
+	class FESLRequest;
 	class Server : public INetServer {
 	public:
 		Server();
@@ -19,7 +20,9 @@ namespace FESL {
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *GetAuthTask() { return mp_auth_tasks; };
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *GetUserTask() { return mp_user_tasks; };
 		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *GetProfileTask() { return mp_profile_tasks; };
-		TaskScheduler<TaskShared::GeoRequest, TaskThreadData> * GetGeoTasks() { return mp_geo_tasks; };
+		TaskScheduler<TaskShared::GeoRequest, TaskThreadData> *GetGeoTasks() { return mp_geo_tasks; };
+
+		TaskScheduler<FESLRequest, TaskThreadData> *GetFESLTasks() { return mp_fesl_tasks; };
 		void GetCountries(std::vector<TaskShared::CountryRegion>::const_iterator &begin, std::vector<TaskShared::CountryRegion>::const_iterator &end) {
 			begin = m_countries.begin();
 			end = m_countries.end();
@@ -31,6 +34,7 @@ namespace FESL {
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *mp_user_tasks;
 		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *mp_profile_tasks;
 		TaskScheduler<TaskShared::GeoRequest, TaskThreadData> *mp_geo_tasks;
+		TaskScheduler<FESLRequest, TaskThreadData> *mp_fesl_tasks;
 	};
 }
 #endif //_SMSERVER_H

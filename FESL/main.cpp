@@ -124,10 +124,13 @@ int main() {
 		app_config->GetVariableInt(s, "theaterPort", port);
 		server_info.theaterPort = (uint16_t)port;
 
+		app_config->GetVariableInt(s, "gameid", port);
+		server_info.gameid = (uint16_t)port;
+
 		server_info.termsOfServiceData = get_file_contents(tos_path);
 
 		FESL::Driver *driver = new FESL::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), server_info, stringCrypterPKey, x509_path.c_str(), rsa_path.c_str(), ssl_version, proxyFlag);
-		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s (ssl: %d) proxy flag: %d\n", address.ToString().c_str(), ssl_version != SSLNetIOIFace::ESSL_None, proxyFlag);
+		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s (ssl: %d) proxy flag: %d, gameid: %d\n", address.ToString().c_str(), ssl_version != SSLNetIOIFace::ESSL_None, proxyFlag, server_info.gameid);
 		g_gameserver->addNetworkDriver(driver);
 		it++;
 	}

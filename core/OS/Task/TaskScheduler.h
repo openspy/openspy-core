@@ -50,6 +50,8 @@ class TaskScheduler {
 			m_tasks_setup = false;
 			m_num_tasks = num_tasks;
 
+			mp_mqconnection = NULL;
+
 			mp_tasks = new OS::LinkedListHead<ScheduledTask<ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >*>();
 
 			mp_request_handlers = requestHandlerTable;
@@ -118,7 +120,8 @@ class TaskScheduler {
 			switch(state) {
 				case EThreadInitState_AllocThreadData:					
 					data = new ThreadData;
-					data->mp_mqconnection = scheduler->mp_mqconnection->clone();
+					if(scheduler->mp_mqconnection != NULL)
+						data->mp_mqconnection = scheduler->mp_mqconnection->clone();
 					data->mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
 					data->scheduler = (void *)scheduler;
 					data->server = scheduler->mp_server;
