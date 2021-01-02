@@ -81,6 +81,6 @@ namespace FESL {
 
 		request.peer->DecRef();
 
-        return false;
+        return true;
     }
 }

@@ -53,7 +53,7 @@ namespace FESL {
 							s << "\""  << OS::url_encode(feature.Message) << "\"";
 					 }
 					 s << "\n";
-
+					idx++;
 					it++;
 				}
 			}
