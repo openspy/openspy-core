@@ -99,6 +99,8 @@ namespace FESL {
 
 		request.objectInventoryItemsCallback(error_details, results, request.peer);
 
+		json_decref(send_json);
+
 		request.peer->DecRef();
 
         return true;

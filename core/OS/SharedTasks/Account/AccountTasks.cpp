@@ -213,7 +213,7 @@ namespace TaskShared {
 			//json_object_set(send_obj, "profile", profile_obj);
 
 			if(json_object_size(user_obj) > 0)
-				json_object_set(send_obj, "user", user_obj);
+				json_object_set_new(send_obj, "user", user_obj);
 
 
 			char *json_string = json_dumps(send_obj, 0);

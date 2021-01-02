@@ -77,6 +77,8 @@ namespace FESL {
 			}
 		}
 
+		json_decref(send_json);
+
 		request.gameFeaturesCallback(error_details, results, request.peer);
 
 		request.peer->DecRef();

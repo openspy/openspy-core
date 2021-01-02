@@ -56,8 +56,9 @@ namespace TaskShared {
 					else {
 						success = false;
 					}
-					json_decref(json_data);
 				}
+				if(json_data)
+					json_decref(json_data);
 			}
 			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
