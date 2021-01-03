@@ -90,8 +90,14 @@ namespace TaskShared {
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, write_data);
 
-			/* Close socket after one use */
-			curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
+			/* enable TCP keep-alive for this transfer */
+			curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
+			
+			/* set keep-alive idle time to 120 seconds */
+			curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 120L);
+			
+			/* interval time between keep-alive probes: 60 seconds */
+			curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 60L);
 
 			if(out_list != NULL) {
 				*out_list = chunk;
@@ -322,8 +328,14 @@ namespace TaskShared {
 				/* set maximum allowed redirects */
 				curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
 
-				/* Close socket after one use */
-				curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
+				/* enable TCP keep-alive for this transfer */
+				curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
+				
+				/* set keep-alive idle time to 120 seconds */
+				curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 120L);
+				
+				/* interval time between keep-alive probes: 60 seconds */
+				curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 60L);
 
 				curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_callback);
 				curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&recv_data);
