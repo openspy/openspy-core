@@ -11,6 +11,10 @@
 #include <sstream>
 namespace FESL {
 	void Peer::m_login_fetched_game_entitlements_auth_cb(TaskShared::WebErrorDetails error_details, std::vector<EntitledGameFeature> results, INetPeer *peer) {
+			if(error_details.response_code != TaskShared::WebErrorCode_Success) {
+				((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_ACCOUNT, "Login");
+				return;
+			}
 			std::ostringstream s;
 
 			s << "TXN=Login\n";

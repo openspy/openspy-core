@@ -9,6 +9,7 @@
 #include <sstream>
 namespace FESL {
 	void Peer::m_get_object_inventory_callback(TaskShared::WebErrorDetails error_details, std::vector<ObjectInventoryItem> results, INetPeer *peer) {
+		if(error_details.response_code == TaskShared::WebErrorCode_Success) {
 			std::ostringstream s;
 
 			s << "TXN=GetObjectInventory\n";
@@ -37,7 +38,11 @@ namespace FESL {
 				it++;
 			}
 
-			((Peer *)peer)->SendPacket(FESL_TYPE_DOBJ, s.str());
+			((Peer *)peer)->SendPacket(FESL_TYPE_DOBJ, s.str());			
+		} else {
+			((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_DOBJ, "GetObjectInventory");
+		}
+
 	}
 	bool Peer::m_dobj_get_object_inventory(OS::KVReader kv_list) {
 

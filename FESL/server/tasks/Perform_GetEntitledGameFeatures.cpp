@@ -68,7 +68,9 @@ namespace FESL {
 		std::vector<EntitledGameFeature> results;
 
 
-		if(json_is_array(send_json)) {
+		if (Handle_WebError(send_json, error_details)) {
+
+		} else if(json_is_array(send_json)) {		
 			json_t *value;
 			size_t index;
 			json_array_foreach(send_json, index, value) {
