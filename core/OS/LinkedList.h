@@ -9,19 +9,22 @@ namespace OS {
             mp_head = NULL;
         }
         T GetHead() { return mp_head; };
-        void SetHead(T item) { mp_head = item; }
+        void SetHead(T item) {
+            mp_head = item;
+        }
         void RemoveFromList(T item) {
+            T previous;
             if (item == GetHead()) {
                 SetHead(item->GetNext());
             }
             else if (item->GetNext() != NULL) {
                 item->GetNext()->SetNext(item->GetNext()->GetNext());
-
-                T previous;
                 if(FindPrevious(item, previous) )
                 {
                     previous->SetNext(item->GetNext());
                 }
+            } else if(FindPrevious(item, previous)) {
+                    previous->SetNext(NULL);
             }
         }
         void AddToList(T item) {
@@ -42,13 +45,14 @@ namespace OS {
             if(p) {
                 do {
                     T next = p->GetNext();
-                    if(next == p) { 
+                    if(next == item) { 
                         out = p;
                         return true;
                     }
                     p = next;
                 } while(p);
             }
+            out = NULL;
             return false;
         }
         T mp_head;

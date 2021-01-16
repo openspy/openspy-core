@@ -37,6 +37,7 @@
 			void run();
 		private:
 			static bool LLIterator_UnregisterSocket(EPollDataInfo* data_info, UnregisterSocketIteratorState* peer);
+			static bool LLIterator_DeleteAll(EPollDataInfo* data_info, UnregisterSocketIteratorState* peer);
 			int m_epollfd;
 			struct epoll_event m_events[MAX_EPOLL_EVENTS];
 			
