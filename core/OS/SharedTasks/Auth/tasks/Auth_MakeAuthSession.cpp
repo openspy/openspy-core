@@ -5,7 +5,7 @@ namespace TaskShared {
     bool PerformAuth_MakeAuthSession(AuthRequest request, TaskThreadData *thread_data) {
 		curl_data recv_data;
 		//build json object
-		json_t *send_obj = json_object(), *profile_obj = json_object(), *user_obj = json_object();
+		json_t *send_obj = json_object(), *profile_obj = json_object();
 
 		json_object_set_new(profile_obj, "id", json_integer(request.profile.id));
 
