@@ -3,43 +3,43 @@ services:
   serverbrowsing:
     ports:
       - "28910:30693"
-    command: /app/bin/serverbrowsing
+    command: /opt/openspy/bin/serverbrowsing
     env_file: .env-local
-    image: os-test
+    image: os-core
   qr:
     ports:
       - "27900:30694"
-    command: /app/bin/qr
+    command: /opt/openspy/bin/qr
     env_file: .env-local
-    image: os-test
+    image: os-core
   natneg:
     ports:
       - "27901:30695"
-    command: /app/bin/qr
+    command: /opt/openspy/bin/qr
     env_file: .env-local
-    image: os-test
+    image: os-core
   GP:
     ports:
       - "29900:30974"
-    command: /app/bin/GP
+    command: /opt/openspy/bin/GP
     env_file: .env-local
-    image: os-test
+    image: os-core
   SM:
     ports:
       - "29901:30734"
-    command: /app/bin/SM
+    command: /opt/openspy/bin/SM
     env_file: .env-local
-    image: os-test
+    image: os-core
   gstats:
     ports:
       - "29920:30836"
-    command: /app/bin/gstats
+    command: /opt/openspy/bin/gstats
     env_file: .env-local
-    image: os-test
+    image: os-core
   FESL-bf2142:
     ports:
       - "18300:30837"
-    command: /app/bin/FESL
+    command: /opt/openspy/bin/FESL
     env_file: .env-local
-    image: os-test
+    image: os-core
     

@@ -122,6 +122,7 @@
                                         <variable type="literal" name="messagingPort">12124</variable>
                                         <variable type="literal" name="theaterHostname">bf2142-theatre.openspy.net</variable>
                                         <variable type="literal" name="theaterPort">12124</variable>
+                                        <variable type="literal" name="gameid">1324</variable>
                                 </variables>
                         </driver>
                 </drivers>
