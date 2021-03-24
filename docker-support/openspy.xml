@@ -1,0 +1,142 @@
+<applications>
+        <application name="qr">
+                <drivers>
+                        <driver name="qrserver">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30694</port>
+                                        </address>
+                                </addresses>
+                        </driver>
+                </drivers>
+        </application>
+        <application name="natneg">
+                <drivers>
+                        <driver name="nn1">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30695</port>
+                                        </address>
+                                </addresses>
+                        </driver>
+                        <driver name="nn2">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30696</port>
+                                        </address>
+                                </addresses>
+                        </driver>
+                        <driver name="nn3">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30697</port>
+                                        </address>
+                                </addresses>
+                        </driver>
+                </drivers>
+        </application>
+        <application name="serverbrowsing">
+                <drivers>
+                        <driver name="sbserver">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30692</port>
+                                        </address>
+                                </addresses>
+                                <variables>
+                                        <variable type="literal" name="protocol-version">1</variable>
+                                </variables>
+                        </driver>
+                        <driver name="sbserver_enctypex">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30693</port>
+                                        </address>
+                                </addresses>
+                                <variables>
+                                        <variable type="literal" name="protocol-version">2</variable>
+                                </variables>
+                        </driver>
+                </drivers>
+        </application>
+        <application name="GP">
+                <drivers>
+                        <driver name="gpserver">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30974</port>
+                                        </address>
+                                </addresses>
+                        </driver>
+                </drivers>
+        </application>
+        <application name="GS">
+                <drivers>
+                        <driver name="gsserver">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30836</port>
+                                        </address>
+                                </addresses>
+                        </driver>
+                </drivers>
+        </application>
+        <application name="SM">
+                <drivers>
+                        <driver name="smserver">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30734</port>
+                                        </address>
+                                </addresses>
+                        </driver>
+                </drivers>
+        </application>
+        <application name="FESL">
+                <drivers>
+                        <driver name="bf2142pc-server">
+                                <addresses>
+                                        <address>
+                                                <ip>0.0.0.0</ip>
+                                                <port>30837</port>
+                                        </address>
+                                </addresses>
+                                <variables>
+                                        <variable type="literal" name="stringCrypterPKey">password_key.pem</variable>
+                                        <variable type="literal" name="ssl-version">SSLv3</variable>
+                                        <variable type="literal" name="x509">x509.pem</variable>
+                                        <variable type="literal" name="x509_pkey">rsa_priv.pem</variable>
+                                        <variable type="literal" name="tosFile">tos_battlefield.txt</variable>
+                                        <variable type="literal" name="subDomain">openspy.net</variable>
+                                        <variable type="literal" name="domainPartition">bf2124</variable>
+                                        <variable type="literal" name="messagingHostname">bf2142-msg.openspy.net</variable>
+                                        <variable type="literal" name="messagingPort">12124</variable>
+                                        <variable type="literal" name="theaterHostname">bf2142-theatre.openspy.net</variable>
+                                        <variable type="literal" name="theaterPort">12124</variable>
+                                </variables>
+                        </driver>
+                </drivers>
+        </application>
+</applications>
+<variables>
+        <variable type="env" name="redis-address">REDIS_ADDRESS</variable>
+        <variable type="env" name="webservices-url">WEBSERVICES_URL</variable>
+        <variable type="env" name="webservices-apikey">WEBSERVICES_APIKEY</variable>
+        <variable type="literal" name="hostname">OS-dev</variable>
+        <variable type="literal" name="num-async-tasks">4</variable>
+
+        <variable type="env" name="rabbitmq_address">RABBITMQ_ADDRESS</variable>
+
+        <variable type="env" name="rabbitmq_user">RABBITMQ_USER</variable>
+        <variable type="env" name="rabbitmq_password">RABBITMQ_PASSWORD</variable>
+        <variable type="literal" name="rabbitmq_vhost">/</variable>        
+</variables>

@@ -1,0 +1,45 @@
+version: "3.3"
+services:
+  serverbrowsing:
+    ports:
+      - "28910:30693"
+    command: /app/bin/serverbrowsing
+    env_file: .env-local
+    image: os-test
+  qr:
+    ports:
+      - "27900:30694"
+    command: /app/bin/qr
+    env_file: .env-local
+    image: os-test
+  natneg:
+    ports:
+      - "27901:30695"
+    command: /app/bin/qr
+    env_file: .env-local
+    image: os-test
+  GP:
+    ports:
+      - "29900:30974"
+    command: /app/bin/GP
+    env_file: .env-local
+    image: os-test
+  SM:
+    ports:
+      - "29901:30734"
+    command: /app/bin/SM
+    env_file: .env-local
+    image: os-test
+  gstats:
+    ports:
+      - "29920:30836"
+    command: /app/bin/gstats
+    env_file: .env-local
+    image: os-test
+  FESL-bf2142:
+    ports:
+      - "18300:30837"
+    command: /app/bin/FESL
+    env_file: .env-local
+    image: os-test
+    
