@@ -30,6 +30,8 @@ Environment variables and literal values are supported.
 If for whatever reason you want to seperate this file just change the working directly of the application.
 Within this file you will need to configure the AMQP (rabbitmq) connection details, redis connection details, and the HTTP API web service details.
 
+HA Proxy headers are also supported, but due to UDP servers it is not fully usable throughout the application. UDP & TCP load balancers have been used in the past, but UDP load balancer support can be spotty around providers. In the case of UDP, the NAT layer must be transparent, which is typically not the case. Due to this, this feature is no longer used, but remains in the code.
+
 ## Services
 ### QR (Query & Reporting)
 This service handles both the old V1 QR protocol (ASCII based), and the V2 protocol (binary based).
