@@ -23,7 +23,7 @@ namespace Peerchat {
         std::string channel_target = data_parser.at(1);
         std::string user_target  = data_parser.at(2);
 
-        std::string kv_string  = data_parser.at(5);
+        std::string kv_string  = data_parser.at(3);
 		bool do_combine = false;
 		if (kv_string.length() > 1 && kv_string[0] == ':') {
 			kv_string = kv_string.substr(1);

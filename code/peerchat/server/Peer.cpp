@@ -71,6 +71,8 @@ namespace Peerchat {
 				gs_crypt(recv_buffer.GetHead(), len, &m_crypt_key_in);
 			}
 
+			OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s", getAddress().ToString().c_str(), m_profile.id, recv_buffer.GetHead());
+
 			std::string command_upper;
 			bool command_found = false;
 			std::string recv_buf;
@@ -142,11 +144,13 @@ namespace Peerchat {
 		OS::Buffer buffer;
 		buffer.WriteBuffer((void *)data.c_str(), data.length());
 
+		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s", getAddress().ToString().c_str(), m_profile.id, data.c_str());
+
 		if(m_using_encryption) {
 			gs_crypt(buffer.GetHead(), buffer.bytesWritten(), &m_crypt_key_out);
 		}
 
-		//OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s", getAddress().ToString().c_str(), m_profile.id, data.c_str());
+		
 
 		NetIOCommResp io_resp;
 		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
@@ -178,7 +182,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("LISTLIMIT", true, 2, &Peer::handle_listlimit));
 		commands.push_back(CommandEntry("WHOIS", true, 1, &Peer::handle_whois));
 		commands.push_back(CommandEntry("WHO", true, 1, &Peer::handle_who));
-		commands.push_back(CommandEntry("SETCKEY", true, 5, &Peer::handle_setckey));
+		commands.push_back(CommandEntry("SETCKEY", true, 3, &Peer::handle_setckey));
 		commands.push_back(CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey));
 		commands.push_back(CommandEntry("SETCHANKEY", true, 4, &Peer::handle_setchankey));
 		commands.push_back(CommandEntry("GETCHANKEY", true, 4, &Peer::handle_getchankey));
@@ -193,15 +197,15 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("LISTUSERMODES", true, 1, &Peer::handle_listusermodes));
 		m_commands = commands;
 	}
-	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name) {
+	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name, std::string default_name) {
 		std::ostringstream s;
-		std::string name = "*";
+		std::string name = default_name;
 		if(m_user_details.nick.size() > 0) {
 			name = m_user_details.nick;
 		}
 
 		if(target_name.size()) {
-			std::string nick = "*";
+			std::string nick = default_name;
 			if(m_user_details.nick.length()) {
 				nick = m_user_details.nick;
 			}

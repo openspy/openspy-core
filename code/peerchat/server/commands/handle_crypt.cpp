@@ -40,10 +40,7 @@ namespace Peerchat {
     }
 
     void Peer::handle_crypt(std::vector<std::string> data_parser) {
-        //CRYPT des 1 thps6pc
-
         std::string gamename = data_parser.at(3);
-        printf("got crypt command %s\n", gamename.c_str());
 
         PeerchatBackendRequest req;
 
