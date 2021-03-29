@@ -88,6 +88,7 @@ namespace Peerchat {
 			EPeerchatRequestType_SetChanProps,
 			EPeerchatRequestType_ListChanProps,
 			EPeerchatRequestType_DeleteChanProps,
+			EPeerchatRequestType_LookupGameInfo
 	};
 
   enum EUserChannelFlag {
@@ -168,6 +169,8 @@ namespace Peerchat {
 			std::vector<ChannelSummary> channel_summaries;
 			OS::KVReader kv_data;
 
+			OS::GameData game_data;
+
 			UsermodeRecord usermode;
 
 			bool is_start;
@@ -215,6 +218,7 @@ namespace Peerchat {
 			std::string message_type;
 			std::string message_target;
 			std::string message;
+			std::string gamename;
 
 			std::vector<int> channel_id_list;
 
@@ -245,6 +249,7 @@ namespace Peerchat {
 	bool Perform_SetUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_ListUsermodes(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_DeleteUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_LookupGameInfo(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
 	bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message);
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message);

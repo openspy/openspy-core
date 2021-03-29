@@ -76,6 +76,7 @@ namespace Peerchat {
 			{EPeerchatRequestType_CreateUserMode, Perform_SetUsermode},
 			{EPeerchatRequestType_ListUserModes, Perform_ListUsermodes},
 			{EPeerchatRequestType_DeleteUserMode, Perform_DeleteUsermode},
+			{EPeerchatRequestType_LookupGameInfo, Perform_LookupGameInfo},
 			{NULL, NULL}
 		};
 

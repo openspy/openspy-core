@@ -15,6 +15,7 @@
 #include <sstream>
 #include <algorithm>
 
+#include "chatCrypt.h"
 
 #define PEERCHAT_PING_TIME 300
 
@@ -130,6 +131,8 @@ namespace Peerchat {
 		static void OnSetUserMode(TaskResponse response_data, Peer* peer);
 		static void OnListUserModes(TaskResponse response_data, Peer* peer);
 		static void OnDeleteUserMode(TaskResponse response_data, Peer* peer);
+		static void OnRecievedGameInfo(TaskResponse response_data, void *extra);
+		static void OnGetGameInfo_Crypt(TaskResponse response_data, Peer* peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -162,6 +165,7 @@ namespace Peerchat {
 		void handle_setusermode(std::vector<std::string> data_parser);
 		void handle_listusermodes(std::vector<std::string> data_parser);
 		void handle_delusermode(std::vector<std::string> data_parser);
+		void handle_crypt(std::vector<std::string> data_parser);
 
 		void handle_channel_mode_command(std::vector<std::string> data_parser);
 		void handle_user_mode_command(std::vector<std::string> data_parser);
@@ -190,6 +194,11 @@ namespace Peerchat {
 		int m_oper_flags;
 
 		std::map<int, int> m_channel_flags;
+
+
+		bool m_using_encryption;
+		gs_crypt_key m_crypt_key_in;
+		gs_crypt_key m_crypt_key_out;
 	};
 }
 #endif //_GPPEER_H

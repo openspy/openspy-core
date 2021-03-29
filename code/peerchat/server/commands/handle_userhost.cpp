@@ -26,7 +26,7 @@ namespace Peerchat {
 		}
 	}
 	void Peer::handle_userhost(std::vector<std::string> data_parser) {
-		if (data_parser.size() < 1) {
+		if (data_parser.size() < 2) {
 			std::ostringstream ss;
 			ss << m_user_details.nick << "=+" << m_user_details.username << "@" << m_user_details.hostname;
 			send_numeric(302, ss.str());

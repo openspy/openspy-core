@@ -20,6 +20,7 @@ namespace Peerchat {
 		m_user_details.modeflags = 0;
 		m_oper_flags = 0;
 		mp_mutex = OS::CreateMutex();
+		m_using_encryption = false;
 		RegisterCommands();
 	}
 	Peer::~Peer() {
@@ -64,6 +65,10 @@ namespace Peerchat {
 
 			if (len <= 0) {
 				goto end;
+			}
+
+			if(m_using_encryption) {
+				gs_crypt(recv_buffer.GetHead(), len, &m_crypt_key_in);
 			}
 
 			std::string command_upper;
@@ -137,6 +142,10 @@ namespace Peerchat {
 		OS::Buffer buffer;
 		buffer.WriteBuffer((void *)data.c_str(), data.length());
 
+		if(m_using_encryption) {
+			gs_crypt(buffer.GetHead(), buffer.bytesWritten(), &m_crypt_key_out);
+		}
+
 		//OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s", getAddress().ToString().c_str(), m_profile.id, data.c_str());
 
 		NetIOCommResp io_resp;
@@ -148,6 +157,7 @@ namespace Peerchat {
 
 	void Peer::RegisterCommands() {
 		std::vector<CommandEntry> commands;
+		commands.push_back(CommandEntry("CRYPT", false, 3, &Peer::handle_crypt));
 		commands.push_back(CommandEntry("NICK", false, 1 ,&Peer::handle_nick));
 		commands.push_back(CommandEntry("USER", false, 4, &Peer::handle_user));
 		commands.push_back(CommandEntry("PING", false, 0, &Peer::handle_ping));
