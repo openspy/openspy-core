@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <string.h>
 int match2(const char *mask, const char *name)
 {
 	const unsigned char *m = (unsigned char *)mask;

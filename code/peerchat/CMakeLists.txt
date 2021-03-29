@@ -4,7 +4,7 @@ project(peerchat)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-file (GLOB MAIN_SRCS "*.cpp")
+file (GLOB MAIN_SRCS "*.cpp") 
 file (GLOB MAIN_HDRS "*.h")
 file (GLOB SERVER_SRCS "server/*.cpp")
 file (GLOB SERVER_HDRS "server/*.h")

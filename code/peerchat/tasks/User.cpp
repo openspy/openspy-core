@@ -12,6 +12,7 @@ namespace Peerchat {
         Redis::Value v;
 
         bool nick_exists = false;
+        int id = 0;
         if (Redis::CheckError(reply) || reply.values.size() == 0) {
             nick_exists = true;
         } else {
@@ -25,7 +26,7 @@ namespace Peerchat {
         if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
             goto error_end;
         }
-        int id = 0;
+        
 		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			id = atoi(reply.values[0].value._str.c_str());
 		}
@@ -37,6 +38,9 @@ namespace Peerchat {
 		return UserSummary();
     }
     UserSummary LookupUserById(TaskThreadData *thread_data, int user_id) {
+		Redis::Value v, arr;
+
+
         UserSummary summary;
         if (user_id == -1) {
             summary.address = OS::Address("0.0.0.0:0");

@@ -67,7 +67,7 @@ namespace Peerchat {
 
 		void OnConnectionReady();
 		void Delete(bool timeout = false, std::string reason = "");
-		void Peer::Delete(bool timeout = false);
+		void Delete(bool timeout = false); //required, due to INetPeer inheritance
 		
 		void think(bool packet_waiting);
 		void handle_packet(OS::KVReader data_parser);

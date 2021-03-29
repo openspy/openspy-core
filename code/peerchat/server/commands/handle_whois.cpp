@@ -23,10 +23,11 @@ namespace Peerchat {
 	void Peer::OnWhois_FetchUser(TaskResponse response_data, Peer* peer) {
 		if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
 			std::ostringstream ss;
-			ss << response_data.summary.nick << " " << response_data.summary.username << " " << response_data.summary.hostname << " * :" << response_data.summary.realname;
-			peer->send_numeric(311, ss.str(), true);
+			ss << response_data.summary.username << " " << response_data.summary.hostname << " * :" << response_data.summary.realname;
+			peer->send_numeric(311, ss.str(), true, response_data.summary.nick);
 
 			ss.str("");
+
 			std::vector<ChannelSummary>::iterator it = response_data.channel_summaries.begin();
 			while(it != response_data.channel_summaries.end()) {
 				ChannelSummary summary = *(it++);
@@ -34,9 +35,9 @@ namespace Peerchat {
 			}
 
 			ss.str(ss.str().substr(0, ss.str().length() - 1));			
-			peer->send_numeric(319, ss.str());
+			peer->send_numeric(319, ss.str(), false, response_data.summary.nick);
 
-			peer->send_numeric(318, "End of WHOIS list");
+			peer->send_numeric(318, "End of WHOIS list", false, response_data.summary.nick);
 		}
 		else {
 			peer->send_no_such_target_error(response_data.profile.uniquenick);

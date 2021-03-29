@@ -7,119 +7,170 @@
 
 #include <sstream>
 namespace Peerchat {
+
     Driver::Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
 
     }
     Peer *Driver::FindPeerByProfileID(int profileid) {
         return NULL;
     }
-    Peer *Driver::FindPeerByUserSummary(UserSummary summary) {
-		mp_mutex->lock();
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = (Peer *)*it;
-			if (stricmp(peer->GetUserDetails().ToString().c_str(), summary.ToString().c_str()) == 0 && !peer->ShouldDelete()) {
-				mp_mutex->unlock();
-				return peer;
-			}
-			it++;
+	bool Driver::LLIterator_FindPeerByUserSummary(INetPeer* peer, FindPeerByUserSummaryState* state) {
+		Peer* p = (Peer *)peer;
+		if (stricmp(p->GetUserDetails().ToString().c_str(), state->summary.ToString().c_str()) == 0 && !p->ShouldDelete()) {
+			state->peer = p;
+			return false;
 		}
+		return true;
+	}
+    Peer *Driver::FindPeerByUserSummary(UserSummary summary) {
+
+		FindPeerByUserSummaryState state;
+		state.summary = summary;
+		state.peer = NULL;
+
+		mp_mutex->lock();
+		OS::LinkedListIterator<INetPeer*, FindPeerByUserSummaryState*> iterator(mp_peers);
+    	iterator.Iterate(LLIterator_FindPeerByUserSummary, &state);
 		mp_mutex->unlock();
+
 		return NULL;   
     }
     INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
         return new Peer(this, socket);
     }
-	void Driver::SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf) {
-		mp_mutex->lock();
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = (Peer *)*it;
-			bool summaryMatch = peer->GetUserDetails().ToString().compare(fromSummary);
-			if(summaryMatch && includeSelf) {
-				peer->send_message(messageType, message, fromSummary);
-			} else if(!summaryMatch) {
-				peer->send_message(messageType, message, fromSummary);
-			}
-			it++;
+	bool Driver::LLIterator_SendUserMessageToVisibleUsers(INetPeer* peer, SendMessageIteratorState* state) {
+		Peer *p = (Peer *)peer;
+		bool summaryMatch = p->GetUserDetails().ToString().compare(state->fromSummary);
+		if(summaryMatch && state->includeSelf) {
+			p->send_message(state->messageType, state->message, state->fromSummary);
+		} else if(!summaryMatch) {
+			p->send_message(state->messageType, state->message, state->fromSummary);
 		}
+		return true;
+	}
+	void Driver::SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf) {
+		SendMessageIteratorState state;
+		state.fromSummary = fromSummary;
+		state.messageType = messageType;
+		state.message = message;
+		state.includeSelf = includeSelf;
+
+		mp_mutex->lock();
+		OS::LinkedListIterator<INetPeer*, SendMessageIteratorState*> iterator(mp_peers);
+    	iterator.Iterate(LLIterator_SendUserMessageToVisibleUsers, &state);
 		mp_mutex->unlock();
+	}
+	bool Driver::LLIterator_OnChannelMessage(INetPeer* peer, SendMessageIteratorState* state)
+	{
+		Peer *p = (Peer *)peer;
+		if (state->from.modeflags & EUserChannelFlag_Invisible) {
+			if (~p->GetOperFlags() & OPERPRIVS_INVISIBLE) {
+				return true;
+			}
+		}
+		bool in_channel = p->GetChannelFlags(state->channel.channel_id) & EUserChannelFlag_IsInChannel && (p->GetChannelFlags(state->channel.channel_id) & state->requiredChanUserModes || state->requiredChanUserModes == 0);
+		int has_oper = p->GetOperFlags() & state->requiredOperFlags || state->requiredOperFlags == 0;
+		bool selfMatch = (state->includeSelf && state->from.user_id == p->GetBackendId()) || (state->from.user_id != p->GetBackendId());
+		if(in_channel && selfMatch && has_oper) {
+			p->send_message(state->type, state->message, state->from.userSummary.ToString(), state->channel.channel_name, state->target.userSummary.nick);
+
+			if (state->type.compare("JOIN") == 0 && state->from.user_id == p->GetBackendId()) {
+				p->handle_channel_join_events(state->channel);
+			}
+		}
+		return true;
 	}
 	void Driver::OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf, int requiredChanUserModes, int requiredOperFlags) {
-		mp_mutex->lock();
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = (Peer *)*it;
-			if (from.modeflags & EUserChannelFlag_Invisible) {
-				if (~peer->GetOperFlags() & OPERPRIVS_INVISIBLE) {
-					it++;
-					continue;
-				}
-			}
-			bool in_channel = peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_IsInChannel && (peer->GetChannelFlags(channel.channel_id) & requiredChanUserModes || requiredChanUserModes == 0);
-			int has_oper = peer->GetOperFlags() & requiredOperFlags || requiredOperFlags == 0;
-			bool selfMatch = (includeSelf && from.user_id == peer->GetBackendId()) || (from.user_id != peer->GetBackendId());
-			if(in_channel && selfMatch && has_oper) {
-				peer->send_message(type, message,from.userSummary.ToString(), channel.channel_name, target.userSummary.nick);
+		SendMessageIteratorState state;
+		state.type = type;
+		state.from = from;
+		state.channel = channel;
+		state.message = message;
+		state.target = target;
+		state.includeSelf = includeSelf;
+		state.requiredChanUserModes = requiredChanUserModes;
+		state.requiredOperFlags = requiredOperFlags;
 
-				if (type.compare("JOIN") == 0 && from.user_id == peer->GetBackendId()) {
-					peer->handle_channel_join_events(channel);
-				}
-			}
-			it++;
-		}
+		mp_mutex->lock();
+		OS::LinkedListIterator<INetPeer*, SendMessageIteratorState*> iterator(mp_peers);
+    	iterator.Iterate(LLIterator_OnChannelMessage, &state);
 		mp_mutex->unlock();
 	}
-
+	bool Driver::LLIterator_OnSetUserChannelKeys(INetPeer* peer, SetChannelKeysIteratorState* state) {
+		Peer *p = (Peer *)peer;
+		if(p->GetChannelFlags(state->summary.channel_id) & EUserChannelFlag_IsInChannel) {
+			p->send_numeric(702,state->keys_message, true, state->summary.channel_name, false);
+		}
+		return true;
+	}
 	void Driver::OnSetUserChannelKeys(ChannelSummary summary, UserSummary user_summary, OS::KVReader keys) {
-		mp_mutex->lock();
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		SetChannelKeysIteratorState state;
+		state.summary = summary;
+		state.user_summary = user_summary;
+		state.keys = keys;
+
 		std::ostringstream ss;
 		ss << summary.channel_name << " " << user_summary.nick << " BCAST :" << keys.ToString();
-		while (it != m_connections.end()) {
-			Peer *peer = (Peer *)*it;
-			if(peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_IsInChannel) {
-				peer->send_numeric(702,ss.str(), true, summary.channel_name, false);
-			}
-			it++;
-		}
+		state.keys_message = ss.str();
+
+		mp_mutex->lock();
+		OS::LinkedListIterator<INetPeer*, SetChannelKeysIteratorState*> iterator(mp_peers);
+    	iterator.Iterate(LLIterator_OnSetUserChannelKeys, &state);
 		mp_mutex->unlock();
 	}
+
+	bool Driver::LLIterator_OnSetChannelKeys(INetPeer* peer, SetChannelKeysIteratorState* state) {
+		Peer *p = (Peer *)peer;
+		if(p->GetChannelFlags(state->summary.channel_id) & EUserChannelFlag_IsInChannel) {
+			p->send_numeric(704,state->keys_message, true, state->summary.channel_name, false);
+		}
+	}
+	
 	void Driver::OnSetChannelKeys(ChannelSummary summary, OS::KVReader keys) {
-		mp_mutex->lock();
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
+		SetChannelKeysIteratorState state;
+		state.summary = summary;
+		state.keys = keys;
+
 		std::ostringstream ss;
 		ss << summary.channel_name << " BCAST :" << keys.ToString();
-		while (it != m_connections.end()) {
-			Peer *peer = (Peer *)*it;
-			if(peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_IsInChannel) {
-				peer->send_numeric(704,ss.str(), true, summary.channel_name, false);
-			}
-			it++;
-		}
+		state.keys_message = ss.str();
+
+		mp_mutex->lock();
+		OS::LinkedListIterator<INetPeer*, SetChannelKeysIteratorState*> iterator(mp_peers);
+    	iterator.Iterate(LLIterator_OnSetChannelKeys, &state);
 		mp_mutex->unlock();
 	}
-	void Driver::OnChannelBroadcast(std::string type, UserSummary target, std::map<int, int> channel_list, std::string message, bool includeSelf) {
-		mp_mutex->lock();
-		std::vector<INetPeer *>::iterator it = m_connections.begin();
-		while (it != m_connections.end()) {
-			Peer *peer = (Peer *)*(it++);
-			if (includeSelf && peer->GetUserDetails().ToString().compare(target.ToString()) == 0) {
-				peer->send_message(type, message, target.ToString());
-				continue;
-			}
-			std::map<int, int>::iterator it2 = channel_list.begin();
-			
-			while(it2 != channel_list.end()) {
-				std::pair<int, int> p = *it2;
-				bool shouldSend = ~p.second & EUserChannelFlag_Invisible || peer->GetOperFlags() & OPERPRIVS_INVISIBLE;
-				if(peer->GetChannelFlags(p.first) & EUserChannelFlag_IsInChannel && shouldSend) {
-					peer->send_message(type, message,target.ToString());
-					break;
-				}
-				it2++;
-			}
+
+	bool Driver::LLIterator_OnChannelBroadcast(INetPeer* peer, OnChannelBroadcastState* state) {
+		Peer *p = (Peer *)peer;
+		if (state->includeSelf && p->GetUserDetails().ToString().compare(state->target.ToString()) == 0) {
+			p->send_message(state->type, state->message, state->target.ToString());
+			return true;
 		}
+		std::map<int, int>::iterator it2 = state->channel_list.begin();
+		
+		while(it2 != state->channel_list.end()) {
+			std::pair<int, int> pair = *it2;
+			bool shouldSend = ~pair.second & EUserChannelFlag_Invisible || p->GetOperFlags() & OPERPRIVS_INVISIBLE;
+			if(p->GetChannelFlags(pair.first) & EUserChannelFlag_IsInChannel && shouldSend) {
+				p->send_message(state->type, state->message,state->target.ToString());
+				return true;
+			}
+			it2++;
+		}
+		return true;
+	}
+	void Driver::OnChannelBroadcast(std::string type, UserSummary target, std::map<int, int> channel_list, std::string message, bool includeSelf) {
+		OnChannelBroadcastState state;
+		state.type = type;
+		state.target = target;
+		state.channel_list = channel_list;
+		state.message = message;
+		state.includeSelf = includeSelf;
+
+		mp_mutex->lock();		
+		OS::LinkedListIterator<INetPeer*, OnChannelBroadcastState*> iterator(mp_peers);
+    	iterator.Iterate(LLIterator_OnChannelBroadcast, &state);
 		mp_mutex->unlock();
 	}
 }

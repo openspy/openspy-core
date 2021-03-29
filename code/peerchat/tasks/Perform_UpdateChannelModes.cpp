@@ -212,7 +212,7 @@ namespace Peerchat {
 		free((void *)base64);
 
 
-		if (mode_message.str().size()) {0
+		if (mode_message.str().size()) {
 			std::ostringstream mq_message;
 			mq_message << "\\type\\MODE\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\1";
 

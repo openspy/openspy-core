@@ -17,6 +17,45 @@
 namespace Peerchat {
 	class Peer;
 	class Driver;
+
+	class FindPeerByUserSummaryState {
+		public:
+			UserSummary summary;
+			Peer *peer;
+	} ;
+
+	class SendMessageIteratorState {
+		public:
+			std::string fromSummary;
+			std::string messageType;
+			std::string message;
+			bool includeSelf;
+			int requiredChanUserModes;
+			int requiredOperFlags;
+
+			std::string type;
+			ChannelUserSummary from;
+			ChannelSummary channel;
+			ChannelUserSummary target;
+	};
+
+	class SetChannelKeysIteratorState {
+		public:
+			ChannelSummary summary;
+			UserSummary user_summary;
+			OS::KVReader keys;
+			std::string keys_message;
+	};
+
+	class OnChannelBroadcastState {
+		public:
+			std::string type;
+			UserSummary target;
+			std::map<int, int> channel_list;
+			std::string message;
+			bool includeSelf;
+	};
+
 	class Driver : public TCPDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
@@ -29,6 +68,15 @@ namespace Peerchat {
 		void OnChannelBroadcast(std::string type, UserSummary target, std::map<int, int> channel_list, std::string message, bool includeSelf);
 	protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket);
+
+	private:
+		static bool LLIterator_FindPeerByUserSummary(INetPeer* peer, FindPeerByUserSummaryState* state);
+		static bool LLIterator_SendUserMessageToVisibleUsers(INetPeer* peer, SendMessageIteratorState* state);
+		static bool LLIterator_OnChannelMessage(INetPeer* peer, SendMessageIteratorState* state);
+		static bool LLIterator_OnSetUserChannelKeys(INetPeer* peer, SetChannelKeysIteratorState* state);
+		static bool LLIterator_OnSetChannelKeys(INetPeer* peer, SetChannelKeysIteratorState* state);
+		static bool LLIterator_OnChannelBroadcast(INetPeer* peer, OnChannelBroadcastState* state);
+		//
 	};
 }
 #endif //_SBDRIVER_H
