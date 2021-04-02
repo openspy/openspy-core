@@ -50,8 +50,8 @@ int main() {
 			bool proxyFlag = false;
 			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 			OS::Address address = addresses.front();
-			Peerchat::Driver *driver = new Peerchat::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), proxyFlag);
-			OS::LogText(OS::ELogLevel_Info, "Adding peerchat Driver: %s:%d proxy: %d\n", address.ToString(true).c_str(), address.GetPort(), proxyFlag);
+			Peerchat::Driver *driver = new Peerchat::Driver(g_gameserver, s, address.ToString(true).c_str(), address.GetPort(), proxyFlag);
+			OS::LogText(OS::ELogLevel_Info, "Adding peerchat (%s) Driver: %s:%d proxy: %d\n", s.c_str(), address.ToString(true).c_str(), address.GetPort(), proxyFlag);
 			g_gameserver->addNetworkDriver(driver);
 			it++;
 	}

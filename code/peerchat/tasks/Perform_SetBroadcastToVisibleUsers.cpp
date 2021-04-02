@@ -36,7 +36,16 @@ namespace Peerchat {
         channel_modes_str = channel_modes_str.substr(0, channel_modes_str.length() - 1);
 
 		std::ostringstream mq_message;
-		mq_message << "\\type\\" << request.message_type.c_str()  << "\\message\\" << b64_string << "\\channels\\" << channel_str << "\\channel_modes\\" << channel_modes_str << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\" << (bool)(request.type == EPeerchatRequestType_SetBroadcastToVisibleUsers);
+		//mq_message << "\\type\\" << request.message_type.c_str()  << "\\message\\" << b64_string << "\\channels\\" << channel_str << "\\channel_modes\\" << channel_modes_str << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\" << (bool)(request.type == EPeerchatRequestType_SetBroadcastToVisibleUsers);
+
+        mq_message << "\\type\\" << request.message_type.c_str()  << "\\message\\" << b64_string << "\\channels\\" << channel_str << "\\channel_modes\\" << channel_modes_str;
+        if(request.type == EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary) {
+            mq_message << "\\fromSummary\\" << request.summary.ToString();
+        } else {
+            mq_message << "\\fromUserId\\" << request.summary.id;
+        }
+        
+        mq_message << "\\includeSelf\\" << (bool)(request.type == EPeerchatRequestType_SetBroadcastToVisibleUsers || request.type == EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary);
         thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_broadcast_routingkey, mq_message.str().c_str());
 
 		if (request.peer) {

@@ -19,7 +19,7 @@ namespace Peerchat {
 
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
-		req.type = EPeerchatRequestType_SetBroadcastToVisibleUsers;
+		req.type = EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary;
 		req.peer = this;
 		req.summary = GetUserDetails();
 	
@@ -50,8 +50,8 @@ namespace Peerchat {
 				reason = reason.substr(1);
 			}
 
-			if (do_combine) {
-				for (int i = 1; i < data_parser.size(); i++) {
+			if (do_combine && data_parser.size() > 2) {
+				for (int i = 2; i < data_parser.size(); i++) {
 					reason = reason.append(" ").append(data_parser.at(i));
 				}
 			}

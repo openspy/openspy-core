@@ -45,6 +45,7 @@ namespace Peerchat {
 		req.type = EPeerchatRequestType_UserPartChannel;
 		req.peer = this;
 		req.channel_summary.channel_name = target;
+		req.summary = GetUserDetails();
 		req.message = message;
 		req.peer->IncRef();
 		req.callback = NULL;

@@ -43,7 +43,29 @@ namespace Peerchat {
 	};
 
 	class UserSummary {
+		
 		public:
+			UserSummary() {
+				id = 0;	
+			}
+			UserSummary(std::string string) {
+				int username_marker = string.find_first_of("!");
+				int address_marker = string.find_first_of("@");
+
+				int id_marker = string.find_first_of("+");
+
+				nick = string.substr(0, username_marker);
+				username = string.substr(username_marker + 1, address_marker - username_marker - 1);
+
+				size_t address_end = std::string::npos;
+				
+				if(id_marker != -1) {
+					std::string id_data = string.substr(id_marker + 1);
+					id = atoi(id_data.c_str());
+					address_end = id_marker - 1;
+				}
+				address = string.substr(address_marker + 1, id_marker - address_marker - 1);
+			}
 			int id;
 			std::string nick;
 			std::string username;
@@ -54,8 +76,15 @@ namespace Peerchat {
 			int profileid;
 			int modeflags;
 			int operflags;
-			std::string ToString() {
-				return nick + "!" + username + "@" + address.ToString(true);
+			std::string ToString(bool includeId = false) {
+				std::ostringstream ss;
+				ss << nick << "!";
+				ss << username << "@";
+				ss << address.ToString(true);
+				if(includeId) {
+					ss << "+" << id;
+				}
+				return ss.str();
 			};
 	};
 

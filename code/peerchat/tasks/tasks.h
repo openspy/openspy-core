@@ -78,6 +78,7 @@ namespace Peerchat {
 			EPeerchatRequestType_GetChannelKeys,
 			EPeerchatRequestType_UserKickChannel,
 			EPeerchatRequestType_SetBroadcastToVisibleUsers,
+			EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary,
 			EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource,
 			EPeerchatRequestType_DeleteUser,
 			EPeerchatRequestType_KeepaliveUser,
@@ -205,6 +206,9 @@ namespace Peerchat {
 
 	class PeerchatBackendRequest {
 		public:
+			PeerchatBackendRequest() {
+
+			}
 			int type;
 			Peer *peer;
 			OS::User user;

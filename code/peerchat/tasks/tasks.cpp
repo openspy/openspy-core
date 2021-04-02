@@ -67,6 +67,7 @@ namespace Peerchat {
 			{EPeerchatRequestType_GetChannelKeys, Perform_GetChannelKeys},
 
 			{EPeerchatRequestType_SetBroadcastToVisibleUsers, Perform_SetBroadcastToVisibleUsers},
+			{EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary, Perform_SetBroadcastToVisibleUsers},
 			{EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource, Perform_SetBroadcastToVisibleUsers},
 
 			{EPeerchatRequestType_DeleteUser, Perform_DeleteUser},
@@ -122,6 +123,9 @@ namespace Peerchat {
 			UserSummary from;
 			if (reader.HasKey("fromUserId")) {
 				from = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
+			} else if(reader.HasKey("fromSummary")) {
+				from = UserSummary(reader.GetValue("fromSummary"));
+				printf("got summary: %s - %s\n", from.ToString().c_str(), reader.GetValue("fromSummary").c_str());
 			}
 
 			std::string channels = reader.GetValue("channels");

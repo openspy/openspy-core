@@ -5,6 +5,7 @@
 namespace Peerchat {
 	bool Perform_UserJoinEvents(PeerchatBackendRequest request, TaskThreadData* thread_data) {
         TaskResponse response;
+
         int initial_flags = request.channel_modify.set_mode_flags;
         if (initial_flags & EUserChannelFlag_Invisible) {
             std::ostringstream mq_message;

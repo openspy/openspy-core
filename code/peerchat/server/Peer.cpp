@@ -21,6 +21,7 @@ namespace Peerchat {
 		m_oper_flags = 0;
 		mp_mutex = OS::CreateMutex();
 		m_using_encryption = false;
+		gettimeofday(&m_last_recv, NULL);
 		RegisterCommands();
 	}
 	Peer::~Peer() {
@@ -38,6 +39,9 @@ namespace Peerchat {
 		Delete(false, "Client Exited");
 	}
 	void Peer::Delete(bool timeout, std::string reason) {
+		if(m_delete_flag) {
+			return;
+		}
 		send_quit(reason);
 		m_delete_flag = true;
 		m_timeout_flag = timeout;
@@ -67,16 +71,20 @@ namespace Peerchat {
 				goto end;
 			}
 
+			gettimeofday(&m_last_recv, NULL);
+
 			if(m_using_encryption) {
 				gs_crypt(recv_buffer.GetHead(), len, &m_crypt_key_in);
 			}
 
-			OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s", getAddress().ToString().c_str(), m_profile.id, recv_buffer.GetHead());
+			
 
 			std::string command_upper;
 			bool command_found = false;
 			std::string recv_buf;
 			recv_buf.append((const char *)recv_buffer.GetHead(), len);
+
+			OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s", getAddress().ToString().c_str(), m_profile.id, recv_buf.c_str());
 
 			std::vector<std::string> commands = OS::KeyStringToVector(recv_buf, false, '\n');
 			std::vector<std::string>::iterator it = commands.begin();
@@ -166,6 +174,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("USER", false, 4, &Peer::handle_user));
 		commands.push_back(CommandEntry("PING", false, 0, &Peer::handle_ping));
 		commands.push_back(CommandEntry("OPER", false, 3, &Peer::handle_oper));
+		commands.push_back(CommandEntry("LOGIN", false, 3, &Peer::handle_login));
 		commands.push_back(CommandEntry("PRIVMSG", true, 2, &Peer::handle_privmsg));
 		commands.push_back(CommandEntry("NOTICE", true, 2, &Peer::handle_notice));
 		commands.push_back(CommandEntry("UTM", true, 2, &Peer::handle_utm));
@@ -265,7 +274,7 @@ namespace Peerchat {
 		peer->send_numeric(1, s.str());
 		s.str("");
 
-		s << "Your host is " << "SERVER NAME"  << ", running version 1.0";
+		s << "Your host is " << ((Peerchat::Driver *)peer->GetDriver())->getServerName()  << ", running version 1.0";
 		peer->send_numeric(2, s.str());
 		s.str("");
 

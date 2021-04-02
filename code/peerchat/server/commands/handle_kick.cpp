@@ -50,6 +50,7 @@ namespace Peerchat {
 		req.type = EPeerchatRequestType_UserKickChannel;
 		req.peer = this;
 		req.channel_summary.channel_name = channel_target;
+		req.summary = GetUserDetails();
         req.message_target = user_target;
 		req.message = message;
 		req.peer->IncRef();

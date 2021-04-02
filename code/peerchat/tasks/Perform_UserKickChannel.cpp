@@ -21,7 +21,7 @@ namespace Peerchat {
 		else {
 			if (to_summary.id != 0) {
 				response.error_details.response_code = TaskShared::WebErrorCode_Success;
-				RemoveUserFromChannel(thread_data, request.peer->GetUserDetails(), channel, "KICK", request.message, to_summary);
+				RemoveUserFromChannel(thread_data, request.summary, channel, "KICK", request.message, to_summary);
 			}
 			else {
 				response.error_details.response_code = TaskShared::WebErrorCode_NoSuchUser;

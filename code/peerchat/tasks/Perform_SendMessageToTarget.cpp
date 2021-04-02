@@ -21,7 +21,13 @@ namespace Peerchat {
 		if (reader.HasKey("toChannelId")) {
 			ChannelSummary summary = LookupChannelById(thread_data, reader.GetValueInt("toChannelId"));
 			if (summary.channel_id) {
-				UserSummary from_user_summary = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
+				UserSummary from_user_summary;
+				// = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
+				if(reader.HasKey("fromUserId")) {
+					from_user_summary = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
+				} else {
+					from_user_summary = reader.GetValue("fromUserSummary");
+				}
 				ChannelUserSummary from;
 				from.userSummary = from_user_summary;
 				from.user_id = from_user_summary.id;
@@ -30,15 +36,31 @@ namespace Peerchat {
 
 				ChannelUserSummary target;
 				target.user_id = reader.GetValueInt("toUserId");
-				target.userSummary = LookupUserById(thread_data, reader.GetValueInt("toUserId"));
+				if(reader.HasKey("toUserId")) {
+					target.userSummary = LookupUserById(thread_data, reader.GetValueInt("toUserId"));
+				} else {
+					target.userSummary = reader.GetValue("toUserSummary");
+				}
+				
 				target.channel_id = summary.channel_id;
 				target.modeflags = LookupUserChannelModeFlags(thread_data, from.channel_id, target.user_id);
 				server->OnChannelMessage(reader.GetValue("type"), from, summary, send_message, target, includeSelf, requiredChanFlags, requiredOperFlags);
 			}
 		}
 		else {
-			UserSummary from_user_summary = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
-			UserSummary to_user_summary = LookupUserById(thread_data, reader.GetValueInt("toUserId"));
+			UserSummary from_user_summary, to_user_summary;
+
+			if(reader.HasKey("fromUserId")) {
+				from_user_summary = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
+			} else {
+				from_user_summary = reader.GetValue("fromUserSummary");
+			}
+
+			if(reader.HasKey("toUserId")) {
+				to_user_summary = LookupUserById(thread_data, reader.GetValueInt("toUserId"));
+			} else {
+				to_user_summary = reader.GetValue("toUserSummary");
+			}
 			server->OnUserMessage(reader.GetValue("type"), from_user_summary, to_user_summary, send_message);
 		}
         

@@ -37,7 +37,7 @@ namespace Peerchat {
 		int initial_flags = EUserChannelFlag_IsInChannel;
 		initial_flags |= request.channel_modify.set_mode_flags;
 
-		UserSummary userSummary = request.peer->GetUserDetails();
+		UserSummary userSummary = request.summary;
 
 		initial_flags |= getEffectiveUsermode(channel.channel_name, userSummary, request.peer);
 
