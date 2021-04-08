@@ -33,7 +33,7 @@ namespace Peerchat {
     	iterator.Iterate(LLIterator_FindPeerByUserSummary, &state);
 		mp_mutex->unlock();
 
-		return NULL;   
+		return state.peer;   
     }
     INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
         return new Peer(this, socket);

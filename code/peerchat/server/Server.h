@@ -30,6 +30,8 @@ namespace Peerchat {
 		void OnSetUserChannelKeys(ChannelSummary summary, UserSummary user_summary, OS::KVReader keys);
 		void OnSetChannelKeys(ChannelSummary summary, OS::KVReader keys);
 
+		void OnUpdateChanUsermode(int channel_id, UserSummary user_summary, int new_modeflags);
+
 	private:
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *mp_auth_tasks;
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *mp_user_tasks;

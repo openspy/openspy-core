@@ -334,6 +334,11 @@ namespace Peerchat {
 		mp_mutex->unlock();
 		return flags;
 	}
+	void Peer::SetChannelFlags(int channel_id, int mode_flags) {
+		mp_mutex->lock();
+		m_channel_flags[channel_id] = mode_flags;
+		mp_mutex->unlock();
+	}
 	std::vector<int> Peer::GetChannels() {
 		std::vector<int> channels;
 		mp_mutex->lock();

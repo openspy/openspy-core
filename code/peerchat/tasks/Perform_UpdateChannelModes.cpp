@@ -4,6 +4,8 @@
 
 namespace Peerchat {
 	void HandleSetUsermodes(TaskThreadData* thread_data, PeerchatBackendRequest request, std::ostringstream &ss, bool unset) {
+		std::ostringstream message;
+
 		std::map<std::string, int>::iterator it = request.channel_modify.set_usermodes.begin();
 		if (unset)
 			it = request.channel_modify.unset_usermodes.begin();
@@ -50,8 +52,11 @@ namespace Peerchat {
 			else {
 				modeflags |= modes;
 			}
-			
 			Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", request.channel_summary.channel_id, summary.id, modeflags);
+
+			message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\to\\" << request.channel_summary.channel_name << "\\user_id\\" << summary.id << "\\modeflags\\" << modeflags;
+			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());
+			message.str("");
 
 		}
 		error_end:

@@ -169,8 +169,12 @@ namespace Peerchat {
 			std::string send_message = std::string((const char*)data_out, data_len);
 			free((void*)data_out);
 			OS::KVReader keys = send_message;
+			
 			ChannelSummary summary = GetChannelSummaryByName(thread_data, reader.GetValue("to"), false);
 			UserSummary user_summary;
+			int mode_flags;
+
+
 			if(reader.HasKey("user_id")) {
 				user_summary = LookupUserById(thread_data, reader.GetValueInt("user_id"));
 			}
@@ -179,6 +183,9 @@ namespace Peerchat {
 				server->OnSetUserChannelKeys(summary, user_summary, keys);
 			} else if (reader.GetValue("type").compare("SETCHANKEY") == 0) {
 				server->OnSetChannelKeys(summary, keys);
+			} else if (reader.GetValue("type").compare("UPDATE_USER_CHANMODEFLAGS") == 0) {
+				mode_flags = reader.GetValueInt("modeflags");
+				server->OnUpdateChanUsermode(summary.channel_id, user_summary, mode_flags);
 			}
 			return false;
 		}

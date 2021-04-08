@@ -122,6 +122,8 @@ namespace Peerchat {
 		void handle_channel_join_events(ChannelSummary channel);
 
 		int GetChannelFlags(int channel_id);
+		void SetChannelFlags(int channel_id, int modeflags);
+		
 		std::vector<int> GetChannels();
 
 		void SendNickUpdate(std::string newNick);

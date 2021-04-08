@@ -65,8 +65,19 @@ namespace Peerchat {
     void Server::OnChannelBroadcast(std::string type, UserSummary target, std::map<int, int> channel_list, std::string message, bool includeSelf) {
       std::vector<INetDriver*>::iterator it = m_net_drivers.begin();
       while (it != m_net_drivers.end()) {
-        Peerchat::Driver* driver = (Peerchat::Driver*) * it;
+        Peerchat::Driver *driver = (Peerchat::Driver*) * it;
         driver->OnChannelBroadcast(type, target, channel_list, message, includeSelf);
+        it++;
+      }
+    }
+    void Server::OnUpdateChanUsermode(int channel_id, UserSummary user_summary, int new_modeflags) {
+      std::vector<INetDriver*>::iterator it = m_net_drivers.begin();
+      while (it != m_net_drivers.end()) {
+        Peerchat::Driver *driver = (Peerchat::Driver*) * it;
+        Peerchat::Peer *peer = driver->FindPeerByUserSummary(user_summary);
+        if(peer) {
+          peer->SetChannelFlags(channel_id, new_modeflags);
+        }        
         it++;
       }
     }
