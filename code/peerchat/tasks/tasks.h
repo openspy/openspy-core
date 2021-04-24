@@ -273,6 +273,8 @@ namespace Peerchat {
 	void AddUserToChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, int initial_flags);
 	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target = UserSummary(), bool silent = false);
 	std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id);
+	int CountChannelUsers(TaskThreadData *thread_data, int channel_id);
+	void DeleteChannelById(TaskThreadData *thread_data, int channel_id);
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id);
 
 	void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base = "", bool show_private = false);

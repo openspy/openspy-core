@@ -229,6 +229,11 @@ namespace Peerchat {
 		}
 
 		///XXX: delete channel if empty & not "stay open" mode
+		int count = CountChannelUsers(thread_data, channel.channel_id);
+		printf("list count: %d\n", count);
+		if(count == 0) {
+			DeleteChannelById(thread_data, channel.channel_id);
+		}
 
 		
     }
@@ -251,6 +256,37 @@ namespace Peerchat {
 			modeflags = v.value._int;
 		}
 		return modeflags;
+	}
+    int CountChannelUsers(TaskThreadData *thread_data, int channel_id) {
+		int count = 0;
+        std::vector<ChannelUserSummary> result;
+        Redis::Response reply;
+		Redis::Value v, arr;
+        int cursor = 0;
+
+        do {
+			reply = Redis::Command(thread_data->mp_redis_connection, 0, "ZSCAN channel_%d_users %d", channel_id, cursor);
+			if (Redis::CheckError(reply) || reply.values.size() == 0 || reply.values[0].arr_value.values.size() < 2)
+				goto error_cleanup;
+
+			v = reply.values[0].arr_value.values[0].second;
+			arr = reply.values[0].arr_value.values[1].second;
+
+		 	if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+		 		cursor = atoi(v.value._str.c_str());
+		 	} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+		 		cursor = v.value._int;
+		 	}
+			count += arr.arr_value.values.size() / 2;
+        } while(cursor != 0);
+        error_cleanup:
+        return count;
+    }
+	void DeleteChannelById(TaskThreadData *thread_data, int channel_id) {
+		ChannelSummary channel = LookupChannelById(thread_data, channel_id);
+		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d", channel_id);
+		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channelname_%s", channel.channel_name.c_str());
+		Redis::Command(thread_data->mp_redis_connection, 0, "HDEL channels %s", channel.channel_name.c_str());
 	}
     std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id) {
         std::vector<ChannelUserSummary> result;

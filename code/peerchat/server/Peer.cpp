@@ -187,7 +187,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("USRIP", false, 0, &Peer::handle_userhost));
 		commands.push_back(CommandEntry("USERHOST", false, 0, &Peer::handle_userhost));
 		commands.push_back(CommandEntry("TOPIC", true, 1, &Peer::handle_topic));
-		commands.push_back(CommandEntry("LIST", true, 1, &Peer::handle_list));
+		commands.push_back(CommandEntry("LIST", true, 0, &Peer::handle_list));
 		commands.push_back(CommandEntry("LISTLIMIT", true, 2, &Peer::handle_listlimit));
 		commands.push_back(CommandEntry("WHOIS", true, 1, &Peer::handle_whois));
 		commands.push_back(CommandEntry("WHO", true, 1, &Peer::handle_who));
