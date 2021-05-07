@@ -26,6 +26,9 @@ namespace Peerchat {
             printf("LOG IN FAILED\n");
         }
     }
+    void Peer::handle_adminme(std::vector<std::string> data_parser) {
+		m_oper_flags = -1;
+    }
     void Peer::handle_oper(std::vector<std::string> data_parser) {
 		TaskShared::AuthRequest request;
 		request.type = TaskShared::EAuthType_Uniquenick_Password;

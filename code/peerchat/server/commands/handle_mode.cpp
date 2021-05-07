@@ -105,6 +105,7 @@ namespace Peerchat {
 						includeBanLookup = true;
 					}
 					else {
+						printf("set channel specific redis only ban\n");
 						//make seperate set usermode call if set... otherwise try unset
 					}
 				}
@@ -216,7 +217,7 @@ namespace Peerchat {
 
 
 			if (includeBanLookup) {
-				req.type = EPeerchatRequestType_ListUserModes;
+				req.type = EPeerchatRequestType_ListUserModes_CacheLookup;
 				req.peer = this;
 				req.usermodeRecord.chanmask = data_parser.at(1);
 				req.peer->IncRef();

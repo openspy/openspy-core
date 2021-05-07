@@ -85,6 +85,7 @@ namespace Peerchat {
 			EPeerchatRequestType_UserJoinEvents, //send invisible msg, do automatic modes etc
 			EPeerchatRequestType_CreateUserMode,
 			EPeerchatRequestType_ListUserModes,
+			EPeerchatRequestType_ListUserModes_CacheLookup,
 			EPeerchatRequestType_DeleteUserMode,
 			EPeerchatRequestType_SetChanProps,
 			EPeerchatRequestType_ListChanProps,
@@ -147,6 +148,8 @@ namespace Peerchat {
 				isGlobal = false;
 				profileid = 0;
 				modeflags = 0;
+				memset(&expires_at, 0, sizeof(expires_at));
+				memset(&set_at, 0, sizeof(set_at));
 			}
 			int usermodeid;
 			std::string chanmask;
@@ -252,6 +255,7 @@ namespace Peerchat {
 	bool Perform_KeepaliveUser(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_SetUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_ListUsermodes(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_ListUsermodes_Cached(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_DeleteUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_LookupGameInfo(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
@@ -294,8 +298,11 @@ namespace Peerchat {
 
 	UsermodeRecord GetUsermodeFromJson(json_t* item);
 
-	int getEffectiveUsermode(std::string channelName, UserSummary summary, Peer* peer);
+	int getEffectiveUsermode(TaskThreadData* thread_data, int channel_id, UserSummary summary, Peer* peer);
 	json_t* GetJsonFromUserSummary(UserSummary summary);
+	void WriteUsermodeToCache(UsermodeRecord usermode, TaskThreadData* thread_data);
+	void AssociateUsermodeToChannel(UsermodeRecord record, ChannelSummary summary, TaskThreadData* thread_data);
+	void LoadUsermodeFromCache(TaskThreadData* thread_data, std::string cacheKey, UsermodeRecord &record);
 
 	extern const char *peerchat_channel_exchange;
     extern const char *peerchat_client_message_routingkey;

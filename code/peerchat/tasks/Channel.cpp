@@ -2,6 +2,8 @@
 #include <sstream>
 #include <server/Server.h>
 
+#include <OS/HTTP.h>
+
 #define CHANNEL_EXPIRE_TIME 86400
 namespace Peerchat {
     const char *mp_pk_channel_name = "PEERCHATCHANID";
@@ -117,8 +119,44 @@ namespace Peerchat {
 		error_end:
 		return summary;
 	}
+	void AssociateUsermodeToChannel(UsermodeRecord record, ChannelSummary summary, TaskThreadData* thread_data) {
+		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_usermodes \"%d\" %s", summary.channel_id, record.usermodeid, record.chanmask.c_str());
+	}
+	void LoadUsermodesForChannel(ChannelSummary summary, TaskThreadData* thread_data) {
+		json_t* send_json = json_object();
+		json_object_set_new(send_json, "channelmask", json_string(summary.channel_name.c_str()));
 
+		std::string url = std::string(OS::g_webServicesURL) + "/v1/Usermode/lookup";
 
+		OS::HTTPClient client(url);
+
+		char* json_data = json_dumps(send_json, 0);
+
+		OS::HTTPResponse resp = client.Post(json_data, NULL);
+
+		free(json_data);
+		json_decref(send_json);
+
+		
+		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
+
+		bool success = false;
+
+		TaskShared::WebErrorDetails error_info;
+
+		if (!TaskShared::Handle_WebError(send_json, error_info)) {
+			int num_items = json_array_size(send_json);
+			for (int i = 0; i < num_items; i++) {
+				json_t* item = json_array_get(send_json, i);
+
+				UsermodeRecord record = GetUsermodeFromJson(item);
+				WriteUsermodeToCache(record, thread_data);
+				AssociateUsermodeToChannel(record, summary, thread_data);
+			}
+		}
+		if(send_json)
+			json_decref(send_json);
+	}
 	ChannelSummary CreateChannel(TaskThreadData* thread_data, std::string name) {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 
@@ -147,6 +185,10 @@ namespace Peerchat {
 
 		Redis::Command(thread_data->mp_redis_connection, 0, "SET channelname_%s %d", name.c_str(), channel_id);
 		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channelname_%s %d", name.c_str(), CHANNEL_EXPIRE_TIME);
+
+		//load usermodes
+
+		LoadUsermodesForChannel(summary, thread_data);
 		return summary;
 	}
 

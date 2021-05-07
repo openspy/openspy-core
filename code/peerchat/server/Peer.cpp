@@ -174,6 +174,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("USER", false, 4, &Peer::handle_user));
 		commands.push_back(CommandEntry("PING", false, 0, &Peer::handle_ping));
 		commands.push_back(CommandEntry("OPER", false, 3, &Peer::handle_oper));
+		commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
 		commands.push_back(CommandEntry("LOGIN", false, 3, &Peer::handle_login));
 		commands.push_back(CommandEntry("PRIVMSG", true, 2, &Peer::handle_privmsg));
 		commands.push_back(CommandEntry("NOTICE", true, 2, &Peer::handle_notice));

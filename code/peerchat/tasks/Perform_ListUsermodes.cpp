@@ -132,35 +132,224 @@ namespace Peerchat {
 		return true;
 	}
 
-	int getEffectiveUsermode(std::string channelName, UserSummary summary, Peer *peer) {
-		json_t* send_json = json_object();
-		json_object_set_new(send_json, "channelName", json_string(channelName.c_str()));
-		json_object_set_new(send_json, "userSummary", GetJsonFromUserSummary(summary));
+	bool Perform_ListUsermodes_Cached(PeerchatBackendRequest request, TaskThreadData* thread_data) {
+		int modeflags = 0;
 
-		std::string url = std::string(OS::g_webServicesURL) + "/v1/Usermode/GetEffectiveUsermode";
+		Redis::Response reply;
+		Redis::Value v, arr;
 
-		OS::HTTPClient client(url);
+		std::string keyname;
 
-		char* json_data = json_dumps(send_json, 0);
+		int cursor = 0;
 
-		OS::HTTPResponse resp = client.Post(json_data, peer);
+		TaskResponse response;
+		response.channel_summary.channel_name = request.usermodeRecord.chanmask;
 
-		free(json_data);
-		json_decref(send_json);
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 
-		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
-		if (!send_json) {
-			return 0;
+
+		response.is_start = true;
+
+		//scan channel usermodes
+		do {
+			reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH USERMODE_*", cursor);
+			if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
+				goto end_error;
+
+			v = reply.values[0].arr_value.values[0].second;
+			arr = reply.values[0].arr_value.values[1].second;
+			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+				if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+					cursor = atoi(v.value._str.c_str());
+				} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+					cursor = v.value._int;
+				}
+
+				if(arr.arr_value.values.size() <= 0) {
+					break;
+				}
+
+				for(size_t i=0;i<arr.arr_value.values.size();i++) {
+					LoadUsermodeFromCache(thread_data, arr.arr_value.values[i].second.value._str, response.usermode);
+					response.error_details.response_code = TaskShared::WebErrorCode_Success;
+
+					if (request.callback)
+						request.callback(response, request.peer);
+
+					response.is_start = false;
+				}
+			}
+		} while(cursor != 0);
+
+		response.is_end = true;
+		response.usermode.usermodeid = 0;
+		if (request.callback)
+			request.callback(response, request.peer);
+
+		end_error:
+		return true;
+	}
+	void LoadUsermodeFromCache(TaskThreadData* thread_data, std::string cacheKey, UsermodeRecord &record) {
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+
+		Redis::Response reply;
+		Redis::Value v;
+
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s id", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
 		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.usermodeid = atoi(OS::strip_quotes(v.value._str).c_str());
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s chanmask", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.chanmask = OS::strip_quotes(v.value._str).c_str();
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s hostmask", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.hostmask = OS::strip_quotes(v.value._str).c_str();
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s comment", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.comment = OS::strip_quotes(v.value._str).c_str();
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s machineid", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.machineid = OS::strip_quotes(v.value._str).c_str();
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s profileid", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.profileid = atoi(OS::strip_quotes(v.value._str).c_str());
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s modeflags", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.modeflags = atoi(OS::strip_quotes(v.value._str).c_str());
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s expiresAt", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.expires_at.tv_sec = atoi(OS::strip_quotes(v.value._str).c_str());
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s setAt", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.set_at.tv_sec = atoi(OS::strip_quotes(v.value._str).c_str());
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s setBy", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.setByUserSummary = UserSummary(OS::strip_quotes(v.value._str).c_str());
+		}
+
+		end_error:
+		return;
+	}
+	bool UsermodeMatchesUser(UsermodeRecord usermode, UserSummary summary) {
+		if(usermode.profileid != 0 && summary.profileid == usermode.profileid) {
+			return true;
+		}
+
+		if(usermode.hostmask.length() > 0 && match2(usermode.hostmask.c_str(), summary.hostname.c_str())) {
+			return true;
+		}
+
+		if(usermode.machineid.length() > 0 && match2(usermode.machineid.c_str(), summary.realname.c_str())) {
+			return true;
+		}
+		return false;
+	}
+	int getEffectiveUsermode(TaskThreadData* thread_data, int channel_id, UserSummary summary, Peer *peer) {
 
 		int modeflags = 0;
 
-		UsermodeRecord record = GetUsermodeFromJson(send_json);
-		modeflags = record.modeflags;
+		Redis::Response reply;
+		Redis::Value v, arr;
 
-		json_decref(send_json);
+		UsermodeRecord record;
 
+		std::string keyname;
+
+		int cursor = 0;
+		//scan channel usermodes
+		do {
+			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HSCAN channel_%d_usermodes %d match *", channel_id, cursor);
+			if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
+				goto error_cleanup;
+
+			v = reply.values[0].arr_value.values[0].second;
+			arr = reply.values[0].arr_value.values[1].second;
+			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+				if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+					cursor = atoi(v.value._str.c_str());
+				} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+					cursor = v.value._int;
+				}
+
+				if(arr.arr_value.values.size() <= 0) {
+					break;
+				}
+
+				for(size_t i=0;i<arr.arr_value.values.size();i++) {
+					if(i % 2 == 0) {
+						keyname = "USERMODE_" + arr.arr_value.values[i].second.value._str;
+						LoadUsermodeFromCache(thread_data, keyname, record);
+						if(UsermodeMatchesUser(record, summary)) {
+							modeflags |= record.modeflags;
+						}
+						
+					}
+						
+				}
+			}
+		} while(cursor != 0);
+
+		error_cleanup:
 		return modeflags;
 	}
 }

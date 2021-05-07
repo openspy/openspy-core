@@ -5,6 +5,9 @@
 namespace Peerchat {
 
 	bool CheckUserCanJoinChannel(ChannelSummary channel, Peer *peer, std::string password, int initial_flags) {
+		if(peer->GetOperFlags() & OPERPRIVS_OPEROVERRIDE) {
+			return true;
+		}
 		if (channel.basic_mode_flags & EChannelMode_InviteOnly) {
 			if (~peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_Invited || initial_flags & EUserChannelFlag_Invited) {
 				peer->send_numeric(473, "Cannot join channel (+i)", false, channel.channel_name);
@@ -39,7 +42,7 @@ namespace Peerchat {
 
 		UserSummary userSummary = request.summary;
 
-		initial_flags |= getEffectiveUsermode(channel.channel_name, userSummary, request.peer);
+		initial_flags |= getEffectiveUsermode(thread_data, channel.channel_id, userSummary, request.peer);
 
         if(!CheckUserCanJoinChannel(channel, request.peer, original_password, initial_flags)) {
             response.error_details.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
