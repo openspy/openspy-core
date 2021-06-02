@@ -303,6 +303,7 @@ namespace Peerchat {
 	void WriteUsermodeToCache(UsermodeRecord usermode, TaskThreadData* thread_data);
 	void AssociateUsermodeToChannel(UsermodeRecord record, ChannelSummary summary, TaskThreadData* thread_data);
 	void LoadUsermodeFromCache(TaskThreadData* thread_data, std::string cacheKey, UsermodeRecord &record);
+	json_t* UsermodeRecordToJson(UsermodeRecord record);
 
 	extern const char *peerchat_channel_exchange;
     extern const char *peerchat_client_message_routingkey;

@@ -19,6 +19,11 @@ namespace Peerchat {
 
 		bool see_invisible = peer->GetOperFlags() & OPERPRIVS_INVISIBLE;		
 
+		if (~peer->GetChannelFlags(response_data.channel_summary.channel_id) & EUserChannelFlag_IsInChannel && !see_invisible) {
+			peer->send_numeric(366, "End of /NAMES list.", false, response_data.channel_summary.channel_name);
+			return;
+		}
+
 		std::ostringstream s;
 		std::string target = "= " + response_data.channel_summary.channel_name;
 		while (it != response_data.channel_summary.users.end()) {

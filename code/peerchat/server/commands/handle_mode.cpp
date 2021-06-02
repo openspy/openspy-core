@@ -104,9 +104,13 @@ namespace Peerchat {
 					if (data_parser.size()-1 < last_offset) {
 						includeBanLookup = true;
 					}
-					else {
-						printf("set channel specific redis only ban\n");
+					else {						
 						//make seperate set usermode call if set... otherwise try unset
+						if (data_parser.size()-1 < last_offset) {
+							continue;
+						}
+						std::string ban_mask = data_parser.at(last_offset);
+						printf("set channel specific redis only ban %s %d\n", ban_mask.c_str(), set);
 					}
 				}
 				else if (mode_string[i] == 'k') {

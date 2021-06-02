@@ -254,13 +254,14 @@ namespace Peerchat {
 
 	void RemoveUserFromChannel(TaskThreadData* thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target, bool silent) {
 
+		std::ostringstream message;
+
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 		Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
-		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_user%d", channel.channel_id, user.id);
+		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_user_%d", channel.channel_id, user.id);
 
 		if(!silent) {
-			const char* base64 = OS::BinToBase64Str((uint8_t*)remove_message.c_str(), remove_message.length());
-			std::ostringstream message;
+			const char* base64 = OS::BinToBase64Str((uint8_t*)remove_message.c_str(), remove_message.length());			
 			message << "\\type\\" << type << "\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToString(true) << "\\message\\" << base64 << "\\includeSelf\\1";
 
 			if (target.id != 0) {
@@ -277,7 +278,9 @@ namespace Peerchat {
 			DeleteChannelById(thread_data, channel.channel_id);
 		}
 
-		
+		message.str("");
+		message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\to\\" << channel.channel_name << "\\user_id\\" << user.id << "\\modeflags\\" << 0;
+		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
     }
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {
 		Redis::Response reply;

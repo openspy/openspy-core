@@ -68,11 +68,15 @@ namespace Peerchat {
             return;
         }
 
-        std::ostringstream ss;
-        ss << "LISTUSERMODE ";
-        SerializeUsermodeRecord(response_data.usermode, ss);
 
-        ((Peer*)peer)->send_message("PRIVMSG", ss.str(), "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+        if(response_data.usermode.usermodeid != 0) {
+            std::ostringstream ss;
+            ss << "LISTUSERMODE ";
+            SerializeUsermodeRecord(response_data.usermode, ss);
+
+
+            ((Peer*)peer)->send_message("PRIVMSG", ss.str(), "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+        }
 
         if(response_data.is_end) {
             ((Peer *)peer)->send_message("PRIVMSG", "LISTUSERMODE \\final\\1", "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
@@ -85,7 +89,12 @@ namespace Peerchat {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 
-		req.type = EPeerchatRequestType_ListUserModes;
+        if(chanmask.find("*") == std::string::npos) {
+            req.type = EPeerchatRequestType_ListUserModes_CacheLookup;
+        } else {
+            req.type = EPeerchatRequestType_ListUserModes;
+        }
+		
 		req.peer = this;
 
 		UsermodeRecord usermodeRecord;
