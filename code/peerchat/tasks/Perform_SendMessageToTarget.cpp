@@ -17,6 +17,8 @@ namespace Peerchat {
 		bool includeSelf = (bool)reader.GetValueInt("includeSelf");
 		int requiredChanFlags = reader.GetValueInt("requiredChanUserModes");
 		int requiredOperFlags = reader.GetValueInt("requiredOperFlags");
+
+		int onlyVisibleTo = reader.GetValueInt("onlyVisibleTo");
 		std::string send_message = std::string((const char*)data_out, data_len);
 		if (reader.HasKey("toChannelId")) {
 			ChannelSummary summary = LookupChannelById(thread_data, reader.GetValueInt("toChannelId"));
@@ -44,7 +46,7 @@ namespace Peerchat {
 				
 				target.channel_id = summary.channel_id;
 				target.modeflags = LookupUserChannelModeFlags(thread_data, from.channel_id, target.user_id);
-				server->OnChannelMessage(reader.GetValue("type"), from, summary, send_message, target, includeSelf, requiredChanFlags, requiredOperFlags);
+				server->OnChannelMessage(reader.GetValue("type"), from, summary, send_message, target, includeSelf, requiredChanFlags, requiredOperFlags, onlyVisibleTo);
 			}
 		}
 		else {

@@ -32,6 +32,7 @@ namespace Peerchat {
 			bool includeSelf;
 			int requiredChanUserModes;
 			int requiredOperFlags;
+			int onlyVisibleTo;
 
 			std::string type;
 			ChannelUserSummary from;
@@ -62,7 +63,7 @@ namespace Peerchat {
 		Peer *FindPeerByProfileID(int profileid);		
 		Peer *FindPeerByUserSummary(UserSummary summary);
 		void SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf = true);
-		void OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf, int requiredChanUserModes, int requiredOperFlags);
+		void OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf, int requiredChanUserModes, int requiredOperFlags, int onlyVisibleTo);
 		void OnSetUserChannelKeys(ChannelSummary summary, UserSummary user_summary, OS::KVReader keys);
 		void OnSetChannelKeys(ChannelSummary summary, OS::KVReader keys);
 		void OnChannelBroadcast(std::string type, UserSummary target, std::map<int, int> channel_list, std::string message, bool includeSelf);

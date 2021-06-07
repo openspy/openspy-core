@@ -58,6 +58,7 @@ namespace Peerchat {
 	enum EUserModes {
 		EUserMode_Quiet = 1 << 0, //+q
 		EUserMode_Invisible = 1 << 1, // +i
+		EUserMode_Gagged = 1 << 2, // +g
 		//
 	};
   enum EPeerchatRequestType {
@@ -90,7 +91,8 @@ namespace Peerchat {
 			EPeerchatRequestType_SetChanProps,
 			EPeerchatRequestType_ListChanProps,
 			EPeerchatRequestType_DeleteChanProps,
-			EPeerchatRequestType_LookupGameInfo
+			EPeerchatRequestType_LookupGameInfo,
+			EPeerchatRequestType_LookupGlobalUsermode
 	};
 
   enum EUserChannelFlag {
@@ -129,6 +131,7 @@ namespace Peerchat {
 	class ChannelSummary {
 		public:
 			std::string channel_name;
+			std::string entrymsg;
 			int channel_id;
 			int basic_mode_flags;
 			std::string password;
@@ -163,6 +166,30 @@ namespace Peerchat {
 			struct timeval set_at; //or "expires in secs" when setting
 			UserSummary setByUserSummary;
 	};
+	class ChanpropsRecord {
+		public:
+		ChanpropsRecord() {
+			id = 0;
+			onlyOwner = false;
+				memset(&expires_at, 0, sizeof(expires_at));
+				memset(&set_at, 0, sizeof(set_at));
+		}
+		int id;
+		std::string channel_mask;
+		std::string password;
+		std::string entrymsg;
+		std::string comment;
+		struct timeval expires_at;
+		std::string groupname;
+		int limit;
+		int modeflags;
+		bool onlyOwner;
+		std::string topic;
+		struct timeval set_at;
+		std::string setByNick;
+		int setByPid;
+		std::string setByHost;
+	};
   class TaskResponse {
 		public:
 			TaskShared::WebErrorDetails error_details;
@@ -176,6 +203,7 @@ namespace Peerchat {
 			OS::GameData game_data;
 
 			UsermodeRecord usermode;
+			ChanpropsRecord chanprops;
 
 			bool is_start;
 			bool is_end;
@@ -230,6 +258,7 @@ namespace Peerchat {
 			std::vector<int> channel_id_list;
 
 			UsermodeRecord usermodeRecord;
+			ChanpropsRecord chanpropsRecord;
 	};
 	
 
@@ -258,6 +287,9 @@ namespace Peerchat {
 	bool Perform_ListUsermodes_Cached(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_DeleteUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_LookupGameInfo(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_LookupGlobalUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data);
+
+	bool Perform_ListChanprops(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
 	bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message);
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message);
@@ -304,6 +336,10 @@ namespace Peerchat {
 	void AssociateUsermodeToChannel(UsermodeRecord record, ChannelSummary summary, TaskThreadData* thread_data);
 	void LoadUsermodeFromCache(TaskThreadData* thread_data, std::string cacheKey, UsermodeRecord &record);
 	json_t* UsermodeRecordToJson(UsermodeRecord record);
+
+	ChanpropsRecord GetChanpropsFromJson(json_t* item);
+	bool ApplyChanProps(ChannelSummary &summary);
+	void SerializeChanpropsRecord(ChanpropsRecord record, std::ostringstream& ss);
 
 	extern const char *peerchat_channel_exchange;
     extern const char *peerchat_client_message_routingkey;

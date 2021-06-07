@@ -37,11 +37,11 @@ namespace Peerchat {
         it++;
       }
     }
-    void Server::OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf, int requiredChanFlags, int requiredOperFlags) {
+    void Server::OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf, int requiredChanFlags, int requiredOperFlags, int onlyVisibleTo) {
       std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
       while (it != m_net_drivers.end()) {
         Peerchat::Driver *driver = (Peerchat::Driver *)*it;
-        driver->OnChannelMessage(type, from, channel, message, target, includeSelf, requiredChanFlags, requiredOperFlags);
+        driver->OnChannelMessage(type, from, channel, message, target, includeSelf, requiredChanFlags, requiredOperFlags, onlyVisibleTo);
         it++;
       }
     }

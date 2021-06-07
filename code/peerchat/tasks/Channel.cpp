@@ -31,6 +31,14 @@ namespace Peerchat {
 		}
 		summary.channel_name = reply.values[0].value._str;
 
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d entrymsg", channel_id);
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+			goto error_end;
+		}
+		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			summary.entrymsg = reply.values[0].value._str.c_str();
+		}
+
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d modeflags", channel_id);
 		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
 			goto error_end;
@@ -85,8 +93,7 @@ namespace Peerchat {
 		}
 		if(reply.values.size() > 0 && reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			summary.topic = reply.values[0].value._str;
-		}
-		
+		}		
 
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d topic_time", channel_id);
 		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
@@ -110,7 +117,6 @@ namespace Peerchat {
 		if(reply.values.size() > 0 && reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			summary.topic_user_summary = reply.values[0].value._str;
 		}
-
 
 		summary.channel_id = channel_id;
 
@@ -169,6 +175,8 @@ namespace Peerchat {
 		summary.limit = 0;
 		summary.basic_mode_flags = 0;
 
+		
+
 		struct timeval curtime;
 		gettimeofday(&curtime, NULL);
 		summary.created_at = curtime;
@@ -186,7 +194,11 @@ namespace Peerchat {
 		Redis::Command(thread_data->mp_redis_connection, 0, "SET channelname_%s %d", name.c_str(), channel_id);
 		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channelname_%s %d", name.c_str(), CHANNEL_EXPIRE_TIME);
 
-		//load usermodes
+		
+		//load chanprops & usermodes
+		ApplyChanProps(summary);
+
+		summary = LookupChannelById(thread_data, channel_id);
 
 		LoadUsermodesForChannel(summary, thread_data);
 		return summary;
@@ -250,6 +262,20 @@ namespace Peerchat {
 		std::ostringstream message;
 		message << "\\type\\JOIN\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToString(true) << "\\includeSelf\\1";
 		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
+
+	
+
+		if(channel.entrymsg.length() > 0) {
+			message.str("");
+
+			const char *base64 = OS::BinToBase64Str((uint8_t *)channel.entrymsg.c_str(), channel.entrymsg.length());
+			std::string b64_string = base64;
+			free((void *)base64);
+
+
+			message << "\\type\\NOTICE\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << "SERVER!SERVER@0.0.0.0" << "\\includeSelf\\1\\message\\" << b64_string << "\\onlyVisibleTo\\" << user.id;
+			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
+		}
 	}
 
 	void RemoveUserFromChannel(TaskThreadData* thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target, bool silent) {

@@ -25,6 +25,7 @@ namespace Peerchat {
 	class TaskResponse;
 	class ChannelSummary;
 	class UsermodeRecord;
+	class ChanpropsRecord;
 
 	class Peer;
 	typedef void(Peer::*CommandCallback)(std::vector<std::string>);
@@ -164,6 +165,8 @@ namespace Peerchat {
 		static void OnDeleteUserMode(TaskResponse response_data, Peer* peer);
 		static void OnRecievedGameInfo(TaskResponse response_data, void *extra);
 		static void OnGetGameInfo_Crypt(TaskResponse response_data, Peer* peer);
+		static void OnLookupGlobalUsermode(TaskResponse response_data, Peer *peer);
+		static void OnListChanProps(TaskResponse response_data, Peer *peer);		
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -196,6 +199,9 @@ namespace Peerchat {
 		void handle_setusermode(std::vector<std::string> data_parser);
 		void handle_listusermodes(std::vector<std::string> data_parser);
 		void handle_delusermode(std::vector<std::string> data_parser);
+		void handle_setchanprops(std::vector<std::string> data_parser);
+		void handle_listchanprops(std::vector<std::string> data_parser);
+		void handle_delchanprops(std::vector<std::string> data_parser);
 		void handle_crypt(std::vector<std::string> data_parser);
 		void handle_adminme(std::vector<std::string> data_parser);
 
@@ -208,6 +214,7 @@ namespace Peerchat {
 		void send_quit(std::string reason);
 		static void getChannelSpecialInfo(std::ostringstream &ss, ChannelSummary summary);
 		static void SerializeUsermodeRecord(UsermodeRecord record, std::ostringstream& ss);
+		static void SerializeChanpropsRecord(ChanpropsRecord record, std::ostringstream& ss);
 
 		OS::GameData m_game;
 		

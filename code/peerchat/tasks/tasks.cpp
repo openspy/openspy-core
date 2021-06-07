@@ -32,6 +32,7 @@ namespace Peerchat {
 		ModeFlagMap local_user_mode_flag_map[] = {
 			{EUserMode_Quiet, 'q'},
 			{EUserMode_Invisible, 'i'},
+			{EUserMode_Gagged, 'g'}
 		};
 
 		ModeFlagMap* user_join_chan_flag_map = NULL;
@@ -80,6 +81,11 @@ namespace Peerchat {
 			
 			{EPeerchatRequestType_DeleteUserMode, Perform_DeleteUsermode},
 			{EPeerchatRequestType_LookupGameInfo, Perform_LookupGameInfo},
+			{EPeerchatRequestType_LookupGlobalUsermode, Perform_LookupGlobalUsermode},
+
+			//{EPeerchatRequestType_SetChanProps, NULL},
+			{EPeerchatRequestType_ListChanProps, Perform_ListChanprops},
+			//{EPeerchatRequestType_DeleteChanProps, NULL},
 			{NULL, NULL}
 		};
 
@@ -127,7 +133,6 @@ namespace Peerchat {
 				from = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
 			} else if(reader.HasKey("fromSummary")) {
 				from = UserSummary(reader.GetValue("fromSummary"));
-				printf("got summary: %s - %s\n", from.ToString().c_str(), reader.GetValue("fromSummary").c_str());
 			}
 
 			std::string channels = reader.GetValue("channels");

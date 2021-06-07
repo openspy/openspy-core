@@ -158,8 +158,6 @@ namespace Peerchat {
 			gs_crypt(buffer.GetHead(), buffer.bytesWritten(), &m_crypt_key_out);
 		}
 
-		
-
 		NetIOCommResp io_resp;
 		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
 		if (io_resp.disconnect_flag || io_resp.error_flag) {
@@ -205,6 +203,8 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("SETUSERMODE", true, 2, &Peer::handle_setusermode));
 		commands.push_back(CommandEntry("DELUSERMODE", true, 1, &Peer::handle_delusermode));
 		commands.push_back(CommandEntry("LISTUSERMODES", true, 1, &Peer::handle_listusermodes));
+
+		commands.push_back(CommandEntry("LISTCHANPROPS", true, 1, &Peer::handle_listchanprops));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name, std::string default_name) {
@@ -265,6 +265,7 @@ namespace Peerchat {
 			params.push_back("NAMES");
 			params.push_back(to);
 			handle_names(params);
+			send_topic(to);
 		}
 	}
 	void Peer::OnUserRegistered(TaskResponse response_data, Peer *peer)  {
@@ -302,7 +303,24 @@ namespace Peerchat {
 		s << "Your backend ID is " << response_data.summary.id;
 		peer->send_numeric(377, s.str());
 		s.str("");
-
+	}
+	//EPeerchatRequestType_LookupGlobalUsermode
+	void Peer::OnLookupGlobalUsermode(TaskResponse response_data, Peer *peer)  {
+		if(response_data.usermode.modeflags & EUserChannelFlag_Banned) {
+			peer->Delete(false, "KILLED - KLINE");
+			return;
+		}
+		if(response_data.usermode.modeflags & EUserChannelFlag_Gagged) {
+			peer->m_user_details.modeflags |= EUserMode_Gagged;
+		}
+		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(peer->GetDriver()->getServer()))->GetPeerchatTask();
+		PeerchatBackendRequest req;
+		req.type = EPeerchatRequestType_SetUserDetails;
+		req.peer = peer;
+		req.summary = peer->m_user_details;
+		req.peer->IncRef();
+		req.callback = OnUserRegistered;
+		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::OnUserMaybeRegistered() {
 		if(m_user_details.nick.length() == 0 || m_user_details.username.length() == 0 || m_sent_client_init) {
@@ -313,11 +331,11 @@ namespace Peerchat {
 
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
-		req.type = EPeerchatRequestType_SetUserDetails;
+		req.type = EPeerchatRequestType_LookupGlobalUsermode;
 		req.peer = this;
 		req.summary = m_user_details;
 		req.peer->IncRef();
-		req.callback = OnUserRegistered;
+		req.callback = OnLookupGlobalUsermode;
 		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::OnRecvDirectMsg(UserSummary from, std::string msg, std::string type) {

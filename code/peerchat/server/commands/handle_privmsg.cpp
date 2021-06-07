@@ -66,9 +66,15 @@ namespace Peerchat {
         scheduler->AddRequest(req.type, req); 
     }
     void Peer::handle_privmsg(std::vector<std::string> data_parser) {
+        if(m_user_details.modeflags & EUserMode_Gagged) {
+            return;
+        }
         handle_message_command("PRIVMSG", data_parser);
     }
     void Peer::handle_notice(std::vector<std::string> data_parser) {
+        if(m_user_details.modeflags & EUserMode_Gagged) {
+            return;
+        }
         handle_message_command("NOTICE", data_parser);
     }
     void Peer::handle_utm(std::vector<std::string> data_parser) {

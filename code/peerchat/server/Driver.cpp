@@ -72,7 +72,9 @@ namespace Peerchat {
 		int has_oper = p->GetOperFlags() & state->requiredOperFlags || state->requiredOperFlags == 0;
 		bool selfMatch = (state->includeSelf && state->from.user_id == p->GetBackendId()) || (state->from.user_id != p->GetBackendId());
 		if(in_channel && selfMatch && has_oper) {
-			p->send_message(state->type, state->message, state->from.userSummary.ToString(), state->channel.channel_name, state->target.userSummary.nick);
+			if(state->onlyVisibleTo == 0 || state->onlyVisibleTo == p->GetBackendId()) {
+				p->send_message(state->type, state->message, state->from.userSummary.ToString(), state->channel.channel_name, state->target.userSummary.nick);
+			}
 
 			if (state->type.compare("JOIN") == 0 && state->from.user_id == p->GetBackendId()) {
 				p->handle_channel_join_events(state->channel);
@@ -80,7 +82,7 @@ namespace Peerchat {
 		}
 		return true;
 	}
-	void Driver::OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf, int requiredChanUserModes, int requiredOperFlags) {
+	void Driver::OnChannelMessage(std::string type, ChannelUserSummary from, ChannelSummary channel, std::string message, ChannelUserSummary target, bool includeSelf, int requiredChanUserModes, int requiredOperFlags, int onlyVisibleTo) {
 		SendMessageIteratorState state;
 		state.type = type;
 		state.from = from;
@@ -90,6 +92,7 @@ namespace Peerchat {
 		state.includeSelf = includeSelf;
 		state.requiredChanUserModes = requiredChanUserModes;
 		state.requiredOperFlags = requiredOperFlags;
+		state.onlyVisibleTo = onlyVisibleTo;
 
 		mp_mutex->lock();
 		OS::LinkedListIterator<INetPeer*, SendMessageIteratorState*> iterator(mp_peers);
