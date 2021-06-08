@@ -5,7 +5,12 @@
 #include <string>
 #include <time.h>
 
+
 #define REDIS_MAX_RECONNECT_RECURSION_DEPTH 5
+
+namespace OS {
+	class CMutex;
+}
 
 namespace Redis {
 
@@ -43,6 +48,7 @@ namespace Redis {
 		bool runLoop;
 		char *connect_address;
 		int selectedDb;
+		OS::CMutex *mp_mutex;
 	} Connection;
 
 	typedef struct {

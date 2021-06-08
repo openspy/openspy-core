@@ -18,6 +18,7 @@ typedef int socklen_t;
 #include "Redis.h"
 
 #include <OS/OpenSpy.h>
+#include <OS/Thread.h>
 #define REDIS_BUFFSZ 1000000
 #define RECONNECT_SLEEP_TIME 2000
 namespace Redis {
@@ -61,6 +62,8 @@ namespace Redis {
 
 		ret->read_buff_alloc_sz = REDIS_BUFFSZ;
 		ret->read_buff = (char *)malloc(REDIS_BUFFSZ);
+
+		ret->mp_mutex = OS::CreateMutex();
 
 		ret->runLoop = false;
 
@@ -296,6 +299,7 @@ namespace Redis {
 		return total_len;
 	}
 	Response Command(Connection *conn, time_t sleepMS, const char *fmt, ...) {
+		conn->mp_mutex->lock();
 		Response resp;
 		va_list args;
 		va_start(args, fmt);
@@ -309,6 +313,7 @@ namespace Redis {
 		if (sleepMS != 0)
 			OS::Sleep((int)sleepMS);
 		int len = Recv(conn);
+		int diff = 0;
 		if (len <= 0) {
 			
 			OS::LogText(OS::ELogLevel_Critical, "redis recv error: %d", len);
@@ -323,19 +328,21 @@ namespace Redis {
 				conn->command_recursion_depth++;
 				resp = Command(conn, sleepMS, "%s", cmd.c_str());
 				conn->command_recursion_depth = 0;
-				return resp;
+				goto exit_early;
 			}
 			else {
 				conn->command_recursion_depth = 0;
 			}
-			return resp;
+			goto exit_early;
 		}
 		else {
 			conn->command_recursion_depth = 0;
 		}
 
-		int diff = 0;
+		
 		parse_response(conn->read_buff, diff, &resp, NULL);
+		exit_early:
+		conn->mp_mutex->unlock();
 		return resp;
 	}
 	/*void LoopingCommand(Connection *conn, time_t sleepMS, void(*mpFunc)(Connection *, Response, void *), void *extra, const char *fmt, ...) {
@@ -375,6 +382,7 @@ namespace Redis {
 			close(connection->sd);
 
 		free((void *)connection->connect_address);
+		delete connection->mp_mutex;
 		free((void *)connection);
 	}
 	void CancelLooping(Connection *connection) {
