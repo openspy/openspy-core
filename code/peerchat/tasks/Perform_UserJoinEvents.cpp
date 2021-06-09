@@ -7,6 +7,12 @@ namespace Peerchat {
         TaskResponse response;
 
         int initial_flags = request.channel_modify.set_mode_flags;
+        if(request.peer->GetOperFlags() & OPERPRIVS_GLOBALOWNER) {
+            initial_flags |= EUserChannelFlag_Owner;
+        }
+        if(request.peer->GetOperFlags() & OPERPRIVS_GETVOICE) {
+            initial_flags |= EUserChannelFlag_Voice;
+        }
         if (initial_flags & EUserChannelFlag_Invisible) {
             std::ostringstream mq_message;
             std::string message = "INVISIBLE USER " + request.peer->GetUserDetails().nick + " JOINED CHANNEL";

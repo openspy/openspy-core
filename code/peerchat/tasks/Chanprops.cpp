@@ -13,27 +13,27 @@ namespace Peerchat {
 		}
 
         subitem = json_object_get(item, "channelmask");
-		if (subitem != NULL) {
+		if (subitem != NULL && !json_is_null(subitem)) {
 			record.channel_mask = json_string_value(subitem);
 		}
 
         subitem = json_object_get(item, "password");
-		if (subitem != NULL) {
+		if (subitem != NULL && !json_is_null(subitem)) {
 			record.password = json_string_value(subitem);
 		}
 
         subitem = json_object_get(item, "entrymsg");
-		if (subitem != NULL) {
+		if (subitem != NULL && !json_is_null(subitem)) {
 			record.entrymsg = json_string_value(subitem);
 		}
 
         subitem = json_object_get(item, "comment");
-		if (subitem != NULL) {
+		if (subitem != NULL && !json_is_null(subitem)) {
 			record.comment = json_string_value(subitem);
 		}
 
         subitem = json_object_get(item, "groupname");
-		if (subitem != NULL) {
+		if (subitem != NULL && !json_is_null(subitem)) {
 			record.groupname = json_string_value(subitem);
 		}
 
@@ -49,24 +49,24 @@ namespace Peerchat {
 
 		subitem = json_object_get(item, "onlyOwner");
 		if (subitem != NULL) {
-			record.modeflags = json_boolean_value(subitem);
+			record.onlyOwner = json_boolean_value(subitem);
 		}
 
         subitem = json_object_get(item, "topic");
-		if (subitem != NULL) {
+		if (subitem != NULL && !json_is_null(subitem)) {
 			record.topic = json_string_value(subitem);
 		}
 
         subitem = json_object_get(item, "setByNick");
-		if (subitem != NULL) {
+		if (subitem != NULL && !json_is_null(subitem)) {
 			record.setByNick = json_string_value(subitem);
 		}
         subitem = json_object_get(item, "setByHost");
-		if (subitem != NULL) {
+		if (subitem != NULL && !json_is_null(subitem)) {
 			record.setByHost = json_string_value(subitem);
 		}
         subitem = json_object_get(item, "setByPid");
-		if (subitem != NULL) {
+		if (subitem != NULL && !json_is_null(subitem)) {
 			record.setByPid = json_integer_value(subitem);
 		}
 

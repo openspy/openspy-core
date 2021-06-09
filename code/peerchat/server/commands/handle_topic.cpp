@@ -16,9 +16,14 @@
 namespace Peerchat {
     void Peer::OnTopic_FetchChannelInfo(TaskResponse response_data, Peer *peer) {
 		std::ostringstream s;
-		peer->send_numeric(332, response_data.channel_summary.topic, false, response_data.channel_summary.channel_name);
-		s << response_data.channel_summary.topic_user_summary << " " << response_data.channel_summary.topic_time.tv_sec;
-		peer->send_numeric(333, s.str(), true, response_data.channel_summary.channel_name);
+		if(response_data.channel_summary.topic_time.tv_sec == 0) {
+			peer->send_numeric(331, "No topic set", false, response_data.channel_summary.channel_name);
+		} else {
+			peer->send_numeric(332, response_data.channel_summary.topic, false, response_data.channel_summary.channel_name);
+			s << response_data.channel_summary.topic_user_summary << " " << response_data.channel_summary.topic_time.tv_sec;
+			peer->send_numeric(333, s.str(), true, response_data.channel_summary.channel_name);			
+		}
+
     }
 	void Peer::send_topic(std::string channel) {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();

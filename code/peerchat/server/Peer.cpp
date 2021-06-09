@@ -172,7 +172,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("USER", false, 4, &Peer::handle_user));
 		commands.push_back(CommandEntry("PING", false, 0, &Peer::handle_ping));
 		commands.push_back(CommandEntry("OPER", false, 3, &Peer::handle_oper));
-		commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
+		
 		commands.push_back(CommandEntry("LOGIN", false, 3, &Peer::handle_login));
 		commands.push_back(CommandEntry("PRIVMSG", true, 2, &Peer::handle_privmsg));
 		commands.push_back(CommandEntry("NOTICE", true, 2, &Peer::handle_notice));
@@ -200,11 +200,17 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("SETGROUP", true, 2, &Peer::handle_setgroup));
 
 
+
+		//oper override
+		commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
+		//global oper cmds
 		commands.push_back(CommandEntry("SETUSERMODE", true, 2, &Peer::handle_setusermode));
 		commands.push_back(CommandEntry("DELUSERMODE", true, 1, &Peer::handle_delusermode));
 		commands.push_back(CommandEntry("LISTUSERMODES", true, 1, &Peer::handle_listusermodes));
 
 		commands.push_back(CommandEntry("LISTCHANPROPS", true, 1, &Peer::handle_listchanprops));
+		commands.push_back(CommandEntry("SETCHANPROPS", true, 1, &Peer::handle_setchanprops));
+		commands.push_back(CommandEntry("DELCHANPROPS", true, 1, &Peer::handle_delchanprops));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name, std::string default_name) {

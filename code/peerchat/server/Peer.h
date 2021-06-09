@@ -166,7 +166,9 @@ namespace Peerchat {
 		static void OnRecievedGameInfo(TaskResponse response_data, void *extra);
 		static void OnGetGameInfo_Crypt(TaskResponse response_data, Peer* peer);
 		static void OnLookupGlobalUsermode(TaskResponse response_data, Peer *peer);
-		static void OnListChanProps(TaskResponse response_data, Peer *peer);		
+		static void OnListChanProps(TaskResponse response_data, Peer *peer);
+		static void OnSetChanProps(TaskResponse response_data, Peer* peer);
+		static void OnDelChanProps(TaskResponse response_data, Peer* peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);

@@ -104,6 +104,5 @@ namespace Peerchat {
 		req.peer->IncRef();
 		req.callback = OnListUserModes;
 		scheduler->AddRequest(req.type, req);
-
     }
 }

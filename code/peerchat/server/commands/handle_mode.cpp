@@ -32,6 +32,21 @@ namespace Peerchat {
 					s << channel_mode_flag_map[i].character;
 				}
 			}
+			if(response_data.channel_summary.password.length() > 0) {
+				s <<  "k";
+			}
+
+			if(response_data.channel_summary.limit > 0) {
+				s <<  "l";
+			}
+
+			if(response_data.channel_summary.password.length() > 0) {
+				s << " " << response_data.channel_summary.password;
+			}
+
+			if(response_data.channel_summary.limit > 0) {
+				s << " " << response_data.channel_summary.limit;
+			}
 			peer->send_numeric(324, s.str(), true);
 
 			s.str("");

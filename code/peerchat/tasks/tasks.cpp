@@ -83,9 +83,9 @@ namespace Peerchat {
 			{EPeerchatRequestType_LookupGameInfo, Perform_LookupGameInfo},
 			{EPeerchatRequestType_LookupGlobalUsermode, Perform_LookupGlobalUsermode},
 
-			//{EPeerchatRequestType_SetChanProps, NULL},
+			{EPeerchatRequestType_SetChanProps, Perform_SetChanprops},
 			{EPeerchatRequestType_ListChanProps, Perform_ListChanprops},
-			//{EPeerchatRequestType_DeleteChanProps, NULL},
+			{EPeerchatRequestType_DeleteChanProps, Perform_DelChanprops},
 			{NULL, NULL}
 		};
 

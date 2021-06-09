@@ -171,8 +171,9 @@ namespace Peerchat {
 		ChanpropsRecord() {
 			id = 0;
 			onlyOwner = false;
-				memset(&expires_at, 0, sizeof(expires_at));
-				memset(&set_at, 0, sizeof(set_at));
+			kickExisting = false;
+			memset(&expires_at, 0, sizeof(expires_at));
+			memset(&set_at, 0, sizeof(set_at));
 		}
 		int id;
 		std::string channel_mask;
@@ -189,6 +190,7 @@ namespace Peerchat {
 		std::string setByNick;
 		int setByPid;
 		std::string setByHost;
+		bool kickExisting;
 	};
   class TaskResponse {
 		public:
@@ -290,6 +292,8 @@ namespace Peerchat {
 	bool Perform_LookupGlobalUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data);
 
 	bool Perform_ListChanprops(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_SetChanprops(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_DelChanprops(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
 	bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message);
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message);

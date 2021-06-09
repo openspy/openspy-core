@@ -7,7 +7,6 @@
 namespace Peerchat {
 
 	bool Perform_ListChanprops(PeerchatBackendRequest request, TaskThreadData* thread_data) {
-        printf("list chanprops\n");
 		json_t* send_json = json_object();
 		json_object_set_new(send_json, "channelmask", json_string(request.chanpropsRecord.channel_mask.c_str()));
 
