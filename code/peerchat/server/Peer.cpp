@@ -21,6 +21,7 @@ namespace Peerchat {
 		m_oper_flags = 0;
 		mp_mutex = OS::CreateMutex();
 		m_using_encryption = false;
+		m_flood_weight = 0;
 		gettimeofday(&m_last_recv, NULL);
 		RegisterCommands();
 	}
@@ -104,9 +105,15 @@ namespace Peerchat {
 						if (entry.login_required) {
 							if(m_user_details.id == 0) break;
 						}
+						if(entry.required_operflags != 0) {
+							if(!(GetOperFlags() & entry.required_operflags)) {
+								break;
+							}
+						}
 						command_found = true;
 
 						if (((int)command_items.size()) >= entry.minimum_args+1) {
+							m_flood_weight += entry.weight;
 							(*this.*entry.callback)(command_items);
 						}
 						else {
@@ -127,6 +134,15 @@ namespace Peerchat {
 
 	end:
 		//send_ping();
+
+		if(!(GetOperFlags() & OPERPRIVS_FLOODEXCEMPT)) {
+			if(m_flood_weight >= MAX_FLOOD_WEIGHT) {
+				Delete(false, "Excess flood");
+				return;
+			}
+		}
+
+		m_flood_weight -= FLOOD_DECR_PER_TICK;
 
 		//check for timeout
 		struct timeval current_time;
@@ -168,49 +184,49 @@ namespace Peerchat {
 	void Peer::RegisterCommands() {
 		std::vector<CommandEntry> commands;
 		commands.push_back(CommandEntry("CRYPT", false, 3, &Peer::handle_crypt));
-		commands.push_back(CommandEntry("NICK", false, 1 ,&Peer::handle_nick));
+		commands.push_back(CommandEntry("NICK", false, 1 ,&Peer::handle_nick, 0, 150));
 		commands.push_back(CommandEntry("USER", false, 4, &Peer::handle_user));
 		commands.push_back(CommandEntry("PING", false, 0, &Peer::handle_ping));
-		commands.push_back(CommandEntry("OPER", false, 3, &Peer::handle_oper));
+		commands.push_back(CommandEntry("OPER", false, 3, &Peer::handle_oper,0, 250));
 		
-		commands.push_back(CommandEntry("LOGIN", false, 3, &Peer::handle_login));
+		commands.push_back(CommandEntry("LOGIN", false, 3, &Peer::handle_login, 0, 250));
 		commands.push_back(CommandEntry("PRIVMSG", true, 2, &Peer::handle_privmsg));
 		commands.push_back(CommandEntry("NOTICE", true, 2, &Peer::handle_notice));
 		commands.push_back(CommandEntry("UTM", true, 2, &Peer::handle_utm));
 		commands.push_back(CommandEntry("ATM", true, 2, &Peer::handle_atm));
-		commands.push_back(CommandEntry("JOIN", true, 1, &Peer::handle_join));
+		commands.push_back(CommandEntry("JOIN", true, 1, &Peer::handle_join, 0, 100));
 		commands.push_back(CommandEntry("PART", true, 1, &Peer::handle_part));
 		commands.push_back(CommandEntry("QUIT", false, 1, &Peer::handle_quit));
-		commands.push_back(CommandEntry("MODE", true, 1, &Peer::handle_mode));
+		commands.push_back(CommandEntry("MODE", true, 1, &Peer::handle_mode, 0, 100));
 		commands.push_back(CommandEntry("NAMES", true, 1, &Peer::handle_names));
 		commands.push_back(CommandEntry("USRIP", false, 0, &Peer::handle_userhost));
 		commands.push_back(CommandEntry("USERHOST", false, 0, &Peer::handle_userhost));
-		commands.push_back(CommandEntry("TOPIC", true, 1, &Peer::handle_topic));
-		commands.push_back(CommandEntry("LIST", true, 0, &Peer::handle_list));
-		commands.push_back(CommandEntry("LISTLIMIT", true, 2, &Peer::handle_listlimit));
-		commands.push_back(CommandEntry("WHOIS", true, 1, &Peer::handle_whois));
+		commands.push_back(CommandEntry("TOPIC", true, 1, &Peer::handle_topic, 0, 100));
+		commands.push_back(CommandEntry("LIST", true, 0, &Peer::handle_list, 0, 300));
+		commands.push_back(CommandEntry("LISTLIMIT", true, 2, &Peer::handle_listlimit, 0, 300));
+		commands.push_back(CommandEntry("WHOIS", true, 1, &Peer::handle_whois, 0, 100));
 		commands.push_back(CommandEntry("WHO", true, 1, &Peer::handle_who));
-		commands.push_back(CommandEntry("SETCKEY", true, 3, &Peer::handle_setckey));
-		commands.push_back(CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey));
-		commands.push_back(CommandEntry("SETCHANKEY", true, 4, &Peer::handle_setchankey));
-		commands.push_back(CommandEntry("GETCHANKEY", true, 4, &Peer::handle_getchankey));
-		commands.push_back(CommandEntry("SETKEY", true, 4, &Peer::handle_setkey));
-		commands.push_back(CommandEntry("GETKEY", true, 4, &Peer::handle_getkey));
-		commands.push_back(CommandEntry("KICK", true, 2, &Peer::handle_kick));
-		commands.push_back(CommandEntry("SETGROUP", true, 2, &Peer::handle_setgroup));
+		commands.push_back(CommandEntry("SETCKEY", true, 3, &Peer::handle_setckey, 0, 100));
+		commands.push_back(CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey, 0, 100));
+		commands.push_back(CommandEntry("SETCHANKEY", true, 4, &Peer::handle_setchankey, 0, 100));
+		commands.push_back(CommandEntry("GETCHANKEY", true, 4, &Peer::handle_getchankey, 0, 100));
+		commands.push_back(CommandEntry("SETKEY", true, 4, &Peer::handle_setkey, 0, 100));
+		commands.push_back(CommandEntry("GETKEY", true, 4, &Peer::handle_getkey, 0, 100));
+		commands.push_back(CommandEntry("KICK", true, 2, &Peer::handle_kick, 0, 200));
+		commands.push_back(CommandEntry("SETGROUP", true, 2, &Peer::handle_setgroup, 0, 100));
 
 
 
 		//oper override
 		commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
 		//global oper cmds
-		commands.push_back(CommandEntry("SETUSERMODE", true, 2, &Peer::handle_setusermode));
-		commands.push_back(CommandEntry("DELUSERMODE", true, 1, &Peer::handle_delusermode));
-		commands.push_back(CommandEntry("LISTUSERMODES", true, 1, &Peer::handle_listusermodes));
+		commands.push_back(CommandEntry("SETUSERMODE", true, 2, &Peer::handle_setusermode, OPERPRIVS_GLOBALOWNER));
+		commands.push_back(CommandEntry("DELUSERMODE", true, 1, &Peer::handle_delusermode, OPERPRIVS_GLOBALOWNER));
+		commands.push_back(CommandEntry("LISTUSERMODES", true, 1, &Peer::handle_listusermodes, OPERPRIVS_GLOBALOWNER));
 
-		commands.push_back(CommandEntry("LISTCHANPROPS", true, 1, &Peer::handle_listchanprops));
-		commands.push_back(CommandEntry("SETCHANPROPS", true, 1, &Peer::handle_setchanprops));
-		commands.push_back(CommandEntry("DELCHANPROPS", true, 1, &Peer::handle_delchanprops));
+		commands.push_back(CommandEntry("LISTCHANPROPS", true, 1, &Peer::handle_listchanprops, OPERPRIVS_GLOBALOWNER));
+		commands.push_back(CommandEntry("SETCHANPROPS", true, 1, &Peer::handle_setchanprops, OPERPRIVS_GLOBALOWNER));
+		commands.push_back(CommandEntry("DELCHANPROPS", true, 1, &Peer::handle_delchanprops, OPERPRIVS_GLOBALOWNER));
 		m_commands = commands;
 	}
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name, std::string default_name) {

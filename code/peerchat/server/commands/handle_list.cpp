@@ -41,7 +41,7 @@ namespace Peerchat {
 				
 			}
 			ss << summary.channel_name << " " << summary.users.size() << " :";
-			if (response_data.channel_summary.channel_id == -1) { //special info
+			if (response_data.summary.id == 1) { //special info
 				getChannelSpecialInfo(ss, summary);
 			}
 			else {
@@ -56,22 +56,23 @@ namespace Peerchat {
 	void Peer::handle_list(std::vector<std::string> data_parser) {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
-		req.channel_modify.update_topic = false;
-		req.channel_summary.channel_id = 0;
-		req.channel_summary.limit = 0;
 
 		std::string target = "*";
-		if (data_parser.size() > 1) {
-			target = data_parser.at(1);
-			req.channel_summary.channel_name = target;
+		int command_index = 1;
 
-			if (target.size() > 0 && target[0] == 'k') {
-				req.channel_summary.channel_id = -1;
+		bool got_filtermask = false, got_keydump = false;
+		do {
+			std::string s = data_parser.at(command_index);
+			if(s.compare("k") == 0 && command_index+1 == data_parser.size()) {
+				got_keydump = true;
+			} else if(!got_filtermask) {
+				target = s;
+				got_filtermask = true;
 			}
-			else if (data_parser.size() > 2) {
-				req.channel_summary.channel_id = -1;
-			}
-		}
+		} while(++command_index < data_parser.size());
+
+		req.channel_summary.channel_id = got_keydump;
+		req.channel_summary.channel_name = target;
 
 		req.type = EPeerchatRequestType_ListChannels;
 		req.peer = this;
@@ -80,7 +81,6 @@ namespace Peerchat {
 		req.peer->IncRef();
 		req.callback = OnListChannels;
 		scheduler->AddRequest(req.type, req);
-
 	}
 	void Peer::handle_listlimit(std::vector<std::string> data_parser) {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();

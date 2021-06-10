@@ -16,7 +16,6 @@
 
 namespace Peerchat {
 	void Peer::OnSetGroup(TaskResponse response_data, Peer* peer) {
-		printf("setgroup\n");
 	}
 
     void Peer::handle_setgroup(std::vector<std::string> data_parser) {
@@ -24,7 +23,7 @@ namespace Peerchat {
         std::string group  = data_parser.at(2);
 
         std::ostringstream s;
-        s << "\\GROUP\\" << group;
+        s << "\\groupname\\" << group;
         std::string kv_string = s.str();
 
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();

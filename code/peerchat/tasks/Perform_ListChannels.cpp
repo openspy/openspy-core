@@ -39,12 +39,10 @@ namespace Peerchat {
 					summary = GetChannelSummaryByName(thread_data, key, false);
 
 					if (summary.channel_id != 0) {
-						
-
 						Redis::Response reply;
 						Redis::Value v;
 
-						reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d custkey_GROUP", summary.channel_id);
+						reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d custkey_groupname", summary.channel_id);
 						if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
 							continue;
 						}

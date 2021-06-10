@@ -18,6 +18,9 @@
 #include "chatCrypt.h"
 
 #define PEERCHAT_PING_TIME 300
+#define MAX_FLOOD_WEIGHT 600
+#define FLOOD_DECR_PER_TICK 25
+#define WARNING_FLOOD_WEIGHT_THRESHOLD 450
 
 namespace Peerchat {
 	class Driver;
@@ -31,15 +34,19 @@ namespace Peerchat {
 	typedef void(Peer::*CommandCallback)(std::vector<std::string>);
 	class CommandEntry {
 	public:
-		CommandEntry(std::string name, bool login_required, int minimum_args, CommandCallback callback) {
+		CommandEntry(std::string name, bool login_required, int minimum_args, CommandCallback callback, int required_operflags = 0, int weight = 50) {
 			this->name = name;
 			this->login_required = login_required;
 			this->callback = callback;
 			this->minimum_args = minimum_args;
+			this->required_operflags = required_operflags;
+			this->weight = weight;
 		}
 		std::string name;
 		bool login_required;
 		int minimum_args;
+		int required_operflags;
+		int weight;
 		CommandCallback callback;
 	};
 
@@ -240,6 +247,8 @@ namespace Peerchat {
 		bool m_using_encryption;
 		gs_crypt_key m_crypt_key_in;
 		gs_crypt_key m_crypt_key_out;
+
+		int m_flood_weight;
 	};
 }
 #endif //_GPPEER_H
