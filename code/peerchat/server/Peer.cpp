@@ -142,7 +142,12 @@ namespace Peerchat {
 			}
 		}
 
-		m_flood_weight -= FLOOD_DECR_PER_TICK;
+		if(m_flood_weight > 0) {
+			m_flood_weight -= FLOOD_DECR_PER_TICK;
+		}
+		if(m_flood_weight < 0)
+			m_flood_weight = 0;
+		
 
 		//check for timeout
 		struct timeval current_time;
