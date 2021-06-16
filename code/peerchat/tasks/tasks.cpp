@@ -46,7 +46,8 @@ namespace Peerchat {
 			{EUserChannelFlag_HalfOp, 'h'},
 			{EUserChannelFlag_Op, 'o'},
 			{EUserChannelFlag_Owner, 'O'},
-			{EUserChannelFlag_Banned, 'b'}
+			{EUserChannelFlag_Banned, 'b'},
+			{EUserChannelFlag_GameidPermitted, 'p'}
 		};
 
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
@@ -86,6 +87,8 @@ namespace Peerchat {
 			{EPeerchatRequestType_SetChanProps, Perform_SetChanprops},
 			{EPeerchatRequestType_ListChanProps, Perform_ListChanprops},
 			{EPeerchatRequestType_DeleteChanProps, Perform_DelChanprops},
+
+			{EPeerchatRequestType_RemoteKill_ByName, Perform_RemoteKill_ByName},
 			{NULL, NULL}
 		};
 
@@ -193,6 +196,12 @@ namespace Peerchat {
 			} else if (reader.GetValue("type").compare("UPDATE_USER_CHANMODEFLAGS") == 0) {
 				mode_flags = reader.GetValueInt("modeflags");
 				server->OnUpdateChanUsermode(summary.channel_id, user_summary, mode_flags);
+			} else if (reader.GetValue("type").compare("REMOTE_KILL") == 0) {
+				
+				OS::Base64StrToBin((const char*)reader.GetValue("reason").c_str(), &data_out, data_len);
+				std::string kill_reason = (const char *)data_out;
+				free((void *)data_out);
+				server->OnKillUser(user_summary, kill_reason);
 			}
 			return false;
 		}

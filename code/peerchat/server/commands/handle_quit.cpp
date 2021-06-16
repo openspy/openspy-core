@@ -38,6 +38,11 @@ namespace Peerchat {
 		req.callback = NULL;
 		
         scheduler->AddRequest(req.type, req);
+
+
+		std::ostringstream s;
+		s << "ERROR: Closing Link: " <<  ((Peerchat::Server *)GetDriver()->getServer())->getServerName() << " (" << reason << ")" << std::endl;
+		SendPacket(s.str());
     }
     void Peer::handle_quit(std::vector<std::string> data_parser) {
         std::string reason = "";

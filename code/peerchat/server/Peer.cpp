@@ -114,6 +114,9 @@ namespace Peerchat {
 
 						if (((int)command_items.size()) >= entry.minimum_args+1) {
 							m_flood_weight += entry.weight;
+							if(m_flood_weight >= WARNING_FLOOD_WEIGHT_THRESHOLD) {
+								send_flood_warning();
+							}
 							(*this.*entry.callback)(command_items);
 						}
 						else {
@@ -225,6 +228,8 @@ namespace Peerchat {
 		//oper override
 		commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
 		//global oper cmds
+		commands.push_back(CommandEntry("KILL", true, 2, &Peer::handle_kill, OPERPRIVS_KILL));
+
 		commands.push_back(CommandEntry("SETUSERMODE", true, 2, &Peer::handle_setusermode, OPERPRIVS_GLOBALOWNER));
 		commands.push_back(CommandEntry("DELUSERMODE", true, 1, &Peer::handle_delusermode, OPERPRIVS_GLOBALOWNER));
 		commands.push_back(CommandEntry("LISTUSERMODES", true, 1, &Peer::handle_listusermodes, OPERPRIVS_GLOBALOWNER));
@@ -396,5 +401,13 @@ namespace Peerchat {
 		}
 		mp_mutex->unlock();
 		return channels;
+	}
+	void Peer::send_flood_warning() {
+		std::ostringstream ss;
+		ss << "Excess Flood: " << m_flood_weight;
+		send_message("PRIVMSG", ss.str(), "SERVER!SERVER@*", m_user_details.nick);
+	}
+	void Peer::OnRemoteDisconnect(std::string reason) {
+		Delete(false, reason);
 	}
 }

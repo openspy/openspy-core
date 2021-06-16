@@ -142,6 +142,8 @@ namespace Peerchat {
 		///
 		void send_no_such_target_error(std::string channel);
 		///
+
+		void OnRemoteDisconnect(std::string reason);
 	private:
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void* extra, INetPeer* peer);
@@ -176,6 +178,7 @@ namespace Peerchat {
 		static void OnListChanProps(TaskResponse response_data, Peer *peer);
 		static void OnSetChanProps(TaskResponse response_data, Peer* peer);
 		static void OnDelChanProps(TaskResponse response_data, Peer* peer);
+		static void OnKillUser(TaskResponse response_data, Peer* peer);		
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -213,11 +216,14 @@ namespace Peerchat {
 		void handle_delchanprops(std::vector<std::string> data_parser);
 		void handle_crypt(std::vector<std::string> data_parser);
 		void handle_adminme(std::vector<std::string> data_parser);
+		void handle_kill(std::vector<std::string> data_parser);		
 
 		void handle_channel_mode_command(std::vector<std::string> data_parser);
 		void handle_user_mode_command(std::vector<std::string> data_parser);
 
 		void send_topic(std::string channel);
+
+		void send_flood_warning();
 
 		void handle_message_command(std::string type, std::vector<std::string> data_parser);
 		void send_quit(std::string reason);

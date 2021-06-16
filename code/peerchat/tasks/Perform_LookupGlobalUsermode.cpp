@@ -8,7 +8,7 @@ namespace Peerchat {
 	bool Perform_LookupGlobalUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data) {
 
 		json_t* send_json = json_object();
-		json_object_set_new(send_json, "channelName", json_string("X"));
+		json_object_set_new(send_json, "channelName", json_string("x"));
 
         json_t *user_summary = json_object();
         json_object_set_new(user_summary, "hostname", json_string(request.summary.address.ToString(true).c_str()));

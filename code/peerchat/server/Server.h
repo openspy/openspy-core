@@ -32,6 +32,8 @@ namespace Peerchat {
 
 		void OnUpdateChanUsermode(int channel_id, UserSummary user_summary, int new_modeflags);
 
+		void OnKillUser(UserSummary user_summary, std::string reason);
+
 	private:
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *mp_auth_tasks;
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *mp_user_tasks;
