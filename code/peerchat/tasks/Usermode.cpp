@@ -175,8 +175,11 @@ namespace Peerchat {
 			goto end_error;
 		}
 		v = reply.values.front();
+		record.gameid = -1;
+		record.has_gameid = false;
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			record.gameid = atoi(OS::strip_quotes(v.value._str).c_str());
+			record.has_gameid = true;
 		}
 
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s expiresAt", cacheKey.c_str());
@@ -241,15 +244,15 @@ namespace Peerchat {
 			return true;
 		}
 
-		if(usermode.hostmask.length() > 0 && match2(usermode.hostmask.c_str(), summary.hostname.c_str())) {
+		if(usermode.hostmask.length() > 0 && (stricmp(usermode.hostmask.c_str(), summary.hostname.c_str()) != 0 || match(usermode.hostmask.c_str(), summary.hostname.c_str()))) {
 			return true;
 		}
 
-		if(usermode.machineid.length() > 0 && match2(usermode.machineid.c_str(), summary.realname.c_str())) {
+		if(usermode.machineid.length() > 0 && (stricmp(usermode.machineid.c_str(), summary.realname.c_str()) != 0 || match(usermode.machineid.c_str(), summary.realname.c_str()))) {
 			return true;
 		}
 
-		if(usermode.gameid != -1 && usermode.gameid == summary.gameid) {
+		if(usermode.has_gameid && usermode.gameid == summary.gameid) {
 			return true;
 		}
 		return false;

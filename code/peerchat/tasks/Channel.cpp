@@ -299,7 +299,6 @@ namespace Peerchat {
 
 		///XXX: delete channel if empty & not "stay open" mode
 		int count = CountChannelUsers(thread_data, channel.channel_id);
-		printf("list count: %d\n", count);
 		if(count == 0) {
 			DeleteChannelById(thread_data, channel.channel_id);
 		}
