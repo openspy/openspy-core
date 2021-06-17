@@ -54,7 +54,7 @@ namespace Peerchat {
 			}
 			Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", request.channel_summary.channel_id, summary.id, modeflags);
 
-			message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\to\\" << request.channel_summary.channel_name << "\\user_id\\" << summary.id << "\\modeflags\\" << modeflags;
+			message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\channel_id\\" << request.channel_summary.channel_id << "\\user_id\\" << summary.id << "\\modeflags\\" << modeflags;
 			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());
 			message.str("");
 

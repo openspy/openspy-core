@@ -16,7 +16,7 @@
 
 namespace Peerchat {
 	void Peer::OnSetCKey(TaskResponse response_data, Peer* peer) {
-		printf("setckey\n");
+		
 	}
 
     void Peer::handle_setckey(std::vector<std::string> data_parser) {

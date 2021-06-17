@@ -103,7 +103,15 @@ namespace Peerchat {
 			};
 	};
 
-
+	class UserAddressVisibiltyInfo {
+		public:
+			UserAddressVisibiltyInfo(int channel_id, int user_id) {
+				this.channel_id = channel_id;
+				this.user_id = user_id;
+			}
+			int channel_id;
+			int user_id;
+	}
 
 	class Peer : public INetPeer {
 	public:
@@ -133,7 +141,7 @@ namespace Peerchat {
 		int GetBackendId() { return m_user_details.id; };
 
 		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "", bool append_name = true, std::string default_name = "*");
-		void send_message(std::string messageType, std::string messageContent, std::string from = "", std::string to = "", std::string target = "");
+		void send_message(std::string messageType, std::string messageContent, UserSummary from = UserSummary(), std::string to = "", std::string target = "");
 		void handle_channel_join_events(ChannelSummary channel);
 
 		int GetChannelFlags(int channel_id);

@@ -17,7 +17,7 @@
 namespace Peerchat {
 	void Peer::OnSetUserMode(TaskResponse response_data, Peer* peer) {
 		if (response_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
-			((Peer*)peer)->send_message("PRIVMSG", "Failed to set usermode", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+			((Peer*)peer)->send_message("PRIVMSG", "Failed to set usermode", *server_userSummary, ((Peer*)peer)->m_user_details.nick);
 			return;
 		}
 
@@ -25,10 +25,10 @@ namespace Peerchat {
 		ss << "SETUSERMODE ";
 		SerializeUsermodeRecord(response_data.usermode, ss);
 
-		((Peer*)peer)->send_message("PRIVMSG", ss.str(), "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+		((Peer*)peer)->send_message("PRIVMSG", ss.str(), *server_userSummary, ((Peer*)peer)->m_user_details.nick);
 
 		if (response_data.is_end) {
-			((Peer*)peer)->send_message("PRIVMSG", "SETUSERMODE \\final\\1", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+			((Peer*)peer)->send_message("PRIVMSG", "SETUSERMODE \\final\\1", *server_userSummary, ((Peer*)peer)->m_user_details.nick);
 		}
 	}
 

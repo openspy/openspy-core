@@ -73,7 +73,7 @@ namespace Peerchat {
 		bool selfMatch = (state->includeSelf && state->from.user_id == p->GetBackendId()) || (state->from.user_id != p->GetBackendId());
 		if(in_channel && selfMatch && has_oper) {
 			if(state->onlyVisibleTo == 0 || state->onlyVisibleTo == p->GetBackendId()) {
-				p->send_message(state->type, state->message, state->from.userSummary.ToString(), state->channel.channel_name, state->target.userSummary.nick);
+				p->send_message(state->type, state->message, state->from.userSummary, state->channel.channel_name, state->target.userSummary.nick);
 			}
 
 			if (state->type.compare("JOIN") == 0 && state->from.user_id == p->GetBackendId()) {

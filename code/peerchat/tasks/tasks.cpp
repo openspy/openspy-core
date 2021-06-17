@@ -11,6 +11,8 @@ namespace Peerchat {
 		const char* peerchat_key_updates_routingkey = "peerchat.keyupdate-messages";
 		const char* peerchat_broadcast_routingkey = "peerchat.client-broadcasts";
 
+		UserSummary* server_userSummary = NULL;
+
 		ModeFlagMap* channel_mode_flag_map = NULL;
 		int num_channel_mode_flags = 0;
 		ModeFlagMap local_channel_mode_flag_map[] = {
@@ -100,6 +102,12 @@ namespace Peerchat {
 		};
 
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server) {
+			server_userSummary = new UserSummary();
+			server_userSummary->nick = "SERVER";
+			server_userSummary->username = "SERVER";
+			server_userSummary->hostname = "Matrix";
+			server_userSummary->id = -1;
+
 			channel_mode_flag_map = (ModeFlagMap*)&local_channel_mode_flag_map;
 			num_channel_mode_flags = sizeof(local_channel_mode_flag_map) / sizeof(ModeFlagMap);
 
@@ -180,10 +188,14 @@ namespace Peerchat {
 			free((void*)data_out);
 			OS::KVReader keys = send_message;
 			
-			ChannelSummary summary = GetChannelSummaryByName(thread_data, reader.GetValue("to"), false);
+			ChannelSummary summary;
+				
 			UserSummary user_summary;
 			int mode_flags;
 
+			if(reader.HasKey("channel_id")) {
+				summary = LookupChannelById(thread_data, reader.GetValueInt("channel_id"));
+			}
 
 			if(reader.HasKey("user_id")) {
 				user_summary = LookupUserById(thread_data, reader.GetValueInt("user_id"));

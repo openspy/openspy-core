@@ -18,7 +18,7 @@ namespace Peerchat {
 	void Peer::OnSetChanProps(TaskResponse response_data, Peer* peer) {
 
         if (response_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
-            ((Peer*)peer)->send_message("PRIVMSG", "Failed to set chanprops", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+            ((Peer*)peer)->send_message("PRIVMSG", "Failed to set chanprops", *server_userSummary, ((Peer*)peer)->m_user_details.nick);
             return;
         }
 
@@ -28,7 +28,7 @@ namespace Peerchat {
         ss << "\\id\\" << response_data.chanprops.id;
         ss << "\\final\\1";
 
-        ((Peer *)peer)->send_message("PRIVMSG",ss.str(), "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
+        ((Peer *)peer)->send_message("PRIVMSG",ss.str(), *server_userSummary, ((Peer *)peer)->m_user_details.nick);
     }
 
     ChanpropsRecord GetChanpropsFromKVReader(OS::KVReader reader) {

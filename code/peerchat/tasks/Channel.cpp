@@ -304,7 +304,7 @@ namespace Peerchat {
 		}
 
 		message.str("");
-		message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\to\\" << channel.channel_name << "\\user_id\\" << user.id << "\\modeflags\\" << 0;
+		message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\channel_id\\" << channel.channel_id << "\\user_id\\" << user.id << "\\modeflags\\" << 0;
 		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
     }
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {

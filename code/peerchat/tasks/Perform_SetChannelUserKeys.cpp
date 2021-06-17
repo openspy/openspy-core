@@ -51,7 +51,7 @@ namespace Peerchat {
 
 					const char* base64 = OS::BinToBase64Str((uint8_t*)kv_string.c_str(), kv_string.length());
 					std::ostringstream message;
-					message << "\\type\\SETCKEY\\to\\" << summary.channel_name << "\\user_id\\" << user_summary.id << "\\keys\\" << base64;
+					message << "\\type\\SETCKEY\\channel_id\\" << summary.channel_id << "\\user_id\\" << user_summary.id << "\\keys\\" << base64;
 					thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());
 
 					free((void*)base64);

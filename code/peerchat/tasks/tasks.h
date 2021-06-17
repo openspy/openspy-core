@@ -358,5 +358,6 @@ namespace Peerchat {
     extern const char *peerchat_client_message_routingkey;
 	extern const char *peerchat_key_updates_routingkey;
 	extern const char *peerchat_broadcast_routingkey;
+	extern UserSummary		   *server_userSummary;
 }
 #endif //_MM_TASKS_H

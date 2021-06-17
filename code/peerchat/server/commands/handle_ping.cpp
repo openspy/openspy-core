@@ -23,7 +23,7 @@ namespace Peerchat {
 				end = end.substr(1);
 			}
 		}
-        send_message("PONG", end, "", ((Peerchat::Server*)GetDriver()->getServer())->getServerName());
+        send_message("PONG", end, UserSummary(), ((Peerchat::Server*)GetDriver()->getServer())->getServerName());
 
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;

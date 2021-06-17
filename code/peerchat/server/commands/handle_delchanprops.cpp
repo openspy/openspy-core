@@ -17,7 +17,7 @@
 namespace Peerchat {
 	void Peer::OnDelChanProps(TaskResponse response_data, Peer* peer) {
         if (response_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
-            ((Peer*)peer)->send_message("PRIVMSG", "Failed to delete chanprops", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+            ((Peer*)peer)->send_message("PRIVMSG", "Failed to delete chanprops", *server_userSummary, ((Peer*)peer)->m_user_details.nick);
             return;
         }
     }

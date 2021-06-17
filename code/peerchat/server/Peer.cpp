@@ -264,17 +264,22 @@ namespace Peerchat {
 		s << str << std::endl;
 		SendPacket(s.str());
 	}
-	void Peer::send_message(std::string messageType, std::string messageContent, std::string from, std::string to, std::string target) {
+	void Peer::send_message(std::string messageType, std::string messageContent, UserSummary from, std::string to, std::string target) {
 		if (m_user_details.modeflags & EUserMode_Quiet) {
 			return;
 		}
 		std::ostringstream s;
 
-		if(from.length() == 0) {
-			from = ((Peerchat::Server *)GetDriver()->getServer())->getServerName();
+
+		std::string from_string;
+
+		if(from.id == 0) {
+			from_string = ((Peerchat::Server *)GetDriver()->getServer())->getServerName();
+		} else {
+			from_string = from.ToString();
 		}
 
-		s << ":" << from;
+		s << ":" << from_string;
 		s << " " << messageType;
 		if(to.length() > 0) {
 			s << " " << to;
@@ -288,7 +293,7 @@ namespace Peerchat {
 		s << std::endl;
 		SendPacket(s.str());
 
-		if (messageType.compare("JOIN") == 0 && from.compare(GetUserDetails().ToString()) == 0) {
+		if (messageType.compare("JOIN") == 0 && from.id == GetUserDetails().id) {
 			//send names automatically
 			std::vector<std::string> params;
 			params.push_back("NAMES");
@@ -402,7 +407,7 @@ namespace Peerchat {
 	void Peer::send_flood_warning() {
 		std::ostringstream ss;
 		ss << "Excess Flood: " << m_flood_weight;
-		send_message("PRIVMSG", ss.str(), "SERVER!SERVER@*", m_user_details.nick);
+		send_message("PRIVMSG", ss.str(), *server_userSummary, m_user_details.nick);
 	}
 	void Peer::OnRemoteDisconnect(std::string reason) {
 		Delete(false, reason);

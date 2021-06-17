@@ -68,7 +68,7 @@ namespace Peerchat {
 	void Peer::OnListUserModes(TaskResponse response_data, Peer* peer) {
 
         if (response_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
-            ((Peer*)peer)->send_message("PRIVMSG", "Failed to list usermodes", "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+            ((Peer*)peer)->send_message("PRIVMSG", "Failed to list usermodes", *server_userSummary, ((Peer*)peer)->m_user_details.nick);
             return;
         }
 
@@ -79,11 +79,11 @@ namespace Peerchat {
             SerializeUsermodeRecord(response_data.usermode, ss);
 
 
-            ((Peer*)peer)->send_message("PRIVMSG", ss.str(), "SERVER!SERVER@*", ((Peer*)peer)->m_user_details.nick);
+            ((Peer*)peer)->send_message("PRIVMSG", ss.str(), *server_userSummary, ((Peer*)peer)->m_user_details.nick);
         }
 
         if(response_data.is_end) {
-            ((Peer *)peer)->send_message("PRIVMSG", "LISTUSERMODE \\final\\1", "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
+            ((Peer *)peer)->send_message("PRIVMSG", "LISTUSERMODE \\final\\1", *server_userSummary, ((Peer *)peer)->m_user_details.nick);
         }
     }
 
