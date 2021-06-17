@@ -55,7 +55,13 @@ namespace Peerchat {
 		public:
 			UserSummary() {
 				id = 0;	
+				operflags = 0;
+				profileid = 0;
+				userid = 0;
+				modeflags = 0;
+				gameid = -1;
 			}
+			
 			UserSummary(std::string string) {
 				int username_marker = string.find_first_of("!");
 				int address_marker = string.find_first_of("@");
@@ -82,6 +88,7 @@ namespace Peerchat {
 			OS::Address address;
 			int gameid;
 			int profileid;
+			int userid;
 			int modeflags;
 			int operflags;
 			std::string ToString(bool includeId = false) {
@@ -135,7 +142,7 @@ namespace Peerchat {
 		std::vector<int> GetChannels();
 
 		void SendNickUpdate(std::string newNick);
-		int GetOperFlags() { return m_oper_flags; };
+		int GetOperFlags() { return m_user_details.operflags; };
 
 		///
 		/// This block is public for use in async tasks
@@ -245,7 +252,6 @@ namespace Peerchat {
 		std::vector<CommandEntry> m_commands;
 
 		bool m_sent_client_init;
-		int m_oper_flags;
 
 		std::map<int, int> m_channel_flags;
 

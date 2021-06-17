@@ -18,8 +18,9 @@ namespace Peerchat {
         if(auth_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
             ((Peer *)peer)->m_profile = profile;
             ((Peer *)peer)->m_user = user;
-            ((Peer*)peer)->m_oper_flags = -1;
+            ((Peer *)peer)->m_user_details.operflags = -1;
             ((Peer *)peer)->m_user_details.profileid = profile.id;
+            ((Peer *)peer)->m_user_details.userid = user.id;
             ((Peer *)peer)->send_message("NOTICE", "Authenticated", "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
             ((Peer *)peer)->send_message("NOTICE", "Rights Granted", "SERVER!SERVER@*", ((Peer *)peer)->m_user_details.nick);
         } else {
@@ -27,7 +28,7 @@ namespace Peerchat {
         }
     }
     void Peer::handle_adminme(std::vector<std::string> data_parser) {
-		m_oper_flags = -1;
+		m_user_details.operflags = -1;
     }
     void Peer::handle_oper(std::vector<std::string> data_parser) {
 		TaskShared::AuthRequest request;

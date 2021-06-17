@@ -55,7 +55,7 @@ namespace Peerchat {
 		req.profile.uniquenick = numeric;
         
         req.peer->IncRef();
-        req.callback = OnGetCKey;
+        req.callback = OnGetKey;
         scheduler->AddRequest(req.type, req);
         
     }

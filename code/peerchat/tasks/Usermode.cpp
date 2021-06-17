@@ -61,6 +61,12 @@ namespace Peerchat {
 			record.modeflags = json_integer_value(subitem);
 		}
 
+		subitem = json_object_get(item, "gameid");
+		if (subitem != NULL && !json_is_null(subitem)) {
+			record.gameid = json_integer_value(subitem);
+			record.has_gameid = true;
+		}
+
 		subitem = json_object_get(item, "expiresAt");
 		record.expires_at.tv_sec = 0;
 		record.expires_at.tv_usec = 0;
@@ -164,6 +170,15 @@ namespace Peerchat {
 			record.modeflags = atoi(OS::strip_quotes(v.value._str).c_str());
 		}
 
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s gameid", cacheKey.c_str());
+		if (Redis::CheckError(reply)) {
+			goto end_error;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			record.gameid = atoi(OS::strip_quotes(v.value._str).c_str());
+		}
+
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s expiresAt", cacheKey.c_str());
 		if (Redis::CheckError(reply)) {
 			goto end_error;
@@ -233,6 +248,10 @@ namespace Peerchat {
 		if(usermode.machineid.length() > 0 && match2(usermode.machineid.c_str(), summary.realname.c_str())) {
 			return true;
 		}
+
+		if(usermode.gameid != -1 && usermode.gameid == summary.gameid) {
+			return true;
+		}
 		return false;
 	}
 	int getEffectiveUsermode(TaskThreadData* thread_data, int channel_id, UserSummary summary, Peer *peer) {
@@ -280,6 +299,14 @@ namespace Peerchat {
 			}
 		} while(cursor != 0);
 
+
+		/*
+			No permitted gameid match found, therefore user is banned
+		*/
+		if((modeflags & EUserChannelFlag_GameidPermitted) == 0) {
+			modeflags |= EUserChannelFlag_Banned;
+		}
+
 		error_cleanup:
 		return modeflags;
 	}
@@ -298,6 +325,10 @@ namespace Peerchat {
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s machineid \"%s\"", key_name.c_str(), usermode.machineid.c_str());
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s profileid %d", key_name.c_str(), usermode.profileid);
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s modeflags %d", key_name.c_str(), usermode.modeflags);
+		if(usermode.has_gameid) {
+			Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", key_name.c_str(), usermode.gameid);
+		}
+			
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s isGlobal %d", key_name.c_str(), usermode.usermodeid > 0);
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s setByNick \"%s\"", key_name.c_str(), usermode.setByUserSummary.nick.c_str());
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s setByHost \"%s\"", key_name.c_str(), usermode.setByUserSummary.hostname.c_str());
@@ -324,6 +355,12 @@ namespace Peerchat {
 			json_object_set(object, "profileid", json_integer(record.profileid));
 
 		json_object_set(object, "modeflags", json_integer(record.modeflags));
+
+		json_t *gameid_item = json_integer(record.gameid);
+		if(record.has_gameid == false) {
+			gameid_item = json_null();
+		}
+		json_object_set(object, "gameid", gameid_item);
 
 		json_object_set(object, "expiresIn", json_integer(record.expires_at.tv_sec)); //expires in seconds
 

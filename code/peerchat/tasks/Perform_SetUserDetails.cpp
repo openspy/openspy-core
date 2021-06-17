@@ -62,12 +62,8 @@ namespace Peerchat {
             } else {
                 response.summary.nick = userDetails.nick;
 
-                std::ostringstream ss;
-                ss << "user_" << response.summary.id;
-                request.summary.modeflags = 0;
-                request.summary.gameid = 0;
-                ApplyUserKeys(thread_data, ss.str(), request.summary, "", true);
-                ApplyUserKeys(thread_data, ss.str(), request.summary, "custkey_");
+                ApplyUserKeys(thread_data, "", request.summary, "", true);
+                ApplyUserKeys(thread_data, "", request.summary, "custkey_");
 
                 if(request.summary.nick.length() != 0) {
                     Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());

@@ -205,8 +205,15 @@ namespace Peerchat {
 			}
 			return false;
 		}
+		
 
 		void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base, bool show_private) {
+			std::ostringstream ss;
+			if(base_key.length() == 0) {
+				ss << "user_" << userSummary.id;
+				base_key = ss.str();
+			}
+			
 			if(user_base.length() > 0) {
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %susername %s", base_key.c_str(), user_base.c_str(), userSummary.username.c_str());
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %snick %s", base_key.c_str(), user_base.c_str(), userSummary.nick.c_str());
@@ -214,6 +221,7 @@ namespace Peerchat {
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sgameid %d", base_key.c_str(), user_base.c_str(), userSummary.gameid);
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %shostname %s", base_key.c_str(), user_base.c_str(), userSummary.hostname.c_str());
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sprofileid %d", base_key.c_str(), user_base.c_str(), userSummary.profileid);
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %suserid %d", base_key.c_str(), user_base.c_str(), userSummary.userid);
 
 				if(show_private) {
 					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %saddress %s", base_key.c_str(), user_base.c_str(), userSummary.address.ToString(true).c_str());
@@ -227,6 +235,7 @@ namespace Peerchat {
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", base_key.c_str(), userSummary.gameid);
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s hostname %s", base_key.c_str(), userSummary.hostname.c_str());
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s profileid %d", base_key.c_str(), userSummary.profileid);
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s userid %d", base_key.c_str(), userSummary.userid);
 				if(show_private) {
 					
 					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s address %s", base_key.c_str(), userSummary.address.ToString(true).c_str());

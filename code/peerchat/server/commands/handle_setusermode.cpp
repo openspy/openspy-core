@@ -72,6 +72,11 @@ namespace Peerchat {
 			usermodeRecord.isGlobal = usermode_properties.GetValueInt("isGlobal");
 		}
 
+		if (usermode_properties.HasKey("gameid")) {
+			usermodeRecord.gameid = usermode_properties.GetValueInt("gameid");
+			usermodeRecord.has_gameid = true;
+		}
+
 		usermodeRecord.expires_at.tv_usec = 0;
 		usermodeRecord.expires_at.tv_sec = 0;
 		if (usermode_properties.HasKey("expiressec")) {

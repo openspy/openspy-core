@@ -153,6 +153,8 @@ namespace Peerchat {
 				isGlobal = false;
 				profileid = 0;
 				modeflags = 0;
+				gameid = -1;
+				has_gameid = false;
 				memset(&expires_at, 0, sizeof(expires_at));
 				memset(&set_at, 0, sizeof(set_at));
 			}
@@ -167,6 +169,9 @@ namespace Peerchat {
 			struct timeval expires_at; //or "expires in secs" when setting
 			struct timeval set_at; //or "expires in secs" when setting
 			UserSummary setByUserSummary;
+
+			bool has_gameid; //false if null, true if exists
+			int gameid; //-1 = unauthenticated
 	};
 	class ChanpropsRecord {
 		public:

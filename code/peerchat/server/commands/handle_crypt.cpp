@@ -37,6 +37,7 @@ namespace Peerchat {
         peer->send_numeric(705, ss.str(), true);
 
         peer->m_using_encryption = true;
+        peer->m_user_details.gameid = response_data.game_data.gameid;
     }
 
     void Peer::handle_crypt(std::vector<std::string> data_parser) {

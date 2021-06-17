@@ -28,6 +28,10 @@ namespace Peerchat {
             ss << "\\machineid\\" << record.machineid;
         if (record.profileid != 0)
             ss << "\\profileid\\" << record.profileid;
+
+        if(record.has_gameid) {
+            ss << "\\gameid\\" << record.gameid;
+        }
         ss << "\\isGlobal\\" << record.isGlobal;
 
         if (record.expires_at.tv_sec != 0) {

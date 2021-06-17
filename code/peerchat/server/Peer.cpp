@@ -16,9 +16,6 @@
 namespace Peerchat {
 	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		m_sent_client_init = false;
-		m_user_details.id = 0;
-		m_user_details.modeflags = 0;
-		m_oper_flags = 0;
 		mp_mutex = OS::CreateMutex();
 		m_using_encryption = false;
 		m_flood_weight = 0;

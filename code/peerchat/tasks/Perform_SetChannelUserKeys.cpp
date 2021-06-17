@@ -40,9 +40,10 @@ namespace Peerchat {
 					it++;
 				}
 
-                std::string id = "user_" + response.summary.id;
                 request.summary.modeflags = 0;
-                ApplyUserKeys(thread_data, id, request.summary, "custkey_");
+				ApplyUserKeys(thread_data, "", request.summary, "");
+                ApplyUserKeys(thread_data, "", request.summary, "custkey_");
+				
 
 
 				if (broadcast_keys.size() > 0) {
