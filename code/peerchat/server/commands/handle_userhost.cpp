@@ -18,7 +18,7 @@ namespace Peerchat {
 	void Peer::OnUsrip_FetchUser(TaskResponse response_data, Peer* peer) {
 		if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
 			std::ostringstream ss;
-			ss << response_data.summary.nick << "=+" << response_data.summary.username << "@" << response_data.summary.hostname;
+			ss << response_data.summary.nick << "=+" << response_data.summary.username << "@" << response_data.summary.GetIRCAddress(peer->IsUserAddressVisible(response_data.summary.id));
 			peer->send_numeric(302, ss.str());
 		}
 		else if (response_data.error_details.response_code == TaskShared::WebErrorCode_NoSuchUser) {

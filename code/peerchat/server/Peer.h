@@ -91,6 +91,20 @@ namespace Peerchat {
 			int userid;
 			int modeflags;
 			int operflags;
+			std::string ToIRCString(bool address_visible = false) {
+				std::ostringstream ss;
+				ss << nick << "!";
+				ss << username << "@";
+				ss << GetIRCAddress(address_visible);
+				return ss.str();				
+			}
+			std::string GetIRCAddress(bool address_visible = false) {
+				if(address_visible) {
+					return address.ToString(true);
+				} else {
+					return "*";
+				}
+			}
 			std::string ToString(bool includeId = false) {
 				std::ostringstream ss;
 				ss << nick << "!";
@@ -100,18 +114,31 @@ namespace Peerchat {
 					ss << "+" << id;
 				}
 				return ss.str();
-			};
+			}
 	};
 
-	class UserAddressVisibiltyInfo {
+	class UserAddressVisibiltyInfo : public OS::LinkedList<UserAddressVisibiltyInfo *> {
 		public:
-			UserAddressVisibiltyInfo(int channel_id, int user_id) {
-				this.channel_id = channel_id;
-				this.user_id = user_id;
+			UserAddressVisibiltyInfo(int user_id, int channel_id) : OS::LinkedList<UserAddressVisibiltyInfo *>() {
+				this->channel_id = channel_id;
+				this->user_id = user_id;
 			}
 			int channel_id;
 			int user_id;
-	}
+	};
+	class IterateUserAddressVisibiltyInfoState {
+		public:
+			IterateUserAddressVisibiltyInfoState() {
+				channel_id = 0;
+				user_id = 0;
+				peer = NULL;
+				found = false;
+			}
+			int channel_id;
+			int user_id;
+			bool found;
+			Peer *peer;
+	};
 
 	class Peer : public INetPeer {
 	public:
@@ -159,6 +186,16 @@ namespace Peerchat {
 		///
 
 		void OnRemoteDisconnect(std::string reason);
+
+		void OnSetExternalUserChanModeFlags(int user_id, int channel_id, int modeflags);
+
+		bool IsUserAddressVisible(int user_id);
+		void AddUserToAddressVisbilityList(int user_id, int channel_id); //user joined / ops gained
+		void RemoveUserAddressVisibility_ByChannel(int channel_id); //PART / ops lost
+		void RemoveUserAddressVisibility_ByChannelUser(int user_id, int channel_id); //user parted
+		void RemoveUserAddressVisibility_ByUser(int user_id); //user quit
+		void RefreshUserAddressVisibility_ByChannel(int channel_id);
+		void PurgeUserAddressVisibility();
 	private:
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void* extra, INetPeer* peer);
@@ -239,6 +276,16 @@ namespace Peerchat {
 		void send_topic(std::string channel);
 
 		void send_flood_warning();
+
+		//UserAddressVisibiltyInfo stuff
+		OS::LinkedListHead<UserAddressVisibiltyInfo *>* mp_user_address_visibility_list;
+		static bool LLIterator_IsUserAddressVisible(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state);
+		static bool LLIterator_RemoveUserAddressVisibility_ByChannel(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state);
+		static bool LLIterator_RemoveUserAddressVisibility_ByChannelUser(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state);
+		static bool LLIterator_RemoveUserAddressVisibility_ByUser(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state);
+		static bool LLIterator_PurgeUserAddressVisibility(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state);
+		static void OnLookup_RefreshUserAddressVisibility_ByChannel(TaskResponse response_data, Peer *peer);
+		//
 
 		void handle_message_command(std::string type, std::vector<std::string> data_parser);
 		void send_quit(std::string reason);

@@ -15,6 +15,7 @@
 #include "Peer.h"
 namespace Peerchat {
 	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
+		mp_user_address_visibility_list = new OS::LinkedListHead<UserAddressVisibiltyInfo*>();
 		m_sent_client_init = false;
 		mp_mutex = OS::CreateMutex();
 		m_using_encryption = false;
@@ -24,7 +25,12 @@ namespace Peerchat {
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
+
+		PurgeUserAddressVisibility();
+		delete mp_user_address_visibility_list;
+		
 		delete mp_mutex;
+		
 	}
 
 	void Peer::OnConnectionReady() {
@@ -276,7 +282,7 @@ namespace Peerchat {
 		if(from.id == 0) {
 			from_string = ((Peerchat::Server *)GetDriver()->getServer())->getServerName();
 		} else {
-			from_string = from.ToString();
+			from_string = from.ToIRCString(IsUserAddressVisible(from.id));
 		}
 
 		s << ":" << from_string;
@@ -338,7 +344,6 @@ namespace Peerchat {
 		peer->send_numeric(377, s.str());
 		s.str("");
 	}
-	//EPeerchatRequestType_LookupGlobalUsermode
 	void Peer::OnLookupGlobalUsermode(TaskResponse response_data, Peer *peer)  {
 		if(response_data.usermode.modeflags & EUserChannelFlag_Banned) {
 			peer->Delete(false, "KILLED - KLINE");
@@ -388,9 +393,26 @@ namespace Peerchat {
 		return flags;
 	}
 	void Peer::SetChannelFlags(int channel_id, int mode_flags) {
+		
+		int current_modeflags = 0;
+		if(m_channel_flags.find(channel_id) != m_channel_flags.end()) {
+			current_modeflags = m_channel_flags[channel_id];
+		}
+
 		mp_mutex->lock();
 		m_channel_flags[channel_id] = mode_flags;
 		mp_mutex->unlock();
+
+		
+		//check if needs to refresh user address visibility list for channel or purge channel address visibility
+		int current_modelevel = GetUserChannelModeLevel(current_modeflags);
+		int modelevel = GetUserChannelModeLevel(mode_flags);
+		if(current_modelevel <= 1 && modelevel > 1) {
+			RefreshUserAddressVisibility_ByChannel(channel_id);
+		} else if(modelevel <= 1) {
+			RemoveUserAddressVisibility_ByChannel(channel_id);
+		}
+
 	}
 	std::vector<int> Peer::GetChannels() {
 		std::vector<int> channels;
@@ -411,5 +433,120 @@ namespace Peerchat {
 	}
 	void Peer::OnRemoteDisconnect(std::string reason) {
 		Delete(false, reason);
+	}
+	bool Peer::LLIterator_IsUserAddressVisible(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
+		if(info->user_id == state->user_id) {
+			state->found = true;
+			return false;
+		}
+		return true;
+	}
+	bool Peer::IsUserAddressVisible(int user_id) {
+		if(GetOperFlags() & OPERPRIVS_GLOBALOWNER) {
+			return true;
+		}
+		IterateUserAddressVisibiltyInfoState state;
+		state.user_id = user_id;
+		state.peer = this;
+		OS::LinkedListIterator<UserAddressVisibiltyInfo*, IterateUserAddressVisibiltyInfoState*> iterator(mp_user_address_visibility_list);
+		iterator.Iterate(LLIterator_IsUserAddressVisible, &state);
+		return state.found;
+	}
+	void Peer::AddUserToAddressVisbilityList(int user_id, int channel_id) {
+		mp_mutex->lock();
+		mp_user_address_visibility_list->AddToList(new UserAddressVisibiltyInfo(user_id, channel_id));
+		mp_mutex->unlock();
+	}
+	bool Peer::LLIterator_RemoveUserAddressVisibility_ByChannel(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
+		if(info->channel_id == state->channel_id) {
+			state->peer->mp_user_address_visibility_list->RemoveFromList(info);
+			delete info;
+		}
+		return true;
+	}
+	void Peer::RemoveUserAddressVisibility_ByChannel(int channel_id) {
+		IterateUserAddressVisibiltyInfoState state;
+		state.channel_id = channel_id;
+		state.peer = this;
+		OS::LinkedListIterator<UserAddressVisibiltyInfo*, IterateUserAddressVisibiltyInfoState*> iterator(mp_user_address_visibility_list);
+		mp_mutex->lock();
+		iterator.Iterate(LLIterator_RemoveUserAddressVisibility_ByChannel, &state);
+		mp_mutex->unlock();
+	}
+	bool Peer::LLIterator_RemoveUserAddressVisibility_ByChannelUser(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
+		if(info->channel_id == state->channel_id && info->user_id == state->user_id) {
+			state->peer->mp_user_address_visibility_list->RemoveFromList(info);
+			delete info;
+		}
+		return true;
+	}
+	void Peer::RemoveUserAddressVisibility_ByChannelUser(int user_id, int channel_id) {
+		IterateUserAddressVisibiltyInfoState state;
+		state.channel_id = channel_id;
+		state.user_id = user_id;
+		state.peer = this;
+		OS::LinkedListIterator<UserAddressVisibiltyInfo*, IterateUserAddressVisibiltyInfoState*> iterator(mp_user_address_visibility_list);
+		mp_mutex->lock();
+		iterator.Iterate(LLIterator_RemoveUserAddressVisibility_ByChannelUser, &state);
+		mp_mutex->unlock();
+	}
+	bool Peer::LLIterator_RemoveUserAddressVisibility_ByUser(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
+		if(info->user_id == state->user_id) {
+			state->peer->mp_user_address_visibility_list->RemoveFromList(info);
+			delete info;
+		}
+		return true;
+	}
+	void Peer::RemoveUserAddressVisibility_ByUser(int user_id) {
+		IterateUserAddressVisibiltyInfoState state;
+		state.user_id = user_id;
+		state.peer = this;
+		OS::LinkedListIterator<UserAddressVisibiltyInfo*, IterateUserAddressVisibiltyInfoState*> iterator(mp_user_address_visibility_list);
+		mp_mutex->lock();
+		iterator.Iterate(LLIterator_RemoveUserAddressVisibility_ByUser, &state);
+		mp_mutex->unlock();
+	}
+	void Peer::OnLookup_RefreshUserAddressVisibility_ByChannel(TaskResponse response_data, Peer *peer) {
+		std::vector<ChannelUserSummary>::iterator it = response_data.channel_summary.users.begin();
+		while (it != response_data.channel_summary.users.end()) {
+			ChannelUserSummary user = *(it++);
+			if(user.userSummary.id != peer->GetBackendId()) {
+				peer->AddUserToAddressVisbilityList(user.userSummary.id, response_data.channel_summary.channel_id);
+			}
+		}
+	}
+	void Peer::RefreshUserAddressVisibility_ByChannel(int channel_id) {
+        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
+        PeerchatBackendRequest req;
+        req.type = EPeerchatRequestType_LookupChannelDetails;
+        req.peer = this;
+        req.channel_summary.channel_id = channel_id;
+        req.peer->IncRef();
+        req.callback = OnLookup_RefreshUserAddressVisibility_ByChannel;
+        scheduler->AddRequest(req.type, req);
+	}
+	bool Peer::LLIterator_PurgeUserAddressVisibility(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
+		state->peer->mp_user_address_visibility_list->RemoveFromList(info);
+		delete info;
+		return true;
+	}
+	void Peer::PurgeUserAddressVisibility() {
+		IterateUserAddressVisibiltyInfoState state;
+		state.peer = this;
+		OS::LinkedListIterator<UserAddressVisibiltyInfo*, IterateUserAddressVisibiltyInfoState*> iterator(mp_user_address_visibility_list);
+		mp_mutex->lock();
+		iterator.Iterate(LLIterator_RemoveUserAddressVisibility_ByUser, &state);
+		mp_mutex->unlock();
+	}
+	void Peer::OnSetExternalUserChanModeFlags(int user_id, int channel_id, int modeflags) {
+		int current_modeflags = GetChannelFlags(channel_id);
+		int current_modelevel = GetUserChannelModeLevel(current_modeflags);
+		int modelevel = GetUserChannelModeLevel(modeflags);
+		bool has_op = GetUserChannelModeLevel(current_modeflags) > 1;
+		if((modeflags & EUserChannelFlag_IsInChannel) && (current_modeflags & EUserChannelFlag_IsInChannel) && has_op && current_modeflags >= modelevel) {
+			AddUserToAddressVisbilityList(user_id, channel_id);
+		} else if(!(modeflags & EUserChannelFlag_IsInChannel)) {
+			RemoveUserAddressVisibility_ByChannelUser(user_id, channel_id);
+		}
 	}
 }

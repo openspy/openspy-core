@@ -132,6 +132,13 @@ namespace Peerchat {
 	};
 	class ChannelSummary {
 		public:
+			ChannelSummary() {
+				channel_id = 0;
+				basic_mode_flags = 0;
+				limit = 0;
+				memset(&created_at, 0, sizeof(created_at));
+				memset(&topic_time, 0, sizeof(topic_time));
+			}
 			std::string channel_name;
 			std::string entrymsg;
 			int channel_id;
@@ -325,6 +332,7 @@ namespace Peerchat {
 	int CountChannelUsers(TaskThreadData *thread_data, int channel_id);
 	void DeleteChannelById(TaskThreadData *thread_data, int channel_id);
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id);
+	void SendUpdateUserChanModeflags(TaskThreadData* thread_data, int channel_id, int user_id, int modeflags);
 
 	void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base = "", bool show_private = false);
 
@@ -336,6 +344,7 @@ namespace Peerchat {
 	bool CheckChannelUserModeChange(TaskThreadData* thread_data, Peer *peer, std::string channel, int from_mode_flags, std::map<std::string, int> set_usermodes, std::map<std::string, int> unset_usermodes);
 	bool TestChannelUserModeChangeItem(TaskThreadData* thread_data, Peer* peer, ChannelSummary channel_summary, std::string target_username, int from_mode_flags, int update_flags);
 	EUserChannelFlag GetMinimumModeFlagsFromUpdateSet(int update_mode_flags);
+	int GetUserChannelModeLevel(int modeflags);
 	//
 
 	int channelUserModesStringToFlags(std::string mode_string);

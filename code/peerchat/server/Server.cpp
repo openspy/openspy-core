@@ -74,10 +74,7 @@ namespace Peerchat {
       std::vector<INetDriver*>::iterator it = m_net_drivers.begin();
       while (it != m_net_drivers.end()) {
         Peerchat::Driver *driver = (Peerchat::Driver*) * it;
-        Peerchat::Peer *peer = driver->FindPeerByUserSummary(user_summary);
-        if(peer) {
-          peer->SetChannelFlags(channel_id, new_modeflags);
-        }        
+        driver->OnSetUserChanModeFlags(user_summary.id, channel_id, new_modeflags);
         it++;
       }
     }

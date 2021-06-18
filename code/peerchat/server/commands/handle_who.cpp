@@ -39,7 +39,7 @@ namespace Peerchat {
 				continue;
 			}
 			s << user.userSummary.username << " ";
-			s << user.userSummary.hostname << " ";
+			s << user.userSummary.GetIRCAddress(peer->IsUserAddressVisible(user.userSummary.id)) << " ";
 			s << ((Peerchat::Server*)peer->GetDriver()->getServer())->getServerName() << " ";
 			s << user.userSummary.nick << " ";
 			s << "H";

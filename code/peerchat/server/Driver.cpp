@@ -146,7 +146,7 @@ namespace Peerchat {
 
 	bool Driver::LLIterator_OnChannelBroadcast(INetPeer* peer, OnChannelBroadcastState* state) {
 		Peer *p = (Peer *)peer;
-		if (state->includeSelf && p->GetUserDetails().ToString().compare(state->target.ToString()) == 0) {
+		if (state->includeSelf && p->GetBackendId() == state->target.id) {
 			p->send_message(state->type, state->message, state->target.ToString());
 			return true;
 		}
@@ -156,7 +156,8 @@ namespace Peerchat {
 			std::pair<int, int> pair = *it2;
 			bool shouldSend = ~pair.second & EUserChannelFlag_Invisible || p->GetOperFlags() & OPERPRIVS_INVISIBLE;
 			if(p->GetChannelFlags(pair.first) & EUserChannelFlag_IsInChannel && shouldSend) {
-				p->send_message(state->type, state->message,state->target.ToString());
+				p->send_message(state->type, state->message,state->target);
+				p->RemoveUserAddressVisibility_ByUser(state->target.id);
 				return true;
 			}
 			it2++;
@@ -175,5 +176,26 @@ namespace Peerchat {
 		OS::LinkedListIterator<INetPeer*, OnChannelBroadcastState*> iterator(mp_peers);
     	iterator.Iterate(LLIterator_OnChannelBroadcast, &state);
 		mp_mutex->unlock();
+	}
+	bool Driver::LLIterator_OnSetUserChanModeFlags(INetPeer* peer, OnSetUserChanModeFlagsState* state) {
+		Peer *p = (Peer *)peer;
+		if(p->GetBackendId() == state->user_id) {
+			p->SetChannelFlags(state->channel_id, state->modeflags);
+		} else {
+			p->OnSetExternalUserChanModeFlags(state->user_id, state->channel_id, state->modeflags);
+		}
+		return true;
+	}
+	void Driver::OnSetUserChanModeFlags(int user_id, int channel_id, int modeflags) {
+		OnSetUserChanModeFlagsState state;
+		state.user_id = user_id;
+		state.channel_id = channel_id;
+		state.modeflags = modeflags;
+
+		mp_mutex->lock();		
+		OS::LinkedListIterator<INetPeer*, OnSetUserChanModeFlagsState*> iterator(mp_peers);
+    	iterator.Iterate(LLIterator_OnSetUserChanModeFlags, &state);
+		mp_mutex->unlock();
+
 	}
 }

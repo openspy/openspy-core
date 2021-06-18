@@ -56,6 +56,12 @@ namespace Peerchat {
 			std::string message;
 			bool includeSelf;
 	};
+	class OnSetUserChanModeFlagsState {
+		public:
+			int channel_id;
+			int user_id;
+			int modeflags;
+	};
 
 	class Driver : public TCPDriver {
 	public:
@@ -68,6 +74,7 @@ namespace Peerchat {
 		void OnSetChannelKeys(ChannelSummary summary, OS::KVReader keys);
 		void OnChannelBroadcast(std::string type, UserSummary target, std::map<int, int> channel_list, std::string message, bool includeSelf);
 		std::string getServerName() { return m_server_name;}
+		void OnSetUserChanModeFlags(int user_id, int channel_id, int modeflags);
 	protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket);
 
@@ -79,6 +86,7 @@ namespace Peerchat {
 		static bool LLIterator_OnSetUserChannelKeys(INetPeer* peer, SetChannelKeysIteratorState* state);
 		static bool LLIterator_OnSetChannelKeys(INetPeer* peer, SetChannelKeysIteratorState* state);
 		static bool LLIterator_OnChannelBroadcast(INetPeer* peer, OnChannelBroadcastState* state);
+		static bool LLIterator_OnSetUserChanModeFlags(INetPeer* peer, OnSetUserChanModeFlagsState* state);
 		//
 	};
 }

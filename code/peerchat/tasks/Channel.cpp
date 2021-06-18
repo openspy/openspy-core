@@ -259,6 +259,8 @@ namespace Peerchat {
 		user.modeflags = 0;
 		ApplyUserKeys(thread_data, id.str(), user, "custkey_");
 
+		SendUpdateUserChanModeflags(thread_data, channel.channel_id, user.id, initial_flags);
+
 		std::ostringstream message;
 		message << "\\type\\JOIN\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToString(true) << "\\includeSelf\\1";
 		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
@@ -303,10 +305,9 @@ namespace Peerchat {
 			DeleteChannelById(thread_data, channel.channel_id);
 		}
 
-		message.str("");
-		message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\channel_id\\" << channel.channel_id << "\\user_id\\" << user.id << "\\modeflags\\" << 0;
-		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
+		SendUpdateUserChanModeflags(thread_data, channel.channel_id, user.id, 0);
     }
+
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {
 		Redis::Response reply;
 		Redis::Value v;
@@ -390,7 +391,7 @@ namespace Peerchat {
         error_cleanup:
         return result;
     }
-	int GetUserModeLevel(int modeflags) {
+	int GetUserChannelModeLevel(int modeflags) {
 		if (modeflags & EUserChannelFlag_Owner) {
 			return 4;
 		}
@@ -409,11 +410,11 @@ namespace Peerchat {
 		if (peer->GetOperFlags() & OPERPRIVS_OPEROVERRIDE) {
 			return true;
 		}
-		if (GetUserModeLevel(min_mode_flags) > GetUserModeLevel(from_mode_flags)) {
+		if (GetUserChannelModeLevel(min_mode_flags) > GetUserChannelModeLevel(from_mode_flags)) {
 			peer->send_numeric(482, "You're not channel operator (Does not meet minimum rank)", false, channel);
 			return false;
 		}
-		if (GetUserModeLevel(to_mode_flags) > GetUserModeLevel(from_mode_flags)) {
+		if (GetUserChannelModeLevel(to_mode_flags) > GetUserChannelModeLevel(from_mode_flags)) {
 			peer->send_numeric(482, "You're not channel operator (Target user ranked higher)", false, channel);
 			return false;
 		}
@@ -476,5 +477,10 @@ namespace Peerchat {
 			it++;
 		}
 		return true;
+	}
+	void SendUpdateUserChanModeflags(TaskThreadData* thread_data, int channel_id, int user_id, int modeflags) {
+		std::ostringstream message;
+		message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\channel_id\\" << channel_id << "\\user_id\\" << user_id << "\\modeflags\\" << modeflags;
+		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
 	}
 }

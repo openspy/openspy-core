@@ -16,7 +16,7 @@
 
 namespace Peerchat {
 	void Peer::OnSetKey(TaskResponse response_data, Peer* peer) {
-		printf("setkey\n");
+		
 	}
 
     //SETKEY CHC 0 000 :\b_test\1

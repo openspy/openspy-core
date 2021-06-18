@@ -6,8 +6,13 @@ namespace Peerchat {
 
     bool Perform_LookupChannelDetails(PeerchatBackendRequest request, TaskThreadData *thread_data) {
 		TaskResponse response;
-
-        ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
+		ChannelSummary summary;
+		if(request.channel_summary.channel_id != 0) {			
+			summary = LookupChannelById(thread_data, request.channel_summary.channel_id);
+		} else {
+			summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
+		}
+        
 		if (summary.channel_id != 0) {
 			response.error_details.response_code = TaskShared::WebErrorCode_Success;
 		}
