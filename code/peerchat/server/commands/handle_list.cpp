@@ -5,7 +5,6 @@
 #include <sstream>
 #include <algorithm>
 
-#include <OS/gamespy/gamespy.h>
 #include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
@@ -28,19 +27,38 @@ namespace Peerchat {
 
 		//XXX: dump channel keys
 	}
+	int Peer::GetListUserCount(ChannelSummary summary) {
+		if(GetOperFlags() & OPERPRIVS_INVISIBLE) {
+			return summary.users.size();
+		}
+		std::vector<ChannelUserSummary>::iterator it = summary.users.begin();
+		int c = 0;
+		while (it != summary.users.end()) {
+			ChannelUserSummary user = *(it++);
+			if (user.modeflags & EUserChannelFlag_Invisible) {
+				continue;
+			}
+			c++;
+		}
+		return c;
+		
+	}
 	void Peer::OnListChannels(TaskResponse response_data, Peer* peer) {
 		peer->send_numeric(321, "Channel :Users Name", true);
 		std::vector<ChannelSummary>::iterator it = response_data.channel_summaries.begin();
 		while (it != response_data.channel_summaries.end()) {
 			std::ostringstream ss;
 			ChannelSummary summary = *(it++);
+			int user_count = peer->GetListUserCount(summary);
 			if (summary.basic_mode_flags & EChannelMode_Private || summary.basic_mode_flags & EChannelMode_Secret) {
 				if (~peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_IsInChannel) {
 					continue;
-				}
-				
+				}				
 			}
-			ss << summary.channel_name << " " << summary.users.size() << " :";
+			if(user_count == 0 && !(summary.basic_mode_flags & EChannelMode_StayOpen)) {
+				continue;
+			}
+			ss << summary.channel_name << " " << user_count << " :";
 			if (response_data.summary.id == 1) { //special info
 				getChannelSpecialInfo(ss, summary);
 			}

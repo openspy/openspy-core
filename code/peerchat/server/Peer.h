@@ -277,6 +277,8 @@ namespace Peerchat {
 
 		void send_flood_warning();
 
+		int GetListUserCount(ChannelSummary summary);
+
 		//UserAddressVisibiltyInfo stuff
 		OS::LinkedListHead<UserAddressVisibiltyInfo *>* mp_user_address_visibility_list;
 		static bool LLIterator_IsUserAddressVisible(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state);
@@ -292,6 +294,8 @@ namespace Peerchat {
 		static void getChannelSpecialInfo(std::ostringstream &ss, ChannelSummary summary);
 		static void SerializeUsermodeRecord(UsermodeRecord record, std::ostringstream& ss);
 		static void SerializeChanpropsRecord(ChanpropsRecord record, std::ostringstream& ss);
+
+		void handle_ban_hostmask(std::string channel, std::string hostmask, bool set);
 
 		OS::GameData m_game;
 		

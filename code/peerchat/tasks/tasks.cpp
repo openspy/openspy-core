@@ -91,6 +91,7 @@ namespace Peerchat {
 			{EPeerchatRequestType_DeleteChanProps, Perform_DelChanprops},
 
 			{EPeerchatRequestType_RemoteKill_ByName, Perform_RemoteKill_ByName},
+			{EPeerchatRequestType_UpdateChannelModes_BanMask, Perform_UpdateChannelModes_BanMask},
 			{NULL, NULL}
 		};
 

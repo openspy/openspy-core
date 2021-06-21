@@ -93,7 +93,8 @@ namespace Peerchat {
 			EPeerchatRequestType_DeleteChanProps,
 			EPeerchatRequestType_LookupGameInfo,
 			EPeerchatRequestType_LookupGlobalUsermode,
-			EPeerchatRequestType_RemoteKill_ByName
+			EPeerchatRequestType_RemoteKill_ByName,
+			EPeerchatRequestType_UpdateChannelModes_BanMask
 	};
 
   enum EUserChannelFlag {
@@ -310,6 +311,7 @@ namespace Peerchat {
 	bool Perform_DelChanprops(PeerchatBackendRequest request, TaskThreadData* thread_data);
 
 	bool Perform_RemoteKill_ByName(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_UpdateChannelModes_BanMask(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
 	bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message);
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message);

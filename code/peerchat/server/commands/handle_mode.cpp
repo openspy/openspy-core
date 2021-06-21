@@ -87,10 +87,31 @@ namespace Peerchat {
 			peer->send_no_such_target_error(response_data.channel_summary.channel_name);
 		}
 	}
+	void Peer::handle_ban_hostmask(std::string channel, std::string hostmask, bool set) {
+		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
+
+		PeerchatBackendRequest req;
+		req.channel_summary.channel_name = channel;
+		req.type = EPeerchatRequestType_UpdateChannelModes_BanMask;
+
+		req.peer = this;
+		req.peer->IncRef();
+		
+		if(set) {
+			req.channel_modify.set_usermodes[hostmask] |= EUserChannelFlag_Banned;
+		} else {
+			req.channel_modify.unset_usermodes[hostmask] |= EUserChannelFlag_Banned;
+		}
+
+		scheduler->AddRequest(req.type, req);
+	}
 	void Peer::handle_channel_mode_command(std::vector<std::string> data_parser) {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		bool includeBanLookup = false;
+
+		req.channel_summary.channel_name = data_parser.at(1);
+
 		if (data_parser.size() == 2) {
 			//lookup
 			req.type = EPeerchatRequestType_LookupChannelDetails;
@@ -125,6 +146,7 @@ namespace Peerchat {
 							continue;
 						}
 						std::string ban_mask = data_parser.at(last_offset);
+						handle_ban_hostmask(req.channel_summary.channel_name, ban_mask, set);
 						printf("set channel specific redis only ban %s %d\n", ban_mask.c_str(), set);
 					}
 				}
@@ -227,7 +249,6 @@ namespace Peerchat {
 			req.type = EPeerchatRequestType_UpdateChannelModes;
 			req.peer = this;
 			req.summary = m_user_details;
-			req.channel_summary.channel_name = data_parser.at(1);
 			req.channel_modify.set_mode_flags = set_flags;
 			req.channel_modify.unset_mode_flags = unset_flags;
 			req.peer->IncRef();
