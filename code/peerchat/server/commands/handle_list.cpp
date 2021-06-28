@@ -79,15 +79,18 @@ namespace Peerchat {
 		int command_index = 1;
 
 		bool got_filtermask = false, got_keydump = false;
-		do {
-			std::string s = data_parser.at(command_index);
-			if(s.compare("k") == 0 && command_index+1 == data_parser.size()) {
-				got_keydump = true;
-			} else if(!got_filtermask) {
-				target = s;
-				got_filtermask = true;
-			}
-		} while(++command_index < data_parser.size());
+		if(data_parser.size() > 1) {
+			do {
+				std::string s = data_parser.at(command_index);
+				if(s.compare("k") == 0 && command_index+1 == data_parser.size()) {
+					got_keydump = true;
+				} else if(!got_filtermask) {
+					target = s;
+					got_filtermask = true;
+				}
+			} while(++command_index < data_parser.size());
+		}
+		
 
 		req.channel_summary.channel_id = got_keydump;
 		req.channel_summary.channel_name = target;

@@ -21,7 +21,20 @@ namespace Peerchat {
 		else {
 			if (to_summary.id != 0) {
 				response.error_details.response_code = TaskShared::WebErrorCode_Success;
-				RemoveUserFromChannel(thread_data, request.summary, channel, "KICK", request.message, to_summary);
+				int requiredChanUserModes = 0;
+				if(to_mode_flags & EUserChannelFlag_Invisible) {
+					requiredChanUserModes = EUserChannelFlag_Invisible;
+					std::ostringstream mq_message;
+					std::string message = "INVISIBLE USER " + to_summary.nick + " KICKED FROM CHANNEL";
+					const char* base64 = OS::BinToBase64Str((uint8_t*)message.c_str(), message.length());
+					std::string b64_string = base64;
+					free((void*)base64);
+
+					mq_message << "\\type\\NOTICE\\toChannelId\\" << channel.channel_id << "\\message\\" << b64_string << "\\fromUserSummary\\" << to_summary.ToString(true) << "\\requiredChanUserModes\\" << EUserChannelFlag_Invisible << "\\includeSelf\\1";
+					thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
+				}
+				
+				RemoveUserFromChannel(thread_data, request.summary, channel, "KICK", request.message, to_summary, false, requiredChanUserModes);
 			}
 			else {
 				response.error_details.response_code = TaskShared::WebErrorCode_NoSuchUser;

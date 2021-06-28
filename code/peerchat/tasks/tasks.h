@@ -94,7 +94,8 @@ namespace Peerchat {
 			EPeerchatRequestType_LookupGameInfo,
 			EPeerchatRequestType_LookupGlobalUsermode,
 			EPeerchatRequestType_RemoteKill_ByName,
-			EPeerchatRequestType_UpdateChannelModes_BanMask
+			EPeerchatRequestType_UpdateChannelModes_BanMask,
+			EPeerchatRequestType_OperCheck
 	};
 
   enum EUserChannelFlag {
@@ -310,6 +311,8 @@ namespace Peerchat {
 	bool Perform_SetChanprops(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_DelChanprops(PeerchatBackendRequest request, TaskThreadData* thread_data);
 
+	bool Perform_OperCheck(PeerchatBackendRequest request, TaskThreadData* thread_data);
+
 	bool Perform_RemoteKill_ByName(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_UpdateChannelModes_BanMask(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	
@@ -329,12 +332,12 @@ namespace Peerchat {
 	ChannelSummary CreateChannel(TaskThreadData *thread_data, std::string name);
 	ChannelSummary GetChannelSummaryByName(TaskThreadData *thread_data, std::string name, bool create);
 	void AddUserToChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, int initial_flags);
-	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target = UserSummary(), bool silent = false);
+	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target = UserSummary(), bool silent = false, int requiredChanUserModes = 0);
 	std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id);
 	int CountChannelUsers(TaskThreadData *thread_data, int channel_id);
 	void DeleteChannelById(TaskThreadData *thread_data, int channel_id);
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id);
-	void SendUpdateUserChanModeflags(TaskThreadData* thread_data, int channel_id, int user_id, int modeflags);
+	void SendUpdateUserChanModeflags(TaskThreadData* thread_data, int channel_id, int user_id, int modeflags, int old_modeflags);
 
 	void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base = "", bool show_private = false);
 

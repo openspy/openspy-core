@@ -22,6 +22,8 @@ namespace Peerchat {
             ((Peer *)peer)->m_user_details.profileid = profile.id;
             s << user.id << " " << profile.id;
             ((Peer *)peer)->send_numeric(707, s.str());
+
+            ((Peer *)peer)->perform_oper_check();
         } else {
             s << "Invalid login information (" << profile.id << ")";
             ((Peer *)peer)->send_numeric(708, s.str());

@@ -4,6 +4,27 @@
 
 namespace Peerchat {
 
+	bool Perform_GetChannelKeys_HandleOverrides(ChannelSummary summary, std::string name, std::string& output) {
+		bool result = true;
+		std::ostringstream ss;
+		if(name.compare("topic") == 0) {
+			ss << summary.topic;			
+		}
+		else if(name.compare("limit") == 0) {
+			ss << summary.limit;
+		}
+		else if(name.compare("key") == 0) {
+			ss << (summary.password.length() > 0) ? 1 : 0;
+		} else {
+			result = false;
+		}
+		if(result) {
+			output = ss.str();
+		}
+		
+		return result;
+	}
+
 	bool Perform_GetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data) {
 		TaskResponse response;
 
@@ -22,17 +43,27 @@ namespace Peerchat {
 
 				Redis::Response reply;
 				Redis::Value v;
-				
-				reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d custkey_%s", summary.channel_id, p.first.c_str());
-				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-					continue;
-				}
-				v = reply.values[0];
 
 				ss << "\\" << p.first << "\\";
-				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					ss << v.value._str;
+
+				std::string computedOutput;
+
+				if(!Perform_GetChannelKeys_HandleOverrides(summary, p.first, computedOutput)) {
+					reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d custkey_%s", summary.channel_id, p.first.c_str());
+					if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+						continue;
+					}
+					v = reply.values[0];
+
+					
+					if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+						ss << v.value._str;
+					}
+				} else {
+					ss << computedOutput;
 				}
+				
+
 			}
 		}
 

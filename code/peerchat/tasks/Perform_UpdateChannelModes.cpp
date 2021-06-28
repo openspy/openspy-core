@@ -39,13 +39,16 @@ namespace Peerchat {
 			}
 			v = reply.values[0];
 
-			int modeflags = 0;
+			int modeflags = 0, original_modeflags;
 			if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 				modeflags = atoi(v.value._str.c_str());
 			}
 			else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 				modeflags = v.value._int;
 			}
+
+			original_modeflags = modeflags;
+
 			if(unset) {
 				modeflags &= ~modes;
 			}
@@ -54,7 +57,7 @@ namespace Peerchat {
 			}
 			Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", request.channel_summary.channel_id, summary.id, modeflags);
 
-			SendUpdateUserChanModeflags(thread_data, request.channel_summary.channel_id, summary.id, modeflags);
+			SendUpdateUserChanModeflags(thread_data, request.channel_summary.channel_id, summary.id, modeflags, original_modeflags);
 
 		}
 		error_end:
@@ -92,6 +95,8 @@ namespace Peerchat {
 		std::ostringstream mode_message;
 
 		request.channel_summary = summary;
+
+		int old_modeflags = summary.basic_mode_flags;
 
 		if (request.channel_modify.set_mode_flags != 0 || request.channel_modify.update_password || request.channel_modify.update_limit || request.channel_modify.set_usermodes.size()) {
 			bool added_mode = false;
@@ -217,7 +222,7 @@ namespace Peerchat {
 
 		if (mode_message.str().size()) {
 			std::ostringstream mq_message;
-			mq_message << "\\type\\MODE\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\1";
+			mq_message << "\\type\\MODE\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\1" << "\\oldModeflags\\" << old_modeflags << "\\newModeflags\\" << summary.basic_mode_flags;
 
 			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
 		}

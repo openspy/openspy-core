@@ -297,6 +297,9 @@ namespace Peerchat {
 
 		void handle_ban_hostmask(std::string channel, std::string hostmask, bool set);
 
+		void perform_oper_check();
+		static void OnFetchOperStatus(TaskResponse response_data, Peer* peer);
+
 		OS::GameData m_game;
 		
 		struct timeval m_last_recv, m_last_ping;

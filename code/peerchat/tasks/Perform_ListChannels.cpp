@@ -2,8 +2,53 @@
 #include <sstream>
 #include <server/Server.h>
 
-namespace Peerchat {
+#include <OS/HTTP.h>
 
+namespace Peerchat {
+	ChannelSummary ChanPropsToChannelSummary(ChanpropsRecord record) {
+		ChannelSummary summary;
+		summary.channel_name = record.channel_mask;
+		summary.topic = record.topic;
+		summary.limit = record.limit;
+		summary.basic_mode_flags = record.modeflags;
+		summary.password = record.password;
+		return summary;
+	}
+	void AppendNonExistentPersistentChannels(PeerchatBackendRequest request, TaskThreadData *thread_data, std::vector<ChannelSummary> &channels) {
+		//fetch all where modemask 64
+		//if not exists in channels, append
+
+		json_t* send_json = json_object();
+		json_object_set_new(send_json, "modeflagMask", json_integer(EChannelMode_StayOpen));
+		json_object_set_new(send_json, "exists", json_false());
+
+		std::string url = std::string(OS::g_webServicesURL) + "/v1/Chanprops/lookup";
+
+		OS::HTTPClient client(url);
+
+		char* json_data = json_dumps(send_json, 0);
+
+		OS::HTTPResponse resp = client.Post(json_data, request.peer);
+
+		free(json_data);
+		json_decref(send_json);
+
+		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
+
+		TaskResponse response;
+
+		if (!TaskShared::Handle_WebError(send_json, response.error_details)) {
+			int num_items = json_array_size(send_json);
+			for (int i = 0; i < num_items; i++) {
+				json_t* item = json_array_get(send_json, i);
+				ChanpropsRecord record = GetChanpropsFromJson(item);
+				if (request.channel_summary.channel_name.compare(record.groupname) == 0 || match2(request.channel_summary.channel_name.c_str(), record.channel_mask.c_str()) == 0) {
+					channels.push_back(ChanPropsToChannelSummary(record));
+				}
+				
+			}
+		}
+	}
 	std::vector<ChannelSummary> ListChannels(PeerchatBackendRequest request, TaskThreadData *thread_data) {
         Redis::Response reply;
 		Redis::Value v, arr;
@@ -57,6 +102,9 @@ namespace Peerchat {
 			}
 			else break;
         } while(cursor != 0 && (channels.size() < request.channel_summary.limit || request.channel_summary.limit == 0));
+
+	AppendNonExistentPersistentChannels(request, thread_data, channels);
+		
 	error_cleanup:
 		return channels;
     }

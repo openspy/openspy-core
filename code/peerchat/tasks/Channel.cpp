@@ -259,7 +259,7 @@ namespace Peerchat {
 		user.modeflags = 0;
 		ApplyUserKeys(thread_data, id.str(), user, "custkey_");
 
-		SendUpdateUserChanModeflags(thread_data, channel.channel_id, user.id, initial_flags);
+		SendUpdateUserChanModeflags(thread_data, channel.channel_id, user.id, initial_flags, 0);
 
 		std::ostringstream message;
 		message << "\\type\\JOIN\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToString(true) << "\\includeSelf\\1";
@@ -280,7 +280,7 @@ namespace Peerchat {
 		}
 	}
 
-	void RemoveUserFromChannel(TaskThreadData* thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target, bool silent) {
+	void RemoveUserFromChannel(TaskThreadData* thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target, bool silent, int requiredChanUserModes) {
 
 		std::ostringstream message;
 
@@ -288,9 +288,13 @@ namespace Peerchat {
 		Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
 		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_user_%d", channel.channel_id, user.id);
 
+		int old_modeflags = LookupUserChannelModeFlags(thread_data, channel.channel_id, user.id);
+
 		if(!silent) {
 			const char* base64 = OS::BinToBase64Str((uint8_t*)remove_message.c_str(), remove_message.length());			
 			message << "\\type\\" << type << "\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToString(true) << "\\message\\" << base64 << "\\includeSelf\\1";
+
+			message << "\\requiredChanUserModes\\" << requiredChanUserModes;
 
 			if (target.id != 0) {
 				message << "\\toUserSummary\\" << target.ToString(true);
@@ -305,7 +309,8 @@ namespace Peerchat {
 			DeleteChannelById(thread_data, channel.channel_id);
 		}
 
-		SendUpdateUserChanModeflags(thread_data, channel.channel_id, user.id, 0);
+		
+		SendUpdateUserChanModeflags(thread_data, channel.channel_id, user.id, 0, old_modeflags);
     }
 
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {
@@ -478,9 +483,9 @@ namespace Peerchat {
 		}
 		return true;
 	}
-	void SendUpdateUserChanModeflags(TaskThreadData* thread_data, int channel_id, int user_id, int modeflags) {
+	void SendUpdateUserChanModeflags(TaskThreadData* thread_data, int channel_id, int user_id, int modeflags, int old_modeflags) {
 		std::ostringstream message;
-		message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\channel_id\\" << channel_id << "\\user_id\\" << user_id << "\\modeflags\\" << modeflags;
+		message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\channel_id\\" << channel_id << "\\user_id\\" << user_id << "\\modeflags\\" << modeflags << "\\old_modeflags\\" << old_modeflags;
 		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
 	}
 }
