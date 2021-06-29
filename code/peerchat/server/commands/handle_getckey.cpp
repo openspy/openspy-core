@@ -21,8 +21,27 @@ namespace Peerchat {
 	*/
 	void Peer::OnGetCKey(TaskResponse response_data, Peer* peer) {
 		std::ostringstream ss;
-		ss << response_data.summary.nick << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString();
-		peer->send_numeric(702, ss.str(), true, response_data.channel_summary.channel_name);
+
+		bool see_invisible = peer->GetOperFlags() & OPERPRIVS_INVISIBLE;		
+
+		bool skip = false;
+		if(response_data.channel_summary.basic_mode_flags & EChannelMode_Auditorium && response_data.summary.id != peer->GetBackendId()) {
+			skip = true;
+		} else if(response_data.channel_summary.basic_mode_flags & EChannelMode_Auditorium_ShowVOP && response_data.summary.id != peer->GetBackendId()) {
+			if (!(response_data.channelUserSummary.modeflags & (EUserChannelFlag_Owner | EUserChannelFlag_Op | EUserChannelFlag_HalfOp | EUserChannelFlag_Voice))) {
+				skip = true;
+			}
+		}
+
+		if ((response_data.channelUserSummary.modeflags & EUserChannelFlag_Invisible) && !see_invisible) {
+			skip = true;
+		}
+		
+		if(!skip) {
+			ss << response_data.summary.nick << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString();
+			peer->send_numeric(702, ss.str(), true, response_data.channel_summary.channel_name);
+		}
+		
 
 
 		if (response_data.profile.id == 1) {

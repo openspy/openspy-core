@@ -131,8 +131,6 @@ namespace Peerchat {
 				std::string summary = std::string((const char*)data_out, data_len);
 				free(data_out);
 
-				printf("summary: %s\n", summary.c_str());
-
 				return UserSummary(summary);
 			}
 	};

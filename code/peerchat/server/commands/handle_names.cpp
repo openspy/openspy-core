@@ -31,6 +31,13 @@ namespace Peerchat {
 			if ((user.modeflags & EUserChannelFlag_Invisible) && !see_invisible) {
 				continue;
 			}
+			if(response_data.channel_summary.basic_mode_flags & EChannelMode_Auditorium && user.userSummary.id != peer->GetBackendId()) {
+				continue;
+			} else if(response_data.channel_summary.basic_mode_flags & EChannelMode_Auditorium_ShowVOP && user.userSummary.id != peer->GetBackendId()) {
+				if (!(user.modeflags & (EUserChannelFlag_Owner | EUserChannelFlag_Op | EUserChannelFlag_HalfOp | EUserChannelFlag_Voice))) {
+					continue;
+				}
+			}
 			if (user.modeflags & (EUserChannelFlag_Owner | EUserChannelFlag_Op | EUserChannelFlag_HalfOp)) {
 				s << "@";
 			}

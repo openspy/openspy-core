@@ -13,17 +13,7 @@
 #include <server/Driver.h>
 #include <server/Server.h>
 #include <server/Peer.h>
-/*
-<- :orwell.freenode.net 352 CHC ##olc ~CHC unaffiliated/chc orwell.freenode.net CHC H :0 CHC
-<- :orwell.freenode.net 352 CHC ##olc ~kikemike unaffiliated/kikemike livingstone.freenode.net kikemike H :0 realname
-<- :orwell.freenode.net 352 CHC ##olc ChanServ services. services. ChanServ H@ :0 Channel Services
-<- :orwell.freenode.net 315 CHC ##olc :End of /WHO list.
-*/
 
-/*
-<- :orwell.freenode.net 352 CHC ##olc ~CHC unaffiliated/chc orwell.freenode.net CHC H :0 CHC
-<- :orwell.freenode.net 315 CHC CHC :End of /WHO list.
-*/
 namespace Peerchat {
 	void Peer::OnWho_FetchChannelInfo(TaskResponse response_data, Peer* peer) {
 		std::vector<ChannelUserSummary>::iterator it = response_data.channel_summary.users.begin();
@@ -38,6 +28,15 @@ namespace Peerchat {
 			if ((user.modeflags & EUserChannelFlag_Invisible) && !see_invisible) {
 				continue;
 			}
+
+			if(response_data.channel_summary.basic_mode_flags & EChannelMode_Auditorium && user.userSummary.id != peer->GetBackendId()) {
+				continue;
+			} else if(response_data.channel_summary.basic_mode_flags & EChannelMode_Auditorium_ShowVOP && user.userSummary.id != peer->GetBackendId()) {
+				if (!(user.modeflags & (EUserChannelFlag_Owner | EUserChannelFlag_Op | EUserChannelFlag_HalfOp | EUserChannelFlag_Voice))) {
+					continue;
+				}
+			}
+
 			s << user.userSummary.username << " ";
 			s << user.userSummary.GetIRCAddress(peer->IsUserAddressVisible(user.userSummary.id)) << " ";
 			s << ((Peerchat::Server*)peer->GetDriver()->getServer())->getServerName() << " ";

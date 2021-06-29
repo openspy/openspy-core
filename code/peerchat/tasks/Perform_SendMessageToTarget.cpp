@@ -40,7 +40,7 @@ namespace Peerchat {
 				target.user_id = reader.GetValueInt("toUserId");
 				if(reader.HasKey("toUserId")) {
 					target.userSummary = LookupUserById(thread_data, reader.GetValueInt("toUserId"));
-				} else {
+				} else if(reader.HasKey("toUserSummary")) {
 					target.userSummary = UserSummary::FromBase64String(reader.GetValue("toUserSummary"));
 				}
 				

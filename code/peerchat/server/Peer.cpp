@@ -94,7 +94,7 @@ namespace Peerchat {
 
 			std::vector<std::string> commands = OS::KeyStringToVector(recv_buf, false, '\n');
 			std::vector<std::string>::iterator it = commands.begin();
-			while(it != commands.end()) {
+			while(it != commands.end() && !m_delete_flag) {
 				std::string command_line = OS::strip_whitespace(*it);
 				std::vector<std::string> command_items = OS::KeyStringToVector(command_line, false, ' ');
 
@@ -232,7 +232,7 @@ namespace Peerchat {
 
 
 		//oper override
-		//commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
+		commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
 		//global oper cmds
 		commands.push_back(CommandEntry("KILL", true, 2, &Peer::handle_kill, OPERPRIVS_KILL));
 

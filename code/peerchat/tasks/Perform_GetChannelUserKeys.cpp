@@ -69,7 +69,8 @@ namespace Peerchat {
 			while (it != users.end()) {
 				ChannelUserSummary user = *(it++);
 
-				response.summary = LookupUserById(thread_data, user.user_id);
+				response.summary = user.userSummary;
+				response.channelUserSummary = user;
 
 
 				std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> iterators = request.channel_modify.kv_data.GetHead();

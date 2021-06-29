@@ -215,6 +215,7 @@ namespace Peerchat {
 			OS::User user;
 			UserSummary summary;
 			ChannelSummary channel_summary;
+			ChannelUserSummary channelUserSummary;
 			std::vector<ChannelSummary> channel_summaries;
 			OS::KVReader kv_data;
 
