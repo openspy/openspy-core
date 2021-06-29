@@ -46,9 +46,11 @@ namespace Peerchat {
 		if(m_delete_flag) {
 			return;
 		}
-		send_quit(reason);
+		
 		m_delete_flag = true;
 		m_timeout_flag = timeout;
+
+		send_quit(reason);
 
 		if (m_user_details.id != 0) {
 			TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
@@ -106,7 +108,7 @@ namespace Peerchat {
 					CommandEntry entry = *it2;
 					if (command_upper.compare(entry.name) == 0) {
 						if (entry.login_required) {
-							if(m_user_details.id == 0) break;
+							if(m_user_details.id == 0 || !m_sent_client_init) break;
 						}
 						if(entry.required_operflags != 0) {
 							if(!(GetOperFlags() & entry.required_operflags)) {
@@ -230,7 +232,7 @@ namespace Peerchat {
 
 
 		//oper override
-		commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
+		//commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
 		//global oper cmds
 		commands.push_back(CommandEntry("KILL", true, 2, &Peer::handle_kill, OPERPRIVS_KILL));
 

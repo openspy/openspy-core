@@ -23,7 +23,7 @@ namespace Peerchat {
 			{EChannelMode_Secret, 's'},
 			{EChannelMode_InviteOnly, 'i'},
 			{EChannelMode_StayOpen, 'z'},
-			{EChannelMode_Registered, 'r'},
+			{EChannelMode_UserCreated, 'r'},
 			{EChannelMode_OpsObeyChannelLimit, 'e'},
 			{EChannelMode_Auditorium, 'u'},
 			{EChannelMode_Auditorium_ShowVOP, 'q'}
