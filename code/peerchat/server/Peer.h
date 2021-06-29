@@ -115,6 +115,23 @@ namespace Peerchat {
 				}
 				return ss.str();
 			}
+			std::string ToBase64String(bool includeId = false) {
+				std::string s = ToString(includeId);
+				const char *base64 = OS::BinToBase64Str((uint8_t *)s.c_str(), s.length());
+				std::string b64_string = base64;
+				free((void *)base64);
+				return b64_string;
+			}
+			static UserSummary FromBase64String(std::string base64) {
+				uint8_t *data_out;
+				size_t data_len;
+
+				OS::Base64StrToBin((const char *)base64.c_str(), &data_out, data_len);
+				std::string summary = std::string((const char*)data_out, data_len);
+				free(data_out);
+
+				return UserSummary(summary);
+			}
 	};
 
 	class UserAddressVisibiltyInfo : public OS::LinkedList<UserAddressVisibiltyInfo *> {
