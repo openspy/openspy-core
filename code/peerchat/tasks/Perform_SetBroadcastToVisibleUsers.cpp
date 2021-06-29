@@ -40,7 +40,7 @@ namespace Peerchat {
 
         mq_message << "\\type\\" << request.message_type.c_str()  << "\\message\\" << b64_string << "\\channels\\" << channel_str << "\\channel_modes\\" << channel_modes_str;
         if(request.type == EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary) {
-            mq_message << "\\fromSummary\\" << request.summary.ToString();
+            mq_message << "\\fromSummary\\" << request.summary.ToBase64String(true);
         } else {
             mq_message << "\\fromUserId\\" << request.summary.id;
         }

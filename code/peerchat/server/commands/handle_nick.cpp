@@ -17,7 +17,7 @@ namespace Peerchat {
 	void Peer::SendNickUpdate(std::string newNick) {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
-		req.type = EPeerchatRequestType_SetBroadcastToVisibleUsers;
+		req.type = EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary;
 		req.peer = this;
 		req.summary = GetUserDetails();
 		req.message = newNick;

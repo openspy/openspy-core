@@ -145,7 +145,7 @@ namespace Peerchat {
 			if (reader.HasKey("fromUserId")) {
 				from = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
 			} else if(reader.HasKey("fromSummary")) {
-				from = UserSummary(reader.GetValue("fromSummary"));
+				from = UserSummary::FromBase64String(reader.GetValue("fromSummary"));
 			}
 
 			std::string channels = reader.GetValue("channels");

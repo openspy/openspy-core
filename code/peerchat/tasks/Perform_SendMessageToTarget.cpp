@@ -28,7 +28,7 @@ namespace Peerchat {
 				if(reader.HasKey("fromUserId")) {
 					from_user_summary = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
 				} else {
-					from_user_summary = reader.GetValue("fromUserSummary");
+					from_user_summary = UserSummary::FromBase64String(reader.GetValue("fromUserSummary"));
 				}
 				ChannelUserSummary from;
 				from.userSummary = from_user_summary;
@@ -41,7 +41,7 @@ namespace Peerchat {
 				if(reader.HasKey("toUserId")) {
 					target.userSummary = LookupUserById(thread_data, reader.GetValueInt("toUserId"));
 				} else {
-					target.userSummary = reader.GetValue("toUserSummary");
+					target.userSummary = UserSummary::FromBase64String(reader.GetValue("toUserSummary"));
 				}
 				
 				target.channel_id = summary.channel_id;
@@ -55,13 +55,13 @@ namespace Peerchat {
 			if(reader.HasKey("fromUserId")) {
 				from_user_summary = LookupUserById(thread_data, reader.GetValueInt("fromUserId"));
 			} else {
-				from_user_summary = reader.GetValue("fromUserSummary");
+				from_user_summary = UserSummary::FromBase64String(reader.GetValue("fromUserSummary"));
 			}
 
 			if(reader.HasKey("toUserId")) {
 				to_user_summary = LookupUserById(thread_data, reader.GetValueInt("toUserId"));
 			} else {
-				to_user_summary = reader.GetValue("toUserSummary");
+				to_user_summary = UserSummary::FromBase64String(reader.GetValue("toUserSummary"));
 			}
 			server->OnUserMessage(reader.GetValue("type"), from_user_summary, to_user_summary, send_message);
 		}

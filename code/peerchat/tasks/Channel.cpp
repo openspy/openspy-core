@@ -262,7 +262,7 @@ namespace Peerchat {
 		SendUpdateUserChanModeflags(thread_data, channel.channel_id, user.id, initial_flags, 0);
 
 		std::ostringstream message;
-		message << "\\type\\JOIN\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToString(true) << "\\includeSelf\\1";
+		message << "\\type\\JOIN\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToBase64String(true) << "\\includeSelf\\1";
 		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
 
 	
@@ -275,7 +275,7 @@ namespace Peerchat {
 			free((void *)base64);
 
 
-			message << "\\type\\NOTICE\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << "SERVER!SERVER@0.0.0.0" << "\\includeSelf\\1\\message\\" << b64_string << "\\onlyVisibleTo\\" << user.id;
+			message << "\\type\\NOTICE\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << server_userSummary->ToBase64String(true) << "\\includeSelf\\1\\message\\" << b64_string << "\\onlyVisibleTo\\" << user.id;
 			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
 		}
 	}
@@ -292,12 +292,12 @@ namespace Peerchat {
 
 		if(!silent) {
 			const char* base64 = OS::BinToBase64Str((uint8_t*)remove_message.c_str(), remove_message.length());			
-			message << "\\type\\" << type << "\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToString(true) << "\\message\\" << base64 << "\\includeSelf\\1";
+			message << "\\type\\" << type << "\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToBase64String(true) << "\\message\\" << base64 << "\\includeSelf\\1";
 
 			message << "\\requiredChanUserModes\\" << requiredChanUserModes;
 
 			if (target.id != 0) {
-				message << "\\toUserSummary\\" << target.ToString(true);
+				message << "\\toUserSummary\\" << target.ToBase64String(true);
 			}
 			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
 			free((void*)base64);

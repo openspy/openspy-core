@@ -79,6 +79,7 @@ namespace Peerchat {
 					address_end = id_marker - 1;
 				}
 				address = string.substr(address_marker + 1, id_marker - address_marker - 1);
+				hostname = address.ToString(true);
 			}
 			int id;
 			std::string nick;
@@ -129,6 +130,8 @@ namespace Peerchat {
 				OS::Base64StrToBin((const char *)base64.c_str(), &data_out, data_len);
 				std::string summary = std::string((const char*)data_out, data_len);
 				free(data_out);
+
+				printf("summary: %s\n", summary.c_str());
 
 				return UserSummary(summary);
 			}
