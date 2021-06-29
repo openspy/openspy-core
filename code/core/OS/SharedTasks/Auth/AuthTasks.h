@@ -18,6 +18,7 @@ namespace TaskShared {
         EAuthType_NickEmail,
 		EAuthType_MakeAuthSession,
 		EAuthType_DeleteAuthSession,
+		EAuthType_TestPreAuth,
     };
 
 	class AuthData {
@@ -52,6 +53,9 @@ namespace TaskShared {
 
 		INetPeer *peer;
 		std::string gamename;
+
+		std::string auth_token;
+		std::string auth_token_challenge;
 	};
 
 	void AuthReq_InitCurl(void *curl, char *post_data, void *write_data, AuthRequest request, struct curl_slist **out_list);
@@ -62,5 +66,6 @@ namespace TaskShared {
     bool PerformAuth_NickEmail(AuthRequest request, TaskThreadData *thread_data);
 	bool PerformAuth_MakeAuthSession(AuthRequest request, TaskThreadData *thread_data);
 	bool PerformAuth_DeleteAuthSession(AuthRequest request, TaskThreadData *thread_data);
+	bool PerformAuth_TestPreAuth(AuthRequest request, TaskThreadData *thread_data);	
 }
 #endif //OS_TASKSHARED_AUTH_H

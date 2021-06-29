@@ -10,6 +10,7 @@ namespace TaskShared {
 			{EAuthType_NickEmail, PerformAuth_NickEmail},
 			{EAuthType_MakeAuthSession, PerformAuth_MakeAuthSession},
 			{EAuthType_DeleteAuthSession, PerformAuth_DeleteAuthSession},
+			{EAuthType_TestPreAuth, PerformAuth_TestPreAuth},
 			{NULL, NULL}
 		};
         TaskScheduler<AuthRequest, TaskThreadData> *InitAuthTasks(INetServer *server) {
@@ -47,6 +48,9 @@ namespace TaskShared {
 			switch (request.type) {
 			case EAuthType_MakeAuthTicket:
 				url += "/v1/Presence/Auth/GenAuthTicket";
+				break;
+			case EAuthType_TestPreAuth:
+				url += "/v1/Auth/TestPreAuth";
 				break;
 			case EAuthType_NickEmail:
 			case EAuthType_Uniquenick_Password:

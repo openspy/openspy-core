@@ -201,6 +201,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("OPER", false, 3, &Peer::handle_oper,0, 250));
 		
 		commands.push_back(CommandEntry("LOGIN", false, 3, &Peer::handle_login, 0, 250));
+		commands.push_back(CommandEntry("LOGINPREAUTH", false, 2, &Peer::handle_loginpreauth, 0, 250));
 		commands.push_back(CommandEntry("PRIVMSG", true, 2, &Peer::handle_privmsg));
 		commands.push_back(CommandEntry("NOTICE", true, 2, &Peer::handle_notice));
 		commands.push_back(CommandEntry("UTM", true, 2, &Peer::handle_utm));

@@ -70,4 +70,22 @@ namespace Peerchat {
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetAuthTask();
 		scheduler->AddRequest(request.type, request);
     }
+
+    void Peer::handle_loginpreauth(std::vector<std::string> data_parser) {
+        TaskShared::AuthRequest request;
+        
+		request.callback = m_login_auth_cb;
+		request.peer = this;
+		IncRef();
+
+        request.auth_token = data_parser.at(1);
+        request.auth_token_challenge = data_parser.at(2);
+
+        request.type = TaskShared::EAuthType_TestPreAuth;
+
+        TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetAuthTask();
+		scheduler->AddRequest(request.type, request);
+
+        
+    }
 }

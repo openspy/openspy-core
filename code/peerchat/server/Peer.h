@@ -269,6 +269,7 @@ namespace Peerchat {
 		void handle_crypt(std::vector<std::string> data_parser);
 		void handle_adminme(std::vector<std::string> data_parser);
 		void handle_kill(std::vector<std::string> data_parser);		
+		void handle_loginpreauth(std::vector<std::string> data_parser);
 
 		void handle_channel_mode_command(std::vector<std::string> data_parser);
 		void handle_user_mode_command(std::vector<std::string> data_parser);

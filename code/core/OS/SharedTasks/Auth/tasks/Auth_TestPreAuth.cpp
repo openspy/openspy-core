@@ -2,20 +2,14 @@
 #include <OS/Net/NetPeer.h>
 #include "../AuthTasks.h"
 namespace TaskShared {
-    bool PerformAuth_Email_Password(AuthRequest request, TaskThreadData *thread_data) {
+    bool PerformAuth_TestPreAuth(AuthRequest request, TaskThreadData *thread_data) {
 		curl_data recv_data;
 		//build json object
-		json_t *send_obj = json_object(), *profile_obj = json_object(), *user_obj = json_object();
+		json_t *send_obj = json_object();
 
-		json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
 
-		json_object_set_new(send_obj, "profileLookup", profile_obj);
-
-		json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
-
-		json_object_set_new(send_obj, "userLookup", user_obj);
-
-		json_object_set_new(send_obj, "password", json_string(request.user.password.c_str()));
+		json_object_set_new(send_obj, "token", json_string(request.auth_token.c_str()));
+        json_object_set_new(send_obj, "challenge", json_string(request.auth_token_challenge.c_str()));
 		
 		char *json_dump = json_dumps(send_obj, 0);
 
@@ -41,21 +35,21 @@ namespace TaskShared {
 
 				} else if (json_data) {
 					success = true;
-					json_t *session_obj = json_object_get(json_data, "session");
-					json_t *session_key_json = json_object_get(session_obj, "sessionKey");
-					if (session_key_json) {
-							auth_data.session_key = json_string_value(session_key_json);
-					}
+                    json_t *session_obj = json_object_get(json_data, "session");
+                    json_t *session_key_json = json_object_get(session_obj, "sessionKey");
+                    if (session_key_json) {
+                        auth_data.session_key = json_string_value(session_key_json);
+                    }
 
-					session_key_json = json_object_get(session_obj, "expiresAt");
-					if (session_key_json) {
-							auth_data.expiresAt = json_integer_value(session_key_json);
-					}
+                    session_key_json = json_object_get(session_obj, "expiresAt");
+                    if (session_key_json) {
+                        auth_data.expiresAt = json_integer_value(session_key_json);
+                    }
 
-					session_key_json = json_object_get(session_obj, "expiresIn");
-					if (session_key_json) {
-							auth_data.expiresInSecs = json_integer_value(session_key_json);
-					}
+                    session_key_json = json_object_get(session_obj, "expiresIn");
+                    if (session_key_json) {
+                        auth_data.expiresInSecs = json_integer_value(session_key_json);
+                    }
 
 					session_key_json = json_object_get(json_data, "profile");
 					if (session_key_json) {

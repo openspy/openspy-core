@@ -49,7 +49,7 @@ namespace Peerchat {
 		EChannelMode_Secret = 1 << 4, // +s
 		EChannelMode_InviteOnly = 1 << 5, // +i
 		EChannelMode_StayOpen = 1 << 6, //+z??
-		EChannelMode_Registered = 1 << 7, //+r 
+		EChannelMode_UserCreated = 1 << 7, //+r - create isGlobal 0 owner by users ip
 		EChannelMode_OpsObeyChannelLimit = 1 << 8, //+e -- maybe "ops obey channel limit"?
 		EChannelMode_Auditorium = 1 << 9, //+u
 		EChannelMode_Auditorium_ShowVOP = 1 << 10, //+q
