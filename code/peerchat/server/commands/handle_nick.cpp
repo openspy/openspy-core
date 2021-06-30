@@ -61,6 +61,10 @@ namespace Peerchat {
 		if (nick[0] == ':') {
 			nick = nick.substr(1);
 		}
+
+        if(nick.compare("*") == 0) {
+            nick = ((Peer *)peer)->m_profile.uniquenick;
+        }
         req.summary.nick = nick;
         req.peer->IncRef();
         req.callback = OnNickReserve;

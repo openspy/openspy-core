@@ -21,7 +21,7 @@ namespace Peerchat {
             ((Peer *)peer)->m_user = user;
             ((Peer *)peer)->m_user_details.profileid = profile.id;
             s << user.id << " " << profile.id;
-            ((Peer *)peer)->send_numeric(707, s.str());
+            ((Peer *)peer)->send_numeric(707, s.str(), true);
 
             ((Peer *)peer)->perform_oper_check();
         } else {

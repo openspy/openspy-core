@@ -76,10 +76,10 @@ namespace SM {
 		std::vector<OS::Profile>::iterator it = results.begin();
 		while (it != results.end()) {
 			OS::Profile p = *it;
+			if(p.nick.length())
+				s << "\\nick\\" << p.nick;
 			if (p.uniquenick.length())
 				s << "\\uniquenick\\" << p.uniquenick;
-			else if(p.nick.length())
-				s << "\\nick\\" << p.nick;
 			it++;
 		}
 
