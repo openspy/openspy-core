@@ -192,7 +192,7 @@ namespace OS {
 
 	int match(const char *mask, const char *name);
 	int match2(const char *mask, const char *name, int &match_count, char wildcard_char = '*');
-	void gen_random(char *s, const int len);
+	void gen_random(char *s, const int len, int time_multiplier = 1);
 }
 
 #ifdef _WIN32

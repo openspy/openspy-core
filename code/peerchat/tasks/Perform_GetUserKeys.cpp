@@ -10,6 +10,7 @@ namespace Peerchat {
 		UserSummary user_summary = GetUserSummaryByName(thread_data, request.summary.username);
 		response.summary = user_summary;
 		response.profile.uniquenick = request.profile.uniquenick; //getkey numeric value
+		response.profile.nick = request.summary.username;
 
 		std::ostringstream ss;
 

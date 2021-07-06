@@ -14,6 +14,8 @@
 #include <server/Server.h>
 #include <server/Peer.h>
 
+#include <string>
+
 namespace Peerchat {
     void Peer::handle_channel_join_events(ChannelSummary channel) {
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)GetDriver()->getServer())->GetPeerchatTask();
@@ -56,14 +58,27 @@ namespace Peerchat {
             }
         }
 
-        req.type = EPeerchatRequestType_UserJoinChannel;
-        req.peer = this;
-        req.channel_summary.channel_name = target;
-        req.summary = GetUserDetails();
-        
-        req.peer->IncRef();
-        req.callback = OnJoinChannel;
-        scheduler->AddRequest(req.type, req);
+
+        std::string channel;
+        std::istringstream chanstream = std::istringstream(target);
+        while (std::getline(chanstream, channel, ',')) {
+
+            if(do_chan_name(channel.c_str()) == 0) {
+                send_numeric(476, "Bad channel name", false, channel);
+                continue;
+            }
+
+            req.type = EPeerchatRequestType_UserJoinChannel;
+            req.peer = this;
+            req.channel_summary.channel_name = channel;
+            req.summary = GetUserDetails();
+            
+            req.peer->IncRef();
+            req.callback = OnJoinChannel;
+            scheduler->AddRequest(req.type, req);
+        }
+
+
         
     }
 }

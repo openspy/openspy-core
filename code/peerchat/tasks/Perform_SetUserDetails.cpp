@@ -20,6 +20,9 @@ namespace Peerchat {
         response.summary = request.summary;
         response.profile.uniquenick = request.summary.nick;
 
+        std::string formatted_name;
+		std::transform(request.summary.nick.begin(),request.summary.nick.end(),std::back_inserter(formatted_name),tolower);
+
         UserSummary userDetails = request.peer->GetUserDetails();
         bool nick_update = false;
         if(userDetails.id != 0) {
@@ -29,7 +32,7 @@ namespace Peerchat {
             nick_update = true;
         }
 
-        Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS usernick_%s", request.summary.nick.c_str());
+        Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS usernick_%s", formatted_name.c_str());
         Redis::Value v;
 
         bool nick_exists = false;
@@ -54,27 +57,27 @@ namespace Peerchat {
         if(!nick_exists) {
             response.summary.nick = request.summary.nick;
             if(nick_update) {
-                Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());
+                Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", formatted_name.c_str());
 
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d nick %s", response.summary.id, request.summary.nick.c_str());
 
-                Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", request.summary.nick.c_str(), response.summary.id);
+                Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", formatted_name.c_str(), response.summary.id);
             } else {
                 response.summary.nick = userDetails.nick;
 
                 ApplyUserKeys(thread_data, "", request.summary, "", true);
                 ApplyUserKeys(thread_data, "", request.summary, "custkey_");
 
-                if(request.summary.nick.length() != 0) {
-                    Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());
-                    Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", request.summary.nick.c_str(), response.summary.id);
+                if(formatted_name.length() != 0) {
+                    Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", formatted_name.c_str());
+                    Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", formatted_name.c_str(), response.summary.id);
                 }
             }
 
             Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE user_%d %d", response.summary.id, USER_EXPIRE_TIME);
 
-            if(request.summary.nick.length() != 0)
-                Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE usernick_%s %d", request.summary.nick.c_str(), USER_EXPIRE_TIME);
+            if(formatted_name.length() != 0)
+                Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE usernick_%s %d", formatted_name.c_str(), USER_EXPIRE_TIME);
 
             response.error_details.response_code = TaskShared::WebErrorCode_Success;
         } else {

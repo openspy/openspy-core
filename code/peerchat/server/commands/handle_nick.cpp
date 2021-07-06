@@ -62,8 +62,11 @@ namespace Peerchat {
 			nick = nick.substr(1);
 		}
 
-        if(nick.compare("*") == 0) {
-            nick = ((Peer *)peer)->m_profile.uniquenick;
+        if(nick.compare("*") == 0 && m_profile.uniquenick.length() > 0) {
+            nick = m_profile.uniquenick;
+        } else if(do_nick_name(nick.c_str()) == 0) {
+            send_numeric(432, "Erroneous nickname", false, nick);
+            return;
         }
         req.summary.nick = nick;
         req.peer->IncRef();

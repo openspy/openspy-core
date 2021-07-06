@@ -20,7 +20,7 @@ namespace Peerchat {
 			response.error_details.response_code = TaskShared::WebErrorCode_NoSuchUser;
 		}
 
-		
+		response.profile.uniquenick = request.channel_summary.channel_name;
 		response.channel_summary = summary;
 		if (request.callback) {
 			request.callback(response, request.peer);

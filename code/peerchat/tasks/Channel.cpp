@@ -1,5 +1,6 @@
 #include "tasks.h"
 #include <sstream>
+#include <cctype>
 #include <server/Server.h>
 
 #include <OS/HTTP.h>
@@ -166,6 +167,10 @@ namespace Peerchat {
 	ChannelSummary CreateChannel(TaskThreadData* thread_data, std::string name) {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 
+
+		std::string formatted_name;
+		std::transform(name.begin(),name.end(),std::back_inserter(formatted_name),tolower);
+
 		int channel_id = GetPeerchatChannelID(thread_data);
 
 		ChannelSummary summary;
@@ -181,7 +186,7 @@ namespace Peerchat {
 		gettimeofday(&curtime, NULL);
 		summary.created_at = curtime;
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channels \"%s\" %d", name.c_str(), channel_id);
+		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channels \"%s\" %d", formatted_name.c_str(), channel_id);
 
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d name \"%s\"", channel_id, name.c_str());
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d modeflags 0", channel_id);
@@ -191,8 +196,8 @@ namespace Peerchat {
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d created_at %d", channel_id, now.tv_sec);
 		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d %d", channel_id, CHANNEL_EXPIRE_TIME);
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SET channelname_%s %d", name.c_str(), channel_id);
-		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channelname_%s %d", name.c_str(), CHANNEL_EXPIRE_TIME);
+		Redis::Command(thread_data->mp_redis_connection, 0, "SET channelname_%s %d", formatted_name.c_str(), channel_id);
+		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channelname_%s %d", formatted_name.c_str(), CHANNEL_EXPIRE_TIME);
 
 		
 		//load chanprops & usermodes
@@ -227,16 +232,22 @@ namespace Peerchat {
 		}
 		return id;
 	}
-	ChannelSummary GetChannelSummaryByName(TaskThreadData* thread_data, std::string name, bool create) {
-		int id = GetChannelIdByName(thread_data, name);
+	ChannelSummary GetChannelSummaryByName(TaskThreadData* thread_data, std::string name, bool create, UserSummary creator, bool *created) {
+		std::string formatted_name;
+		std::transform(name.begin(),name.end(),std::back_inserter(formatted_name),tolower);
+		int id = GetChannelIdByName(thread_data, formatted_name);
 		if (id != 0) {
 			return LookupChannelById(thread_data, id);
 		}
 		//doesn't exist, create
 		if (create) {
-			return CreateChannel(thread_data, name);
+			if(created != NULL)
+				*created = true;
+			return CreateChannel(thread_data, formatted_name);
 		}
 		else {
+			if(created != NULL)
+				*created = false;
 			ChannelSummary summary;
 			summary.channel_id = 0;
 			summary.channel_name = name;
@@ -265,19 +276,6 @@ namespace Peerchat {
 		message << "\\type\\JOIN\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToBase64String(true) << "\\includeSelf\\1";
 		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
 
-	
-
-		if(channel.entrymsg.length() > 0) {
-			message.str("");
-
-			const char *base64 = OS::BinToBase64Str((uint8_t *)channel.entrymsg.c_str(), channel.entrymsg.length());
-			std::string b64_string = base64;
-			free((void *)base64);
-
-
-			message << "\\type\\NOTICE\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << server_userSummary->ToBase64String(true) << "\\includeSelf\\1\\message\\" << b64_string << "\\onlyVisibleTo\\" << user.id;
-			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
-		}
 	}
 
 	void RemoveUserFromChannel(TaskThreadData* thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target, bool silent, int requiredChanUserModes) {
@@ -363,6 +361,9 @@ namespace Peerchat {
 		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d", channel_id);
 		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channelname_%s", channel.channel_name.c_str());
 		Redis::Command(thread_data->mp_redis_connection, 0, "HDEL channels %s", channel.channel_name.c_str());
+
+		DeleteTemporaryUsermodesForChannel(thread_data, channel);
+		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_usermodes", channel_id);
 	}
     std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id) {
         std::vector<ChannelUserSummary> result;

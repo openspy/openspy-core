@@ -610,9 +610,9 @@ namespace OS {
 		}
 		return match2(mask, name, match_count);
 	}
-	void gen_random(char *s, const int len) {
+	void gen_random(char *s, const int len, int time_multiplier) {
 		int i;
-		srand((unsigned int)time(NULL));
+		srand((unsigned int)time(NULL) * time_multiplier);
 		static const char alphanum[] =
 			"0123456789"
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"

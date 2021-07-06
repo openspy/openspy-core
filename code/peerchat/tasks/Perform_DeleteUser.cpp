@@ -8,7 +8,11 @@ namespace Peerchat {
         TaskResponse response;
 
         UserSummary userDetails = request.peer->GetUserDetails();
-        Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", userDetails.nick.c_str());
+
+        std::string formatted_name;
+		std::transform(userDetails.nick.begin(),userDetails.nick.end(),std::back_inserter(formatted_name),tolower);
+
+        Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", formatted_name.c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "DEL user_%d", userDetails.id);
 
         std::vector<int> channels = request.peer->GetChannels();

@@ -76,6 +76,8 @@ namespace Peerchat {
 		response.is_start = true;
 		response.is_end = false;
 
+		response.error_details.response_code = TaskShared::WebErrorCode_Success;
+
 		//scan channel usermodes
 		do {
 			reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH USERMODE_*", cursor);
@@ -97,7 +99,7 @@ namespace Peerchat {
 
 				for(size_t i=0;i<arr.arr_value.values.size();i++) {
 					LoadUsermodeFromCache(thread_data, arr.arr_value.values[i].second.value._str, response.usermode);
-					response.error_details.response_code = TaskShared::WebErrorCode_Success;
+					
 
 					if (request.callback)
 						request.callback(response, request.peer);
@@ -113,6 +115,11 @@ namespace Peerchat {
 			request.callback(response, request.peer);
 
 		end_error:
+
+		if (request.peer) {
+			request.peer->DecRef();
+		}
+
 		return true;
 	}
 

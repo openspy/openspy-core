@@ -26,6 +26,8 @@ namespace Peerchat {
         }
     }
     void Peer::perform_oper_check() {
+        refresh_user_details();
+        
 		PeerchatBackendRequest request;
 		request.type = EPeerchatRequestType_OperCheck;
 		request.callback = OnFetchOperStatus;

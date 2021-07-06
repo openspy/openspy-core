@@ -47,6 +47,19 @@ namespace Peerchat {
             thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mode_message.str().c_str());
         }
 
+        ChannelSummary channel =  LookupChannelById(thread_data, request.channel_summary.channel_id);
+		if(channel.entrymsg.length() > 0) {
+            std::ostringstream entry_message;
+
+			const char *base64 = OS::BinToBase64Str((uint8_t *)channel.entrymsg.c_str(), channel.entrymsg.length());
+			std::string b64_string = base64;
+			free((void *)base64);
+
+
+			entry_message << "\\type\\NOTICE\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << server_userSummary->ToBase64String(true) << "\\includeSelf\\1\\message\\" << b64_string << "\\onlyVisibleTo\\" << request.peer->GetBackendId();
+			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, entry_message.str().c_str());
+		}
+
         int current_modeflags = request.peer->GetChannelFlags(request.channel_summary.channel_id);
         int old_modeflags = current_modeflags;
         current_modeflags |= initial_flags;

@@ -24,6 +24,16 @@ namespace Peerchat {
             m_user_details.realname = m_user_details.realname.substr(1);
         }
 
+        if(do_nick_name(m_user_details.username.c_str()) == 0) {
+            send_numeric(468, "Erroneous User", false, m_user_details.username);
+            return;
+        }
+        if(do_nick_name(m_user_details.realname.c_str()) == 0) {
+            send_numeric(468, "Erroneous User", false, m_user_details.realname);
+            return;
+        }
+        
+
         OnUserMaybeRegistered();
     }
 }

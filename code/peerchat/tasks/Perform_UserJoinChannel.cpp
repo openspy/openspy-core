@@ -4,9 +4,13 @@
 
 namespace Peerchat {
 
-	bool CheckUserCanJoinChannel(ChannelSummary channel, Peer *peer, std::string password, int initial_flags) {
+	bool CheckUserCanJoinChannel(TaskThreadData *thread_data, ChannelSummary channel, Peer *peer, std::string password, int initial_flags) {
 		if(peer->GetOperFlags() & OPERPRIVS_OPEROVERRIDE) {
 			return true;
+		}
+		if(CountUserChannels(thread_data, peer->GetBackendId()) > MAX_USER_CHANNELS) {
+			peer->send_numeric(405, "You have joined too many channels", false, channel.channel_name);
+			return false;
 		}
 		if (channel.basic_mode_flags & EChannelMode_InviteOnly) {
 			if (~peer->GetChannelFlags(channel.channel_id) & EUserChannelFlag_Invited || initial_flags & EUserChannelFlag_Invited) {
@@ -32,7 +36,8 @@ namespace Peerchat {
 	}
 
     bool Perform_UserJoinChannel(PeerchatBackendRequest request, TaskThreadData *thread_data) {
-        ChannelSummary channel = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, true);
+		bool created = false;
+        ChannelSummary channel = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, true, request.peer->GetUserDetails(), &created);
 		std::string original_password = request.channel_summary.password;
         TaskResponse response;
 		response.channel_summary = channel;
@@ -42,9 +47,15 @@ namespace Peerchat {
 
 		UserSummary userSummary = request.summary;
 
+		
+
+		if(channel.basic_mode_flags & EChannelMode_UserCreated && created) {
+			Create_StagingRoom_UsermodeRecords(channel, request, thread_data);
+		}
+
 		initial_flags |= getEffectiveUsermode(thread_data, channel.channel_id, userSummary, request.peer);
 
-        if(!CheckUserCanJoinChannel(channel, request.peer, original_password, initial_flags)) {
+        if(!CheckUserCanJoinChannel(thread_data, channel, request.peer, original_password, initial_flags)) {
             response.error_details.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
         } else {
             response.error_details.response_code = TaskShared::WebErrorCode_Success;

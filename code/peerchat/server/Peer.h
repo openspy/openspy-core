@@ -16,11 +16,15 @@
 #include <algorithm>
 
 #include "chatCrypt.h"
+#include <server/irc_common.h>
 
 #define PEERCHAT_PING_TIME 300
-#define MAX_FLOOD_WEIGHT 600
+#define MAX_FLOOD_WEIGHT 1600
 #define FLOOD_DECR_PER_TICK 25
-#define WARNING_FLOOD_WEIGHT_THRESHOLD 450
+#define WARNING_FLOOD_WEIGHT_THRESHOLD 1200
+#define REGISTRATION_TIMEOUT 60
+#define MAX_USER_CHANNELS 20
+
 
 namespace Peerchat {
 	class Driver;
@@ -197,6 +201,8 @@ namespace Peerchat {
 		void SendNickUpdate(std::string newNick);
 		int GetOperFlags() { return m_user_details.operflags; };
 
+		void refresh_user_details(bool user_registration = false);
+
 		///
 		/// This block is public for use in async tasks
 		///
@@ -321,7 +327,7 @@ namespace Peerchat {
 
 		OS::GameData m_game;
 		
-		struct timeval m_last_recv, m_last_ping;
+		struct timeval m_last_recv, m_last_ping, m_connect_time;
 
 		OS::User m_user;
 		OS::Profile m_profile;

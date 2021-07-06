@@ -21,9 +21,14 @@ namespace Peerchat {
 	*/
 	void Peer::OnGetKey(TaskResponse response_data, Peer* peer) {
 		std::ostringstream ss;
-        //uniquenick is "numeric"
-		ss << response_data.summary.nick << " " << response_data.summary.nick << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString();
-		peer->send_numeric(700, ss.str(), true, response_data.channel_summary.channel_name);
+        //uniquenick is "numeric", nick is target user
+
+		if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
+			ss << response_data.summary.nick << " " << response_data.summary.nick << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString();
+			peer->send_numeric(700, ss.str(), true, response_data.channel_summary.channel_name);
+		} else {
+			peer->send_no_such_target_error(response_data.profile.nick);
+		}
 	}
 
     void Peer::handle_getkey(std::vector<std::string> data_parser) {

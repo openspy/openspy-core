@@ -19,7 +19,7 @@
 
 #include <server/Peer.h>
 
-#define USER_EXPIRE_TIME 300
+#define USER_EXPIRE_TIME 900
 
 namespace Peerchat {
 	enum EOperPrivileges {
@@ -50,7 +50,7 @@ namespace Peerchat {
 		EChannelMode_InviteOnly = 1 << 5, // +i
 		EChannelMode_StayOpen = 1 << 6, //+z??
 		EChannelMode_UserCreated = 1 << 7, //+r - create isGlobal 0 owner by users ip
-		EChannelMode_OpsObeyChannelLimit = 1 << 8, //+e -- maybe "ops obey channel limit"?
+		EChannelMode_OpsObeyChannelLimit = 1 << 8, //+e OpsObeyChannelLimit
 		EChannelMode_Auditorium = 1 << 9, //+u
 		EChannelMode_Auditorium_ShowVOP = 1 << 10, //+q
 		//
@@ -331,14 +331,16 @@ namespace Peerchat {
 	int GetPeerchatChannelID(TaskThreadData *thread_data);
 	ChannelSummary LookupChannelById(TaskThreadData *thread_data, int channel_id);
 	ChannelSummary CreateChannel(TaskThreadData *thread_data, std::string name);
-	ChannelSummary GetChannelSummaryByName(TaskThreadData *thread_data, std::string name, bool create);
+	ChannelSummary GetChannelSummaryByName(TaskThreadData *thread_data, std::string name, bool create = false, UserSummary creator = UserSummary(), bool *created = NULL);
 	void AddUserToChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, int initial_flags);
 	void RemoveUserFromChannel(TaskThreadData *thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target = UserSummary(), bool silent = false, int requiredChanUserModes = 0);
 	std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id);
 	int CountChannelUsers(TaskThreadData *thread_data, int channel_id);
+	int CountUserChannels(TaskThreadData *thread_data, int user_id);
 	void DeleteChannelById(TaskThreadData *thread_data, int channel_id);
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id);
 	void SendUpdateUserChanModeflags(TaskThreadData* thread_data, int channel_id, int user_id, int modeflags, int old_modeflags);
+	void DeleteTemporaryUsermodesForChannel(TaskThreadData* thread_data, ChannelSummary channel);
 
 	void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base = "", bool show_private = false);
 
@@ -352,6 +354,8 @@ namespace Peerchat {
 	EUserChannelFlag GetMinimumModeFlagsFromUpdateSet(int update_mode_flags);
 	int GetUserChannelModeLevel(int modeflags);
 	//
+
+	int Create_StagingRoom_UsermodeRecords(ChannelSummary channel, PeerchatBackendRequest request, TaskThreadData* thread_data);
 
 	int channelUserModesStringToFlags(std::string mode_string);
 	std::string modeFlagsToModeString(int modeflags);

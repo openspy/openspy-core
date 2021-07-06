@@ -41,7 +41,7 @@ namespace Peerchat {
 
         result.groupname = reader.GetValue("groupname");
         result.limit = reader.GetValueInt("limit");
-        result.kickExisting = reader.GetValueInt("kickExisting");
+        result.kickExisting = reader.GetValueInt("kickexisting");
 
         result.expires_at.tv_sec = reader.GetValueInt("expiresinsec");
 

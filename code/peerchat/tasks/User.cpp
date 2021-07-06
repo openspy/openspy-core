@@ -8,7 +8,10 @@ namespace Peerchat {
 		
         Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 
-        Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS usernick_%s", name.c_str());
+		std::string formatted_name;
+		std::transform(name.begin(),name.end(),std::back_inserter(formatted_name),tolower);
+
+        Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS usernick_%s", formatted_name.c_str());
         Redis::Value v;
 
         bool nick_exists = false;
@@ -22,7 +25,7 @@ namespace Peerchat {
             }
         }
 
-        reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET usernick_%s", name.c_str());
+        reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET usernick_%s", formatted_name.c_str());
         if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
             goto error_end;
         }

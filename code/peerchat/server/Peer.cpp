@@ -21,6 +21,7 @@ namespace Peerchat {
 		m_using_encryption = false;
 		m_flood_weight = 0;
 		gettimeofday(&m_last_recv, NULL);
+		gettimeofday(&m_connect_time, NULL);		
 		RegisterCommands();
 	}
 	Peer::~Peer() {
@@ -160,7 +161,10 @@ namespace Peerchat {
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIME * 2) {
+		if(current_time.tv_sec - m_connect_time.tv_sec > REGISTRATION_TIMEOUT && !m_sent_client_init) {
+			Delete(true, "Registration Timeout");
+		}
+		else if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIME * 2) {
 			Delete(true, "Ping Timeout");
 		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete(false, "Connection severed");
@@ -224,7 +228,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey, 0, 100));
 		commands.push_back(CommandEntry("SETCHANKEY", true, 4, &Peer::handle_setchankey, 0, 100));
 		commands.push_back(CommandEntry("GETCHANKEY", true, 4, &Peer::handle_getchankey, 0, 100));
-		commands.push_back(CommandEntry("SETKEY", true, 4, &Peer::handle_setkey, 0, 100));
+		commands.push_back(CommandEntry("SETKEY", true, 1, &Peer::handle_setkey, 0, 100));
 		commands.push_back(CommandEntry("GETKEY", true, 4, &Peer::handle_getkey, 0, 100));
 		commands.push_back(CommandEntry("KICK", true, 2, &Peer::handle_kick, 0, 200));
 		commands.push_back(CommandEntry("SETGROUP", true, 2, &Peer::handle_setgroup, 0, 100));
@@ -355,13 +359,16 @@ namespace Peerchat {
 		if(response_data.usermode.modeflags & EUserChannelFlag_Gagged) {
 			peer->m_user_details.modeflags |= EUserMode_Gagged;
 		}
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(peer->GetDriver()->getServer()))->GetPeerchatTask();
+		peer->refresh_user_details(true);
+	}
+	void Peer::refresh_user_details(bool user_registration) {
+		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_SetUserDetails;
-		req.peer = peer;
-		req.summary = peer->m_user_details;
+		req.peer = this;
+		req.summary = GetUserDetails();
 		req.peer->IncRef();
-		req.callback = OnUserRegistered;
+		req.callback = user_registration ? OnUserRegistered : NULL;
 		scheduler->AddRequest(req.type, req);
 	}
 	void Peer::OnUserMaybeRegistered() {

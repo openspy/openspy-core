@@ -16,6 +16,11 @@
 
 namespace Peerchat {
 	void Peer::OnWho_FetchChannelInfo(TaskResponse response_data, Peer* peer) {
+		if (response_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
+			peer->send_no_such_target_error(response_data.profile.uniquenick);
+			return;
+		}
+		
 		std::vector<ChannelUserSummary>::iterator it = response_data.channel_summary.users.begin();
 
 		bool see_invisible = false; //XXX: get invisible operflag
@@ -57,6 +62,10 @@ namespace Peerchat {
 	}
 
 	void Peer::OnWho_FetchUserInfo(TaskResponse response_data, Peer* peer) {
+		if (response_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
+			peer->send_no_such_target_error(response_data.profile.uniquenick);
+			return;
+		}
 		UserSummary summary = response_data.summary;
 
 		std::string target = summary.nick;

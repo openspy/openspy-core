@@ -24,16 +24,20 @@ namespace Peerchat {
         std::ostringstream ss;
 
         char client_challenge[17], server_challenge[17];
-        strcpy(client_challenge, "NtJ0ID3rWuIGbskv");
-        strcpy(server_challenge, "p2A9g9CFtwgGlPI8");
+
+        memset(&client_challenge, 0, sizeof(client_challenge));
+        OS::gen_random((char *)&client_challenge, sizeof(client_challenge)-1, 1);
+
+        memset(&server_challenge, 0, sizeof(server_challenge));
+        OS::gen_random((char *)&server_challenge, sizeof(server_challenge)-1, 2);
 
         ss << client_challenge << " " << server_challenge;
 
-        gs_xcode_buf(client_challenge, 16, response_data.game_data.secretkey.c_str());
-        gs_xcode_buf(server_challenge, 16, response_data.game_data.secretkey.c_str());
+        gs_xcode_buf(client_challenge, sizeof(client_challenge)-1, response_data.game_data.secretkey.c_str());
+        gs_xcode_buf(server_challenge, sizeof(server_challenge)-1, response_data.game_data.secretkey.c_str());
         
-        gs_prepare_key(client_challenge, 16, &peer->m_crypt_key_in);
-        gs_prepare_key(server_challenge, 16, &peer->m_crypt_key_out);
+        gs_prepare_key(client_challenge, sizeof(client_challenge)-1, &peer->m_crypt_key_in);
+        gs_prepare_key(server_challenge, sizeof(server_challenge)-1, &peer->m_crypt_key_out);
         peer->send_numeric(705, ss.str(), true);
 
         peer->m_using_encryption = true;

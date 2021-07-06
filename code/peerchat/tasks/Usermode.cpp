@@ -244,11 +244,11 @@ namespace Peerchat {
 			return true;
 		}
 
-		if(usermode.hostmask.length() > 0 && (stricmp(usermode.hostmask.c_str(), summary.hostname.c_str()) != 0 || match(usermode.hostmask.c_str(), summary.hostname.c_str()))) {
+		if(usermode.hostmask.length() > 0 && (stricmp(usermode.hostmask.c_str(), summary.hostname.c_str()) == 0 || match(usermode.hostmask.c_str(), summary.hostname.c_str()) == 0)) {
 			return true;
 		}
 
-		if(usermode.machineid.length() > 0 && (stricmp(usermode.machineid.c_str(), summary.realname.c_str()) != 0 || match(usermode.machineid.c_str(), summary.realname.c_str()))) {
+		if(usermode.machineid.length() > 0 && (stricmp(usermode.machineid.c_str(), summary.realname.c_str()) == 0 || match(usermode.machineid.c_str(), summary.realname.c_str()) == 0)) {
 			return true;
 		}
 
