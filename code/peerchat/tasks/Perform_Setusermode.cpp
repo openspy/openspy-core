@@ -13,7 +13,7 @@ namespace Peerchat {
 		record.setByUserSummary = request.peer->GetUserDetails();
 		record.comment = "Staging room - Creator record";
 		record.hostmask = record.setByUserSummary.hostname;
-		record.modeflags = EUserChannelFlag_HalfOp;
+		record.modeflags = EUserChannelFlag_Op;
 		record.isGlobal = false;
 
 		json_t* send_json = UsermodeRecordToJson(record);

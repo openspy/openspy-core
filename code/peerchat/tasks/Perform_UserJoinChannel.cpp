@@ -19,8 +19,11 @@ namespace Peerchat {
 			}
 		}
 		if (channel.limit != 0 && channel.users.size() >= channel.limit) {
-			peer->send_numeric(471, "Cannot join channel (+l)", false, channel.channel_name);
-			return false;
+			if((channel.basic_mode_flags & EChannelMode_OpsObeyChannelLimit) || GetUserChannelModeLevel(initial_flags) < 3) {
+				peer->send_numeric(471, "Cannot join channel (+l)", false, channel.channel_name);
+				return false;
+			}
+			
 		}
 		if (channel.password.length() != 0) {
 			if (channel.password.compare(password) != 0) {
