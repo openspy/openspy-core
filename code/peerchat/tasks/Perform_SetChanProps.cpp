@@ -10,7 +10,10 @@ namespace Peerchat {
     json_t *ChanPropsToJson(ChanpropsRecord record) {
         json_t *send_json = json_object();
 
-        json_object_set_new(send_json, "channelmask", json_string(record.channel_mask.c_str()));
+		std::string formatted_name;
+		std::transform(record.channel_mask.begin(),record.channel_mask.end(),std::back_inserter(formatted_name),tolower);
+
+        json_object_set_new(send_json, "channelmask", json_string(formatted_name.c_str()));
 
         if(record.password.length() > 0)
             json_object_set_new(send_json, "password", json_string(record.password.c_str()));

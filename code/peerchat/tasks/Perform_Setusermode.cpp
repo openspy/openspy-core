@@ -8,8 +8,11 @@ namespace Peerchat {
 		TaskResponse response;
 
 		UsermodeRecord record;
+
+		std::string formatted_name;
+		std::transform(channel.channel_name.begin(),channel.channel_name.end(),std::back_inserter(formatted_name),tolower);
         
-		record.chanmask = channel.channel_name;
+		record.chanmask = formatted_name;
 		record.setByUserSummary = request.peer->GetUserDetails();
 		record.comment = "Staging room - Creator record";
 		record.hostmask = record.setByUserSummary.hostname;
@@ -46,7 +49,10 @@ namespace Peerchat {
 
 		UsermodeRecord record;
         
-		record.chanmask = channel.channel_name;
+		std::string formatted_name;
+		std::transform(channel.channel_name.begin(),channel.channel_name.end(),std::back_inserter(formatted_name),tolower);
+        
+		record.chanmask = formatted_name;
 		record.setByUserSummary = request.peer->GetUserDetails();
 		record.comment = "Staging room - Gameid Record";
 		record.modeflags = EUserChannelFlag_GameidPermitted;
