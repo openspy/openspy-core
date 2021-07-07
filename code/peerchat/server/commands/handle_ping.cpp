@@ -25,13 +25,6 @@ namespace Peerchat {
 		}
         send_message("PONG", end, UserSummary(), ((Peerchat::Server*)GetDriver()->getServer())->getServerName());
 
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
-		PeerchatBackendRequest req;
-		req.type = EPeerchatRequestType_KeepaliveUser;
-		req.summary = GetUserDetails();
-		req.peer = this;
-		req.peer->IncRef();
-		req.callback = NULL;
-		scheduler->AddRequest(req.type, req);
+		perform_keepalive();
     }
 }

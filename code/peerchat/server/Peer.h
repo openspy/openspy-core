@@ -23,7 +23,7 @@
 #define FLOOD_DECR_PER_TICK 25
 #define WARNING_FLOOD_WEIGHT_THRESHOLD 1200
 #define REGISTRATION_TIMEOUT 60
-#define MAX_USER_CHANNELS 20
+#define MAX_USER_CHANNELS 32
 
 
 namespace Peerchat {
@@ -203,6 +203,8 @@ namespace Peerchat {
 
 		void refresh_user_details(bool user_registration = false);
 
+		void perform_keepalive();
+
 		///
 		/// This block is public for use in async tasks
 		///
@@ -327,7 +329,7 @@ namespace Peerchat {
 
 		OS::GameData m_game;
 		
-		struct timeval m_last_recv, m_last_ping, m_connect_time;
+		struct timeval m_last_recv, m_last_ping, m_connect_time, m_last_keepalive;
 
 		OS::User m_user;
 		OS::Profile m_profile;

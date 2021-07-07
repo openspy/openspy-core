@@ -1,6 +1,6 @@
 #include <string.h>
 #include "irc_common.h"
-#define NICKLEN MAX_NICK_LEN
+#define NICKLEN 32
 typedef unsigned char u_char;
 #define PRINT 1
 #define CNTRL 2
@@ -132,7 +132,7 @@ unsigned char char_atribs[] =
  * allowed it...
  */
 
-int do_nick_name(char *nick) {
+int is_nick_valid(char *nick) {
   char   *ch;
 
   if(strlen(nick) > NICKLEN) return 0;
@@ -150,7 +150,7 @@ int do_nick_name(char *nick) {
 }
 
 
-int do_chan_name(char *nick) {
+int is_chan_valid(char *nick) {
   char   *ch;
 
   int len = strlen(nick);

@@ -63,7 +63,7 @@ namespace Peerchat {
         std::istringstream chanstream = std::istringstream(target);
         while (std::getline(chanstream, channel, ',')) {
 
-            if(do_chan_name(channel.c_str()) == 0) {
+            if(is_chan_valid(channel.c_str()) == 0) {
                 send_numeric(476, "Bad channel name", false, channel);
                 continue;
             }

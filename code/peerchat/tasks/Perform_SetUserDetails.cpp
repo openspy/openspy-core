@@ -23,6 +23,10 @@ namespace Peerchat {
         std::string formatted_name;
 		std::transform(request.summary.nick.begin(),request.summary.nick.end(),std::back_inserter(formatted_name),tolower);
 
+        std::string formatted_name_original;
+        std::string original_nick = request.peer->GetUserDetails().nick;
+		std::transform(original_nick.begin(),original_nick.end(),std::back_inserter(formatted_name_original),tolower);
+
         UserSummary userDetails = request.peer->GetUserDetails();
         bool nick_update = false;
         if(userDetails.id != 0) {
@@ -57,7 +61,7 @@ namespace Peerchat {
         if(!nick_exists) {
             response.summary.nick = request.summary.nick;
             if(nick_update) {
-                Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", formatted_name.c_str());
+                Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", formatted_name_original.c_str());
 
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d nick %s", response.summary.id, request.summary.nick.c_str());
 
