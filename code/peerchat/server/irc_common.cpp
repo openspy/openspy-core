@@ -8,6 +8,8 @@ typedef unsigned char u_char;
 #define PUNCT 8
 #define DIGIT 16
 #define SPACE 32
+#define GAMESPY 64
+#define BLOCK_START 128
 #define	IsCntrl(c) (char_atribs[(u_char)(c)]&CNTRL)
 #define IsAlpha(c) (char_atribs[(u_char)(c)]&ALPHA)
 #define IsSpace(c) (char_atribs[(u_char)(c)]&SPACE)
@@ -21,8 +23,10 @@ typedef unsigned char u_char;
 #define IsAscii(c) ((u_char)(c) >= 0 && (u_char)(c) <= 0x7f)
 #define IsGraph(c) ((char_atribs[(u_char)(c)]&PRINT) && ((u_char)(c) != 0x32))
 #define IsPunct(c) (!(char_atribs[(u_char)(c)]&(CNTRL|ALPHA|DIGIT)))
+#define IsGamespy(c) ((char_atribs[(u_char)(c)]&(GAMESPY)))
+#define IsBlockStart(c) ((char_atribs[(u_char)(c)]&(BLOCK_START)))
 
-#define	isvalid(c) (((c) >= 'A' && (c) < '~') || IsDigit(c) || (c) == '-')
+#define	isvalid(c) (((c) >= 'A' && (c) < '~') || IsDigit(c) || (c) == '-' || IsGamespy(c))
 
 unsigned char char_atribs[] =
 {
@@ -39,19 +43,19 @@ unsigned char char_atribs[] =
     /* space */
     PRINT | SPACE,
     /* !"#$%&'( */
-    PRINT, PRINT, PRINT, PRINT, PRINT, PRINT, PRINT, PRINT,
+    PRINT, PRINT /*| GAMESPY*/, PRINT | GAMESPY | BLOCK_START, PRINT | GAMESPY, PRINT | GAMESPY, PRINT | GAMESPY, PRINT /*| GAMESPY*/, PRINT | GAMESPY,
     /* )*+,-./ */
-    PRINT, PRINT, PRINT, PRINT, PRINT, PRINT, PRINT,
+    PRINT | GAMESPY, PRINT | GAMESPY, PRINT | GAMESPY | BLOCK_START, PRINT | GAMESPY, PRINT | GAMESPY, PRINT | GAMESPY, PRINT | GAMESPY,
     /* 0123 */
     PRINT | DIGIT, PRINT | DIGIT, PRINT | DIGIT, PRINT | DIGIT,
     /* 4567 */
     PRINT | DIGIT, PRINT | DIGIT, PRINT | DIGIT, PRINT | DIGIT,
     /* 89:; */
-    PRINT | DIGIT, PRINT | DIGIT, PRINT, PRINT,
+    PRINT | DIGIT, PRINT | DIGIT, PRINT | GAMESPY | BLOCK_START, PRINT | GAMESPY,
     /* <=>? */
     PRINT, PRINT, PRINT, PRINT,
     /* @ */
-    PRINT,
+    PRINT | GAMESPY | BLOCK_START,
     /* ABC */
     PRINT | ALPHA, PRINT | ALPHA, PRINT | ALPHA,
     /* DEF */
@@ -136,6 +140,9 @@ int is_nick_valid(char *nick) {
   char   *ch;
 
   if(strlen(nick) > NICKLEN) return 0;
+
+  char start = nick[0];
+  if(IsBlockStart(start)) return 0;
     
   for (ch = nick; *ch && (ch - nick) < NICKLEN; ch++)
       if (!isvalid(*ch) || IsSpace(*ch))
