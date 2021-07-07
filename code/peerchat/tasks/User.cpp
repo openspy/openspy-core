@@ -46,18 +46,29 @@ namespace Peerchat {
 
         UserSummary summary;
         if (user_id == -1) {
-            summary.address = OS::Address("0.0.0.0:0");
-            summary.nick = "SERVER";
-            summary.username = "SERVER";
-            summary.hostname = "*";
-            summary.realname = "SERVER";
-            summary.operflags = 0;
-            summary.profileid = 0;
-            summary.id = -1;
-            return summary;
+            return *server_userSummary;
         }
+
         Redis::Response reply;
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+
+
+        reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS user_%d", user_id);
+
+        bool user_exists = false;
+        if (!(Redis::CheckError(reply) || reply.values.size() == 0)) {
+            v = reply.values.front();
+            if ((v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) || (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0)) {
+                user_exists = true;
+            }
+        }
+
+        if(!user_exists) {
+            summary.id = 0;
+            return summary;
+        }
+
+
         reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET user_%d username", user_id);
         if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
             goto error_end;

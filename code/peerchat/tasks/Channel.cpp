@@ -390,6 +390,10 @@ namespace Peerchat {
                 summary.channel_id = channel_id;
                 summary.user_id = atoi(user_id.c_str());
 				summary.userSummary = LookupUserById(thread_data, summary.user_id);
+
+				if(summary.userSummary.id == 0) {
+					continue;
+				}
 				summary.modeflags = LookupUserChannelModeFlags(thread_data, channel_id, summary.user_id);
                 result.push_back(summary);
             }

@@ -40,13 +40,15 @@ namespace Peerchat {
 
 			if(found_channels) {
 				ss.str(ss.str().substr(0, ss.str().length() - 1));			
-				peer->send_numeric(319, ss.str(), false, response_data.summary.nick);
+				peer->send_numeric(319, ss.str(), false, response_data.summary.nick);				
 			}
+			peer->send_numeric(318, "End of WHOIS list", false, response_data.summary.nick);
 		}
 		else {
 			peer->send_no_such_target_error(response_data.profile.uniquenick);
+			peer->send_numeric(318, "End of WHOIS list", false, response_data.profile.uniquenick);
 		}
-		peer->send_numeric(318, "End of WHOIS list", false, response_data.summary.nick);
+		
 	}
     void Peer::handle_whois(std::vector<std::string> data_parser) {
         std::string target = data_parser.at(1);
