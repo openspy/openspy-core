@@ -23,7 +23,7 @@ namespace MM {
 	};
 
 	TaskScheduler<MMPushRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
-		{mm_channel_exchange, mm_server_event_routingkey, Handle_ClientMessage},
+		{mm_channel_exchange, mm_client_message_routingkey, Handle_ClientMessage},
 		{NULL, NULL, NULL}
 	};
 
