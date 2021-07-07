@@ -17,7 +17,7 @@
 namespace Peerchat {
 	void Peer::OnGetChanKey(TaskResponse response_data, Peer* peer) {
 		std::ostringstream ss;
-		ss << response_data.channel_summary.channel_name << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString();
+		ss << response_data.channel_summary.channel_name << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString(true);
 		peer->send_numeric(704, ss.str(), true);
 	}
 

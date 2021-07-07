@@ -150,12 +150,17 @@ namespace OS {
 		}
 		return ret;
 	}
-	std::string KVReader::ToString() const {
+	std::string KVReader::ToString(bool values_only) const {
 		std::string ret;
 		std::vector<std::pair<std::string, std::string>>::const_iterator it = m_kv_map.cbegin();
 		while (it != m_kv_map.cend()) {
 			std::pair<std::string, std::string> p = *it;
-			ret += m_delimitor + p.first + m_delimitor + p.second;
+			if(values_only) {
+				ret += m_delimitor + p.second;
+			} else {
+				ret += m_delimitor + p.first + m_delimitor + p.second;
+			}
+			
 			if (m_line_delimitor != 0) {
 				ret += m_line_delimitor;
 			}

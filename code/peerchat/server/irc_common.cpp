@@ -136,10 +136,7 @@ int is_nick_valid(char *nick) {
   char   *ch;
 
   if(strlen(nick) > NICKLEN) return 0;
-  
-  if (*nick == '-' || IsDigit(*nick))	/* first character is [0..9-] */
-      return 0;
-  
+    
   for (ch = nick; *ch && (ch - nick) < NICKLEN; ch++)
       if (!isvalid(*ch) || IsSpace(*ch))
 	  break;

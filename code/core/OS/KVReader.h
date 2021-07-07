@@ -28,7 +28,7 @@ namespace OS {
 		size_t Size() { return m_kv_map.size(); };
 		std::map<std::string, std::string> GetKVMap() const;
 
-		std::string ToString() const;
+		std::string ToString(bool values_only = false) const;
 	private:
 		int GetIndex(int n); //map internal index to external index
 		bool IsDataKey(std::string key);

@@ -24,7 +24,7 @@ namespace Peerchat {
         //uniquenick is "numeric", nick is target user
 
 		if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
-			ss << response_data.summary.nick << " " << response_data.summary.nick << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString();
+			ss << response_data.summary.nick << " " << response_data.summary.nick << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString(true);
 			peer->send_numeric(700, ss.str(), true, response_data.channel_summary.channel_name);
 		} else {
 			peer->send_no_such_target_error(response_data.profile.nick);
