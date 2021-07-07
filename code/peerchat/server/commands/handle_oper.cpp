@@ -52,9 +52,6 @@ namespace Peerchat {
             
         }
     }
-    void Peer::handle_adminme(std::vector<std::string> data_parser) {
-		m_user_details.operflags = -1;
-    }
     void Peer::handle_oper(std::vector<std::string> data_parser) {
 		TaskShared::AuthRequest request;
 		request.type = TaskShared::EAuthType_Uniquenick_Password;

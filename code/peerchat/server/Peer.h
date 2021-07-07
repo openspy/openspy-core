@@ -293,7 +293,6 @@ namespace Peerchat {
 		void handle_listchanprops(std::vector<std::string> data_parser);
 		void handle_delchanprops(std::vector<std::string> data_parser);
 		void handle_crypt(std::vector<std::string> data_parser);
-		void handle_adminme(std::vector<std::string> data_parser);
 		void handle_kill(std::vector<std::string> data_parser);		
 		void handle_loginpreauth(std::vector<std::string> data_parser);
 

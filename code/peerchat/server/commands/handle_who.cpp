@@ -64,22 +64,26 @@ namespace Peerchat {
 	void Peer::OnWho_FetchUserInfo(TaskResponse response_data, Peer* peer) {
 		if (response_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
 			peer->send_no_such_target_error(response_data.profile.uniquenick);
-			return;
+			
+		} else {
+			UserSummary summary = response_data.summary;
+
+			std::string target = summary.nick;
+
+			std::ostringstream s;
+			s << summary.username << " ";
+			s << summary.hostname << " ";
+			s << ((Peerchat::Server*)peer->GetDriver()->getServer())->getServerName() << " ";
+			s << summary.nick << " ";
+			s << "H";
+			s << " :0 " << summary.realname;
+			peer->send_numeric(352, s.str(), true, target);
 		}
-		UserSummary summary = response_data.summary;
 
-		std::string target = summary.nick;
-
-		std::ostringstream s;
-		s << summary.username << " ";
-		s << summary.hostname << " ";
-		s << ((Peerchat::Server*)peer->GetDriver()->getServer())->getServerName() << " ";
-		s << summary.nick << " ";
-		s << "H";
-		s << " :0 " << summary.realname;
-		peer->send_numeric(352, s.str(), true, target);
 
 		peer->send_numeric(315, "End of /WHO list.");
+
+			
 	}
     void Peer::handle_who(std::vector<std::string> data_parser) {
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();

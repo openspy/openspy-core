@@ -15,11 +15,6 @@
 #include <server/Peer.h>
 
 namespace Peerchat {
-	/*
-<- :s 311 CHC \c2d\cdri\c8ver Xvaqlsf9fX|0 190.148.50.19 * :f338b38dac75de566f8272b2e674a6bf
-<- :s 319 CHC \c2d\cdri\c8ver :#GPG!2386
-<- :s 318 CHC \c2d\cdri\c8ver :End of WHOIS list
-	*/
 	void Peer::OnWhois_FetchUser(TaskResponse response_data, Peer* peer) {
 		if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
 			std::ostringstream ss;
@@ -47,12 +42,11 @@ namespace Peerchat {
 				ss.str(ss.str().substr(0, ss.str().length() - 1));			
 				peer->send_numeric(319, ss.str(), false, response_data.summary.nick);
 			}
-
-			peer->send_numeric(318, "End of WHOIS list", false, response_data.summary.nick);
 		}
 		else {
 			peer->send_no_such_target_error(response_data.profile.uniquenick);
 		}
+		peer->send_numeric(318, "End of WHOIS list", false, response_data.summary.nick);
 	}
     void Peer::handle_whois(std::vector<std::string> data_parser) {
         std::string target = data_parser.at(1);

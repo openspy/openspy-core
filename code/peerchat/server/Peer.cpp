@@ -248,9 +248,6 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("SETGROUP", true, 2, &Peer::handle_setgroup, 0, 100));
 
 
-
-		//oper override
-		commands.push_back(CommandEntry("ADMINME", false, 0, &Peer::handle_adminme));
 		//global oper cmds
 		commands.push_back(CommandEntry("KILL", true, 2, &Peer::handle_kill, OPERPRIVS_KILL));
 
