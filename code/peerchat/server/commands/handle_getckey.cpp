@@ -39,6 +39,9 @@ namespace Peerchat {
 		
 		if(!skip) {
 			ss << response_data.summary.nick << " " << response_data.profile.uniquenick << " :" << response_data.kv_data.ToString(true);
+			if(response_data.kv_data_withnames.Size() > 0) {
+				ss << response_data.kv_data_withnames.ToString();
+			}
 			peer->send_numeric(702, ss.str(), true, response_data.channel_summary.channel_name);
 		}
 		

@@ -218,6 +218,7 @@ namespace Peerchat {
 			ChannelUserSummary channelUserSummary;
 			std::vector<ChannelSummary> channel_summaries;
 			OS::KVReader kv_data;
+			OS::KVReader kv_data_withnames; //used for wildcard GETCKEY, which must be output with names
 
 			OS::GameData game_data;
 

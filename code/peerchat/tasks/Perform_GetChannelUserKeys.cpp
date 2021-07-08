@@ -4,6 +4,50 @@
 
 namespace Peerchat {
 
+	void Handle_GetChannelUserKeys_LookupWildcard(TaskThreadData* thread_data, int channel_id, int user_id, std::string search_string, std::ostringstream &ss) {
+
+        Redis::Response reply;
+		Redis::Value v, arr;
+        int cursor = 0;
+
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+        do {
+            reply = Redis::Command(thread_data->mp_redis_connection, 0, "HSCAN channel_%d_user_%d %d MATCH custkey_%s", channel_id, user_id, cursor, search_string.c_str());
+			if (Redis::CheckError(reply))
+				goto error_cleanup;
+
+			v = reply.values[0].arr_value.values[0].second;
+			arr = reply.values[0].arr_value.values[1].second;
+
+			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+
+				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+					cursor = atoi(v.value._str.c_str());
+				}
+				else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+					cursor = v.value._int;
+				}
+				std::string key;
+				for (size_t i = 0; i < arr.arr_value.values.size(); i++) {
+					if (arr.arr_value.values[i].first != Redis::REDIS_RESPONSE_TYPE_STRING)
+						continue;
+
+					
+					
+					if((i % 2) == 0) {
+						key = arr.arr_value.values[i].second.value._str;
+						key = key.substr(8); //skip custkey_
+					} else {
+						ss << "\\" << key << "\\" << arr.arr_value.values[i].second.value._str;
+					}
+					
+				}
+			}else break;
+        } while(cursor != 0);
+		error_cleanup:
+		return;
+	}
+
 	void Handle_GetChannelUserKeys_SingleUser(PeerchatBackendRequest request, TaskThreadData* thread_data) {
 		TaskResponse response;
 
@@ -14,6 +58,7 @@ namespace Peerchat {
 		response.profile.uniquenick = request.profile.uniquenick; //getckey numeric value
 
 		std::ostringstream ss;
+		std::ostringstream wildcard_ss;
 
 		if (summary.channel_id != 0 && user_summary.id != 0) {
 			response.error_details.response_code = TaskShared::WebErrorCode_Success;
@@ -25,22 +70,25 @@ namespace Peerchat {
 				Redis::Response reply;
 				Redis::Value v;
 
-				
+				if(p.first.find_first_of('*') == std::string::npos) {
+					reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d_user_%d custkey_%s", summary.channel_id, user_summary.id, p.first.c_str());
+					if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+						continue;
+					}
+					v = reply.values[0];
 
-				reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d_user_%d custkey_%s", summary.channel_id, user_summary.id, p.first.c_str());
-				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-					continue;
-				}
-				v = reply.values[0];
-
-				ss << "\\" << p.first << "\\";
-				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					ss << v.value._str;
+					ss << "\\" << p.first << "\\";
+					if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+						ss << v.value._str;
+					}
+				} else {
+					Handle_GetChannelUserKeys_LookupWildcard(thread_data, summary.channel_id, user_summary.id, p.first, wildcard_ss);
 				}
 			}
 		}
 
 		response.kv_data = ss.str();
+		response.kv_data_withnames = wildcard_ss.str();
 		response.profile.id = 1; //indicate end
 
 		if (request.callback) {
@@ -60,6 +108,7 @@ namespace Peerchat {
 		response.profile.uniquenick = request.profile.uniquenick; //getckey numeric value
 
 		std::ostringstream ss;
+		std::ostringstream wildcard_ss;
 
 		if (summary.channel_id != 0) {
 			response.error_details.response_code = TaskShared::WebErrorCode_Success;
@@ -80,17 +129,21 @@ namespace Peerchat {
 
 					Redis::Response reply;
 					Redis::Value v;
+					if(p.first.find_first_of('*') == std::string::npos) {
+						reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d_user_%d custkey_%s", summary.channel_id, user.user_id, p.first.c_str());
+						if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+							continue;
+						}
+						v = reply.values[0];
 
-					reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d_user_%d custkey_%s", summary.channel_id, user.user_id, p.first.c_str());
-					if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-						continue;
+						ss << "\\" << p.first << "\\";
+						if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+							ss << v.value._str;
+						}
+					} else {
+						Handle_GetChannelUserKeys_LookupWildcard(thread_data, summary.channel_id, user.user_id, p.first, wildcard_ss);
 					}
-					v = reply.values[0];
-
-					ss << "\\" << p.first << "\\";
-					if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-						ss << v.value._str;
-					}
+					
 				}
 
 				
@@ -102,11 +155,13 @@ namespace Peerchat {
 				}
 
 				response.kv_data = ss.str();
+				response.kv_data_withnames = wildcard_ss.str();
 				ss.str("");
 				if (request.callback) {
 					request.callback(response, request.peer);
 				}
 				response.kv_data = OS::KVReader();
+				response.kv_data_withnames = OS::KVReader();
 			}			
 		}
 
