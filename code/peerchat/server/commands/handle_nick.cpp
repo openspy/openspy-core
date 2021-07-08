@@ -47,7 +47,7 @@ namespace Peerchat {
             }
         } 
         else if (response_data.error_details.response_code == TaskShared::WebErrorCode_UniqueNickInUse) {
-            if(response_data.profile.uniquenick.compare(peer->m_profile.uniquenick) || response_data.profile.uniquenick.compare(peer->m_profile.uniquenick+ "-gs")) {
+            if(peer->m_profile.id != 0 && (response_data.profile.uniquenick.compare(peer->m_profile.uniquenick) || response_data.profile.uniquenick.compare(peer->m_profile.uniquenick+ "-gs"))) {
                 //remote kill user... steal nick
                 peer->perform_acquire_uniquenick(response_data.summary);
             } else {
