@@ -22,6 +22,7 @@ namespace Peerchat {
 		m_flood_weight = 0;
 		gettimeofday(&m_last_recv, NULL);
 		gettimeofday(&m_connect_time, NULL);		
+		gettimeofday(&m_last_keepalive, NULL);
 		RegisterCommands();
 	}
 	Peer::~Peer() {
@@ -164,7 +165,7 @@ namespace Peerchat {
 		if(current_time.tv_sec - m_connect_time.tv_sec > REGISTRATION_TIMEOUT && !m_sent_client_init) {
 			Delete(true, "Registration Timeout");
 		}
-		else if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_PING_TIME && packet_waiting) {
+		else if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_PING_TIME) {
 			perform_keepalive();	
 		}
 		else if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIME * 2) {

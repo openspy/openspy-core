@@ -31,9 +31,9 @@ namespace Peerchat {
             json_object_set(send_json, "comment", json_null());
 
         if(record.groupname.length() > 0)
-            json_object_set_new(send_json, "group", json_string(record.groupname.c_str()));
+            json_object_set_new(send_json, "groupname", json_string(record.groupname.c_str()));
         else 
-            json_object_set(send_json, "group", json_null());
+            json_object_set(send_json, "groupname", json_null());
 
         if(record.topic.length() > 0)
             json_object_set_new(send_json, "topic", json_string(record.topic.c_str()));

@@ -63,11 +63,14 @@ namespace Peerchat {
 	bool Driver::LLIterator_OnChannelMessage(INetPeer* peer, SendMessageIteratorState* state)
 	{
 		Peer *p = (Peer *)peer;
-		if (state->from.modeflags & EUserChannelFlag_Invisible) {
-			if (~p->GetOperFlags() & OPERPRIVS_INVISIBLE) {
-				return true;
+		if(state->type.compare("NOTICE") != 0) { //permit NOTICE messages to show up from invisible users
+			if (state->from.modeflags & EUserChannelFlag_Invisible) {
+				if (~p->GetOperFlags() & OPERPRIVS_INVISIBLE) {
+					return true;
+				}
 			}
 		}
+		
 		bool in_channel = p->GetChannelFlags(state->channel.channel_id) & EUserChannelFlag_IsInChannel && (p->GetChannelFlags(state->channel.channel_id) & state->requiredChanUserModes || state->requiredChanUserModes == 0);
 		int has_oper = p->GetOperFlags() & state->requiredOperFlags || state->requiredOperFlags == 0;
 		bool selfMatch = (state->includeSelf && state->from.user_id == p->GetBackendId()) || (state->from.user_id != p->GetBackendId());

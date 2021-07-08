@@ -33,6 +33,9 @@ namespace Peerchat {
 				if(peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_IsInChannel || peer->GetOperFlags() & OPERPRIVS_GLOBALOWNER) {
 					channel_visible = true;
 				}
+				if(peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_Invisible && (!peer->GetOperFlags() & OPERPRIVS_INVISIBLE)) { 
+					channel_visible = false;
+				}
 				if(!channel_visible) continue;
 				ss << summary.channel_name << " ";
 				found_channels = true;

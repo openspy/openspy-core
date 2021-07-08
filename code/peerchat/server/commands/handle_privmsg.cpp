@@ -62,7 +62,7 @@ namespace Peerchat {
         req.message_type = type;
         req.message_target = target;
         req.peer->IncRef();
-        req.callback = OnNickReserve;
+        req.callback = NULL;
         scheduler->AddRequest(req.type, req); 
     }
     void Peer::handle_privmsg(std::vector<std::string> data_parser) {

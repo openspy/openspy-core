@@ -102,6 +102,7 @@ namespace Peerchat {
 				}
 
 				response.kv_data = ss.str();
+				ss.str("");
 				if (request.callback) {
 					request.callback(response, request.peer);
 				}

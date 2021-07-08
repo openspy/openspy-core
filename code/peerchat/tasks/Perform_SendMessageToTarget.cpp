@@ -103,12 +103,11 @@ namespace Peerchat {
 			if (summary.channel_id == 0 || !CheckUserCanSendMessage(summary, request.peer)) {
 				if (summary.channel_id != 0) {
 					request.peer->send_numeric(404, "Cannot send to channel", false, target);
-					request.peer->DecRef();
 				}
 				else {
 					request.peer->send_no_such_target_error(target);
-					request.peer->DecRef();
 				}
+				request.peer->DecRef();
 				return true;
 			}
 			mq_message << "\\type\\" << request.message_type.c_str() << "\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id;
