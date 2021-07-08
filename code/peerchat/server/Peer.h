@@ -256,7 +256,8 @@ namespace Peerchat {
 		static void OnListChanProps(TaskResponse response_data, Peer *peer);
 		static void OnSetChanProps(TaskResponse response_data, Peer* peer);
 		static void OnDelChanProps(TaskResponse response_data, Peer* peer);
-		static void OnKillUser(TaskResponse response_data, Peer* peer);		
+		static void OnKillUser(TaskResponse response_data, Peer* peer);
+		static void OnNickReserve_DuplicateRemoteKill(TaskResponse response_data, Peer *peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -325,6 +326,8 @@ namespace Peerchat {
 
 		void perform_oper_check();
 		static void OnFetchOperStatus(TaskResponse response_data, Peer* peer);
+
+		void perform_acquire_uniquenick(UserSummary target);
 
 		OS::GameData m_game;
 		

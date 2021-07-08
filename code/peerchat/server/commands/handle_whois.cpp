@@ -45,6 +45,11 @@ namespace Peerchat {
 				ss.str(ss.str().substr(0, ss.str().length() - 1));			
 				peer->send_numeric(319, ss.str(), false, response_data.summary.nick);				
 			}
+			if(response_data.summary.operflags != 0 && (peer->GetOperFlags() & OPERPRIVS_LISTOPERS)) {
+				ss.str("");
+				ss << "Is an IRC Operator (" << response_data.summary.operflags << ")";
+				peer->send_numeric(313, ss.str(), false, response_data.summary.nick);	
+			}
 			peer->send_numeric(318, "End of WHOIS list", false, response_data.summary.nick);
 		}
 		else {

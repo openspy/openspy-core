@@ -147,7 +147,6 @@ namespace Peerchat {
 						}
 						std::string ban_mask = data_parser.at(last_offset);
 						handle_ban_hostmask(req.channel_summary.channel_name, ban_mask, set);
-						printf("set channel specific redis only ban %s %d\n", ban_mask.c_str(), set);
 					}
 				}
 				else if (mode_string[i] == 'k') {

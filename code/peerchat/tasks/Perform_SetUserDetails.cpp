@@ -85,6 +85,7 @@ namespace Peerchat {
 
             response.error_details.response_code = TaskShared::WebErrorCode_Success;
         } else {
+            response.summary = GetUserSummaryByName(thread_data, formatted_name);
             response.error_details.response_code = TaskShared::WebErrorCode_UniqueNickInUse;
         }
         

@@ -47,8 +47,40 @@ namespace Peerchat {
             }
         } 
         else if (response_data.error_details.response_code == TaskShared::WebErrorCode_UniqueNickInUse) {
-            peer->send_numeric(433,"Nickname is already in use", false, response_data.profile.uniquenick);
+            if(response_data.profile.uniquenick.compare(peer->m_profile.uniquenick) || response_data.profile.uniquenick.compare(peer->m_profile.uniquenick+ "-gs")) {
+                //remote kill user... steal nick
+                peer->perform_acquire_uniquenick(response_data.summary);
+            } else {
+                peer->send_numeric(433,"Nickname is already in use", false, response_data.profile.uniquenick);
+            }
+            
         }
+    }
+    void Peer::OnNickReserve_DuplicateRemoteKill(TaskResponse response_data, Peer *peer) {
+        if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
+            TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(peer->GetDriver()->getServer()))->GetPeerchatTask();
+            PeerchatBackendRequest req;
+            req.type = EPeerchatRequestType_SetUserDetails;
+            req.peer = peer;
+            req.summary = peer->GetUserDetails();
+            req.summary.nick = response_data.profile.uniquenick;
+            req.peer->IncRef();
+            req.callback = OnNickReserve;
+            scheduler->AddRequest(req.type, req);
+        }
+    }
+    void Peer::perform_acquire_uniquenick(UserSummary target) {
+        TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
+        PeerchatBackendRequest req;
+        req.type = EPeerchatRequestType_RemoteKill_ByName;
+        req.peer = this;
+        req.summary.username = target.nick;
+
+        req.usermodeRecord.comment = "Duplicate Login";
+
+        req.peer->IncRef();
+        req.callback = OnNickReserve_DuplicateRemoteKill;
+        scheduler->AddRequest(req.type, req);
     }
     void Peer::handle_nick(std::vector<std::string> data_parser) {
         TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();

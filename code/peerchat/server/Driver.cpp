@@ -63,7 +63,7 @@ namespace Peerchat {
 	bool Driver::LLIterator_OnChannelMessage(INetPeer* peer, SendMessageIteratorState* state)
 	{
 		Peer *p = (Peer *)peer;
-		if(state->type.compare("NOTICE") != 0) { //permit NOTICE messages to show up from invisible users
+		if(state->type.compare("NOTICE") != 0 && state->type.compare("MODE") != 0 && state->type.compare("TOPIC") != 0 && state->type.compare("KICK") != 0) { //allow NOTICE/MODE/TOPIC/KICK through
 			if (state->from.modeflags & EUserChannelFlag_Invisible) {
 				if (~p->GetOperFlags() & OPERPRIVS_INVISIBLE) {
 					return true;

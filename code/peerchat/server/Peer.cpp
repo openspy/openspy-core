@@ -145,6 +145,8 @@ namespace Peerchat {
 	end:
 		//send_ping();
 
+		perform_keepalive();
+
 		if(!(GetOperFlags() & OPERPRIVS_FLOODEXCEMPT)) {
 			if(m_flood_weight >= MAX_FLOOD_WEIGHT) {
 				Delete(false, "Excess flood");
@@ -165,9 +167,6 @@ namespace Peerchat {
 		if(current_time.tv_sec - m_connect_time.tv_sec > REGISTRATION_TIMEOUT && !m_sent_client_init) {
 			Delete(true, "Registration Timeout");
 		}
-		else if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_PING_TIME) {
-			perform_keepalive();	
-		}
 		else if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIME * 2) {
 			Delete(true, "Ping Timeout");
 		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
@@ -175,15 +174,21 @@ namespace Peerchat {
 		}
 	}
 	void Peer::perform_keepalive() {
-		gettimeofday(&m_last_keepalive, NULL);
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
-		PeerchatBackendRequest req;
-		req.type = EPeerchatRequestType_KeepaliveUser;
-		req.summary = GetUserDetails();
-		req.peer = this;
-		req.peer->IncRef();
-		req.callback = NULL;
-		scheduler->AddRequest(req.type, req);
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+
+
+		if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_PING_TIME) {
+			gettimeofday(&m_last_keepalive, NULL);
+			TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
+			PeerchatBackendRequest req;
+			req.type = EPeerchatRequestType_KeepaliveUser;
+			req.summary = GetUserDetails();
+			req.peer = this;
+			req.peer->IncRef();
+			req.callback = NULL;
+			scheduler->AddRequest(req.type, req);
+		}
 	}
 	void Peer::handle_packet(OS::KVReader data_parser) {
 			
