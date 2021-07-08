@@ -31,7 +31,7 @@ namespace NN {
         json_object_set_new(packet_obj, "data", init_obj);
         return packet_obj;
    }
-    void Driver::handle_natify_packet(OS::Address from, NatNegPacket *packet, std::string gamename) {
+    void Driver::handle_natify_packet(OS::Address from, NatNegPacket *packet) {
         OS::LogText(OS::ELogLevel_Info, "[%s] Got natify - version: %d, client idx: %d, porttype: %d", from.ToString().c_str(), packet->version, ntohl(packet->cookie), packet->Packet.Init.porttype);
 
         if(packet->Packet.Init.porttype == NN_PT_NN1) {

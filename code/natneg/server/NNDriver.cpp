@@ -51,9 +51,9 @@ namespace NN {
 						packet.cookie = dgram.buffer.ReadInt();
 
 						int packetSize = packetSizeFromType(packet.packettype);
-						
+						std::string gamename;
 
-						std::string gamename = "";
+						
 						size_t new_pos = 0;
 						switch(packet.packettype) {
 							case NN_INIT:
@@ -63,29 +63,29 @@ namespace NN {
 							break;
 							case NN_CONNECT_ACK:
 								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-								handle_connect_ack_packet(dgram.address, &packet, gamename);
+								handle_connect_ack_packet(dgram.address, &packet);
 							break;
 							case NN_ADDRESS_CHECK:
 								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
 								new_pos = ((size_t)begin-(size_t)dgram.buffer.GetHead());
 								new_pos += sizeof(packet);
 								dgram.buffer.SetReadCursor(new_pos);
-								handle_address_check_packet(dgram.address, &packet, gamename);
+								handle_address_check_packet(dgram.address, &packet);
 							break;
 							case NN_REPORT:
 								dgram.buffer.ReadBuffer(&packet.Packet.Report, packetSize);
-								handle_report_packet(dgram.address, &packet, gamename);
+								handle_report_packet(dgram.address, &packet);
 							break;
 							case NN_NATIFY_REQUEST:
 								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
 								new_pos = ((size_t)begin-(size_t)dgram.buffer.GetHead());
 								new_pos += sizeof(packet);
 								dgram.buffer.SetReadCursor(new_pos);
-								handle_natify_packet(dgram.address, &packet, gamename);
+								handle_natify_packet(dgram.address, &packet);
 							break;
 							case NN_ERTACK:
 								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-								handle_ert_ack_packet(dgram.address, &packet, gamename);
+								handle_ert_ack_packet(dgram.address, &packet);
 							break;
 						}
 
@@ -123,9 +123,9 @@ namespace NN {
 			case NN_ERTTEST:
 			case NN_INIT:
 			case NN_INITACK:
-				size = INITPACKET_SIZE;
-				break;
 			case NN_CONNECT_ACK:
+				size = INITPACKET_SIZE;
+				break;			
 			case NN_CONNECT_PING:
 			case NN_CONNECT:
 				size = CONNECTPACKET_SIZE;
