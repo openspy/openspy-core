@@ -62,7 +62,7 @@ namespace Peerchat {
 		}
 		error_end:
 
-		ss << " " << user_ss.str();
+		ss << " :" << user_ss.str();
 	}
     bool Perform_UpdateChannelModes(PeerchatBackendRequest request, TaskThreadData *thread_data) {
 

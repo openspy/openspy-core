@@ -157,6 +157,7 @@ namespace Peerchat {
 				response.kv_data = ss.str();
 				response.kv_data_withnames = wildcard_ss.str();
 				ss.str("");
+				wildcard_ss.str("");
 				if (request.callback) {
 					request.callback(response, request.peer);
 				}

@@ -27,7 +27,7 @@ namespace Peerchat {
             thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
         }
         if (initial_flags & EUserChannelFlag_Voice) {
-            std::string message = "+v " + request.peer->GetUserDetails().nick;
+            std::string message = "+v :" + request.peer->GetUserDetails().nick;
             const char* base64 = OS::BinToBase64Str((uint8_t*)message.c_str(), message.length());
             std::string b64_string = base64;
             free((void*)base64);
@@ -37,7 +37,7 @@ namespace Peerchat {
             thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mode_message.str().c_str());
         }
         if (initial_flags & EUserChannelFlag_HalfOp || initial_flags & EUserChannelFlag_Op || initial_flags & EUserChannelFlag_Owner) {
-            std::string message = "+o " + request.peer->GetUserDetails().nick;
+            std::string message = "+o :" + request.peer->GetUserDetails().nick;
             const char* base64 = OS::BinToBase64Str((uint8_t*)message.c_str(), message.length());
             std::string b64_string = base64;
             free((void*)base64);
