@@ -136,8 +136,8 @@ unsigned char char_atribs[] =
  * allowed it...
  */
 
-int is_nick_valid(char *nick) {
-  char   *ch;
+int is_nick_valid(const char *nick) {
+  const char   *ch;
 
   if(strlen(nick) > NICKLEN) return 0;
 
@@ -154,8 +154,8 @@ int is_nick_valid(char *nick) {
 }
 
 
-int is_chan_valid(char *nick) {
-  char   *ch;
+int is_chan_valid(const char *nick) {
+  const char   *ch;
 
   int len = strlen(nick);
   if(len > NICKLEN && len > 1) return 0;

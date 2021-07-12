@@ -67,10 +67,10 @@ namespace Peerchat {
 			}
 			
 			UserSummary(std::string string) {
-				int username_marker = string.find_first_of("!");
-				int address_marker = string.find_first_of("@");
+				size_t username_marker = string.find_first_of("!");
+				size_t address_marker = string.find_first_of("@");
 
-				int id_marker = string.find_first_of("+");
+				size_t id_marker = string.find_first_of("+");
 
 				nick = string.substr(0, username_marker);
 				username = string.substr(username_marker + 1, address_marker - username_marker - 1);

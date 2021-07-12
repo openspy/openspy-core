@@ -57,10 +57,10 @@ void gs_crypt(unsigned char *buffer_ptr, int buffer_len, gs_crypt_key *key)
 }
 
 
-void gs_xcode_buf(char *buf, int len, char *enckey)
+void gs_xcode_buf(char *buf, int len, const char *enckey)
 {
 	int i;
-	char *pos = enckey;
+	const char *pos = enckey;
 
 	for (i = 0 ; i < len ; i++)
 	{

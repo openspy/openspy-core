@@ -130,6 +130,7 @@ namespace Peerchat {
 		if(p->GetChannelFlags(state->summary.channel_id) & EUserChannelFlag_IsInChannel) {
 			p->send_numeric(704,state->keys_message, true, state->summary.channel_name, false);
 		}
+		return true;
 	}
 	
 	void Driver::OnSetChannelKeys(ChannelSummary summary, OS::KVReader keys) {
