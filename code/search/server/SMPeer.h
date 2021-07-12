@@ -96,6 +96,10 @@ namespace SM {
 		static void m_nicks_cb(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 		void handle_searchunique(OS::KVReader data_parser);
+
+
+		static void m_uniquesearch_cb(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		void handle_uniquesearch(OS::KVReader data_parser);
 		void post_register_registercdkey();
 		static const char *mp_hidden_str;
 

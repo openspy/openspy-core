@@ -2,7 +2,7 @@
 #include <sstream>
 #include <server/Server.h>
 namespace Peerchat {
-        const char *peerchat_channel_exchange = "openspy.core";
+        const char *peerchat_channel_exchange = "peerchat.core";
 
 		/*
 			this queue is used for PRIVMSG,NOTICE,ATM,UTM,MODE,TOPIC, JOIN, PART
@@ -236,6 +236,7 @@ namespace Peerchat {
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %shostname %s", base_key.c_str(), user_base.c_str(), userSummary.hostname.c_str());
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sprofileid %d", base_key.c_str(), user_base.c_str(), userSummary.profileid);
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %suserid %d", base_key.c_str(), user_base.c_str(), userSummary.userid);
+				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sbackendid %d", base_key.c_str(), user_base.c_str(), userSummary.id);
 
 				if(show_private) {
 					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %saddress %s", base_key.c_str(), user_base.c_str(), userSummary.address.ToString(true).c_str());
@@ -250,6 +251,7 @@ namespace Peerchat {
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s hostname %s", base_key.c_str(), userSummary.hostname.c_str());
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s profileid %d", base_key.c_str(), userSummary.profileid);
 				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s userid %d", base_key.c_str(), userSummary.userid);
+
 				if(show_private) {
 					
 					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s address %s", base_key.c_str(), userSummary.address.ToString(true).c_str());

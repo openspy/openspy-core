@@ -139,7 +139,10 @@ unsigned char char_atribs[] =
 int is_nick_valid(const char *nick) {
   const char   *ch;
 
-  if(strlen(nick) > NICKLEN) return 0;
+  int nick_len = strlen(nick);
+  if(nick_len > NICKLEN) return 0;
+
+  if(nick_len == 1 && nick[0] == '*') return 0;
 
   char start = nick[0];
   if(IsBlockStart(start)) return 0;

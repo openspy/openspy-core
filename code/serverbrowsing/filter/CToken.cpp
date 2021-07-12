@@ -318,12 +318,12 @@ int string_compare_less_than_equals(std::string s1, std::string s2) {
 		stack.pop(); \
 		if (t1.getType() == EToken_Integer && t2.getType() == EToken_Integer) { \
 			int i1, i2; \
-			i1 = t1.getInt(); \
-			i2 = t2.getInt(); \
+			i2 = t1.getInt(); \
+			i1 = t2.getInt(); \
 			val = i1 _operator i2; \
 		} else if(t1.getType() == EToken_String || t2.getType() == EToken_String) {\
-			std::string s1 = tokenToString(&t1); \
-			std::string s2 = tokenToString(&t2); \
+			std::string s2 = tokenToString(&t1); \
+			std::string s1 = tokenToString(&t2); \
 			val = string_compare_func (s1, s2) string_compare_end;\
 		} \
 	} \

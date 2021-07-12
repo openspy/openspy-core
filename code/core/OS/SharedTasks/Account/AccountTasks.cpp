@@ -3,6 +3,7 @@
 #include <OS/SharedTasks/tasks.h>
 #include "ProfileTasks.h"
 #include "UserTasks.h"
+#define MAX_SUGGESTIONS 5
 namespace TaskShared {
 
 		TaskScheduler<UserRequest, TaskThreadData>::RequestHandlerEntry UserTasks_requestTable[] = {
@@ -22,6 +23,7 @@ namespace TaskShared {
 			{EProfileSearch_CreateProfile, PerformProfileRequest},
 			{EProfileSearch_DeleteProfile, PerformProfileRequest},
 			{EProfileSearch_UpdateProfile, PerformProfileRequest},
+			{EProfileSearch_SuggestUniquenick, Perform_SuggestUniquenick},
 
 			{EProfileSearch_Buddies, Perform_BuddyRequest},
 			{EProfileSearch_Buddies_Reverse, Perform_BuddyRequest},
@@ -49,6 +51,9 @@ namespace TaskShared {
 			switch (request.type) {
 			case EProfileSearch_Profiles:
 				url += "/v1/Profile/lookup";
+				break;
+			case EProfileSearch_SuggestUniquenick:
+				url += "/v1/Profile/GetNameSuggestions";
 				break;
 			case EProfileSearch_CreateProfile:
 			case EProfileSearch_DeleteProfile:
@@ -385,6 +390,73 @@ namespace TaskShared {
 
 			if (request.callback != NULL)
 				request.callback(error_details, results, request.extra, request.peer);
+
+			if (request.peer) {
+				request.peer->DecRef();
+			}
+			return true;
+		}
+		bool Perform_SuggestUniquenick(ProfileRequest request, TaskThreadData *thread_data) {
+			curl_data recv_data;
+			recv_data.buffer = "";
+			std::vector<OS::Profile> results;
+			std::map<int, OS::User> users_map;
+			//build json object
+
+			json_t *send_obj = json_object();
+
+			//profile parameters
+
+			if (request.profile_search_details.uniquenick.length())
+				json_object_set_new(send_obj, "preferredName", json_string(request.profile_search_details.uniquenick.c_str()));
+
+			if (request.profile_search_details.namespaceid != -1)
+				json_object_set_new(send_obj, "namespaceid", json_integer(request.profile_search_details.namespaceid));
+
+			json_object_set_new(send_obj, "num_suggestions", json_integer(MAX_SUGGESTIONS));
+
+
+
+			char *json_string = json_dumps(send_obj, 0);
+
+			CURL *curl = curl_easy_init();
+			CURLcode res;
+			struct curl_slist *chunk = NULL;
+			TaskShared::WebErrorDetails error_details;
+			if (curl) {
+
+				ProfileReq_InitCurl(curl, json_string, (void *)&recv_data, request, &chunk);
+				res = curl_easy_perform(curl);
+				if (res == CURLE_OK) {
+					json_t *json_data = NULL;
+
+					json_data = json_loads(recv_data.buffer.c_str(), 0, NULL);
+					if (Handle_WebError(json_data, error_details)) {
+
+					}
+					else if (json_data && json_is_array(json_data)) {
+						int arr_len = json_array_size(json_data);
+						for(int i=0;i<arr_len;i++) {
+							OS::Profile suggestedProfile;
+							suggestedProfile.uniquenick = json_string_value(json_array_get(json_data, i));
+							results.push_back(suggestedProfile);
+						}
+					}
+					else {
+						error_details.response_code = TaskShared::WebErrorCode_BackendError;
+					}
+				}
+				curl_slist_free_all(chunk);
+				curl_easy_cleanup(curl);
+			}
+
+			if (json_string) {
+				free((void *)json_string);
+			}
+			if (send_obj)
+				json_decref(send_obj);
+
+			request.callback(error_details, results, users_map, request.extra, request.peer);
 
 			if (request.peer) {
 				request.peer->DecRef();

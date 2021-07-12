@@ -117,13 +117,10 @@ namespace SM {
 			handle_searchunique(data_parser);
 		} else if(!command.compare("profilelist")) {
 			
+		} else if(!command.compare("uniquesearch")) {
+			handle_uniquesearch(data_parser);
 		}
-		//!command.compare("uniquesearch") ||
-
-		/*
-		[127.0.0.1:50805] Recv: \searchunique\\sesskey\0\profileid\0\uniquenick\gptestc1\namespaces\1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16\gamename\gmtest
-		*/
-
+		
 		gettimeofday(&m_last_recv, NULL);
 	}
 

@@ -18,6 +18,7 @@ namespace TaskShared {
 		EProfileSearch_Buddies,
 		EProfileSearch_Buddies_Reverse,
 		EProfileSearch_Blocks,
+		EProfileSearch_SuggestUniquenick,
 	};
 
 	class ProfileRequest {
@@ -33,12 +34,8 @@ namespace TaskShared {
 		ProfileSearchBuddyCallback buddyCallback;
 		int type;
 	};
-
-    bool Perform_GetProfiles(ProfileRequest request, TaskThreadData *thread_data);
-    bool Perform_CreateProfile(ProfileRequest request, TaskThreadData *thread_data);
-    bool Perform_DeleteProfile(ProfileRequest request, TaskThreadData *thread_data);
-    bool Perform_UpdateProfile(ProfileRequest request, TaskThreadData *thread_data);
 	bool Perform_BuddyRequest(ProfileRequest request, TaskThreadData *thread_data);
+	bool Perform_SuggestUniquenick(ProfileRequest request, TaskThreadData *thread_data);
 
 	void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileRequest request, struct curl_slist **out_list);
 	bool PerformProfileRequest(ProfileRequest request, TaskThreadData *thread_data);

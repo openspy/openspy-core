@@ -156,7 +156,7 @@ namespace Peerchat {
 	bool Driver::LLIterator_OnChannelBroadcast(INetPeer* peer, OnChannelBroadcastState* state) {
 		Peer *p = (Peer *)peer;
 		if (state->includeSelf && p->GetBackendId() == state->target.id) {
-			p->send_message(state->type, state->message, state->target.ToString());
+			p->send_message(state->type, state->message, state->target);
 			return true;
 		}
 		std::map<int, int>::iterator it2 = state->channel_list.begin();

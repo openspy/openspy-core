@@ -47,7 +47,6 @@ namespace Peerchat {
 	}
 	void Peer::OnGetBackendId(TaskResponse response_data, Peer *peer) {
 		peer->m_user_details.id = response_data.summary.id;
-		printf("backend id: %d\n", peer->m_user_details.id);
 	}
 	void Peer::OnConnectionReady() {
 		m_user_details.address = getAddress();
