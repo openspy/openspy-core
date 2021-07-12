@@ -190,7 +190,7 @@ namespace Peerchat {
 		int GetBackendId() { return m_user_details.id; };
 
 		void send_numeric(int num, std::string str, bool no_colon = false, std::string target_name = "", bool append_name = true, std::string default_name = "*");
-		void send_message(std::string messageType, std::string messageContent, UserSummary from = UserSummary(), std::string to = "", std::string target = "");
+		void send_message(std::string messageType, std::string messageContent, UserSummary from = UserSummary(), std::string to = "", std::string target = "", bool no_colon = false);
 		void handle_channel_join_events(ChannelSummary channel);
 
 		int GetChannelFlags(int channel_id);
@@ -225,6 +225,7 @@ namespace Peerchat {
 	private:
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void* extra, INetPeer* peer);
+		static void OnGetBackendId(TaskResponse response_data, Peer *peer);
 		static void OnNickReserve(TaskResponse response_data, Peer *peer);
 		static void OnUserRegistered(TaskResponse response_data, Peer *peer);
 		static void OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer);
@@ -348,6 +349,7 @@ namespace Peerchat {
 
 
 		bool m_using_encryption;
+		bool m_stream_waiting;
 		gs_crypt_key m_crypt_key_in;
 		gs_crypt_key m_crypt_key_out;
 

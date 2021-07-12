@@ -15,14 +15,25 @@
 #include "Peer.h"
 namespace Peerchat {
 	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
+		m_user_details.id = 0;
 		mp_user_address_visibility_list = new OS::LinkedListHead<UserAddressVisibiltyInfo*>();
 		m_sent_client_init = false;
+		m_stream_waiting = false;
 		mp_mutex = OS::CreateMutex();
 		m_using_encryption = false;
 		m_flood_weight = 0;
 		gettimeofday(&m_last_recv, NULL);
 		gettimeofday(&m_connect_time, NULL);		
 		gettimeofday(&m_last_keepalive, NULL);
+
+		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
+		PeerchatBackendRequest req;
+		req.type = EPeerchatRequestType_SetUserDetails;
+		req.peer = this;
+		req.peer->IncRef();
+		req.callback = OnGetBackendId;
+		scheduler->AddRequest(req.type, req);
+		
 		RegisterCommands();
 	}
 	Peer::~Peer() {
@@ -34,7 +45,10 @@ namespace Peerchat {
 		delete mp_mutex;
 		
 	}
-
+	void Peer::OnGetBackendId(TaskResponse response_data, Peer *peer) {
+		peer->m_user_details.id = response_data.summary.id;
+		printf("backend id: %d\n", peer->m_user_details.id);
+	}
 	void Peer::OnConnectionReady() {
 		m_user_details.address = getAddress();
 		m_user_details.hostname = m_user_details.address.ToString(true);
@@ -68,6 +82,16 @@ namespace Peerchat {
 	void Peer::think(bool packet_waiting) {
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
+
+		if(m_stream_waiting) {
+			packet_waiting = true;
+			m_stream_waiting = false;
+		}
+
+		if(m_user_details.id == 0 && packet_waiting) {
+			m_stream_waiting = true;
+			packet_waiting = false; //don't process anything until you have a backend id
+		}
 
 		if (packet_waiting) {
 			OS::Buffer recv_buffer;
@@ -294,7 +318,7 @@ namespace Peerchat {
 		s << str << std::endl;
 		SendPacket(s.str());
 	}
-	void Peer::send_message(std::string messageType, std::string messageContent, UserSummary from, std::string to, std::string target) {
+	void Peer::send_message(std::string messageType, std::string messageContent, UserSummary from, std::string to, std::string target, bool no_colon) {
 		if (m_user_details.modeflags & EUserMode_Quiet) {
 			return;
 		}
@@ -318,7 +342,11 @@ namespace Peerchat {
 			s << " " << target;
 		}
 		if(messageContent.length() > 0) {
-			s << " :" << messageContent;
+			s << " ";
+			if(!no_colon) {
+				s << ":";
+			}
+			s << messageContent;
 		}
 		s << std::endl;
 		SendPacket(s.str());
@@ -364,7 +392,7 @@ namespace Peerchat {
 		peer->send_numeric(376, s.str());
 		s.str("");
 
-		s << "Your backend ID is " << response_data.summary.id;
+		s << "Your backend ID is " << peer->GetBackendId();
 		peer->send_numeric(377, s.str());
 		s.str("");
 	}

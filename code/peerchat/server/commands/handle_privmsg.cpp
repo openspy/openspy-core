@@ -36,10 +36,9 @@ namespace Peerchat {
             if(message[0] == 0x01) { //possible ctcp
                 if(type.compare("PRIVMSG") == 0) {
                     block_message = true;
-                    //ACTION
                     if(message.length() >= 7) {
                         std::string action = message.substr(1,6);
-                        if(action.compare("ACTION") == 0) {
+                        if(action.compare("ACTION") == 0) { //is a /me command
                             block_message = false;
                         }                        
                     }

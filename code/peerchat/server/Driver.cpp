@@ -70,13 +70,18 @@ namespace Peerchat {
 				}
 			}
 		}
+
+		bool no_colon = false;
+		if(state->type.compare("MODE") == 0) { //without this, GameSpy Arcade doesn't process mode events
+			no_colon = true;
+		}
 		
 		bool in_channel = p->GetChannelFlags(state->channel.channel_id) & EUserChannelFlag_IsInChannel && (p->GetChannelFlags(state->channel.channel_id) & state->requiredChanUserModes || state->requiredChanUserModes == 0);
 		int has_oper = p->GetOperFlags() & state->requiredOperFlags || state->requiredOperFlags == 0;
 		bool selfMatch = (state->includeSelf && state->from.user_id == p->GetBackendId()) || (state->from.user_id != p->GetBackendId());
 		if(in_channel && selfMatch && has_oper) {
 			if(state->onlyVisibleTo == 0 || state->onlyVisibleTo == p->GetBackendId()) {
-				p->send_message(state->type, state->message, state->from.userSummary, state->channel.channel_name, state->target.userSummary.nick);
+				p->send_message(state->type, state->message, state->from.userSummary, state->channel.channel_name, state->target.userSummary.nick, no_colon);
 			}
 
 			if (state->type.compare("JOIN") == 0 && state->from.user_id == p->GetBackendId()) {
