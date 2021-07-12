@@ -7,9 +7,11 @@ namespace TaskShared {
 		//build json object
 		json_t *send_obj = json_object(), *profile_obj = json_object(), *user_obj = json_object();
 
-		json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
 
-		json_object_set_new(send_obj, "profileLookup", profile_obj);
+		if (request.profile.nick.length() > 0) {
+			json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
+			json_object_set_new(send_obj, "profileLookup", profile_obj);
+		}
 
 		json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
 

@@ -87,7 +87,7 @@ bool checkMultiCharToken(const char *filter, int &idx, int len, CToken *token) {
 	if(strncmp(&filter[idx],"==", 2) == 0) {
 		*token = CToken(EToken_Equals);
 		idx ++;
-	} else if (strncmp(&filter[idx], "is", 2) == 0) {
+	} else if (strncasecmp(&filter[idx], "is", 2) == 0) {
 		*token = CToken(EToken_Equals);
 		idx++;
 	} else if (strncmp(&filter[idx], "=", 1) == 0) {

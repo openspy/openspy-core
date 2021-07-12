@@ -36,8 +36,8 @@ namespace Peerchat {
         gs_xcode_buf(client_challenge, sizeof(client_challenge)-1, response_data.game_data.secretkey.c_str());
         gs_xcode_buf(server_challenge, sizeof(server_challenge)-1, response_data.game_data.secretkey.c_str());
         
-        gs_prepare_key(client_challenge, sizeof(client_challenge)-1, &peer->m_crypt_key_in);
-        gs_prepare_key(server_challenge, sizeof(server_challenge)-1, &peer->m_crypt_key_out);
+        gs_prepare_key((const unsigned char *)&client_challenge, sizeof(client_challenge)-1, &peer->m_crypt_key_in);
+        gs_prepare_key((const unsigned char*)&server_challenge, sizeof(server_challenge)-1, &peer->m_crypt_key_out);
         peer->send_numeric(705, ss.str(), true);
 
         peer->m_using_encryption = true;

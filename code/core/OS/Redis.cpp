@@ -87,10 +87,8 @@ namespace Redis {
 		connection->sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 		//set timeout, due to intermittent redis hanging
-		struct timeval tv;
-		memset(&tv, 0, sizeof(tv));
-		tv.tv_sec = 5;		
-		setsockopt(connection->sd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(struct timeval));
+		int timeout = 5000;
+		setsockopt(connection->sd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 
 		uint32_t ip = resolv(address);
 

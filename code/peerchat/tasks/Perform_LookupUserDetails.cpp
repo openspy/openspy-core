@@ -57,7 +57,7 @@ namespace Peerchat {
         do {
             reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH channel_*_user_%d", cursor, user_id);
             if (Redis::CheckError(reply))
-                return;
+                return 0;
 
             v = reply.values[0].arr_value.values[0].second;
             arr = reply.values[0].arr_value.values[1].second;

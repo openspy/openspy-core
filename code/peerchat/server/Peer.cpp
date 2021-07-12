@@ -106,7 +106,7 @@ namespace Peerchat {
 			gettimeofday(&m_last_recv, NULL);
 
 			if(m_using_encryption) {
-				gs_crypt(recv_buffer.GetHead(), len, &m_crypt_key_in);
+				gs_crypt((unsigned char*)recv_buffer.GetHead(), len, &m_crypt_key_in);
 			}
 
 			
@@ -124,6 +124,7 @@ namespace Peerchat {
 				std::string command_line = OS::strip_whitespace(*it);
 				std::vector<std::string> command_items = OS::KeyStringToVector(command_line, false, ' ');
 
+				if (command_items.size() == 0) break;
 				std::string command = command_items.at(0);
 
 				command_upper = "";
@@ -232,7 +233,7 @@ namespace Peerchat {
 		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s", getAddress().ToString().c_str(), m_profile.id, data.c_str());
 
 		if(m_using_encryption) {
-			gs_crypt(buffer.GetHead(), buffer.bytesWritten(), &m_crypt_key_out);
+			gs_crypt((unsigned char *)buffer.GetHead(), buffer.bytesWritten(), &m_crypt_key_out);
 		}
 
 		NetIOCommResp io_resp;

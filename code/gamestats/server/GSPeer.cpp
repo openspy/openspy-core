@@ -129,7 +129,7 @@ namespace GS {
 			}
 		}
 		end:
-		//send_ping();
+		send_ping();
 
 		/*
 		//check for timeout -- Removed: not implemented in most clients
