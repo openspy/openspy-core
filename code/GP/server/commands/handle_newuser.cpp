@@ -66,6 +66,8 @@ namespace GP {
 		}
 		else if (data_parser.HasKey("password")) {
 			password = data_parser.GetValue("password");
+		} else if (data_parser.HasKey("pass")) {
+			password = data_parser.GetValue("pass");
 		}
 		else {
 			send_error(GP_PARSE);
