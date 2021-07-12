@@ -49,11 +49,19 @@ namespace SM {
 		if (data_parser.HasKey("passenc")) {
 			password = data_parser.GetValue("passenc");
 			int passlen = (int)password.length();
-			char *dpass = (char *)base64_decode((uint8_t *)password.c_str(), &passlen);
-			passlen = gspassenc((uint8_t *)dpass);
+			char* dpass = (char*)base64_decode((uint8_t*)password.c_str(), &passlen);
+			passlen = gspassenc((uint8_t*)dpass);
 			password = dpass;
 			if (dpass)
-				free((void *)dpass);
+				free((void*)dpass);
+		} else if (data_parser.HasKey("passwordenc")) {
+			password = data_parser.GetValue("passwordenc");
+			int passlen = (int)password.length();
+			char* dpass = (char*)base64_decode((uint8_t*)password.c_str(), &passlen);
+			passlen = gspassenc((uint8_t*)dpass);
+			password = dpass;
+			if (dpass)
+				free((void*)dpass);
 		}
 		else if (data_parser.HasKey("pass")) {
 			password = data_parser.GetValue("pass");

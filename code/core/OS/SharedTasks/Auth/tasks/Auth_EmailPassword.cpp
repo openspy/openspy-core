@@ -7,9 +7,11 @@ namespace TaskShared {
 		//build json object
 		json_t *send_obj = json_object(), *profile_obj = json_object(), *user_obj = json_object();
 
-		json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
 
-		json_object_set_new(send_obj, "profileLookup", profile_obj);
+		if (request.profile.nick.length() > 0) {
+			json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
+			json_object_set_new(send_obj, "profileLookup", profile_obj);
+		}
 
 		json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
 
@@ -40,8 +42,8 @@ namespace TaskShared {
 				if (Handle_WebError(json_data, auth_data.error_details)) {
 
 				} else if (json_data) {
-					json_t *success_obj = json_object_get(json_data, "success");
-					if (success_obj == json_true()) {
+					json_t *success_obj = json_object_get(json_data, "user");
+					if (success_obj != NULL && !json_is_null(success_obj)) {
 						success = true;
 						json_t *session_obj = json_object_get(json_data, "session");
 						json_t *session_key_json = json_object_get(session_obj, "sessionKey");

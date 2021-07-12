@@ -27,7 +27,7 @@ namespace SM {
 			s << "\\firstname\\" << p.firstname;
 			s << "\\lastname\\" << p.lastname;
 			s << "\\email\\";
-			if(u.publicmask & GP_MASK_EMAIL)
+			if(u.publicmask & GP_MASK_EMAIL || ((int)extra) != 0)
 				s << u.email;
 			else 
 				s << Peer::mp_hidden_str;
@@ -79,6 +79,7 @@ namespace SM {
 
 		request.type = TaskShared::EProfileSearch_Profiles;
 		request.peer = this;
+		request.extra = (void *)(request.user_search_details.email.length() > 0);
 		IncRef();
 		request.callback = Peer::m_search_callback;
 		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetProfileTask();
