@@ -13,7 +13,7 @@
 #include <GP/server/GPServer.h>
 
 namespace GP {
-    	void Peer::handle_login(OS::KVReader data_parser) {
+    void Peer::handle_login(OS::KVReader data_parser) {
 		int partnercode = data_parser.GetValueInt("partnerid");
 		//int peer_port = data_parser.GetValueInt("port");
 		//int sdkrev = data_parser.GetValueInt("sdkrevision");

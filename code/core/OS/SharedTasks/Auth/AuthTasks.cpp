@@ -162,6 +162,9 @@ namespace TaskShared {
 				else if (error_name.compare("NickInvalid") == 0) {
 					error_info.response_code = TaskShared::WebErrorCode_NickInvalid;
 				}
+				else if (error_name.compare("UniqueNickInvalid") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_UniqueNickInvalid;
+				}
 				else if (error_name.compare("UniqueNickInUse") == 0) {
 					error_info.response_code = TaskShared::WebErrorCode_UniqueNickInUse;
 				}

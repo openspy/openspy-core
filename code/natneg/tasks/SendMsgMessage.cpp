@@ -138,13 +138,20 @@ namespace NN {
 			json_t *driver_address_json = json_object_get(root, "driver_address");
 			json_t *to_address_json = json_object_get(root, "to_address");
 
-			OS::Address driver_address;
-			driver_address = OS::Address(json_string_value(driver_address_json));
-			
+			json_t *hostname_json = json_object_get(root, "hostname");
 
-			NN::Driver *driver = server->findDriverByAddress(driver_address);
-			if(stricmp(type_str, "connect") == 0) {
-				Handle_ConnectPacket(root, driver);
+			if(hostname_json && json_is_string(hostname_json)) {
+				const char *hostname = json_string_value(hostname_json);
+				if(stricmp(OS::g_hostName, hostname) == 0) {
+					OS::Address driver_address;
+					driver_address = OS::Address(json_string_value(driver_address_json));
+					
+
+					NN::Driver *driver = server->findDriverByAddress(driver_address);
+					if(stricmp(type_str, "connect") == 0) {
+						Handle_ConnectPacket(root, driver);
+					}
+				}
 			}
 		}
 
