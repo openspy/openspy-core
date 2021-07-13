@@ -19,17 +19,19 @@ namespace Peerchat {
 		
 	}
 
+	//SETCHANKEY #GSP!godzilla2ps2!M411DDDD3M :\hostname\CDEMMNP|6\roomready\1\pwprivate\25
+
     void Peer::handle_setchankey(std::vector<std::string> data_parser) {
         std::string channel_target  = data_parser.at(1);
 
-        std::string kv_string  = data_parser.at(4);
+        std::string kv_string  = data_parser.at(2);
 		bool do_combine = false;
 		if (kv_string.length() > 1 && kv_string[0] == ':') {
 			kv_string = kv_string.substr(1);
 			do_combine = true;
 		}
 		if (do_combine) {
-			for (int i = 5; i < data_parser.size(); i++) {
+			for (int i = 3; i < data_parser.size(); i++) {
 				kv_string = kv_string.append(" ").append(data_parser.at(i));
 			}
 		}

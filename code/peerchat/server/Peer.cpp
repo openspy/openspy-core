@@ -270,7 +270,7 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("WHO", true, 1, &Peer::handle_who));
 		commands.push_back(CommandEntry("SETCKEY", true, 3, &Peer::handle_setckey, 0, 100));
 		commands.push_back(CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey, 0, 100));
-		commands.push_back(CommandEntry("SETCHANKEY", true, 4, &Peer::handle_setchankey, 0, 100));
+		commands.push_back(CommandEntry("SETCHANKEY", true, 2, &Peer::handle_setchankey, 0, 100));
 		commands.push_back(CommandEntry("GETCHANKEY", true, 4, &Peer::handle_getchankey, 0, 100));
 		commands.push_back(CommandEntry("SETKEY", true, 1, &Peer::handle_setkey, 0, 100));
 		commands.push_back(CommandEntry("GETKEY", true, 4, &Peer::handle_getkey, 0, 100));

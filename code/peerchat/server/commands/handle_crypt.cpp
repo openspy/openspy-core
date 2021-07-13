@@ -16,7 +16,7 @@
 
 namespace Peerchat {
 	void Peer::OnGetGameInfo_Crypt(TaskResponse response_data, Peer* peer) {
-        if(response_data.game_data.gameid == 0) {
+        if(response_data.game_data.secretkey[0] == 0) {
             peer->Delete(false, "Invalid gamename");
             return;
         }

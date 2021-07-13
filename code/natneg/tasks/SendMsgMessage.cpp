@@ -96,7 +96,7 @@ namespace NN {
 			packet.Packet.Connect.remoteIP = 0;
 			packet.Packet.Connect.remotePort = 0;
 			driver->SendPacket(to_address, &packet);
-			OS::LogText(OS::ELogLevel_Info, "[%s] Send Connection Error: %d", to_address.ToString().c_str(), packet.Packet.Connect.finished);
+			OS::LogText(OS::ELogLevel_Info, "[%s] Send Connection Error: %d %d", to_address.ToString().c_str(), packet.Packet.Connect.finished, ntohl(packet.cookie));
 		} else {
 			ConnectionSummary summary = LoadSummaryFromJson(data);
 
@@ -124,7 +124,7 @@ namespace NN {
 			packet.Packet.Connect.gotyourdata = 0;
 
 			driver->SendPacket(to_address, &packet);
-			OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s)", to_address.ToString().c_str(), connect_address.ToString().c_str());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s) - %d", to_address.ToString().c_str(), connect_address.ToString().c_str(), summary.cookie);
 		}
 	}
 	bool Handle_HandleRecvMessage(TaskThreadData  *thread_data, std::string message) {
@@ -140,17 +140,23 @@ namespace NN {
 
 			json_t *hostname_json = json_object_get(root, "hostname");
 
+			bool should_process = true;
+
 			if(hostname_json && json_is_string(hostname_json)) {
 				const char *hostname = json_string_value(hostname_json);
-				if(stricmp(OS::g_hostName, hostname) == 0) {
-					OS::Address driver_address;
-					driver_address = OS::Address(json_string_value(driver_address_json));
-					
+				if(stricmp(OS::g_hostName, hostname) != 0) {
+					should_process = false;
+				}
+			}
 
-					NN::Driver *driver = server->findDriverByAddress(driver_address);
-					if(stricmp(type_str, "connect") == 0) {
-						Handle_ConnectPacket(root, driver);
-					}
+			if(should_process) {
+				OS::Address driver_address;
+				driver_address = OS::Address(json_string_value(driver_address_json));
+				
+
+				NN::Driver *driver = server->findDriverByAddress(driver_address);
+				if(stricmp(type_str, "connect") == 0) {
+					Handle_ConnectPacket(root, driver);
 				}
 			}
 		}

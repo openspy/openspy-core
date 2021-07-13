@@ -35,6 +35,6 @@ namespace NN {
 		if (json_data)
 			free((void *)json_data);
 
-        OS::LogText(OS::ELogLevel_Info, "[%s] Got connection ACK", from.ToString().c_str());
+        OS::LogText(OS::ELogLevel_Info, "[%s] Got connection ACK - %d", from.ToString().c_str(), ntohl(packet->cookie));
     }
 }
