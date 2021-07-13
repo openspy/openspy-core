@@ -30,12 +30,14 @@ namespace Peerchat {
 				std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> iterators = request.channel_modify.kv_data.GetHead();
 				std::vector<std::pair< std::string, std::string> >::const_iterator it = iterators.first;
 				while (it != iterators.second) {
-					std::pair<std::string, std::string> p = *it;
+					std::pair<std::string, std::string> p = *it++;
+					if(Is_Chankey_InjectKey(p.first.c_str())) {
+						continue;
+					}
 					if (p.first.length() > 2 && p.first.substr(0, 2).compare("b_") == 0) {
 						broadcast_keys[p.first] = p.second;
 					}
 					Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d \"custkey_%s\" \"%s\"", summary.channel_id, p.first.c_str(), p.second.c_str());
-					it++;
 				}
 
 
