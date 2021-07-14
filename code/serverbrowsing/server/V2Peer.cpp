@@ -270,9 +270,10 @@ namespace SB {
 				buffer.WriteByte(0);
 			}
 
-			std::vector<MM::Server *>::iterator it = servers.list.begin();
+
+			std::vector<MM::Server*>::iterator it = servers.list.begin();
 			while (it != servers.list.end()) {
-				MM::Server *server = *it;
+				MM::Server* server = *it;
 				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, false, servers.first_set);
 				it++;
 			}
@@ -603,7 +604,7 @@ namespace SB {
 						/*
 							This optimziation works on HAS_KEY_FLAG only
 						*/
-						if(type == KEYTYPE_STRING)
+						if(type == KEYTYPE_STRING && m_last_list_req.push_updates == false)
 							buffer->WriteByte(0xFF); //string index, -1 = no index
 						if (value.length() > 0) {
 
@@ -706,7 +707,7 @@ namespace SB {
 		if(!m_last_list_req.push_updates || m_in_message) return;
 		if(server) {
 			if(serverMatchesLastReq(server)) {
-				sendServerData(server, false, true, NULL, true, NULL, false, true);
+				sendServerData(server, true, true, NULL, false, NULL, false, false);
 			}
 		}
 	}
@@ -714,7 +715,7 @@ namespace SB {
 		if(!m_last_list_req.push_updates || m_in_message) return;
 
 		if(server && serverMatchesLastReq(server)) {
-			sendServerData(server, false, true, NULL, true, NULL, false, true);
+			sendServerData(server, true, true, NULL, false, NULL, false, false);
 		}
 	}
 
@@ -754,7 +755,24 @@ namespace SB {
 
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
-		SendListQueryResp(results, request.req);
+		if(request.req.push_updates == true) {
+			if(results.first_set) {
+				MM::ServerListQuery empty_results = results;
+				empty_results.list = std::vector<MM::Server *>();
+				empty_results.last_set = true;
+				SendListQueryResp(empty_results, request.req);
+			}
+
+			std::vector<MM::Server*>::iterator it = results.list.begin();
+			while (it != results.list.end()) {
+				MM::Server* server = *it;
+				sendServerData(server, true, true, NULL, false, NULL, false, false);
+				it++;
+			}
+
+		} else {
+			SendListQueryResp(results, request.req, true);
+		}
 	}
 	void V2Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		SendListQueryResp(results, request.req);
@@ -767,3 +785,4 @@ namespace SB {
 		}
 	}
 }
+

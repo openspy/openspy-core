@@ -322,11 +322,13 @@ namespace GP {
 		scheduler->AddRequest(req.type, req);
 	}
 	bool Peer::OnAuth(std::string session_key) {
+		/* This functionality cannot be used for certain games, such as Gauntlet PS2, which shares an account between all players.
 		if (session_key.compare(m_backend_session_key) != 0) {
 			send_error(GP_FORCED_DISCONNECT);
 			Delete();
 			return false;
 		}
+		*/
 		return true;
 	}
 }

@@ -5,6 +5,8 @@
 
 #include <tasks/tasks.h>
 
+#include <serverbrowsing/filter/filter.h>
+
 namespace SB {
 	Peer::Peer(Driver *driver, INetIOSocket *sd, int version) : INetPeer(driver, sd) {
 		mp_driver = driver;
@@ -34,7 +36,10 @@ namespace SB {
 			return false;
 		}*/
 		if(server->game.gameid == m_last_list_req.m_for_game.gameid) {
-			return true;
+			if(m_last_list_req.filter.length() == 0 || filterMatches(m_last_list_req.filter.c_str(), server->kvFields)) {
+				return true;
+			}
+			
 		}
 		return false;
 	}
