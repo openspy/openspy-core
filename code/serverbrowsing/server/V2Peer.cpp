@@ -700,7 +700,7 @@ namespace SB {
 
 		buffer.WriteByte(DELETE_SERVER_MESSAGE);
 		buffer.WriteInt(server->wan_address.ip);
-		buffer.WriteShort(server->wan_address.port);
+		buffer.WriteShort(htons(server->wan_address.port));
 		SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), true);
 	}
 	void V2Peer::informNewServers(MM::Server *server) {
