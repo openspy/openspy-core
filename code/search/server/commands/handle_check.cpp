@@ -17,8 +17,32 @@
 namespace SM {
 	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 		std::ostringstream s;
-		s << "\\cur\\" << (int)success;
-		s << "\\pid\\" << profile.id;
+		if(success) {
+				s << "\\cur\\" << 0;
+				s << "\\pid\\" << profile.id;
+		} else {
+				GPShared::GPErrorCode code = GPShared::GP_NETWORK;
+				s << "\\cur\\";
+				switch (auth_data.error_details.response_code) {
+					case TaskShared::WebErrorCode_NoSuchUser:
+							code = (GPShared::GP_LOGIN_BAD_EMAIL);
+							break;
+					case TaskShared::WebErrorCode_AuthInvalidCredentials:
+							code = (GPShared::GP_LOGIN_BAD_PASSWORD);
+							break;
+					case TaskShared::WebErrorCode_NickInvalid:
+							code = (GPShared::GP_LOGIN_BAD_PROFILE);
+							break;
+					case TaskShared::WebErrorCode_UniqueNickInvalid:
+							code = (GPShared::GP_LOGIN_BAD_UNIQUENICK);
+							break;
+					case TaskShared::WebErrorCode_BackendError:
+							code = (GPShared::GP_NETWORK);
+							break;
+				}
+				s << code;
+		}
+
 
 		((Peer *)peer)->SendPacket(s.str().c_str());
 
