@@ -531,6 +531,9 @@ namespace SB {
 			natneg_val = atoi(server->kvFields["natneg"].c_str());
 			if(natneg_val == 0) {
 				flags |= UNSOLICITED_UDP_FLAG;
+				if(!full_keys) { //this is needed at least for the deer hunter series, basically with no keys sent, the SDK will query the server directly
+					no_keys = true;
+				}
 			} else {
 				flags |= CONNECT_NEGOTIATE_FLAG;
 			}
