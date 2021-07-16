@@ -19,6 +19,7 @@ namespace NN {
         json_object_set_new(packet_obj, "type", json_string("connect_ack"));
 
         json_object_set_new(packet_obj, "cookie", json_integer(ntohl(packet->cookie)));
+        json_object_set_new(packet_obj, "clientindex", json_integer(packet->Packet.Init.clientindex));
         return packet_obj;
    }
     void Driver::handle_connect_ack_packet(OS::Address from, NatNegPacket *packet) {
