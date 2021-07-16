@@ -107,7 +107,7 @@ namespace NN {
 			NN::DetermineNextAddress(nat, next_public_address, next_private_address);
 
 
-			if(next_public_address.ip == to_address.ip) {
+			if(next_public_address.ip == to_address.ip && summary.version != 1) {
 				connect_address = next_private_address;
 				if(connect_address.GetPort() == 0) {
 					connect_address.port = next_public_address.port;
@@ -115,7 +115,7 @@ namespace NN {
 			} else {
 				connect_address = next_public_address;
 			}
-			packet.version = summary.version;;
+			packet.version = summary.version;
 			packet.cookie = htonl(summary.cookie);
 			packet.Packet.Connect.remoteIP = connect_address.GetIP();
 			packet.Packet.Connect.remotePort = htons(connect_address.GetPort());

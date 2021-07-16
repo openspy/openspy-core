@@ -46,11 +46,12 @@ namespace NN {
 							printf("INVALID PACKET\n");
 							break;
 						}
+						memset(&packet.Packet.Init, 0, sizeof(packet.Packet.Init));
 						packet.version = dgram.buffer.ReadByte();
 						packet.packettype = dgram.buffer.ReadByte();
 						packet.cookie = dgram.buffer.ReadInt();
 
-						int packetSize = packetSizeFromType(packet.packettype);
+						int packetSize = packetSizeFromType(packet.packettype, packet.version);
 						std::string gamename;
 
 						
@@ -58,7 +59,9 @@ namespace NN {
 						switch(packet.packettype) {
 							case NN_INIT:
 								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-								gamename = dgram.buffer.ReadNTS();
+								if(packet.version > 1) {
+									gamename = dgram.buffer.ReadNTS();
+								}								
 								handle_init_packet(dgram.address, &packet, gamename);
 							break;
 							case NN_CONNECT_ACK:
@@ -111,7 +114,7 @@ namespace NN {
 
 	}
 
-	int Driver::packetSizeFromType(uint8_t type) {
+	int Driver::packetSizeFromType(uint8_t type, uint8_t version) {
 		int size = 0;
 		switch (type) {
 			case NN_PREINIT:
@@ -125,6 +128,9 @@ namespace NN {
 			case NN_INITACK:
 			case NN_CONNECT_ACK:
 				size = INITPACKET_SIZE;
+				if(version == 1) {
+					size -= sizeof(uint32_t) + sizeof(uint16_t); //missing localo ip + port
+				}
 				break;			
 			case NN_CONNECT_PING:
 			case NN_CONNECT:
@@ -143,7 +149,7 @@ namespace NN {
 		client_socket.address = to;
 		client_socket.shared_socket = true;
 
-		int size = packetSizeFromType(packet->packettype) + BASEPACKET_SIZE;
+		int size = packetSizeFromType(packet->packettype, packet->version) + BASEPACKET_SIZE;
 		memcpy(&packet->magic, NNMagicData, NATNEG_MAGIC_LEN);
 
 		OS::Buffer buffer(size);

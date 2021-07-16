@@ -29,7 +29,7 @@ namespace NN {
 	private:
 		static void *TaskThread(OS::CThread *thread);
 
-		int packetSizeFromType(uint8_t type);
+		int packetSizeFromType(uint8_t type, uint8_t version);
 		void handle_init_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
 		void handle_connect_ack_packet(OS::Address from, NatNegPacket *packet);
 		void handle_address_check_packet(OS::Address from, NatNegPacket *packet);
