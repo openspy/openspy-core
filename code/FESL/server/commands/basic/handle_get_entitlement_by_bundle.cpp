@@ -9,9 +9,14 @@
 #include <sstream>
 namespace FESL {
 	bool Peer::m_subs_get_entitlement_by_bundle(OS::KVReader kv_list) {
-		std::string kv_str = "TXN=GetEntitlementByBundle\n"
-			"EntitlementByBundle.[]=0\n";
-		SendPacket(FESL_TYPE_SUBS, kv_str);
+		std::ostringstream s;
+		s << "TXN=GetEntitlementByBundle\n";
+
+		if(kv_list.HasKey("TID")) {
+			s << "TID=" << kv_list.GetValueInt("TID") << "\n";
+		}
+		s << "EntitlementByBundle.[]=0\n";
+		SendPacket(FESL_TYPE_SUBS, s.str());
 		return true;
 	}
 }

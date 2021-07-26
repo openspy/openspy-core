@@ -114,10 +114,10 @@ namespace FESL {
 
 		void SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence = -1);
 
-		void loginToSubAccount(std::string uniquenick);
-		void loginToPersona(std::string uniquenick);
-		void SendCustomError(FESL_COMMAND_TYPE type, std::string TXN, std::string fieldName, std::string fieldError);
-		void SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN);
+		void loginToSubAccount(std::string uniquenick, int tid);
+		void loginToPersona(std::string uniquenick, int tid);
+		void SendCustomError(FESL_COMMAND_TYPE type, std::string TXN, std::string fieldName, std::string fieldError, int tid);
+		void SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN, int tid);
 
 		void Delete(bool timeout = false);
 
@@ -157,11 +157,12 @@ namespace FESL {
 		static void m_update_user_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer);
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer);
 		static void m_update_user_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
-		static void m_get_object_inventory_callback(TaskShared::WebErrorDetails error_details, std::vector<ObjectInventoryItem> results, INetPeer *peer);
+		static void m_get_object_inventory_callback(TaskShared::WebErrorDetails error_details, std::vector<ObjectInventoryItem> results, INetPeer *peer, void *extra);
 
 		void send_memcheck(int type, int salt = 0);
 		void send_subaccounts();
 		void send_personas();
+		int m_last_profile_lookup_tid;
 
 		
 		OS::CMutex *mp_mutex;
@@ -181,12 +182,12 @@ namespace FESL {
 		static CommandHandler m_commands[];
 
 		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
-		static void m_login_fetched_game_entitlements_auth_cb(TaskShared::WebErrorDetails error_details, std::vector<EntitledGameFeature> results, INetPeer *peer);
+		static void m_login_fetched_game_entitlements_auth_cb(TaskShared::WebErrorDetails error_details, std::vector<EntitledGameFeature> results, INetPeer *peer, void *extra);
 		static void m_nulogin_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
-		void handle_web_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN);
+		void handle_web_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN, int tid);
 	};
 }
 #endif //_FESLPEER_H

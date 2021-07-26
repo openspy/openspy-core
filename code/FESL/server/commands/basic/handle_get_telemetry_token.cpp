@@ -11,6 +11,9 @@ namespace FESL {
 	bool Peer::m_acct_get_telemetry_token(OS::KVReader kv_list) {
 		std::ostringstream s;
 		s << "TXN=GetTelemetryToken\n";
+		if(kv_list.HasKey("TID")) {
+			s << "TID=" << kv_list.GetValueInt("TID") << "\n";
+		}
 		s << "telemetryToken=\"teleToken\"\n";
 		s << "enabled=0\n";
 		s << "disabled=1\n";

@@ -10,14 +10,17 @@
 
 #include <sstream>
 namespace FESL {
-	void Peer::m_login_fetched_game_entitlements_auth_cb(TaskShared::WebErrorDetails error_details, std::vector<EntitledGameFeature> results, INetPeer *peer) {
+	void Peer::m_login_fetched_game_entitlements_auth_cb(TaskShared::WebErrorDetails error_details, std::vector<EntitledGameFeature> results, INetPeer *peer, void *extra) {
 			if(error_details.response_code != TaskShared::WebErrorCode_Success) {
-				((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_ACCOUNT, "Login");
+				((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_ACCOUNT, "Login", (int)extra);
 				return;
 			}
 			std::ostringstream s;
 
 			s << "TXN=Login\n";
+			if((int)extra != -1) {
+				s << "TID=" << (int)extra << "\n";
+			}
 			s << "lkey=" << ((Peer *)peer)->m_session_key << "\n";
 			
 			s << "displayName=" << ((Peer *)peer)->m_account_profile.uniquenick << "\n";
@@ -71,7 +74,7 @@ namespace FESL {
 			request.user_search_details.id = ((Peer *)peer)->m_user.id;
 			request.user_search_details.partnercode = OS_EA_PARTNER_CODE;
 			request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
-			request.extra = peer;
+			request.extra = extra;
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
@@ -93,6 +96,7 @@ namespace FESL {
 			FESLRequest request;
 			request.type = EFESLRequestType_GetEntitledGameFeatures;
 			request.peer = peer;
+			request.extra = extra;
 			request.profileid = profile.id;
 			request.driverInfo = server_info;
 			peer->IncRef();
@@ -105,7 +109,7 @@ namespace FESL {
 
 		}
 		else {
-			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "Login");
+			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "Login", (int)extra);
 		}
 	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
@@ -129,6 +133,11 @@ namespace FESL {
 		request.type = TaskShared::EAuthType_Uniquenick_Password;
 		request.callback = m_login_auth_cb;
 		request.peer = this;
+		request.extra = (void *)-1;
+		if(kv_list.HasKey("TID")) {
+			request.extra = (void *)kv_list.GetValueInt("TID");
+		}
+
 		IncRef();
 		request.profile.uniquenick = nick;
 		request.profile.namespaceid = FESL_ACCOUNT_NAMESPACEID;

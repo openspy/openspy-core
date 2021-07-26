@@ -50,6 +50,8 @@ namespace FESL {
 
 		mp_mutex = OS::CreateMutex();
 
+		m_last_profile_lookup_tid = -1;
+
 		
 	}
 	Peer::~Peer() {
@@ -161,18 +163,24 @@ namespace FESL {
 		SendPacket(FESL_TYPE_FSYS, s.str(), 0);
 	}
 
-	void Peer::SendCustomError(FESL_COMMAND_TYPE type, std::string TXN, std::string fieldName, std::string fieldError) {
+	void Peer::SendCustomError(FESL_COMMAND_TYPE type, std::string TXN, std::string fieldName, std::string fieldError, int tid) {
 		std::ostringstream s;
 		s << "TXN=" << TXN << "\n";
+		if(tid != -1) {
+			s << "TID=" << tid << "\n";
+		}
 		s << "errorContainer=[]\n";
 		s << "errorCode=" << FESL_ERROR_CUSTOM << "\n";
 		s << "errorContainer.0.fieldName=" << fieldName << "\n";
 		s << "errorContainer.0.fieldError=" << fieldError << "\n";
 		SendPacket(type, s.str());
 	}
-	void Peer::SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN) {
+	void Peer::SendError(FESL_COMMAND_TYPE type, FESL_ERROR error, std::string TXN, int tid) {
 		std::ostringstream s;
 		s << "TXN=" << TXN << "\n";
+		if(tid != -1) {
+			s << "TID=" << tid << "\n";
+		}
 		s << "errorContainer=[]\n";
 		if (error == (FESL_ERROR)0) {
 			s << "errorType=" << error << "\n";
@@ -199,7 +207,7 @@ namespace FESL {
 		Delete();
 	}
 
-	void Peer::handle_web_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN) {
+	void Peer::handle_web_error(TaskShared::WebErrorDetails error_details, FESL_COMMAND_TYPE cmd_type, std::string TXN, int tid) {
 		FESL_ERROR error = FESL_ERROR_AUTH_FAILURE;
 		std::string fieldName;
 		std::string fieldError;
@@ -237,10 +245,10 @@ namespace FESL {
 		}
 
 		if (error == FESL_ERROR_CUSTOM) {
-			SendCustomError(cmd_type, TXN, fieldName, fieldError);
+			SendCustomError(cmd_type, TXN, fieldName, fieldError, tid);
 		}
 		else {
-			SendError(cmd_type, error, TXN);
+			SendError(cmd_type, error, TXN, tid);
 		}
 		
 	}

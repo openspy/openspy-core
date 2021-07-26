@@ -18,7 +18,11 @@ namespace FESL {
 		request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
 		request.profile_search_details.nick = nick;
 		request.profile_search_details.uniquenick = nick;
-		request.extra = this;
+		int tid = -1;
+		if(kv_list.HasKey("TID")) {
+			tid = kv_list.GetValueInt("TID");
+		}
+		request.extra = (void *)tid;
 		request.peer = this;
 		request.peer->IncRef();
 		request.type = TaskShared::EProfileSearch_CreateProfile;
@@ -34,9 +38,9 @@ namespace FESL {
 			((Peer *)peer)->mp_mutex->lock();
 			((Peer *)peer)->m_profiles.push_back(results.front());
 			((Peer *)peer)->mp_mutex->unlock();
-			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_NO_ERROR, "AddSubAccount");
+			((Peer *)peer)->SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_NO_ERROR, "AddSubAccount", (int)extra);
 		} else {
-			((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_ACCOUNT, "AddSubAccount");
+			((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_ACCOUNT, "AddSubAccount", (int)extra);
 		}
 	}
 }

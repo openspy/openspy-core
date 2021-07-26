@@ -9,8 +9,12 @@
 #include <sstream>
 namespace FESL {
 	bool Peer::m_acct_register_game_handler(OS::KVReader kv_list) {
-		std::string kv_str = "TXN=RegisterGame\n";
-		SendPacket(FESL_TYPE_ACCOUNT, kv_str);
+		std::ostringstream s;
+		s << "TXN=RegisterGame\n";
+		if(kv_list.HasKey("TID")) {
+			s << "TID=" << kv_list.GetValueInt("TID") << "\n";
+		}
+		SendPacket(FESL_TYPE_ACCOUNT, s.str());
 		return true;
 	}
 }

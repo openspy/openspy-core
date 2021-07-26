@@ -21,6 +21,9 @@ namespace FESL {
 
 		PublicInfo public_info = ((FESL::Driver *)mp_driver)->GetServerInfo();
 		ss << "TXN=Hello\n";
+		if(kv_list.HasKey("TID")) {
+			ss << "TID=" << kv_list.GetValueInt("TID") << "\n";
+		}
 		ss << "domainPartition.domain=" << public_info.domainPartition << "\n";
 		ss << "messengerIp=" << public_info.messagingHostname << "\n";
 		ss << "messengerPort=" << public_info.messagingPort << "\n";

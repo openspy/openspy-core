@@ -8,11 +8,14 @@
 
 #include <sstream>
 namespace FESL {
-	void Peer::m_get_object_inventory_callback(TaskShared::WebErrorDetails error_details, std::vector<ObjectInventoryItem> results, INetPeer *peer) {
+	void Peer::m_get_object_inventory_callback(TaskShared::WebErrorDetails error_details, std::vector<ObjectInventoryItem> results, INetPeer *peer, void *extra) {
 		if(error_details.response_code == TaskShared::WebErrorCode_Success) {
 			std::ostringstream s;
 
 			s << "TXN=GetObjectInventory\n";
+			if((int)extra != -1) {
+				s << "TID=" << (int)extra << "\n";
+			}
 
 			s << "entitlements.[]=" << results.size() << "\n";
 
@@ -40,7 +43,7 @@ namespace FESL {
 
 			((Peer *)peer)->SendPacket(FESL_TYPE_DOBJ, s.str());			
 		} else {
-			((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_DOBJ, "GetObjectInventory");
+			((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_DOBJ, "GetObjectInventory", (int)extra);
 		}
 
 	}

@@ -28,6 +28,9 @@ namespace FESL {
 		}
 		
 		s << "TXN=GetAccount\n";
+		if(kv_list.HasKey("TID")) {
+			s << "TID=" << kv_list.GetValueInt("TID") << "\n";
+		}
 		s << "parentalEmail=parents@ea.com\n";
 		s << "countryCode=" << m_account_profile.countrycode << "\n";
 		s << "countryDesc=\"" << region.countryname << "\"\n";

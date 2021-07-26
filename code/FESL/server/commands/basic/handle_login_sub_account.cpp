@@ -8,7 +8,7 @@
 
 #include <sstream>
 namespace FESL {
-	void Peer::loginToSubAccount(std::string uniquenick) {
+	void Peer::loginToSubAccount(std::string uniquenick, int tid) {
 		std::ostringstream s;
 		mp_mutex->lock();
 		bool loggedIn = false;
@@ -18,6 +18,9 @@ namespace FESL {
 			if (profile.uniquenick.compare(uniquenick) == 0) {
 				m_profile = profile;
 				s << "TXN=LoginSubAccount\n";
+				if(tid != -1) {
+					s << "TID=" << tid << "\n";
+				}
 				s << "lkey=" << m_session_key << "\n";
 				s << "profileId=" << m_profile.id << "\n";
 				s << "userId=" << m_user.id << "\n";
@@ -28,12 +31,16 @@ namespace FESL {
 			it++;
 		}
 		if (!loggedIn) {
-			SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_ACCOUNT_NOT_FOUND, "LoginSubAccount");
+			SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_ACCOUNT_NOT_FOUND, "LoginSubAccount", tid);
 		}
 		mp_mutex->unlock();
 	}
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {
-		loginToSubAccount(kv_list.GetValue("name"));
+		int tid = -1;
+		if(kv_list.HasKey("TID")) {
+			tid = kv_list.GetValueInt("TID");
+		}
+		loginToSubAccount(kv_list.GetValue("name"), tid);
 		return true;
 	}
 }

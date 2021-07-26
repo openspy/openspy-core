@@ -47,8 +47,8 @@ namespace FESL {
     };
 
 
-    typedef void (*EntitledGameFeaturesLookupCallback)(TaskShared::WebErrorDetails error_details, std::vector<EntitledGameFeature> results, INetPeer *peer);
-    typedef void (*ObjectInventoryItemsLookupCallback)(TaskShared::WebErrorDetails error_details, std::vector<ObjectInventoryItem> results, INetPeer *peer);
+    typedef void (*EntitledGameFeaturesLookupCallback)(TaskShared::WebErrorDetails error_details, std::vector<EntitledGameFeature> results, INetPeer *peer, void *extra);
+    typedef void (*ObjectInventoryItemsLookupCallback)(TaskShared::WebErrorDetails error_details, std::vector<ObjectInventoryItem> results, INetPeer *peer, void *extra);
 
 	class FESLRequest {
         public:
@@ -59,6 +59,7 @@ namespace FESL {
             PublicInfo driverInfo;
 
             std::vector<std::string> objectIds;
+            void *extra;
 
             EntitledGameFeaturesLookupCallback gameFeaturesCallback;
             ObjectInventoryItemsLookupCallback objectInventoryItemsCallback;

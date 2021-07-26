@@ -29,6 +29,11 @@ namespace FESL {
 		request.type = TaskShared::EAuthType_User_EmailPassword;
 		request.callback = m_nulogin_auth_cb;
 		request.peer = this;
+		request.extra = (void *)-1;
+		if(kv_list.HasKey("TID")) {
+			request.extra = (void *)kv_list.GetValueInt("TID");
+		}
+		
 		IncRef();
 
 		request.profile.namespaceid = FESL_ACCOUNT_NAMESPACEID;
@@ -45,6 +50,9 @@ namespace FESL {
 		std::ostringstream s;
 		if (success) {
 			s << "TXN=NuLogin\n";
+			if((int)extra != -1) {
+				s << "TID=" << (int)extra << "\n";
+			}
 			s << "lkey=" << auth_data.session_key << "\n";
 			((Peer *)peer)->m_session_key = auth_data.session_key;
 			s << "displayName=" << profile.uniquenick << "\n";
@@ -63,7 +71,7 @@ namespace FESL {
 			request.user_search_details.id = user.id;
 			request.user_search_details.partnercode = OS_EA_PARTNER_CODE;
 			request.profile_search_details.namespaceid = FESL_PROFILE_NAMESPACEID;
-			request.extra = peer;
+			request.extra = extra;
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
@@ -71,7 +79,7 @@ namespace FESL {
 			scheduler->AddRequest(request.type, request);
 		}
 		else {
-			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "NuLogin");
+			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "NuLogin", (int)extra);
 		}
 	}
 }

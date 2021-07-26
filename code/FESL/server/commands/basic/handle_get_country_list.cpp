@@ -22,6 +22,9 @@ namespace FESL {
 	bool Peer::m_acct_get_country_list(OS::KVReader kv_list) {
 		std::ostringstream s;
 		s << "TXN=GetCountryList\n";
+		if(kv_list.HasKey("TID")) {
+			s << "TID=" << kv_list.GetValueInt("TID") << "\n";
+		}
 		FESL::Server *server = (FESL::Server *) GetDriver()->getServer();
 		std::vector<TaskShared::CountryRegion>::const_iterator begin, end, it;
 		server->GetCountries(begin, end);

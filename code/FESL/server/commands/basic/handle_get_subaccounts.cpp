@@ -14,6 +14,9 @@ namespace FESL {
 		std::vector<OS::Profile>::iterator it = m_profiles.begin();
 		int i = 0;
 		s << "TXN=GetSubAccounts\n";
+		if(m_last_profile_lookup_tid != -1) {
+			s << "TID=" << m_last_profile_lookup_tid << "\n";
+		}
 		s << "subAccounts.[]=" << m_profiles.size() << "\n";
 		while (it != m_profiles.end()) {
 			OS::Profile profile = *it;
@@ -29,6 +32,11 @@ namespace FESL {
 			m_pending_subaccounts = true;
 		}
 		else {
+			int tid = -1;
+			if(kv_list.HasKey("TID")) {
+				tid = kv_list.GetValueInt("TID");
+			}
+			m_last_profile_lookup_tid = tid;
 			send_subaccounts();
 		}
 		return true;
