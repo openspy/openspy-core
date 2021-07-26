@@ -36,7 +36,12 @@ namespace FESL {
 		}
 		request.extra = (void *)tid;
 		IncRef();
-		request.profile = m_profile;
+		if(m_profile.id != 0) {
+			request.profile = m_profile;
+		} else {
+			request.profile = m_account_profile;
+		}
+		
 
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetAuthTask();
 		scheduler->AddRequest(request.type, request);
