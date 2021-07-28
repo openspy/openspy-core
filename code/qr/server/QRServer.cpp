@@ -1,4 +1,3 @@
-#include "QRPeer.h"
 #include "QRServer.h"
 #include "QRDriver.h"
 #include <iterator>
@@ -33,16 +32,16 @@ namespace QR {
 	void Server::shutdown() {
 
 	}
-	Peer *Server::find_client(OS::Address address) {
+	QR::Driver *Server::findDriverByAddress(OS::Address address) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {
-			QR::Driver *driver = (QR::Driver *)*it;
-			QR::Peer *peer = driver->find_client(address);
-			if (peer) {
-				return peer;
+			INetDriver *driver = *it;
+			if(driver->getListenerSocket()->address == address) {
+				return (QR::Driver *)driver;
 			}
 			it++;
 		}
 		return NULL;
 	}
+
 }

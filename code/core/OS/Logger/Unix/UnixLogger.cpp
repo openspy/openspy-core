@@ -40,12 +40,5 @@ namespace OS {
 			break;
 		}
 		vsyslog(log_level, format, args);
-
-		/*va_list va_cpy;
-		va_copy(va_cpy,args);		
-		fprintf(stderr, "[%s]:", level_str);
-		vfprintf(stderr, format, va_cpy);
-		fprintf(stderr, "\n");
-		va_end(va_cpy);*/
 	}
 }

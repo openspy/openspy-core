@@ -1,6 +1,15 @@
 #include <tasks/tasks.h>
 #include <sstream>
 namespace MM {
+	bool isTeamString(const char *string) {
+		size_t len = strlen(string);
+		if(len < 2)
+			return false;
+		if(string[len-2] == '_' && string[len-1] == 't') {
+			return true;
+		}
+		return false;
+	}
 	int GetServerID(TaskThreadData *thread_data) {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;

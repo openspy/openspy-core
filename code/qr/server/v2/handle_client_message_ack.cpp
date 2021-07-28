@@ -1,0 +1,47 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <algorithm>
+#include <server/QRServer.h>
+#include <server/QRDriver.h>
+#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
+#include <qr/tasks/tasks.h>
+#include <tasks/tasks.h>
+#include <server/v2.h>
+namespace QR {
+    void Driver::send_client_message(int version, OS::Address to_address, uint32_t instance_key, uint32_t message_key, OS::Buffer &message_buffer) {
+		OS::Buffer buffer;
+
+        if(version == 2) {
+            struct timeval current_time;
+            gettimeofday(&current_time, NULL);
+
+            buffer.WriteByte(QR_MAGIC_1);
+            buffer.WriteByte(QR_MAGIC_2);
+
+            buffer.WriteByte(PACKET_CLIENT_MESSAGE);
+            buffer.WriteInt(instance_key);
+
+            buffer.WriteInt(message_key);
+            buffer.WriteBuffer(message_buffer.GetHead(), message_buffer.bytesWritten());
+            SendPacket(to_address, buffer);
+        }
+    }
+    void Driver::handle_v2_client_message_ack(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
+        uint32_t key = buffer.ReadInt();
+
+        TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
+        MM::MMPushRequest req;
+
+        req.callback = NULL;
+        req.from_address = from_address;
+        req.v2_instance_key = *(uint32_t *)instance_key;
+        req.driver = this;
+        req.version = 2;
+        req.server.id = key;
+
+
+        req.type = MM::EMMPushRequestType_ClientMessageAck;
+        scheduler->AddRequest(req.type, req);
+    }
+}

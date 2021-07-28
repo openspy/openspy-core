@@ -6,8 +6,6 @@
 #include <OS/Mutex.h>
 #include <OS/Net/NetDriver.h>
 
-#include "QRPeer.h"
-
 
 #include <map>
 #include <vector>
@@ -19,37 +17,44 @@
 
 #define MAX_DATA_SIZE 1400
 #define DRIVER_THREAD_TIME 1000
+namespace MM {
+	class MMTaskResponse;
+}
 namespace QR {
-	class Peer;
-	
-
 	class Driver : public INetDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
 		void think(bool listener_waiting);
 
-		Peer *find_client(OS::Address address);
-		Peer *find_or_create(OS::Address address, INetIOSocket *socket, int version = 2);
+		//v2
+		void handle_v2_packet(INetIODatagram &packet);		
+		void handle_v2_available(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer);		
+		void handle_v2_heartbeat(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer);		
+		void handle_v2_challenge(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer);		
+		void handle_v2_keepalive(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer);
+		void handle_v2_client_message_ack(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer);
+		
 
-		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
+		void send_client_message(int version, OS::Address to_address, uint32_t instance_key, uint32_t message_key, OS::Buffer &send_buffer);
+
+		void send_v2_error(OS::Address to, uint32_t instance_key, uint8_t error_code, const char *error_message);
+
+
+		static void on_keepalive_processed(MM::MMTaskResponse response);
+		static void on_got_v2_available_data(MM::MMTaskResponse response);
+		static void on_heartbeat_processed(MM::MMTaskResponse response);
+		static void on_got_v2_challenge_response(MM::MMTaskResponse response);		
+
+		void SendPacket(OS::Address to, OS::Buffer buffer);
 
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
 		void OnPeerMessage(INetPeer *peer);
 	private:
-		static void *TaskThread(OS::CThread *thread);
-		void TickConnections();
-
-		std::vector<Peer *> m_connections;
-		std::vector<Peer *> m_peers_to_delete;
-		
 		struct timeval m_server_start;
 
 		INetIOSocket *mp_socket;
-
-		OS::CMutex *mp_mutex;
-		OS::CThread *mp_thread;
 
 	};
 }
