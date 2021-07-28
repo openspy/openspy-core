@@ -531,9 +531,6 @@ namespace SB {
 			natneg_val = atoi(server->kvFields["natneg"].c_str());
 			if(natneg_val == 0) {
 				flags |= UNSOLICITED_UDP_FLAG;
-				if(!full_keys) { //this is needed at least for the deer hunter series, basically with no keys sent, the SDK will query the server directly
-					no_keys = true;
-				}
 			} else {
 				flags |= CONNECT_NEGOTIATE_FLAG;
 			}
@@ -758,7 +755,7 @@ namespace SB {
 
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
-		if(request.req.push_updates == true) {
+		if(request.req.send_fields_for_all != true) {
 			if(results.first_set) {
 				MM::ServerListQuery empty_results = results;
 				empty_results.list = std::vector<MM::Server *>();
