@@ -278,7 +278,7 @@ namespace SB {
 			while (it != servers.list.end()) {
 				MM::Server* server = *it;
 				
-				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, no_keys, servers.first_set);
+				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, no_keys);
 				it++;
 			}
 
@@ -517,7 +517,7 @@ namespace SB {
 			Delete();
 		}
 	}
-	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, OS::Buffer *sendBuffer, bool full_keys, const std::map<std::string, int> *optimized_fields, bool no_keys, bool first_set) {
+	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, OS::Buffer *sendBuffer, bool full_keys, const std::map<std::string, int> *optimized_fields, bool no_keys) {
 		OS::Buffer *buffer = sendBuffer;
 		if (!buffer) {
 			buffer = new OS::Buffer();
@@ -711,7 +711,7 @@ namespace SB {
 		if(!m_last_list_req.push_updates || m_in_message) return;
 		if(server) {
 			if(serverMatchesLastReq(server)) {
-				sendServerData(server, true, true, NULL, false, NULL, false, false);
+				sendServerData(server, true, true, NULL, false, NULL, false);
 			}
 		}
 	}
@@ -719,7 +719,7 @@ namespace SB {
 		if(!m_last_list_req.push_updates || m_in_message) return;
 
 		if(server && serverMatchesLastReq(server)) {
-			sendServerData(server, true, true, NULL, false, NULL, false, false);
+			sendServerData(server, true, true, NULL, false, NULL, false);
 		}
 	}
 
@@ -764,7 +764,7 @@ namespace SB {
 		std::vector<MM::Server*>::iterator it = results.list.begin();
 		while (it != results.list.end()) {
 			MM::Server* server = *it;
-			sendServerData(server, true, true, NULL, false, NULL, false, false);
+			sendServerData(server, true, true, NULL, false, NULL, false);
 			it++;
 		}
 	}
@@ -775,7 +775,7 @@ namespace SB {
 		if (results.list.size() == 0) return;
 		MM::Server *server = results.list.front();
 		if (server) {
-			sendServerData(server, false, true, NULL, true, NULL, false, false);
+			sendServerData(server, false, true, NULL, true, NULL, false);
 		}
 	}
 }
