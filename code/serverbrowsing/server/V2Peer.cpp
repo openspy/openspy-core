@@ -689,7 +689,7 @@ namespace SB {
 			buffer->WriteByte(0); //terminator
 		}
 
-		if (!first_set) {
+		if (sendBuffer == NULL) { //sendbuffer is null, so send packet now or will be lost
 			SendPacket((uint8_t *)buffer->GetHead(), buffer->bytesWritten(), push);
 			buffer->resetWriteCursor();
 		}
