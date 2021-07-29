@@ -729,8 +729,9 @@ namespace SB {
 
 	void V2Peer::SendPushKeys() {
 		OS::Buffer buffer;
+		if(m_last_list_req.m_from_game.push_keys.size() == 0) return;
 		std::map<std::string, uint8_t>::iterator it = m_last_list_req.m_from_game.push_keys.begin();
-
+		buffer.WriteByte(PUSH_KEYS_MESSAGE);
 		buffer.WriteByte((uint8_t)m_last_list_req.m_from_game.push_keys.size());
 		while(it != m_last_list_req.m_from_game.push_keys.end()) {
 			std::pair<std::string, uint8_t> pair = *it;
@@ -784,7 +785,7 @@ namespace SB {
 				MM::Server* server = *it;
 				
 				sendServerData(server, true, true, &write_buffer, false, NULL, false, false);
-				mp_push_delay_buffer->WriteShort(write_buffer.bytesWritten() + sizeof(uint16_t));
+				mp_push_delay_buffer->WriteShort(htons(write_buffer.bytesWritten() + sizeof(uint16_t)));
 				mp_push_delay_buffer->WriteBuffer(write_buffer.GetHead(), write_buffer.bytesWritten());
 				write_buffer.resetWriteCursor();
 				it++;
