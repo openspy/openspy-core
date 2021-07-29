@@ -103,6 +103,8 @@ namespace SB {
 				bool m_got_game_pair;
 				bool m_in_message;
 
+				OS::Buffer *mp_push_delay_buffer;
+
 				#if HACKER_PATCH_MSG_SPAM_CHECKER
 					int m_hp_msg_spam_count;
 					OS::Address m_hp_msg_spam_last_msg_sent_to;

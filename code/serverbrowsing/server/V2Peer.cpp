@@ -24,6 +24,7 @@ namespace SB {
 		m_last_list_req.m_from_game.gamename[0] = 0;
 		m_in_message = false;
 		m_got_game_pair = false;
+		mp_push_delay_buffer = NULL;
 
 		#if HACKER_PATCH_MSG_SPAM_CHECKER
 				m_hp_msg_spam_count = 0;
@@ -32,6 +33,9 @@ namespace SB {
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
 	}
 	V2Peer::~V2Peer() {
+		if(mp_push_delay_buffer) {
+			delete mp_push_delay_buffer;
+		}
 	}
 	void V2Peer::handle_packet(OS::Buffer &buffer) {
 		uint8_t request_type = 0;
@@ -759,14 +763,40 @@ namespace SB {
 
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
+
+		/*
+			Sends the server list response, and does delayed push logic, if logic is needed
+				This logic exists because *after* the server list was sent without basic keys, the server then pushed the keys to the client... but openspy grabs it all at once
+		*/
+		bool do_delayed_push = true;
+		if(request.req.send_fields_for_all || request.req.no_server_list) {
+			do_delayed_push = false;
+		}
+		if(results.first_set && mp_push_delay_buffer == NULL && do_delayed_push) {
+			mp_push_delay_buffer = new OS::Buffer();
+		}
 		SendListQueryResp(results, request.req);
 
-		std::vector<MM::Server*>::iterator it = results.list.begin();
-		while (it != results.list.end()) {
-			MM::Server* server = *it;
-			sendServerData(server, true, true, NULL, false, NULL, false, false);
-			it++;
+		if(do_delayed_push) {
+			std::vector<MM::Server*>::iterator it = results.list.begin();
+			OS::Buffer write_buffer;
+			while (it != results.list.end()) {
+				MM::Server* server = *it;
+				
+				sendServerData(server, true, true, &write_buffer, false, NULL, false, false);
+				mp_push_delay_buffer->WriteShort(write_buffer.bytesWritten() + sizeof(uint16_t));
+				mp_push_delay_buffer->WriteBuffer(write_buffer.GetHead(), write_buffer.bytesWritten());
+				write_buffer.resetWriteCursor();
+				it++;
+			}
+
+			if(results.last_set) {
+				SendPacket((uint8_t *)mp_push_delay_buffer->GetHead(), mp_push_delay_buffer->bytesWritten(), false);
+				delete mp_push_delay_buffer;
+				mp_push_delay_buffer = NULL;
+			}
 		}
+
 	}
 	void V2Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		SendListQueryResp(results, request.req);
