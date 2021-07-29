@@ -14,6 +14,7 @@ namespace MM {
 
 	TaskScheduler<MMQueryRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
 		{EMMQueryRequestType_GetServers, PerformGetServers},
+		{EMMQueryRequestType_GetServers_AsPushMessages, PerformGetServers},
 		{EMMQueryRequestType_GetGroups, PerformGetGroups},
 		{EMMQueryRequestType_GetServerByKey, PerformGetServerByKey},
 		{EMMQueryRequestType_GetServerByIP, PerformGetServerByIP},

@@ -689,7 +689,7 @@ namespace SB {
 			buffer->WriteByte(0); //terminator
 		}
 
-		if (sendBuffer == NULL) { //sendbuffer is null, so send packet now or will be lost
+		if (!first_set || push) { //sendbuffer is null, so send packet now or will be lost
 			SendPacket((uint8_t *)buffer->GetHead(), buffer->bytesWritten(), push);
 			buffer->resetWriteCursor();
 		}
@@ -759,13 +759,24 @@ namespace SB {
 
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
-		SendListQueryResp(results, request.req);
+		if(request.type == MM::EMMQueryRequestType_GetServers) {
+			SendListQueryResp(results, request.req);
 
-		std::vector<MM::Server*>::iterator it = results.list.begin();
-		while (it != results.list.end()) {
-			MM::Server* server = *it;
-			sendServerData(server, true, true, NULL, false, NULL, false, false);
-			it++;
+			if ((results.list.empty() || results.last_set) && request.req.send_fields_for_all == false && request.req.no_server_list == false) {
+				//end list response... now push basic keys...
+
+				MM::MMQueryRequest req;
+				req.req = request.req;
+				req.type = MM::EMMQueryRequestType_GetServers_AsPushMessages;
+				AddRequest(req);
+			}
+		} else if(request.type == MM::EMMQueryRequestType_GetServers_AsPushMessages) {
+			std::vector<MM::Server*>::iterator it = results.list.begin();
+			while (it != results.list.end()) {
+				MM::Server* server = *it;
+				sendServerData(server, true, true, NULL, false, NULL, false, false);
+				it++;
+			}
 		}
 	}
 	void V2Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {

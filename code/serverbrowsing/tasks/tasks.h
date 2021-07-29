@@ -110,6 +110,7 @@ namespace MM {
 
 	enum EMMQueryRequestType {
 		EMMQueryRequestType_GetServers,
+		EMMQueryRequestType_GetServers_AsPushMessages,
 		EMMQueryRequestType_GetGroups,
 		EMMQueryRequestType_GetServerByKey,
 		EMMQueryRequestType_GetServerByIP,
