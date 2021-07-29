@@ -272,9 +272,13 @@ namespace SB {
 
 
 			std::vector<MM::Server*>::iterator it = servers.list.begin();
+			bool no_keys = true;
+			if(list_req.send_fields_for_all == true || list_req.send_groups == true)
+				no_keys = false;
 			while (it != servers.list.end()) {
 				MM::Server* server = *it;
-				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, false, servers.first_set);
+				
+				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, no_keys, servers.first_set);
 				it++;
 			}
 
@@ -755,23 +759,13 @@ namespace SB {
 
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
-		if(request.req.send_fields_for_all != true) {
-			if(results.first_set) {
-				MM::ServerListQuery empty_results = results;
-				empty_results.list = std::vector<MM::Server *>();
-				empty_results.last_set = true;
-				SendListQueryResp(empty_results, request.req);
-			}
+		SendListQueryResp(results, request.req);
 
-			std::vector<MM::Server*>::iterator it = results.list.begin();
-			while (it != results.list.end()) {
-				MM::Server* server = *it;
-				sendServerData(server, true, true, NULL, false, NULL, false, false);
-				it++;
-			}
-
-		} else {
-			SendListQueryResp(results, request.req, true);
+		std::vector<MM::Server*>::iterator it = results.list.begin();
+		while (it != results.list.end()) {
+			MM::Server* server = *it;
+			sendServerData(server, true, true, NULL, false, NULL, false, false);
+			it++;
 		}
 	}
 	void V2Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
