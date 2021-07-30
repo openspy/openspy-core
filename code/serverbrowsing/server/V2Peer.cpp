@@ -276,13 +276,9 @@ namespace SB {
 
 
 			std::vector<MM::Server*>::iterator it = servers.list.begin();
-			bool no_keys = true;
-			if(list_req.send_fields_for_all == true || list_req.send_groups == true)
-				no_keys = false;
 			while (it != servers.list.end()) {
 				MM::Server* server = *it;
-				
-				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, no_keys, servers.first_set);
+				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, false, servers.first_set);
 				it++;
 			}
 
@@ -544,7 +540,7 @@ namespace SB {
 			}
 		}
 
-		if(natneg_val == 0 && m_last_list_req.send_fields_for_all == false && !full_keys) { //required for natneg disabled games (dh2005, MOHPA)
+		if(natneg_val == 0 && m_last_list_req.send_fields_for_all == false && m_last_list_req.send_groups == false && !push && !full_keys) { //required for some natneg disabled games (dh2005, MOHPA)
 			no_keys = true;
 		}
 		
