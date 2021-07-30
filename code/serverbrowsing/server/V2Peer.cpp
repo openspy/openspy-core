@@ -543,6 +543,10 @@ namespace SB {
 				flags |= CONNECT_NEGOTIATE_FLAG;
 			}
 		}
+
+		if(natneg_val == 0 && m_last_list_req.send_fields_for_all == false && !full_keys) { //required for natneg disabled games (dh2005, MOHPA)
+			no_keys = true;
+		}
 		
 		if(server->kvFields.find("localip0") != server->kvFields.end()) { //TODO: scan localips??
 			int addr = inet_addr(server->kvFields["localip0"].c_str());
@@ -764,38 +768,23 @@ namespace SB {
 
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
+		if(request.req.push_updates == true) {
+			if(results.first_set) {
+				MM::ServerListQuery empty_results = results;
+				empty_results.list = std::vector<MM::Server *>();
+				empty_results.last_set = true;
+				SendListQueryResp(empty_results, request.req);
+			}
 
-		/*
-			Sends the server list response, and does delayed push logic, if logic is needed
-				This logic exists because *after* the server list was sent without basic keys, the server then pushed the keys to the client... but openspy grabs it all at once
-		*/
-		bool do_delayed_push = true;
-		if(request.req.send_fields_for_all || request.req.no_server_list) {
-			do_delayed_push = false;
-		}
-		if(results.first_set && mp_push_delay_buffer == NULL && do_delayed_push) {
-			mp_push_delay_buffer = new OS::Buffer();
-		}
-		SendListQueryResp(results, request.req);
-
-		if(do_delayed_push) {
 			std::vector<MM::Server*>::iterator it = results.list.begin();
-			OS::Buffer write_buffer;
 			while (it != results.list.end()) {
 				MM::Server* server = *it;
-				
-				sendServerData(server, true, true, &write_buffer, false, NULL, false, false);
-				mp_push_delay_buffer->WriteShort(htons(write_buffer.bytesWritten() + sizeof(uint16_t)));
-				mp_push_delay_buffer->WriteBuffer(write_buffer.GetHead(), write_buffer.bytesWritten());
-				write_buffer.resetWriteCursor();
+				sendServerData(server, true, true, NULL, false, NULL, false, false);
 				it++;
 			}
 
-			if(results.last_set) {
-				SendPacket((uint8_t *)mp_push_delay_buffer->GetHead(), mp_push_delay_buffer->bytesWritten(), false);
-				delete mp_push_delay_buffer;
-				mp_push_delay_buffer = NULL;
-			}
+		} else {
+			SendListQueryResp(results, request.req, true);
 		}
 
 	}
