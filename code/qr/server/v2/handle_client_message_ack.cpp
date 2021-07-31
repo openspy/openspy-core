@@ -43,7 +43,7 @@ namespace QR {
         req.version = 2;
         req.server.id = key;
 
-        OS::LogText(OS::ELogLevel_Info, "[%s] Got client message ack %d", to_address.ToString().c_str(), key);
+        OS::LogText(OS::ELogLevel_Info, "[%s] Got client message ack %d", from_address.ToString().c_str(), key);
 
 
         req.type = MM::EMMPushRequestType_ClientMessageAck;

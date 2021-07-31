@@ -298,8 +298,9 @@ namespace SB {
 				req.req.send_groups = true;
 				req.req.all_keys = true;
 			} else {
-				send_error(true, "Unknown list mode");
-				return;
+				req.req.all_keys = false;
+				//send_error(true, "Unknown list mode");
+				//return;
 			}
 
 			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), fields: %s  is_group: %d, all_keys: %d", getAddress().ToString().c_str(), req.req.m_from_game.gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
