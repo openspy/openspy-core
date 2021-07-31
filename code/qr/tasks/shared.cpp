@@ -10,6 +10,20 @@ namespace MM {
 		}
 		return false;
 	}
+    bool isPlayerString(std::string key, std::string &variable_name, int &player_id) {
+        size_t last_underscore = key.find_last_of('_');
+        if(last_underscore == std::string::npos || last_underscore-1 >= key.length())
+            return false;
+        std::string numeric_portion = key.substr(last_underscore + 1);
+
+        std::string::const_iterator it = numeric_portion.begin();
+        while (it != numeric_portion.end() && std::isdigit(*it)) ++it;
+        if(it != numeric_portion.end()) return false;
+
+        player_id = atoi(numeric_portion.c_str());
+        variable_name = key.substr(0, last_underscore);
+        return true;
+    }
 	int GetServerID(TaskThreadData *thread_data) {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;
@@ -23,10 +37,10 @@ namespace MM {
 		}
 		return ret;
 	}
-	int TryFindServerID(TaskThreadData *thread_data, ServerInfo server) {
-		std::string ip = server.m_address.ToString(true);
+	int TryFindServerID(TaskThreadData *thread_data, OS::Address address) {
+		std::string ip = address.ToString(true);
 		std::stringstream map;
-		map << "IPMAP_" << ip << "-" << server.m_address.GetPort();
+		map << "IPMAP_" << ip << "-" << address.GetPort();
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS %s", map.str().c_str());
 		Redis::Value v = resp.values.front();

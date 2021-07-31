@@ -88,8 +88,10 @@ namespace MM {
     TaskScheduler<MMPushRequest, TaskThreadData> *InitTasks(INetServer *server);
 
 	//shared functions
+	int TryFindServerID(TaskThreadData *thread_data, OS::Address address);
 	int GetServerID(TaskThreadData *thread_data);
 	bool isTeamString(const char *string);
+	bool isPlayerString(std::string key, std::string &variable_name, int &player_id);
 
 	void WriteServerData(TaskThreadData *thread_data, std::string server_key, ServerInfo server, uint32_t instance_key = 0);
 	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted);

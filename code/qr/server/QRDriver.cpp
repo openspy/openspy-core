@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include  <algorithm>
+#include <algorithm>
+#include <sstream>
 #include "QRServer.h"
 #include "QRDriver.h"
 #include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 
 #include "v2.h"
+
 
 namespace QR {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
@@ -44,7 +46,7 @@ namespace QR {
 					do {
 						last_read_remaining = dgram.buffer.readRemaining();
 						if(firstChar == '\\') { //v1
-
+							handle_v1_packet(dgram);
 						} else { //v2
 							handle_v2_packet(dgram);
 						}
@@ -88,6 +90,17 @@ namespace QR {
 		buffer.WriteInt(instance_key);
 		buffer.WriteByte(error_code); //error code
 		buffer.WriteNTS(error_message);
+		SendPacket(to, buffer);
+	}
+
+	void Driver::send_v1_error(OS::Address to, const char *error_message) {
+		std::stringstream ss;
+		ss << "\\error\\" << error_message << "\\final\\";
+
+		std::string message = ss.str();
+
+		OS::Buffer buffer;
+		buffer.WriteBuffer(message.c_str(),message.length());
 		SendPacket(to, buffer);
 	}
 }

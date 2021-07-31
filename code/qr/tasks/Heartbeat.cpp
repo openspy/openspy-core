@@ -26,7 +26,10 @@ namespace MM {
         return "";
     }
     std::string GetNewServerKey(TaskThreadData *thread_data, uint32_t instance_key, OS::Address address, std::string gamename, int &id) {
-        id = GetServerID(thread_data);
+        id = TryFindServerID(thread_data, address);
+
+        if(id == -1)
+            id = GetServerID(thread_data);
 
 		std::ostringstream s;
 		s << gamename << ":" << id << ":";
@@ -34,7 +37,7 @@ namespace MM {
 
         return server_key;
     }
-    std::string GenerateV2Challenge(OS::GameData game_data) {
+    std::string GenerateChallenge(OS::GameData game_data) {
         char challenge[V2_CHALLENGE_LEN + 1];
         memset(&challenge, 0, sizeof(challenge));
 		OS::gen_random((char *)&challenge,sizeof(challenge)-1);
@@ -60,8 +63,7 @@ namespace MM {
 
         Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 
-        //v2 logic
-            //check for server by instance key + ip:port
+        //check for server by instance key + ip:port
         std::string server_key = GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
         //if not exists
         if(server_key.length() == 0) {
@@ -85,7 +87,7 @@ namespace MM {
             int server_id;
             server_key = GetNewServerKey(thread_data, request.v2_instance_key, request.from_address, gamename, server_id);
 
-            std::string challenge_string = GenerateV2Challenge(game_info);
+            std::string challenge_string = GenerateChallenge(game_info);
 
             char challenge_resp[90] = { 0 };
             gsseckey((unsigned char *)&challenge_resp, challenge_string.c_str(), (const unsigned char *)game_info.secretkey.c_str(), 0);
@@ -135,15 +137,9 @@ namespace MM {
         std::string ipinput = server.m_address.ToString(true);
 
 		Redis::Command(thread_data->mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), server.m_address.GetPort(), server_key.c_str());
-		
 
-        
-
-
-        if(instance_key != 0) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "SET IPINSTMAP_%ld-%s-%d %s", instance_key, ipinput.c_str(), server.m_address.GetPort(), server_key.c_str());
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s instance_key %ld", server_key.c_str(), instance_key);
-        }
+        Redis::Command(thread_data->mp_redis_connection, 0, "SET IPINSTMAP_%ld-%s-%d %s", instance_key, ipinput.c_str(), server.m_address.GetPort(), server_key.c_str());
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s instance_key %ld", server_key.c_str(), instance_key);
 
 		Redis::Command(thread_data->mp_redis_connection, 0, "HINCRBY %s num_updates 1", server_key.c_str());
 
@@ -211,15 +207,15 @@ namespace MM {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s deleted %d", server_key.c_str(), deleted);
     }
 	void SetServerInitialInfo(TaskThreadData *thread_data, OS::Address driver_address, std::string server_key, OS::GameData game_info, std::string challenge_response, OS::Address address, int id) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s driver_address %s", server_key.c_str(), driver_address.ToString().c_str());
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s driver_hostname %s", server_key.c_str(), OS::g_hostName);
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), address.GetPort());
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), address.ToString(true).c_str());
-			Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), game_info.gameid);
-			Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s driver_address %s", server_key.c_str(), driver_address.ToString().c_str());
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s driver_hostname %s", server_key.c_str(), OS::g_hostName);
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), address.GetPort());
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), address.ToString(true).c_str());
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), game_info.gameid);
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
 
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s challenge %s", server_key.c_str(), challenge_response.c_str());
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s challenge %s", server_key.c_str(), challenge_response.c_str());
 
-            Redis::Command(thread_data->mp_redis_connection, 0, "ZADD %s %d \"%s\"", game_info.gamename.c_str(), id, server_key.c_str());
+        Redis::Command(thread_data->mp_redis_connection, 0, "ZADD %s %d \"%s\"", game_info.gamename.c_str(), id, server_key.c_str());
     }
 }

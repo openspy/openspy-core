@@ -15,6 +15,8 @@
 #include <sys/time.h>
 #endif
 
+#include <OS/Net/Processors/KVProcessor.h>
+
 #define MAX_DATA_SIZE 1400
 #define DRIVER_THREAD_TIME 1000
 namespace MM {
@@ -26,6 +28,20 @@ namespace QR {
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
 		void think(bool listener_waiting);
+
+		//v1
+		void perform_v1_key_scan(OS::Address from_address);
+		void handle_v1_packet(INetIODatagram &packet);
+		void handle_v1_heartbeat(OS::Address from_address, OS::KVReader reader);
+		void handle_v1_heartbeat_data(OS::Address from_address, OS::KVReader reader);
+		void handle_v1_validate(OS::Address from_address, OS::KVReader reader);
+		void handle_v1_echo(OS::Address from_address, OS::KVReader reader);
+
+		static void on_v1_heartbeat_data_processed(MM::MMTaskResponse response);
+		static void on_v1_heartbeat_processed(MM::MMTaskResponse response);
+		static void on_v1_secure_processed(MM::MMTaskResponse response);
+		static void on_v1_echo_processed(MM::MMTaskResponse response);
+		
 
 		//v2
 		void handle_v2_packet(INetIODatagram &packet);		
@@ -39,11 +55,12 @@ namespace QR {
 		void send_client_message(int version, OS::Address to_address, uint32_t instance_key, uint32_t message_key, OS::Buffer &send_buffer);
 
 		void send_v2_error(OS::Address to, uint32_t instance_key, uint8_t error_code, const char *error_message);
+		void send_v1_error(OS::Address to, const char *error_message);
 
 
-		static void on_keepalive_processed(MM::MMTaskResponse response);
+		static void on_v2_keepalive_processed(MM::MMTaskResponse response);
 		static void on_got_v2_available_data(MM::MMTaskResponse response);
-		static void on_heartbeat_processed(MM::MMTaskResponse response);
+		static void on_v2_heartbeat_processed(MM::MMTaskResponse response);
 		static void on_got_v2_challenge_response(MM::MMTaskResponse response);		
 
 		void SendPacket(OS::Address to, OS::Buffer buffer);
@@ -51,6 +68,8 @@ namespace QR {
 		INetIOSocket *getListenerSocket() const;
 		const std::vector<INetIOSocket *> getSockets() const;
 		void OnPeerMessage(INetPeer *peer);
+
+		void handle_v1_packet(OS::KVReader data_parser);
 	private:
 		struct timeval m_server_start;
 

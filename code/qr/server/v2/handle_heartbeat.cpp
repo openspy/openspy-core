@@ -9,7 +9,7 @@
 #include <tasks/tasks.h>
 #include <server/v2.h>
 namespace QR {
-    void Driver::on_heartbeat_processed(MM::MMTaskResponse response) {
+    void Driver::on_v2_heartbeat_processed(MM::MMTaskResponse response) {
 		if(response.error_message != NULL) {
 			response.driver->send_v2_error(response.from_address, response.v2_instance_key, 1, response.error_message);		
 			return;
@@ -113,7 +113,7 @@ namespace QR {
         req.server = server_info;
         req.version = 2;
         req.type = MM::EMMPushRequestType_Heartbeat;
-        req.callback = on_heartbeat_processed;
+        req.callback = on_v2_heartbeat_processed;
         scheduler->AddRequest(req.type, req);
     }
 }
