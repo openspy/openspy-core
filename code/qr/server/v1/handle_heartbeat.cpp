@@ -29,17 +29,21 @@ namespace QR {
     void Driver::handle_v1_heartbeat(OS::Address from_address, OS::KVReader reader) {
         MM::ServerInfo server_info;
         server_info.m_address = from_address;
-        //std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> GetHead() const;
 
         std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it_header = reader.GetHead();
         std::vector<std::pair< std::string, std::string> >::const_iterator it = it_header.first;
         it++; //skip heartbeat setting
 
+        std::stringstream ss;
+
         while(it != it_header.second) {
             std::pair< std::string, std::string> p = *it;
             server_info.m_keys[p.first] = p.second;
+            ss << "(" << p.first << "," << p.second << ") ";
             it++;
         }
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", from_address.ToString().c_str(), ss.str().c_str());
+		ss.str("");
         
         TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
         MM::MMPushRequest req;        
@@ -49,7 +53,7 @@ namespace QR {
         req.driver = this;
         req.server = server_info;
         req.version = 1;
-        req.type = MM::EMMPushRequestType_Heartbeat;
+        req.type = MM::EMMPushRequestType_Heartbeat_ClearExistingKeys;
         req.callback = on_v1_heartbeat_processed;
         scheduler->AddRequest(req.type, req);
     }
@@ -69,6 +73,8 @@ namespace QR {
         std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it_header = reader.GetHead();
         std::vector<std::pair< std::string, std::string> >::const_iterator it = it_header.first;
 
+        std::stringstream ss;
+
         while(it != it_header.second) {
             std::pair< std::string, std::string> p = *it;
             int player_id = 0;
@@ -79,12 +85,17 @@ namespace QR {
                 } else {
                     server_info.m_player_keys[variable_name][player_id] = p.second;
                 }
+                ss << "P(" << player_id << ") (" << variable_name << "," << p.second << " ) ";
             } else {
                 server_info.m_keys[variable_name] = p.second;
+                ss << "(" << variable_name << "," << p.second << ") ";
             }
             
             it++;
         }
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", from_address.ToString().c_str(), ss.str().c_str());
+		ss.str("");
 
         TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
         MM::MMPushRequest req;        

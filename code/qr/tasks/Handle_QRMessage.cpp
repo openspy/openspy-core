@@ -6,8 +6,6 @@ namespace MM {
     bool Handle_QRMessage(TaskThreadData *thread_data, std::string message) {
 		QR::Server *server = (QR::Server *)thread_data->server;
 
-		printf("got QR message: %s\n", message.c_str());
-
 		json_t *root = json_loads(message.c_str(), 0, NULL);
 		if(!root) return false;
 

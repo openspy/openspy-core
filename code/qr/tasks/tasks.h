@@ -32,6 +32,7 @@ namespace MM {
 	enum EMMPushRequestType {
 		EMMPushRequestType_GetGameInfoByGameName,
 		EMMPushRequestType_Heartbeat,
+		EMMPushRequestType_Heartbeat_ClearExistingKeys,
 		EMMPushRequestType_ValidateServer,
 		EMMPushRequestType_Keepalive,
 		EMMPushRequestType_ClientMessageAck
@@ -96,6 +97,7 @@ namespace MM {
 	void WriteServerData(TaskThreadData *thread_data, std::string server_key, ServerInfo server, uint32_t instance_key = 0);
 	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted);
 	void SetServerInitialInfo(TaskThreadData *thread_data, OS::Address driver_address, std::string server_key, OS::GameData game_info, std::string challenge_response, OS::Address address, int id);
+	void ClearServerCustKeys(TaskThreadData *thread_data, std::string server_key);
 	void WriteLastHeartbeatTime(TaskThreadData *thread_data, std::string server_key, OS::Address address, uint32_t instance_key);
 
 	std::string GetServerKeyBy_InstanceKey_Address(TaskThreadData *thread_data, uint32_t instance_key, OS::Address address);

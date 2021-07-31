@@ -17,6 +17,7 @@ namespace MM {
 	TaskScheduler<MMPushRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
 		{EMMPushRequestType_GetGameInfoByGameName, PerformGetGameInfo},
 		{EMMPushRequestType_Heartbeat, PerformHeartbeat},
+		{EMMPushRequestType_Heartbeat_ClearExistingKeys, PerformHeartbeat},
 		{EMMPushRequestType_ValidateServer, PerformValidate},
 		{EMMPushRequestType_Keepalive, PerformKeepalive},
 		{EMMPushRequestType_ClientMessageAck, PerformClientMessageAck},

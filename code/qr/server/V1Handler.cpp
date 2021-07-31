@@ -13,7 +13,6 @@ namespace QR {
         OS::KVReader data_parser = input;
 
         std::string message_type = data_parser.GetKeyByIdx(0);
-        printf("input is: %s\n", message_type.c_str());
 
         if(message_type.compare("heartbeat") == 0) {
             handle_v1_heartbeat(packet.address, data_parser);
@@ -25,10 +24,5 @@ namespace QR {
             //read heartbeat server info
             handle_v1_heartbeat_data(packet.address, data_parser);
         }
-        
-        
-    }
-    void Driver::handle_v1_packet(OS::KVReader data_parser) {
-        printf("handle_v1_packet\n");
     }
 }

@@ -92,6 +92,9 @@ namespace MM {
             char challenge_resp[90] = { 0 };
             gsseckey((unsigned char *)&challenge_resp, challenge_string.c_str(), (const unsigned char *)game_info.secretkey.c_str(), 0);
 
+            if(request.type == EMMPushRequestType_Heartbeat_ClearExistingKeys) {
+                ClearServerCustKeys(thread_data, server_key);
+            }
             WriteServerData(thread_data, server_key, request.server, request.v2_instance_key);
             SetServerDeleted(thread_data, server_key, 1);
             SetServerInitialInfo(thread_data, request.driver->getListenerSocket()->address, server_key, game_info, challenge_resp, request.from_address, server_id);
@@ -111,6 +114,9 @@ namespace MM {
                     request.callback(response);
                     return;
                 }
+            }
+            if(request.type == EMMPushRequestType_Heartbeat_ClearExistingKeys) {
+                ClearServerCustKeys(thread_data, server_key);
             }
             WriteServerData(thread_data, server_key, request.server, request.v2_instance_key);
 
@@ -217,5 +223,41 @@ namespace MM {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s challenge %s", server_key.c_str(), challenge_response.c_str());
 
         Redis::Command(thread_data->mp_redis_connection, 0, "ZADD %s %d \"%s\"", game_info.gamename.c_str(), id, server_key.c_str());
+    }
+    void ClearServerCustKeys(TaskThreadData *thread_data, std::string server_key) {
+		Redis::Response reply;
+
+		std::string key;
+		Redis::Value v, arr;
+
+		int cursor = 0;
+        int channel_id;
+
+        do {
+            reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH %scustkeys*", cursor, server_key.c_str());
+            if (Redis::CheckError(reply))
+                return;
+
+            v = reply.values[0].arr_value.values[0].second;
+            arr = reply.values[0].arr_value.values[1].second;
+
+			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+
+				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+					cursor = atoi(v.value._str.c_str());
+				}
+				else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+					cursor = v.value._int;
+				}
+				for (size_t i = 0; i < arr.arr_value.values.size(); i++) {
+					if (arr.arr_value.values[i].first != Redis::REDIS_RESPONSE_TYPE_STRING)
+						continue;
+
+					key = arr.arr_value.values[i].second.value._str;
+                    Redis::Command(thread_data->mp_redis_connection, 0, "DEL %s", key.c_str());
+                }
+            }
+        } while(cursor != 0);
+        
     }
 }

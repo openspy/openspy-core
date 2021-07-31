@@ -43,7 +43,6 @@ namespace NN {
 						dgram.buffer.ReadBuffer(&packet.magic, NATNEG_MAGIC_LEN);
 						if(memcmp(&NNMagicData,&packet.magic, NATNEG_MAGIC_LEN) != 0) {
 							//skip invalid packet
-							printf("INVALID PACKET\n");
 							break;
 						}
 						memset(&packet.Packet.Init, 0, sizeof(packet.Packet.Init));
