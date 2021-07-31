@@ -541,7 +541,7 @@ namespace SB {
 			}
 		}
 
-		if(flags & UNSOLICITED_UDP_FLAG && m_last_list_req.send_fields_for_all == false && m_last_list_req.send_groups == false && !push && !full_keys) { //required for some natneg disabled games (dh2005, MOHPA)
+		if((flags & UNSOLICITED_UDP_FLAG) && m_last_list_req.send_fields_for_all == false && m_last_list_req.send_groups == false && !push && !full_keys) { //required for some natneg disabled games (dh2005, MOHPA)
 			no_keys = true;
 		}
 		
