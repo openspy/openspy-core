@@ -12,6 +12,8 @@ namespace QR {
     void Driver::send_client_message(int version, OS::Address to_address, uint32_t instance_key, uint32_t message_key, OS::Buffer &message_buffer) {
 		OS::Buffer buffer;
 
+        OS::LogText(OS::ELogLevel_Info, "[%s] Send client message: %d - %d", to_address.ToString().c_str(), message_buffer.bytesWritten(), message_key);
+
         if(version == 2) {
             struct timeval current_time;
             gettimeofday(&current_time, NULL);
@@ -25,6 +27,7 @@ namespace QR {
             buffer.WriteInt(message_key);
             buffer.WriteBuffer(message_buffer.GetHead(), message_buffer.bytesWritten());
             SendPacket(to_address, buffer);
+            
         }
     }
     void Driver::handle_v2_client_message_ack(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
@@ -39,6 +42,8 @@ namespace QR {
         req.driver = this;
         req.version = 2;
         req.server.id = key;
+
+        OS::LogText(OS::ELogLevel_Info, "[%s] Got client message ack %d", to_address.ToString().c_str(), key);
 
 
         req.type = MM::EMMPushRequestType_ClientMessageAck;
