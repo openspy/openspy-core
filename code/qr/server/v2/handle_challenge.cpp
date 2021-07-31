@@ -20,6 +20,7 @@ namespace QR {
 		buffer.WriteByte(PACKET_CLIENT_REGISTERED);
 		buffer.WriteInt(response.v2_instance_key);
 		response.driver->SendPacket(response.from_address, buffer);
+        OS::LogText(OS::ELogLevel_Info, "[%s] Server Registered", response.from_address.ToString().c_str());
     }
     void Driver::handle_v2_challenge(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
         std::string challenge = buffer.ReadNTS();
@@ -34,7 +35,6 @@ namespace QR {
         req.driver = this;
         req.version = 2;
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got challenge response: %s", from_address.ToString().c_str(), challenge.c_str());
 		req.type = MM::EMMPushRequestType_ValidateServer;
 		scheduler->AddRequest(req.type, req);
     }
