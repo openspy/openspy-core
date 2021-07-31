@@ -11,7 +11,7 @@
 namespace QR {
     void Driver::perform_v1_key_scan(OS::Address from_address) {
         std::stringstream ss;
-        ss << "\\packets\\\\final\\";
+        ss << "\\status\\\\final\\";
 
         std::string message = ss.str();
 
