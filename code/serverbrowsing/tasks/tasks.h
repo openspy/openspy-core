@@ -20,6 +20,7 @@ namespace MM {
 		public:
 			Server() {
 				id = 0;
+				allow_unsolicited_udp = false;
 			}
 			~Server() {
 
