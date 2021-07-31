@@ -530,17 +530,18 @@ namespace SB {
 		if (server->wan_address.port != server->game.queryport) {
 			flags |= NONSTANDARD_PORT_FLAG;
 		}
+		if(server->allow_unsolicited_udp) {
+			flags |= UNSOLICITED_UDP_FLAG;
+		}
 		int natneg_val = 0;
 		if(server->kvFields.find("natneg") != server->kvFields.end()) {
 			natneg_val = atoi(server->kvFields["natneg"].c_str());
-			if(natneg_val == 0) {
-				flags |= UNSOLICITED_UDP_FLAG;
-			} else {
+			if(natneg_val == 1 && !(flags & UNSOLICITED_UDP_FLAG)) {
 				flags |= CONNECT_NEGOTIATE_FLAG;
 			}
 		}
 
-		if(natneg_val == 0 && m_last_list_req.send_fields_for_all == false && m_last_list_req.send_groups == false && !push && !full_keys) { //required for some natneg disabled games (dh2005, MOHPA)
+		if(flags & UNSOLICITED_UDP_FLAG && m_last_list_req.send_fields_for_all == false && m_last_list_req.send_groups == false && !push && !full_keys) { //required for some natneg disabled games (dh2005, MOHPA)
 			no_keys = true;
 		}
 		
@@ -587,6 +588,10 @@ namespace SB {
 		}
 		if (flags & NONSTANDARD_PRIVATE_PORT_FLAG) {
 			buffer->WriteShort(htons(private_port));
+		}
+
+		if(flags & ICMP_IP_FLAG) {
+			buffer->WriteInt(server->icmp_address.ip);
 		}
 
 		if(flags & HAS_KEYS_FLAG) {

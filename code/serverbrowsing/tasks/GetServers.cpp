@@ -182,6 +182,24 @@ namespace MM {
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
 			server->wan_address.ip = inet_addr((v.value._str).c_str());
 
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s icmp_address", entry_name.c_str());
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+			goto error_cleanup;
+
+		v = reply.values.front();
+
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
+			server->icmp_address.ip = inet_addr((v.value._str).c_str());
+
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s allow_unsolicited_udp", entry_name.c_str());
+		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
+			goto error_cleanup;
+
+		v = reply.values.front();
+
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
+			server->allow_unsolicited_udp = atoi((v.value._str).c_str()) != 0;
+
 		if(all_keys) {
 			do {
 				reply = Redis::Command(thread_data->mp_redis_connection, 0, "HSCAN %scustkeys %d MATCH *", entry_name.c_str(), cursor);

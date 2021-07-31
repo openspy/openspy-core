@@ -26,6 +26,9 @@ namespace MM {
 			}
 			OS::Address wan_address;
 			OS::Address lan_address;
+			OS::Address icmp_address;
+			bool allow_unsolicited_udp;
+
 			OS::GameData game;
 			OS::countryRegion region;
 			std::map<std::string, std::string> kvFields;
