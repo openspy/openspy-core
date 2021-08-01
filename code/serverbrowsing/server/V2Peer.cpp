@@ -246,8 +246,6 @@ namespace SB {
 		
 		buffer.WriteShort(htons(list_req.m_from_game.queryport));
 
-		bool send_push_keys = false;
-
 		if(!list_req.no_server_list) {
 			buffer.WriteByte((uint8_t)list_req.field_list.size());
 
@@ -289,9 +287,7 @@ namespace SB {
 				//terminator
 				buffer.WriteByte(0);
 				buffer.WriteInt(-1);
-				if (!list_req.send_groups) {
-					send_push_keys = true;
-				}				
+			
 			}
 
 		}
@@ -300,11 +296,6 @@ namespace SB {
 
 		if (buffer.bytesWritten() > 0) {
 			SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), false);
-		}
-
-		if (!m_sent_push_keys && send_push_keys) {
-			m_sent_push_keys = true;
-			SendPushKeys();
 		}
 
 		if (servers.last_set) {
@@ -544,6 +535,10 @@ namespace SB {
 		if((flags & UNSOLICITED_UDP_FLAG) && m_last_list_req.send_fields_for_all == false && m_last_list_req.send_groups == false && !push && !full_keys) { //required for some natneg disabled games (dh2005, MOHPA)
 			no_keys = true;
 		}
+
+		if(server->icmp_address.ip != 0) {
+			flags |= ICMP_IP_FLAG;
+		}
 		
 		if(server->kvFields.find("localip0") != server->kvFields.end()) { //TODO: scan localips??
 			int addr = inet_addr(server->kvFields["localip0"].c_str());
@@ -775,6 +770,11 @@ namespace SB {
 				empty_results.list = std::vector<MM::Server *>();
 				empty_results.last_set = true;
 				SendListQueryResp(empty_results, request.req);
+			}
+
+			if (!m_sent_push_keys) {
+				m_sent_push_keys = true;
+				SendPushKeys();
 			}
 
 			std::vector<MM::Server*>::iterator it = results.list.begin();
