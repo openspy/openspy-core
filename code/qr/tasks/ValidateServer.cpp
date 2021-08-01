@@ -43,6 +43,7 @@ namespace MM {
             response.error_message = "Invalid challenge response";
         } else {
             SetServerDeleted(thread_data, server_key, 0);
+            Redis::Command(thread_data->mp_redis_connection, 0, "HDEL %s challenge", server_key.c_str());
 
 			std::ostringstream s;
 			s << "\\new\\" << server_key.c_str();

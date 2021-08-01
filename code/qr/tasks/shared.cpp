@@ -118,6 +118,18 @@ namespace MM {
 		} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 			ret = v.value._int;
 		}
-		return ret == 1;
+
+        resp = Redis::Command(thread_data->mp_redis_connection, 0, "HEXISTS %s challenge", server_key.c_str());
+
+        bool challenge_exists = false;
+        if (Redis::CheckError(resp) || resp.values.size() == 0) {
+            challenge_exists = true;
+        } else {
+            v = resp.values[0];
+            if ((v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) || (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0)) {
+                challenge_exists = true;
+            }
+        }
+		return ret == 1 && !challenge_exists;
 	}
 }
