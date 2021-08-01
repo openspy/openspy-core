@@ -95,6 +95,7 @@ namespace MM {
 	bool isTeamString(const char *string);
 	bool isPlayerString(std::string key, std::string &variable_name, int &player_id);
 	OS::Address GetQueryAddressForServer(TaskThreadData *thread_data, std::string server_key);
+	bool isServerDeleted(TaskThreadData *thread_data, std::string server_key);
 
 	void WriteServerData(TaskThreadData *thread_data, std::string server_key, ServerInfo server, uint32_t instance_key, OS::Address from_address);
 	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted);

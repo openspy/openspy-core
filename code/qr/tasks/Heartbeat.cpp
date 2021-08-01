@@ -13,17 +13,24 @@ namespace MM {
 		Redis::Response reply;
 		Redis::Value v;
 
+        std::string server_key = "";
+
 
         Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", s.str().c_str());
 		if (Redis::CheckError(reply)) {
-			return "";
+			return server_key;
 		}
 		v = reply.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			return OS::strip_quotes(v.value._str).c_str();
+			server_key = OS::strip_quotes(v.value._str).c_str();
 		}
-        return "";
+        if(server_key.length() != 0) {
+            if(isServerDeleted(thread_data, server_key)) {
+                return "";
+            }
+        }
+        return server_key;
     }
     std::string GetNewServerKey(TaskThreadData *thread_data, uint32_t instance_key, OS::Address address, std::string gamename, int &id) {
         id = TryFindServerID(thread_data, address);
