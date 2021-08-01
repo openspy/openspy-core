@@ -32,8 +32,12 @@ namespace MM {
         std::string server_key = GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
 
         std::string expected_challenge = GetV2CalculatedChallenge(request, thread_data, server_key);
+        std::string chopped_challenge = request.gamename;
+        if(chopped_challenge.length() > expected_challenge.length()) {
+            chopped_challenge = chopped_challenge.substr(0, expected_challenge.length());
+        }
 
-        if(expected_challenge.compare(request.gamename) != 0) {
+        if(expected_challenge.compare(chopped_challenge) != 0) {
             response.error_message = "Invalid challenge response";
         } else {
             Redis::Command(thread_data->mp_redis_connection, 0, "HDEL %s challenge", server_key.c_str());

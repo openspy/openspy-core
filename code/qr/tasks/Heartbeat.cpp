@@ -92,6 +92,12 @@ namespace MM {
             char challenge_resp[90] = { 0 };
             gsseckey((unsigned char *)&challenge_resp, challenge_string.c_str(), (const unsigned char *)game_info.secretkey.c_str(), 0);
 
+            if(request.version == 1) {
+                const int V1_MAX_CHALLENGE_LEN = 8;
+                challenge_resp[V1_MAX_CHALLENGE_LEN] = 0;
+                challenge_string = challenge_string.substr(0, V1_MAX_CHALLENGE_LEN);
+            }
+
             if(request.type == EMMPushRequestType_Heartbeat_ClearExistingKeys) {
                 ClearServerCustKeys(thread_data, server_key);
             }
