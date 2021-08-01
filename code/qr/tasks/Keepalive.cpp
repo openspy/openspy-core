@@ -15,11 +15,11 @@ namespace MM {
         response.from_address = request.from_address;
         response.challenge = request.gamename; //copy echo key
 
-        std::string server_key = GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
+        std::string server_key = GetServerKey_FromRequest(request, thread_data);
         if(server_key.length() == 0) {
             response.error_message = "No server registered";
         } else {
-            WriteLastHeartbeatTime(thread_data, server_key, request.from_address, request.v2_instance_key);
+            WriteLastHeartbeatTime(thread_data, server_key, request.from_address, request.v2_instance_key, request.from_address);
         }        
         
         request.callback(response);

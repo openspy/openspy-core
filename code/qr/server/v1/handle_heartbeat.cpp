@@ -23,12 +23,14 @@ namespace QR {
             buffer.WriteBuffer(message.c_str(),message.length());
 			response.driver->SendPacket(response.from_address, buffer);
 		} else {
-            response.driver->perform_v1_key_scan(response.from_address);
+            response.driver->perform_v1_key_scan(response.query_address);
         }
     }
     void Driver::handle_v1_heartbeat(OS::Address from_address, OS::KVReader reader) {
         MM::ServerInfo server_info;
-        server_info.m_address = from_address;
+
+        OS::Address query_address = OS::Address(from_address.GetIP(), reader.GetValueInt("heartbeat"));
+        server_info.m_address = query_address;
 
         std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it_header = reader.GetHead();
         std::vector<std::pair< std::string, std::string> >::const_iterator it = it_header.first;

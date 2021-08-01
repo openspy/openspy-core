@@ -55,16 +55,61 @@ namespace MM {
 
         return challenge;
     }
+    std::string GetNewServerKey_FromRequest(MMPushRequest request, TaskThreadData *thread_data, std::string gamename, int &server_id) {
+        return GetNewServerKey(thread_data, request.v2_instance_key, request.server.m_address, gamename, server_id);
+    }
+    std::string Get_QR1_Stored_Address_ServerKey(MMPushRequest request, TaskThreadData *thread_data) {
+        std::ostringstream s;
+        s << "QR1MAP_" << request.from_address.ToString(true) << "-" << request.from_address.GetPort();
+
+		Redis::Response reply;
+		Redis::Value v;
+
+        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", s.str().c_str());
+		if (Redis::CheckError(reply)) {
+			return "";
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			return OS::strip_quotes(v.value._str).c_str();
+		}
+        return "";
+    }
+    std::string GetServerKey_FromRequest(MMPushRequest request, TaskThreadData *thread_data) {
+        if(request.version == 1) {
+            bool use_stored_qr1_address = false;
+            //qr1, do "query lookup" for non-data incoming queries
+            switch(request.type) {
+                //use from address
+                case EMMPushRequestType_Heartbeat:
+                break;
+
+                //use stored QR1 address
+                case EMMPushRequestType_ValidateServer:
+                case EMMPushRequestType_Keepalive:
+                default:
+                use_stored_qr1_address = true;
+                break;
+            }
+
+            if(use_stored_qr1_address) {
+                return Get_QR1_Stored_Address_ServerKey(request, thread_data);
+            }
+        }
+        return GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
+    }
     bool PerformHeartbeat(MMPushRequest request, TaskThreadData *thread_data) {
         MMTaskResponse response;
         response.v2_instance_key = request.v2_instance_key;
         response.driver = request.driver;
         response.from_address = request.from_address;
+        response.query_address = request.server.m_address;
 
         Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 
         //check for server by instance key + ip:port
-        std::string server_key = GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
+        std::string server_key = GetServerKey_FromRequest(request, thread_data);
         //if not exists
         if(server_key.length() == 0) {
             if(request.server.m_keys.find("gamename") == request.server.m_keys.end()) {
@@ -85,7 +130,7 @@ namespace MM {
             }
 
             int server_id;
-            server_key = GetNewServerKey(thread_data, request.v2_instance_key, request.from_address, gamename, server_id);
+            server_key = GetNewServerKey_FromRequest(request, thread_data, gamename, server_id);
 
             std::string challenge_string = GenerateChallenge(game_info);
 
@@ -101,9 +146,9 @@ namespace MM {
             if(request.type == EMMPushRequestType_Heartbeat_ClearExistingKeys) {
                 ClearServerCustKeys(thread_data, server_key);
             }
-            WriteServerData(thread_data, server_key, request.server, request.v2_instance_key);
+            WriteServerData(thread_data, server_key, request.server, request.v2_instance_key, request.from_address);
             SetServerDeleted(thread_data, server_key, 1);
-            SetServerInitialInfo(thread_data, request.driver->getListenerSocket()->address, server_key, game_info, challenge_resp, request.from_address, server_id);
+            SetServerInitialInfo(thread_data, request.driver->getListenerSocket()->address, server_key, game_info, challenge_resp, request.server.m_address, server_id, request.from_address);
 
             response.challenge = challenge_string;
             request.callback(response);
@@ -124,7 +169,7 @@ namespace MM {
             if(request.type == EMMPushRequestType_Heartbeat_ClearExistingKeys) {
                 ClearServerCustKeys(thread_data, server_key);
             }
-            WriteServerData(thread_data, server_key, request.server, request.v2_instance_key);
+            WriteServerData(thread_data, server_key, request.server, request.v2_instance_key, request.from_address);
 
 			std::ostringstream s;
 			s << "\\update\\" << server_key.c_str();
@@ -134,21 +179,29 @@ namespace MM {
         }
         return true;
     }
-    void WriteLastHeartbeatTime(TaskThreadData *thread_data, std::string server_key, OS::Address address, uint32_t instance_key) {
+    void WriteLastHeartbeatTime(TaskThreadData *thread_data, std::string server_key, OS::Address address, uint32_t instance_key, OS::Address from_address) {
         struct timeval current_time;
         gettimeofday(&current_time, NULL);
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s last_heartbeat %d", server_key.c_str(), current_time.tv_sec);
 
-
+        if(instance_key == 0 && address.GetPort() != from_address.GetPort()) { //instance key is 0, likely QR1
+            Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE QR1MAP_%s-%d %d", from_address.ToString(true).c_str(), from_address.GetPort(), MM_PUSH_EXPIRE_TIME);
+        }
+        
         Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d %d", address.ToString(true).c_str(), address.GetPort(), MM_PUSH_EXPIRE_TIME);
         Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE IPINSTMAP_%ld-%s-%d %d", instance_key, address.ToString(true).c_str(), address.GetPort(), MM_PUSH_EXPIRE_TIME);
         Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %s %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME);
         Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %scustkeys %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME);
     }
-    void WriteServerData(TaskThreadData *thread_data, std::string server_key, ServerInfo server, uint32_t instance_key) {
+    void WriteServerData(TaskThreadData *thread_data, std::string server_key, ServerInfo server, uint32_t instance_key, OS::Address from_address) {
         std::string ipinput = server.m_address.ToString(true);
 
 		Redis::Command(thread_data->mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), server.m_address.GetPort(), server_key.c_str());
+
+        if(instance_key == 0 && server.m_address.GetPort() != from_address.GetPort()) {
+            Redis::Command(thread_data->mp_redis_connection, 0, "SET QR1MAP_%s-%d %s", from_address.ToString(true).c_str(), from_address.GetPort(), server_key.c_str());
+        }
+            
 
         Redis::Command(thread_data->mp_redis_connection, 0, "SET IPINSTMAP_%ld-%s-%d %s", instance_key, ipinput.c_str(), server.m_address.GetPort(), server_key.c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s instance_key %ld", server_key.c_str(), instance_key);
@@ -212,15 +265,16 @@ namespace MM {
 		}
 		i=0;
 
-		WriteLastHeartbeatTime(thread_data, server_key, server.m_address, instance_key);
+		WriteLastHeartbeatTime(thread_data, server_key, server.m_address, instance_key, from_address);
 
     }
 	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted) {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s deleted %d", server_key.c_str(), deleted);
     }
-	void SetServerInitialInfo(TaskThreadData *thread_data, OS::Address driver_address, std::string server_key, OS::GameData game_info, std::string challenge_response, OS::Address address, int id) {
+	void SetServerInitialInfo(TaskThreadData *thread_data, OS::Address driver_address, std::string server_key, OS::GameData game_info, std::string challenge_response, OS::Address address, int id, OS::Address from_address) {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s driver_address %s", server_key.c_str(), driver_address.ToString().c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s driver_hostname %s", server_key.c_str(), OS::g_hostName);
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s qr_port %d", server_key.c_str(), from_address.GetPort());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), address.GetPort());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), address.ToString(true).c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), game_info.gameid);

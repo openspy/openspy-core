@@ -29,7 +29,9 @@ namespace MM {
         response.driver = request.driver;
         response.from_address = request.from_address;
 
-        std::string server_key = GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
+        std::string server_key = GetServerKey_FromRequest(request, thread_data);
+
+        response.query_address = GetQueryAddressForServer(thread_data, server_key);
 
         std::string expected_challenge = GetV2CalculatedChallenge(request, thread_data, server_key);
         std::string chopped_challenge = request.gamename;
