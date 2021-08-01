@@ -31,11 +31,11 @@ namespace SSLNetIOIFace {
             case ESSL_SSLv23:
                 mp_ssl_ctx = SSL_CTX_new(SSLv23_method());
                 break;
-//            # ifndef OPENSSL_NO_SSL2_METHOD
-//            case ESSL_SSLv2:
-//                mp_ssl_ctx = SSL_CTX_new(SSLv2_method());
-//                break;
-//            #endif
+            # ifndef OPENSSL_NO_SSL2_METHOD
+            case ESSL_SSLv2:
+                mp_ssl_ctx = SSL_CTX_new(SSLv2_method());
+                break;
+            #endif
             # ifndef OPENSSL_NO_SSL3_METHOD
             case ESSL_SSLv3:
                 mp_ssl_ctx = SSL_CTX_new(SSLv3_method());
