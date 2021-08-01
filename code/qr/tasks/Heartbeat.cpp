@@ -171,9 +171,12 @@ namespace MM {
             }
             WriteServerData(thread_data, server_key, request.server, request.v2_instance_key, request.from_address);
 
-			std::ostringstream s;
-			s << "\\update\\" << server_key.c_str();
-			thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+
+            if(server_key.find("thugpro") == std::string::npos) { //temporarily supress thugpro updates
+                std::ostringstream s;
+                s << "\\update\\" << server_key.c_str();
+                thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+            }
             
             request.callback(response);
         }
