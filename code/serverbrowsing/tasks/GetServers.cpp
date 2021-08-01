@@ -169,13 +169,8 @@ namespace MM {
 
 		v = reply.values.front();
 
-
-		//read wan info
-		uint16_t wan_port;
-		uint32_t wan_ip;
-
 		if(v.type== Redis::REDIS_RESPONSE_TYPE_STRING)
-			wan_port = atoi((v.value._str).c_str());
+			server->wan_address.port = atoi((v.value._str).c_str());
 
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s wan_ip", entry_name.c_str());
 
@@ -185,9 +180,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
-			wan_ip = inet_addr((v.value._str).c_str());
-		server->wan_address = OS::Address(wan_ip, wan_port);
-		//
+			server->wan_address.ip = inet_addr((v.value._str).c_str());
 
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s icmp_address", entry_name.c_str());
 		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
@@ -196,7 +189,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
-			server->icmp_address = OS::Address(v.value._str);
+			server->icmp_address.ip = inet_addr((v.value._str).c_str());
 
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s allow_unsolicited_udp", entry_name.c_str());
 		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)

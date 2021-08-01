@@ -447,7 +447,9 @@ namespace SB {
 		FlushPendingRequests();
 	}
 	void V2Peer::ProcessInfoRequest(OS::Buffer &buffer) {
-		OS::Address address = OS::Address(buffer.ReadInt(), buffer.ReadShort());
+		OS::Address address;
+		address.ip = buffer.ReadInt();
+		address.port = buffer.ReadShort();
 
 		MM::MMQueryRequest req;
 		req.address = address;
@@ -525,7 +527,7 @@ namespace SB {
 		uint32_t private_ip = 0;
 		uint16_t private_port = 0;
 
-		if (server->wan_address.GetPort() != server->game.queryport) {
+		if (server->wan_address.port != server->game.queryport) {
 			flags |= NONSTANDARD_PORT_FLAG;
 		}
 		if(server->allow_unsolicited_udp) {
@@ -575,10 +577,10 @@ namespace SB {
 		}
 
 		buffer->WriteByte(flags); //flags
-		buffer->WriteInt(server->wan_address.GetIP()); //ip
+		buffer->WriteInt(server->wan_address.ip); //ip
 
 		if (flags & NONSTANDARD_PORT_FLAG) {
-			buffer->WriteShort(htons(server->wan_address.GetPort()));
+			buffer->WriteShort(htons(server->wan_address.port));
 		}
 
 		if (flags & PRIVATE_IP_FLAG) {
@@ -589,7 +591,7 @@ namespace SB {
 		}
 
 		if(flags & ICMP_IP_FLAG) {
-			buffer->WriteInt(server->icmp_address.GetIP());
+			buffer->WriteInt(server->icmp_address.ip);
 		}
 
 		if(flags & HAS_KEYS_FLAG) {
@@ -710,8 +712,8 @@ namespace SB {
 		if(!m_last_list_req.push_updates || m_in_message) return;
 
 		buffer.WriteByte(DELETE_SERVER_MESSAGE);
-		buffer.WriteInt(server->wan_address.GetIP());
-		buffer.WriteShort(htons(server->wan_address.GetPort()));
+		buffer.WriteInt(server->wan_address.ip);
+		buffer.WriteShort(htons(server->wan_address.port));
 		SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), true);
 	}
 	void V2Peer::informNewServers(MM::Server *server) {

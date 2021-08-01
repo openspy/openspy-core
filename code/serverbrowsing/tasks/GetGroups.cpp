@@ -112,7 +112,7 @@ namespace MM {
 
 		v = reply.values.front();
 
-		server->wan_address = OS::Address(atoi((v.value._str).c_str()), 0); //for V2
+		server->wan_address.ip = htonl(atoi((v.value._str).c_str())); //for V2
 		server->kvFields["groupid"] = (v.value._str).c_str(); //for V1
 		
 		FindAppend_ServKVFields(thread_data, server, entry_name, "maxwaiting");

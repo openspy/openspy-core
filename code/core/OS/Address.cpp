@@ -10,7 +10,7 @@ namespace OS {
 		ip = addr.sin_addr.s_addr;
 		port = addr.sin_port;
 	}
-	Address::Address(std::string input, int input_port) {
+	Address::Address(std::string input) {
 		std::string address;
 		size_t offset = input.find(':');
 		if (offset != std::string::npos) {
@@ -21,16 +21,13 @@ namespace OS {
 			address = input;
 		}
 		ip = inet_addr(address.c_str());
-
-		if(input_port != 0)
-			port = htons(input_port);
 	}
 	Address::Address() {
 		ip = 0;
 		port = 0;
 	}
 	uint16_t Address::GetPort() const {
-		return ntohs(port);
+		return htons(port);
 	}
 	const struct sockaddr_in Address::GetInAddr() {
 		struct sockaddr_in ret;
@@ -55,7 +52,7 @@ namespace OS {
 		std::ostringstream s;
 		s << ipinput;
 		if (!ip_only) {
-			s << ":" << ntohs(port);
+			s << ":" << htons(port);
 		}
 		return s.str();
 	}

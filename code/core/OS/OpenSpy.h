@@ -129,7 +129,7 @@ namespace OS {
 	class Address {
 	public:
 		Address(struct sockaddr_in);
-		Address(std::string input, int input_port = 0);
+		Address(std::string input);
 		Address();
 		Address(uint32_t ip, uint16_t port);
 		uint32_t GetIP() const { return ip; };
@@ -149,7 +149,7 @@ namespace OS {
 		bool operator!=(const Address &addr) const {
 			return !operator==(addr);
 		}
-	private:
+	//private:
 		uint32_t ip;
 		uint16_t port;
 	};

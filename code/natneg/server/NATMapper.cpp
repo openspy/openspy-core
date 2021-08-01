@@ -115,27 +115,26 @@ namespace NN {
 		bottom_address = OS::Address(nat.mappings[i].publicIp, nat.mappings[i].publicPort);
 		address = bottom_address;
 
-		uint16_t port;
-
 		switch (nat.mappingScheme) {
 			case private_as_public: //first connection = game socket
 				address = top_address;
-				port = next_private_address.GetPort();
+				address.port = next_private_address.port;
 				break;
 			case unrecognized: //good default
 			case consistent_port: //since same public port from address, and natneg will send connect packet from first connection.
 				address = top_address;
-				port = top_address.GetPort();
+				address.port = top_address.port;
 				break;
 			case mixed: //unknown
 			case incremental: //should work if no new connections were made during natneg process
 				address = bottom_address;
-				port = bottom_address.GetPort() + 1;
+				address.port = htons(ntohs(bottom_address.port) + 1);
 				break;
 			default:
 			break;
+
 		}
-		next_public_address = OS::Address(address.GetIP(), port);
+		next_public_address = address;
 	}
 	void LoadSummaryIntoNAT(NN::ConnectionSummary summary, NAT &nat) {
 		memset(&nat.mappings, 0, sizeof(nat.mappings));

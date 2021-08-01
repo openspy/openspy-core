@@ -182,7 +182,8 @@ std::vector<OS::Address> AppConfig::GetDriverAddresses(std::string driverName, b
 						}
 						it3++;
 					}
-					address = OS::Address(ip, port);
+					address = OS::Address(ip);
+					address.port = htons(port);
 					ret.push_back(address);
 					it2++;
 				}
