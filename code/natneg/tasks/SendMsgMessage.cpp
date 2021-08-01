@@ -107,10 +107,10 @@ namespace NN {
 			NN::DetermineNextAddress(nat, next_public_address, next_private_address);
 
 
-			if(next_public_address.ip == to_address.ip && summary.version != 1) {
+			if(next_public_address.GetIP() == to_address.GetIP() && summary.version != 1) {
 				connect_address = next_private_address;
 				if(connect_address.GetPort() == 0) {
-					connect_address.port = next_public_address.port;
+					connect_address = OS::Address(connect_address.GetIP(), next_public_address.GetPort());
 				}
 			} else {
 				connect_address = next_public_address;

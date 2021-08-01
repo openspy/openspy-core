@@ -76,6 +76,7 @@ namespace MM {
 				no_list_cache = false;
 				send_fields_for_all = false;
 				all_keys = false;
+				compressed_list = true;
 			}
 			~sServerListReq() {
 
@@ -97,6 +98,7 @@ namespace MM {
 			bool no_server_list;
 			bool no_list_cache;
 			bool send_fields_for_all;
+			bool compressed_list;
 		
 
 			//used after lookup

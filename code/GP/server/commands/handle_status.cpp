@@ -62,8 +62,8 @@ namespace GP {
 			if(status.location_str[0] != 0)
 				ss << "|ls|" << status.location_str;
 
-			if(status.address.ip != 0) {
-				ss << "|ip|" << status.address.ip;
+			if(status.address.GetIP() != 0) {
+				ss << "|ip|" << status.address.GetIP();
 				ss << "|p|" << status.address.GetPort();
 			}
 

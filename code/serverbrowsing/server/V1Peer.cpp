@@ -290,6 +290,7 @@ namespace SB {
 			req.type = MM::EMMQueryRequestType_GetGameInfoByGameName;
 			m_waiting_gamedata = 1;
 			req.req.send_groups = false;
+			req.req.compressed_list = true;
 			if(mode.compare("cmp") == 0) {				
 				req.req.all_keys = false;
 			} else if(mode.compare("info2") == 0) {
@@ -299,6 +300,7 @@ namespace SB {
 				req.req.all_keys = true;
 			} else {
 				req.req.all_keys = false;
+				req.req.compressed_list = false;
 				//send_error(true, "Unknown list mode");
 				//return;
 			}
@@ -411,13 +413,21 @@ namespace SB {
 		void V1Peer::SendServers(MM::ServerListQuery results) {
 			OS::Buffer buffer;
 
+			std::ostringstream s;
 
 			//std::vector<Server *> list;
 			std::vector<MM::Server *>::iterator it = results.list.begin();
 			while(it != results.list.end()) {
 				MM::Server *serv = *it;
-				buffer.WriteInt(serv->wan_address.GetIP());
-				buffer.WriteShort(serv->wan_address.GetPort());
+				if(m_last_list_req.compressed_list == true) {
+					buffer.WriteInt(serv->wan_address.GetIP());
+					buffer.WriteShort(serv->wan_address.GetPort());
+				} else {
+					s.str("");
+					s << "\\ip\\" << serv->wan_address.ToString();
+					buffer.WriteBuffer(s.str().c_str(),s.str().length());
+				}
+
 				it++;
 			}
 			SendPacket((const uint8_t *)buffer.GetHead(), buffer.bytesWritten(), results.last_set);
