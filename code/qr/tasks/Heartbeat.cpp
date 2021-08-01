@@ -77,8 +77,9 @@ namespace MM {
         return "";
     }
     std::string GetServerKey_FromRequest(MMPushRequest request, TaskThreadData *thread_data) {
-        if(request.version == 1) {
-            bool use_stored_qr1_address = false;
+        std::string key;
+        bool use_stored_qr1_address = false;
+        if(request.version == 1) {            
             //qr1, do "query lookup" for non-data incoming queries
             switch(request.type) {
                 //use from address
@@ -94,10 +95,12 @@ namespace MM {
             }
 
             if(use_stored_qr1_address) {
-                return Get_QR1_Stored_Address_ServerKey(request, thread_data);
+                key = Get_QR1_Stored_Address_ServerKey(request, thread_data);
             }
         }
-        return GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
+        if(!use_stored_qr1_address || key.length() == 0)
+            key = GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
+        return key;
     }
     bool PerformHeartbeat(MMPushRequest request, TaskThreadData *thread_data) {
         MMTaskResponse response;

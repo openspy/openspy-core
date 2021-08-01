@@ -14,7 +14,6 @@ namespace QR {
 			response.driver->send_v1_error(response.from_address, response.error_message);		
 			return;
 		}
-        printf("Server registered - %s - %s\n", response.from_address.ToString().c_str(), response.query_address.ToString().c_str());
         response.driver->perform_v1_key_scan(response.query_address);
         OS::LogText(OS::ELogLevel_Info, "[%s] Server Registered", response.from_address.ToString().c_str());
     }
