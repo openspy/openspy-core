@@ -186,6 +186,14 @@ namespace SB {
 
 			data = skip_queryid(data);
 
+			if(m_validated == false) {
+					//skip invalid \basic\ data for jbnightfire server browser
+					if(strncmp(data.c_str(),"\\basic\\", 7) == 0) {
+							data = data.substr(6);
+					}
+			}
+
+
 			OS::KVReader kv_parser = OS::KVReader(data);
 
 			if (kv_parser.Size() < 1) {
