@@ -42,7 +42,7 @@ namespace SB {
 		void handle_gamename(std::string data);
 		void handle_list(std::string data);
 		void send_error(bool disconnect, const char *fmt, ...);
-		void send_crypt_header(int enctype);
+		void send_crypt_header(int enctype, OS::Buffer &buffer);
 		void send_validation();
 		std::string field_cleanup(std::string s);
 		std::string skip_queryid(std::string s);
@@ -52,6 +52,7 @@ namespace SB {
 		uint8_t m_enctype;
 		crypt_key m_crypt_key_enctype2;
 		bool m_validated;
+		bool m_sent_crypt_key;
 
 
 		int m_waiting_gamedata; //1 = waiting, 2 = process packet queue

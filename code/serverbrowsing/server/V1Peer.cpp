@@ -25,7 +25,7 @@ namespace SB {
 			m_validated = false;
 
 			m_sent_validation = false;
-
+			m_sent_crypt_key = false;
 
 		}
 		V1Peer::~V1Peer() {
@@ -41,7 +41,7 @@ namespace SB {
 			std::ostringstream s;
 			s << "\\basic\\\\secure\\" << m_challenge;
 			m_sent_validation = true;
-			SendPacket((const uint8_t*)s.str().c_str(),s.str().length(), true);
+			SendPacket((const uint8_t*)s.str().c_str(),s.str().length(), false);
 		}
 		void V1Peer::send_ping() {
 			//check for timeout
@@ -151,7 +151,6 @@ namespace SB {
 			resp << "\\error\\" << str;
 
 			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", getAddress().ToString().c_str(), str);
-			//SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), true);
 
 			if (disconnect) {
 				Delete();
@@ -260,7 +259,6 @@ namespace SB {
 				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (const unsigned char *)m_game.secretkey.c_str(), m_enctype);
 				if(!m_validated) {
 					if(strcmp(realvalidate,m_validation.c_str()) == 0) {
-						send_crypt_header(m_enctype);
 						m_validated = true;
 					} else {
 						send_error(true, "Validation error");
@@ -421,6 +419,8 @@ namespace SB {
 		void V1Peer::SendServers(MM::ServerListQuery results) {
 			OS::Buffer buffer;
 
+
+
 			std::ostringstream ss;
 			//std::vector<Server *> list;
 			std::vector<MM::Server *>::iterator it = results.list.begin();
@@ -443,7 +443,13 @@ namespace SB {
 			}
 		}
 		void V1Peer::SendPacket(const uint8_t *buff, size_t len, bool attach_final, bool skip_encryption) {
+
 			OS::Buffer buffer;
+			int skip_len = 0;
+			if(m_validated)
+				send_crypt_header(m_enctype, buffer);
+
+			skip_len += buffer.bytesWritten();
 			buffer.WriteBuffer((void *)buff, len);
 			if(attach_final) {
 				buffer.WriteBuffer((void*)"\\final\\", 7);
@@ -453,7 +459,7 @@ namespace SB {
 			if (!skip_encryption) {
 				switch (m_enctype) {
 				case 2:
-					crypt_docrypt(&m_crypt_key_enctype2, (unsigned char *)buffer.GetHead(), (int)buffer.bytesWritten());
+					crypt_docrypt(&m_crypt_key_enctype2, (unsigned char *)buffer.GetHead() + skip_len, (int)buffer.bytesWritten() - skip_len);
 					break;
 				}
 			}
@@ -464,8 +470,9 @@ namespace SB {
 				Delete();
 			}
 		}
-		void V1Peer::send_crypt_header(int enctype) {
-			OS::Buffer buffer;
+		void V1Peer::send_crypt_header(int enctype, OS::Buffer &buffer) {
+			if(m_sent_crypt_key) return;
+			m_sent_crypt_key = true;
 			char cryptkey[13];
 			size_t secretkeylen = m_game.secretkey.length();
 			if(enctype == 2) {
@@ -478,7 +485,6 @@ namespace SB {
 				}
 				buffer.WriteByte(sizeof(cryptkey) ^ 0xEC);
 				buffer.WriteBuffer((uint8_t *)&cryptkey, sizeof(cryptkey));
-				SendPacket((const uint8_t *)buffer.GetHead(), buffer.bytesWritten(), false, true);
 			}
 		}
 		std::string V1Peer::field_cleanup(std::string s) {
