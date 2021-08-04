@@ -83,7 +83,12 @@ namespace OS {
 		delete g_logger;
 		delete OS::g_config;
 		curl_easy_cleanup(OS::g_curl);
+		curl_share_cleanup(OS::g_curlShare);
 		curl_global_cleanup();
+
+		for(int i=0;i<CURL_LOCK_DATA_LAST;i++) {
+			delete g_curlMutexes[i];
+		}
 
 		free((void *)g_hostName);
 		free((void *)g_webServicesURL);
