@@ -40,6 +40,8 @@ namespace OS {
 
 		if (curl) {
 			curl_easy_setopt(curl, CURLOPT_URL, m_url.c_str());
+			curl_easy_setopt(curl, CURLOPT_SHARE, OS::g_curlShare);
+
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, send.c_str());
 
 			/* set default user agent */

@@ -95,7 +95,8 @@ namespace Peerchat {
 			EPeerchatRequestType_LookupGlobalUsermode,
 			EPeerchatRequestType_RemoteKill_ByName,
 			EPeerchatRequestType_UpdateChannelModes_BanMask,
-			EPeerchatRequestType_OperCheck
+			EPeerchatRequestType_OperCheck,
+			EPeerchatRequestType_CountServerUsers,
 	};
 
   enum EUserChannelFlag {
@@ -314,6 +315,7 @@ namespace Peerchat {
 	bool Perform_DelChanprops(PeerchatBackendRequest request, TaskThreadData* thread_data);
 
 	bool Perform_OperCheck(PeerchatBackendRequest request, TaskThreadData* thread_data);
+	bool Perform_CountServerUsers(PeerchatBackendRequest request, TaskThreadData* thread_data);
 
 	bool Perform_RemoteKill_ByName(PeerchatBackendRequest request, TaskThreadData* thread_data);
 	bool Perform_UpdateChannelModes_BanMask(PeerchatBackendRequest request, TaskThreadData* thread_data);
@@ -343,6 +345,7 @@ namespace Peerchat {
 	void SendUpdateUserChanModeflags(TaskThreadData* thread_data, int channel_id, int user_id, int modeflags, int old_modeflags);
 	void DeleteTemporaryUsermodesForChannel(TaskThreadData* thread_data, ChannelSummary channel);
 	bool Is_Chankey_InjectKey(const char *key);
+	int CountServerUsers(TaskThreadData* thread_data);
 
 	void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base = "", bool show_private = false);
 

@@ -93,6 +93,7 @@ namespace Peerchat {
 			{EPeerchatRequestType_RemoteKill_ByName, Perform_RemoteKill_ByName},
 			{EPeerchatRequestType_UpdateChannelModes_BanMask, Perform_UpdateChannelModes_BanMask},
 			{EPeerchatRequestType_OperCheck, Perform_OperCheck},
+			{EPeerchatRequestType_CountServerUsers, Perform_CountServerUsers},
 			{NULL, NULL}
 		};
 

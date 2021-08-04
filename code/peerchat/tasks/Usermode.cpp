@@ -291,6 +291,7 @@ namespace Peerchat {
 				for(size_t i=0;i<arr.arr_value.values.size();i++) {
 					if(i % 2 == 0) {
 						keyname = "USERMODE_" + arr.arr_value.values[i].second.value._str;
+						record = UsermodeRecord();
 						LoadUsermodeFromCache(thread_data, keyname, record);
 						if(UsermodeMatchesUser(record, summary)) {
 							modeflags |= record.modeflags;
@@ -306,9 +307,9 @@ namespace Peerchat {
 		/*
 			No permitted gameid match found, therefore user is banned
 		*/
-		if((modeflags & EUserChannelFlag_GameidPermitted) == 0) {
+		/*if((modeflags & EUserChannelFlag_GameidPermitted) == 0) {
 			modeflags |= EUserChannelFlag_Banned;
-		}
+		}*/
 
 		error_cleanup:
 		return modeflags;

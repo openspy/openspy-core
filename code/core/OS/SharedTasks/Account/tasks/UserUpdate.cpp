@@ -47,6 +47,7 @@ namespace TaskShared {
 			std::string url = std::string(OS::g_webServicesURL) + "/v1/User";
 
 			curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+			curl_easy_setopt(curl, CURLOPT_SHARE, OS::g_curlShare);
 
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
 

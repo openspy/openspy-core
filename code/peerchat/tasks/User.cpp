@@ -135,4 +135,34 @@ namespace Peerchat {
         error_end:
             return summary;
     }
+    int CountServerUsers(TaskThreadData* thread_data) {
+        int count = 0;
+        Redis::Response reply;
+		Redis::Value v, arr;
+        int cursor = 0;
+		std::vector<ChannelSummary> channels;
+		ChannelSummary summary;
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+        do {
+            reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH usernick_*", cursor);
+			if (Redis::CheckError(reply))
+				break;
+
+			v = reply.values[0].arr_value.values[0].second;
+			arr = reply.values[0].arr_value.values[1].second;
+
+			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+
+				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+					cursor = atoi(v.value._str.c_str());
+				}
+				else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+					cursor = v.value._int;
+				}
+				count += arr.arr_value.values.size();
+			}
+			else break;
+        } while(cursor != 0);
+        return count;
+    }
 }

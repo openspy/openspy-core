@@ -33,6 +33,7 @@ namespace TaskShared {
 		}
 
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+		curl_easy_setopt(curl, CURLOPT_SHARE, OS::g_curlShare);
 
 		if(post_data != NULL)
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);

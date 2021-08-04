@@ -63,7 +63,9 @@ class AppConfig;
 class Config;
 namespace OS {
 	extern AppConfig *g_config;
-	extern CURL *g_curl;
+	extern CURL *g_curl; //only used for curl_easy_escape
+	extern CURLSH *g_curlShare;
+	extern CMutex **g_curlMutexes;
 	class Logger;
 	extern Logger *g_logger;
 	extern const char *g_appName;
@@ -193,6 +195,9 @@ namespace OS {
 	int match(const char *mask, const char *name);
 	int match2(const char *mask, const char *name, int &match_count, char wildcard_char = '*');
 	void gen_random(char *s, const int len, int time_multiplier = 1);
+
+	void curlLockCallback(CURL *handle, curl_lock_data data, curl_lock_access access, void *userptr);
+	void curlUnlockCallback(CURL *handle, curl_lock_data data, void *userptr);
 }
 
 #ifdef _WIN32

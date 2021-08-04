@@ -268,17 +268,18 @@ namespace Peerchat {
 		commands.push_back(CommandEntry("LISTLIMIT", true, 2, &Peer::handle_listlimit, 0, 300));
 		commands.push_back(CommandEntry("WHOIS", true, 1, &Peer::handle_whois, 0, 100));
 		commands.push_back(CommandEntry("WHO", true, 1, &Peer::handle_who));
-		commands.push_back(CommandEntry("SETCKEY", true, 3, &Peer::handle_setckey, 0, 100));
-		commands.push_back(CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey, 0, 100));
-		commands.push_back(CommandEntry("SETCHANKEY", true, 2, &Peer::handle_setchankey, 0, 100));
-		commands.push_back(CommandEntry("GETCHANKEY", true, 4, &Peer::handle_getchankey, 0, 100));
-		commands.push_back(CommandEntry("SETKEY", true, 1, &Peer::handle_setkey, 0, 100));
-		commands.push_back(CommandEntry("GETKEY", true, 4, &Peer::handle_getkey, 0, 100));
+		commands.push_back(CommandEntry("SETCKEY", true, 3, &Peer::handle_setckey, 0, 10));
+		commands.push_back(CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey, 0, 10));
+		commands.push_back(CommandEntry("SETCHANKEY", true, 2, &Peer::handle_setchankey, 0, 10));
+		commands.push_back(CommandEntry("GETCHANKEY", true, 4, &Peer::handle_getchankey, 0, 10));
+		commands.push_back(CommandEntry("SETKEY", true, 1, &Peer::handle_setkey, 0, 10));
+		commands.push_back(CommandEntry("GETKEY", true, 4, &Peer::handle_getkey, 0, 10));
 		commands.push_back(CommandEntry("KICK", true, 2, &Peer::handle_kick, 0, 200));
 		commands.push_back(CommandEntry("SETGROUP", true, 2, &Peer::handle_setgroup, 0, 100));
 
 
 		//global oper cmds
+		commands.push_back(CommandEntry("LUSERS", true, 0, &Peer::handle_lusers, OPERPRIVS_LISTOPERS));
 		commands.push_back(CommandEntry("KILL", true, 2, &Peer::handle_kill, OPERPRIVS_KILL));
 
 		commands.push_back(CommandEntry("SETUSERMODE", true, 2, &Peer::handle_setusermode, OPERPRIVS_GLOBALOWNER));

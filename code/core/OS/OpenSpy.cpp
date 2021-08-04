@@ -26,11 +26,26 @@ namespace OS {
 	const char *g_webServicesURL = NULL;
 	const char *g_webServicesAPIKey = NULL;
 	int			g_numAsync = 0;
-	CURL	   *g_curl = NULL;
-	void Init(const char *appName, AppConfig *appConfig) {
+	CURL *g_curl = NULL;
+	CURLSH *g_curlShare = NULL;
+	CMutex **g_curlMutexes= NULL;
+		void Init(const char *appName, AppConfig *appConfig) {
+
+		curl_global_init(CURL_GLOBAL_SSL);
 
 		OS::g_config = appConfig;
-		OS::g_curl = curl_easy_init();
+		OS::g_curl = curl_easy_init(); //only used for curl_easy_escape
+
+		g_curlShare = curl_share_init();
+		//CURL_LOCK_DATA_LAST
+		g_curlMutexes = malloc(sizeof(CMutex *) * CURL_LOCK_DATA_LAST);
+		for(int i=0;i<CURL_LOCK_DATA_LAST;i++) {
+			g_curlMutexes[i] = OS::CreateMutex();
+		}
+
+		curl_share_setopt(g_curlShare, CURLSHOPT_LOCKFUNC, curlLockCallback);
+		curl_share_setopt(g_curlShare, CURLSHOPT_UNLOCKFUNC, curlUnlockCallback);
+		curl_share_setopt(g_curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
 
 		std::string hostname, redis_address, webservices_url, apikey;
 		OS::g_config->GetVariableInt(appName, "num-async-tasks", g_numAsync);
@@ -44,8 +59,6 @@ namespace OS {
 		g_webServicesURL = strdup(webservices_url.c_str());
 		g_redisAddress = strdup(redis_address.c_str());
 		g_webServicesAPIKey = strdup(apikey.c_str());
-
-		curl_global_init(CURL_GLOBAL_SSL);
 
 		redis_timeout.tv_usec = 0;
 		redis_timeout.tv_sec = 30;
@@ -534,6 +547,15 @@ namespace OS {
 		curl_free(ret);
 		return ret_str;
 	}
+
+	void curlLockCallback(CURL *handle, curl_lock_data data, curl_lock_access access, void *userptr) {
+		g_curlMutexes[data]->lock();
+	}
+	void curlUnlockCallback(CURL *handle, curl_lock_data data, void *userptr) {
+		g_curlMutexes[data]->unlock();
+	}
+
+
 	int match2(const char *mask, const char *name, int &match_count, char wildcard_char)
 	{
 		const u_char *m = (u_char *)mask;

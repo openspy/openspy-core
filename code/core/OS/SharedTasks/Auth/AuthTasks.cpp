@@ -71,6 +71,7 @@ namespace TaskShared {
 				break;
 			}
 			curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+			curl_easy_setopt(curl, CURLOPT_SHARE, OS::g_curlShare);
 
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
 
