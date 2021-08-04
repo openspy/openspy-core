@@ -59,22 +59,25 @@ namespace Peerchat {
 		UserSummary userSummary = request.summary;
 
 		
+		if(!is_in_channel) {
+			if(channel.basic_mode_flags & EChannelMode_UserCreated && created) {
+				Create_StagingRoom_UsermodeRecords(channel, request, thread_data);
+			}
 
-		if(channel.basic_mode_flags & EChannelMode_UserCreated && created) {
-			Create_StagingRoom_UsermodeRecords(channel, request, thread_data);
-		}
+			initial_flags |= getEffectiveUsermode(thread_data, channel.channel_id, userSummary, request.peer);
 
-		initial_flags |= getEffectiveUsermode(thread_data, channel.channel_id, userSummary, request.peer);
-
-        if(!is_in_channel && !CheckUserCanJoinChannel(thread_data, channel, request.peer, original_password, initial_flags)) {
-            response.error_details.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
-        } else {
-            response.error_details.response_code = TaskShared::WebErrorCode_Success;
-			response.summary.id = initial_flags;
-        }
-		
-		if (response.error_details.response_code == TaskShared::WebErrorCode_Success) {
-			AddUserToChannel(thread_data, userSummary, channel, initial_flags);
+			if(!is_in_channel && !CheckUserCanJoinChannel(thread_data, channel, request.peer, original_password, initial_flags)) {
+				response.error_details.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
+			} else {
+				response.error_details.response_code = TaskShared::WebErrorCode_Success;
+				response.summary.id = initial_flags;
+			}
+			
+			if (response.error_details.response_code == TaskShared::WebErrorCode_Success) {
+				AddUserToChannel(thread_data, userSummary, channel, initial_flags);
+			}
+		} else {
+			response.error_details.response_code = TaskShared::WebErrorCode_AuthInvalidCredentials;
 		}
 
 		if (request.callback)

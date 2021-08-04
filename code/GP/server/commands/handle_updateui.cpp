@@ -48,7 +48,7 @@ namespace GP {
 		request.type = TaskShared::EUserRequestType_Update;
 		request.extra = NULL;
 		request.peer = this;
-		//IncRef();
+		request.peer->IncRef();
 		request.callback = NULL;
 		request.search_params = m_user;
 		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *user_scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetUserTask();
