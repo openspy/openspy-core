@@ -57,10 +57,10 @@ namespace GP {
 		if(m_profile.id != 0) {
 			GPBackendRedisRequest req;
 			req.type = EGPRedisRequestType_UpdateStatus;
-			req.peer = this;
-			req.peer->IncRef();
+			req.profile = m_profile;
+			req.peer = NULL;
 			req.StatusInfo = GPShared::gp_default_status;
-			req.extra = (void *)req.peer;
+			req.extra = NULL;
 
 			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 			scheduler->AddRequest(req.type, req);
@@ -156,22 +156,6 @@ namespace GP {
 			}
 			it++;
 		}
-
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
-		if (current_time.tv_sec - m_status_refresh.tv_sec > (GP_STATUS_EXPIRE_TIME / 2)) {
-			gettimeofday(&m_status_refresh, NULL);
-			//often called with keep alives
-			if (m_profile.id) {
-				TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
-				GPBackendRedisRequest req;
-				req.type = EGPRedisRequestType_UpdateStatus;
-				req.peer = this;
-				req.peer->IncRef();
-				req.StatusInfo = m_status;
-				scheduler->AddRequest(req.type, req);
-			}
-		}
 	}
 
 	void Peer::handle_statusinfo(OS::KVReader data_parser) {
@@ -226,6 +210,20 @@ namespace GP {
 		if (m_session_expires_at.tv_sec != 0 && current_time.tv_sec > m_session_expires_at.tv_sec) {
 			m_session_expires_at.tv_sec = 0;
 			refresh_session();
+		}
+
+		if (current_time.tv_sec - m_status_refresh.tv_sec > (GP_STATUS_EXPIRE_TIME / 2)) {
+			gettimeofday(&m_status_refresh, NULL);
+			//often called with keep alives
+			if (m_profile.id) {
+				TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+				GPBackendRedisRequest req;
+				req.type = EGPRedisRequestType_UpdateStatus;
+				req.peer = this;
+				req.peer->IncRef();
+				req.StatusInfo = m_status;
+				scheduler->AddRequest(req.type, req);
+			}
 		}
 	}
 	void Peer::send_error(GPErrorCode code, std::string addon_data) {

@@ -57,7 +57,7 @@ namespace GP {
 						status.location_str = json_string_value(json_object_get(array_item, "locationText"));
 						status.quiet_flags = json_integer_value(json_object_get(array_item, "quietFlags"));
 						status.address.ip = htonl(inet_addr(OS::strip_quotes(json_string_value(json_object_get(array_item, "ip"))).c_str()));
-						status.address.port = (json_integer_value(json_object_get(array_item, "port")));;
+						status.address.port = (json_integer_value(json_object_get(array_item, "port")));
 						results[profile.id] = status;
 					}
 				}

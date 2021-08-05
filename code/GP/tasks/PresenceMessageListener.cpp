@@ -64,7 +64,7 @@ namespace GP {
 			status.location_str = reader.GetValue("location_string");
 			status.quiet_flags = (GPShared::GPEnum)reader.GetValueInt("quiet_flags");
 			reason = reader.GetValue("ip");
-			status.address.ip = htonl(inet_addr(OS::strip_quotes(reason).c_str()));
+			status.address.ip = inet_addr(OS::strip_quotes(reason).c_str());
 			status.address.port = (reader.GetValueInt("port"));
 			server->InformStatusUpdate(from_profileid, status);
 		}

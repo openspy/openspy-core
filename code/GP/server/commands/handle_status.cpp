@@ -63,7 +63,7 @@ namespace GP {
 				ss << "|ls|" << status.location_str;
 
 			if(status.address.ip != 0) {
-				ss << "|ip|" << status.address.ip;
+				ss << "|ip|" << htonl(status.address.ip);
 				ss << "|p|" << status.address.GetPort();
 			}
 

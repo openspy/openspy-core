@@ -13,8 +13,12 @@ namespace GP {
 		json_object_set_new(send_obj, "statusText", json_string(request.StatusInfo.status_str.c_str()));
 		json_object_set_new(send_obj, "locationText", json_string(request.StatusInfo.location_str.c_str()));
 
-
-		json_object_set_new(profile_obj, "id", json_integer(request.peer->GetProfileID()));
+		if(request.profile.id != 0) {
+			json_object_set_new(profile_obj, "id", json_integer(request.profile.id));
+		} else {
+			json_object_set_new(profile_obj, "id", json_integer(request.peer->GetProfileID()));
+		}
+		
 		json_object_set_new(send_obj, "profileLookup", profile_obj);
 
 
