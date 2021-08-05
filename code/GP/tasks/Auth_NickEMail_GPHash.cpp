@@ -20,8 +20,8 @@ namespace GP {
 		json_object_set_new(send_obj, "client_challenge", json_string(request.client_challenge.c_str()));
 		json_object_set_new(send_obj, "client_response", json_string(request.client_response.c_str()));
 
-		json_object_set(send_obj, "user", user_obj);
-		json_object_set(send_obj, "profile", profile_obj);
+		json_object_set_new(send_obj, "user", user_obj);
+		json_object_set_new(send_obj, "profile", profile_obj);
 
 
 		char *json_data_str = json_dumps(send_obj, 0);

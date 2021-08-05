@@ -96,7 +96,6 @@ namespace Peerchat {
 		if (subitem != NULL && !json_is_null(subitem)) {
 			record.set_at.tv_sec = json_integer_value(subitem);
 		}
-
 		
 		return record;
 	}
@@ -347,31 +346,38 @@ namespace Peerchat {
 	json_t* UsermodeRecordToJson(UsermodeRecord record) {
 		json_t* object = json_object();
 		if(record.chanmask.length() > 0)
-			json_object_set(object, "channelmask", json_string(record.chanmask.c_str()));
+			json_object_set_new(object, "channelmask", json_string(record.chanmask.c_str()));
 		if (record.hostmask.length() > 0)
-			json_object_set(object, "hostmask", json_string(record.hostmask.c_str()));
+			json_object_set_new(object, "hostmask", json_string(record.hostmask.c_str()));
 		if (record.comment.length() > 0)
-			json_object_set(object, "comment", json_string(record.comment.c_str()));
+			json_object_set_new(object, "comment", json_string(record.comment.c_str()));
 		if (record.machineid.length() > 0)
-			json_object_set(object, "machineid", json_string(record.machineid.c_str()));
+			json_object_set_new(object, "machineid", json_string(record.machineid.c_str()));
 
 		if (record.profileid != 0)
-			json_object_set(object, "profileid", json_integer(record.profileid));
+			json_object_set_new(object, "profileid", json_integer(record.profileid));
 
-		json_object_set(object, "modeflags", json_integer(record.modeflags));
+		json_object_set_new(object, "modeflags", json_integer(record.modeflags));
 
 		json_t *gameid_item = json_integer(record.gameid);
 		if(record.has_gameid == false) {
 			gameid_item = json_null();
 		}
-		json_object_set(object, "gameid", gameid_item);
+		json_object_set_new(object, "gameid", gameid_item);
 
-		json_object_set(object, "expiresIn", json_integer(record.expires_at.tv_sec)); //expires in seconds
 
-		json_object_set(object, "setByNick", json_string(record.setByUserSummary.nick.c_str()));
+		json_t *isGlobal = json_false();
+		if(record.isGlobal) {
+			isGlobal = json_true();
+		}
+		json_object_set_new(object, "isGlobal", isGlobal); //expires in seconds
 
-		json_object_set(object, "setByHost", json_string(record.setByUserSummary.hostname.c_str()));
-		json_object_set(object, "setByPid", json_integer(record.setByUserSummary.profileid));
+		json_object_set_new(object, "expiresIn", json_integer(record.expires_at.tv_sec)); //expires in seconds
+
+		json_object_set_new(object, "setByNick", json_string(record.setByUserSummary.nick.c_str()));
+
+		json_object_set_new(object, "setByHost", json_string(record.setByUserSummary.hostname.c_str()));
+		json_object_set_new(object, "setByPid", json_integer(record.setByUserSummary.profileid));
 		return object;
 	}
 

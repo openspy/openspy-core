@@ -20,8 +20,8 @@ namespace GS {
 			it++;
 		}
 
-		json_object_set(send_json, "_id", json_string(request.game_instance_identifier.c_str()));
-		json_object_set(send_json, "complete", request.complete ? json_true() : json_false());
+		json_object_set_new(send_json, "_id", json_string(request.game_instance_identifier.c_str()));
+		json_object_set_new(send_json, "complete", request.complete ? json_true() : json_false());
 		json_object_set_new(send_json, "keyValueList", data_obj);
 
 		std::string url = std::string(OS::g_webServicesURL);

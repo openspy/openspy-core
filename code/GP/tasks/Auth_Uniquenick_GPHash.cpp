@@ -11,7 +11,7 @@ namespace GP {
 			json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile.namespaceid));
 
 
-		json_object_set(send_obj, "profile", profile_obj);
+		json_object_set_new(send_obj, "profile", profile_obj);
 
 		json_object_set_new(send_obj, "server_challenge", json_string(request.server_challenge.c_str()));
 		json_object_set_new(send_obj, "client_challenge", json_string(request.client_challenge.c_str()));

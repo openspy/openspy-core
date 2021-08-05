@@ -6,19 +6,19 @@ namespace GP {
 			json_t *send_obj = json_object(), *to_obj = json_object(), *from_obj = json_object();
 
 
-			json_object_set(send_obj, "sourceProfile", from_obj);
-			json_object_set(send_obj, "targetProfile", to_obj);
+			json_object_set_new(send_obj, "sourceProfile", from_obj);
+			json_object_set_new(send_obj, "targetProfile", to_obj);
 
 			json_object_set_new(to_obj, "id", json_integer(request.ToFromData.to_profileid));
 			json_object_set_new(from_obj, "id", json_integer(request.ToFromData.from_profileid));
 
 			if (request.type == EGPRedisRequestType_DelBuddy) {
 				//this might not be needed...
-				json_object_set(send_obj, "silent", json_true());
+				json_object_set_new(send_obj, "silent", json_true());
 			}
 
 			if (request.auth_token.length()) {
-				json_object_set(send_obj, "addReason", json_string(request.auth_token.c_str()));
+				json_object_set_new(send_obj, "addReason", json_string(request.auth_token.c_str()));
 			}
 
 

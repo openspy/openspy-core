@@ -7,8 +7,8 @@ namespace GP {
 
 		json_object_set_new(send_obj, "addReason", json_string(request.BuddyRequest.reason.c_str()));
 
-		json_object_set(send_obj, "sourceProfile", from_obj);
-		json_object_set(send_obj, "targetProfile", to_obj);
+		json_object_set_new(send_obj, "sourceProfile", from_obj);
+		json_object_set_new(send_obj, "targetProfile", to_obj);
 
 		json_object_set_new(to_obj, "id", json_integer(request.BuddyRequest.to_profileid));
 		json_object_set_new(from_obj, "id", json_integer(request.BuddyRequest.from_profileid));

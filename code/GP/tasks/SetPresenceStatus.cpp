@@ -15,7 +15,7 @@ namespace GP {
 
 
 		json_object_set_new(profile_obj, "id", json_integer(request.peer->GetProfileID()));
-		json_object_set(send_obj, "profileLookup", profile_obj);
+		json_object_set_new(send_obj, "profileLookup", profile_obj);
 
 
 		char *json_dump = json_dumps(send_obj, 0);

@@ -18,33 +18,33 @@ namespace Peerchat {
         if(record.password.length() > 0)
             json_object_set_new(send_json, "password", json_string(record.password.c_str()));
         else 
-            json_object_set(send_json, "password", json_null());
+            json_object_set_new(send_json, "password", json_null());
 
         if(record.entrymsg.length() > 0)
             json_object_set_new(send_json, "entrymsg", json_string(record.entrymsg.c_str()));
         else 
-            json_object_set(send_json, "entrymsg", json_null());
+            json_object_set_new(send_json, "entrymsg", json_null());
 
         if(record.comment.length() > 0)
             json_object_set_new(send_json, "comment", json_string(record.comment.c_str()));
         else 
-            json_object_set(send_json, "comment", json_null());
+            json_object_set_new(send_json, "comment", json_null());
 
         if(record.groupname.length() > 0)
             json_object_set_new(send_json, "groupname", json_string(record.groupname.c_str()));
         else 
-            json_object_set(send_json, "groupname", json_null());
+            json_object_set_new(send_json, "groupname", json_null());
 
         if(record.topic.length() > 0)
             json_object_set_new(send_json, "topic", json_string(record.topic.c_str()));
         else 
-            json_object_set(send_json, "topic", json_null());
+            json_object_set_new(send_json, "topic", json_null());
 
         json_object_set_new(send_json, "limit", json_integer(record.limit));
         json_object_set_new(send_json, "modeflags", json_integer(record.modeflags));
 
-        json_object_set(send_json, "onlyOwner", record.onlyOwner ? json_true() : json_false());
-        json_object_set(send_json, "kickExisting", record.kickExisting ? json_true() : json_false());
+        json_object_set_new(send_json, "onlyOwner", record.onlyOwner ? json_true() : json_false());
+        json_object_set_new(send_json, "kickExisting", record.kickExisting ? json_true() : json_false());
 
         json_object_set_new(send_json, "setByPid", json_integer(record.setByPid));
         json_object_set_new(send_json, "setByNick", json_string(record.setByNick.c_str()));
