@@ -14,22 +14,28 @@
 
 namespace GP {
 	void Peer::m_update_registernick_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
+		std::ostringstream s;
+		s << "\\id\\" << (int)extra;
+		std::string id_string = s.str();
+		s.str("");
 		GP::Peer *gppeer = (GP::Peer *)peer;
 		switch (error_details.response_code) {
-            case TaskShared::WebErrorCode_UniqueNickInUse:
-                gppeer->send_error(GPShared::GP_REGISTERUNIQUENICK_TAKEN);
-            break;
-            default:
-            case TaskShared::WebErrorCode_CdKeyAlreadyTaken:
+			case TaskShared::WebErrorCode_UniqueNickInUse:
+				gppeer->send_error(GPShared::GP_REGISTERUNIQUENICK_TAKEN, id_string);
+				break;
+			default:
+			case TaskShared::WebErrorCode_CdKeyAlreadyTaken:
 			case TaskShared::WebErrorCode_BadCdKey:
-				gppeer->send_error(GPShared::GP_REGISTERUNIQUENICK);
+				gppeer->send_error(GPShared::GP_REGISTERUNIQUENICK, id_string);
+				break;
+			case TaskShared::WebErrorCode_Success:
 				break;
 		}
 		if (error_details.response_code != TaskShared::WebErrorCode_Success) {
 			return;
 		}
-		std::ostringstream s;
-		s << "\\rn\\1";
+		
+		s << "\\rn\\1" << id_string;
 
 		gppeer->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
 	}
