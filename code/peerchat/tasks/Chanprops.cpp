@@ -101,6 +101,8 @@ namespace Peerchat {
 		free(json_data);
 		json_decref(send_json);
 
+		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
+
 		bool success = false;
 
 		TaskShared::WebErrorDetails error_info;
@@ -108,6 +110,10 @@ namespace Peerchat {
 		if (!TaskShared::Handle_WebError(send_json, error_info)) {
 			success = true;
 		}
+
+		if(send_json)
+			json_decref(send_json);
+
 		return success;
     }
 }
