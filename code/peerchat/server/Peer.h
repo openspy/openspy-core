@@ -182,8 +182,6 @@ namespace Peerchat {
 		void run_timed_operations();
 		void SendPacket(std::string data);
 
-		void RegisterCommands();
-
 		void OnUserMaybeRegistered();
 		UserSummary GetUserDetails() { return m_user_details; };
 		void OnRecvDirectMsg(UserSummary from, std::string msg, std::string type);
@@ -343,12 +341,11 @@ namespace Peerchat {
 
 		OS::CMutex *mp_mutex;
 
-		std::vector<CommandEntry> m_commands;
-
 		bool m_sent_client_init;
 
 		std::map<int, int> m_channel_flags;
 
+		static const CommandEntry m_commands[];
 
 		bool m_using_encryption;
 		bool m_stream_waiting;
