@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 int gslame(int num) {
-    int     a,
+    volatile int     a,
             c;
 
     c = (num >> 16) & 0xffff;
