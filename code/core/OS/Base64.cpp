@@ -52,7 +52,6 @@ namespace OS {
 		ret[(*bufferPtr).length] = 0;
 		memcpy(ret, (*bufferPtr).data, (*bufferPtr).length);
 
-		BIO_set_close(bio, BIO_NOCLOSE);
 		BIO_free_all(bio);
 
 		return ret;
