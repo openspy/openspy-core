@@ -34,6 +34,7 @@
 
 			void RegisterSocket(INetPeer *peer, bool notify_driver_only = false);
 			void UnregisterSocket(INetPeer *peer);
+			void UnregisterDriver(INetDriver *driver);
 			void run();
 		private:
 			static bool LLIterator_UnregisterSocket(EPollDataInfo* data_info, UnregisterSocketIteratorState* peer);

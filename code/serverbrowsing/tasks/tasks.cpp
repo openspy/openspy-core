@@ -29,7 +29,7 @@ namespace MM {
 	};
 
     TaskScheduler<MMQueryRequest, TaskThreadData> *InitTasks(INetServer *server) {
-        TaskScheduler<MMQueryRequest, TaskThreadData> *scheduler = new TaskScheduler<MMQueryRequest, TaskThreadData>(4, server, requestTable, listenerTable);
+        TaskScheduler<MMQueryRequest, TaskThreadData> *scheduler = new TaskScheduler<MMQueryRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, listenerTable);
 
         scheduler->SetThreadDataFactory(TaskScheduler<MMQueryRequest, TaskThreadData>::DefaultThreadDataFactory);
 

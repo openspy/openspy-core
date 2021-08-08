@@ -15,6 +15,8 @@ namespace SB {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
 		m_version = version;
 	}
+	Driver::~Driver() {
+	}
 	void Driver::TickConnections() { 
 		TCPDriver::TickConnections();
 		MM::Server serv;

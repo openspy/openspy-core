@@ -19,7 +19,7 @@ namespace NN {
 	};
 
     TaskScheduler<NNRequestData, TaskThreadData> *InitTasks(INetServer *server) {
-        TaskScheduler<NNRequestData, TaskThreadData> *scheduler = new TaskScheduler<NNRequestData, TaskThreadData>(4, server, requestTable, listenerTable);
+        TaskScheduler<NNRequestData, TaskThreadData> *scheduler = new TaskScheduler<NNRequestData, TaskThreadData>(OS::g_numAsync, server, requestTable, listenerTable);
 
         scheduler->SetThreadDataFactory(TaskScheduler<NNRequestData, TaskThreadData>::DefaultThreadDataFactory);
 

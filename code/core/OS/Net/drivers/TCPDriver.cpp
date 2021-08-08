@@ -18,8 +18,8 @@ TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool p
 }
 TCPDriver::~TCPDriver() {
     mp_thread->SignalExit(true);
-    delete mp_mutex;
     delete mp_thread;
+    delete mp_mutex;
 
     DeleteClients();
 

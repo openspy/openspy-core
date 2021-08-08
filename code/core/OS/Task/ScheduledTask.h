@@ -35,9 +35,10 @@ class ScheduledTask : public OS::Task<ReqClass>, public OS::LinkedList<Scheduled
 			this->mp_thread = OS::CreateThread(ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> >::TaskThread, this, true);
 		}
 		~ScheduledTask() {
-			this->mp_thread->SignalExit(true);
+			this->mp_thread->SignalExit(true, this->mp_thread_poller);
 			delete this->mp_thread;
 			delete this->mp_mutex;
+			this->mp_thread = NULL;
         }
 		void SetThreadData(ThreadData data) {
 			mp_thread_data = data;
@@ -51,13 +52,14 @@ class ScheduledTask : public OS::Task<ReqClass>, public OS::LinkedList<Scheduled
 		static void *TaskThread(OS::CThread *thread) {
 			ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *task = (ScheduledTask<ReqClass, ThreadData *, TaskScheduler<ReqClass, ThreadData> > *)thread->getParams();
 			while(thread->isRunning()) {
-				task->StallForRequest();
+				task->StallForRequest(thread);
 			}
 			return NULL; 
 		}
-		void StallForRequest() {
+		void StallForRequest(OS::CThread *thread) {			
 			if(this->m_request_list.empty())
 				this->mp_thread_poller->wait(SCHEDULED_TASK_WAIT_TIME);
+			if(!thread->isRunning()) return;
 			this->mp_mutex->lock();
 			bool empty = this->m_request_list.empty();
 			ReqClass task_params;

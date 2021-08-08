@@ -47,6 +47,7 @@ namespace OS {
 		}
 		if(wait)
 			pthread_join(m_thread, NULL);
+			
 
 		m_thread_dead = true;
 	}

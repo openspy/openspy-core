@@ -17,7 +17,7 @@
 class TCPDriver : public INetDriver {
     public:
 		TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false, const char *x509_path = NULL, const char *rsa_priv_path = NULL, SSLNetIOIFace::ESSL_Type ssl_version = SSLNetIOIFace::ESSL_None);
-		~TCPDriver();
+		virtual ~TCPDriver();
 		void think(bool packet_waiting);
 
 		INetIOSocket *getListenerSocket() const;

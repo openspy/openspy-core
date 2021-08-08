@@ -28,6 +28,7 @@ namespace SB {
 	class Driver : public TCPDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port, int version = 2, bool proxyHeaders = false);
+		~Driver();
 		void SendDeleteServer(MM::Server *server);
 	    void SendNewServer(MM::Server *server);
 	    void SendUpdateServer(MM::Server *server);

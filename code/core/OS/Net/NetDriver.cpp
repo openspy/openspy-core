@@ -10,7 +10,7 @@ INetDriver::INetDriver(INetServer *server) {
 
 }
 INetDriver::~INetDriver() {
-
+	delete mp_peers;
 }
 INetIOInterface<> *INetDriver::getNetIOInterface() {
 	return mp_net_io_interface;

@@ -1,4 +1,5 @@
 #include "PMutex.h"
+#include <stdio.h>
 namespace OS {
 	CPMutex::CPMutex() {
 		pthread_mutexattr_init(&m_mutex_attrs);

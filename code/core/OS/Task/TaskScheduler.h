@@ -69,7 +69,16 @@ class TaskScheduler {
 			setupTasks();
 		}
 		~TaskScheduler() {
+			if(mp_mqconnection) {
+				delete mp_mqconnection;
+			}
 			//free tasks
+			OS::LinkedListIterator<ScheduledTask<ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >*, TaskScheduler<ReqClass, ThreadData>*> iterator(mp_tasks);
+			iterator.Iterate(LLIterator_Task_Delete, this);
+
+			delete mp_tasks;
+			delete mp_shared_game_cache;
+
 		}
 
 		static bool LLIterator_Task_InitThreadData(ScheduledTask < ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> > *task, TaskScheduler<ReqClass, ThreadData> *scheduler) {
@@ -85,7 +94,11 @@ class TaskScheduler {
 		void SetThreadDataFactory(ThreadDataFactory threadDataFactoryFunc) {
 			mp_thread_data_factory = threadDataFactoryFunc;
 		}
-
+		static bool LLIterator_Task_Delete(ScheduledTask < ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >* task, TaskScheduler<ReqClass, ThreadData> *scheduler) {
+			scheduler->mp_thread_data_factory(scheduler, EThreadInitState_DeallocThreadData, scheduler->m_task_data[task]);
+			delete task;
+			return true;
+		}
 
 
 		static bool LLIterator_Task_AddRequest(ScheduledTask < ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >* task, AddRequestState* state) {
@@ -136,10 +149,16 @@ class TaskScheduler {
 						}
 						data->mp_mqconnection->declareReady();
 					}
-					iterator.Iterate(LLIterator_InitTaskThreadData, data);
+					//iterator.Iterate(LLIterator_InitTaskThreadData, data); //this is already initalized at ScheduledTask ctor
 
 				break;
 				case EThreadInitState_DeallocThreadData:
+					if(scheduler->mp_mqconnection != NULL)
+						delete data->mp_mqconnection;
+					Redis::Disconnect(data->mp_redis_connection);
+					data->mp_redis_connection = NULL;
+
+					delete data;
 				break;
 			}
 			return data;

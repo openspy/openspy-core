@@ -52,6 +52,15 @@ namespace MQ {
             mp_reconnect_retry_thread->SignalExit(true);
             delete mp_reconnect_retry_thread;
         }
+        delete mp_mutex;
+
+        std::map<std::string, rmqListenerData *>::iterator it = m_listener_callbacks.begin();
+
+        while(it != m_listener_callbacks.end()) {
+            std::pair<std::string, rmqListenerData *> p = *it;
+            delete p.second;
+            it++;
+        }
     }
     void rmqConnection::sendMessage(MQMessageProperties properties, std::string message) {
         if(mp_rabbitmq_conn == NULL) {
@@ -187,12 +196,13 @@ namespace MQ {
     }
 
     void rmqConnection::disconnect() {
-        if(mp_rabbitmq_conn == NULL) return;
         if(mp_listen_thread) {
             mp_listen_thread->SignalExit(true);
             delete mp_listen_thread;
             mp_listen_thread = NULL;
         }
+
+        if(mp_rabbitmq_conn == NULL) return;
 
 		//if (!m_cloned_connection) {
 		amqp_channel_close(mp_rabbitmq_conn, m_channel_id, AMQP_REPLY_SUCCESS);

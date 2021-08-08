@@ -94,6 +94,7 @@ namespace OS {
 		free((void *)g_webServicesURL);
 		free((void *)g_webServicesAPIKey);
 		free((void *)g_redisAddress);
+		free((void *)g_curlMutexes);
 	}
 	OS::GameData GetGameByRedisKey(const char *key, Redis::Connection *redis_ctx = NULL) {
 		GameData game;

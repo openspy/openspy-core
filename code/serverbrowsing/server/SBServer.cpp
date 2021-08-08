@@ -6,6 +6,8 @@
 SBServer::SBServer() : INetServer() {
 }
 SBServer::~SBServer() {
+	delete mp_task_scheduler;
+	
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 	while (it != m_net_drivers.end()) {
 		delete *it;
