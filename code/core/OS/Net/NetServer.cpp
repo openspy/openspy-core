@@ -19,6 +19,11 @@ INetServer::INetServer() {
 }
 INetServer::~INetServer() {
 	delete mp_net_event_mgr;
+	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
+	while (it != m_net_drivers.end()) {
+		delete *it;
+		it++;
+	}
 }
 void INetServer::addNetworkDriver(INetDriver *driver) {
 	m_net_drivers.push_back(driver);

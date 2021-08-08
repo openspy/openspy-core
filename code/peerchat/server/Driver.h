@@ -66,6 +66,7 @@ namespace Peerchat {
 	class Driver : public TCPDriver {
 	public:
 		Driver(INetServer *server, std::string server_name, const char *host, uint16_t port, bool proxyHeaders = false );
+		virtual ~Driver();
 		Peer *FindPeerByProfileID(int profileid);		
 		Peer *FindPeerByUserSummary(UserSummary summary);
 		void SendUserMessageToVisibleUsers(std::string fromSummary, std::string messageType, std::string message, bool includeSelf = true);

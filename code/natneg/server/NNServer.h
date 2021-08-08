@@ -15,6 +15,7 @@ namespace NN {
 	class Server : public INetServer {
 		public:
 			Server();
+			virtual ~Server();
 			void init();
 			void tick();
 			void shutdown();

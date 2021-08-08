@@ -11,6 +11,9 @@ namespace Peerchat {
     Driver::Driver(INetServer *server, std::string server_name, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
 		m_server_name = server_name;
     }
+	Driver::~Driver() {
+		
+	}
     Peer *Driver::FindPeerByProfileID(int profileid) {
         return NULL;
     }

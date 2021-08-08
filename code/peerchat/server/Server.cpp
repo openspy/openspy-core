@@ -8,6 +8,12 @@ namespace Peerchat {
       mp_profile_tasks = TaskShared::InitProfileTasks(this);
       mp_peerchat_tasks = Peerchat::InitTasks(this);
     }
+    Server::~Server() {
+      delete mp_peerchat_tasks;
+      delete mp_profile_tasks;
+      delete mp_user_tasks;
+      delete mp_auth_tasks;
+    }
     void Server::init() {
 
     }

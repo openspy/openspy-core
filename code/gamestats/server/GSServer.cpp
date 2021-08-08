@@ -6,9 +6,13 @@
 
 namespace GS {
 	Server::Server() : INetServer(){
+		mp_gamestats_tasks = GS::InitTasks(this);
+	}
+	Server::~Server() {
+		delete mp_gamestats_tasks;
 	}
 	void Server::init() {
-		mp_gamestats_tasks = GS::InitTasks(this);
+		
 	}
 	void Server::tick() {
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

@@ -16,6 +16,8 @@ namespace NN {
 		mp_mutex = OS::CreateMutex();
 	}
 	Driver::~Driver() {
+		getNetIOInterface()->closeSocket(mp_socket);
+		delete mp_net_io_interface;
 		delete mp_mutex;
 	}
 	void Driver::think(bool listener_waiting) {

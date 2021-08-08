@@ -9,6 +9,7 @@ namespace GS {
 	class Server : public INetServer {
 	public:
 		Server();
+		~Server();
 		void init();
 		void tick();
 		void shutdown();

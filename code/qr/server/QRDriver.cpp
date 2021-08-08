@@ -20,6 +20,7 @@ namespace QR {
 	}
 	Driver::~Driver() {
 		getNetIOInterface()->closeSocket(mp_socket);
+		delete mp_net_io_interface;
 	}
 	void Driver::think(bool listener_waiting) {
 		if (listener_waiting) {

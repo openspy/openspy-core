@@ -11,6 +11,13 @@ namespace FESL {
 		mp_geo_tasks = TaskShared::InitGeoTasks(this);
 		mp_fesl_tasks = FESL::InitTasks(this);
 	}
+	Server::~Server() {
+		delete mp_fesl_tasks;
+		delete mp_geo_tasks;
+		delete mp_profile_tasks;
+		delete mp_user_tasks;
+		delete mp_auth_tasks;
+	}
 	void Server::init() {
 		TaskShared::GeoRequest request;
 		request.type = TaskShared::EGeoTaskType_GetCountries;
