@@ -115,6 +115,8 @@ namespace Peerchat {
 			record.usermodeid = atoi(OS::strip_quotes(v.value._str).c_str());
 		}
 
+		record.isGlobal = record.usermodeid > 0;
+
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s chanmask", cacheKey.c_str());
 		if (Redis::CheckError(reply)) {
 			goto end_error;
@@ -359,18 +361,20 @@ namespace Peerchat {
 
 		json_object_set_new(object, "modeflags", json_integer(record.modeflags));
 
-		json_t *gameid_item = json_integer(record.gameid);
+		
 		if(record.has_gameid == false) {
-			gameid_item = json_null();
+			json_object_set(object, "gameid", json_null());
+		} else {
+			json_object_set_new(object, "gameid", json_integer(record.gameid));
 		}
-		json_object_set_new(object, "gameid", gameid_item);
+		
 
 
 		json_t *isGlobal = json_false();
 		if(record.isGlobal) {
 			isGlobal = json_true();
 		}
-		json_object_set_new(object, "isGlobal", isGlobal); //expires in seconds
+		json_object_set(object, "isGlobal", isGlobal); //expires in seconds
 
 		json_object_set_new(object, "expiresIn", json_integer(record.expires_at.tv_sec)); //expires in seconds
 

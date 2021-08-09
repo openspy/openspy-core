@@ -48,6 +48,13 @@ namespace Peerchat {
 				if (request.callback)
 					request.callback(response, request.peer);
 			}
+			if(num_items == 0) {
+				response.is_start = true;
+				response.is_end = true;
+
+				if (request.callback)
+					request.callback(response, request.peer);
+			}
 		}
 
 		if(send_json)

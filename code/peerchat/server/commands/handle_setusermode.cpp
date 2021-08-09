@@ -27,7 +27,7 @@ namespace Peerchat {
 
 		((Peer*)peer)->send_message("PRIVMSG", ss.str(), *server_userSummary, ((Peer*)peer)->m_user_details.nick);
 
-		if (response_data.is_end) {
+		if (response_data.is_end == 1) {
 			((Peer*)peer)->send_message("PRIVMSG", "SETUSERMODE \\final\\1", *server_userSummary, ((Peer*)peer)->m_user_details.nick);
 		}
 	}

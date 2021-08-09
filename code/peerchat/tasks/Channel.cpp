@@ -263,7 +263,7 @@ namespace Peerchat {
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", channel.channel_id, user.id, initial_flags);
 
 		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d channel_id %d", channel.channel_id, user.id, channel.channel_id);
-		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_user_%d %d", channel.channel_id, CHANNEL_EXPIRE_TIME);
+		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_user_%d %d", channel.channel_id, user.id, CHANNEL_EXPIRE_TIME);
 
 		std::ostringstream id;
 		id << "channel_" << channel.channel_id << "_user_" << user.id;
