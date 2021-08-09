@@ -138,6 +138,7 @@ class TaskScheduler {
 					data->mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
 					data->scheduler = (void *)scheduler;
 					data->server = scheduler->mp_server;
+					data->mp_mutex = OS::CreateMutex();
 				break;
 				case EThreadInitState_InitThreadData:
 					
@@ -157,7 +158,7 @@ class TaskScheduler {
 						delete data->mp_mqconnection;
 					Redis::Disconnect(data->mp_redis_connection);
 					data->mp_redis_connection = NULL;
-
+					delete data->mp_mutex;
 					delete data;
 				break;
 			}
@@ -181,7 +182,9 @@ class TaskScheduler {
 				} while (scheduler->mp_listener_handlers[++i].handler != NULL);
 			}
 			if(handler) {
+				thread_data->mp_mutex->lock();
 				handler(thread_data, message);
+				thread_data->mp_mutex->unlock();
 			}
 		}
 		static void HandleRequestCallback(TaskScheduler<ReqClass, ThreadData> *scheduler,ReqClass request, ThreadData *data) {
@@ -196,7 +199,9 @@ class TaskScheduler {
 				} while (scheduler->mp_request_handlers[++i].handler != NULL);
 			}
 			if (handler) {
+				data->mp_mutex->lock();
 				handler(request, data);
+				data->mp_mutex->unlock();
 			}
 		}
 	protected:

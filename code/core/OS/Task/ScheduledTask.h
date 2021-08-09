@@ -19,6 +19,7 @@ class TaskThreadData {
 		void *scheduler;
 		int id; //task thread index
 		OS::GameCache *shared_game_cache;
+		OS::CMutex *mp_mutex;
 };
 
 template<typename ReqClass, typename ThreadData>

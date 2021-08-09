@@ -304,6 +304,7 @@ namespace Peerchat {
 		void send_topic(std::string channel);
 
 		void send_flood_warning();
+		void send_ping();
 
 		int GetListUserCount(ChannelSummary summary);
 
@@ -332,7 +333,7 @@ namespace Peerchat {
 
 		OS::GameData m_game;
 		
-		struct timeval m_last_recv, m_last_ping, m_connect_time, m_last_keepalive;
+		struct timeval m_last_recv, m_last_ping, m_connect_time, m_last_keepalive, m_last_sent_ping;
 
 		OS::User m_user;
 		OS::Profile m_profile;

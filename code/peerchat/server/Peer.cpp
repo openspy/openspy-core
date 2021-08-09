@@ -64,6 +64,7 @@ namespace Peerchat {
 		m_using_encryption = false;
 		m_flood_weight = 0;
 		gettimeofday(&m_last_recv, NULL);
+		gettimeofday(&m_last_sent_ping, NULL);
 		gettimeofday(&m_connect_time, NULL);		
 		gettimeofday(&m_last_keepalive, NULL);
 
@@ -204,7 +205,7 @@ namespace Peerchat {
 		}
 
 	end:
-		//send_ping();
+		send_ping();
 
 		perform_keepalive();
 
@@ -232,6 +233,20 @@ namespace Peerchat {
 			Delete(true, "Ping Timeout");
 		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete(false, "Connection severed");
+		}
+	}
+	void Peer::send_ping() {
+		struct timeval current_time;
+		gettimeofday(&current_time, NULL);
+		if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIME) {
+			if (current_time.tv_sec - m_last_sent_ping.tv_sec > PEERCHAT_PING_TIME) {
+				gettimeofday(&m_last_sent_ping, NULL);
+				char ping_key[9];
+
+				memset(&ping_key, 0, sizeof(ping_key));
+				OS::gen_random((char *)&ping_key, sizeof(ping_key)-1, 1);
+				send_message("PING", ping_key, UserSummary(), ((Peerchat::Server*)GetDriver()->getServer())->getServerName());
+			}
 		}
 	}
 	void Peer::perform_keepalive() {
