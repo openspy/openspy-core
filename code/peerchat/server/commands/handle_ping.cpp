@@ -27,4 +27,7 @@ namespace Peerchat {
 
 		perform_keepalive();
     }
+    void Peer::handle_pong(std::vector<std::string> data_parser) {
+		perform_keepalive();
+    }
 }

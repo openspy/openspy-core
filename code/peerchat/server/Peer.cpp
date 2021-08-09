@@ -19,6 +19,7 @@ namespace Peerchat {
 		CommandEntry("NICK", false, 1 ,&Peer::handle_nick, 0, 150),
 		CommandEntry("USER", false, 4, &Peer::handle_user),
 		CommandEntry("PING", false, 0, &Peer::handle_ping),
+		CommandEntry("PONG", false, 0, &Peer::handle_pong),
 		CommandEntry("OPER", false, 3, &Peer::handle_oper,0, 250),
 		CommandEntry("LOGIN", false, 3, &Peer::handle_login, 0, 250),
 		CommandEntry("LOGINPREAUTH", false, 2, &Peer::handle_loginpreauth, 0, 250),

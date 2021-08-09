@@ -262,6 +262,7 @@ namespace Peerchat {
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
 		void handle_ping(std::vector<std::string> data_parser);
+		void handle_pong(std::vector<std::string> data_parser);
 		void handle_oper(std::vector<std::string> data_parser);
 		void handle_login(std::vector<std::string> data_parser);
 		void handle_privmsg(std::vector<std::string> data_parser);
