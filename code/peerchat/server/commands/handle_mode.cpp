@@ -322,6 +322,28 @@ namespace Peerchat {
 			req.peer->IncRef();
 			req.callback = OnMode_UpdateUserMode;
 			scheduler->AddRequest(req.type, req);
+
+
+			//unset quiet flags, resend channel names list
+			if((unset_flags & EUserMode_Quiet) && !(set_flags & EUserMode_Quiet)) {
+					mp_mutex->lock();
+					std::map<int, int>::iterator it = m_channel_flags.begin();
+					while (it != m_channel_flags.end()) {
+						std::pair<int, int> p = *it;
+
+						if(p.second & EUserChannelFlag_IsInChannel) {
+							req.type = EPeerchatRequestType_LookupChannelDetails;
+							req.peer = this;
+							req.peer->IncRef();
+							req.callback = OnNames_FetchChannelInfo;
+							req.channel_summary.channel_id = p.first;
+							scheduler->AddRequest(req.type, req);
+						}
+						
+						it++;
+					}
+					mp_mutex->unlock();
+			}
 		}
 	}
 	void Peer::handle_mode(std::vector<std::string> data_parser) {
