@@ -54,7 +54,8 @@ namespace TaskShared {
 			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);
 		}
-		request.callback(cdkey_data, request.extra, request.peer);
+		if(request.callback != NULL)
+			request.callback(cdkey_data, request.extra, request.peer);
 		if (json_dump) {
 			free((void *)json_dump);
 		}

@@ -152,6 +152,7 @@ namespace GP {
 
 		if (auth_data.gamedata.secretkey[0] != 0) {
 			((Peer *)peer)->m_game = auth_data.gamedata;
+			((Peer *)peer)->post_register_registercdkey(profile);
 		}
 		else if (((Peer *)peer)->m_postregister_cdkey.length() > 0) {
 			((Peer *)peer)->send_error(GPShared::GP_GENERAL, "Cannot register CD Key - Invalid game supplied");
@@ -161,12 +162,12 @@ namespace GP {
 		//((Peer *)peer)->refresh_session();
 	}
 
-	void Peer::post_register_registercdkey() {
+	void Peer::post_register_registercdkey(OS::Profile profile) {
 		TaskShared::CDKeyRequest request;
 		
 		request.gameid = m_game.gameid;
 		request.cdkey = m_postregister_cdkey;
-		request.profile = m_profile;
+		request.profile = profile;
 		request.extra = NULL;
 		request.peer = this;
 		request.peer->IncRef();

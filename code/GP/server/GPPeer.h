@@ -169,7 +169,7 @@ namespace GP {
 		void send_blocks();
 		void refresh_session();
 		void delete_session();
-		void post_register_registercdkey();
+		void post_register_registercdkey(OS::Profile profile);
 
 		bool m_got_buddies;
 		bool m_got_blocks;
