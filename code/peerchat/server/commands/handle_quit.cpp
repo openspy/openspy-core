@@ -30,7 +30,8 @@ namespace Peerchat {
 		std::map<int, int>::iterator it = m_channel_flags.begin();
 		while (it != m_channel_flags.end()) {
 			std::pair<int, int> p = *it;
-			req.channel_id_list.push_back(p.first);
+			if(GetChannelFlags(p.first) & EUserChannelFlag_IsInChannel)
+				req.channel_id_list.push_back(p.first);
 			it++;
 		}
 
