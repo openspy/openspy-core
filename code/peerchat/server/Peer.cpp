@@ -231,7 +231,7 @@ namespace Peerchat {
 		if(current_time.tv_sec - m_connect_time.tv_sec > REGISTRATION_TIMEOUT && !m_sent_client_init) {
 			Delete(true, "Registration Timeout");
 		}
-		else if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIME * 2) {
+		else if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIMEOUT_TIME) {
 			Delete(true, "Ping Timeout");
 		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete(false, "Connection severed");
@@ -240,15 +240,17 @@ namespace Peerchat {
 	void Peer::send_ping() {
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIME) {
-			if (current_time.tv_sec - m_last_sent_ping.tv_sec > PEERCHAT_PING_TIME) {
+		if (current_time.tv_sec - m_last_sent_ping.tv_sec > PEERCHAT_PING_INTERVAL) {
 				gettimeofday(&m_last_sent_ping, NULL);
 				char ping_key[9];
 
 				memset(&ping_key, 0, sizeof(ping_key));
 				OS::gen_random((char *)&ping_key, sizeof(ping_key)-1, 1);
-				send_message("PING", ping_key, UserSummary(), ((Peerchat::Server*)GetDriver()->getServer())->getServerName());
-			}
+				
+				std::ostringstream s;
+				s << " PING " << " :" << ping_key;
+				s << std::endl;
+				SendPacket(s.str());
 		}
 	}
 	void Peer::perform_keepalive() {
@@ -256,7 +258,7 @@ namespace Peerchat {
 		gettimeofday(&current_time, NULL);
 
 
-		if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_PING_TIME) {
+		if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_PING_TIMEOUT_TIME) {
 			gettimeofday(&m_last_keepalive, NULL);
 			TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 			PeerchatBackendRequest req;
@@ -356,15 +358,6 @@ namespace Peerchat {
 		}
 		s << std::endl;
 		SendPacket(s.str());
-
-		if (messageType.compare("JOIN") == 0 && from.id == GetUserDetails().id) {
-			//send names automatically
-			std::vector<std::string> params;
-			params.push_back("NAMES");
-			params.push_back(to);
-			handle_names(params);
-			send_topic(to);
-		}
 	}
 	void Peer::OnUserRegistered(TaskResponse response_data, Peer *peer)  {
 		std::ostringstream s;

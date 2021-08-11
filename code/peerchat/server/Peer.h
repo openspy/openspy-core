@@ -18,7 +18,8 @@
 #include "chatCrypt.h"
 #include <server/irc_common.h>
 
-#define PEERCHAT_PING_TIME 300
+#define PEERCHAT_PING_TIMEOUT_TIME 300
+#define PEERCHAT_PING_INTERVAL 120
 #define MAX_FLOOD_WEIGHT 1600
 #define FLOOD_DECR_PER_TICK 25
 #define WARNING_FLOOD_WEIGHT_THRESHOLD 1200
@@ -75,12 +76,12 @@ namespace Peerchat {
 				nick = string.substr(0, username_marker);
 				username = string.substr(username_marker + 1, address_marker - username_marker - 1);
 
-				size_t address_end = std::string::npos;
+				//size_t address_end = std::string::npos;
 				
 				if(id_marker != -1) {
 					std::string id_data = string.substr(id_marker + 1);
 					id = atoi(id_data.c_str());
-					address_end = id_marker - 1;
+					//address_end = id_marker - 1;
 				}
 				address = string.substr(address_marker + 1, id_marker - address_marker - 1);
 				hostname = address.ToString(true);
@@ -220,18 +221,20 @@ namespace Peerchat {
 		void RemoveUserAddressVisibility_ByUser(int user_id); //user quit
 		void RefreshUserAddressVisibility_ByChannel(int channel_id);
 		void PurgeUserAddressVisibility();
+
+		//called by UserJoinEvents task
+		static void OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer);
+		static void OnTopic_FetchChannelInfo(TaskResponse response_data, Peer* peer);
 	private:
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void* extra, INetPeer* peer);
 		static void OnGetBackendId(TaskResponse response_data, Peer *peer);
 		static void OnNickReserve(TaskResponse response_data, Peer *peer);
 		static void OnUserRegistered(TaskResponse response_data, Peer *peer);
-		static void OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer);
 		static void OnMode_FetchChannelInfo(TaskResponse response_data, Peer* peer);
 		static void OnMode_FetchUserInfo(TaskResponse response_data, Peer* peer);
 		static void OnMode_UpdateUserMode(TaskResponse response_data, Peer* peer);
 		static void OnMode_FetchBanInfo(TaskResponse response_data, Peer* peer);
-		static void OnTopic_FetchChannelInfo(TaskResponse response_data, Peer* peer);
 		static void OnJoinChannel(TaskResponse response_data, Peer* peer);
 		static void OnListChannels(TaskResponse response_data, Peer* peer);
 		static void OnWhois_FetchUser(TaskResponse response_data, Peer* peer);

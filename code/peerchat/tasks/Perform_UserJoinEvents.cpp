@@ -6,6 +6,11 @@ namespace Peerchat {
 	bool Perform_UserJoinEvents(PeerchatBackendRequest request, TaskThreadData* thread_data) {
         TaskResponse response;
 
+        response.channel_summary = LookupChannelById(thread_data, request.channel_summary.channel_id);
+
+        Peer::OnTopic_FetchChannelInfo(response, request.peer);
+        Peer::OnNames_FetchChannelInfo(response, request.peer);
+
         int initial_flags = request.channel_modify.set_mode_flags;
         if(request.peer->GetOperFlags() & OPERPRIVS_GLOBALOWNER) {
             initial_flags |= EUserChannelFlag_Owner;
