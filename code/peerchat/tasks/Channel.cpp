@@ -6,6 +6,7 @@
 #include <OS/HTTP.h>
 
 #define CHANNEL_EXPIRE_TIME 86400
+#define CHANNEL_DELETE_EXPIRE_TIME 30
 namespace Peerchat {
     const char *mp_pk_channel_name = "PEERCHATCHANID";
 	int GetPeerchatChannelID(TaskThreadData *thread_data) {
@@ -357,8 +358,9 @@ namespace Peerchat {
         return count;
     }
 	void DeleteChannelById(TaskThreadData *thread_data, int channel_id) {
-		ChannelSummary channel = LookupChannelById(thread_data, channel_id);
-		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d", channel_id);
+		ChannelSummary channel = LookupChannelById(thread_data, channel_id);		
+		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d %d", channel_id, CHANNEL_DELETE_EXPIRE_TIME); //keep basic information around for short time (for PART events, etc)
+		
 		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channelname_%s", channel.channel_name.c_str());
 		Redis::Command(thread_data->mp_redis_connection, 0, "HDEL channels %s", channel.channel_name.c_str());
 
