@@ -236,6 +236,7 @@ namespace Peerchat {
 		static void OnMode_UpdateUserMode(TaskResponse response_data, Peer* peer);
 		static void OnMode_FetchBanInfo(TaskResponse response_data, Peer* peer);
 		static void OnJoinChannel(TaskResponse response_data, Peer* peer);
+		static void OnPartChannel(TaskResponse response_data, Peer* peer);
 		static void OnListChannels(TaskResponse response_data, Peer* peer);
 		static void OnWhois_FetchUser(TaskResponse response_data, Peer* peer);
 		static void OnSetCKey(TaskResponse response_data, Peer* peer);

@@ -19,6 +19,15 @@ namespace Peerchat {
 -> s PART #test :hello there
 <- :CHC!CHC@99.243.125.215 PART #test :hello there
 	*/
+    void Peer::OnPartChannel(TaskResponse response_data, Peer* peer) {
+        if(response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {            
+            ((Peer *)peer)->SetChannelFlags(response_data.channel_summary.channel_id, 0);
+        } else if(response_data.error_details.response_code == TaskShared::WebErrorCode_NoSuchUser) {
+			((Peer *)peer)->send_no_such_target_error(response_data.channel_summary.channel_name);
+		} else if (response_data.error_details.response_code == TaskShared::WebErrorCode_AuthInvalidCredentials) {
+			((Peer *)peer)->send_numeric(403, "You're not on that channel", false, response_data.channel_summary.channel_name);
+		}
+    }
 	void Peer::handle_part(std::vector<std::string> data_parser) {
 		std::string target = data_parser.at(1);
 
@@ -48,7 +57,7 @@ namespace Peerchat {
 		req.summary = GetUserDetails();
 		req.message = message;
 		req.peer->IncRef();
-		req.callback = NULL;
+		req.callback = OnPartChannel;
 		scheduler->AddRequest(req.type, req);
 
 	}

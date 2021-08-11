@@ -82,6 +82,11 @@ namespace Peerchat {
 		bool in_channel = p->GetChannelFlags(state->channel.channel_id) & EUserChannelFlag_IsInChannel && (p->GetChannelFlags(state->channel.channel_id) & state->requiredChanUserModes || state->requiredChanUserModes == 0);
 		int has_oper = p->GetOperFlags() & state->requiredOperFlags || state->requiredOperFlags == 0;
 		bool selfMatch = (state->includeSelf && state->from.user_id == p->GetBackendId()) || (state->from.user_id != p->GetBackendId());
+
+		
+		if(state->from.user_id == p->GetBackendId() && state->type.compare("PART") == 0) { //allow PART message, as user would already have been deleted from the channel
+			in_channel = true; 
+		}
 		if(in_channel && selfMatch && has_oper) {
 			if(state->onlyVisibleTo == 0 || state->onlyVisibleTo == p->GetBackendId()) {
 				p->send_message(state->type, state->message, state->from.userSummary, state->channel.channel_name, state->target.userSummary.nick, no_colon);
