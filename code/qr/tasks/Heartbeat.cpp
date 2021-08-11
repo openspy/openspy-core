@@ -118,10 +118,17 @@ namespace MM {
 
         Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 
+        int statechanged = 1;
+        if(request.server.m_keys.find("statechanged") != request.server.m_keys.end()) {
+            std::string statechanged_val = request.server.m_keys["statechanged"];
+            statechanged = atoi(statechanged_val.c_str());
+            
+        }
+
         //check for server by instance key + ip:port
         std::string server_key = GetServerKey_FromRequest(request, thread_data);
         //if not exists
-        if(server_key.length() == 0) {
+        if(server_key.length() == 0 || statechanged == 3) {
             if(request.server.m_keys.find("gamename") == request.server.m_keys.end()) {
                 //return adderror
                 response.error_message = "No gamename supplied";
@@ -163,18 +170,15 @@ namespace MM {
             response.challenge = challenge_string;
             request.callback(response);
         } else {
-            if(request.server.m_keys.find("statechanged") != request.server.m_keys.end()) {
-                std::string statechanged = request.server.m_keys["statechanged"];
-                if(atoi(statechanged.c_str()) == 2) {
-                    SetServerDeleted(thread_data, server_key, 1);
+            if(statechanged == 2) {
+                SetServerDeleted(thread_data, server_key, 1);
 
-                    std::ostringstream s;
-                    s << "\\del\\" << server_key.c_str();
-                    thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+                std::ostringstream s;
+                s << "\\del\\" << server_key.c_str();
+                thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
 
-                    request.callback(response);
-                    return;
-                }
+                request.callback(response);
+                return;
             }
             if(request.type == EMMPushRequestType_Heartbeat_ClearExistingKeys) {
                 ClearServerCustKeys(thread_data, server_key);

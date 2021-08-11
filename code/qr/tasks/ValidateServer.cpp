@@ -41,7 +41,7 @@ namespace MM {
 
         if(expected_challenge.compare(chopped_challenge) != 0) {
             response.error_message = "Invalid challenge response";
-        } else {
+        } else if(isServerDeleted(thread_data, server_key)) {
             SetServerDeleted(thread_data, server_key, 0);
             Redis::Command(thread_data->mp_redis_connection, 0, "HDEL %s challenge", server_key.c_str());
 
