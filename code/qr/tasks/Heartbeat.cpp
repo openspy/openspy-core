@@ -127,8 +127,8 @@ namespace MM {
 
         //check for server by instance key + ip:port
         std::string server_key = GetServerKey_FromRequest(request, thread_data);
-        //if not exists
-        if(server_key.length() == 0 || statechanged == 3) {
+        //if not exists, state changed 3 (which means QR V2 has not been registered yet), or QR1 server is "fully deleted", meaning it could be a resume, or was not registered yet (secure challenge dropped)
+        if(server_key.length() == 0 || statechanged == 3 || (request.version == 1 && isServerDeleted(thread_data, server_key, true))) {
             if(request.server.m_keys.find("gamename") == request.server.m_keys.end()) {
                 //return adderror
                 response.error_message = "No gamename supplied";
