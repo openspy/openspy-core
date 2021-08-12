@@ -21,7 +21,7 @@ namespace QR {
 
 			OS::Buffer buffer;
             buffer.WriteBuffer(message.c_str(),message.length());
-			response.driver->SendPacket(response.from_address, buffer);
+            response.driver->SendPacket(response.query_address, buffer);
 		} else {
             response.driver->perform_v1_key_scan(response.query_address);
         }
