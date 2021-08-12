@@ -15,7 +15,7 @@ namespace QR {
 			return;
 		} else if(response.challenge.length() != 0) {
             std::stringstream ss;
-            ss << "\\secure\\" << response.challenge << "\\final\\";
+            ss << "\\secure\\" << response.challenge;
 
             std::string message = ss.str();
 

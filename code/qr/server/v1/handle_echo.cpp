@@ -15,7 +15,7 @@ namespace QR {
 			return;
 		}
         std::stringstream ss;
-        ss << "\\echo\\" << response.challenge << "\\final\\";
+        ss << "\\echo\\" << response.challenge;
 
         std::string message = ss.str();
 
