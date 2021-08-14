@@ -92,6 +92,8 @@ namespace QR {
 		buffer.WriteByte(error_code); //error code
 		buffer.WriteNTS(error_message);
 		SendPacket(to, buffer);
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Send Error: %s", to.ToString().c_str(), error_message);
 	}
 
 	void Driver::send_v1_error(OS::Address to, const char *error_message) {
@@ -99,6 +101,8 @@ namespace QR {
 		ss << "\\error\\" << error_message;
 
 		std::string message = ss.str();
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Send Error: %s", to.ToString().c_str(), error_message);
 
 		OS::Buffer buffer;
 		buffer.WriteBuffer(message.c_str(),message.length());
