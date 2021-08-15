@@ -187,7 +187,11 @@ namespace MM {
 
             std::ostringstream s;
             s << "\\update\\" << server_key.c_str();
-            thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+
+            if(!(server_key.length() > 7 && server_key.substr(0, 7).compare("thugpro") == 0)) { //temporarily supress thugpro updates
+                thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+            }
+            
             
             request.callback(response);
         }
