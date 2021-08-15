@@ -8,6 +8,7 @@ namespace MM {
 		std::ostringstream message;
 		std::string src_ip, dst_ip;
 		#if HACKER_PATCH_MSG_FORCE_NATNEG_ONLY
+		if(request.req.m_for_game.gameid == 1420) { //only apply patch to flatout2 pc
 				request.buffer.resetReadCursor();
 				if (request.buffer.readRemaining() != 10) {
 					OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting non-10 submit data (%d)", request.peer->getAddress().ToString().c_str(), request.buffer.readRemaining());
@@ -17,6 +18,8 @@ namespace MM {
 					OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting non-natneg submit data", request.peer->getAddress().ToString().c_str());
 					goto exit_clean;
 				}
+		}
+
 		#endif
 
 		base64 = OS::BinToBase64Str((uint8_t *)request.buffer.GetReadCursor(), request.buffer.readRemaining());
