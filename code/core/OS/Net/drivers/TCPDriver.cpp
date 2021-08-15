@@ -71,7 +71,6 @@ void TCPDriver::TickConnections() {
 }
 bool TCPDriver::LLIterator_TickOrDeleteClient(INetPeer* peer, TCPDriver* driver) {
     if (peer->ShouldDelete()) {
-        INetPeer* next = peer->GetNext();
         if (peer->GetRefCount() == 1) { //only 1 reference (the drivers reference)
             driver->mp_peers->RemoveFromList(peer);
             driver->m_server->UnregisterSocket(peer);
