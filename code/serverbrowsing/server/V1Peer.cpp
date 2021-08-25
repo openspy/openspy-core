@@ -346,7 +346,7 @@ namespace SB {
 
 				it = results.captured_basic_fields.begin();
 
-				resp << "\\" << serv->wan_address.ToString(); //add ip/port
+				resp << "\\" << serv->wan_address.ToString(true) << ":" << serv->wan_address.port; //add ip/port
 				while(it != results.captured_basic_fields.end()) {
 					std::string field = *it;
 					resp << "\\" << field_cleanup(serv->kvFields[field]);
