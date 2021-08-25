@@ -337,6 +337,7 @@ namespace SB {
 					it++;
 				}
 				SendPacket((const uint8_t *)resp.str().c_str(), resp.str().length(), false);
+				resp.str("");
 			}
 
 			std::vector<MM::Server *>::iterator it2 = results.list.begin();

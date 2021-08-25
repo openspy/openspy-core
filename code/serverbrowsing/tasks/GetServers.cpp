@@ -238,8 +238,8 @@ namespace MM {
 							server->kvFields[key] = arr.arr_value.values[i + 1].second.value._int;
 						}
 
-						if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), arr.arr_value.values[i + 1].second.value._str) == ret->captured_basic_fields.end()) {
-							ret->captured_basic_fields.push_back(arr.arr_value.values[i].second.value._str);
+						if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), key) == ret->captured_basic_fields.end()) {
+							ret->captured_basic_fields.push_back(key);
 						}
 					}
 				}
@@ -396,16 +396,18 @@ namespace MM {
 
 
 			all_cust_keys = server->kvFields;
-			server->kvFields.clear(); //remove all keys
-			std::map<std::string, std::string>::iterator it = all_cust_keys.begin();
-			while(it != all_cust_keys.end()) {
-				std::pair<std::string, std::string> p = *it;
+			if(req->all_keys == false) {
+				server->kvFields.clear(); //remove all keys
+				std::map<std::string, std::string>::iterator it = all_cust_keys.begin();
+				while(it != all_cust_keys.end()) {
+					std::pair<std::string, std::string> p = *it;
 
-				//add only keys which were requested
-				if(std::find(ret->requested_fields.begin(), ret->requested_fields.end(), p.first) != ret->requested_fields.end()) {
-					server->kvFields[p.first] = p.second;
+					//add only keys which were requested
+					if(std::find(ret->requested_fields.begin(), ret->requested_fields.end(), p.first) != ret->requested_fields.end()) {
+						server->kvFields[p.first] = p.second;
+					}
+					it++;
 				}
-				it++;
 			}
 		}
 

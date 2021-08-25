@@ -145,7 +145,7 @@ namespace MM {
 						std::string search_key = entry_name;
 						search_key += "custkeys";
 						FindAppend_ServKVFields(thread_data, server, search_key, arr.arr_value.values[i].second.value._str);
-						if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), arr.arr_value.values[i].second.value._str) == ret->captured_basic_fields.end()) {
+						if(std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), key) == ret->captured_basic_fields.end()) {
 							ret->captured_basic_fields.push_back(arr.arr_value.values[i].second.value._str);
 						}
 					}
