@@ -44,7 +44,7 @@ namespace MM {
 
         return server_key;
     }
-    std::string GenerateChallenge(OS::GameData game_data) {
+    std::string GenerateChallenge(OS::GameData game_data, OS::Address from_address) {
         char challenge[V2_CHALLENGE_LEN + 1];
         memset(&challenge, 0, sizeof(challenge));
 		OS::gen_random((char *)&challenge,sizeof(challenge)-1);
@@ -59,6 +59,9 @@ namespace MM {
 			*backend_flags = hex_chars[rand() % 8];
 		}
 		*(backend_flags+1) = hex_chars[rand() % (sizeof(hex_chars)-1)];
+
+        char *ip_string = (char *)&challenge[8];
+        sprintf(ip_string,"%08X%04X", htonl(from_address.GetIP()), from_address.GetPort());
 
         return challenge;
     }
@@ -149,7 +152,7 @@ namespace MM {
             int server_id;
             server_key = GetNewServerKey_FromRequest(request, thread_data, gamename, server_id);
 
-            std::string challenge_string = GenerateChallenge(game_info);
+            std::string challenge_string = GenerateChallenge(game_info, request.from_address);
 
             char challenge_resp[90] = { 0 };
             gsseckey((unsigned char *)&challenge_resp, challenge_string.c_str(), (const unsigned char *)game_info.secretkey.c_str(), 0);
