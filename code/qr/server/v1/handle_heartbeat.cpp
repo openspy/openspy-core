@@ -21,9 +21,16 @@ namespace QR {
 
 			OS::Buffer buffer;
             buffer.WriteBuffer(message.c_str(),message.length());
-            response.driver->SendPacket(response.query_address, buffer);
+            response.driver->SendPacket(response.query_address, buffer);  //some games like roguespaer require it to be sent to the query address (most games will accept this still)
+            if(response.from_address != response.query_address) {
+                response.driver->SendPacket(response.from_address, buffer);  //other games require it to be sent to the from address (thps4ps2)
+            }
+            
 		} else {
-            response.driver->perform_v1_key_scan(response.query_address);
+            response.driver->perform_v1_key_scan(response.query_address); //some games like roguespaer require it to be sent to the query address (most games will accept this still)
+            if(response.from_address != response.query_address) {
+                response.driver->perform_v1_key_scan(response.from_address); //other games require it to be sent to the from address (thps4ps2)
+            }
         }
     }
     void Driver::handle_v1_heartbeat(OS::Address from_address, OS::KVReader reader) {
