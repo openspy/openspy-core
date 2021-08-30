@@ -7,19 +7,20 @@
 #define UTMASTER_PING_TIME 120
 
 
-//SERVET TO CLIENT
-#define MESSAGE_CHALLENGE 0x0b
-#define MESSAGE_CHALLENGE_AUTHORIZATION 0x0e
-#define MESSAGE_VERIFIED 0x0a
-#define MESSAGE_NEWS 0xb0
-#define MESSAGE_REQUEST_SERVER_LIST 0x2b
-
-//CLIENT TO SERVER
-#define MESSAGE_CHALLENGE_RESPONSE 0x68
-#define MESSAGE_VERIFICATION_DATA 0x22
-#define MESSAGE_NEWS_REQUEST 0x01
-
 namespace UT {
+	enum EConnectionState {
+		EConnectionState_WaitChallengeResponse,
+		EConnectionState_ApprovedResponse,
+		EConnectionState_WaitRequest,
+		EConnectionState_Heartbeat
+	};
+
+	enum ERequestType {
+		ERequestType_ServerList,
+		ERequestType_MOTD,
+		ERequestType_NewServer = 4,
+	};
+
 	class Driver;
 	class Peer : public INetPeer {
 	public:
@@ -36,17 +37,28 @@ namespace UT {
 		void handle_packet(OS::Buffer recv_buffer);
 
 		void send_challenge(std::string challenge_string);
-		void send_packet(char type, OS::Buffer buffer);
+		void send_packet(OS::Buffer buffer);
 
 		void send_challenge_authorization();
-		void send_news();
+		void send_motd();
 		void send_verified();
 		void handle_request_server_list(OS::Buffer recv_buffer);
 
+		void send_keys_request();
+
+
 
 		void Delete(bool timeout = false);
-	private:
+		private:
+		EConnectionState m_state;
+		bool m_is_server;
 
+		void handle_challenge_response(OS::Buffer buffer);
+		void handle_heartbeat(OS::Buffer buffer);
+
+		//serialization stuff
+		std::string Read_FString(OS::Buffer &buffer);
+		void Write_FString(std::string input, OS::Buffer &buffer);
 
 	};
 }
