@@ -36,7 +36,6 @@ namespace MM {
 	};
 
 	enum UTMasterRequestType {
-		UTMasterRequestType_AllocateServerId,
 		UTMasterRequestType_ListServers,
 		UTMasterRequestType_Heartbeat,
         UTMasterRequestType_DeleteServer
@@ -78,10 +77,16 @@ namespace MM {
 	bool PerformAllocateServerId(UTMasterRequest request, TaskThreadData *thread_data);
 	bool PerformHeartbeat(UTMasterRequest request, TaskThreadData *thread_data);
 	bool PerformListServers(UTMasterRequest request, TaskThreadData *thread_data);
+	bool PerformDeleteServer(UTMasterRequest request, TaskThreadData *thread_data);
+
+	int GetServerID(TaskThreadData *thread_data);
+	bool isServerDeleted(TaskThreadData *thread_data, std::string server_key);
+	std::string GetServerKey_FromIPMap(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info);
 
 
 	extern const char *mm_channel_exchange;
     extern const char *mp_pk_name;
+	extern const char *mm_server_event_routingkey;
 
 }
 #endif //_MM_TASKS_H

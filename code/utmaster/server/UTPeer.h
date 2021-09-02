@@ -8,6 +8,7 @@
 
 namespace MM {
 	class MMTaskResponse;
+	class ServerRecord;
 }
 
 namespace UT {
@@ -60,25 +61,25 @@ namespace UT {
 		void handle_ngstats_info(OS::Buffer recv_buffer);
 		void handle_newserver_request(OS::Buffer recv_buffer);
 
-		static void on_allocate_server_id(MM::MMTaskResponse response);
 		static void on_get_server_list(MM::MMTaskResponse response);
-		void allocate_server_id();
 		
 
 		void Delete(bool timeout = false);
-		int GetServerID() { return m_server_id; }
 		int GetGameId();
-		//private:
+		private:
 			EConnectionState m_state;
 			void handle_challenge_response(OS::Buffer buffer);
 			void handle_heartbeat(OS::Buffer buffer);
+
+			void delete_server();
 
 			//serialization stuff
 			static std::string Read_FString(OS::Buffer &buffer);
 			static void Write_FString(std::string input, OS::Buffer &buffer);
 
 			UT::Config *m_config;
-			int m_server_id;
+
+			OS::Address m_server_address;
 
 	};
 }

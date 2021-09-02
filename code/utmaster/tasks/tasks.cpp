@@ -6,12 +6,13 @@
 
 namespace MM {
 	const char *mm_channel_exchange = "openspy.master";
+	const char *mm_server_event_routingkey = "server.event";
     const char *mp_pk_name = "QRID";
 
 	TaskScheduler<UTMasterRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
-		{UTMasterRequestType_AllocateServerId, PerformAllocateServerId},
 		{UTMasterRequestType_Heartbeat, PerformHeartbeat},
 		{UTMasterRequestType_ListServers, PerformListServers},
+		{UTMasterRequestType_DeleteServer, PerformDeleteServer},
 		{NULL, NULL}
 	};
 

@@ -15,12 +15,11 @@ namespace UT {
 		gettimeofday(&m_last_recv, NULL);
 		m_state = EConnectionState_WaitChallengeResponse;
 		m_config = NULL;
-		m_server_id = 0;
 		
 	}
 	void Peer::OnConnectionReady() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());
-		send_challenge("308275962");
+		send_challenge("111111111");
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
@@ -70,7 +69,7 @@ namespace UT {
 			break;
 			case EConnectionState_WaitRequest:
 				req_type = (ERequestType)recv_buffer.ReadByte();
-				printf("got req type: %d\n", req_type);
+				//printf("got req type: %d\n", req_type);
 				switch(req_type) {
 					case ERequestType_ServerList:
 						handle_request_server_list(recv_buffer);
@@ -86,13 +85,13 @@ namespace UT {
 			break;
 			case EConnectionState_Heartbeat:
 			req_type = (ERequestType)recv_buffer.ReadByte() + HEARTBEAT_MODE_OFFSET;
-			printf("hb req: %08X\n", req_type - HEARTBEAT_MODE_OFFSET);
+			//printf("hb req: %08X\n", req_type - HEARTBEAT_MODE_OFFSET);
 			switch(req_type) {
 				case ERequestType_Heartbeat:
 					handle_heartbeat(recv_buffer);
 				break;
 				case ERequestType_PlayerQuery:
-					printf("player query\n");
+					//printf("player query\n");
 				break;
 			}
 			
@@ -101,20 +100,20 @@ namespace UT {
 	}
 	void Peer::handle_newserver_request(OS::Buffer recv_buffer) {
 		int unk1 = recv_buffer.ReadInt();
-		printf("new serv, unk1: %d\n", unk1);
+		//printf("new serv, unk1: %d\n", unk1);
 		if(recv_buffer.readRemaining() > 0) {
 			
 			int unk2 = recv_buffer.ReadInt();
-			printf("more data... stats: %d\n", unk2);
+			//printf("more data... stats: %d\n", unk2);
 			int unk3 = recv_buffer.ReadInt();
-			printf("unk3: %d\n", unk3);
+			//printf("unk3: %d\n", unk3);
 			bool continue_parse = true;
 			std::string accumulated_string;
 			while(continue_parse) {			
 				while(true) {
 					char b = recv_buffer.ReadByte();
 					if(b == 0x00 || b == 0x09) {
-						printf("done: %s\n",accumulated_string.c_str());
+						//printf("done: %s\n",accumulated_string.c_str());
 						if(b == 0x0) {
 							continue_parse = false;
 							break;
@@ -127,7 +126,7 @@ namespace UT {
 			}
 			int unk4 = recv_buffer.ReadInt();
 			int unk5 = recv_buffer.ReadInt();
-			printf("unk4: %d %d\n", unk4, unk5);
+			//printf("unk4: %d %d\n", unk4, unk5);
 			continue_parse = true;
 			accumulated_string = "";
 			while(continue_parse) {			
@@ -145,14 +144,14 @@ namespace UT {
 					}
 				}
 			}
-			printf("server rules: %s\n", accumulated_string.c_str());
+			//printf("server rules: %s\n", accumulated_string.c_str());
 		}
-		allocate_server_id();
+		send_server_id(0); //init stats backend, generate match id, for now not needed
 	}
 	void Peer::handle_ngstats_info(OS::Buffer recv_buffer) {
 		int unk1 = recv_buffer.ReadInt();
 		int unk2 = recv_buffer.ReadInt();
-		printf("ngstats: %d - %d\n", unk1, unk2);
+		//printf("ngstats: %d - %d\n", unk1, unk2);
 	}
 	void Peer::handle_heartbeat(OS::Buffer buffer) {
 		MM::ServerRecord record;
@@ -164,47 +163,47 @@ namespace UT {
 		if(flags & 0x01 && len > 0) {
 			std::string ip_address = buffer.ReadNTS();
 			buffer.ReadByte();
-			printf("got some ip: %s\n", ip_address.c_str());
+			//printf("got some ip: %s\n", ip_address.c_str());
 		}
 		//uint16_t unk1 = buffer.ReadShort();
 		uint32_t unk2 = buffer.ReadInt(); 
 
 		
 
-		printf("unks: %02x %02x %08x\n", flags, len, unk2);
+		//printf("unks: %02x %02x %08x\n", flags, len, unk2);
 
 		record.m_address.port = htons(buffer.ReadShort());
 
 		//read more unknown properties
 		buffer.ReadByte(); buffer.ReadByte(); buffer.ReadByte();
-		printf("query port: %d\n", ntohs(record.m_address.port));
+		//printf("query port: %d\n", ntohs(record.m_address.port));
 
 
 		int hostname_len = buffer.ReadInt();
 		record.hostname = buffer.ReadNTS();
-		printf("hostname: %s\n", record.hostname.c_str());
+		//printf("hostname: %s\n", record.hostname.c_str());
 
 		record.level = Read_FString(buffer);
-		printf("level: %s\n", record.level.c_str());
+		//printf("level: %s\n", record.level.c_str());
 
 		record.game_group = Read_FString(buffer);
-		printf("game_group: %s\n", record.game_group.c_str());
+		//printf("game_group: %s\n", record.game_group.c_str());
 
 		int num_players = buffer.ReadInt(), max_players = buffer.ReadInt(), unk5 = buffer.ReadInt(), unk6 = buffer.ReadInt();//, unk7 = buffer.ReadInt();
 		record.num_players = num_players;
 		record.max_players = max_players;
 		//unk4 = max players
-		printf("unk5:%d %08x\n", unk5, unk6);
+		//printf("unk5:%d %08x\n", unk5, unk6);
 		
 		uint8_t unk7 = buffer.ReadByte(), unk8 = buffer.ReadByte(), unk9 = buffer.ReadByte(), num_fields = buffer.ReadByte();
-		printf("unk7: %d %d %d %d\n", unk7, unk8, unk9, num_fields);
-		printf("num_players: %d, Max players: %d\n", num_players, max_players);
+		//printf("unk7: %d %d %d %d\n", unk7, unk8, unk9, num_fields);
+		//printf("num_players: %d, Max players: %d\n", num_players, max_players);
 
 		int idx = num_fields;
 		while(buffer.readRemaining() > 0) {
 			std::string field = Read_FString(buffer);
 			std::string property = Read_FString(buffer);
-			printf("%s(%d) = %s(%d)\n", field.c_str(), field.length(), property.c_str(), property.length());
+			//printf("%s(%d) = %s(%d)\n", field.c_str(), field.length(), property.c_str(), property.length());
 
 			record.m_rules[field] = property;
 			if(--idx <= 0) break;
@@ -220,11 +219,13 @@ namespace UT {
 
 			player_record.name = buffer.ReadNTS();			
 			
-			printf("name: %s\n", player_record.name.c_str());
+			//printf("name: %s\n", player_record.name.c_str());
 			record.m_players.push_back(player_record);
 
 			if(--idx <= 0) break;
-		};
+		}
+
+		m_server_address = record.m_address;
 
         TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
         MM::UTMasterRequest req;        
@@ -235,20 +236,6 @@ namespace UT {
 		req.record = record;
         scheduler->AddRequest(req.type, req);
 
-	}
-	void Peer::on_allocate_server_id(MM::MMTaskResponse response) {
-		UT::Peer *peer = response.peer;
-		peer->m_server_id = response.server_id;
-		peer->send_server_id(response.server_id);
-	}
-	void Peer::allocate_server_id() {
-        TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
-        MM::UTMasterRequest req;        
-        req.type = MM::UTMasterRequestType_AllocateServerId;
-		req.peer = this;
-		req.peer->IncRef();
-		req.callback = on_allocate_server_id;
-        scheduler->AddRequest(req.type, req);
 	}
 	void Peer::send_server_id(int id) {
 		m_state = EConnectionState_Heartbeat;
@@ -320,8 +307,8 @@ namespace UT {
 			OS::Buffer server_buffer;
 			
 			server_buffer.WriteInt(server.m_address.ip);
-			server_buffer.WriteShort(server.m_address.port);
-			server_buffer.WriteShort(server.m_address.port + 1);
+			server_buffer.WriteShort(server.m_address.port); //game port
+			server_buffer.WriteShort(server.m_address.port + 1); //query port (maybe this can be something other than +1?)
 
 			Write_FString(server.hostname, server_buffer);
 			Write_FString(server.level, server_buffer);
@@ -348,7 +335,7 @@ namespace UT {
 	void Peer::handle_request_server_list(OS::Buffer recv_buffer) {
 		if(m_config->is_server) return; //???
 		char num_filter_fileds = recv_buffer.ReadByte();
-		printf("num_filter_fileds: %d\n", num_filter_fileds);
+		//printf("num_filter_fileds: %d\n", num_filter_fileds);
 		for(int i=0;i<num_filter_fileds;i++) {
 			int field_len = recv_buffer.ReadByte(); //skip string len
 			if(field_len == 0 || field_len == 4) { ///xxxx?? why 4?? game bug?
@@ -362,7 +349,7 @@ namespace UT {
 				continue;
 			}
 			std::string property = recv_buffer.ReadNTS();
-			printf("%s (%d) = %s (%d)\n", field.c_str(), field_len, property.c_str(), property_len);
+			//printf("%s (%d) = %s (%d)\n", field.c_str(), field_len, property.c_str(), property_len);
 		}
 
         TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
@@ -397,8 +384,11 @@ namespace UT {
 	}
 
 	void Peer::Delete(bool timeout) {
+		delete_server();
+
 		m_timeout_flag = timeout;
 		m_delete_flag = true;
+		
 	}
 
 	std::string Peer::Read_FString(OS::Buffer &buffer) {
@@ -417,5 +407,17 @@ namespace UT {
 	int Peer::GetGameId() {
 		if(m_config == NULL) return 0;
 		return m_config->gameid;
+	}
+	void Peer::delete_server() {
+		if(m_config != NULL && m_config->is_server) {
+			TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
+			MM::UTMasterRequest req;        
+			req.type = MM::UTMasterRequestType_DeleteServer;
+			req.peer = this;
+			req.peer->IncRef();
+			req.record.m_address = m_server_address;
+			req.callback = NULL;
+			scheduler->AddRequest(req.type, req);
+		}
 	}
 }

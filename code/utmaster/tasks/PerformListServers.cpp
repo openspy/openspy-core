@@ -27,7 +27,6 @@ namespace MM {
 		result.m_address.ip = inet_addr(GetHKey(thread_data, server_key, "wan_ip").c_str());
 
 		std::string cust_keys = server_key + "custkeys";
-		printf("lookup: %s\n", cust_keys.c_str());
 
 		result.hostname = GetHKey(thread_data, cust_keys, "hostname");
 		result.level = GetHKey(thread_data, cust_keys, "mapname");
@@ -68,8 +67,11 @@ namespace MM {
 
 			for(size_t i=0;i<arr.arr_value.values.size();i+=2) {
 				std::string server_key = arr.arr_value.values[i].second.value._str;
-                ServerRecord record = LoadServerInfo(request, thread_data, server_key);
-                results.push_back(record);
+				if(!isServerDeleted(thread_data, server_key)) {
+                	ServerRecord record = LoadServerInfo(request, thread_data, server_key);				
+					results.push_back(record);
+				}
+                
 
 			}
 		} while(cursor != 0);

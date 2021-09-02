@@ -4,10 +4,74 @@
 #include <server/UTPeer.h>
 
 namespace MM {
-    std::string GetServerKey_FromRequest(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info) {
-        int server_id = request.peer->GetServerID();
+	int GetServerID(TaskThreadData *thread_data) {
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
+		int ret = -1;
+		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "INCR %s", mp_pk_name);
+		Redis::Value v = resp.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+			ret = v.value._int;
+		}
+		else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			ret = atoi(v.value._str.c_str());
+		}
+		return ret;
+	}
+	bool isServerDeleted(TaskThreadData *thread_data, std::string server_key) {
+		std::string ip;
+		uint16_t port;
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
+		int ret = -1;
+		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "HGET %s deleted", server_key.c_str());
+		Redis::Value v = resp.values.front();
+		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			ret = atoi(v.value._str.c_str());
+		} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+			ret = v.value._int;
+		}
+
+		
+		return ret == 1;
+	}
+    std::string GetServerKey_FromIPMap(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info) {
+        std::ostringstream s;
+        s << "IPMAP_" << request.record.m_address.ToString(true) << "-" << request.record.m_address.GetPort();
+
+        std::string server_key = "";
+		Redis::Response reply;
+		Redis::Value v;
+
+        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
+		reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", s.str().c_str());
+		if (Redis::CheckError(reply)) {
+			return server_key;
+		}
+		v = reply.values.front();
+		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			server_key = OS::strip_quotes(v.value._str).c_str();
+		}
+
+        if(server_key.length() != 0) {
+            if(isServerDeleted(thread_data, server_key)) {
+                return "";
+            }
+        }
+
+        return server_key;
+    }
+    std::string GetServerKey_FromRequest(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info, bool &is_new_server, int &server_id) {
+
+        is_new_server = false;
+        std::string server_key = GetServerKey_FromIPMap(request, thread_data, game_info);
+        if(server_key.length() > 0) {
+            return server_key;
+        }
+        //lookip via IP map... else make new QR id and return server key
+        server_id = GetServerID(thread_data);
         std::ostringstream s;
         s << game_info.gamename << ":" << server_id << ":";
+
+        is_new_server = true;
         return s.str();
     }
     void WriteServerData(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info, std::string server_key, int id) {
@@ -15,7 +79,8 @@ namespace MM {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), request.record.m_address.GetPort());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), request.record.m_address.ToString(true).c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), game_info.gameid);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
+        if(id > 0)
+            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s deleted 0", server_key.c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HINCRBY %s num_updates 1", server_key.c_str());
 
@@ -54,9 +119,21 @@ namespace MM {
         response.peer = request.peer;
         
         OS::GameData game_info = OS::GetGameByID(request.peer->GetGameId(), thread_data->mp_redis_connection);
-        std::string key = GetServerKey_FromRequest(request, thread_data, game_info);
+        bool is_new_server = false;
+        int server_id = 0;
+        std::string key = GetServerKey_FromRequest(request, thread_data, game_info, is_new_server, server_id);
 
-        WriteServerData(request, thread_data, game_info, key, request.peer->GetServerID());
+        WriteServerData(request, thread_data, game_info, key, server_id);
+
+		std::ostringstream s;
+        if(is_new_server) {
+            //send AMQP new server event
+			s << "\\new\\" << key.c_str();			
+        } else {
+            //send update
+            s << "\\update\\" << key.c_str();
+        }
+        thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
 
         if(request.peer) {
             request.peer->DecRef();
