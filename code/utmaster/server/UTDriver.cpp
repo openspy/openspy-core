@@ -10,4 +10,16 @@ namespace UT {
 	INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
 		return new Peer(this, socket);
 	}
+	UT::Config *Driver::FindConfigByClientName(std::string clientName) {
+		std::vector<UT::Config *>::iterator it = m_config.begin();
+		
+		while(it != m_config.end()) {
+			UT::Config *config = *it;
+			if(config->clientName.compare(clientName) == 0) {
+				return config;
+			}
+			it++;
+		}
+		return NULL;
+	}
 }

@@ -6,6 +6,9 @@
 
 #define UTMASTER_PING_TIME 120
 
+namespace MM {
+	class MMTaskResponse;
+}
 
 namespace UT {
 	enum EConnectionState {
@@ -15,13 +18,20 @@ namespace UT {
 		EConnectionState_Heartbeat
 	};
 
+	#define HEARTBEAT_MODE_OFFSET 9000
 	enum ERequestType {
 		ERequestType_ServerList,
 		ERequestType_MOTD,
 		ERequestType_NewServer = 4,
+
+		//server host mode requests
+		ERequestType_Heartbeat = 1 + HEARTBEAT_MODE_OFFSET,
+		ERequestType_PlayerQuery = 2 + HEARTBEAT_MODE_OFFSET,
 	};
 
 	class Driver;
+	class Config;
+
 	class Peer : public INetPeer {
 	public:
 		Peer(Driver *driver, INetIOSocket *sd);
@@ -39,26 +49,36 @@ namespace UT {
 		void send_challenge(std::string challenge_string);
 		void send_packet(OS::Buffer buffer);
 
+
+		void send_challenge_response(std::string response);
 		void send_challenge_authorization();
 		void send_motd();
 		void send_verified();
+		void send_server_id(int id);
+
 		void handle_request_server_list(OS::Buffer recv_buffer);
+		void handle_ngstats_info(OS::Buffer recv_buffer);
+		void handle_newserver_request(OS::Buffer recv_buffer);
 
-		void send_keys_request();
-
-
+		static void on_allocate_server_id(MM::MMTaskResponse response);
+		static void on_get_server_list(MM::MMTaskResponse response);
+		void allocate_server_id();
+		
 
 		void Delete(bool timeout = false);
-		private:
-		EConnectionState m_state;
-		bool m_is_server;
+		int GetServerID() { return m_server_id; }
+		int GetGameId();
+		//private:
+			EConnectionState m_state;
+			void handle_challenge_response(OS::Buffer buffer);
+			void handle_heartbeat(OS::Buffer buffer);
 
-		void handle_challenge_response(OS::Buffer buffer);
-		void handle_heartbeat(OS::Buffer buffer);
+			//serialization stuff
+			static std::string Read_FString(OS::Buffer &buffer);
+			static void Write_FString(std::string input, OS::Buffer &buffer);
 
-		//serialization stuff
-		std::string Read_FString(OS::Buffer &buffer);
-		void Write_FString(std::string input, OS::Buffer &buffer);
+			UT::Config *m_config;
+			int m_server_id;
 
 	};
 }
