@@ -16,8 +16,12 @@ namespace MM {
 		{NULL, NULL}
 	};
 
+	TaskScheduler<UTMasterRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
+		{NULL, NULL, NULL}
+	};
+
     TaskScheduler<UTMasterRequest, TaskThreadData> *InitTasks(INetServer *server) {
-        TaskScheduler<UTMasterRequest, TaskThreadData> *scheduler = new TaskScheduler<UTMasterRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, NULL);
+        TaskScheduler<UTMasterRequest, TaskThreadData> *scheduler = new TaskScheduler<UTMasterRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, listenerTable);
 
         scheduler->SetThreadDataFactory(TaskScheduler<UTMasterRequest, TaskThreadData>::DefaultThreadDataFactory);
 

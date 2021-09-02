@@ -34,6 +34,7 @@ namespace MM {
 		return ret == 1;
 	}
     std::string GetServerKey_FromIPMap(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info) {
+        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
         std::ostringstream s;
         s << "IPMAP_" << request.record.m_address.ToString(true) << "-" << request.record.m_address.GetPort();
 
@@ -89,6 +90,7 @@ namespace MM {
 
         //write cust keys
         std::string cust_keys = server_key + "custkeys";
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gamename \"%s\"", cust_keys.c_str(), game_info.gamename.c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s hostname \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.hostname).c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s mapname \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.level).c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s game_group \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.game_group).c_str());
