@@ -49,9 +49,9 @@ namespace UT {
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		if (current_time.tv_sec - m_last_recv.tv_sec > UTMASTER_PING_TIME * 2) {
+		/*if (current_time.tv_sec - m_last_recv.tv_sec > UTMASTER_PING_TIME * 2) {
 			Delete(true);
-		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
+		} else */if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete();
 		}
 	}
