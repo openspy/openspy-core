@@ -1,6 +1,6 @@
 #include <OS/OpenSpy.h>
 #include <OS/Buffer.h>
-
+#include <sstream>
 
 #include "UTPeer.h"
 #include "UTDriver.h"
@@ -100,20 +100,16 @@ namespace UT {
 	}
 	void Peer::handle_newserver_request(OS::Buffer recv_buffer) {
 		int unk1 = recv_buffer.ReadInt();
-		//printf("new serv, unk1: %d\n", unk1);
 		if(recv_buffer.readRemaining() > 0) {
 			
 			int unk2 = recv_buffer.ReadInt();
-			//printf("more data... stats: %d\n", unk2);
 			int unk3 = recv_buffer.ReadInt();
-			//printf("unk3: %d\n", unk3);
 			bool continue_parse = true;
 			std::string accumulated_string;
 			while(continue_parse) {			
 				while(true) {
 					char b = recv_buffer.ReadByte();
 					if(b == 0x00 || b == 0x09) {
-						//printf("done: %s\n",accumulated_string.c_str());
 						if(b == 0x0) {
 							continue_parse = false;
 							break;
@@ -126,14 +122,12 @@ namespace UT {
 			}
 			int unk4 = recv_buffer.ReadInt();
 			int unk5 = recv_buffer.ReadInt();
-			//printf("unk4: %d %d\n", unk4, unk5);
 			continue_parse = true;
 			accumulated_string = "";
 			while(continue_parse) {			
 				while(true) {
 					char b = recv_buffer.ReadByte();
 					if(b == 0x00 || b == 0x09) {
-						//printf("done: %s\n",accumulated_string.c_str());
 						if(b == 0x0) {
 							continue_parse = false;
 							break;
@@ -144,86 +138,81 @@ namespace UT {
 					}
 				}
 			}
-			//printf("server rules: %s\n", accumulated_string.c_str());
+			OS::LogText(OS::ELogLevel_Info, "[%s] Stats Init: %s", getAddress().ToString().c_str(), accumulated_string.c_str());
 		}
 		send_server_id(0); //init stats backend, generate match id, for now not needed
-	}
-	void Peer::handle_ngstats_info(OS::Buffer recv_buffer) {
-		int unk1 = recv_buffer.ReadInt();
-		int unk2 = recv_buffer.ReadInt();
-		//printf("ngstats: %d - %d\n", unk1, unk2);
 	}
 	void Peer::handle_heartbeat(OS::Buffer buffer) {
 		MM::ServerRecord record;
 		record.m_address = getAddress();
+
+		std::stringstream ss;
 		
 		//read unknown properties
-		uint8_t flags = buffer.ReadByte();
-		uint8_t len = buffer.ReadByte();
-		if(flags & 0x01 && len > 0) {
-			std::string ip_address = buffer.ReadNTS();
-			buffer.ReadByte();
-			//printf("got some ip: %s\n", ip_address.c_str());
+		uint8_t num_addresses = buffer.ReadByte();
+		ss << "Clients (";
+		while(num_addresses--) {
+			std::string ip_address = Read_FString(buffer);		
+			ss << ip_address << " ";			
 		}
-		//uint16_t unk1 = buffer.ReadShort();
+		ss << ") ";
+		buffer.ReadByte(); //??
 		uint32_t unk2 = buffer.ReadInt(); 
 
-		
-
-		//printf("unks: %02x %02x %08x\n", flags, len, unk2);
-
 		record.m_address.port = htons(buffer.ReadShort());
+		ss << " Address: " << record.m_address.ToString();
 
 		//read more unknown properties
 		buffer.ReadByte(); buffer.ReadByte(); buffer.ReadByte();
-		//printf("query port: %d\n", ntohs(record.m_address.port));
+		
 
 
 		int hostname_len = buffer.ReadInt();
 		record.hostname = buffer.ReadNTS();
-		//printf("hostname: %s\n", record.hostname.c_str());
+		ss << " Hostname: " << record.hostname;
 
 		record.level = Read_FString(buffer);
-		//printf("level: %s\n", record.level.c_str());
+		ss << " Level: " << record.level;
 
 		record.game_group = Read_FString(buffer);
-		//printf("game_group: %s\n", record.game_group.c_str());
+		ss << " Game group: " << record.game_group;
 
 		int num_players = buffer.ReadInt(), max_players = buffer.ReadInt(), unk5 = buffer.ReadInt(), unk6 = buffer.ReadInt();//, unk7 = buffer.ReadInt();
 		record.num_players = num_players;
 		record.max_players = max_players;
-		//unk4 = max players
-		//printf("unk5:%d %08x\n", unk5, unk6);
+		ss << " Players: (" << record.num_players << "/" << record.max_players << ") ";
 		
 		uint8_t unk7 = buffer.ReadByte(), unk8 = buffer.ReadByte(), unk9 = buffer.ReadByte(), num_fields = buffer.ReadByte();
-		//printf("unk7: %d %d %d %d\n", unk7, unk8, unk9, num_fields);
-		//printf("num_players: %d, Max players: %d\n", num_players, max_players);
 
 		int idx = num_fields;
 		while(buffer.readRemaining() > 0) {
 			std::string field = Read_FString(buffer);
 			std::string property = Read_FString(buffer);
-			//printf("%s(%d) = %s(%d)\n", field.c_str(), field.length(), property.c_str(), property.length());
+
+			ss << "(" << field << "," << property << "), ";
 
 			record.m_rules[field] = property;
 			if(--idx <= 0) break;
 		} 
 
-		int num_player_entries = buffer.ReadByte();
+		int num_player_entries = buffer.ReadShort();
 
+		ss << " Players (";
 		idx = num_player_entries;
 		while(buffer.readRemaining() > 0) {
 			MM::PlayerRecord player_record;
 			int name_len = buffer.ReadInt();
 			
 
-			player_record.name = buffer.ReadNTS();			
+			player_record.name = buffer.ReadNTS();
+			ss << player_record.name << ",";
 			
-			//printf("name: %s\n", player_record.name.c_str());
 			record.m_players.push_back(player_record);
 
 			if(--idx <= 0) break;
 		}
+		ss << ")";
+		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", getAddress().ToString().c_str(), ss.str().c_str());
 
 		m_server_address = record.m_address;
 
@@ -334,6 +323,9 @@ namespace UT {
 	}
 	void Peer::handle_request_server_list(OS::Buffer recv_buffer) {
 		if(m_config->is_server) return; //???
+
+		std::stringstream ss;
+
 		char num_filter_fileds = recv_buffer.ReadByte();
 		//printf("num_filter_fileds: %d\n", num_filter_fileds);
 		for(int i=0;i<num_filter_fileds;i++) {
@@ -349,8 +341,11 @@ namespace UT {
 				continue;
 			}
 			std::string property = recv_buffer.ReadNTS();
+			ss << field << "="  << property << ",";
 			//printf("%s (%d) = %s (%d)\n", field.c_str(), field_len, property.c_str(), property_len);
 		}
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Server list request: %s", getAddress().ToString().c_str(), ss.str().c_str());
 
         TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
         MM::UTMasterRequest req;        

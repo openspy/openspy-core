@@ -58,7 +58,6 @@ namespace UT {
 		void send_server_id(int id);
 
 		void handle_request_server_list(OS::Buffer recv_buffer);
-		void handle_ngstats_info(OS::Buffer recv_buffer);
 		void handle_newserver_request(OS::Buffer recv_buffer);
 
 		static void on_get_server_list(MM::MMTaskResponse response);
