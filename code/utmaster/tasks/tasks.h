@@ -19,6 +19,9 @@ namespace MM {
 	class PlayerRecord {
 		public:
 			std::string name;
+			int ping;
+			int score;
+			int rank;
 	};
 	class ServerRecord {
 		public:

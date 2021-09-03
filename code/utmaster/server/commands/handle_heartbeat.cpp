@@ -50,8 +50,7 @@ namespace UT {
 		
 		uint8_t unk7 = buffer.ReadByte(), unk8 = buffer.ReadByte(), unk9 = buffer.ReadByte(), num_fields = buffer.ReadByte();
 
-		int idx = num_fields;
-		while(buffer.readRemaining() > 0) {
+		for(int i=0;i<num_fields;i++) {
 			std::string field = Read_FString(buffer);
 			std::string property = Read_FString(buffer);
 
@@ -63,23 +62,25 @@ namespace UT {
 			} else {
 				record.m_rules[field] = property;
 			}
-			if(--idx <= 0) break;
 		} 
-		int num_player_entries = buffer.ReadShort();
-
+		int num_player_entries = buffer.ReadByte();
+		
 		ss << " Players (";
-		idx = num_player_entries;
-		while(buffer.readRemaining() > 0) {
+		for(int i=0;i<num_player_entries;i++) {
 			MM::PlayerRecord player_record;
+			uint8_t player_index = buffer.ReadByte();
 			int name_len = buffer.ReadInt();
 			
 
 			player_record.name = buffer.ReadNTS();
-			ss << player_record.name << ",";
+
+			player_record.ping = buffer.ReadInt();
+			player_record.score = buffer.ReadInt();
+			player_record.rank = buffer.ReadInt();
+
+			ss << player_record.name << "(" << player_record.ping << "," << player_record.score << "," << player_record.rank << "),";
 			
 			record.m_players.push_back(player_record);
-
-			if(--idx <= 0) break;
 		}
 		ss << ")";
 		OS::LogText(OS::ELogLevel_Info, "[%s] HB: %s", getAddress().ToString().c_str(), ss.str().c_str());

@@ -50,7 +50,7 @@ namespace UT {
 		void send_challenge(std::string challenge_string);
 		void send_packet(OS::Buffer buffer);
 
-
+		void send_ping();
 
 		
 

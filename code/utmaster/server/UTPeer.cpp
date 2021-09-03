@@ -44,7 +44,7 @@ namespace UT {
 		}
 
 	end:
-		//send_ping();
+		send_ping();
 
 		//check for timeout
 		struct timeval current_time;
@@ -97,6 +97,19 @@ namespace UT {
 			
 			break;
 		}
+	}
+
+	void Peer::send_ping() {
+		struct timeval current_time;
+
+		gettimeofday(&current_time, NULL);
+		if(current_time.tv_sec - m_last_ping.tv_sec > UTMASTER_PING_TIME) {
+			gettimeofday(&m_last_ping, NULL);
+			OS::Buffer send_buffer;
+			send_buffer.WriteInt(0);	
+			send_packet(send_buffer);
+		}
+
 	}
 
 
