@@ -51,16 +51,7 @@ namespace UT {
 		void send_packet(OS::Buffer buffer);
 
 
-		void send_challenge_response(std::string response);
-		void send_challenge_authorization();
-		void send_motd();
-		void send_verified();
-		void send_server_id(int id);
 
-		void handle_request_server_list(OS::Buffer recv_buffer);
-		void handle_newserver_request(OS::Buffer recv_buffer);
-
-		static void on_get_server_list(MM::MMTaskResponse response);
 		
 
 		void Delete(bool timeout = false);
@@ -69,6 +60,19 @@ namespace UT {
 			EConnectionState m_state;
 			void handle_challenge_response(OS::Buffer buffer);
 			void handle_heartbeat(OS::Buffer buffer);
+
+			void send_challenge_response(std::string response);
+			void send_challenge_authorization();
+			void send_motd();
+			void send_verified();
+			void send_server_id(int id);
+
+			void handle_request_server_list(OS::Buffer recv_buffer);
+			void handle_newserver_request(OS::Buffer recv_buffer);
+
+			int get_server_flags(MM::ServerRecord record);
+
+			static void on_get_server_list(MM::MMTaskResponse response);
 
 			void delete_server();
 

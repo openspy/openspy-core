@@ -33,6 +33,8 @@ namespace MM {
 
 			std::map<std::string, std::string> m_rules;
 			std::vector<PlayerRecord> m_players;
+
+			std::vector<std::string> m_mutators;
 	};
 
 	enum UTMasterRequestType {
@@ -49,6 +51,13 @@ namespace MM {
 	};
 
 	typedef void (*MMTaskResponseCallback)(MMTaskResponse response);
+
+	class FilterProperties {
+		public:
+			std::string field;
+			std::string property;
+			bool is_negate;
+	};
 
 	class UTMasterRequest {
 		public:
@@ -67,6 +76,9 @@ namespace MM {
 			UT::Peer *peer;
 
 			ServerRecord record;
+			//std::map<std::string, std::string> m_filter_items;
+			//std::map<std::string, std::string> m_filter_negate_items;
+			std::vector<FilterProperties> m_filters;
 
 			MMTaskResponseCallback callback;
 

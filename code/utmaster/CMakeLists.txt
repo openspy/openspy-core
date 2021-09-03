@@ -8,11 +8,13 @@ file (GLOB MAIN_SRCS "*.cpp")
 file (GLOB MAIN_HDRS "*.h")
 file (GLOB SERVER_SRCS "server/*.cpp")
 file (GLOB SERVER_HDRS "server/*.h")
+file (GLOB SERVER_CMDS_SRCS "server/commands/*.cpp")
+file (GLOB SERVER_CMDS_HDRS "server/commands/*.h")
 file (GLOB TASKS_SRCS "tasks/*.cpp")
 file (GLOB TASKS_HDRS "tasks/*.h")
 
 
-set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${TASKS_SRCS})
+set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${TASKS_SRCS} ${SERVER_CMDS_SRCS})
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 

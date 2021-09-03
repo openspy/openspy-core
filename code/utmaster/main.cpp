@@ -50,7 +50,7 @@ std::vector<UT::Config *> LoadConfigMapping(std::string filePath) {
 	while(it != children.end()) {
 		OS::ConfigNode child = *it;
 		if (child.GetKey().compare("clientMapping") == 0) {
-			UT::Config *msConfig = new UT::Config();;
+			UT::Config *msConfig = new UT::Config();
 
 			std::vector<OS::ConfigNode> mappingChildren = child.GetArrayChildren();
 			std::vector<OS::ConfigNode>::iterator it2 = mappingChildren.begin();
@@ -65,6 +65,8 @@ std::vector<UT::Config *> LoadConfigMapping(std::string filePath) {
 					msConfig->is_server = configNode.GetValueInt() == 1;
 				} else if(key.compare("motd") == 0) {
 					msConfig->motd = get_file_contents(configNode.GetValue());
+				} else if(key.compare("latest-version") == 0) {
+					msConfig->latest_version = atoi(configNode.GetValue().c_str());
 				}
 				it2++;
 			}
