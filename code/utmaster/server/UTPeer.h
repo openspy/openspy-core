@@ -26,8 +26,10 @@ namespace UT {
 		ERequestType_NewServer = 4,
 
 		//server host mode requests
+		ERequestType_ServerInit = 0 + HEARTBEAT_MODE_OFFSET, //UT2003 request, basically "NewServer" request
 		ERequestType_Heartbeat = 1 + HEARTBEAT_MODE_OFFSET,
 		ERequestType_PlayerQuery = 2 + HEARTBEAT_MODE_OFFSET,
+		ERequestType_RequestMatchId = 4 + HEARTBEAT_MODE_OFFSET,
 	};
 
 	class Driver;

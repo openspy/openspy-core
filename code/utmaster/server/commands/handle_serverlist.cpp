@@ -75,9 +75,14 @@ namespace UT {
 
 			server_buffer.WriteByte(server.num_players);
 			server_buffer.WriteByte(server.max_players);
-			server_buffer.WriteInt(response.peer->get_server_flags(server)); //flags
-			server_buffer.WriteShort(12546); //?
-			server_buffer.WriteByte(0);
+			if(response.peer->m_client_version >= 3000) {
+				server_buffer.WriteInt(response.peer->get_server_flags(server)); //flags
+				server_buffer.WriteShort(12546); //?
+				server_buffer.WriteByte(0);
+			} else {
+				server_buffer.WriteByte(response.peer->get_server_flags(server)); //flags
+			}
+
 
 			send_buffer.WriteInt(server_buffer.bytesWritten());
 			send_buffer.WriteBuffer(server_buffer.GetHead(),server_buffer.bytesWritten());
@@ -92,8 +97,6 @@ namespace UT {
 
 	}
 	void Peer::handle_request_server_list(OS::Buffer recv_buffer) {
-		if(m_config->is_server) return; //???
-
 		TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
         MM::UTMasterRequest req;     
 
