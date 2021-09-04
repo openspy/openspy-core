@@ -56,7 +56,7 @@ namespace UT {
 		}
 	}
 	void Peer::handle_packet(OS::Buffer recv_buffer) {
-		
+		//XXX: clean this up... logic is confusing to follow
 		ERequestType req_type;
 		int len = recv_buffer.ReadInt();
 		//printf("got data in state %d - len %d\n", m_state, len);
@@ -90,6 +90,7 @@ namespace UT {
 			switch(req_type) {
 				case ERequestType_ServerInit:
 					send_server_id(0);
+				break;
 				case ERequestType_Heartbeat:
 					handle_heartbeat(recv_buffer);
 				break;

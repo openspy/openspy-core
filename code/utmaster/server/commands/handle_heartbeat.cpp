@@ -157,7 +157,6 @@ namespace UT {
 		send_server_id(0); //init stats backend, generate match id, for now not needed
 	}
 	void Peer::send_server_id(int id) {
-		m_state = EConnectionState_Heartbeat;
 		OS::Buffer send_buffer;
 		send_buffer.WriteByte(3);
 		send_buffer.WriteInt(id);

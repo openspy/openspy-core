@@ -15,7 +15,7 @@ namespace UT {
 
 		m_config = ((UT::Driver *)this->GetDriver())->FindConfigByClientName(client);
 		if(m_config == NULL) {
-			send_challenge_response("MODIFIED_CLIENT");
+			send_challenge_response("DENIED");
 			Delete();
 			return;
 		}
