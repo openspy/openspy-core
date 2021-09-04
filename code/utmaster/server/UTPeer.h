@@ -72,7 +72,9 @@ namespace UT {
 			void handle_request_server_list(OS::Buffer recv_buffer);
 			void handle_newserver_request(OS::Buffer recv_buffer);
 
+
 			int get_server_flags(MM::ServerRecord record);
+			int get_server_flags_ut2003(MM::ServerRecord record);
 
 			static void on_get_server_list(MM::MMTaskResponse response);
 

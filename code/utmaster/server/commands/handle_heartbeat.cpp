@@ -94,6 +94,11 @@ namespace UT {
 
 		m_server_address = record.m_address;
 
+		//inject version for UT2003
+		ss.str("");
+		ss << m_client_version;
+		record.m_rules["ServerVersion"] = ss.str();
+
         TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
         MM::UTMasterRequest req;        
         req.type = MM::UTMasterRequestType_Heartbeat;

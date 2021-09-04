@@ -9,6 +9,9 @@
 
 namespace UT {
     int Peer::get_server_flags(MM::ServerRecord record) {
+		if(m_client_version <= 3000) {
+			return get_server_flags_ut2003(record);
+		}
         int flags = 0;
         if(record.m_rules.find("GamePassword") != record.m_rules.end()) {
             if(record.m_rules["GamePassword"].compare("True") == 0) {
@@ -49,8 +52,43 @@ namespace UT {
 			}
             it++;
         }
+        return flags;
+    }
+    int Peer::get_server_flags_ut2003(MM::ServerRecord record) {
+        int flags = 0;
+        if(record.m_rules.find("GamePassword") != record.m_rules.end()) {
+            if(record.m_rules["GamePassword"].compare("True") == 0) {
+                flags |= (1 << 6);
+            }
+        }
 
+        if(record.m_rules.find("GameStats") != record.m_rules.end()) {
+            if(record.m_rules["GameStats"].compare("True") == 0) {
+                flags |= (1 << 5);
+            }
+        }
 
+        if(record.m_rules.find("ServerVersion") != record.m_rules.end()) {
+            std::string version = record.m_rules["ServerVersion"];
+            if(atoi(version.c_str()) == m_config->latest_client_version) {
+                flags |= (1 << 4);
+            }
+        }
+
+        if(record.m_rules.find("ServerMode") != record.m_rules.end()) {
+            if(record.m_rules["ServerMode"].compare("non-dedicated") == 0) {
+                flags |= (1 << 3);
+            }
+        }
+        
+        std::vector<std::string>::iterator it = record.m_mutators.begin();
+        while(it != record.m_mutators.end()) {
+            std::string mutator = *it;
+			if(mutator.compare("MutInstaGib") == 0) {
+				flags |= (1 << 2);
+			}
+            it++;
+        }
         return flags;
     }
 	void Peer::on_get_server_list(MM::MMTaskResponse response) {

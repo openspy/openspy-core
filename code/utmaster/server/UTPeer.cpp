@@ -59,7 +59,7 @@ namespace UT {
 		
 		ERequestType req_type;
 		int len = recv_buffer.ReadInt();
-		printf("got data in state %d - len %d\n", m_state, len);
+		//printf("got data in state %d - len %d\n", m_state, len);
 		switch(m_state) {
 			case EConnectionState_WaitChallengeResponse:
 				handle_challenge_response(recv_buffer);
@@ -70,7 +70,7 @@ namespace UT {
 			break;
 			case EConnectionState_WaitRequest:
 				req_type = (ERequestType)recv_buffer.ReadByte();
-				printf("wait req type: %d\n", req_type);
+				//printf("wait req type: %d\n", req_type);
 				switch(req_type) {
 					case ERequestType_ServerList:
 						handle_request_server_list(recv_buffer);
@@ -86,7 +86,7 @@ namespace UT {
 			break;
 			case EConnectionState_Heartbeat:
 			req_type = (ERequestType)recv_buffer.ReadByte() + HEARTBEAT_MODE_OFFSET;
-			printf("hb req: %08X\n", req_type - HEARTBEAT_MODE_OFFSET);
+			//printf("hb req: %08X\n", req_type - HEARTBEAT_MODE_OFFSET);
 			switch(req_type) {
 				case ERequestType_ServerInit:
 					send_server_id(0);
