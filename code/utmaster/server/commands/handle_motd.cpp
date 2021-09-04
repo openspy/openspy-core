@@ -9,6 +9,7 @@
 
 namespace UT {
 	void Peer::send_motd() {
+		if(m_config->is_server) return;
 		OS::Buffer send_buffer;
 
 		send_buffer.WriteByte(0x6A);
