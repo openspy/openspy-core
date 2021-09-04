@@ -58,7 +58,8 @@ namespace UT {
 	void Peer::send_challenge_response(std::string response) {
 		OS::Buffer send_buffer;
 		Write_FString(response, send_buffer);
-		send_buffer.WriteInt(3);		
+		if(m_client_version >= 3000)
+			send_buffer.WriteInt(3);		
 		send_packet(send_buffer);
 	}
 	void Peer::send_challenge_authorization() {
