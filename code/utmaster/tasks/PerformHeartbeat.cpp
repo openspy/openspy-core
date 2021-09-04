@@ -90,6 +90,7 @@ namespace MM {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s currentplayers %d", cust_keys.c_str(), request.record.num_players);        
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s freespace %d", cust_keys.c_str(), request.record.num_players < request.record.max_players);
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s nomutators %s", cust_keys.c_str(), request.record.m_mutators.size() == 0 ? "true" : "false");
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s standard %s", cust_keys.c_str(), request.record.isStandardServer() ? "true" : "false");
 
         int nobots = true;
         if(request.record.m_rules.find("MinPlayers") != request.record.m_rules.end()) {

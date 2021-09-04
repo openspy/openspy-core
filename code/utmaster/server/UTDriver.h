@@ -22,13 +22,13 @@ namespace UT {
 			Config() {
 				gameid = 0;
 				is_server = 0;
-				latest_version = 0;
+				latest_client_version = 0;
 			}
 			std::string clientName;
 			int gameid;
 			std::string motd;
 			bool is_server;
-			int latest_version;
+			int latest_client_version;
 	};
 
 	class Driver : public TCPDriver {

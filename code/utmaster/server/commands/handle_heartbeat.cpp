@@ -43,12 +43,19 @@ namespace UT {
 		record.game_group = Read_FString(buffer);
 		ss << " Game group: " << record.game_group;
 
-		int num_players = buffer.ReadInt(), max_players = buffer.ReadInt(), unk5 = buffer.ReadInt(), unk6 = buffer.ReadInt();//, unk7 = buffer.ReadInt();
+		int num_players = buffer.ReadInt(), max_players = buffer.ReadInt(), unk5 = buffer.ReadInt();
+		if(m_client_version >= 3000) {
+			uint32_t unk6 = buffer.ReadInt();//, unk7 = buffer.ReadInt();
+		}
 		record.num_players = num_players;
 		record.max_players = max_players;
 		ss << " Players: (" << record.num_players << "/" << record.max_players << ") ";
 		
-		uint8_t unk7 = buffer.ReadByte(), unk8 = buffer.ReadByte(), unk9 = buffer.ReadByte(), num_fields = buffer.ReadByte();
+		if(m_client_version >= 3000) {
+			uint8_t unk7 = buffer.ReadByte(), unk8 = buffer.ReadByte(), unk9 = buffer.ReadByte();
+		}
+		
+		uint8_t num_fields = buffer.ReadByte();
 
 		for(int i=0;i<num_fields;i++) {
 			std::string field = Read_FString(buffer);
@@ -63,7 +70,7 @@ namespace UT {
 				record.m_rules[field] = property;
 			}
 		} 
-		int num_player_entries = buffer.ReadByte();
+		uint8_t num_player_entries = buffer.ReadByte();
 		
 		ss << " Players (";
 		for(int i=0;i<num_player_entries;i++) {
@@ -76,9 +83,9 @@ namespace UT {
 
 			player_record.ping = buffer.ReadInt();
 			player_record.score = buffer.ReadInt();
-			player_record.rank = buffer.ReadInt();
+			player_record.stats_id = buffer.ReadInt();
 
-			ss << player_record.name << "(" << player_record.ping << "," << player_record.score << "," << player_record.rank << "),";
+			ss << player_record.name << "(" << player_record.ping << "," << player_record.score << "," << player_record.stats_id << "),";
 			
 			record.m_players.push_back(player_record);
 		}

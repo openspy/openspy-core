@@ -84,6 +84,8 @@ namespace UT {
 
 			OS::Address m_server_address;
 
+			uint32_t m_client_version;
+
 	};
 }
 #endif //_GPPEER_H

@@ -21,7 +21,7 @@ namespace MM {
 			std::string name;
 			int ping;
 			int score;
-			int rank;
+			int stats_id;
 	};
 	class ServerRecord {
 		public:
@@ -38,6 +38,22 @@ namespace MM {
 			std::vector<PlayerRecord> m_players;
 
 			std::vector<std::string> m_mutators;
+
+			bool isStandardMutator(std::string mutator) {
+				return mutator.compare("DMMutator") == 0;
+			}
+
+			bool isStandardServer() {
+				if(m_mutators.size() > 0) {
+					std::vector<std::string>::iterator it = m_mutators.begin();
+					while(it != m_mutators.end()) {
+						std::string s = *it;
+						if(!isStandardMutator(s)) return false;
+						it++;
+					}
+				}
+				return true;
+			}
 	};
 
 	enum UTMasterRequestType {

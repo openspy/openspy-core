@@ -65,8 +65,8 @@ std::vector<UT::Config *> LoadConfigMapping(std::string filePath) {
 					msConfig->is_server = configNode.GetValueInt() == 1;
 				} else if(key.compare("motd") == 0) {
 					msConfig->motd = get_file_contents(configNode.GetValue());
-				} else if(key.compare("latest-version") == 0) {
-					msConfig->latest_version = atoi(configNode.GetValue().c_str());
+				} else if(key.compare("latest-client-version") == 0) {
+					msConfig->latest_client_version = atoi(configNode.GetValue().c_str());
 				}
 				it2++;
 			}

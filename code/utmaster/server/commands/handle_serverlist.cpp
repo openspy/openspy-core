@@ -24,7 +24,7 @@ namespace UT {
 
         if(record.m_rules.find("ServerVersion") != record.m_rules.end()) {
             std::string version = record.m_rules["ServerVersion"];
-            if(atoi(version.c_str()) == m_config->latest_version) {
+            if(atoi(version.c_str()) == m_config->latest_client_version) {
                 flags |= (1 << 2);
             }
         }
@@ -35,12 +35,10 @@ namespace UT {
             }
         }
         
-        if(record.m_rules.find("standard") != record.m_rules.end()) {
-            if(record.m_rules["standard"].compare("True") == 0) {
-                flags |= (1 << 5);
-            }
-        }
-
+		if(record.isStandardServer()) {
+			flags |= (1 << 5);
+		}
+		
         std::vector<std::string>::iterator it = record.m_mutators.begin();
         while(it != record.m_mutators.end()) {
             std::string mutator = *it;
@@ -51,6 +49,8 @@ namespace UT {
 			}
             it++;
         }
+
+
         return flags;
     }
 	void Peer::on_get_server_list(MM::MMTaskResponse response) {
