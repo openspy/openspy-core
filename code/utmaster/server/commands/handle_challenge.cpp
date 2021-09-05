@@ -69,8 +69,6 @@ namespace UT {
 		} else {
 			m_state = EConnectionState_ApprovedResponse;
 		}
-		if(m_config->is_server)
-			m_state = EConnectionState_Heartbeat;
 		send_challenge_response("APPROVED");
 		
 	}

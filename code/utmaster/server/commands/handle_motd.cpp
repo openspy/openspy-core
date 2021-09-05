@@ -8,6 +8,9 @@
 #include <tasks/tasks.h>
 
 namespace UT {
+	void Peer::handle_motd(OS::Buffer recv_buffer) {
+		send_motd();
+	}
 	void Peer::send_motd() {
 		if(m_config->is_server) return;
 		OS::Buffer send_buffer;

@@ -14,23 +14,36 @@ namespace MM {
 namespace UT {
 	enum EConnectionState {
 		EConnectionState_WaitChallengeResponse,
-		EConnectionState_ApprovedResponse,
-		EConnectionState_WaitRequest,
-		EConnectionState_Heartbeat
+		EConnectionState_ApprovedResponse, //UT
+		EConnectionState_WaitRequest
 	};
 
-	#define HEARTBEAT_MODE_OFFSET 9000
-	enum ERequestType {
-		ERequestType_ServerList,
-		ERequestType_MOTD,
-		ERequestType_NewServer = 4,
 
-		//server host mode requests
-		ERequestType_ServerInit = 0 + HEARTBEAT_MODE_OFFSET, //UT2003 request, basically "NewServer" request
-		ERequestType_Heartbeat = 1 + HEARTBEAT_MODE_OFFSET,
-		ERequestType_PlayerQuery = 2 + HEARTBEAT_MODE_OFFSET,
-		ERequestType_RequestMatchId = 4 + HEARTBEAT_MODE_OFFSET,
+	enum EClientModeRequest {
+		EClientModeRequest_ServerList,
+		EClientModeRequest_MOTD
 	};
+
+	enum EServerModeRequest {
+		EServerModeRequest_ServerInit,
+		EServerModeRequest_Heartbeat,
+		EServerModeRequest_PlayerQuery,
+		EServerModeRequest_NewServer = 4
+	};
+
+
+	class Peer;
+	typedef void(Peer::*RequestHandler)(OS::Buffer recv_buffer);
+	class CommandEntry {
+	public:
+		CommandEntry(uint8_t code, RequestHandler callback) {
+			this->callback = callback;
+			this->code = code;
+		}
+		uint8_t code;
+		RequestHandler callback;
+	};
+
 
 	class Driver;
 	class Config;
@@ -71,6 +84,11 @@ namespace UT {
 
 			void handle_request_server_list(OS::Buffer recv_buffer);
 			void handle_newserver_request(OS::Buffer recv_buffer);
+			void handle_player_query(OS::Buffer recv_buffer);
+
+			void handle_motd(OS::Buffer recv_buffer);
+
+			void handle_server_init(OS::Buffer recv_buffer);
 
 
 			int get_server_flags(MM::ServerRecord record);
@@ -89,6 +107,13 @@ namespace UT {
 			OS::Address m_server_address;
 
 			uint32_t m_client_version;
+
+			const CommandEntry *GetCommandByCode(uint8_t code);
+
+			static const CommandEntry m_client_commands[];
+			static const CommandEntry m_server_commands[];
+
+			bool m_got_server_init;
 
 	};
 }

@@ -8,6 +8,19 @@
 #include <tasks/tasks.h>
 
 namespace UT {
+	const CommandEntry Peer::m_client_commands[] = {
+		CommandEntry(EClientModeRequest_ServerList, &Peer::handle_request_server_list),
+		CommandEntry(EClientModeRequest_MOTD, &Peer::handle_motd),
+		CommandEntry(-1, NULL)
+	};
+
+	const CommandEntry Peer::m_server_commands[] = {
+		CommandEntry(EServerModeRequest_ServerInit, &Peer::handle_server_init),
+		CommandEntry(EServerModeRequest_Heartbeat, &Peer::handle_heartbeat),
+		CommandEntry(EServerModeRequest_PlayerQuery, &Peer::handle_player_query),
+		CommandEntry(EServerModeRequest_NewServer, &Peer::handle_newserver_request),
+		CommandEntry(-1, NULL)
+	};
 	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
@@ -15,6 +28,7 @@ namespace UT {
 		gettimeofday(&m_last_recv, NULL);
 		m_state = EConnectionState_WaitChallengeResponse;
 		m_config = NULL;
+		m_got_server_init = false;
 		
 	}
 	void Peer::OnConnectionReady() {
@@ -57,53 +71,57 @@ namespace UT {
 	}
 	void Peer::handle_packet(OS::Buffer recv_buffer) {
 		//XXX: clean this up... logic is confusing to follow
-		ERequestType req_type;
-		int len = recv_buffer.ReadInt();
-		//printf("got data in state %d - len %d\n", m_state, len);
-		switch(m_state) {
-			case EConnectionState_WaitChallengeResponse:
-				handle_challenge_response(recv_buffer);
-			break;
-			case EConnectionState_ApprovedResponse:
-				send_verified();
-				m_state = EConnectionState_WaitRequest;
-			break;
-			case EConnectionState_WaitRequest:
-				req_type = (ERequestType)recv_buffer.ReadByte();
-				//printf("wait req type: %d\n", req_type);
-				switch(req_type) {
-					case ERequestType_ServerList:
-						handle_request_server_list(recv_buffer);
-					break;
-					case ERequestType_MOTD:
-						send_motd();
-					break;
-					case ERequestType_NewServer:
-						handle_newserver_request(recv_buffer);
-						//send_server_id(1234);
-					break;
-				}
-			break;
-			case EConnectionState_Heartbeat:
-			req_type = (ERequestType)recv_buffer.ReadByte() + HEARTBEAT_MODE_OFFSET;
-			//printf("hb req: %08X\n", req_type - HEARTBEAT_MODE_OFFSET);
-			switch(req_type) {
-				case ERequestType_ServerInit:
-					send_server_id(0);
+		uint8_t req_type;
+		while(recv_buffer.readRemaining() > 0) {
+			
+			int len = recv_buffer.ReadInt();
+			OS::Buffer parse_buffer;
+			if(len == 0 || len > recv_buffer.readRemaining()) break;
+			parse_buffer.WriteBuffer(recv_buffer.GetReadCursor(), len);
+			recv_buffer.SetReadCursor(len);
+			recv_buffer.SetWriteCursor(len);
+
+			//printf("got data in state %d - len %d\n", m_state, len);
+			switch(m_state) {
+				case EConnectionState_WaitChallengeResponse:
+					handle_challenge_response(parse_buffer);
 				break;
-				case ERequestType_Heartbeat:
-					handle_heartbeat(recv_buffer);
+				case EConnectionState_ApprovedResponse:
+					send_verified();
+					m_state = EConnectionState_WaitRequest;
 				break;
-				case ERequestType_PlayerQuery:
-					//printf("player query\n");
-				break;
-				case ERequestType_RequestMatchId:
-					send_server_id(1234);
+				case EConnectionState_WaitRequest:
+					if(!m_config) { //shouldn't make it this far..
+						Delete();
+						return;
+					}
+					req_type = parse_buffer.ReadByte();
+					const CommandEntry *entry = GetCommandByCode(req_type);
+					if(entry) {
+						(*this.*entry->callback)(parse_buffer);
+					} else {
+						OS::LogText(OS::ELogLevel_Info, "[%s] Got unhandled request type %d", getAddress().ToString().c_str(), req_type);
+						//Delete();
+					}
+					
 				break;
 			}
-			
-			break;
 		}
+
+	}
+
+	const CommandEntry *Peer::GetCommandByCode(uint8_t code) {
+		const CommandEntry *table = (const CommandEntry *)(&Peer::m_client_commands);
+		if(m_config->is_server) {
+			table =  (const CommandEntry *)(&Peer::m_server_commands);
+		}
+		int idx = 0;
+		while(true) {
+			if(table[idx].code == -1 || table[idx].callback == NULL) break;
+			if(table[idx].code == code) return &table[idx];
+			idx++;
+		}
+		return NULL;
 	}
 
 	void Peer::send_ping() {

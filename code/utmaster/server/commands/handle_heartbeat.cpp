@@ -154,7 +154,7 @@ namespace UT {
 			}
 			OS::LogText(OS::ELogLevel_Info, "[%s] Stats Init: %s", getAddress().ToString().c_str(), accumulated_string.c_str());
 		}
-		send_server_id(0); //init stats backend, generate match id, for now not needed
+		send_server_id(1234); //init stats backend, generate match id, for now not needed
 	}
 	void Peer::send_server_id(int id) {
 		OS::Buffer send_buffer;
