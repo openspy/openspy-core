@@ -50,6 +50,9 @@ namespace GP {
 		std::string challenge = data_parser.GetValue("challenge");
 		std::string user = data_parser.GetValue("user");
 		std::string response = data_parser.GetValue("response");
+		if(response.length() > 32) {
+			response = response.substr(0,32); //ut3 sends garbage data after this, when really it should never exceed 32 bytes
+		}
 
 		if(type == 1) {
 			perform_nick_email_auth(user.c_str(), partnercode, namespaceid, m_challenge, challenge.c_str(), response.c_str(), operation_id, this);
