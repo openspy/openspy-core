@@ -20,9 +20,9 @@ namespace GP {
 	} ;
 	void Peer::m_create_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		NewProfileInfo *info = (NewProfileInfo*)extra;
+		std::ostringstream s;
 		if(error_details.response_code == TaskShared::WebErrorCode_Success && results.size() > 0) {
 			OS::Profile profile = results.front();
-			std::ostringstream s;
 			s << "\\npr\\1";
 			s << "\\profileid\\" << profile.id;
 			s << "\\id\\" << info->operation_id;
@@ -30,12 +30,13 @@ namespace GP {
 			((GP::Peer *)peer)->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
 		}
 		else {
+			s << "\\id\\" << info->operation_id;
 			switch (error_details.response_code) {
 				case TaskShared::WebErrorCode_NickInUse:
-					((GP::Peer *)peer)->send_error(GPShared::GP_NEWPROFILE_BAD_NICK);
+					((GP::Peer *)peer)->send_error(GPShared::GP_NEWPROFILE_BAD_NICK, s.str());
 				break;
 				default:
-					((GP::Peer *)peer)->send_error(GPShared::GP_NEWPROFILE);
+					((GP::Peer *)peer)->send_error(GPShared::GP_NEWPROFILE, s.str());
 				break;
 			}
 			

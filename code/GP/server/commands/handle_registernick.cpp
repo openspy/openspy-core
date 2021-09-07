@@ -50,7 +50,9 @@ namespace GP {
         if(data_parser.HasKey("uniquenick")) {
             uniquenick = data_parser.GetValue("uniquenick");
         } else {
-            send_error(GPShared::GP_PARSE);
+			std::ostringstream s;
+			s << "\\id\\" << (int)id;
+            send_error(GPShared::GP_PARSE, s.str());
             return;
         }
 

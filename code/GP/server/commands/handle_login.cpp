@@ -187,21 +187,22 @@ namespace GP {
 			((GP::Peer *)peer)->send_buddies();
 			((GP::Peer *)peer)->send_blocks();
 		} else {
+			ss << "\\id\\" << operation_id;
 			switch(auth_data.error_details.response_code) {
 				case TaskShared::WebErrorCode_NoSuchUser:
-					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_EMAIL);
+					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_EMAIL, ss.str());
 				break;
 				case TaskShared::WebErrorCode_AuthInvalidCredentials:
-					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_PASSWORD);
+					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_PASSWORD, ss.str());
 				break;
 				case TaskShared::WebErrorCode_NickInvalid:
-					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_PROFILE);
+					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_PROFILE, ss.str());
 				break;
 				case TaskShared::WebErrorCode_UniqueNickInvalid:
-					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_UNIQUENICK);
+					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_UNIQUENICK, ss.str());
 				break;
 				case TaskShared::WebErrorCode_BackendError:
-					((GP::Peer *)peer)->send_error(GP_NETWORK);
+					((GP::Peer *)peer)->send_error(GP_NETWORK, ss.str());
 				break;
 			}
 		}
