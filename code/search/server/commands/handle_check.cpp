@@ -25,16 +25,16 @@ namespace SM {
 				s << "\\cur\\";
 				switch (auth_data.error_details.response_code) {
 					case TaskShared::WebErrorCode_NoSuchUser:
-							code = (GPShared::GP_LOGIN_BAD_EMAIL);
+							code = (GPShared::GP_CHECK_BAD_EMAIL);
 							break;
 					case TaskShared::WebErrorCode_AuthInvalidCredentials:
-							code = (GPShared::GP_LOGIN_BAD_PASSWORD);
+							code = (GPShared::GP_CHECK_BAD_PASSWORD);
 							break;
 					case TaskShared::WebErrorCode_NickInvalid:
-							code = (GPShared::GP_LOGIN_BAD_PROFILE);
+							code = (GPShared::GP_CHECK_BAD_NICK);
 							break;
 					case TaskShared::WebErrorCode_UniqueNickInvalid:
-							code = (GPShared::GP_LOGIN_BAD_UNIQUENICK);
+							code = (GPShared::GP_CHECK_BAD_NICK);
 							break;
 					case TaskShared::WebErrorCode_BackendError:
 							code = (GPShared::GP_NETWORK);
