@@ -25,6 +25,7 @@ namespace SM {
 			case TaskShared::WebErrorCode_UniqueNickInUse:
 				err_code = GPShared::GP_NEWUSER_UNIQUENICK_INUSE;
 				break;
+			case TaskShared::WebErrorCode_AuthInvalidCredentials:
 			case TaskShared::WebErrorCode_UserExists:
 				err_code = GPShared::GP_NEWUSER_BAD_PASSWORD;
 				break;

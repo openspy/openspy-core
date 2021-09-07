@@ -144,6 +144,8 @@ namespace TaskShared {
 			if (error_class.compare("common") == 0) {
 				if (error_name.compare("NoSuchUser") == 0) {
 					error_info.response_code = TaskShared::WebErrorCode_NoSuchUser;
+				} else if(error_name.compare("UserExists") == 0) {
+					error_info.response_code = TaskShared::WebErrorCode_UserExists;
 				}
 			} else if (error_class.compare("auth") == 0) { 
 				if (error_name.compare("InvalidCredentials") == 0) {
