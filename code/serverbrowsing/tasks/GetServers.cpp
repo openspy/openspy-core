@@ -414,6 +414,8 @@ namespace MM {
 		if(!req || filterMatches(req->filter.c_str(), all_cust_keys)) {
 			if (!req || (ret->list.size() < req->max_results || req->max_results == 0)) {
 				ret->list.push_back(server);
+			} else {
+				delete server;
 			}
 		}
 		else {
