@@ -26,12 +26,11 @@ namespace FESL {
 			s << "TID=" << kv_list.GetValueInt("TID") << "\n";
 		}
 		FESL::Server *server = (FESL::Server *) GetDriver()->getServer();
-		std::vector<TaskShared::CountryRegion>::const_iterator begin, end, it;
-		server->GetCountries(begin, end);
-		it = begin;
+		std::vector<TaskShared::CountryRegion> countries = server->GetCountries();
+		std::vector<TaskShared::CountryRegion>::const_iterator it = countries.begin();
 		int i = 0;
-		int num_countries = std::distance(begin, end);
-		while (it != end) {
+		int num_countries = std::distance(countries.begin(), countries.end());
+		while (it != countries.end()) {
 			
 			TaskShared::CountryRegion country = *it;
 			bool is_approved = is_approved_country(country.countrycode);

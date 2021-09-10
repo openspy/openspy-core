@@ -24,9 +24,8 @@ namespace FESL {
 		TaskScheduler<TaskShared::GeoRequest, TaskThreadData> *GetGeoTasks() { return mp_geo_tasks; };
 
 		TaskScheduler<FESLRequest, TaskThreadData> *GetFESLTasks() { return mp_fesl_tasks; };
-		void GetCountries(std::vector<TaskShared::CountryRegion>::const_iterator &begin, std::vector<TaskShared::CountryRegion>::const_iterator &end) {
-			begin = m_countries.begin();
-			end = m_countries.end();
+		std::vector<TaskShared::CountryRegion> GetCountries() {
+			return m_countries;
 		}
 	private:
 		std::vector<TaskShared::CountryRegion> m_countries;

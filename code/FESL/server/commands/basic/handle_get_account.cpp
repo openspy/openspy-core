@@ -12,13 +12,11 @@ namespace FESL {
 		std::ostringstream s;
 
 		FESL::Server *server = (FESL::Server *) GetDriver()->getServer();
-		std::vector<TaskShared::CountryRegion>::const_iterator begin, end, it;
-		server->GetCountries(begin, end);
-
-		it = begin;
+		std::vector<TaskShared::CountryRegion> countries = server->GetCountries();
+		std::vector<TaskShared::CountryRegion>::const_iterator it = countries.begin();
 
 		TaskShared::CountryRegion region;
-		while (it != end) {
+		while (it != countries.end()) {
 			TaskShared::CountryRegion country = *it;
 			if (country.countrycode.compare(m_account_profile.countrycode) == 0) {
 				region = country;
