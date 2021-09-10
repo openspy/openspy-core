@@ -5,12 +5,7 @@ This is a full rewrite of the old openspy. Each service runs as a seperate proce
 [See here](./DESIGN.md) for some architecture info
 
 ## TODO / Things to improve
-* Strip STL out (or at least resolve slow leaking/fragmentation issue), replace with new containers such as OS::LinkedList
-* Natneg v1 (currently only v1 and v2 are supported)
-* Better FESL support for more EA games
-* Peerchat
-* Remove stateful UDP connections from QR (See natneg, where no Peer class exists)
-* Reduce excessive AMQP & redis connections. 
+* Peerchat - currently mostly working but has rare ref count error which results in crash
 * GP UDP support? -- might not be needed, or bypass the server entirely
 
 
@@ -70,4 +65,5 @@ This service is actually not part of GameSpy, but instead is an EA service which
 ### Peerchat
 This service is used for many things, such as game lobby chat, in some games the room chat, and even in some games it is used in place of, or in combination with the Server Browsing protocol. Its a custom IRC server listening on the default port of 6667.
 
-The peerchat project is currently not suitable for use. Instead the 2010 openspy version is currently used.
+### UTMaster
+This service is a master server for UT2003 and UT2004. Currently a work in progress, but fairly functional.
