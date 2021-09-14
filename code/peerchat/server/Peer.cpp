@@ -17,6 +17,7 @@ namespace Peerchat {
 	const CommandEntry Peer::m_commands[] = {
 		CommandEntry("CRYPT", false, 3, &Peer::handle_crypt),
 		CommandEntry("NICK", false, 1 ,&Peer::handle_nick, 0, 150),
+		CommandEntry("REGISTERNICK", false, 1 ,&Peer::handle_registernick, 0, 150),		 //register unique nick
 		CommandEntry("USER", false, 4, &Peer::handle_user),
 		CommandEntry("PING", false, 0, &Peer::handle_ping),
 		CommandEntry("PONG", false, 0, &Peer::handle_pong),

@@ -96,6 +96,9 @@ namespace Peerchat {
 
         if(nick.compare("*") == 0 && m_profile.uniquenick.length() > 0) {
             nick = m_profile.uniquenick + "-gs";
+        } else if(nick.compare("*") == 0 && m_profile.uniquenick.length() == 0) {
+            send_numeric(709, "No uniquenick registered");
+            return;
         } else if(is_nick_valid(nick.c_str()) == 0) {
             send_numeric(432, "Erroneous nickname", false, nick);
             return;

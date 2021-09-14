@@ -262,6 +262,7 @@ namespace Peerchat {
 		static void OnKillUser(TaskResponse response_data, Peer* peer);
 		static void OnNickReserve_DuplicateRemoteKill(TaskResponse response_data, Peer *peer);
 		static void OnFetch_LUsers(TaskResponse response_data, Peer* peer);
+		static void m_registernick_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -303,6 +304,7 @@ namespace Peerchat {
 		void handle_loginpreauth(std::vector<std::string> data_parser);
 		void handle_lusers(std::vector<std::string> data_parser);
 		void handle_cdkey(std::vector<std::string> data_parser);
+		void handle_registernick(std::vector<std::string> data_parser);
 
 		void handle_channel_mode_command(std::vector<std::string> data_parser);
 		void handle_user_mode_command(std::vector<std::string> data_parser);
