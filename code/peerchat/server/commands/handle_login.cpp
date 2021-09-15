@@ -64,8 +64,6 @@ namespace Peerchat {
             request.user.email = email;
             request.profile.nick = nick;
         }
-        
-        request.user.partnercode = OS_GAMESPY_PARTNER_CODE;
 
 		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetAuthTask();
 		scheduler->AddRequest(request.type, request);
