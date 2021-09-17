@@ -186,10 +186,16 @@ namespace MM {
             if(request.type == EMMPushRequestType_Heartbeat_ClearExistingKeys) {
                 ClearServerCustKeys(thread_data, server_key);
             }
-            WriteServerData(thread_data, server_key, request.server, request.v2_instance_key, request.from_address);
 
             std::ostringstream s;
-            s << "\\update\\" << server_key.c_str();
+            if(request.version == 1 && GetNumHeartbeats(thread_data, server_key) == 0) { //fire V1 new event, which only occurs on first HB, instead of validation success
+                s << "\\new\\" << server_key.c_str();
+            } else {
+                s << "\\update\\" << server_key.c_str();
+            }
+
+            WriteServerData(thread_data, server_key, request.server, request.v2_instance_key, request.from_address);
+            
 
             if(!(server_key.length() > 7 && server_key.substr(0, 7).compare("thugpro") == 0)) { //temporarily supress thugpro updates
                 thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
@@ -291,6 +297,7 @@ namespace MM {
     }
 	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted) {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s deleted %d", server_key.c_str(), deleted);
+        Redis::Command(thread_data->mp_redis_connection, 0, "HDEL %s num_updates", server_key.c_str());
     }
 	void SetServerInitialInfo(TaskThreadData *thread_data, OS::Address driver_address, std::string server_key, OS::GameData game_info, std::string challenge_response, OS::Address address, int id, OS::Address from_address) {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s driver_address %s", server_key.c_str(), driver_address.ToString().c_str());

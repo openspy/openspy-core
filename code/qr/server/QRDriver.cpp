@@ -97,6 +97,7 @@ namespace QR {
 	}
 
 	void Driver::send_v1_error(OS::Address to, const char *error_message) {
+		return;
 		std::stringstream ss;
 		ss << "\\error\\" << error_message;
 

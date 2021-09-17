@@ -96,6 +96,7 @@ namespace QR {
                 }
                 ss << "P(" << player_id << ") (" << variable_name << "," << p.second << " ) ";
             } else {
+                if(variable_name.compare("final") == 0) break; //packet terminator
                 server_info.m_keys[variable_name] = p.second;
                 ss << "(" << variable_name << "," << p.second << ") ";
             }

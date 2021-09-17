@@ -137,4 +137,16 @@ namespace MM {
 		
 		return ret == 1 && !challenge_exists;
 	}
+	int GetNumHeartbeats(TaskThreadData *thread_data, std::string server_key) {
+		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
+		int ret = 0;
+		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "HGET %s num_updates", server_key.c_str());
+		Redis::Value v = resp.values.front();
+		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+			ret = atoi(v.value._str.c_str());
+		} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+			ret = v.value._int;
+		}
+		return ret;
+	}
 }

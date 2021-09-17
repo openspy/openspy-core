@@ -45,9 +45,11 @@ namespace MM {
             SetServerDeleted(thread_data, server_key, 0);
             Redis::Command(thread_data->mp_redis_connection, 0, "HDEL %s challenge", server_key.c_str());
 
-			std::ostringstream s;
-			s << "\\new\\" << server_key.c_str();
-			thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+            if(request.version != 1) { //version 1 new event is only after collection of first heartbeat
+                std::ostringstream s;
+                s << "\\new\\" << server_key.c_str();
+                thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+            }
             
         }
 
