@@ -50,7 +50,7 @@ namespace GP {
 			passenc = data_parser.GetValue("passenc");
 			int passlen = (int)passenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
-			passlen = gspassenc((uint8_t *)dpass);
+			passlen = gspassenc((uint8_t *)dpass, passlen);
 			password = dpass;
 			if (dpass)
 				free((void *)dpass);
@@ -59,7 +59,7 @@ namespace GP {
 			passenc = data_parser.GetValue("passwordenc");
 			int passlen = (int)passenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)passenc.c_str(), &passlen);
-			passlen = gspassenc((uint8_t *)dpass);
+			passlen = gspassenc((uint8_t *)dpass, passlen);
 			password = dpass;
 			if (dpass)
 				free((void *)dpass);
@@ -81,7 +81,7 @@ namespace GP {
 			std::string cdkeyenc = data_parser.GetValue("cdkeyenc");
 			int passlen = (int)cdkeyenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)cdkeyenc.c_str(), &passlen);
-			passlen = gspassenc((uint8_t *)dpass);
+			passlen = gspassenc((uint8_t *)dpass, passlen);
 			m_postregister_cdkey = dpass;
 			if (dpass)
 				free((void *)dpass);

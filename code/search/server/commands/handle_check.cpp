@@ -74,7 +74,7 @@ namespace SM {
 			password = data_parser.GetValue("passenc");
 			int passlen = (int)password.length();
 			char* dpass = (char*)base64_decode((uint8_t*)password.c_str(), &passlen);
-			passlen = gspassenc((uint8_t*)dpass);
+			passlen = gspassenc((uint8_t*)dpass, passlen);
 			password = dpass;
 			if (dpass)
 				free((void*)dpass);
@@ -82,7 +82,7 @@ namespace SM {
 			password = data_parser.GetValue("passwordenc");
 			int passlen = (int)password.length();
 			char* dpass = (char*)base64_decode((uint8_t*)password.c_str(), &passlen);
-			passlen = gspassenc((uint8_t*)dpass);
+			passlen = gspassenc((uint8_t*)dpass, passlen);
 			password = dpass;
 			if (dpass)
 				free((void*)dpass);

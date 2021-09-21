@@ -32,7 +32,7 @@ namespace GP {
 			std::string pwenc = data_parser.GetValue("passwordenc");
 			int passlen = (int)pwenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)pwenc.c_str(), &passlen);
-			passlen = gspassenc((uint8_t *)dpass);
+			passlen = gspassenc((uint8_t *)dpass, passlen);
 
 			if(dpass)
 				m_user.password = dpass;

@@ -177,11 +177,11 @@ namespace SB {
 			AddRequest(req);
 		}
 		void V1Peer::handle_packet(std::string data) {
-			OS::LogText(OS::ELogLevel_Info, "[%s]: Handle %s", getAddress().ToString().c_str(), data.c_str());
 			if (m_waiting_gamedata == 1) {
 				m_waiting_packets.push(data);
 				return;
 			}
+			OS::LogText(OS::ELogLevel_Info, "[%s]: Handle %s", getAddress().ToString().c_str(), data.c_str());
 
 			data = skip_queryid(data);
 

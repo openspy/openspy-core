@@ -24,15 +24,13 @@ int gslame(int num) {
 
 
 
-int gspassenc(uint8_t *pass) {
+int gspassenc(uint8_t *pass, int passlen) {
     int     i,
             a,
             c,
             d,
-            num,
-            passlen;
+            num;
 
-    passlen = (int)strlen((const char *)pass);
     num = 0x79707367;   // "gspy"
     if(!num) {
         num = 1;

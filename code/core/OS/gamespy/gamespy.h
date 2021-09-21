@@ -1,7 +1,7 @@
 #ifndef _OS_GAMESPY_H
 #define _OS_GAMESPY_H
 	int gslame(int num);
-	int gspassenc(uint8_t *pass);
+	int gspassenc(uint8_t *pass, int passlen);
 	uint8_t *base64_encode(uint8_t *data, int *size);
 	uint8_t *base64_decode(uint8_t *data, int *size);
 	void gamespyxor(char *data, int len);

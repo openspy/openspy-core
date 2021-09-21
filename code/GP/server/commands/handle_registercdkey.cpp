@@ -46,7 +46,7 @@ namespace GP {
 			std::string cdkeyenc = data_parser.GetValue("cdkeyenc");
 			int passlen = (int)cdkeyenc.length();
 			char *dpass = (char *)base64_decode((uint8_t *)cdkeyenc.c_str(), &passlen);
-			passlen = gspassenc((uint8_t *)dpass);
+			passlen = gspassenc((uint8_t *)dpass, passlen);
 			cdkey = dpass;
 			if (dpass)
 				free((void *)dpass);
