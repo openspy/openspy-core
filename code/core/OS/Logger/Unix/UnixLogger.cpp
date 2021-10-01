@@ -42,9 +42,9 @@ namespace OS {
 		va_list va_cpy;
 		va_copy(va_cpy,args);
 		vsyslog(log_level, format, args);
-		fprintf(stderr, "[%s]:", level_str);
-		vfprintf(stderr, format, va_cpy);
-		fprintf(stderr, "\n");
+		// fprintf(stderr, "[%s]:", level_str);
+		// vfprintf(stderr, format, va_cpy);
+		// fprintf(stderr, "\n");
 		va_end(va_cpy);
 		
 	}
