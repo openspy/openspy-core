@@ -19,6 +19,7 @@ typedef int socklen_t;
 
 #include <OS/OpenSpy.h>
 #include <OS/Thread.h>
+
 #define REDIS_BUFFSZ 1000000
 #define RECONNECT_SLEEP_TIME 2000
 namespace Redis {
@@ -47,8 +48,26 @@ namespace Redis {
 		strncpy(address, input, len);
 		address[len] = 0;
 	}
+	void init_ssl_and_auth(Connection *connection) {
+		if(connection->use_ssl) {
+			connection->ssl_ctx = SSL_CTX_new(TLS_client_method());
+			connection->ssl_connection = SSL_new(connection->ssl_ctx);
+			SSL_set_fd(connection->ssl_connection, connection->sd);
+			if (SSL_connect(connection->ssl_connection) != 1) {
+				ERR_print_errors_fp(stderr);
+			}
+		} else {
+			connection->ssl_ctx = NULL;
+			connection->ssl_connection = NULL;
+		}
 
-	Connection *Connect(const char *constr, struct timeval tv) {
+		if(connection->username != NULL && connection->password != NULL) {
+			Command(connection, 0, "AUTH %s %s", connection->username, connection->password);
+		} else if(connection->password != NULL) {
+			Command(connection, 0, "AUTH %s", connection->password);
+		}
+	}
+	Connection *Connect(const char *constr, bool use_ssl, const char *username, const char *password, struct timeval tv) {
 
 		Connection *ret = (Connection *)malloc(sizeof(Connection));
 		memset(ret, 0, sizeof(Connection));
@@ -63,11 +82,26 @@ namespace Redis {
 		ret->read_buff_alloc_sz = REDIS_BUFFSZ;
 		ret->read_buff = (char *)malloc(REDIS_BUFFSZ);
 
+		ret->use_ssl = use_ssl;
+		if(username != NULL && strlen(username) > 0) {
+			ret->username = strdup(username);
+		} else {
+			ret->username = NULL;
+		}
+
+		if(password != NULL && strlen(password) > 0) {
+			ret->password = strdup(password);
+		} else {
+			ret->password = NULL;
+		}
+
 		ret->mp_mutex = OS::CreateMutex();
 
 		ret->runLoop = false;
 
 		performAddressConnect(ret, address, port);
+
+		init_ssl_and_auth(ret);
 
 		return ret;
 	}
@@ -76,11 +110,23 @@ namespace Redis {
 		uint16_t port;
 		get_server_address_port(connection->connect_address, address, port);
 
+		if(connection->ssl_connection != NULL) {
+			SSL_free(connection->ssl_connection);
+			connection->ssl_connection = NULL;
+		}
+		if(connection->ssl_ctx != NULL) {
+			SSL_CTX_free(connection->ssl_ctx);
+			connection->ssl_ctx = NULL;
+		}
+			
+
 		close(connection->sd);
 		OS::Sleep(RECONNECT_SLEEP_TIME);
 		performAddressConnect(connection, address, port);
 		connection->reconnect_recursion_depth = 0;
 
+		init_ssl_and_auth(connection);
+	
 		SelectDb(connection, connection->selectedDb); //select last db
 	}
 	void performAddressConnect(Connection *connection, const char *address, uint16_t port) {
@@ -107,6 +153,7 @@ namespace Redis {
 			close(connection->sd);
 			performAddressConnect(connection, address, port);
 		}
+
 	}
 	std::string read_line(std::string str) {
 		std::string r;
@@ -245,7 +292,13 @@ namespace Redis {
 		sReadLineData.recv_loop = true;
 		int total_len = 0, len;
 		while(sReadLineData.recv_loop) {
-			len = recv(conn->sd, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len, MSG_NOSIGNAL); //TODO: check if exeeds max len.. currently set to 1 MB so shouldn't...
+			//int c = SSL_read(ssl_socket->mp_ssl, recvbuf, sizeof(recvbuf));
+			if(conn->ssl_connection != NULL) {
+				len = SSL_read(conn->ssl_connection, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len); //TODO: check if exeeds max len.. currently set to 1 MB so shouldn't...
+			} else {
+				len = recv(conn->sd, &conn->read_buff[total_len], conn->read_buff_alloc_sz-total_len, MSG_NOSIGNAL); //TODO: check if exeeds max len.. currently set to 1 MB so shouldn't...
+			}
+
 			if (len <= 0) {
 				conn->read_buff[0] = 0; 
 				return len;
@@ -305,7 +358,12 @@ namespace Redis {
 		vsprintf(conn->read_buff, fmt, args);
 
 		std::string cmd = conn->read_buff + std::string("\r\n");
-		send(conn->sd, cmd.c_str(), (int)cmd.length(), MSG_NOSIGNAL);
+		if(conn->ssl_connection != NULL) {
+			SSL_write(conn->ssl_connection, cmd.c_str(), (int)cmd.length());
+		} else {
+			send(conn->sd, cmd.c_str(), (int)cmd.length(), MSG_NOSIGNAL);
+		}
+		
 		va_end(args);
 
 		if (sleepMS != 0)
@@ -375,6 +433,10 @@ namespace Redis {
 		}
 	}*/
 	void Disconnect(Connection *connection) {
+		if(connection->ssl_connection != NULL)
+			SSL_free(connection->ssl_connection);
+		if(connection->ssl_ctx != NULL)
+			SSL_CTX_free(connection->ssl_ctx);
 		free(connection->read_buff);
 		if(connection->sd != 0)
 			close(connection->sd);

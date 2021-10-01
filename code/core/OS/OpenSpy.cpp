@@ -25,6 +25,9 @@ namespace OS {
 	const char *g_redisAddress = NULL;
 	const char *g_webServicesURL = NULL;
 	const char *g_webServicesAPIKey = NULL;
+	const char *g_redisUsername = NULL;
+	const char *g_redisPassword = NULL;
+	bool 		g_redisUseSSL = false;
 	int			g_numAsync = 0;
 	CURL *g_curl = NULL;
 	CURLSH *g_curlShare = NULL;
@@ -47,23 +50,34 @@ namespace OS {
 		curl_share_setopt(g_curlShare, CURLSHOPT_UNLOCKFUNC, curlUnlockCallback);
 		curl_share_setopt(g_curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
 
-		std::string hostname, redis_address, webservices_url, apikey;
+		std::string hostname, redis_address, webservices_url, apikey, redis_username, redis_password;
+		int redis_use_ssl_int;
+		OS::g_config->GetVariableString(appName, "redis-address", redis_address);
+		OS::g_config->GetVariableInt(appName, "redis-use-ssl", redis_use_ssl_int);
+		OS::g_config->GetVariableString(appName, "redis-username", redis_username);
+		OS::g_config->GetVariableString(appName, "redis-password", redis_password);
+		g_redisUseSSL = redis_use_ssl_int == 1;
+
 		OS::g_config->GetVariableInt(appName, "num-async-tasks", g_numAsync);
 		OS::g_config->GetVariableString(appName, "hostname", hostname);
-		OS::g_config->GetVariableString(appName, "redis-address", redis_address);
 		OS::g_config->GetVariableString(appName, "webservices-url", webservices_url);
 		OS::g_config->GetVariableString(appName, "webservices-apikey", apikey);
 
 		g_appName = appName;
 		g_hostName = strdup(hostname.c_str());
 		g_webServicesURL = strdup(webservices_url.c_str());
-		g_redisAddress = strdup(redis_address.c_str());
 		g_webServicesAPIKey = strdup(apikey.c_str());
+		g_redisAddress = strdup(redis_address.c_str());
+
+		if(redis_username.length() > 0)
+			g_redisUsername = strdup(redis_username.c_str());
+		if(redis_password.length() > 0)
+			g_redisPassword = strdup(redis_password.c_str());
 
 		redis_timeout.tv_usec = 0;
 		redis_timeout.tv_sec = 30;
 
-		redis_internal_connection = Redis::Connect(g_redisAddress, redis_timeout);
+		redis_internal_connection = Redis::Connect(g_redisAddress, g_redisUseSSL, g_redisUsername,  g_redisPassword, redis_timeout);
 
 		#ifndef _WIN32
 			g_logger = new UnixLogger(appName);
@@ -73,7 +87,7 @@ namespace OS {
 
 		mp_redis_internal_connection_mutex = OS::CreateMutex();
 		
-		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, webservices: %s)\n", appName, g_numAsync, g_hostName, g_redisAddress, g_webServicesURL);
+		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, redis creds: %s:%s, redis use ssl: %d, webservices: %s)\n", appName, g_numAsync, g_hostName, g_redisAddress, g_redisUsername, g_redisPassword, g_redisUseSSL, g_webServicesURL);
 	}
 	void Shutdown() {
 
@@ -94,6 +108,12 @@ namespace OS {
 		free((void *)g_webServicesURL);
 		free((void *)g_webServicesAPIKey);
 		free((void *)g_redisAddress);
+		if(g_redisUsername != NULL) {
+			free((void *)g_redisUsername);
+		}
+		if(g_redisPassword != NULL) {
+			free((void *)g_redisPassword);
+		}
 		free((void *)g_curlMutexes);
 	}
 	OS::GameData GetGameByRedisKey(const char *key, Redis::Connection *redis_ctx = NULL) {

@@ -135,7 +135,7 @@ class TaskScheduler {
 					data = new ThreadData;
 					if(scheduler->mp_mqconnection != NULL)
 						data->mp_mqconnection = scheduler->mp_mqconnection->clone();
-					data->mp_redis_connection = Redis::Connect(OS::g_redisAddress, t);
+					data->mp_redis_connection = Redis::Connect(OS::g_redisAddress, OS::g_redisUseSSL, OS::g_redisUsername, OS::g_redisPassword, t);
 					data->scheduler = (void *)scheduler;
 					data->server = scheduler->mp_server;
 					data->mp_mutex = OS::CreateMutex();

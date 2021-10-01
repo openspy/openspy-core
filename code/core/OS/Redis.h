@@ -5,6 +5,9 @@
 #include <string>
 #include <time.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 
 #define REDIS_MAX_RECONNECT_RECURSION_DEPTH 5
 
@@ -49,6 +52,13 @@ namespace Redis {
 		char *connect_address;
 		int selectedDb;
 		OS::CMutex *mp_mutex;
+
+		bool use_ssl;
+		const char *username;
+		const char *password;
+
+		SSL_CTX *ssl_ctx;
+		SSL *ssl_connection;
 	} Connection;
 
 	typedef struct {
@@ -59,7 +69,7 @@ namespace Redis {
 
 	//TODO: PING/RECONNECT, 
 
-	Connection *Connect(const char *hostname, struct timeval tv);
+	Connection *Connect(const char *hostname, bool use_ssl, const char *username, const char *password, struct timeval tv);
 	Response Command(Connection *conn, time_t sleepMS, const char *fmt, ...);
 
 	//for SUBSCRIBE/DEBUGGER, etc -- REMOVED due to not used anymore... and we set recv timeout, which would cause this to do a reconnect loop as currently implemented

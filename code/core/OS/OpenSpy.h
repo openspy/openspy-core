@@ -71,6 +71,9 @@ namespace OS {
 	extern const char *g_appName;
 	extern const char *g_hostName;
 	extern const char *g_redisAddress;
+	extern const char *g_redisUsername;
+	extern const char *g_redisPassword;
+	extern bool		   g_redisUseSSL;
 	extern const char *g_webServicesURL;
 	extern const char *g_webServicesAPIKey;
 	extern int		   g_numAsync;
