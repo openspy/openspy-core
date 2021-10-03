@@ -50,7 +50,16 @@ namespace Redis {
 	}
 	void init_ssl_and_auth(Connection *connection) {
 		if(connection->use_ssl) {
-			connection->ssl_ctx = SSL_CTX_new(TLS_client_method());
+			const SSL_METHOD *method = NULL;
+
+			//try TLS 1.2 method... otherwise fallback to method which likely is not available (due to FESL requiring SSLv2, an older openssl build is in use)
+			#ifndef OPENSSL_NO_TLS1_2_METHOD
+				method = TLSv1_2_client_method();
+			#else
+				method = TLS_client_method();
+			#endif
+			
+			connection->ssl_ctx = SSL_CTX_new(method);
 			connection->ssl_connection = SSL_new(connection->ssl_ctx);
 			SSL_set_fd(connection->ssl_connection, connection->sd);
 			if (SSL_connect(connection->ssl_connection) != 1) {
