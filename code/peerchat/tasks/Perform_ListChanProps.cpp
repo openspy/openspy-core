@@ -23,8 +23,6 @@ namespace Peerchat {
 
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
-		bool success = false;
-
 		TaskResponse response;
 
 		if (TaskShared::Handle_WebError(send_json, response.error_details)) {
@@ -32,7 +30,6 @@ namespace Peerchat {
 				request.callback(response, request.peer);
 		}
 		else {
-			success = true;
 			int num_items = json_array_size(send_json);
 			for (int i = 0; i < num_items; i++) {
 				json_t* item = json_array_get(send_json, i);

@@ -15,7 +15,7 @@
 namespace GP {
 	void Peer::m_update_registernick_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		std::ostringstream s;
-		s << "\\id\\" << (int)extra;
+		s << "\\id\\" << (ptrdiff_t)extra;
 		std::string id_string = s.str();
 		s.str("");
 		GP::Peer *gppeer = (GP::Peer *)peer;
@@ -41,7 +41,7 @@ namespace GP {
 	}
 	void Peer::handle_registernick(OS::KVReader data_parser) {
         std::string uniquenick, cdkey;
-		int id = data_parser.GetValueInt("id");
+		ptrdiff_t id = (ptrdiff_t)data_parser.GetValueInt("id");
 
         if(data_parser.HasKey("cdkey")) {
             cdkey = data_parser.GetValue("cdkey");
@@ -51,7 +51,7 @@ namespace GP {
             uniquenick = data_parser.GetValue("uniquenick");
         } else {
 			std::ostringstream s;
-			s << "\\id\\" << (int)id;
+			s << "\\id\\" << id;
             send_error(GPShared::GP_PARSE, s.str());
             return;
         }

@@ -72,7 +72,7 @@ namespace Peerchat {
 		ChanpropsRecord record;
 		
         std::string kvString = "";
-        for (int i = 2; i < data_parser.size(); i++) {
+        for (size_t i = 2; i < data_parser.size(); i++) {
 			kvString = kvString.append(" ").append(data_parser.at(i));
 		}
         kvString = kvString.substr(1);

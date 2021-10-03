@@ -181,7 +181,7 @@ namespace MM {
                 thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
 
                 request.callback(response);
-                return;
+                return true;
             }
             if(request.type == EMMPushRequestType_Heartbeat_ClearExistingKeys) {
                 ClearServerCustKeys(thread_data, server_key);
@@ -319,7 +319,6 @@ namespace MM {
 		Redis::Value v, arr;
 
 		int cursor = 0;
-        int channel_id;
 
         do {
             reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH %scustkeys*", cursor, server_key.c_str());

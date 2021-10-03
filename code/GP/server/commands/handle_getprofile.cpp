@@ -19,7 +19,7 @@ namespace GP {
 		if (data_parser.HasKey("profileid") && data_parser.HasKey("id")) {
 			int profileid = data_parser.GetValueInt("profileid");
 			request.profile_search_details.id = profileid;
-			request.extra = (void *)data_parser.GetValueInt("id");
+			request.extra = (void *)(ptrdiff_t)data_parser.GetValueInt("id");
 			request.peer = this;
 			request.peer->IncRef();
 			request.callback = Peer::m_getprofile_callback;
@@ -120,7 +120,7 @@ namespace GP {
 			s << "\\osstring\\" << p.osstring;
 
 
-			s << "\\id\\" << (int)extra;
+			s << "\\id\\" << (ptrdiff_t)extra;
 
 			s << "\\sig\\d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
 

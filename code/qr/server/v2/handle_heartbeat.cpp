@@ -24,7 +24,7 @@ namespace QR {
 		}
     }
     void Driver::handle_v2_heartbeat(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
-        int i = 0;
+        uint32_t i = 0;
         MM::ServerInfo server_info;
 		server_info.m_address = from_address;
 

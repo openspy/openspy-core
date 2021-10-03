@@ -36,8 +36,9 @@ namespace SM {
 					case TaskShared::WebErrorCode_UniqueNickInvalid:
 							code = (GPShared::GP_CHECK_BAD_NICK);
 							break;
+					default:
 					case TaskShared::WebErrorCode_BackendError:
-							code = (GPShared::GP_NETWORK);
+							code = (GPShared::GP_CHECK);
 							break;
 				}
 				s << code;
@@ -53,7 +54,6 @@ namespace SM {
 		std::string nick;
 		std::string uniquenick;
 		std::string email;
-		int partnercode = data_parser.GetValueInt("partnerid");
 		int namespaceid = data_parser.GetValueInt("namespaceid");
 
 		if (!data_parser.HasKey("email") || !data_parser.HasKey("nick")) {
@@ -99,7 +99,7 @@ namespace SM {
 		}
 
 		TaskShared::AuthRequest request;
-		request.type = request.type = TaskShared::EAuthType_NickEmail;
+		request.type = TaskShared::EAuthType_NickEmail;
 		request.profile.nick = nick;
 
 		if(data_parser.HasKey("namespaceid"))

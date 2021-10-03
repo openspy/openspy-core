@@ -136,7 +136,6 @@ namespace NN {
 		if(type) {
 			const char *type_str = json_string_value(type);
 			json_t *driver_address_json = json_object_get(root, "driver_address");
-			json_t *to_address_json = json_object_get(root, "to_address");
 
 			json_t *hostname_json = json_object_get(root, "hostname");
 

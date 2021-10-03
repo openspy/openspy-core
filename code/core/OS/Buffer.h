@@ -36,7 +36,7 @@ namespace OS {
 			void WriteFloat(float f);
 			void WriteDouble(double d);
 			void WriteNTS(std::string str);
-			void WriteBuffer(void *buf, size_t len);
+			void WriteBuffer(const void *buf, size_t len);
 
 			size_t readRemaining();
 			size_t bytesWritten();

@@ -27,7 +27,7 @@ namespace SM {
 			s << "\\firstname\\" << p.firstname;
 			s << "\\lastname\\" << p.lastname;
 			s << "\\email\\";
-			if(u.publicmask & GP_MASK_EMAIL || ((int)extra) != 0)
+			if(u.publicmask & GP_MASK_EMAIL || ((ptrdiff_t)extra) != 0)
 				s << u.email;
 			else 
 				s << Peer::mp_hidden_str;

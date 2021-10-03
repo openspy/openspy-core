@@ -18,7 +18,7 @@ namespace GP {
 			{EGPRedisRequestType_LookupBlockStatus, Perform_GetBuddyStatus},
 			{EGPRedisRequestType_Auth_PreAuth_Token_GPHash, Perform_Auth_PreAuth_Token_GPHash},
 			{EGPRedisRequestType_Auth_LoginTicket, Perform_Auth_LoginTicket_GPHash},
-			{NULL, NULL}
+			{-1, NULL}
 		};
 
 		TaskScheduler<GPBackendRedisRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {

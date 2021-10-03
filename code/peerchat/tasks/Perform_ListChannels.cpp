@@ -101,7 +101,7 @@ namespace Peerchat {
 				}
 			}
 			else break;
-        } while(cursor != 0 && (channels.size() < request.channel_summary.limit || request.channel_summary.limit == 0));
+        } while(cursor != 0 && (channels.size() < (size_t)request.channel_summary.limit || request.channel_summary.limit == 0));
 
 	AppendNonExistentPersistentChannels(request, thread_data, channels);
 		

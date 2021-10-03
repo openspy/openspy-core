@@ -18,7 +18,7 @@ namespace Peerchat {
 				return false;
 			}
 		}
-		if (channel.limit != 0 && channel.users.size() >= channel.limit) {
+		if (channel.limit != 0 && channel.users.size() >= (size_t)channel.limit) {
 			if((channel.basic_mode_flags & EChannelMode_OpsObeyChannelLimit) || GetUserChannelModeLevel(initial_flags) < 3) {
 				peer->send_numeric(471, "Cannot join channel (+l)", false, channel.channel_name);
 				return false;

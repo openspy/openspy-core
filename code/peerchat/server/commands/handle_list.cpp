@@ -76,7 +76,7 @@ namespace Peerchat {
 		PeerchatBackendRequest req;
 
 		std::string target = "*";
-		int command_index = 1;
+		size_t command_index = 1;
 
 		bool got_filtermask = false, got_keydump = false;
 		if(data_parser.size() > 1) {

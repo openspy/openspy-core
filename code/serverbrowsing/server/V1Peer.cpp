@@ -256,7 +256,7 @@ namespace SB {
 					return;
 				}
 				m_game = game_data;
-				gsseckey((unsigned char *)&realvalidate, (unsigned char *)&m_challenge, (const unsigned char *)m_game.secretkey.c_str(), m_enctype);
+				gsseckey((unsigned char *)&realvalidate, (const char *)&m_challenge, (const unsigned char *)m_game.secretkey.c_str(), m_enctype);
 				if(!m_validated) {
 					if(strcmp(realvalidate,m_validation.c_str()) == 0) {
 						m_validated = true;

@@ -45,7 +45,6 @@ namespace TaskShared {
 							GPShared::GPStatus status;
 							json_t *array_item = json_array_get(root, i);
 							json_t *profile_item = json_object_get(array_item, "profile");
-							json_t *user_item = json_object_get(array_item, "user");
 							json_t *status_item = NULL;
 							OS::Profile profile = OS::LoadProfileFromJson(profile_item);
 							profiles.push_back(profile);

@@ -31,7 +31,7 @@ namespace FESL {
 		request.peer = this;
 		request.extra = (void *)-1;
 		if(kv_list.HasKey("TID")) {
-			request.extra = (void *)kv_list.GetValueInt("TID");
+			request.extra = (void *)(ptrdiff_t)kv_list.GetValueInt("TID");
 		}
 		
 		IncRef();
@@ -50,8 +50,8 @@ namespace FESL {
 		std::ostringstream s;
 		if (success) {
 			s << "TXN=NuLogin\n";
-			if((int)extra != -1) {
-				s << "TID=" << (int)extra << "\n";
+			if((ptrdiff_t)extra != (ptrdiff_t)-1) {
+				s << "TID=" << (ptrdiff_t)extra << "\n";
 			}
 			s << "lkey=" << auth_data.session_key << "\n";
 			((Peer *)peer)->m_session_key = auth_data.session_key;
@@ -79,7 +79,7 @@ namespace FESL {
 			scheduler->AddRequest(request.type, request);
 		}
 		else {
-			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "NuLogin", (int)extra);
+			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "NuLogin", (int)(ptrdiff_t)extra);
 		}
 	}
 }

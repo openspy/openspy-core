@@ -13,7 +13,7 @@ namespace MM {
 		{UTMasterRequestType_Heartbeat, PerformHeartbeat},
 		{UTMasterRequestType_ListServers, PerformListServers},
 		{UTMasterRequestType_DeleteServer, PerformDeleteServer},
-		{NULL, NULL}
+		{-1, NULL}
 	};
 
 	TaskScheduler<UTMasterRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {

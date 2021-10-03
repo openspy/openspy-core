@@ -70,8 +70,6 @@ namespace Peerchat {
 
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
-		bool success = false;
-
 		TaskResponse response;
 
 		if (TaskShared::Handle_WebError(send_json, response.error_details)) {
@@ -79,7 +77,6 @@ namespace Peerchat {
 				request.callback(response, request.peer);
 		}
 		else {
-			success = true;
 			ChanpropsRecord record = GetChanpropsFromJson(send_json);
             response.chanprops = record;
 

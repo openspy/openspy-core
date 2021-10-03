@@ -10,7 +10,7 @@ namespace NN {
 
 	TaskScheduler<NNRequestData, TaskThreadData>::RequestHandlerEntry requestTable[] = {
 		{ENNRequestType_SubmitJson, PerformSubmitJson},
-		{NULL, NULL}
+		{-1, NULL}
 	};
 
 	TaskScheduler<NNRequestData, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {

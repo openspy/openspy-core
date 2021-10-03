@@ -39,7 +39,7 @@ namespace Peerchat {
 			usermode_properties_string = usermode_properties_string.substr(1);
 		}
 
-		for (int i = 3; i < data_parser.size(); i++) {
+		for (size_t i = 3; i < data_parser.size(); i++) {
 			usermode_properties_string = usermode_properties_string.append(" ").append(data_parser.at(i));
 		}
 

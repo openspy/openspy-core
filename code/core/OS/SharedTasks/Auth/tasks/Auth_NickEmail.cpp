@@ -49,7 +49,6 @@ namespace TaskShared {
 
 				}
 				else if (json_data) {
-					json_t *error_obj = json_object_get(json_data, "error");
 					success = true;
 					
 					json_t *session_obj = json_object_get(json_data, "session");

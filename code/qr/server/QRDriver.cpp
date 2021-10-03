@@ -40,12 +40,9 @@ namespace QR {
 
 					char firstChar = dgram.buffer.ReadByte();
 					dgram.buffer.resetReadCursor();
-
-					int last_read_remaining = 0;
 					
 					//PROCESS PACKET HERE
 					do {
-						last_read_remaining = dgram.buffer.readRemaining();
 						if(firstChar == '\\') { //v1
 							handle_v1_packet(dgram);
 						} else { //v2

@@ -4,7 +4,7 @@
 #include <server/GSPeer.h>
 namespace GS {
 	bool Perform_AuthTokenAuth(PersistBackendRequest request, TaskThreadData *thread_data) {
-		json_t *send_json = json_object(), *profile_obj = json_object();
+		json_t *send_json = json_object();
 
 		json_object_set_new(send_json, "client_response", json_string(request.game_instance_identifier.c_str()));
 		json_object_set_new(send_json, "auth_token", json_string(request.auth_token.c_str()));
@@ -26,7 +26,6 @@ namespace GS {
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
 		bool success = false;
-		json_t *error_obj = json_object_get(send_json, "error");
 		json_t *profile;
 		OS::Profile auth_profile;
 		OS::User auth_user;

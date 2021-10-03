@@ -19,7 +19,7 @@
 namespace SM {
 	void Peer::m_nicks_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void* extra, INetPeer* peer) {
 		if (success) {
-			int namespaceid = (int)extra;
+			int namespaceid = (int)(ptrdiff_t)extra;
 			TaskShared::ProfileRequest request;
 			request.type = TaskShared::EProfileSearch_Profiles;
 			request.peer = peer;
@@ -48,8 +48,9 @@ namespace SM {
 				case TaskShared::WebErrorCode_UniqueNickInvalid:
 					code = (GPShared::GP_LOGIN_BAD_UNIQUENICK);
 					break;
+				default:
 				case TaskShared::WebErrorCode_BackendError:
-					code = (GPShared::GP_NETWORK);
+					code = (GPShared::GP_LOGIN);
 					break;
 			}
 			s << code;
@@ -128,7 +129,7 @@ namespace SM {
 		}
 
 		request.user.password = password;
-		request.extra = (void *)request.profile.namespaceid;
+		request.extra = (void *)(ptrdiff_t)request.profile.namespaceid;
 		request.peer = this;
 		IncRef();
 		request.callback = Peer::m_nicks_auth_cb;

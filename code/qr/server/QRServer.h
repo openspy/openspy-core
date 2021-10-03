@@ -19,7 +19,7 @@ namespace QR {
 		void tick();
 		void shutdown();
 		TaskScheduler<MM::MMPushRequest, TaskThreadData> *getScheduler() { return mp_task_scheduler; };
-		QR::Driver *Server::findDriverByAddress(OS::Address address);
+		Driver *findDriverByAddress(OS::Address address);
 	private:
 		TaskScheduler<MM::MMPushRequest, TaskThreadData> *mp_task_scheduler;
 	};

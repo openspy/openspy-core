@@ -143,10 +143,10 @@ namespace UT {
 		char num_filter_fields = recv_buffer.ReadByte();
 
 		for(int i=0;i<num_filter_fields;i++) {
-			int field_len = recv_buffer.ReadByte(); //skip string len			
+			/*int field_len = */recv_buffer.ReadByte(); //skip string len			
 			std::string field = recv_buffer.ReadNTS();
 
-			int property_len = recv_buffer.ReadByte();			
+			/*int property_len = */recv_buffer.ReadByte();			
 			std::string property = recv_buffer.ReadNTS();
 			
 

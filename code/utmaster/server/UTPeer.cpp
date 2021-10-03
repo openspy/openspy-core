@@ -74,7 +74,7 @@ namespace UT {
 		uint8_t req_type;
 		while(recv_buffer.readRemaining() > 0) {
 			
-			int len = recv_buffer.ReadInt();
+			size_t len = (size_t)recv_buffer.ReadInt();
 			OS::Buffer parse_buffer;
 			if(len == 0 || len > recv_buffer.readRemaining()) break;
 			parse_buffer.WriteBuffer(recv_buffer.GetReadCursor(), len);

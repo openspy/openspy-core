@@ -2,7 +2,6 @@
 #include <sstream>
 #include <server/Server.h>
 
-#define USER_EXPIRE_TIME 300
 namespace Peerchat {
     bool Handle_PrivMsg(TaskThreadData *thread_data, std::string message) {
         uint8_t *data_out;

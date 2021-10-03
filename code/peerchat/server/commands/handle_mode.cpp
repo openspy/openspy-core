@@ -123,12 +123,12 @@ namespace Peerchat {
 		}
 		else if (data_parser.size() >= 3) { //set/unset
 			// +m-n
-			int last_offset = 2;
+			size_t last_offset = 2;
 
 			bool set = true;
 			int set_flags = 0, unset_flags = 0;
 			std::string mode_string = data_parser.at(2);
-			for (int i = 0; i < mode_string.length(); i++) {
+			for (size_t i = 0; i < mode_string.length(); i++) {
 				if (mode_string[i] == '+') {
 					set = true;
 				}
@@ -279,12 +279,11 @@ namespace Peerchat {
 		}
 		else if (data_parser.size() >= 3) { //set/unset
 			// +m-n
-			int last_offset = 2;
 
 			bool set = true;
 			int set_flags = 0, unset_flags = 0;
 			std::string mode_string = data_parser.at(2);
-			for (int i = 0; i < mode_string.length(); i++) {
+			for (size_t i = 0; i < mode_string.length(); i++) {
 				if (mode_string[i] == '+') {
 					set = true;
 				}

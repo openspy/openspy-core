@@ -12,7 +12,7 @@ namespace GS {
 			{EPersistRequestType_Auth_AuthTicket, Perform_AuthTokenAuth},
 			{EPersistRequestType_Auth_CDKey, Perform_CDKeyAuth},
 			{EPersistRequestType_GetProfileIDFromCDKey, Perform_GetProfileIDFromCD},
-			{NULL, NULL}
+			{-1, NULL}
 		};
         TaskScheduler<PersistBackendRequest, TaskThreadData> *InitTasks(INetServer *server) {
             TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = new TaskScheduler<PersistBackendRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, NULL);

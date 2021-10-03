@@ -16,7 +16,7 @@ namespace Peerchat {
 			ss << summary.limit;
 		}
 		else if(name.compare("key") == 0) {
-			ss << (summary.password.length() > 0) ? 1 : 0;
+			ss << ((summary.password.length() > 0) ? 1 : 0);
 		} else {
 			result = false;
 		}
@@ -27,9 +27,7 @@ namespace Peerchat {
 		return result;
 	}
 	void Perform_GetChannelKeys_InjectOverrides(ChannelSummary summary, std::string search_string, std::ostringstream& output) {
-		
-
-		for(int i=0;i<sizeof(chankey_inject_keys)/sizeof(const char *);i++) {
+		for(size_t i=0;i<(sizeof(chankey_inject_keys)/sizeof(const char *));i++) {
 			if(match(search_string.c_str(), chankey_inject_keys[i]) == 0) {
 				output << "\\" << chankey_inject_keys[i] << "\\";
 				std::string s;
@@ -39,7 +37,7 @@ namespace Peerchat {
 		}
 	}
 	bool Is_Chankey_InjectKey(const char *key) {
-		for(int i=0;i<sizeof(chankey_inject_keys)/sizeof(const char *);i++) {
+		for(size_t i=0;i<(sizeof(chankey_inject_keys)/sizeof(const char *));i++) {
 			if(strcmp(chankey_inject_keys[i], key) == 0) return true;
 		}
 		return false;

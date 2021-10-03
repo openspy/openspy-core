@@ -89,7 +89,7 @@ namespace QR {
             int player_id = 0;
             std::string variable_name = p.first;
             if(MM::isPlayerString(p.first, variable_name, player_id)) {
-                if(server_info.m_player_keys[variable_name].size() <= player_id) {
+                if((int)server_info.m_player_keys[variable_name].size() <= player_id) {
                     server_info.m_player_keys[variable_name].push_back(p.second);
                 } else {
                     server_info.m_player_keys[variable_name][player_id] = p.second;

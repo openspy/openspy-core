@@ -14,14 +14,13 @@ namespace Peerchat {
         Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS usernick_%s", formatted_name.c_str());
         Redis::Value v;
 
-        bool nick_exists = false;
         int id = 0;
         if (Redis::CheckError(reply) || reply.values.size() == 0) {
-            nick_exists = true;
+            goto error_end;
         } else {
             v = reply.values[0];
-            if ((v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) || (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0)) {
-                nick_exists = true;
+            if (!((v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) || (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0))) {
+                goto error_end;
             }
         }
 

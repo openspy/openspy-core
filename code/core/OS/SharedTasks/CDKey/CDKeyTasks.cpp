@@ -7,7 +7,7 @@ namespace TaskShared {
         {ECDKeyType_AssociateToProfile, PerformCDKey_AssociateToProfile},
         {ECDKeyType_GetProfileByCDKey, PerformCDKey_GetProfileByCDKey},
         {ECDKeyType_TestCDKeyValid, PerformCDKey_TestCDKeyValid},
-        {NULL, NULL}
+        {-1, NULL}
     };
     TaskScheduler<CDKeyRequest, TaskThreadData> *InitCDKeyTasks(INetServer *server) {
             TaskScheduler<CDKeyRequest, TaskThreadData> *scheduler = new TaskScheduler<CDKeyRequest, TaskThreadData>(OS::g_numAsync, server, CDKey_RequestHandler, NULL);

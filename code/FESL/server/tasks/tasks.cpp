@@ -10,7 +10,7 @@ namespace FESL {
 		TaskScheduler<FESLRequest, TaskThreadData>::RequestHandlerEntry FESLTasks_requestTable[] = {
 			{EFESLRequestType_GetEntitledGameFeatures, Perform_GetEntitledGameFeatures},
 			{EFESLRequestType_GetObjectInventory, Perform_GetObjectInventory},
-			{NULL, NULL}
+			{-1, NULL}
 		};
 	TaskScheduler<FESLRequest, TaskThreadData> *InitTasks(INetServer *server) {
 		TaskScheduler<FESLRequest, TaskThreadData> *scheduler = new TaskScheduler<FESLRequest, TaskThreadData>(OS::g_numAsync, server, FESLTasks_requestTable, listenerTable);

@@ -10,7 +10,7 @@
 namespace FESL {
 	void Peer::m_create_auth_ticket(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 		std::ostringstream s;
-		int tid = (int)extra;
+		int tid = (int)(ptrdiff_t)extra;
 		if (success) {
 			s << "TXN=GameSpyPreAuth\n";			
 			if(tid != -1) {
@@ -34,7 +34,7 @@ namespace FESL {
 		if(kv_list.HasKey("TID")) {
 			tid = kv_list.GetValueInt("TID");
 		}
-		request.extra = (void *)tid;
+		request.extra = (void *)(ptrdiff_t)tid;
 		IncRef();
 		if(m_profile.id != 0) {
 			request.profile = m_profile;

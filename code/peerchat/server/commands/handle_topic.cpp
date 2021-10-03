@@ -49,7 +49,7 @@ namespace Peerchat {
 			}
 
 			if (do_combine) {
-				for (int i = 3; i < data_parser.size(); i++) {
+				for (size_t i = 3; i < data_parser.size(); i++) {
 					message = message.append(" ").append(data_parser.at(i));
 				}
 			}

@@ -31,7 +31,7 @@ namespace Peerchat {
 			do_combine = true;
 		}
 		if (do_combine) {
-			for (int i = 3; i < data_parser.size(); i++) {
+			for (size_t i = 3; i < data_parser.size(); i++) {
 				kv_string = kv_string.append(" ").append(data_parser.at(i));
 			}
 		}

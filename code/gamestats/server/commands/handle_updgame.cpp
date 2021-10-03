@@ -21,7 +21,7 @@ namespace GS {
 
 	void Peer::updateGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
 		peer->mp_mutex->lock();
-		int sesskey = (int)extra;
+		int sesskey = (int)(ptrdiff_t)extra;
 		peer->m_updgame_sesskey_wait_list.erase(sesskey);
 		peer->mp_mutex->unlock();
 	}

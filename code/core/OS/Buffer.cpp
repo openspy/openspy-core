@@ -125,7 +125,7 @@ namespace OS {
 				WriteByte(0);
 			}
 		}
-		void Buffer::WriteBuffer(void *buf, size_t len) {
+		void Buffer::WriteBuffer(const void *buf, size_t len) {
 			IncWriteCursor(len);
 			memcpy(_write_cursor_last, buf, len);
 		}

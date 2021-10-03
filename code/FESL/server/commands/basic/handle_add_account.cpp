@@ -38,7 +38,7 @@ namespace FESL {
 		req.type = TaskShared::EUserRequestType_Create;
 		req.peer = this;
 
-		req.extra = (void *)tid;
+		req.extra = (void *)(ptrdiff_t)tid;
 		req.peer->IncRef();
 
 		req.registerCallback = m_newuser_cb;
@@ -52,7 +52,7 @@ namespace FESL {
 	}
 	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer) {
 		FESL_ERROR err_code = FESL_ERROR_NO_ERROR;
-		int tid = (int) extra;
+		int tid = (int)(ptrdiff_t)extra;
 		if (auth_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
 			switch (auth_data.error_details.response_code) {
 			case TaskShared::WebErrorCode_UniqueNickInUse:

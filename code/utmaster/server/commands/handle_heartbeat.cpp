@@ -23,7 +23,7 @@ namespace UT {
 		}
 		ss << ") ";
 		buffer.ReadByte(); //??
-		uint32_t unk2 = buffer.ReadInt(); 
+		/*uint32_t unk2 =*/ buffer.ReadInt(); 
 
 		record.m_address.port = htons(buffer.ReadShort());
 		ss << " Address: " << record.m_address.ToString();
@@ -33,7 +33,7 @@ namespace UT {
 		
 
 
-		int hostname_len = buffer.ReadInt();
+		/*int hostname_len =*/ buffer.ReadInt();
 		record.hostname = buffer.ReadNTS();
 		ss << " Hostname: " << record.hostname;
 
@@ -43,16 +43,18 @@ namespace UT {
 		record.game_group = Read_FString(buffer);
 		ss << " Game group: " << record.game_group;
 
-		int num_players = buffer.ReadInt(), max_players = buffer.ReadInt(), unk5 = buffer.ReadInt();
+		int num_players = buffer.ReadInt(), max_players = buffer.ReadInt(); /*, unk5 = buffer.ReadInt(); */ 
+		buffer.ReadInt(); //unk5
+		
 		if(m_client_version >= 3000) {
-			uint32_t unk6 = buffer.ReadInt();//, unk7 = buffer.ReadInt();
+			/*uint32_t unk6 = */buffer.ReadInt();//, unk7 = buffer.ReadInt();
 		}
 		record.num_players = num_players;
 		record.max_players = max_players;
 		ss << " Players: (" << record.num_players << "/" << record.max_players << ") ";
 		
 		if(m_client_version >= 3000) {
-			uint8_t unk7 = buffer.ReadByte(), unk8 = buffer.ReadByte(), unk9 = buffer.ReadByte();
+			/*uint8_t unk7 =*/ buffer.ReadByte(), /*unk8 =*/ buffer.ReadByte(), /*unk9 =*/ buffer.ReadByte();
 		}
 		
 		uint8_t num_fields = buffer.ReadByte();
@@ -75,8 +77,8 @@ namespace UT {
 		ss << " Players (";
 		for(int i=0;i<num_player_entries;i++) {
 			MM::PlayerRecord player_record;
-			uint8_t player_index = buffer.ReadByte();
-			int name_len = buffer.ReadInt();
+			/*uint8_t player_index =*/ buffer.ReadByte();
+			/*int name_len =*/ buffer.ReadInt();
 			
 
 			player_record.name = buffer.ReadNTS();
@@ -113,11 +115,11 @@ namespace UT {
 
     //this seems to be more stats related... but here for now, happens on non-stats games as well, just not much data
 	void Peer::handle_newserver_request(OS::Buffer recv_buffer) {
-		int unk1 = recv_buffer.ReadInt();
+		/*int unk1 =*/ recv_buffer.ReadInt();
 		if(recv_buffer.readRemaining() > 0) {
 			
-			int unk2 = recv_buffer.ReadInt();
-			int unk3 = recv_buffer.ReadInt();
+			/*int unk2 =*/ recv_buffer.ReadInt();
+			/*int unk3 =*/ recv_buffer.ReadInt();
 			bool continue_parse = true;
 			std::string accumulated_string;
 			while(continue_parse) {			
@@ -134,8 +136,8 @@ namespace UT {
 					}
 				}
 			}
-			int unk4 = recv_buffer.ReadInt();
-			int unk5 = recv_buffer.ReadInt();
+			/*int unk4 =*/ recv_buffer.ReadInt();
+			/*int unk5 =*/ recv_buffer.ReadInt();
 			continue_parse = true;
 			accumulated_string = "";
 			while(continue_parse) {			

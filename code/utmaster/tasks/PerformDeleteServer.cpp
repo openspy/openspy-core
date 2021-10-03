@@ -10,7 +10,6 @@ namespace MM {
         response.peer = request.peer;
         
         OS::GameData game_info = OS::GetGameByID(request.peer->GetGameId(), thread_data->mp_redis_connection);
-        bool is_new_server = false;
         std::string server_key = GetServerKey_FromIPMap(request, thread_data, game_info);
 
         if(server_key.length() > 0) {

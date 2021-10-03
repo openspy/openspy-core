@@ -22,7 +22,7 @@ namespace GS {
 		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
-		req.mp_extra = (void *)operation_id;
+		req.mp_extra = (void *)(ptrdiff_t)operation_id;
 		req.type = EPersistRequestType_Auth_ProfileID;
 		req.callback = getPersistDataCallback;
 		req.profileid = profileid;
@@ -36,7 +36,7 @@ namespace GS {
 		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
-		req.mp_extra = (void *)operation_id;
+		req.mp_extra = (void *)(ptrdiff_t)operation_id;
 		req.type = EPersistRequestType_Auth_AuthTicket;
 		req.callback = getPersistDataCallback;
 		req.auth_token = auth_token;
@@ -51,7 +51,7 @@ namespace GS {
 		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
-		req.mp_extra = (void *)operation_id;
+		req.mp_extra = (void *)(ptrdiff_t)operation_id;
 		req.type = EPersistRequestType_Auth_CDKey;
 		req.callback = getPersistDataCallback;
 		req.auth_token = cdkey;
@@ -104,7 +104,7 @@ namespace GS {
 
 
 		std::ostringstream ss;
-		int operation_id = (int)extra;
+		int operation_id = (int)(ptrdiff_t)extra;
 
 		if (operation_id >= ((Peer *)peer)->m_last_authp_operation_id) {
 			((Peer *)peer)->m_user = user;

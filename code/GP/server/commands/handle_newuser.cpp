@@ -87,12 +87,12 @@ namespace GP {
 				free((void *)dpass);
 		}
 
-		int id = data_parser.GetValueInt("id");
+		void *id = (void *)(ptrdiff_t)data_parser.GetValueInt("id");
 
 		TaskShared::UserRequest req;
 		req.type = TaskShared::EUserRequestType_Create;
 		req.peer = this;
-		req.extra = (void *)id;
+		req.extra = id;
 		req.peer->IncRef();
 
 		req.profile_params.nick = nick;
@@ -110,12 +110,12 @@ namespace GP {
 	}
 	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer) {
 		int err_code = 0;
-		int operation_id = (int)extra;
+		ptrdiff_t operation_id = (ptrdiff_t)extra;
 		std::ostringstream s;
 
-		//disabled due to session log-out conflict when games \login\ after \newuser\ 
-		//((Peer *)peer)->m_user = user;
-		//((Peer *)peer)->m_profile = profile;
+		/* disabled due to session log-out conflict when games \login\ after \newuser\ 
+		((Peer *)peer)->m_user = user;
+		((Peer *)peer)->m_profile = profile; */
 
 		if (!success) {
 			err_code = (int)GP_NEWUSER_BAD_NICK;

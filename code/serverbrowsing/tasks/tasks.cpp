@@ -20,7 +20,7 @@ namespace MM {
 		{EMMQueryRequestType_SubmitData, PerformSubmitData},
 		{EMMQueryRequestType_GetGameInfoByGameName, PerformGetGameInfoByGameName},
 		{EMMQueryRequestType_GetGameInfoPairByGameName, PerformGetGameInfoPairByGameName},
-		{NULL, NULL}
+		{-1, NULL}
 	};
 
 	TaskScheduler<MMQueryRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {

@@ -15,6 +15,7 @@ namespace QR {
 		} else {
             OS::Buffer send_buffer;
             struct timeval current_time;
+            gettimeofday(&current_time, NULL);
             send_buffer.WriteByte(QR_MAGIC_1);
             send_buffer.WriteByte(QR_MAGIC_2);
             send_buffer.WriteByte(PACKET_KEEPALIVE);

@@ -29,7 +29,6 @@ namespace FESL {
 		std::vector<TaskShared::CountryRegion> countries = server->GetCountries();
 		std::vector<TaskShared::CountryRegion>::const_iterator it = countries.begin();
 		int i = 0;
-		int num_countries = std::distance(countries.begin(), countries.end());
 		while (it != countries.end()) {
 			
 			TaskShared::CountryRegion country = *it;

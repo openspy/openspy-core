@@ -33,7 +33,6 @@ namespace TaskShared {
 		profile.id = 0;
 		TaskShared::CDKeyData cdkey_data;
 
-		bool success = false;
 		if (curl) {
 			struct curl_slist *chunk = NULL;
 			CDKeyReq_InitCurl(curl, json_dump, (void *)&recv_data, request, &chunk);
@@ -45,9 +44,7 @@ namespace TaskShared {
 				if (Handle_WebError(json_data, cdkey_data.error_details)) {
 
 				}
-				else if (json_data) {
-					success = true;
-
+				if (json_data) {
 					json_decref(json_data);
 				}
 			}

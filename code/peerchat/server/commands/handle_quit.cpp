@@ -57,7 +57,7 @@ namespace Peerchat {
 			}
 
 			if (do_combine && data_parser.size() > 2) {
-				for (int i = 2; i < data_parser.size(); i++) {
+				for (size_t i = 2; i < data_parser.size(); i++) {
 					reason = reason.append(" ").append(data_parser.at(i));
 				}
 			}

@@ -67,6 +67,7 @@ template<typename S = INetIOSocket>
 class INetIOInterface {
 	public:
 		INetIOInterface() { };
+		virtual ~INetIOInterface() {}
 		
 		//socket setup
 		virtual INetIOSocket *BindTCP(OS::Address bind_address) = 0;

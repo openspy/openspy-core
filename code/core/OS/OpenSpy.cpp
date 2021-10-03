@@ -40,8 +40,7 @@ namespace OS {
 		OS::g_curl = curl_easy_init(); //only used for curl_easy_escape
 
 		g_curlShare = curl_share_init();
-		//CURL_LOCK_DATA_LAST
-		g_curlMutexes = malloc(sizeof(CMutex *) * CURL_LOCK_DATA_LAST);
+		g_curlMutexes = (OS::CMutex **)malloc(sizeof(CMutex *) * CURL_LOCK_DATA_LAST);
 		for(int i=0;i<CURL_LOCK_DATA_LAST;i++) {
 			g_curlMutexes[i] = OS::CreateMutex();
 		}

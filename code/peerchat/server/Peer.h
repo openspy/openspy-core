@@ -78,7 +78,7 @@ namespace Peerchat {
 
 				//size_t address_end = std::string::npos;
 				
-				if(id_marker != -1) {
+				if(id_marker != std::string::npos) {
 					std::string id_data = string.substr(id_marker + 1);
 					id = atoi(id_data.c_str());
 					//address_end = id_marker - 1;

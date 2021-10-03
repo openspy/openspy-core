@@ -10,7 +10,7 @@ namespace TaskShared {
 			{EUserRequestType_Search, PerformUserRequest},
 			{EUserRequestType_Update, PerformUserRequest},
 			{EUserRequestType_Create, PerformUserRegisterRequest},
-			{NULL, NULL}
+			{-1, NULL}
 		};
         TaskScheduler<UserRequest, TaskThreadData> *InitUserTasks(INetServer *server) {
             TaskScheduler<UserRequest, TaskThreadData> *scheduler = new TaskScheduler<UserRequest, TaskThreadData>(OS::g_numAsync, server, UserTasks_requestTable, NULL);
@@ -28,7 +28,7 @@ namespace TaskShared {
 			{EProfileSearch_Buddies, Perform_BuddyRequest},
 			{EProfileSearch_Buddies_Reverse, Perform_BuddyRequest},
 			{EProfileSearch_Blocks, Perform_BuddyRequest},
-			{NULL, NULL}
+			{-1, NULL}
 		};
         TaskScheduler<ProfileRequest, TaskThreadData> *InitProfileTasks(INetServer *server) {
             TaskScheduler<ProfileRequest, TaskThreadData> *scheduler = new TaskScheduler<ProfileRequest, TaskThreadData>(OS::g_numAsync, server, ProfileTasks_requestTable, NULL);

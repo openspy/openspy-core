@@ -12,14 +12,14 @@
 namespace FESL {
 	void Peer::m_login_fetched_game_entitlements_auth_cb(TaskShared::WebErrorDetails error_details, std::vector<EntitledGameFeature> results, INetPeer *peer, void *extra) {
 			if(error_details.response_code != TaskShared::WebErrorCode_Success) {
-				((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_ACCOUNT, "Login", (int)extra);
+				((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_ACCOUNT, "Login", (ptrdiff_t)extra);
 				return;
 			}
 			std::ostringstream s;
 
 			s << "TXN=Login\n";
-			if((int)extra != -1) {
-				s << "TID=" << (int)extra << "\n";
+			if((ptrdiff_t)extra != (ptrdiff_t)-1) {
+				s << "TID=" << (ptrdiff_t)extra << "\n";
 			}
 			s << "lkey=" << ((Peer *)peer)->m_session_key << "\n";
 			
@@ -95,7 +95,7 @@ namespace FESL {
 			
 			FESLRequest request;
 			request.type = EFESLRequestType_GetEntitledGameFeatures;
-			request.peer = peer;
+			request.peer = (FESL::Peer *)peer;
 			request.extra = extra;
 			request.profileid = profile.id;
 			request.driverInfo = server_info;
@@ -109,7 +109,7 @@ namespace FESL {
 
 		}
 		else {
-			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "Login", (int)extra);
+			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "Login", (ptrdiff_t)extra);
 		}
 	}
 	bool Peer::m_acct_login_handler(OS::KVReader kv_list) {
@@ -135,7 +135,7 @@ namespace FESL {
 		request.peer = this;
 		request.extra = (void *)-1;
 		if(kv_list.HasKey("TID")) {
-			request.extra = (void *)kv_list.GetValueInt("TID");
+			request.extra = (void *)(ptrdiff_t)kv_list.GetValueInt("TID");
 		}
 
 		IncRef();

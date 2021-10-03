@@ -59,7 +59,6 @@ namespace Peerchat {
     }
     bool Perform_UpdateChannelModes_BanMask(PeerchatBackendRequest request, TaskThreadData *thread_data) {
         TaskResponse response;
-        bool success = true;
         std::map<std::string, int>::iterator it = request.channel_modify.set_usermodes.begin();
         while(it != request.channel_modify.set_usermodes.end()) {
             std::pair<std::string, int> p = *(it++);

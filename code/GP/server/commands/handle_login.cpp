@@ -80,7 +80,7 @@ namespace GP {
 		req.client_challenge = client_challenge;
 		req.client_response = response;
 		req.authCallback = m_auth_cb;
-		req.extra = (void *)operation_id;
+		req.extra = (void *)(ptrdiff_t)operation_id;
 		req.user.partnercode = partnercode;
 		req.peer = this;
 		req.peer->IncRef();
@@ -110,7 +110,7 @@ namespace GP {
 		req.client_challenge = client_challenge;
 		req.authCallback = m_auth_cb;
 		req.client_response = response;
-		req.extra = (void *)operation_id;
+		req.extra = (void *)(ptrdiff_t)operation_id;
 		req.user.partnercode = partnercode;
 		req.peer = this;
 		req.peer->IncRef();
@@ -125,7 +125,7 @@ namespace GP {
 		req.client_challenge = client_challenge;
 		req.authCallback = m_auth_cb;
 		req.client_response = response;
-		req.extra = (void *)operation_id;
+		req.extra = (void *)(ptrdiff_t)operation_id;
 		req.auth_token = auth_token;
 		req.peer = this;
 		req.peer->IncRef();
@@ -140,7 +140,7 @@ namespace GP {
 		req.client_challenge = client_challenge;
 		req.authCallback = m_auth_cb;
 		req.client_response = response;
-		req.extra = (void *)operation_id;
+		req.extra = (void *)(ptrdiff_t)operation_id;
 		req.auth_token = login_ticket;
 		req.peer = this;
 		req.peer->IncRef();
@@ -154,7 +154,7 @@ namespace GP {
 		((GP::Peer *)peer)->m_user = user;
 		((GP::Peer *)peer)->m_profile = profile;
 
-		int operation_id = (int)extra;
+		ptrdiff_t operation_id = (ptrdiff_t)extra;
 
 		std::ostringstream ss;
 		if(success) {
@@ -201,8 +201,9 @@ namespace GP {
 				case TaskShared::WebErrorCode_UniqueNickInvalid:
 					((GP::Peer *)peer)->send_error(GP_LOGIN_BAD_UNIQUENICK, ss.str());
 				break;
+				default:
 				case TaskShared::WebErrorCode_BackendError:
-					((GP::Peer *)peer)->send_error(GP_NETWORK, ss.str());
+					((GP::Peer *)peer)->send_error(GP_LOGIN, ss.str());
 				break;
 			}
 		}

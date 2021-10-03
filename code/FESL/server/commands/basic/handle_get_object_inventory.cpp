@@ -13,8 +13,8 @@ namespace FESL {
 			std::ostringstream s;
 
 			s << "TXN=GetObjectInventory\n";
-			if((int)extra != -1) {
-				s << "TID=" << (int)extra << "\n";
+			if((ptrdiff_t)extra != (ptrdiff_t)-1) {
+				s << "TID=" << (ptrdiff_t)extra << "\n";
 			}
 
 			s << "entitlements.[]=" << results.size() << "\n";
@@ -43,7 +43,7 @@ namespace FESL {
 
 			((Peer *)peer)->SendPacket(FESL_TYPE_DOBJ, s.str());			
 		} else {
-			((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_DOBJ, "GetObjectInventory", (int)extra);
+			((Peer *)peer)->handle_web_error(error_details, FESL_TYPE_DOBJ, "GetObjectInventory", (ptrdiff_t)extra);
 		}
 
 	}

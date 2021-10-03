@@ -29,7 +29,6 @@ namespace GS {
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
 		bool success = false;
-		json_t *error_obj = json_object_get(send_json, "error");
 		json_t *profile;
 		OS::Profile auth_profile;
 		OS::User auth_user;

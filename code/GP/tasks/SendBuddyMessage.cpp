@@ -26,7 +26,6 @@ namespace GP {
 		user.id = 0;
 		profile.id = 0;
 		TaskShared::AuthData auth_data;
-		bool success = false;
 
 		if (curl) {
 			struct curl_slist *chunk = NULL;

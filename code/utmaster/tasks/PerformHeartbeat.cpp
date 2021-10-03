@@ -19,7 +19,6 @@ namespace MM {
 	}
 	bool isServerDeleted(TaskThreadData *thread_data, std::string server_key) {
 		std::string ip;
-		uint16_t port;
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;
 		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "HGET %s deleted", server_key.c_str());

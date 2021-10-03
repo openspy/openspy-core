@@ -94,7 +94,7 @@ namespace Peerchat {
 			{EPeerchatRequestType_UpdateChannelModes_BanMask, Perform_UpdateChannelModes_BanMask},
 			{EPeerchatRequestType_OperCheck, Perform_OperCheck},
 			{EPeerchatRequestType_CountServerUsers, Perform_CountServerUsers},
-			{NULL, NULL}
+			{-1, NULL}
 		};
 
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {

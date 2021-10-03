@@ -172,7 +172,7 @@ namespace Peerchat {
 				command_upper = "";
 				std::transform(command.begin(),command.end(),std::back_inserter(command_upper),toupper);
 				
-				for(int i=0;i<sizeof(m_commands)/sizeof(CommandEntry);i++) {
+				for(size_t i=0;i<sizeof(m_commands)/sizeof(CommandEntry);i++) {
 					CommandEntry entry = m_commands[i];
 					if (command_upper.compare(entry.name) == 0) {
 						if (entry.login_required) {
@@ -595,7 +595,7 @@ namespace Peerchat {
 	}
 	void Peer::OnSetExternalUserChanModeFlags(int user_id, int channel_id, int modeflags) {
 		int current_modeflags = GetChannelFlags(channel_id);
-		int current_modelevel = GetUserChannelModeLevel(current_modeflags);
+		//int current_modelevel = GetUserChannelModeLevel(current_modeflags);
 		int modelevel = GetUserChannelModeLevel(modeflags);
 		bool has_op = GetUserChannelModeLevel(current_modeflags) > 1;
 		if((modeflags & EUserChannelFlag_IsInChannel) && (current_modeflags & EUserChannelFlag_IsInChannel) && has_op && current_modeflags >= modelevel) {

@@ -25,19 +25,22 @@ namespace GP {
 			case TaskShared::WebErrorCode_BadCdKey:
 				gppeer->send_error(GPShared::GP_REGISTERCDKEY_BAD_KEY);
 				break;
+			default:
+				gppeer->send_error(GPShared::GP_REGISTERCDKEY);
+				break;
 		}
 		if (auth_data.error_details.response_code != TaskShared::WebErrorCode_Success) {
 			return;
 		}
 		std::ostringstream s;
 		s << "\\rc\\1";
-		s << "\\id\\" << (int)extra;
+		s << "\\id\\" << (uint64_t)extra;
 
 		gppeer->SendPacket((const uint8_t *)s.str().c_str(), s.str().length());
 	}
 	void Peer::handle_registercdkey(OS::KVReader data_parser) {
         std::string cdkey;
-		int id = data_parser.GetValueInt("id");
+		ptrdiff_t id = (ptrdiff_t)data_parser.GetValueInt("id");
 
         if(data_parser.HasKey("cdkey")) {
             cdkey = data_parser.GetValue("cdkey");

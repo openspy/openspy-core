@@ -26,8 +26,8 @@ namespace UT {
 		if(m_client_version >= 3000 || !m_config->is_server) {
 			running_os = (buffer.ReadByte()) - 3;
 		} else {
-			uint32_t unk1 = buffer.ReadInt();
-			uint8_t unk2 = buffer.ReadByte();
+			/*uint32_t unk1 =*/ buffer.ReadInt();
+			/*uint8_t unk2 =*/ buffer.ReadByte();
 		}
 		
 		std::string language = Read_FString(buffer);

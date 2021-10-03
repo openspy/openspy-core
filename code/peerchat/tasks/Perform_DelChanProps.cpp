@@ -23,19 +23,20 @@ namespace Peerchat {
 
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
-		bool success = false;
-
 		TaskResponse response;
 
 		TaskShared::Handle_WebError(send_json, response.error_details);
-        if (request.callback)
-                request.callback(response, request.peer);
+        if (request.callback) {
+			request.callback(response, request.peer);
+		}
 
-		if(send_json)
+		if(send_json) {
 			json_decref(send_json);
+		}			
 
-		if (request.peer)
+		if (request.peer) {
 			request.peer->DecRef();
+		}
 		return true;
 	}
 

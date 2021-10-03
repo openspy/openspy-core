@@ -148,8 +148,6 @@ namespace Peerchat {
 		
 		send_json = json_loads(resp.buffer.c_str(), 0, NULL);
 
-		bool success = false;
-
 		TaskShared::WebErrorDetails error_info;
 
 		if (!TaskShared::Handle_WebError(send_json, error_info)) {

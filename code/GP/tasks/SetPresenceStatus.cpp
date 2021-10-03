@@ -31,13 +31,14 @@ namespace GP {
 		user.id = 0;
 		profile.id = 0;
 		TaskShared::AuthData auth_data;
-		bool success = false;
 
 		if (curl) {
 			struct curl_slist *chunk = NULL;
 			GPReq_InitCurl(curl, json_dump, (void *)&recv_data, request, &chunk);
 
 			res = curl_easy_perform(curl);
+			if (res == CURLE_OK) {
+			}
 
 			curl_slist_free_all(chunk);
 			curl_easy_cleanup(curl);

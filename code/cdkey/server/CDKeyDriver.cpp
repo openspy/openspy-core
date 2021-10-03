@@ -42,7 +42,7 @@ namespace CDKey {
 				else {
 					dgram.buffer.resetReadCursor();
 
-					gamespyxor(dgram.buffer.GetHead(), dgram.buffer.bytesWritten());
+					gamespyxor((char *)dgram.buffer.GetHead(), dgram.buffer.bytesWritten());
 					std::string input = std::string((const char *)dgram.buffer.GetHead(), dgram.buffer.bytesWritten());
 					OS::KVReader data_parser = input;
 					std::string command = data_parser.GetKeyByIdx(0);
@@ -77,7 +77,7 @@ namespace CDKey {
 
 		OS::Buffer buffer;
 		buffer.WriteBuffer(message.c_str(), message.length());
-		gamespyxor(buffer.GetHead(), buffer.bytesWritten());
+		gamespyxor((char *)buffer.GetHead(), buffer.bytesWritten());
 
 		NetIOCommResp resp = getNetIOInterface()->datagramSend(&client_socket, buffer);
 		if (resp.disconnect_flag || resp.error_flag) {

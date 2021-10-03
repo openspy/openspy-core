@@ -21,7 +21,7 @@ namespace MM {
 		{EMMPushRequestType_ValidateServer, PerformValidate},
 		{EMMPushRequestType_Keepalive, PerformKeepalive},
 		{EMMPushRequestType_ClientMessageAck, PerformClientMessageAck},
-		{NULL, NULL}
+		{-1, NULL}
 	};
 
 	TaskScheduler<MMPushRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {

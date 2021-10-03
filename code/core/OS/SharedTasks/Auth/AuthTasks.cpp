@@ -11,7 +11,7 @@ namespace TaskShared {
 			{EAuthType_MakeAuthSession, PerformAuth_MakeAuthSession},
 			{EAuthType_DeleteAuthSession, PerformAuth_DeleteAuthSession},
 			{EAuthType_TestPreAuth, PerformAuth_TestPreAuth},
-			{NULL, NULL}
+			{-1, NULL}
 		};
         TaskScheduler<AuthRequest, TaskThreadData> *InitAuthTasks(INetServer *server) {
             TaskScheduler<AuthRequest, TaskThreadData> *scheduler = new TaskScheduler<AuthRequest, TaskThreadData>(OS::g_numAsync, server, AuthTask_HandlerTable, NULL);

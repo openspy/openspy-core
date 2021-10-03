@@ -49,7 +49,7 @@ namespace SM {
 		request.profile_search_details.id = profileid;
 		request.namespaceids.push_back(namespaceid);
 
-		request.type = request.type = TaskShared::EProfileSearch_Buddies;
+		request.type = TaskShared::EProfileSearch_Buddies;
 		request.extra = this;
 		request.peer = this;
 		IncRef();

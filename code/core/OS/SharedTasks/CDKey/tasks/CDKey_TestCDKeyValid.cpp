@@ -34,7 +34,6 @@ namespace TaskShared {
 		profile.id = 0;
 		TaskShared::CDKeyData cdkey_data;
 
-		bool success = false;
 		if (curl) {
 			struct curl_slist *chunk = NULL;
 			CDKeyReq_InitCurl(curl, json_dump, (void *)&recv_data, request, &chunk);

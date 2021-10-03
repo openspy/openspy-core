@@ -609,7 +609,7 @@ bool evaluate(std::vector<CToken> tokens, std::map<std::string, std::string>& kv
 }
 TokenOperand resolve_variable(CToken *token, std::map<std::string, std::string>& kvList) {
 	TokenOperand ret;
-	memset(&ret, 0, sizeof(ret));
+	memset((void *)&ret, 0, sizeof(ret));
 	if(token->getType() == EToken_Variable)
 		return resolve_variable((const char *)token->getString().c_str(), kvList);
 	return ret;
