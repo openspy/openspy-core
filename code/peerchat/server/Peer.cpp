@@ -104,6 +104,8 @@ namespace Peerchat {
 		if(m_delete_flag) {
 			return;
 		}
+
+		mp_mutex->lock();
 		
 		m_delete_flag = true;
 		m_timeout_flag = timeout;
@@ -119,6 +121,7 @@ namespace Peerchat {
 			req.callback = NULL;
 			scheduler->AddRequest(req.type, req);
 		}
+		mp_mutex->unlock();
 	}
 	
 	void Peer::think(bool packet_waiting) {
