@@ -449,6 +449,14 @@ namespace Redis {
 		if(connection->sd != 0)
 			close(connection->sd);
 
+		if(connection->username != NULL) {
+			free((void *)connection->username);
+		}
+
+		if(connection->password != NULL) {
+			free((void *)connection->password);
+		}
+
 		free((void *)connection->connect_address);
 		delete connection->mp_mutex;
 		free((void *)connection);
