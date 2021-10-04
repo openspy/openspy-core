@@ -263,6 +263,8 @@ namespace Peerchat {
 		static void OnNickReserve_DuplicateRemoteKill(TaskResponse response_data, Peer *peer);
 		static void OnFetch_LUsers(TaskResponse response_data, Peer* peer);
 		static void m_registernick_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void OnQuit_TaskComplete(TaskResponse response_data, Peer *peer);
+		static void OnDelete_TaskComplete(TaskResponse response_data, Peer *peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -362,6 +364,8 @@ namespace Peerchat {
 		gs_crypt_key m_crypt_key_out;
 
 		int m_flood_weight;
+
+		bool m_got_delete;
 	};
 }
 #endif //_GPPEER_H

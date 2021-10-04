@@ -65,6 +65,7 @@ namespace Peerchat {
 		m_stream_waiting = false;
 		mp_mutex = OS::CreateMutex();
 		m_using_encryption = false;
+		m_got_delete = false;
 		m_flood_weight = 0;
 		gettimeofday(&m_last_recv, NULL);
 		gettimeofday(&m_last_sent_ping, NULL);
@@ -101,27 +102,13 @@ namespace Peerchat {
 		Delete(false, "Client Exited");
 	}
 	void Peer::Delete(bool timeout, std::string reason) {
-		if(m_delete_flag) {
+		if(m_delete_flag || m_got_delete) {
 			return;
 		}
-
-		mp_mutex->lock();
-		
-		m_delete_flag = true;
+		m_got_delete = true; //mark as "deleted", so that async delete related tasks can be completed, which will later set the true delete flag after async events complete
 		m_timeout_flag = timeout;
 
 		send_quit(reason);
-
-		if (m_user_details.id != 0) {
-			TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
-			PeerchatBackendRequest req;
-			req.type = EPeerchatRequestType_DeleteUser;
-			req.peer = this;
-			req.peer->IncRef();
-			req.callback = NULL;
-			scheduler->AddRequest(req.type, req);
-		}
-		mp_mutex->unlock();
 	}
 	
 	void Peer::think(bool packet_waiting) {

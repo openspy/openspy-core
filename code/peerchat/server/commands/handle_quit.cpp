@@ -15,6 +15,22 @@
 #include <server/Peer.h>
 
 namespace Peerchat {
+	static void Peer::OnQuit_TaskComplete(TaskResponse response_data, Peer *peer) {
+		peer->m_delete_flag = true;
+	}
+	static void Peer::OnDelete_TaskComplete(TaskResponse response_data, Peer *peer) {
+		if (peer->m_user_details.id != 0) {
+			TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(peer->GetDriver()->getServer()))->GetPeerchatTask();
+			PeerchatBackendRequest req;
+			req.type = EPeerchatRequestType_DeleteUser;
+			req.peer = peer;
+			req.peer->IncRef();
+			req.callback = OnQuit_TaskComplete;
+			scheduler->AddRequest(req.type, req);
+		} else {
+			peer->m_delete_flag = true;
+		}
+	}
     void Peer::send_quit(std::string reason) {
 
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
@@ -36,7 +52,7 @@ namespace Peerchat {
 		}
 
 		req.peer->IncRef();
-		req.callback = NULL;
+		req.callback = OnDelete_TaskComplete;
 		
         scheduler->AddRequest(req.type, req);
 
