@@ -75,7 +75,7 @@ namespace MQ {
         amqp_basic_properties_t props;
         props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
         props.content_type = amqp_cstring_bytes("text/plain");
-        props.delivery_mode = 2; // persistent delivery mode
+        props.delivery_mode = 1;
 
         std::map<char *, char *> header_values;
 
@@ -129,7 +129,7 @@ namespace MQ {
         amqp_basic_properties_t props;
                 props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
                 props.content_type = amqp_cstring_bytes("text/plain");
-                props.delivery_mode = 2; // persistent delivery mode
+                props.delivery_mode = 1;
         amqp_basic_publish(mp_rabbitmq_conn, m_channel_id, amqp_cstring_bytes(exchange.c_str()),
             amqp_cstring_bytes(routingKey.c_str()), 0, 0,
             &props, amqp_cstring_bytes(message.c_str()));
