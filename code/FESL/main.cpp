@@ -71,7 +71,6 @@ SSLNetIOIFace::ESSL_Type getSSLVersion(std::string driver_name, AppConfig *app_c
 
 #include <curl/curl.h>
 int main() {
-	SSL_library_init();
 	#ifndef _WIN32
 		signal(SIGPIPE, SIG_IGN); // due to openssl SSL_write, we must block broken pipes here
 		signal(SIGINT, sig_handler);

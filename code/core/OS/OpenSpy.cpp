@@ -33,7 +33,7 @@ namespace OS {
 	CURLSH *g_curlShare = NULL;
 	CMutex **g_curlMutexes= NULL;
 		void Init(const char *appName, AppConfig *appConfig) {
-
+		SSL_library_init();
 		curl_global_init(CURL_GLOBAL_SSL);
 
 		OS::g_config = appConfig;
