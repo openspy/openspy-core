@@ -151,8 +151,10 @@ namespace FESL {
 		bool m_acct_register_game_handler(OS::KVReader kv_list);
 		bool m_acct_send_account_name(OS::KVReader kv_list);
 		bool m_acct_send_account_password(OS::KVReader kv_list);
+		bool m_acct_add_persona(OS::KVReader kv_list);
 		
 		static void m_create_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
+		static void m_create_nu_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_delete_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void m_update_user_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer);
 		static void m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer);
