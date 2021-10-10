@@ -31,7 +31,7 @@ namespace GS {
 		m_user.id = 0;
 		m_profile.id = 0;
 
-		m_session_key = rand();
+		m_session_key = m_last_ping.tv_sec;
 
 		OS::gen_random(m_challenge, CHALLENGE_LEN);
 

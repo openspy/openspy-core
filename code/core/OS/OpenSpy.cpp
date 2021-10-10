@@ -86,7 +86,7 @@ namespace OS {
 
 		mp_redis_internal_connection_mutex = OS::CreateMutex();
 		
-		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, redis creds: %s:%s, redis use ssl: %d, webservices: %s)\n", appName, g_numAsync, g_hostName, g_redisAddress, g_redisUsername, g_redisPassword, g_redisUseSSL, g_webServicesURL);
+		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, redis creds: %s, redis use ssl: %d, webservices: %s)\n", appName, g_numAsync, g_hostName, g_redisAddress, g_redisUsername, g_redisUseSSL, g_webServicesURL);
 	}
 	void Shutdown() {
 
