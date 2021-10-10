@@ -37,6 +37,9 @@ namespace QR {
         MM::ServerInfo server_info;
 
         OS::Address query_address = OS::Address(from_address.GetIP(), reader.GetValueInt("heartbeat"));
+        if(query_address.GetPort() == 0) {
+            query_address.port = from_address.port;
+        }
         server_info.m_address = query_address;
 
         std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> it_header = reader.GetHead();
