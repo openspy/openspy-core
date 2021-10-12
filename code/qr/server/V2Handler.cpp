@@ -7,6 +7,8 @@
 #include "v2.h"
 namespace QR {
     void Driver::handle_v2_packet(INetIODatagram &packet) {
+
+		if(packet.buffer.readRemaining() < 5) return; //can't read any more data... don't try
 		uint8_t type = packet.buffer.ReadByte();
 
 		uint8_t instance_key[REQUEST_KEY_LEN];
