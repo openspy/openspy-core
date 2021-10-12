@@ -37,19 +37,15 @@ namespace QR {
 					//log error??
 				}
 				else {
-					unsigned int last_read_remaining = dgram.buffer.readRemaining();
 					char firstChar = dgram.buffer.ReadByte();
 					dgram.buffer.resetReadCursor();
 					
 					//PROCESS PACKET HERE
-					do {
-						if(firstChar == '\\') { //v1
-							handle_v1_packet(dgram);
-						} else { //v2
-							handle_v2_packet(dgram);
-						}
-
-					} while(dgram.buffer.readRemaining() > 0 && last_read_remaining != dgram.buffer.readRemaining());
+					if(firstChar == '\\') { //v1
+						handle_v1_packet(dgram);
+					} else { //v2
+						handle_v2_packet(dgram);
+					}
 				}
 				it++;
 			}
