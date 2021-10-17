@@ -2,7 +2,7 @@
 
 void write_enctype1_encrypted_data(OS::Buffer &output, const char *validate_key, unsigned char *scramble_data, int scrambled_len, char *encrypted_data, int encrypted_len, uint32_t encshare4_data);
 
-static const unsigned char enctype1_master_key[256] = /* pre-built */
+static const unsigned char enctype1_master_key[] = /* pre-built */
     "\x01\xba\xfa\xb2\x51\x00\x54\x80\x75\x16\x8e\x8e\x02\x08\x36\xa5"
     "\x2d\x05\x0d\x16\x52\x07\xb4\x22\x8c\xe9\x09\xd6\xb9\x26\x00\x04"
     "\x06\x05\x00\x13\x18\xc4\x1e\x5b\x1d\x76\x74\xfc\x50\x51\x06\x16"
@@ -29,19 +29,15 @@ int  enctype1_func7e(int, unsigned char *);
 void encshare1(unsigned int *tbuff, unsigned char *datap, int len);
 void encshare4(unsigned char *src, int size, unsigned int *dest);
 
-void obfuscate_scramble_data(unsigned char *scramble_data, int scramble_len, const char *master_key);
-int find_master_key_offset(char key, const char *master_key);
+void obfuscate_scramble_data(unsigned char *scramble_data, int scramble_len, const char *master_key, int master_key_len);
+int find_master_key_offset(char key, const char *master_key, int master_key_len);
 
 
 void create_enctype1_buffer(const char *validate_key, OS::Buffer input, OS::Buffer &output) {
     char *encrypt_data = input.GetHead();
     int encrypt_len = input.bytesWritten();
 
-
-
-    printf("enclen: %d - %s\n", encrypt_len, encrypt_data);
-
-    int encshare4_data = 0xAAAAAAAA;
+    int encshare4_data = rand();
     int tmplen = (encrypt_len >> 1) - 17;
     unsigned int    tbuff[326];
     unsigned char  enc1key[261];
@@ -67,14 +63,14 @@ void create_enctype1_buffer(const char *validate_key, OS::Buffer input, OS::Buff
         enctype1_func4(validate_key, strlen(validate_key), enc1key);
         enctype1_func6e(encrypt_data, tmplen, enc1key);
     }
-    obfuscate_scramble_data(scramble_data, sizeof(scramble_data), enctype1_master_key); 
+    obfuscate_scramble_data(scramble_data, sizeof(scramble_data), enctype1_master_key, sizeof(enctype1_master_key)); 
 
     write_enctype1_encrypted_data(output, validate_key, scramble_data, sizeof(scramble_data), (char *)encrypt_data, encrypt_len, encshare4_data);
 
 }
 
-int find_master_key_offset(char key, const char *master_key) {
-    for(int i=0;i<256;i++) {
+int find_master_key_offset(char key, const char *master_key, int master_key_len) {
+    for(int i=0;i<master_key_len;i++) {
         if(master_key[i] == key) {
             return i;
         }
@@ -85,9 +81,9 @@ int find_master_key_offset(char key, const char *master_key) {
 /*
 This routine will only return the first instance in the master key... so it is not really secure
 */
-void obfuscate_scramble_data(unsigned char *scramble_data, int scramble_len, const char *master_key) {
+void obfuscate_scramble_data(unsigned char *scramble_data, int scramble_len, const char *master_key, int master_key_len) {
     for(int i=0;i<scramble_len;i++) {
-        int offset =  find_master_key_offset(scramble_data[i], master_key);
+        int offset =  find_master_key_offset(scramble_data[i], master_key, master_key_len);
         if(offset != -1) {
             scramble_data[i] = offset;
         }
@@ -100,14 +96,14 @@ void write_enctype1_encrypted_data(OS::Buffer &output, const char *validate_key,
     output.WriteByte(218); //(218 ^ 205) - 5;
 
     for(int i=0;i<13;i++) { //unused data...?
-        output.WriteByte(0); 
+        output.WriteByte(rand()); 
     }
     output.WriteBuffer(scramble_data, scrambled_len);
     output.WriteByte(0); //unknown data
     output.WriteInt(encshare4_data);
 
     for(int i=0;i<18;i++) { //unused data...?
-        output.WriteByte(0); 
+        output.WriteByte(rand()); 
     }
 
     output.WriteBuffer(encrypted_data, encrypted_len);
