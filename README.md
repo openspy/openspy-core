@@ -5,8 +5,7 @@ This is a full rewrite of the old openspy. Each service runs as a seperate proce
 [See here](./DESIGN.md) for some architecture info
 
 ## TODO / Things to improve
-* Peerchat - currently mostly working but has rare ref count error which results in crash
-* GP UDP support? -- might not be needed, or bypass the server entirely
+* Remove HTTP calls, replacing with AMQP listeners
 
 
 ## Building
