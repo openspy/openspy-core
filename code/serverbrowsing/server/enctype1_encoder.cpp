@@ -1,4 +1,4 @@
-int func7e(char v, unsigned char *enc1key) {
+int enctype1_func7e(char v, unsigned char *enc1key) {
     unsigned char   a,
                     b,
                     c;
@@ -55,9 +55,9 @@ int func7e(char v, unsigned char *enc1key) {
 }
 
 
-void func6e(unsigned char *data, int len, unsigned char *enc1key) {
+void enctype1_func6e(unsigned char *data, int len, unsigned char *enc1key) {
     while(len--) {
-        *data = func7e(*data, enc1key);
+        *data = enctype1_func7e(*data, enc1key);
         data++;
     }
 }

@@ -20,12 +20,12 @@ static const unsigned char enctype1_master_key[256] = /* pre-built */
     "\x45\xa9\xbb\x06\xb8\x88\x14\x24\xa9\x00\x14\xcb\x24\x12\xae\xcc"
     "\x57\x56\xee\xfd\x08\x30\xd9\xfd\x8b\x3e\x0a\x84\x46\xfa\x77\xb8";
 
-void func3(unsigned char *, int, unsigned char *);
-void func2(unsigned char *data, int size, unsigned char *key);
-void func4(unsigned char *, int, unsigned char *);
-void func8(unsigned char *, int, const unsigned char *);
-void func6e(unsigned char *, int, unsigned char *);
-int  func7e(int, unsigned char *);
+void enctype1_func3(unsigned char *, int, unsigned char *);
+void enctype1_func2(unsigned char *data, int size, unsigned char *key);
+void enctype1_func4(unsigned char *, int, unsigned char *);
+void enctype1_func8(unsigned char *, int, const unsigned char *);
+void enctype1_func6e(unsigned char *, int, unsigned char *);
+int  enctype1_func7e(int, unsigned char *);
 void encshare1(unsigned int *tbuff, unsigned char *datap, int len);
 void encshare4(unsigned char *src, int size, unsigned int *dest);
 
@@ -59,13 +59,13 @@ void create_enctype1_buffer(const char *validate_key, OS::Buffer input, OS::Buff
 
 
     char encryption_key[258];
-    func3(scramble_data, sizeof(scramble_data), encryption_key);    
-    func2((char *)encrypt_data, encrypt_len, (char *)&encryption_key); //encrypt actual data
+    enctype1_func3(scramble_data, sizeof(scramble_data), encryption_key);    
+    enctype1_func2((char *)encrypt_data, encrypt_len, (char *)&encryption_key); //encrypt actual data
 
     tmplen = (encrypt_len >> 2) - 5;
     if(tmplen >= 0) {
-        func4(validate_key, strlen(validate_key), enc1key);
-        func6e(encrypt_data, tmplen, enc1key);
+        enctype1_func4(validate_key, strlen(validate_key), enc1key);
+        enctype1_func6e(encrypt_data, tmplen, enc1key);
     }
     obfuscate_scramble_data(scramble_data, sizeof(scramble_data), enctype1_master_key); 
 
