@@ -460,11 +460,7 @@ namespace SB {
 
 			create_enctype1_buffer(m_challenge, m_enctype1_accumulator, encrypted_buffer);
 
-			NetIOCommResp io_resp;
-			io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, encrypted_buffer);
-			if(io_resp.disconnect_flag || io_resp.error_flag) {
-				Delete();
-			}
+			this->GetDriver()->getNetIOInterface()->streamSend(m_sd, encrypted_buffer);
 		}
 		void V1Peer::SendPacket_Enctype1(OS::Buffer buffer) {
 			m_enctype1_accumulator.WriteBuffer(buffer.GetHead(), buffer.bytesWritten());
