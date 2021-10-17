@@ -99,7 +99,7 @@ void write_enctype1_encrypted_data(OS::Buffer &output, const char *validate_key,
         output.WriteByte(rand()); 
     }
     output.WriteBuffer(scramble_data, scrambled_len);
-    output.WriteByte(0); //unknown data
+    output.WriteByte(rand()); //unknown data
     output.WriteInt(encshare4_data);
 
     for(int i=0;i<18;i++) { //unused data...?
