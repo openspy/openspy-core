@@ -19,6 +19,7 @@ namespace SB {
 		
 		void send_ping();
 		void think(bool packet_waiting); //called when no data is recieved
+		void Delete(bool timeout = false);
 		
 
 		void informDeleteServers(MM::Server *server);
@@ -33,6 +34,10 @@ namespace SB {
 		void OnRecievedGameInfo(const OS::GameData game_data, void *extra);
 		void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra);
 
+
+		void Enctype1_FlushPackets();
+		void SendPacket_Enctype1(OS::Buffer buffer);
+		OS::Buffer m_enctype1_accumulator;
 
 		void SendPacket(const uint8_t *buff, size_t len, bool attach_final, bool skip_encryption = false);
 		void SendServers(MM::ServerListQuery results);

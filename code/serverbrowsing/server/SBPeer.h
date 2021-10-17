@@ -42,7 +42,7 @@ namespace SB {
 		virtual void OnRecievedGameInfo(const OS::GameData game_data, void *extra) = 0;
 		virtual void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) = 0;
 
-		void Delete(bool timeout = false);
+		virtual void Delete(bool timeout = false);
 	protected:
 		int m_version;
 

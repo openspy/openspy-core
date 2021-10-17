@@ -4,6 +4,7 @@
 #include "SBDriver.h"
 #include "SBPeer.h"
 #include "V1Peer.h"
+#include "enctype1_helper.h"
 
 #include <sstream>
 #include <vector>
@@ -30,6 +31,12 @@ namespace SB {
 		}
 		V1Peer::~V1Peer() {
 
+		}
+		void V1Peer::Delete(bool timeout = false) {
+			if(m_enctype == 1) {
+				Enctype1_FlushPackets();
+			}
+			Peer::Delete(timeout);
 		}
 		void V1Peer::OnConnectionReady() {
 			Peer::OnConnectionReady();
@@ -447,22 +454,41 @@ namespace SB {
 				Delete();
 			}
 		}
+
+		void V1Peer::Enctype1_FlushPackets() {
+			OS::Buffer encrypted_buffer;
+
+			create_enctype1_buffer(m_challenge, m_enctype1_accumulator, encrypted_buffer);
+
+			NetIOCommResp io_resp;
+			io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, encrypted_buffer);
+			if(io_resp.disconnect_flag || io_resp.error_flag) {
+				Delete();
+			}
+		}
+		void V1Peer::SendPacket_Enctype1(OS::Buffer buffer) {
+			m_enctype1_accumulator.WriteBuffer(buffer.GetHead(), buffer.bytesWritten());
+		}
 		void V1Peer::SendPacket(const uint8_t *buff, size_t len, bool attach_final, bool skip_encryption) {
 
 			OS::Buffer buffer;
+			OS::Buffer output_buffer;
 			int skip_len = 0;
-			if(m_validated)
+			if(m_validated && m_enctype == 2)
 				send_crypt_header(m_enctype, buffer);
 
 			skip_len += buffer.bytesWritten();
 			buffer.WriteBuffer((void *)buff, len);
-			if(attach_final) {
+			if(attach_final && m_enctype != 1) {
 				buffer.WriteBuffer((void*)"\\final\\", 7);
 			}
 			if(m_game.secretkey.length() == 0)
 				skip_encryption = true;
 			if (!skip_encryption) {
 				switch (m_enctype) {
+				case 1:
+					SendPacket_Enctype1(buffer);
+					return;
 				case 2:
 					crypt_docrypt(&m_crypt_key_enctype2, (unsigned char *)buffer.GetHead() + skip_len, (int)buffer.bytesWritten() - skip_len);
 					break;
