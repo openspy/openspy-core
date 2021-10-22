@@ -475,7 +475,7 @@ namespace SB {
 
 			skip_len += buffer.bytesWritten();
 			buffer.WriteBuffer((void *)buff, len);
-			if(attach_final && m_enctype != 1) {
+			if(attach_final) {
 				buffer.WriteBuffer((void*)"\\final\\", 7);
 			}
 			if(m_game.secretkey.length() == 0)
