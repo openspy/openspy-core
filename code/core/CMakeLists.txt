@@ -122,3 +122,6 @@ ELSE() #unix
 	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
 	target_link_libraries(openspy pthread ssl crypto curl z jansson pugixml rabbitmq)
 ENDIF()
+
+INSTALL(TARGETS openspy)
+install(DIRECTORY "OS" DESTINATION include FILES_MATCHING PATTERN "*.h")
