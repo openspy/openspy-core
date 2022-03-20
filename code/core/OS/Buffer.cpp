@@ -63,6 +63,12 @@ namespace OS {
 			IncReadCursor(sizeof(uint32_t));
 			return val;
 		}
+		uint64_t Buffer::ReadLong() {
+			if (readRemaining() < sizeof(uint64_t)) return 0;
+			uint64_t val = *(uint64_t *)_read_cursor;
+			IncReadCursor(sizeof(uint64_t));
+			return val;
+		}
 		float Buffer::ReadFloat() {
 			if (readRemaining() < sizeof(float)) return 0;
 			float val = *(float *)_read_cursor;
@@ -105,6 +111,10 @@ namespace OS {
 		void Buffer::WriteInt(uint32_t byte) {
 			IncWriteCursor(sizeof(uint32_t));
 			*(uint32_t *)_write_cursor_last = byte;
+		}
+		void Buffer::WriteLong(uint64_t value) {
+			IncWriteCursor(sizeof(uint64_t));
+			*(uint64_t *)_write_cursor_last = value;
 		}
 		void Buffer::WriteFloat(float f) {
 			IncWriteCursor(sizeof(float));

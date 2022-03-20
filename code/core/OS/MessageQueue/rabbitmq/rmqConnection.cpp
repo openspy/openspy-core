@@ -79,6 +79,7 @@ namespace MQ {
 
         std::map<char *, char *> header_values;
 
+        props.headers.entries = NULL;
         if(properties.headers.size() > 0) {
             props._flags |= AMQP_BASIC_HEADERS_FLAG;
             props.headers.num_entries=properties.headers.size();
@@ -106,6 +107,10 @@ namespace MQ {
         amqp_basic_publish(mp_rabbitmq_conn, m_channel_id, amqp_cstring_bytes(properties.exchange.c_str()),
             amqp_cstring_bytes(properties.routingKey.c_str()), 0, 0,
             &props, amqp_cstring_bytes(message.c_str()));
+
+        if (props.headers.entries != NULL) {
+            free((void *)props.headers.entries);
+        }
 
         std::map<char *, char *>::iterator it2 = header_values.begin();
         while(it2 != header_values.end()) {

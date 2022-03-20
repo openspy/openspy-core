@@ -12,39 +12,39 @@ namespace OS {
 	}
 	void UnixLogger::LogText(ELogLevel level, const char * format, va_list args) {
 		int log_level = LOG_INFO;
-		//const char *level_str = "NA";
+		const char *level_str = "NA";
 		switch(level) {
 			case ELogLevel_Debug:
-				//level_str = "DBG";
+				level_str = "DBG";
 				log_level = LOG_DEBUG;
 			break;
 			case ELogLevel_Warning:
-				//level_str = "WARN";
+				level_str = "WARN";
 				log_level = LOG_WARNING;
 			break;
 			case ELogLevel_Critical:
-				//level_str = "CRIT";
+				level_str = "CRIT";
 				log_level = LOG_CRIT;
 			break;
 			case ELogLevel_Info:
-				//level_str = "INFO";
+				level_str = "INFO";
 				log_level = LOG_INFO;
 			break;
 			case ELogLevel_Error:
-				//level_str = "ERR";
+				level_str = "ERR";
 				log_level = LOG_ERR;
 			break;
 			case ELogLevel_Auth:
-				//level_str = "AUTH";
+				level_str = "AUTH";
 				log_level = LOG_AUTH;
 			break;
 		}
 		va_list va_cpy;
 		va_copy(va_cpy,args);
 		vsyslog(log_level, format, args);
-		// fprintf(stderr, "[%s]:", level_str);
-		// vfprintf(stderr, format, va_cpy);
-		// fprintf(stderr, "\n");
+		fprintf(stderr, "[%s]:", level_str);
+		vfprintf(stderr, format, va_cpy);
+		fprintf(stderr, "\n");
 		va_end(va_cpy);
 		
 	}

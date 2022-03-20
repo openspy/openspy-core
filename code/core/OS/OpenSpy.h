@@ -154,6 +154,10 @@ namespace OS {
 		bool operator!=(const Address &addr) const {
 			return !operator==(addr);
 		}
+       bool operator() (const Address& lhs, const Address& rhs) const
+       {
+           return lhs < rhs;
+       }
 	//private:
 		uint32_t ip;
 		uint16_t port;

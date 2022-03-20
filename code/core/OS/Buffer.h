@@ -25,6 +25,7 @@ namespace OS {
 			uint8_t ReadByte();
 			uint16_t ReadShort();
 			uint32_t ReadInt();
+			uint64_t ReadLong();
 			float ReadFloat();
 			double ReadDouble();
 			std::string ReadNTS();
@@ -32,6 +33,7 @@ namespace OS {
 		
 			void WriteByte(uint8_t byte);
 			void WriteShort(uint16_t byte);
+			void WriteLong(uint64_t value);
 			void WriteInt(uint32_t byte);
 			void WriteFloat(float f);
 			void WriteDouble(double d);

@@ -218,7 +218,6 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		}
 		NetIOCommResp datagramRecv(INetIOSocket *socket, std::vector<INetIODatagram> &datagrams) {
 			NetIOCommResp ret;
-			std::vector<INetIODatagram>::iterator it;
 			char recvbuf[1492];
 			OS::Address os_addr;
 			sockaddr_in in_addr;
@@ -231,11 +230,6 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 				}
 				os_addr = in_addr;
 
-				it = std::find(datagrams.begin(), datagrams.end(), os_addr);
-				if (it != datagrams.end()) {
-					dgram = *it;
-				}
-
 				dgram.address = in_addr;
 				//dgram.buffer = OS::Buffer(len);
 				dgram.buffer.WriteBuffer(recvbuf, len);
@@ -244,12 +238,7 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 
 				dgram.comm_len = len;
 
-				if (it != datagrams.end()) {
-					*it = dgram;
-				}
-				else {
-					datagrams.push_back(dgram);
-				}
+				datagrams.push_back(dgram);
 			} //while (errno != EWOULDBLOCK && errno != EAGAIN);
 			return ret;
 		}
