@@ -10,7 +10,7 @@ namespace QR {
 		bool continueRead = true;
 		do {
 			uint8_t type = packet.buffer.ReadByte();
-			if(packet.buffer.readRemaining() < 5) {
+			if(packet.buffer.readRemaining() < REQUEST_KEY_LEN) {
 				break;
 			}
 
