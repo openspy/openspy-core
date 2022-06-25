@@ -123,5 +123,9 @@ ELSE() #unix
 	target_link_libraries(openspy pthread ssl crypto curl z jansson pugixml rabbitmq)
 ENDIF()
 
-INSTALL(TARGETS openspy)
+INSTALL(TARGETS openspy
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  COMPONENT library
+)
 install(DIRECTORY "OS" DESTINATION include FILES_MATCHING PATTERN "*.h")
