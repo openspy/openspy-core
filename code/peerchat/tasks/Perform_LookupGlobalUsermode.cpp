@@ -12,7 +12,7 @@ namespace Peerchat {
 
         json_t *user_summary = json_object();
         json_object_set_new(user_summary, "hostname", json_string(request.summary.address.ToString(true).c_str()));
-        json_object_set_new(user_summary, "machineid", json_string(request.summary.realname.c_str()));
+        json_object_set_new(user_summary, "realname", json_string(request.summary.realname.c_str()));
         json_object_set_new(send_json, "userSummary", user_summary);
 
 		std::string url = std::string(OS::g_webServicesURL) + "/v1/Usermode/GetEffectiveUsermode";

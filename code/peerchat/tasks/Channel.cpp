@@ -282,8 +282,13 @@ namespace Peerchat {
 		std::ostringstream message;
 
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-		Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
-		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_user_%d", channel.channel_id, user.id);
+		if (target.id != 0) {
+			Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, target.id);
+			Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_user_%d", channel.channel_id, target.id);
+		} else {
+			Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
+			Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_user_%d", channel.channel_id, user.id);
+		}
 
 		int old_modeflags = LookupUserChannelModeFlags(thread_data, channel.channel_id, user.id);
 
@@ -307,7 +312,7 @@ namespace Peerchat {
 		}
 
 		
-		SendUpdateUserChanModeflags(thread_data, channel.channel_id, user.id, 0, old_modeflags);
+		SendUpdateUserChanModeflags(thread_data, channel.channel_id, target.id, 0, old_modeflags);
     }
 
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {

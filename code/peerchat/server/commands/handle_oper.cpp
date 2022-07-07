@@ -43,7 +43,7 @@ namespace Peerchat {
         if(auth_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
             ((Peer *)peer)->m_profile = profile;
             ((Peer *)peer)->m_user = user;
-            ((Peer *)peer)->m_user_details.operflags = -1;
+            ((Peer *)peer)->m_user_details.operflags = 0;
             ((Peer *)peer)->m_user_details.profileid = profile.id;
             ((Peer *)peer)->m_user_details.userid = user.id;
             ((Peer *)peer)->send_message("NOTICE", "Authenticated", *server_userSummary, ((Peer *)peer)->m_user_details.nick);
