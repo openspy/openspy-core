@@ -93,11 +93,12 @@ namespace Peerchat {
 		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 
-        if(chanmask.find("*") == std::string::npos) {
+        /*if(chanmask.find("*") == std::string::npos) {
             req.type = EPeerchatRequestType_ListUserModes_CacheLookup;
         } else {
             req.type = EPeerchatRequestType_ListUserModes;
-        }
+        }*/
+        req.type = EPeerchatRequestType_ListUserModes;
 		
 		req.peer = this;
 
