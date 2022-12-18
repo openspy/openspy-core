@@ -111,7 +111,8 @@ namespace MM {
 	bool PerformDeleteServer(UTMasterRequest request, TaskThreadData *thread_data);
 
 	int GetServerID(TaskThreadData *thread_data);
-	bool isServerDeleted(TaskThreadData *thread_data, std::string server_key);
+	bool isServerDeleted(TaskThreadData* thread_data, std::string server_key);
+	bool serverRecordExists(TaskThreadData* thread_data, std::string server_key);
 	std::string GetServerKey_FromIPMap(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info);
 
 

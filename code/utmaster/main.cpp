@@ -24,17 +24,15 @@ std::string get_file_contents(std::string path) {
 	std::string ret;
 	FILE *fd = fopen(path.c_str(),"r");
 	if(fd) {
-		fseek(fd,0,SEEK_END);
-		int len = ftell(fd);
-		fseek(fd,0,SEEK_SET);
-
-		char *str_data = (char *)malloc(len+1);
-		fread(str_data, len, 1, fd);
-		str_data[len] = 0;
-		ret = str_data;
-		free((void *)str_data);
+		while(1) {
+			uint8_t ch;
+			int len = fread(&ch, sizeof(uint8_t), 1, fd);
+			if (len != sizeof(uint8_t)) break;
+			ret += ch;
+		}
+		fclose(fd);
 	}
-	fclose(fd);
+	
 	return ret;
 }
 

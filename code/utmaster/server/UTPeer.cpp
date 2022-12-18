@@ -159,18 +159,91 @@ namespace UT {
 		
 	}
 
+	int Peer::Read_CompactInt(OS::Buffer &buffer)
+	{
+		int Value = 0;
+
+		char B[5];
+
+		B[0] = buffer.ReadByte();
+		if ((B[0] & 0x40) != 0)
+		{
+			B[1] = buffer.ReadByte();
+			if ((B[1] & 0x80) != 0)
+			{
+				B[2] = buffer.ReadByte();
+				if ((B[2] & 0x80) != 0)
+				{
+					B[3] = buffer.ReadByte();
+					if ((B[3] & 0x80) != 0)
+					{
+						B[4] = buffer.ReadByte();
+						Value = B[4];
+					}
+					Value = (Value << 7) + (B[3] & 0x7f);
+				}
+				Value = (Value << 7) + (B[2] & 0x7f);
+			}
+			Value = (Value << 7) + (B[1] & 0x7f);
+		}
+		Value = (Value << 6) + (B[0] & 0x3f);
+		if ((B[0] & 0x80) != 0)
+			Value = -Value;
+		return Value;
+	}
+
+	void Peer::Write_CompactInt(OS::Buffer& buffer, int value) {
+		int abs_val = abs(value);
+		uint8_t B0 = ((value >= 0) ? 0 : 0x80) + ((abs_val < 0x40) ? abs_val : ((abs_val & 0x3f) + 0x40));
+		buffer.WriteByte(B0);
+
+		if (B0 & 0x40)
+		{
+			abs_val >>= 6;
+			uint8_t B1 = (abs_val < 0x80) ? abs_val : ((abs_val & 0x7f) + 0x80);
+
+			buffer.WriteByte(B1);
+			if (B1 & 0x80)
+			{
+				abs_val >>= 7;
+				uint8_t B2 = (abs_val < 0x80) ? abs_val : ((abs_val & 0x7f) + 0x80);
+				buffer.WriteByte(B2);
+
+				if (B2 & 0x80)
+				{
+					abs_val >>= 7;
+					uint8_t B3 = (abs_val < 0x80) ? abs_val : ((abs_val & 0x7f) + 0x80);;
+					buffer.WriteByte(B3);
+					if (B3 & 0x80)
+					{
+						abs_val >>= 7;
+						uint8_t B4 = abs_val;
+						buffer.WriteByte(B4);
+					}
+				}
+			}
+		}
+	}
+
 	std::string Peer::Read_FString(OS::Buffer &buffer) {
-		uint8_t length = buffer.ReadByte();
+		int length = Read_CompactInt(buffer);
 		std::string result;
-		if(length > 0) {
-			result = buffer.ReadNTS();
+		for (int i = 0; i < length; i++) {
+			char ch = buffer.ReadByte();
+
+			//skip null byte to fix comparision (such as client config lookup)
+			if (i == length-1 && ch == 0) {
+				break;
+			}
+
+			result += ch;
 		}
 		return result;
 	}
 
 	void Peer::Write_FString(std::string input, OS::Buffer &buffer) {
-		buffer.WriteByte(input.length() + 1);
-		buffer.WriteNTS(input);
+		Write_CompactInt(buffer, input.length() + 1);
+		buffer.WriteBuffer(input.c_str(), input.length() + 1);
 	}
 	int Peer::GetGameId() {
 		if(m_config == NULL) return 0;

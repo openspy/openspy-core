@@ -158,7 +158,6 @@ namespace MM {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		
 		int cursor = 0;
-
 		do {
 
 			reply = Redis::Command(thread_data->mp_redis_connection, 0, "ZSCAN %s %d", game_info.gamename.c_str(), cursor);
@@ -179,15 +178,16 @@ namespace MM {
 
 			for(size_t i=0;i<arr.arr_value.values.size();i+=2) {
 				std::string server_key = arr.arr_value.values[i].second.value._str;
+				if (!serverRecordExists(thread_data, server_key)) { //remove dead servers from cache
+					Redis::Command(thread_data->mp_redis_connection, 0, "ZREM %s \"%s\"", game_info.gamename.c_str(), server_key.c_str());
+					continue;
+				}
 				if(!isServerDeleted(thread_data, server_key)) {
                 	ServerRecord record = LoadServerInfo(request, thread_data, server_key);				
 					if(filterMatches(record, request.m_filters)) {
 						results.push_back(record);
-					}
-					
+					}					
 				}
-                
-
 			}
 		} while(cursor != 0);
 
