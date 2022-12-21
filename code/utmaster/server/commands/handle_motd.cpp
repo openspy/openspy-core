@@ -16,7 +16,11 @@ namespace UT {
 		OS::Buffer send_buffer;
 
 		Write_FString(m_config->motd, send_buffer);
+
+		if (m_client_version >= 3000)
+			send_buffer.WriteInt(0); //some kind of status, non-zero = update button lickable
 		send_packet(send_buffer);
+		Delete();
 	}
 
 }

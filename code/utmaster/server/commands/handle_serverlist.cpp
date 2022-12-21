@@ -93,46 +93,36 @@ namespace UT {
     }
 	void Peer::on_get_server_list(MM::MMTaskResponse response) {
 		OS::Buffer send_buffer;
-		send_buffer.WriteInt(0x05);
 		send_buffer.WriteInt(response.server_records.size());
 		send_buffer.WriteByte(1);
+
+		response.peer->send_packet(send_buffer);
 		
 		std::vector<MM::ServerRecord>::iterator it = response.server_records.begin();
 		while(it != response.server_records.end()) {
 			MM::ServerRecord server = *it;
 
-			OS::Buffer server_buffer;
-			
-			server_buffer.WriteInt(server.m_address.ip);
-			server_buffer.WriteShort(server.m_address.port); //game port
-			server_buffer.WriteShort(server.m_address.port + 1); //query port (maybe this can be something other than +1?)
+			send_buffer.resetCursors();
+			send_buffer.WriteInt(server.m_address.ip);
+			send_buffer.WriteShort(server.m_address.port); //game port
+			send_buffer.WriteShort(server.m_address.port + 1); //query port (maybe this can be something other than +1?)
 
-			Write_FString(server.hostname, server_buffer);
-			Write_FString(server.level, server_buffer);
-			Write_FString(server.game_group, server_buffer);
+			Write_FString(server.hostname, send_buffer);
+			Write_FString(server.level, send_buffer);
+			Write_FString(server.game_group, send_buffer);
 
-			server_buffer.WriteByte(server.num_players);
-			server_buffer.WriteByte(server.max_players);
+			send_buffer.WriteByte(server.num_players);
+			send_buffer.WriteByte(server.max_players);
 			if(response.peer->m_client_version >= 3000) {
-				server_buffer.WriteInt(response.peer->get_server_flags(server)); //flags
-				server_buffer.WriteShort(12546); //?
-				server_buffer.WriteByte(0);
+				send_buffer.WriteInt(response.peer->get_server_flags(server)); //flags
+				Write_FString("1", send_buffer);
 			} else {
-				server_buffer.WriteByte(response.peer->get_server_flags(server)); //flags
+				send_buffer.WriteByte(response.peer->get_server_flags(server)); //flags
 			}
-
-
-			send_buffer.WriteInt(server_buffer.bytesWritten());
-			send_buffer.WriteBuffer(server_buffer.GetHead(),server_buffer.bytesWritten());
-		
+			response.peer->send_packet(send_buffer);
 			it++;
 		}
-
-		NetIOCommResp io_resp = response.peer->GetDriver()->getNetIOInterface()->streamSend(response.peer->m_sd, send_buffer);
-		if(io_resp.disconnect_flag || io_resp.error_flag) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d %d", response.peer->getAddress().ToString().c_str(), io_resp.disconnect_flag, io_resp.error_flag);
-		}
-
+		response.peer->Delete();
 	}
 	void Peer::handle_request_server_list(OS::Buffer recv_buffer) {
 		TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
@@ -143,11 +133,9 @@ namespace UT {
 		char num_filter_fields = recv_buffer.ReadByte();
 
 		for(int i=0;i<num_filter_fields;i++) {
-			/*int field_len = */recv_buffer.ReadByte(); //skip string len			
-			std::string field = recv_buffer.ReadNTS();
+			std::string field = Read_FString(recv_buffer);
 
-			/*int property_len = */recv_buffer.ReadByte();			
-			std::string property = recv_buffer.ReadNTS();
+			std::string property = Read_FString(recv_buffer);
 			
 
 			int is_negate = recv_buffer.ReadByte();		

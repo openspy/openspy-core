@@ -115,48 +115,18 @@ namespace UT {
 
     //this seems to be more stats related... but here for now, happens on non-stats games as well, just not much data
 	void Peer::handle_newserver_request(OS::Buffer recv_buffer) {
-		/*int unk1 =*/ recv_buffer.ReadInt();
-		if(recv_buffer.readRemaining() > 0) {
-			
-			/*int unk2 =*/ recv_buffer.ReadInt();
-			/*int unk3 =*/ recv_buffer.ReadInt();
-			bool continue_parse = true;
-			std::string accumulated_string;
-			while(continue_parse) {			
-				while(true) {
-					char b = recv_buffer.ReadByte();
-					if(b == 0x00 || b == 0x09) {
-						if(b == 0x0) {
-							continue_parse = false;
-							break;
-						}
-						accumulated_string = "";	
-					} else {
-						accumulated_string += b;
-					}
-				}
-			}
-			/*int unk4 =*/ recv_buffer.ReadInt();
-			/*int unk5 =*/ recv_buffer.ReadInt();
-			continue_parse = true;
-			accumulated_string = "";
-			while(continue_parse) {			
-				while(true) {
-					char b = recv_buffer.ReadByte();
-					if(b == 0x00 || b == 0x09) {
-						if(b == 0x0) {
-							continue_parse = false;
-							break;
-						}
-						accumulated_string = "";	
-					} else {
-						accumulated_string += b;
-					}
-				}
-			}
-			OS::LogText(OS::ELogLevel_Info, "[%s] Stats Init: %s", getAddress().ToString().c_str(), accumulated_string.c_str());
-		}
+		uint32_t unk1 = recv_buffer.ReadInt();
+
+		OS::LogText(OS::ELogLevel_Info, "[%s] Server new server request: %d", getAddress().ToString().c_str(), unk1);
+
 		send_server_id(1234); //init stats backend, generate match id, for now not needed
+	}
+	void Peer::send_heartbeat_request(uint8_t id, uint32_t code) {
+		OS::Buffer send_buffer;
+		send_buffer.WriteByte(EServerOutgoingRequest_RequestHeartbeat);
+		send_buffer.WriteByte(id);
+		send_buffer.WriteInt(code);
+		send_packet(send_buffer);
 	}
 	void Peer::send_server_id(int id) {
 		OS::Buffer send_buffer;

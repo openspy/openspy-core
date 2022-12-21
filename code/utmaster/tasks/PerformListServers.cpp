@@ -186,6 +186,7 @@ namespace MM {
                 	ServerRecord record = LoadServerInfo(request, thread_data, server_key);				
 					if(filterMatches(record, request.m_filters)) {
 						results.push_back(record);
+						break;
 					}					
 				}
 			}

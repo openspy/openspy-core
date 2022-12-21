@@ -34,15 +34,15 @@ namespace UT {
 		uint32_t gpu_device_id = 0;
 		uint32_t vendor_id = 0;
 		uint32_t cpu_cycles = 0;
-		uint32_t running_gpu = 0;
+		uint32_t running_cpu = 0;
 		if(m_client_version >= 3000) {
-			gpu_device_id = (buffer.ReadInt());
-			vendor_id = (buffer.ReadInt());
-			cpu_cycles = (buffer.ReadInt());
-			running_gpu = (buffer.ReadInt());
+			gpu_device_id = buffer.ReadInt();
+			vendor_id = buffer.ReadInt();
+			cpu_cycles = buffer.ReadInt();
+			running_cpu = buffer.ReadInt();
 		}
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got Game Info: cdkey hash: %s, cd key response: %s, client: %s, version: %d, os: %d, language: %s, gpu device id: %04x, gpu vendor id: %04x, cpu cycles: %d, running cpu: %d", getAddress().ToString().c_str(), cdkey_hash.c_str(), cdkey_response.c_str(), client.c_str(), running_version, running_os, language.c_str(),
-			gpu_device_id, vendor_id, cpu_cycles, running_gpu
+			gpu_device_id, vendor_id, cpu_cycles, running_cpu
 		);
 
 
@@ -55,22 +55,18 @@ namespace UT {
 		Write_FString(challenge_string, send_buffer);
 		send_packet(send_buffer);
 	}
+
 	void Peer::send_challenge_response(std::string response) {
 		OS::Buffer send_buffer;
-		Write_FString(response, send_buffer);
-		if(m_client_version >= 3000)
-			send_buffer.WriteInt(3);		
+		Write_FString(response, send_buffer);	
+		if (!m_config->is_server) {
+			send_buffer.WriteInt(3); //???
+		}
 		send_packet(send_buffer);
 	}
 	void Peer::send_challenge_authorization() {
-		if(m_config->is_server || m_client_version < 3000) {
-			m_state = EConnectionState_WaitRequest;
-
-		} else {
-			m_state = EConnectionState_ApprovedResponse;
-		}
+		m_state = EConnectionState_WaitApprovedResponse;
 		send_challenge_response("APPROVED");
-		
 	}
 	void Peer::send_verified() {
 		OS::Buffer send_buffer;

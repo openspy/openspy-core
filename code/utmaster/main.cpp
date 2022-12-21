@@ -22,7 +22,7 @@ void sig_handler(int signo)
 
 std::string get_file_contents(std::string path) {
 	std::string ret;
-	FILE *fd = fopen(path.c_str(),"r");
+	FILE *fd = fopen(path.c_str(),"rb");
 	if(fd) {
 		while(1) {
 			uint8_t ch;

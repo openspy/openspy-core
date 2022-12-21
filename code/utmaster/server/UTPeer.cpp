@@ -9,16 +9,14 @@
 
 namespace UT {
 	const CommandEntry Peer::m_client_commands[] = {
-		CommandEntry(EClientModeRequest_ServerList, &Peer::handle_request_server_list),
-		CommandEntry(EClientModeRequest_MOTD, &Peer::handle_motd),
+		CommandEntry(EClientIncomingRequest_ServerList, &Peer::handle_request_server_list),
+		CommandEntry(EClientIncomingRequest_MOTD, &Peer::handle_motd),
 		CommandEntry(-1, NULL)
 	};
 
 	const CommandEntry Peer::m_server_commands[] = {
-		CommandEntry(EServerModeRequest_ServerInit, &Peer::handle_server_init),
-		CommandEntry(EServerModeRequest_Heartbeat, &Peer::handle_heartbeat),
-		CommandEntry(EServerModeRequest_PlayerQuery, &Peer::handle_player_query),
-		CommandEntry(EServerModeRequest_NewServer, &Peer::handle_newserver_request),
+		CommandEntry(EServerIncomingRequest_Heartbeat, &Peer::handle_heartbeat),
+		CommandEntry(EServerIncomingRequest_NewServer, &Peer::handle_newserver_request),
 		CommandEntry(-1, NULL)
 	};
 	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
@@ -81,14 +79,19 @@ namespace UT {
 			recv_buffer.SetReadCursor(len);
 			recv_buffer.SetWriteCursor(len);
 
-			//printf("got data in state %d - len %d\n", m_state, len);
 			switch(m_state) {
 				case EConnectionState_WaitChallengeResponse:
 					handle_challenge_response(parse_buffer);
 				break;
-				case EConnectionState_ApprovedResponse:
-					send_verified();
+				case EConnectionState_WaitApprovedResponse:
 					m_state = EConnectionState_WaitRequest;
+					if (m_config->is_server) {
+						handle_uplink_info(parse_buffer);
+					}
+					else {
+						send_verified();
+					}
+					
 				break;
 				case EConnectionState_WaitRequest:
 					if(!m_config) { //shouldn't make it this far..

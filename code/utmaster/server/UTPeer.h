@@ -14,21 +14,37 @@ namespace MM {
 namespace UT {
 	enum EConnectionState {
 		EConnectionState_WaitChallengeResponse,
-		EConnectionState_ApprovedResponse, //UT
+		EConnectionState_WaitApprovedResponse,
 		EConnectionState_WaitRequest
 	};
 
 
-	enum EClientModeRequest {
-		EClientModeRequest_ServerList,
-		EClientModeRequest_MOTD
+	/*
+	* C->S "Game Client" mode msg ids
+	*/
+	enum EClientIncomingRequest {
+		EClientIncomingRequest_ServerList,
+		EClientIncomingRequest_MOTD
 	};
 
-	enum EServerModeRequest {
-		EServerModeRequest_ServerInit,
-		EServerModeRequest_Heartbeat,
-		EServerModeRequest_PlayerQuery,
-		EServerModeRequest_NewServer = 4
+	/*
+	* C->S "Game Server" mode msg ids
+	*/
+	enum EServerIncomingRequest {
+		EServerIncomingRequest_Heartbeat = 1,
+		EServerIncomingRequest_StatsUpdate,
+		EServerIncomingRequest_NewServer = 4
+	};
+
+	/*
+	* S->C "Game Server" mode msg ids
+	*/
+	enum EServerOutgoingRequest {
+		EServerOutgoingRequest_RequestHeartbeat = 0, //Request a heartbeat from the game server
+		EServerOutgoingRequest_InformCreateServer = 1, // unsure if this is really what it does...
+		EServerOutgoingRequest_InformMatchId = 3, //Match ID for the server? or round?
+		EServerOutgoingRequest_PackagesData,
+
 	};
 
 
@@ -72,29 +88,39 @@ namespace UT {
 		void Delete(bool timeout = false);
 		int GetGameId();
 		private:
-			EConnectionState m_state;
-			void handle_challenge_response(OS::Buffer buffer);
-			void handle_heartbeat(OS::Buffer buffer);
+			
 
 			void send_challenge_response(std::string response);
 			void send_challenge_authorization();
 			void send_motd();
 			void send_verified();
 			void send_server_id(int id);
+			void send_heartbeat_request(uint8_t id, uint32_t code);
+			void send_inform_create_server();
+			/*
+			* Protocol init handlers
+			*/
+			void handle_challenge_response(OS::Buffer buffer);
+			void handle_uplink_info(OS::Buffer buffer); //"Game Server" mode only
 
-			void handle_request_server_list(OS::Buffer recv_buffer);
-			void handle_newserver_request(OS::Buffer recv_buffer);
-			void handle_player_query(OS::Buffer recv_buffer);
+			/*
+			* "Game Server" command handlers
+			*/
+			void handle_newserver_request(OS::Buffer recv_buffer);			
+			void handle_heartbeat(OS::Buffer buffer);
+			
 
+			/*
+			* "Game Client" command handlers
+			*/
 			void handle_motd(OS::Buffer recv_buffer);
+			void handle_request_server_list(OS::Buffer recv_buffer);
 
-			void handle_server_init(OS::Buffer recv_buffer);
 
+			static void on_get_server_list(MM::MMTaskResponse response);
 
 			int get_server_flags(MM::ServerRecord record);
 			int get_server_flags_ut2003(MM::ServerRecord record);
-
-			static void on_get_server_list(MM::MMTaskResponse response);
 
 			void delete_server();
 
@@ -104,16 +130,19 @@ namespace UT {
 			static void Write_CompactInt(OS::Buffer& buffer, int value);
 			static void Write_FString(std::string input, OS::Buffer &buffer);
 
+			const CommandEntry* GetCommandByCode(uint8_t code);
+			static const CommandEntry m_client_commands[];
+			static const CommandEntry m_server_commands[];
+
+
+			EConnectionState m_state;
 			UT::Config *m_config;
 
 			OS::Address m_server_address;
 
 			uint32_t m_client_version;
 
-			const CommandEntry *GetCommandByCode(uint8_t code);
 
-			static const CommandEntry m_client_commands[];
-			static const CommandEntry m_server_commands[];
 
 			bool m_got_server_init;
 
