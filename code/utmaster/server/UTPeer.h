@@ -108,6 +108,7 @@ namespace UT {
 			*/
 			void handle_newserver_request(OS::Buffer recv_buffer);			
 			void handle_heartbeat(OS::Buffer buffer);
+			void handle_stats_update(OS::Buffer buffer);
 			
 
 			/*

@@ -16,6 +16,7 @@ namespace UT {
 
 	const CommandEntry Peer::m_server_commands[] = {
 		CommandEntry(EServerIncomingRequest_Heartbeat, &Peer::handle_heartbeat),
+		CommandEntry(EServerIncomingRequest_StatsUpdate, &Peer::handle_stats_update),
 		CommandEntry(EServerIncomingRequest_NewServer, &Peer::handle_newserver_request),
 		CommandEntry(-1, NULL)
 	};
