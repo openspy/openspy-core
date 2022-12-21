@@ -163,6 +163,7 @@ namespace MM {
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s hostname \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.hostname).c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s mapname \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.level).c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gametype \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.game_group).c_str());
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s botlevel \"%s\"", cust_keys.c_str(), request.record.bot_level.c_str());
 
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s numplayers %d", cust_keys.c_str(), request.record.num_players);
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s maxplayers %d", cust_keys.c_str(), request.record.max_players);

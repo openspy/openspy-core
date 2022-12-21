@@ -74,6 +74,7 @@ namespace MM {
 		result.hostname = GetHKey(thread_data, cust_keys, "hostname");
 		result.level = GetHKey(thread_data, cust_keys, "mapname");
 		result.game_group = GetHKey(thread_data, cust_keys, "gametype");
+		result.bot_level = GetHKey(thread_data, cust_keys, "botlevel");
 		result.num_players = GetHKeyInt(thread_data, cust_keys, "numplayers");
 		result.max_players = GetHKeyInt(thread_data, cust_keys, "maxplayers");
 
@@ -186,7 +187,6 @@ namespace MM {
                 	ServerRecord record = LoadServerInfo(request, thread_data, server_key);				
 					if(filterMatches(record, request.m_filters)) {
 						results.push_back(record);
-						break;
 					}					
 				}
 			}

@@ -61,54 +61,49 @@ namespace UT {
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
-		/*if (current_time.tv_sec - m_last_recv.tv_sec > UTMASTER_PING_TIME * 2) {
+		if (current_time.tv_sec - m_last_recv.tv_sec > UTMASTER_PING_TIME) {
 			Delete(true);
-		} else */if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
+		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
 			Delete();
 		}
 	}
 	void Peer::handle_packet(OS::Buffer recv_buffer) {
-		//XXX: clean this up... logic is confusing to follow
 		uint8_t req_type;
-		while(recv_buffer.readRemaining() > 0) {
 			
-			size_t len = (size_t)recv_buffer.ReadInt();
-			OS::Buffer parse_buffer;
-			if(len == 0 || len > recv_buffer.readRemaining()) break;
-			parse_buffer.WriteBuffer(recv_buffer.GetReadCursor(), len);
-			recv_buffer.SetReadCursor(len);
-			recv_buffer.SetWriteCursor(len);
+		size_t len = (size_t)recv_buffer.ReadInt();
+		OS::Buffer parse_buffer;
+		if(len == 0 || len > recv_buffer.readRemaining()) return; //XXX: handle stream
+		parse_buffer.WriteBuffer(recv_buffer.GetReadCursor(), len);
+		recv_buffer.SetReadCursor(len);
+		recv_buffer.SetWriteCursor(len);
 
-			switch(m_state) {
-				case EConnectionState_WaitChallengeResponse:
-					handle_challenge_response(parse_buffer);
-				break;
-				case EConnectionState_WaitApprovedResponse:
-					m_state = EConnectionState_WaitRequest;
-					if (m_config->is_server) {
-						handle_uplink_info(parse_buffer);
-					}
-					else {
-						send_verified();
-					}
+		switch(m_state) {
+			case EConnectionState_WaitChallengeResponse:
+				handle_challenge_response(parse_buffer);
+			break;
+			case EConnectionState_WaitApprovedResponse:
+				if (!m_config) { //shouldn't make it this far..
+					Delete();
+					return;
+				}
+				m_state = EConnectionState_WaitRequest;
+				if (m_config->is_server) {
+					handle_uplink_info(parse_buffer);
+				}
+				else {
+					send_verified();
+				}
 					
-				break;
-				case EConnectionState_WaitRequest:
-					if(!m_config) { //shouldn't make it this far..
-						Delete();
-						return;
-					}
-					req_type = parse_buffer.ReadByte();
-					const CommandEntry *entry = GetCommandByCode(req_type);
-					if(entry) {
-						(*this.*entry->callback)(parse_buffer);
-					} else {
-						OS::LogText(OS::ELogLevel_Info, "[%s] Got unhandled request type %d", getAddress().ToString().c_str(), req_type);
-						//Delete();
-					}
-					
-				break;
-			}
+			break;
+			case EConnectionState_WaitRequest:
+				req_type = parse_buffer.ReadByte();
+				const CommandEntry *entry = GetCommandByCode(req_type);
+				if(entry) {
+					(*this.*entry->callback)(parse_buffer);
+				} else {
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got unhandled request type %d", getAddress().ToString().c_str(), req_type);
+					//Delete();
+				}
 		}
 
 	}
@@ -128,15 +123,15 @@ namespace UT {
 	}
 
 	void Peer::send_ping() {
-		struct timeval current_time;
+		//struct timeval current_time;
 
-		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_ping.tv_sec > UTMASTER_PING_TIME) {
-			gettimeofday(&m_last_ping, NULL);
-			OS::Buffer send_buffer;
-			send_buffer.WriteInt(0);	
-			send_packet(send_buffer);
-		}
+		//gettimeofday(&current_time, NULL);
+		//if(current_time.tv_sec - m_last_ping.tv_sec > UTMASTER_PING_TIME) {
+		//	gettimeofday(&m_last_ping, NULL);
+		//	OS::Buffer send_buffer;
+		//	send_buffer.WriteInt(0);	
+		//	send_packet(send_buffer);
+		//}
 
 	}
 
@@ -231,15 +226,16 @@ namespace UT {
 	std::string Peer::Read_FString(OS::Buffer &buffer) {
 		int length = Read_CompactInt(buffer);
 		std::string result;
-		for (int i = 0; i < length; i++) {
-			char ch = buffer.ReadByte();
+		if (length <= buffer.readRemaining()) {
+			for (int i = 0; i < length; i++) {
+				char ch = buffer.ReadByte();
+				//skip null byte to fix comparision (such as client config lookup)
+				if (i == length - 1 && ch == 0) {
+					break;
+				}
 
-			//skip null byte to fix comparision (such as client config lookup)
-			if (i == length-1 && ch == 0) {
-				break;
+				result += ch;
 			}
-
-			result += ch;
 		}
 		return result;
 	}

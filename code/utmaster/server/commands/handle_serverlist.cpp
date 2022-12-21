@@ -115,7 +115,7 @@ namespace UT {
 			send_buffer.WriteByte(server.max_players);
 			if(response.peer->m_client_version >= 3000) {
 				send_buffer.WriteInt(response.peer->get_server_flags(server)); //flags
-				Write_FString("1", send_buffer);
+				Write_FString(server.bot_level, send_buffer);
 			} else {
 				send_buffer.WriteByte(response.peer->get_server_flags(server)); //flags
 			}

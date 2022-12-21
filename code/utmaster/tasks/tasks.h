@@ -18,6 +18,7 @@ namespace MM {
 
 	class PlayerRecord {
 		public:
+			int id;
 			std::string name;
 			int ping;
 			int score;
@@ -31,6 +32,7 @@ namespace MM {
 			std::string hostname;
 			std::string level;
 			std::string game_group;
+			std::string bot_level;
 			int num_players;
 			int max_players;
 

@@ -22,19 +22,17 @@ namespace UT {
 			ss << ip_address << " ";			
 		}
 		ss << ") ";
-		buffer.ReadByte(); //??
-		/*uint32_t unk2 =*/ buffer.ReadInt(); 
+
+		//unknown data
+		buffer.ReadByte(); buffer.ReadInt(); 
 
 		record.m_address.port = htons(buffer.ReadShort());
 		ss << " Address: " << record.m_address.ToString();
 
 		//read more unknown properties
-		buffer.ReadByte(); buffer.ReadByte(); buffer.ReadByte();
-		
+		buffer.ReadInt(); buffer.ReadShort();
 
-
-		/*int hostname_len =*/ buffer.ReadInt();
-		record.hostname = buffer.ReadNTS();
+		record.hostname = Read_FString(buffer);
 		ss << " Hostname: " << record.hostname;
 
 		record.level = Read_FString(buffer);
@@ -46,15 +44,15 @@ namespace UT {
 		int num_players = buffer.ReadInt(), max_players = buffer.ReadInt(); /*, unk5 = buffer.ReadInt(); */ 
 		buffer.ReadInt(); //unk5
 		
-		if(m_client_version >= 3000) {
-			/*uint32_t unk6 = */buffer.ReadInt();//, unk7 = buffer.ReadInt();
-		}
 		record.num_players = num_players;
 		record.max_players = max_players;
 		ss << " Players: (" << record.num_players << "/" << record.max_players << ") ";
 		
 		if(m_client_version >= 3000) {
-			/*uint8_t unk7 =*/ buffer.ReadByte(), /*unk8 =*/ buffer.ReadByte(), /*unk9 =*/ buffer.ReadByte();
+			buffer.ReadInt();
+
+			record.bot_level = Read_FString(buffer);
+			ss << "Bot: " << record.bot_level << " ";
 		}
 		
 		uint8_t num_fields = buffer.ReadByte();
@@ -65,8 +63,7 @@ namespace UT {
 
 			ss << "(" << field << "," << property << "), ";
 
-
-			if(stricmp(field.c_str(),"mutator") == 0) {
+			if(field.compare("mutator") == 0) {
 				record.m_mutators.push_back(property);
 			} else {
 				record.m_rules[field] = property;
@@ -77,17 +74,14 @@ namespace UT {
 		ss << " Players (";
 		for(int i=0;i<num_player_entries;i++) {
 			MM::PlayerRecord player_record;
-			/*uint8_t player_index =*/ buffer.ReadByte();
-			/*int name_len =*/ buffer.ReadInt();
-			
-
-			player_record.name = buffer.ReadNTS();
+			player_record.id = buffer.ReadInt();
+			player_record.name = Read_FString(buffer);
 
 			player_record.ping = buffer.ReadInt();
 			player_record.score = buffer.ReadInt();
 			player_record.stats_id = buffer.ReadInt();
 
-			ss << player_record.name << "(" << player_record.ping << "," << player_record.score << "," << player_record.stats_id << "),";
+			ss << player_record.name << "(" << player_record.id << "," << player_record.ping << "," << player_record.score << "," << player_record.stats_id << "),";
 			
 			record.m_players.push_back(player_record);
 		}

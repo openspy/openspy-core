@@ -59,13 +59,19 @@ namespace UT {
 	void Peer::send_challenge_response(std::string response) {
 		OS::Buffer send_buffer;
 		Write_FString(response, send_buffer);	
-		if (!m_config->is_server) {
+		if (!m_config->is_server && m_client_version >= 3000) {
 			send_buffer.WriteInt(3); //???
 		}
 		send_packet(send_buffer);
 	}
 	void Peer::send_challenge_authorization() {
-		m_state = EConnectionState_WaitApprovedResponse;
+		if (m_client_version >= 3000 || m_config->is_server) {
+			m_state = EConnectionState_WaitApprovedResponse;
+		}
+		else {
+			m_state = EConnectionState_WaitRequest;
+		}
+		
 		send_challenge_response("APPROVED");
 	}
 	void Peer::send_verified() {

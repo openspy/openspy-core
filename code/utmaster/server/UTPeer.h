@@ -41,7 +41,7 @@ namespace UT {
 	*/
 	enum EServerOutgoingRequest {
 		EServerOutgoingRequest_RequestHeartbeat = 0, //Request a heartbeat from the game server
-		EServerOutgoingRequest_InformCreateServer = 1, // unsure if this is really what it does...
+		EServerOutgoingRequest_DetectedPorts = 1, // detected hb port info
 		EServerOutgoingRequest_InformMatchId = 3, //Match ID for the server? or round?
 		EServerOutgoingRequest_PackagesData,
 
@@ -96,7 +96,7 @@ namespace UT {
 			void send_verified();
 			void send_server_id(int id);
 			void send_heartbeat_request(uint8_t id, uint32_t code);
-			void send_inform_create_server();
+			void send_detected_ports();
 			/*
 			* Protocol init handlers
 			*/
