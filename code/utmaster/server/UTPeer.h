@@ -127,7 +127,7 @@ namespace UT {
 
 			//serialization stuff
 			static int Read_CompactInt(OS::Buffer& buffer);
-			static std::string Read_FString(OS::Buffer &buffer);
+			static std::string Read_FString(OS::Buffer &buffer, bool skip_colours = false);
 			static void Write_CompactInt(OS::Buffer& buffer, int value);
 			static void Write_FString(std::string input, OS::Buffer &buffer);
 

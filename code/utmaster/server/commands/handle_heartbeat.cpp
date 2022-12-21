@@ -18,7 +18,7 @@ namespace UT {
 		uint8_t num_addresses = buffer.ReadByte();
 		ss << "Clients (";
 		while(num_addresses--) {
-			std::string ip_address = Read_FString(buffer);		
+			std::string ip_address = Read_FString(buffer, true);
 			ss << ip_address << " ";			
 		}
 		ss << ") ";
@@ -32,13 +32,13 @@ namespace UT {
 		//read more unknown properties
 		buffer.ReadInt(); buffer.ReadShort();
 
-		record.hostname = Read_FString(buffer);
+		record.hostname = Read_FString(buffer, true);
 		ss << " Hostname: " << record.hostname;
 
-		record.level = Read_FString(buffer);
+		record.level = Read_FString(buffer, true);
 		ss << " Level: " << record.level;
 
-		record.game_group = Read_FString(buffer);
+		record.game_group = Read_FString(buffer, true);
 		ss << " Game group: " << record.game_group;
 
 		int num_players = buffer.ReadInt(), max_players = buffer.ReadInt(); /*, unk5 = buffer.ReadInt(); */ 
@@ -51,15 +51,15 @@ namespace UT {
 		if(m_client_version >= 3000) {
 			buffer.ReadInt();
 
-			record.bot_level = Read_FString(buffer);
+			record.bot_level = Read_FString(buffer, true);
 			ss << "Bot: " << record.bot_level << " ";
 		}
 		
 		uint8_t num_fields = buffer.ReadByte();
 
 		for(int i=0;i<num_fields;i++) {
-			std::string field = Read_FString(buffer);
-			std::string property = Read_FString(buffer);
+			std::string field = Read_FString(buffer, true);
+			std::string property = Read_FString(buffer, true);
 
 			ss << "(" << field << "," << property << "), ";
 
@@ -75,7 +75,7 @@ namespace UT {
 		for(int i=0;i<num_player_entries;i++) {
 			MM::PlayerRecord player_record;
 			player_record.id = buffer.ReadInt();
-			player_record.name = Read_FString(buffer);
+			player_record.name = Read_FString(buffer, true);
 
 			player_record.ping = buffer.ReadInt();
 			player_record.score = buffer.ReadInt();

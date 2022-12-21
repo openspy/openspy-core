@@ -224,7 +224,7 @@ namespace UT {
 		}
 	}
 
-	std::string Peer::Read_FString(OS::Buffer &buffer) {
+	std::string Peer::Read_FString(OS::Buffer &buffer, bool skip_colours) {
 		int length = Read_CompactInt(buffer);
 		std::string result;
 		if (length <= buffer.readRemaining()) {
@@ -233,6 +233,11 @@ namespace UT {
 				//skip null byte to fix comparision (such as client config lookup)
 				if (i == length - 1 && ch == 0) {
 					break;
+				}
+				if (skip_colours && ch == 0x1B) { //skip colour codes
+					i += 3;
+					buffer.ReadByte(); buffer.ReadByte(); buffer.ReadByte();
+					continue;
 				}
 
 				result += ch;
