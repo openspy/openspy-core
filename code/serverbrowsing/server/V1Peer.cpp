@@ -32,7 +32,7 @@ namespace SB {
 		V1Peer::~V1Peer() {
 
 		}
-		void V1Peer::Delete(bool timeout = false) {
+		void V1Peer::Delete(bool timeout) {
 			if(m_enctype == 1) {
 				Enctype1_FlushPackets();
 			}
@@ -458,7 +458,7 @@ namespace SB {
 		void V1Peer::Enctype1_FlushPackets() {
 			OS::Buffer encrypted_buffer;
 
-			create_enctype1_buffer(m_challenge, m_enctype1_accumulator, encrypted_buffer);
+			create_enctype1_buffer((const char *)&m_challenge, m_enctype1_accumulator, encrypted_buffer);
 
 			this->GetDriver()->getNetIOInterface()->streamSend(m_sd, encrypted_buffer);
 		}
@@ -528,16 +528,20 @@ namespace SB {
 		void V1Peer::OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) {
 		}
 		std::string V1Peer::skip_queryid(std::string s) {
-		if (s.substr(0, 9).compare("\\queryid\\") == 0) {
-			s = s.substr(9);
-			size_t queryid_offset = s.find("\\");
-			if (queryid_offset != std::string::npos) {
-				if (s.length() > queryid_offset) {
-					queryid_offset++;
+			if (s.substr(0, 9).compare("\\queryid\\") == 0) {
+				s = s.substr(9);
+				size_t queryid_offset = s.find("\\");
+				if (queryid_offset != std::string::npos) {
+					if (s.length() > queryid_offset) {
+						queryid_offset++;
+					}
+					s = s.substr(queryid_offset);
 				}
-				s = s.substr(queryid_offset);
 			}
-		}
-		return s;
+
+			if (s.substr(0, 2).compare("\r\n") == 0) { //skip new lines (for unreal)... probably should rename this function
+				s = s.substr(2);
+			}
+			return s;
 		}
 }
