@@ -34,7 +34,7 @@ int find_master_key_offset(char key, const char *master_key, int master_key_len)
 
 
 void create_enctype1_buffer(const char *validate_key, OS::Buffer input, OS::Buffer &output) {
-    char *encrypt_data = input.GetHead();
+    unsigned char *encrypt_data = (unsigned char *)input.GetHead();
     int encrypt_len = input.bytesWritten();
 
     int encshare4_data = rand();
@@ -43,7 +43,7 @@ void create_enctype1_buffer(const char *validate_key, OS::Buffer input, OS::Buff
     unsigned char  enc1key[261];
     memset(&tbuff,0,sizeof(tbuff));
     if(tmplen >= 0) {
-        encshare4((char *)&encshare4_data, sizeof(encshare4_data), tbuff);
+        encshare4((unsigned char *)&encshare4_data, sizeof(encshare4_data), tbuff);
         encshare1(tbuff, encrypt_data, tmplen);
     }
 
@@ -55,17 +55,17 @@ void create_enctype1_buffer(const char *validate_key, OS::Buffer input, OS::Buff
 
 
     char encryption_key[258];
-    enctype1_func3(scramble_data, sizeof(scramble_data), encryption_key);    
-    enctype1_func2((char *)encrypt_data, encrypt_len, (char *)&encryption_key); //encrypt actual data
+    enctype1_func3((unsigned char *)&scramble_data, sizeof(scramble_data), (unsigned char *)&encryption_key);    
+    enctype1_func2((unsigned char *)encrypt_data, encrypt_len, (unsigned char *)&encryption_key); //encrypt actual data
 
     tmplen = (encrypt_len >> 2) - 5;
     if(tmplen >= 0) {
-        enctype1_func4(validate_key, strlen(validate_key), enc1key);
+        enctype1_func4((unsigned char *)validate_key, strlen(validate_key), enc1key);
         enctype1_func6e(encrypt_data, tmplen, enc1key);
     }
-    obfuscate_scramble_data(scramble_data, sizeof(scramble_data), enctype1_master_key, sizeof(enctype1_master_key)); 
+    obfuscate_scramble_data((unsigned char*)&scramble_data, sizeof(scramble_data), (const char*)&enctype1_master_key, sizeof(enctype1_master_key));
 
-    write_enctype1_encrypted_data(output, validate_key, scramble_data, sizeof(scramble_data), (char *)encrypt_data, encrypt_len, encshare4_data);
+    write_enctype1_encrypted_data(output, validate_key, (unsigned char *)&scramble_data, sizeof(scramble_data), (char *)encrypt_data, encrypt_len, encshare4_data);
 
 }
 
