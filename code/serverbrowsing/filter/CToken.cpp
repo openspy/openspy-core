@@ -31,12 +31,12 @@ CToken::~CToken() {
 std::string readString(const char *filter, int &idx, int len) {
 	std::string str = "";
 	int i;
-	for(i=idx;i<len;i++) {
-		if(filter[i] == '\'' || filter[i] == '"') break;
+	char delim = filter[idx];
+	for(i=idx+1;i<len;i++) {
+		if(filter[i] == delim) break;
 		str += filter[i];
 	}
 	idx = i;
-	if(filter[i] == '\'' || filter[i] == '"') idx++; //skip the " or '
 	return str;
 }
 const char *readVariable(const char *filter, int &idx, int len) {
@@ -232,7 +232,7 @@ std::vector<CToken> CToken::filterToTokenList(const char *filter) {
 			tokens.push_back(token);
 		} else if(filter[i] == '\'' || filter[i] == '"') {
 			//gets freed in token deconstructor
-			std::string str = readString(filter, ++i, filterlen);
+			std::string str = readString(filter, i, filterlen);
 			token = CToken(str);
 			tokens.push_back(token);
 		} else if(filter[i] =='-') {
