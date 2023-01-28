@@ -33,7 +33,7 @@ namespace UT {
 	enum EServerIncomingRequest {
 		EServerIncomingRequest_Heartbeat = 1,
 		EServerIncomingRequest_StatsUpdate,
-		EServerIncomingRequest_NewServer = 4
+		EServerIncomingRequest_PackagesVersion = 4
 	};
 
 	/*
@@ -42,7 +42,7 @@ namespace UT {
 	enum EServerOutgoingRequest {
 		EServerOutgoingRequest_RequestHeartbeat = 0, //Request a heartbeat from the game server
 		EServerOutgoingRequest_DetectedPorts = 1, // detected hb port info
-		EServerOutgoingRequest_InformMatchId = 3, //Match ID for the server? or round?
+		EServerOutgoingRequest_InformMatchId = 3, //Match ID for the server? or round? -- probably round
 		EServerOutgoingRequest_PackagesData,
 
 	};
@@ -97,6 +97,8 @@ namespace UT {
 			void send_server_id(int id);
 			void send_heartbeat_request(uint8_t id, uint32_t code);
 			void send_detected_ports();
+			void send_packages_data(uint32_t version);
+
 			/*
 			* Protocol init handlers
 			*/
@@ -106,7 +108,7 @@ namespace UT {
 			/*
 			* "Game Server" command handlers
 			*/
-			void handle_newserver_request(OS::Buffer recv_buffer);			
+			void handle_packages_version(OS::Buffer recv_buffer);
 			void handle_heartbeat(OS::Buffer buffer);
 			void handle_stats_update(OS::Buffer buffer);
 			

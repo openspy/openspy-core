@@ -16,7 +16,12 @@
 
 namespace UT {
 	class Peer;
-
+	class PackageItem {
+	public:
+		std::string guid;
+		std::string hash;
+		int version;
+	};
 	class Config {
 		public:
 			Config() {
@@ -29,6 +34,7 @@ namespace UT {
 			std::string motd;
 			bool is_server;
 			int latest_client_version;
+			std::vector<UT::PackageItem> packages;
 	};
 
 	class Driver : public TCPDriver {

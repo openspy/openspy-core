@@ -106,15 +106,6 @@ namespace UT {
 
 	}
 
-
-    //this seems to be more stats related... but here for now, happens on non-stats games as well, just not much data
-	void Peer::handle_newserver_request(OS::Buffer recv_buffer) {
-		uint32_t unk1 = recv_buffer.ReadInt();
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] Server new server request: %d", getAddress().ToString().c_str(), unk1);
-
-		send_server_id(1234); //init stats backend, generate match id, for now not needed
-	}
 	void Peer::send_heartbeat_request(uint8_t id, uint32_t code) {
 		OS::Buffer send_buffer;
 		send_buffer.WriteByte(EServerOutgoingRequest_RequestHeartbeat);
