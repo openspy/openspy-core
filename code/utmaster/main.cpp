@@ -36,7 +36,7 @@ std::string get_file_contents(std::string path) {
 	return ret;
 }
 
-void load_packages_data(UT::Config* cfg, std::vector<OS::ConfigNode>& nodes) {
+void load_packages_data(UT::Config* cfg, std::vector<OS::ConfigNode> nodes) {
 	std::vector<OS::ConfigNode>::iterator it = nodes.begin();
 	while (it != nodes.end()) {
 		UT::PackageItem item;

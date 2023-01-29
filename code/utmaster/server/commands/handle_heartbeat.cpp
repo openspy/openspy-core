@@ -15,7 +15,7 @@ namespace UT {
 		std::stringstream ss;
 		
 		//read unknown properties
-		uint8_t num_addresses = buffer.ReadByte();
+		int num_addresses = Read_CompactInt(buffer);
 		ss << "Clients (";
 		while(num_addresses--) {
 			std::string ip_address = Read_FString(buffer, true);
@@ -55,7 +55,7 @@ namespace UT {
 			ss << "Bot: " << record.bot_level << " ";
 		}
 		
-		uint8_t num_fields = buffer.ReadByte();
+		int num_fields = Read_CompactInt(buffer);
 
 		for(int i=0;i<num_fields;i++) {
 			std::string field = Read_FString(buffer, true);
@@ -69,7 +69,7 @@ namespace UT {
 				record.m_rules[field] = property;
 			}
 		} 
-		uint8_t num_player_entries = buffer.ReadByte();
+		int num_player_entries = Read_CompactInt(buffer);
 		
 		ss << " Players (";
 		for(int i=0;i<num_player_entries;i++) {
