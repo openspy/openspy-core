@@ -14,7 +14,7 @@ namespace UT {
 
 		std::stringstream ss;
 		
-		//read unknown properties
+		//read addresses
 		int num_addresses = Read_CompactInt(buffer);
 		ss << "Clients (";
 		while(num_addresses--) {
@@ -23,14 +23,13 @@ namespace UT {
 		}
 		ss << ") ";
 
-		//unknown data
-		buffer.ReadByte(); buffer.ReadInt(); 
+		ss << " Unk1: " << buffer.ReadInt(); //unknown data
 
-		record.m_address.port = htons(buffer.ReadShort());
-		ss << " Address: " << record.m_address.ToString();
+		ss << " Address: " << Read_FString(buffer, true);
 
-		//read more unknown properties
-		buffer.ReadInt(); buffer.ReadShort();
+		record.m_address.port = htons(buffer.ReadInt());
+		ss << " Port: " << record.m_address.ToString();
+		ss << " Unk2: " << buffer.ReadInt();
 
 		record.hostname = Read_FString(buffer, true);
 		ss << " Hostname: " << record.hostname;
@@ -42,17 +41,17 @@ namespace UT {
 		ss << " Game group: " << record.game_group;
 
 		int num_players = buffer.ReadInt(), max_players = buffer.ReadInt(); /*, unk5 = buffer.ReadInt(); */ 
-		buffer.ReadInt(); //unk5
+		ss << " Unk3: " << buffer.ReadInt();
 		
 		record.num_players = num_players;
 		record.max_players = max_players;
 		ss << " Players: (" << record.num_players << "/" << record.max_players << ") ";
 		
 		if(m_client_version >= 3000) {
-			buffer.ReadInt();
+			ss << " Unk4: " << buffer.ReadInt();
 
 			record.bot_level = Read_FString(buffer, true);
-			ss << "Bot: " << record.bot_level << " ";
+			ss << " Bot: " << record.bot_level << " ";
 		}
 		
 		int num_fields = Read_CompactInt(buffer);
