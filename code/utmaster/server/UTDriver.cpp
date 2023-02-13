@@ -22,4 +22,15 @@ namespace UT {
 		}
 		return NULL;
 	}
+	void Driver::SetConfig(std::vector<UT::Config*> config) { 
+		m_config = config;
+
+		std::vector<UT::Config*>::iterator it = config.begin();
+		while (it != config.end()) {
+			UT::Config* cfg = *it;
+
+			cfg->game_data = OS::GetGameByID(cfg->gameid);
+			it++;
+		}
+	}
 }

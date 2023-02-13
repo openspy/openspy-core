@@ -9,7 +9,7 @@ namespace MM {
         MMTaskResponse response;
         response.peer = request.peer;
         
-        OS::GameData game_info = OS::GetGameByID(request.peer->GetGameId(), thread_data->mp_redis_connection);
+        OS::GameData game_info = request.peer->GetGameData();
         std::string server_key = GetServerKey_FromIPMap(request, thread_data, game_info);
 
         if(server_key.length() > 0) {

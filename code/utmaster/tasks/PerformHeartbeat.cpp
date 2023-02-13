@@ -192,7 +192,7 @@ namespace MM {
         MMTaskResponse response;
         response.peer = request.peer;
         
-        OS::GameData game_info = OS::GetGameByID(request.peer->GetGameId(), thread_data->mp_redis_connection);
+        OS::GameData game_info = request.peer->GetGameData();
         bool is_new_server = false;
         int server_id = 0;
         std::string key = GetServerKey_FromRequest(request, thread_data, game_info, is_new_server, server_id);

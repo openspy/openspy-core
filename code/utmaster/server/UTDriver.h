@@ -31,6 +31,7 @@ namespace UT {
 			}
 			std::string clientName;
 			int gameid;
+			OS::GameData game_data;
 			std::string motd;
 			bool is_server;
 			int latest_client_version;
@@ -40,7 +41,7 @@ namespace UT {
 	class Driver : public TCPDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
-		void SetConfig(std::vector<UT::Config *> config) { m_config = config; }
+		void SetConfig(std::vector<UT::Config*> config);
 		UT::Config *FindConfigByClientName(std::string clientName);
 	protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket);

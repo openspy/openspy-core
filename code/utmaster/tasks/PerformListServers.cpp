@@ -78,40 +78,20 @@ namespace MM {
 		result.num_players = GetHKeyInt(thread_data, cust_keys, "numplayers");
 		result.max_players = GetHKeyInt(thread_data, cust_keys, "maxplayers");
 
-		//XXX: iterate cust keys
+		const char* required_keys[] = {"GamePassword", "GameStats", "ServerVersion", "ServerMode"};
+		for (int i = 0; i < sizeof(required_keys) / sizeof(const char*); i++) {
+			const char* p = required_keys[i];
+			result.m_rules[p] = GetHKey(thread_data, cust_keys, p);
+		}
 
-		int cursor = 0;
 
-		do {
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HSCAN %s %d MATCH *", cust_keys.c_str(), cursor);
-			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
-				goto error_cleanup;
-
-			v = reply.values[0].arr_value.values[0].second;
-			arr = reply.values[0].arr_value.values[1].second;
-
-			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-				if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					cursor = atoi(v.value._str.c_str());
-				} else if(v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.arr_value.values[0].second.value._int;
-				}
-
-				for(size_t i=0;i<arr.arr_value.values.size();i+=2) {
-
-					if(arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
-						continue;
-
-					std::string key = arr.arr_value.values[i].second.value._str;
-					std::string value;
-					if (arr.arr_value.values[i+1].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
-						value = (arr.arr_value.values[i + 1].second.value._str);
-					}
-					result.m_rules[key] = value;
-				}
-			}
-		} while (cursor != 0);
-		error_cleanup:
+		//load filtered stuff
+		std::vector<FilterProperties>::iterator it = request.m_filters.begin();
+		while (it != request.m_filters.end()) {
+			FilterProperties p = *it;
+			result.m_rules[p.field] = GetHKey(thread_data, cust_keys, p.field);
+			it++;
+		}
         return result;
     }
 
@@ -196,7 +176,7 @@ namespace MM {
 			return;
     }
     bool PerformListServers(UTMasterRequest request, TaskThreadData *thread_data) {
-        OS::GameData game_info = OS::GetGameByID(request.peer->GetGameId(), thread_data->mp_redis_connection);
+        OS::GameData game_info = request.peer->GetGameData();
 
         MMTaskResponse response;
         response.peer = request.peer;

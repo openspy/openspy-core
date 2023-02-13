@@ -2,6 +2,7 @@
 #define _GPPEER_H
 #include "../main.h"
 
+#include <OS/OpenSpy.h>
 #include <OS/Net/NetPeer.h>
 
 #define UTMASTER_PING_TIME 120
@@ -86,7 +87,7 @@ namespace UT {
 		
 
 		void Delete(bool timeout = false);
-		int GetGameId();
+		OS::GameData GetGameData();
 		private:
 			
 

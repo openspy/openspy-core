@@ -250,9 +250,9 @@ namespace UT {
 		Write_CompactInt(buffer, input.length() + 1);
 		buffer.WriteBuffer(input.c_str(), input.length() + 1);
 	}
-	int Peer::GetGameId() {
-		if(m_config == NULL) return 0;
-		return m_config->gameid;
+	OS::GameData Peer::GetGameData() {
+		if(m_config == NULL) return OS::GameData();
+		return m_config->game_data;
 	}
 	void Peer::delete_server() {
 		if(m_config != NULL && m_config->is_server) {
