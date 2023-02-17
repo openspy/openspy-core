@@ -172,10 +172,10 @@ namespace MM {
 				case 5:
 					result.max_players = atoi(p.second.value._str.c_str());
 					break;
-				default: //not specially managed property, dump into rules
-					result.m_rules[field_name] = p.second.value._str;
+				default: //not specially managed property, dump into rules (handled outside switch)
 					break;
 			}
+			result.m_rules[field_name] = p.second.value._str;
 
 		}
         return result;
