@@ -4,47 +4,6 @@
 #include <server/UTPeer.h>
 
 namespace MM {
-	std::string GetHKey(TaskThreadData *thread_data, std::string server_key, std::string key) {
-		Redis::Response reply;
-		Redis::Value v;
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s %s", server_key.c_str(), key.c_str());
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
-			return "";
-
-		v = reply.values.front();
-
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING)
-			return v.value._str;
-		return "";
-	}
-	int GetHKeyInt(TaskThreadData *thread_data, std::string server_key, std::string key) {
-		return atoi(GetHKey(thread_data, server_key, key).c_str());
-	}
-	int GetPortFromGamespyInfo(TaskThreadData *thread_data, std::string server_key) {
-		Redis::Response resp;
-		Redis::Value v, arr;
-
-		bool is_gamespy = false;
-
-		resp = Redis::Command(thread_data->mp_redis_connection, 0, "HEXISTS %s instance_key", server_key.c_str());
-
-		if (Redis::CheckError(resp) || resp.values.size() == 0) {
-			is_gamespy = false;
-		} else {
-			v = resp.values[0];
-			if ((v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) || (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0)) {
-				is_gamespy = true;
-			}
-		}
-
-		if(is_gamespy) {
-			std::string cust_keys = server_key + "custkeys";
-			return GetHKeyInt(thread_data, cust_keys, "hostport");
-		}
-
-
-		return 0;
-	}
 	void LoadBasicServerInfo(UTMasterRequest request, TaskThreadData* thread_data, std::string server_key, ServerRecord &result) {
 
 		std::vector<std::string> lookup_keys;
@@ -172,7 +131,7 @@ namespace MM {
 				case 5:
 					result.max_players = atoi(p.second.value._str.c_str());
 					break;
-				default: //not specially managed property, dump into rules (handled outside switch)
+				default: //not specially managed property, dump into rules (handled outside switch due to filtering logic -- due to things like gamegroup filtering)
 					break;
 			}
 			result.m_rules[field_name] = p.second.value._str;

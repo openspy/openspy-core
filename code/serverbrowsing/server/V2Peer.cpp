@@ -22,6 +22,7 @@ namespace SB {
 		m_last_list_req.m_from_game.gameid = 0;
 		m_last_list_req.m_from_game.secretkey[0] = 0;
 		m_last_list_req.m_from_game.gamename[0] = 0;
+		m_last_list_req.push_updates = false;
 		m_in_message = false;
 		m_got_game_pair = false;
 		mp_push_delay_buffer = NULL;
@@ -453,6 +454,7 @@ namespace SB {
 		AddRequest(req);
 	}
 	void V2Peer::send_ping() {
+		if (!m_last_list_req.push_updates || m_in_message) return;
 		//check for timeout
 		struct timeval current_time;
 
