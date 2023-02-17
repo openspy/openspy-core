@@ -5,7 +5,6 @@
 
 namespace MM {
 	int GetServerID(TaskThreadData *thread_data) {
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;
 		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "INCR %s", mp_pk_name);
 		Redis::Value v = resp.values.front();
@@ -18,7 +17,6 @@ namespace MM {
 		return ret;
 	}
 	bool isServerDeleted(TaskThreadData *thread_data, std::string server_key) {
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;
 		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "HGET %s deleted", server_key.c_str());
 		Redis::Value v = resp.values.front();
@@ -30,7 +28,6 @@ namespace MM {
 		return ret == 1;
 	}
     bool serverRecordExists(TaskThreadData* thread_data, std::string server_key) {
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
         int ret = -1;
         Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "EXISTS %s", server_key.c_str());
         Redis::Value v = resp.values.front();
@@ -43,7 +40,6 @@ namespace MM {
         return ret == 1;
     }
     std::string GetServerKey_FromIPMap(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info) {
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
         std::ostringstream s;
         s << "IPMAP_" << request.record.m_address.ToString(true) << "-" << request.record.m_address.GetPort();
 
@@ -51,7 +47,6 @@ namespace MM {
 		Redis::Response reply;
 		Redis::Value v;
 
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", s.str().c_str());
 		if (Redis::CheckError(reply)) {
 			return server_key;
@@ -139,8 +134,6 @@ namespace MM {
         
     }
     void WriteServerData(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info, std::string server_key, int id) {
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
-
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), request.record.m_address.GetPort());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), request.record.m_address.ToString(true).c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), game_info.gameid);
