@@ -109,6 +109,7 @@ namespace MM {
 			v_it++;
 
 			if (p.first != Redis::REDIS_RESPONSE_TYPE_STRING) {
+				idx++;
 				continue;
 			}
 			std::string field_name = lookup_keys.at(idx);
