@@ -73,11 +73,23 @@ namespace MM {
 
 	typedef void (*MMTaskResponseCallback)(MMTaskResponse response);
 
+	
+	enum EQueryType //from MasterServerClient.uc (IpDrv.u)
+	{
+		QT_Equals,
+		QT_NotEquals,
+		QT_LessThan,
+		QT_LessThanEquals,
+		QT_GreaterThan,
+		QT_GreaterThanEquals,
+		QT_Disabled		// if QT_Disabled, query item will not be added
+	};
+
 	class FilterProperties {
 		public:
 			std::string field;
 			std::string property;
-			bool is_negate;
+			EQueryType type;
 	};
 
 	class UTMasterRequest {

@@ -138,18 +138,34 @@ namespace UT {
 			std::string property = Read_FString(recv_buffer);
 			
 
-			int is_negate = recv_buffer.ReadByte();		
+			MM::EQueryType query_type = (MM::EQueryType) recv_buffer.ReadByte();
 
 			MM::FilterProperties filter;
 			filter.field = field;
 			filter.property = property;
-			filter.is_negate = is_negate;
+			filter.type = query_type;
 
-			if(is_negate) {
-				ss << field << "!="  << property << ",";
-			} else {
-				ss << field << "="  << property << ",";
+			switch (filter.type) {
+				case MM::QT_Equals:
+					ss << field << "==" << property << ",";
+					break;
+				case MM::QT_NotEquals:
+					ss << field << "!=" << property << ",";
+					break;
+				case MM::QT_LessThan:
+					ss << field << "<" << property << ",";
+					break;
+				case MM::QT_LessThanEquals:
+					ss << field << "<=" << property << ",";
+					break;
+				case MM::QT_GreaterThan:
+					ss << field << ">" << property << ",";
+					break;
+				case MM::QT_GreaterThanEquals:
+					ss << field << ">=" << property << ",";
+					break;
 			}
+
 			req.m_filters.push_back(filter);
 		}
 

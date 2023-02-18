@@ -147,26 +147,80 @@ namespace MM {
 		return it != record.m_mutators.end();
 	}
 	bool filterPropertyMatches(ServerRecord record, FilterProperties property) {
-		bool match = false;
-		if(stricmp(property.field.c_str(), "mutator") == 0) {
-			match = hasMutator(record, property.property);
-		} else {
-			
-			std::map<std::string, std::string>::iterator rule = record.m_rules.find(property.field);
-			if(rule == record.m_rules.end()) {
-				match = false;
+		bool string_comparision = false;
+
+		switch (property.type) {
+		case QT_Equals:
+		case QT_NotEquals:
+			string_comparision = true;
+			break;
+		}
+		
+		std::map<std::string, std::string>::iterator rule = record.m_rules.find(property.field);
+		if (rule == record.m_rules.end()) {
+			return true;
+		}
+		std::pair<std::string, std::string> p = *rule;
+
+		int comparison = 0;
+
+		if (stricmp(property.field.c_str(), "mutator") == 0) {
+			if (!hasMutator(record, property.property)) {
+				comparison = 1;
 			}
-			else {
-				std::pair<std::string, std::string> p = *rule;
-				if(strcasecmp(property.property.c_str(), p.second.c_str()) == 0) {
-					match = true;
-				}
+		} else if (string_comparision) {
+			comparison = strcasecmp(property.property.c_str(), p.second.c_str());
+		}
+		else {
+			int values[2];
+			values[1] = atoi(property.property.c_str());
+			values[0] = atoi(p.second.c_str());
+
+			if (values[0] == values[1]) {
+				comparison = 0;
+			}
+			else if (values[0] < values[1]) {
+				comparison = -1;
+			}
+			else if (values[0] > values[1]) {
+				comparison = 1;
 			}
 		}
-		if(property.is_negate) {
-			match = !match;
+
+		switch (property.type) {
+		case QT_Equals:
+			if (comparison == 0) {
+				return true;
+			}
+			break;
+		case QT_NotEquals:
+			if (comparison != 0) {
+				return true;
+			}
+			break;
+		case QT_LessThan:
+			if (comparison < 0) {
+				return true;
+			}
+			break;
+		case QT_LessThanEquals:
+			if (comparison <= 0) {
+				return true;
+			}
+			break;
+		case QT_GreaterThan:
+			if (comparison > 0) {
+				return true;
+			}
+			break;
+		case QT_GreaterThanEquals:
+			if (comparison >= 0) {
+				return true;
+			}
+			break;
+
 		}
-		return match;
+		return false;
 	}
 	bool filterMatches(ServerRecord record, std::vector<FilterProperties> &filter) {
 		std::vector<FilterProperties>::iterator it = filter.begin();

@@ -91,7 +91,8 @@ namespace MM {
     }
     void injectFilterVariables(UTMasterRequest request, TaskThreadData *thread_data, std::string cust_keys) {
         //for filters -- this stuff might end up being UT2004 specific
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s currentplayers %d", cust_keys.c_str(), request.record.num_players);        
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s currentplayers %d", cust_keys.c_str(), request.record.num_players);
+        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s category \"%s\"", cust_keys.c_str(), request.record.bot_level.c_str());
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s freespace %d", cust_keys.c_str(), request.record.num_players < request.record.max_players);
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s nomutators %s", cust_keys.c_str(), request.record.m_mutators.size() == 0 ? "true" : "false");
         Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s standard %s", cust_keys.c_str(), request.record.isStandardServer() ? "true" : "false");
