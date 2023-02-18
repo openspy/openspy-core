@@ -35,6 +35,7 @@ namespace MM {
 			v_it++;
 
 			if (p.first != Redis::REDIS_RESPONSE_TYPE_STRING) {
+				idx++;
 				continue;
 			}
 			switch (idx++) {
