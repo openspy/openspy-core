@@ -71,7 +71,7 @@ namespace MM {
 					const char *type_str = json_string_value(type);
 					if(stricmp(type_str, "client_message") == 0) {
 						if(version == 2) {
-							//driver->send_client_message(version, to_address, instance_key, message_key, message_buffer);
+							driver->send_client_message(version, to_address, instance_key, message_key, message_buffer);
 						}
 					}
 				}
