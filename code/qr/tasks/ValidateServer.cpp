@@ -31,6 +31,12 @@ namespace MM {
 
         std::string server_key = GetServerKey_FromRequest(request, thread_data);
 
+        if (server_key.empty()) {
+            response.error_message = "Server not registered";
+            request.callback(response);
+            return true;
+        }
+
         response.query_address = GetQueryAddressForServer(thread_data, server_key);
 
         std::string expected_challenge = GetV2CalculatedChallenge(request, thread_data, server_key);

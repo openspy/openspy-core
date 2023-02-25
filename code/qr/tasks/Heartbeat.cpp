@@ -161,7 +161,7 @@ namespace MM {
         std::string hbtime_key = server_key + "_hbblock";
         bool keyExists = false;
         reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS %s", hbtime_key.c_str());
-        if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)        {
+        if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
             //createKey = true;
         }
 
@@ -317,62 +317,99 @@ namespace MM {
 
 		Redis::Command(thread_data->mp_redis_connection, 0, "HINCRBY %s num_updates 1", server_key.c_str());
 
-		std::map<std::string, std::string>::iterator it = server.m_keys.begin();
-		while (it != server.m_keys.end()) {
-			std::pair<std::string, std::string> p = *it;
-			Redis::Command(thread_data->mp_redis_connection, 0, "HSET %scustkeys %s \"%s\"", server_key.c_str(), p.first.c_str(), OS::escapeJSON(p.second).c_str());
-			it++;
-		}
-		
 
-		std::map<std::string, std::vector<std::string> >::iterator it2 = server.m_player_keys.begin();
-
-		int i = 0, max_idx = 0;
-		std::pair<std::string, std::vector<std::string> > p;
-		std::vector<std::string>::iterator it3;
-		while (it2 != server.m_player_keys.end()) {
-			p = *it2;
-			it3 = p.second.begin();
-			while (it3 != p.second.end()) {
-				std::string s = *it3;
-				if(s.length() > 0) {
-					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %scustkeys_player_%d %s \"%s\"", server_key.c_str(), i, p.first.c_str(), OS::escapeJSON(s).c_str());
-				}
-				i++;
-				it3++;
-			}
-			max_idx= i;
-			i = 0;
-			it2++;
-		}
-
-		for(i=0;i<max_idx;i++) {
-			Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %scustkeys_player_%d %d", server_key.c_str(), i, MM_PUSH_EXPIRE_TIME);
-		}
-		i=0;
+        std::ostringstream s;
+        //std::string custkey_command = "HMSET " + server_key + "custkeys ";
 
 
-		it2 = server.m_team_keys.begin();
-		while (it2 != server.m_team_keys.end()) {
-			p = *it2;
-			it3 = p.second.begin();
-			while (it3 != p.second.end()) {
+        if (!server.m_keys.empty()) {
+            //HMSET is being deprecated, but currently the server needs it... just only involve changing HMSET to HSET (but keeping same syntax) when change is needed
+            s << "HMSET " << server_key << "custkeys";
+            std::map<std::string, std::string>::iterator it = server.m_keys.begin();
+            while (it != server.m_keys.end()) {
+                std::pair<std::string, std::string> p = *it;
+                s << " " << p.first.c_str() << " \"" << OS::escapeJSON(p.second).c_str() << "\"";
+                //Redis::Command(thread_data->mp_redis_connection, 0, "HSET %scustkeys %s \"%s\"", server_key.c_str(), p.first.c_str(), OS::escapeJSON(p.second).c_str());
+                it++;
+            }
+            Redis::Command(thread_data->mp_redis_connection, 0, s.str().c_str());
+            s.str("");
+        }
 
-				std::string s = *it3;
-				if(s.length() > 0) {
-					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %scustkeys_team_%d %s \"%s\"", server_key.c_str(), i, p.first.c_str(), OS::escapeJSON(s).c_str());
-					i++;
-				}
-				it3++;
-			}
-			max_idx= i;
-			i = 0;
-			it2++;
-		}
-		for(i=0;i<max_idx;i++) {
-			Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %scustkeys_team_%d %d", server_key.c_str(), i, MM_PUSH_EXPIRE_TIME);
-		}
-		i=0;
+
+
+        // This map stored the keys remapped in a way which is easier to write to redis (so we can iterate each hash to write at a time instead of key by key)
+        std::map<std::string, std::vector<std::pair<std::string, std::string>>> transposed_keys;
+        std::map<std::string, std::vector<std::string> >::iterator it2 = server.m_player_keys.begin();
+        std::vector<std::string>::iterator it3;
+        std::pair<std::string, std::vector<std::string> > p;
+        int i = 0;
+
+        //Map team keys to transposd keys
+        while (it2 != server.m_player_keys.end()) {
+            p = *it2;
+            it3 = p.second.begin();
+            while (it3 != p.second.end()) {
+                std::string key = p.first;
+                std::string value = *it3;
+                if (value.length() > 0) {
+                    std::ostringstream player_ss;
+                    player_ss << server_key << "custkeys_player_" << i;
+                    transposed_keys[player_ss.str()].push_back(std::pair<std::string, std::string>(key, value));
+                }
+                i++;
+                it3++;
+            }
+
+            i = 0;
+            it2++;
+        }
+
+        //now do the same thing for team keys
+        it2 = server.m_team_keys.begin();
+        while (it2 != server.m_team_keys.end()) {
+            p = *it2;
+            it3 = p.second.begin();
+            while (it3 != p.second.end()) {
+                std::string key = p.first;
+                std::string value = *it3;
+                if (value.length() > 0) {
+                    std::ostringstream player_ss;
+                    player_ss << server_key << "custkeys_team_" << i;
+                    transposed_keys[player_ss.str()].push_back(std::pair<std::string, std::string>(key, value));
+                }
+                i++;
+                it3++;
+            }
+
+            i = 0;
+            it2++;
+        }
+
+        //now actually write to redis
+        std::map<std::string, std::vector<std::pair<std::string, std::string>>>::iterator transposed_keys_it = transposed_keys.begin();
+        while (transposed_keys_it != transposed_keys.end()) {
+            auto p = *transposed_keys_it;
+            std::ostringstream ss;
+            ss << "HMSET " << p.first;
+            std::vector<std::pair<std::string, std::string>>::iterator keys_it = p.second.begin();
+
+            bool got_any = false;
+            while (keys_it != p.second.end()) {
+                std::pair<std::string, std::string> kv_pair = *keys_it;
+                if (!kv_pair.second.empty()) {
+                    ss << " " << kv_pair.first << " \"" << kv_pair.second << "\"";
+                    got_any = true;
+                }
+                keys_it++;
+            }
+
+            if (got_any) {
+                Redis::Command(thread_data->mp_redis_connection, 0, ss.str().c_str());
+                Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %s %d", p.first.c_str(), MM_PUSH_EXPIRE_TIME);
+            }
+            transposed_keys_it++;
+        }
 
 		WriteLastHeartbeatTime(thread_data, server_key, server.m_address, instance_key, from_address);
 
@@ -382,15 +419,19 @@ namespace MM {
         Redis::Command(thread_data->mp_redis_connection, 0, "HDEL %s num_updates", server_key.c_str());
     }
 	void SetServerInitialInfo(TaskThreadData *thread_data, OS::Address driver_address, std::string server_key, OS::GameData game_info, std::string challenge_response, OS::Address address, int id, OS::Address from_address) {
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s driver_address %s", server_key.c_str(), driver_address.ToString().c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s driver_hostname %s", server_key.c_str(), OS::g_hostName);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s qr_port %d", server_key.c_str(), from_address.GetPort());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), address.GetPort());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), address.ToString(true).c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), game_info.gameid);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
+        std::ostringstream ss;
+        ss << "HMSET " << server_key;
 
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s challenge %s", server_key.c_str(), challenge_response.c_str());
+        ss << " driver_address \"" << driver_address.ToString() << "\"";
+        ss << " driver_hostname \"" << OS::g_hostName << "\"";
+
+        ss << " qr_port " << from_address.GetPort();
+        ss << " wan_port " << address.GetPort();
+        ss << " wan_ip \"" << address.ToString(true) << "\"";
+        ss << " gameid " << game_info.gameid;
+        ss << " id " << id;
+        ss << " challenge \"" << challenge_response << "\"";
+        Redis::Command(thread_data->mp_redis_connection, 0, ss.str().c_str());
 
         Redis::Command(thread_data->mp_redis_connection, 0, "ZADD %s %d \"%s\"", game_info.gamename.c_str(), id, server_key.c_str());
     }

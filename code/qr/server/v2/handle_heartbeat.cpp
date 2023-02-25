@@ -112,7 +112,7 @@ namespace QR {
         req.driver = this;
         req.server = server_info;
         req.version = 2;
-        req.type = MM::EMMPushRequestType_Heartbeat_ClearExistingKeys;
+        req.type = MM::EMMPushRequestType_Heartbeat;
         req.callback = on_v2_heartbeat_processed;
         scheduler->AddRequest(req.type, req);
     }
