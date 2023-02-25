@@ -119,6 +119,8 @@ namespace MM {
 
 	//#define NUM_MM_PUSH_THREADS 8
 	#define MM_WAIT_MAX_TIME 1500
-	#define MM_PUSH_EXPIRE_TIME 1800
+	#define MM_PUSH_EXPIRE_TIME 600
+	#define MM_IGNORE_TIME_SECS 60 //number of time in seconds where another heartbeat update will be blocked
+	#define MM_QRV1_NUM_BURST_REQS 3
 }
 #endif //_MM_TASKS_H

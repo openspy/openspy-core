@@ -112,6 +112,76 @@ namespace MM {
             key = GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
         return key;
     }
+    bool CheckServerKey_HasRecentHeartbeat_V1(MMPushRequest request, TaskThreadData* thread_data, std::string server_key) {
+        Redis::Response reply;
+        Redis::Value v;
+
+        if (server_key.length() < 1) {
+            return false;
+        }
+
+        std::string hbtime_key = server_key + "_hbblock";
+        bool keyExists = false;
+        reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", hbtime_key.c_str());
+        if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+            //createKey = true;
+        }
+
+
+        v = reply.values.front();
+        if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+            if (v.value._int >= MM_QRV1_NUM_BURST_REQS)
+                keyExists = true;
+        }
+        else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+            if (atoi(v.value._str.c_str()) >= MM_QRV1_NUM_BURST_REQS)
+                keyExists = true;
+        }
+
+        //add key to block future  requests
+        if (!keyExists) {
+            Redis::Command(thread_data->mp_redis_connection, 0, "INCR %s", hbtime_key.c_str());
+            Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %s %d", hbtime_key.c_str(), MM_IGNORE_TIME_SECS);
+        }
+        return keyExists; //if a key is created, that means the request can be processed (future ones will be blocked)
+    }
+    bool CheckServerKey_HasRecentHeartbeat(MMPushRequest request, TaskThreadData* thread_data, std::string server_key) {
+
+        if (request.version == 1) {
+            return CheckServerKey_HasRecentHeartbeat_V1(request, thread_data, server_key);
+        }
+
+        Redis::Response reply;
+        Redis::Value v;
+
+        if (server_key.length() < 1) {
+            return false;
+        }
+
+        std::string hbtime_key = server_key + "_hbblock";
+        bool keyExists = false;
+        reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS %s", hbtime_key.c_str());
+        if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)        {
+            //createKey = true;
+        }
+
+        v = reply.values.front();
+        if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+            if (v.value._int != 0)
+                keyExists = true;
+        }
+        else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+            if (!atoi(v.value._str.c_str()))
+                keyExists = true;
+        }
+
+        //add key to block future  requests
+        if (!keyExists) {
+            Redis::Command(thread_data->mp_redis_connection, 0, "SET %s 1", hbtime_key.c_str());
+            Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %s %d", hbtime_key.c_str(), MM_IGNORE_TIME_SECS);
+        }
+        return keyExists; //if a key is created, that means the request can be processed (future ones will be blocked)
+    }
     bool PerformHeartbeat(MMPushRequest request, TaskThreadData *thread_data) {
         MMTaskResponse response;
         response.v2_instance_key = request.v2_instance_key;
@@ -130,6 +200,18 @@ namespace MM {
 
         //check for server by instance key + ip:port
         std::string server_key = GetServerKey_FromRequest(request, thread_data);
+
+        if (statechanged == 1) {
+            if (CheckServerKey_HasRecentHeartbeat(request, thread_data, server_key)) {
+                OS::LogText(OS::ELogLevel_Info, "[%s] Rejecting request due to recent heartbeat - %s", request.from_address.ToString().c_str(), server_key.c_str());
+                request.callback(response);
+                return true;
+            }
+            else {
+                OS::LogText(OS::ELogLevel_Info, "[%s] Accepting heartbeat - %s", request.from_address.ToString().c_str(), server_key.c_str());
+            }
+        }
+
         //if not exists, state changed 3 (which means QR V2 has not been registered yet), or QR1 server is "fully deleted", meaning it could be a resume, or was not registered yet (secure challenge dropped)
         if(server_key.length() == 0 || statechanged == 3 || (request.version == 1 && isServerDeleted(thread_data, server_key, true))) {
             if(request.server.m_keys.find("gamename") == request.server.m_keys.end()) {
