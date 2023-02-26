@@ -38,61 +38,6 @@ namespace MM {
         return scheduler;
     }
 
-	bool FindAppend_PlayerKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key, int index)
-	 {
-		Redis::Response reply;
-		Redis::Value v;
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s %s", entry_name.c_str(), key.c_str());
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
-			return false;
-
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			server->kvPlayers[index][key] = (v.value._str);
-		}
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			server->kvPlayers[index][key] = v.value._int;
-		}
-
-		return true;
-
-	}
-	bool FindAppend_TeamKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key, int index) {
-		Redis::Response reply;
-		Redis::Value v;
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s %s", entry_name.c_str(), key.c_str());
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
-			return false;
-
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			server->kvTeams[index][key] = (v.value._str);
-		}
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			server->kvTeams[index][key] = v.value._int;
-		}
-
-		return true;
-
-	}
-	bool FindAppend_ServKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key) {
-		Redis::Response reply;
-		Redis::Value v;
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s %s", entry_name.c_str(), key.c_str());
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR)
-			return false;
-
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			server->kvFields[key] = (v.value._str);
-		}
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			server->kvFields[key] = v.value._int;
-		}
-
-		return true;
-
-	}
 	void FreeServerListQuery(MM::ServerListQuery *query) {
 		std::vector<Server *>::iterator it = query->list.begin();
 		while(it != query->list.end()) {

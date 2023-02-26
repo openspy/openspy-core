@@ -12,6 +12,7 @@
 
 #define READ_BUFFER_SIZE 4096
 
+class CToken;
 
 namespace SB {
 	class Driver;
@@ -51,6 +52,7 @@ namespace SB {
 
 		struct timeval m_last_recv, m_last_ping;
 
+		std::vector<CToken> m_last_list_req_token_list;
 		MM::sServerListReq m_last_list_req;
 
 		void AddRequest(MM::MMQueryRequest req);

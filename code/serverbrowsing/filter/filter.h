@@ -2,6 +2,8 @@
 #include <string>
 #include <map>
 
-bool filterMatches(const char *filter, std::map<std::string, std::string>& kvList);
+#include "CToken.h"
+
+bool filterMatches(std::vector<CToken> token_list, std::map<std::string, std::string>& kvList);
 
 #endif //_FILTER_H

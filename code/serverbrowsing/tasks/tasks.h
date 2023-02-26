@@ -9,6 +9,8 @@
 #include <OS/MessageQueue/MQInterface.h>
 
 #define NN_REDIS_EXPIRE_TIME 500
+
+class CToken;
 namespace SB {
     class Peer;
     class Driver;
@@ -169,7 +171,7 @@ namespace MM {
 
 	//shared functions
 	void AppendServerEntry(TaskThreadData *thread_data, std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, const sServerListReq *req);
-	void AppendGroupEntry(TaskThreadData *thread_data, const char *entry_name, ServerListQuery *ret, bool all_keys, const MMQueryRequest *request);
+	void AppendGroupEntry(TaskThreadData *thread_data, const char *entry_name, ServerListQuery *ret, bool all_keys, const MMQueryRequest *request, std::vector<CToken> token_list);
 
 	bool FindAppend_ServKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key);
 	bool FindAppend_PlayerKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key, int index);

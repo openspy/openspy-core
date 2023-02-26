@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <OS/Net/NetServer.h>
 #include <stdarg.h>
+#include <filter/CToken.h>
 
 #define QR2_USE_QUERY_CHALLENGE 128
 
@@ -380,6 +381,7 @@ namespace SB {
 		req.req.m_from_game = m_last_list_req.m_from_game;
 		req.req.m_for_game = m_last_list_req.m_for_game;
 		m_last_list_req = req.req;
+		m_last_list_req_token_list = CToken::filterToTokenList(m_last_list_req.filter.c_str());
 
 		if (!m_got_game_pair || std::string(m_last_list_req.m_for_game.gamename).compare(req.req.m_for_gamename) != 0) {
 			req.type = MM::EMMQueryRequestType_GetGameInfoPairByGameName;
@@ -425,7 +427,6 @@ namespace SB {
 			else {
 				req.type = MM::EMMQueryRequestType_GetServers;
 			}
-			req.req.all_keys = true; //required for localip0, etc, TODO: find way that doesn't require retrieving full keys
 			m_in_message = true;
 			AddRequest(req);
 		}

@@ -11,10 +11,10 @@
 #include <algorithm>
 
 #include <OS/Buffer.h>
-
 #include <OS/KVReader.h>
-
 #include <OS/Net/NetServer.h>
+
+#include <filter/CToken.h>
 
 namespace SB {
 		V1Peer::V1Peer(Driver *driver, INetIOSocket *sd) : SB::Peer(driver, sd, 1) {
@@ -325,7 +325,11 @@ namespace SB {
 			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), filter: %s  is_group: %d, all_keys: %d", getAddress().ToString().c_str(), req.req.m_from_game.gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
 
 			req.extra = (void *)1;
+			
 			m_last_list_req = req.req;
+
+			m_last_list_req_token_list = CToken::filterToTokenList(m_last_list_req.filter.c_str());
+
 			AddRequest(req);
 			// //server disconnects after this
 		}
