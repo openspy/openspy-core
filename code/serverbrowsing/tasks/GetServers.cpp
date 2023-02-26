@@ -373,7 +373,11 @@ namespace MM {
 
 		Redis::Value v, arr;
 
-		std::vector<CToken> token_list = CToken::filterToTokenList(req->filter.c_str());
+		std::vector<CToken> token_list;
+
+		if (req) {
+			token_list = CToken::filterToTokenList(req->filter.c_str());
+		}
 
 		/*
 		XXX: add redis error checks, cleanup on error, etc
