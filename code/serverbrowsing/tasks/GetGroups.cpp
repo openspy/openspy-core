@@ -124,7 +124,7 @@ namespace MM {
 				idx++;
 				continue;
 			}
-			switch (idx++) {
+			switch (idx) {
 			case 0:
 				server->game.gameid = atoi(p.second.value._str.c_str());
 				break;
@@ -132,22 +132,16 @@ namespace MM {
 				server->wan_address.ip = htonl(atoi((p.second.value._str).c_str())); //for V2
 				server->kvFields["groupid"] = p.second.value._str; //for V1
 				break;
-			case 2:
-				server->kvFields["maxwaiting"] = p.second.value._str;
-				break;
-			case 3:
-				server->kvFields["hostname"] = p.second.value._str;
-				break;
-			case 4:
-				server->kvFields["password"] = p.second.value._str;
-				break;
-			case 5:
-				server->kvFields["numwaiting"] = p.second.value._str;
-				break;
-			case 6:
-				server->kvFields["numservers"] = p.second.value._str;
+			default:
+				if (p.second.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+					server->kvFields[lookup_keys.at(idx)] = p.second.value._str;
+				}
+				else if (p.second.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+					server->kvFields[lookup_keys.at(idx)] = p.second.value._int;
+				}				
 				break;
 			}
+			idx++;
 		}
 	}
 
@@ -156,27 +150,36 @@ namespace MM {
 		Redis::Value v, arr;
 		int cursor = 0;
 		do {
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HSCAN %scustkeys %d match *", server_key);
-			if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
-				goto error_cleanup;
+			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HSCAN %scustkeys %d MATCH *", server_key.c_str(), cursor);
+			if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
+				return;
 
 			v = reply.values[0].arr_value.values[0].second;
 			arr = reply.values[0].arr_value.values[1].second;
+
 			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
 				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 					cursor = atoi(v.value._str.c_str());
 				}
 				else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.value._int;
+					cursor = v.arr_value.values[0].second.value._int;
 				}
 
-				if (arr.arr_value.values.size() <= 0) {
-					break;
-				}
+				for (size_t i = 0; i < arr.arr_value.values.size(); i += 2) {
 
-				for (size_t i = 0; i < arr.arr_value.values.size(); i++) {
-					if (std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), arr.arr_value.values[i].second.value._str) == ret->captured_basic_fields.end()) {
-						ret->captured_basic_fields.push_back(arr.arr_value.values[i].second.value._str);
+					if (arr.arr_value.values[1].first != Redis::REDIS_RESPONSE_TYPE_STRING)
+						continue;
+
+					std::string key = arr.arr_value.values[i].second.value._str;
+					if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_STRING) {
+						server->kvFields[key] = (arr.arr_value.values[i + 1].second.value._str);
+					}
+					else if (arr.arr_value.values[i + 1].first == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+						server->kvFields[key] = arr.arr_value.values[i + 1].second.value._int;
+					}
+
+					if (std::find(ret->captured_basic_fields.begin(), ret->captured_basic_fields.end(), key) == ret->captured_basic_fields.end()) {
+						ret->captured_basic_fields.push_back(key);
 					}
 				}
 			}
@@ -226,7 +229,13 @@ namespace MM {
 				continue;
 			}
 
-			server->kvFields[lookup_keys.at(idx++)] = p.second.value._str;
+			if (p.second.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
+				server->kvFields[lookup_keys.at(idx)] = p.second.value._str;
+			}
+			else if (p.second.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
+				server->kvFields[lookup_keys.at(idx)] = p.second.value._int;
+			}
+			idx++;
 		}
 	}
 
@@ -242,7 +251,7 @@ namespace MM {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_SBGroups);
 
 		FetchGroupBasicInfo(thread_data, entry_name, server);
-		all_keys = true;
+
 		if (all_keys) {
 			FetchGroupAllKeys(thread_data, entry_name, server, ret);
 		}

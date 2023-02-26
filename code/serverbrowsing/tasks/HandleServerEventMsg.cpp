@@ -3,7 +3,6 @@
 #include <server/SBDriver.h>
 namespace MM {
     bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::string message) {
-		return false;
 		std::vector<std::string> vec = OS::KeyStringToVector(message);
 		if (vec.size() < 2) return false;
 		std::string msg_type = vec.at(0);
