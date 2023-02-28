@@ -126,7 +126,7 @@ namespace MM {
 		while (itf != request.m_filters.end()) {
 			FilterProperties p = *itf;
 			lookup_keys.push_back(p.field);
-			it++;
+			itf++;
 		}
 
 
