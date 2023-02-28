@@ -144,14 +144,21 @@ namespace MM {
 
 		reply = Redis::Command(thread_data->mp_redis_connection, REDIS_FLAG_NO_SUB_ARRAYS, cmds.str().c_str());
 
-		for (int i = 0; i < server_keys.size() * 2; i += 2) {
-			Redis::Value basic_keys = reply.values.at(i);
-			Redis::Value custom_keys = reply.values.at(i+1);
+		for (int i = 0, c = 0; i < server_keys.size(); i++, c += 2) {
+			Redis::Value basic_keys = reply.values.at(c);
+			Redis::Value custom_keys = reply.values.at(c+1);
 
-			//void LoadBasicServerInfo(UTMasterRequest request, TaskThreadData* thread_data, std::string server_key, ServerRecord& result, std::vector<std::pair<Redis::REDIS_RESPONSE_TYPE, Redis::Value> > values) {
+			std::string server_key = server_keys.at(i);
+
 			MM:ServerRecord result;
 
 			LoadBasicServerInfo(request, thread_data, result, basic_keys.arr_value.values);
+
+			//Checking port because id is not set yet it seems...
+			if (result.m_address.GetPort() == 0) {
+				Redis::Command(thread_data->mp_redis_connection, 0, "ZREM %s \"%s\"", request.peer->GetGameData().gamename, server_key.c_str());
+				continue;
+			}
 			LoadServerCustomKeys(request, thread_data, result, custom_keys.arr_value.values, lookup_keys);
 			if (filterMatches(result, request.m_filters)) {
 				records.push_back(result);
@@ -277,10 +284,6 @@ namespace MM {
 			std::vector<std::string> server_keys;
 			for(size_t i=0;i<arr.arr_value.values.size();i+=2) {
 				std::string server_key = arr.arr_value.values[i].second.value._str;
-				if (!serverRecordExists(thread_data, server_key) || isServerDeleted(thread_data, server_key)) { //remove dead servers from cache
-					Redis::Command(thread_data->mp_redis_connection, 0, "ZREM %s \"%s\"", game_info.gamename.c_str(), server_key.c_str());
-					continue;
-				}
 				server_keys.push_back(server_key);
 			}
 
