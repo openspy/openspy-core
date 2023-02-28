@@ -27,7 +27,7 @@ namespace MM {
 	int GetServerID(TaskThreadData *thread_data) {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "INCR %s", mp_pk_name);
+		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "INCR %s", mp_pk_name);
 		Redis::Value v = resp.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 			ret = v.value._int;
@@ -84,13 +84,13 @@ namespace MM {
 		std::string ip;
 		uint16_t port;
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "HGET %s wan_ip", server_key.c_str());
+		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s wan_ip", server_key.c_str());
 		Redis::Value v = resp.values.front();
 		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			ip = v.value._str.c_str();
 		}
 
-		resp = Redis::Command(thread_data->mp_redis_connection, 1, "HGET %s wan_port", server_key.c_str());
+		resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s wan_port", server_key.c_str());
 		v = resp.values.front();
 		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			port = atoi(v.value._str.c_str());
@@ -109,7 +109,7 @@ namespace MM {
 		std::string ip;
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "HGET %s deleted", server_key.c_str());
+		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s deleted", server_key.c_str());
 		Redis::Value v = resp.values.front();
 		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			ret = atoi(v.value._str.c_str());
@@ -138,7 +138,7 @@ namespace MM {
 	int GetNumHeartbeats(TaskThreadData *thread_data, std::string server_key) {
 		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = 0;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "HGET %s num_updates", server_key.c_str());
+		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s num_updates", server_key.c_str());
 		Redis::Value v = resp.values.front();
 		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			ret = atoi(v.value._str.c_str());

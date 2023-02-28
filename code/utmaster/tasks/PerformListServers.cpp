@@ -2,32 +2,10 @@
 
 #include <algorithm>
 #include <server/UTPeer.h>
-
+#include <sstream>
 namespace MM {
-	void LoadBasicServerInfo(UTMasterRequest request, TaskThreadData* thread_data, std::string server_key, ServerRecord &result) {
-
-		std::vector<std::string> lookup_keys;
-
-		lookup_keys.push_back("id");
-		lookup_keys.push_back("gameid");
-		lookup_keys.push_back("wan_port");
-		lookup_keys.push_back("wan_ip");
-		lookup_keys.push_back("mutators");
-
-		std::string command = "HMGET " + server_key;
-
-		std::vector<std::string>::iterator it2 = lookup_keys.begin();
-		
-		while (it2 != lookup_keys.end()) {
-			command += " " + *it2;
-			it2++;
-		}
-
-		Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, command.c_str());
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
-			return;
-
-		std::vector<std::pair<Redis::REDIS_RESPONSE_TYPE, Redis::Value> > values = reply.values[0].arr_value.values;
+	bool filterMatches(ServerRecord record, std::vector<FilterProperties>& filter);
+	void LoadBasicServerInfo(UTMasterRequest request, TaskThreadData* thread_data, ServerRecord& result, std::vector<std::pair<Redis::REDIS_RESPONSE_TYPE, Redis::Value> > values) {
 		std::vector<std::pair<Redis::REDIS_RESPONSE_TYPE, Redis::Value> >::iterator v_it = values.begin();
 		int idx = 0;
 		while (v_it != values.end()) {
@@ -57,52 +35,11 @@ namespace MM {
 			}
 		}
 	}
-	ServerRecord LoadServerInfo(UTMasterRequest request, TaskThreadData* thread_data, std::string server_key) {
+
+	void LoadServerCustomKeys(UTMasterRequest request, TaskThreadData* thread_data, MM::ServerRecord &result, std::vector<std::pair<Redis::REDIS_RESPONSE_TYPE, Redis::Value> > values, std::vector<std::string> lookup_keys) {
 		Redis::Response reply;
 		Redis::Value v, arr;
 
-		ServerRecord result;
-
-		std::vector<std::string> lookup_keys;
-
-
-		LoadBasicServerInfo(request, thread_data, server_key, result);
-
-
-
-		//These are returned in order for parsing, first 6 are specially handled
-		lookup_keys.push_back("hostname"); //0
-		lookup_keys.push_back("mapname"); //1
-		lookup_keys.push_back("gametype"); //2
-		lookup_keys.push_back("botlevel");//3
-		lookup_keys.push_back("numplayers"); //4
-		lookup_keys.push_back("maxplayers");//5
-		lookup_keys.push_back("GamePassword");
-		lookup_keys.push_back("GameStats");
-		lookup_keys.push_back("ServerVersion");
-		lookup_keys.push_back("ServerMode");
-
-		std::vector<FilterProperties>::iterator it = request.m_filters.begin();
-		while (it != request.m_filters.end()) {
-			FilterProperties p = *it;
-			lookup_keys.push_back(p.field);
-			it++;
-		}
-
-		std::string cust_keys = server_key + "custkeys";
-		std::string command = "HMGET " + cust_keys;
-
-		std::vector<std::string>::iterator it2 = lookup_keys.begin();
-		while (it2 != lookup_keys.end()) {
-			command += " " + *it2;
-			it2++;
-		}
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, command.c_str());
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
-			return result;
-
-		std::vector<std::pair<Redis::REDIS_RESPONSE_TYPE, Redis::Value> > values = reply.values[0].arr_value.values;
 		std::vector<std::pair<Redis::REDIS_RESPONSE_TYPE, Redis::Value> >::iterator v_it = values.begin();
 		int idx = 0;
 		while (v_it != values.end()) {
@@ -115,31 +52,113 @@ namespace MM {
 			}
 			std::string field_name = lookup_keys.at(idx);
 			switch (idx++) {
-				case 0:
-					result.hostname = p.second.value._str;
-					break;
-				case 1:
-					result.level = p.second.value._str;
-					break;
-				case 2:
-					result.game_group = p.second.value._str;
-					break;
-				case 3:
-					result.bot_level = p.second.value._str;
-					break;
-				case 4:
-					result.num_players = atoi(p.second.value._str.c_str());
-					break;
-				case 5:
-					result.max_players = atoi(p.second.value._str.c_str());
-					break;
-				default: //not specially managed property, dump into rules (handled outside switch due to filtering logic -- due to things like gamegroup filtering)
-					break;
+			case 0:
+				result.hostname = p.second.value._str;
+				break;
+			case 1:
+				result.level = p.second.value._str;
+				break;
+			case 2:
+				result.game_group = p.second.value._str;
+				break;
+			case 3:
+				result.bot_level = p.second.value._str;
+				break;
+			case 4:
+				result.num_players = atoi(p.second.value._str.c_str());
+				break;
+			case 5:
+				result.max_players = atoi(p.second.value._str.c_str());
+				break;
+			default: //not specially managed property, dump into rules (handled outside switch due to filtering logic -- due to things like gamegroup filtering)
+				break;
 			}
 			result.m_rules[field_name] = p.second.value._str;
 
 		}
-        return result;
+	}
+
+	std::vector<ServerRecord> LoadServerInfo(UTMasterRequest request, TaskThreadData* thread_data, const std::vector<std::string> server_keys) {
+		std::vector<ServerRecord> records;
+		Redis::Response reply;
+		Redis::Value v, arr;
+
+		ServerRecord result;
+
+		std::string basic_lookup_str;
+
+		std::vector<std::string> basic_lookup_keys;
+		basic_lookup_keys.push_back("id");
+		basic_lookup_keys.push_back("gameid");
+		basic_lookup_keys.push_back("wan_port");
+		basic_lookup_keys.push_back("wan_ip");
+		basic_lookup_keys.push_back("mutators");
+
+		std::vector<std::string>::iterator it = basic_lookup_keys.begin();
+		while (it != basic_lookup_keys.end()) {
+			basic_lookup_str += " " + *it;
+			it++;
+		}
+
+		std::string lookup_str;
+		std::vector<std::string> lookup_keys;
+		
+		//These are returned in order for parsing, first 6 are specially handled
+		lookup_keys.push_back("hostname"); //0
+		lookup_keys.push_back("mapname"); //1
+		lookup_keys.push_back("gametype"); //2
+		lookup_keys.push_back("botlevel");//3
+		lookup_keys.push_back("numplayers"); //4
+		lookup_keys.push_back("maxplayers");//5
+		lookup_keys.push_back("GamePassword");
+		lookup_keys.push_back("GameStats");
+		lookup_keys.push_back("ServerVersion");
+		lookup_keys.push_back("ServerMode");
+
+		it = lookup_keys.begin();
+
+		while (it != lookup_keys.end()) {
+			lookup_str += " " + *it;
+			it++;
+		}
+
+		std::vector<FilterProperties>::iterator itf = request.m_filters.begin();
+		while (itf != request.m_filters.end()) {
+			FilterProperties p = *itf;
+			lookup_keys.push_back(p.field);
+			it++;
+		}
+
+
+
+		std::ostringstream cmds;
+
+
+		std::vector<std::string>::const_iterator its = server_keys.begin();
+		while (its != server_keys.end()) {
+			const std::string server_key = *its;
+			cmds << "HMGET " << server_key << basic_lookup_str << "\r\n";
+			cmds << "HMGET " << server_key << "custkeys" << lookup_str << "\r\n";
+			its++;
+		}
+
+		reply = Redis::Command(thread_data->mp_redis_connection, REDIS_FLAG_NO_SUB_ARRAYS, cmds.str().c_str());
+
+		for (int i = 0; i < server_keys.size() * 2; i += 2) {
+			Redis::Value basic_keys = reply.values.at(i);
+			Redis::Value custom_keys = reply.values.at(i+1);
+
+			//void LoadBasicServerInfo(UTMasterRequest request, TaskThreadData* thread_data, std::string server_key, ServerRecord& result, std::vector<std::pair<Redis::REDIS_RESPONSE_TYPE, Redis::Value> > values) {
+			MM:ServerRecord result;
+
+			LoadBasicServerInfo(request, thread_data, result, basic_keys.arr_value.values);
+			LoadServerCustomKeys(request, thread_data, result, custom_keys.arr_value.values, lookup_keys);
+			if (filterMatches(result, request.m_filters)) {
+				records.push_back(result);
+			}
+		}
+
+		return records;
     }
 
 	bool hasMutator(ServerRecord record, std::string mutator) {
@@ -239,7 +258,7 @@ namespace MM {
 		int cursor = 0;
 		do {
 
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "ZSCAN %s %d", game_info.gamename.c_str(), cursor);
+			reply = Redis::Command(thread_data->mp_redis_connection, 0, "ZSCAN %s %d COUNT 50", game_info.gamename.c_str(), cursor);
 			if (Redis::CheckError(reply))
 				goto error_cleanup;
 
@@ -255,17 +274,18 @@ namespace MM {
 		 		cursor = v.value._int;
 		 	}
 
+			std::vector<std::string> server_keys;
 			for(size_t i=0;i<arr.arr_value.values.size();i+=2) {
 				std::string server_key = arr.arr_value.values[i].second.value._str;
 				if (!serverRecordExists(thread_data, server_key) || isServerDeleted(thread_data, server_key)) { //remove dead servers from cache
 					Redis::Command(thread_data->mp_redis_connection, 0, "ZREM %s \"%s\"", game_info.gamename.c_str(), server_key.c_str());
 					continue;
 				}
-				ServerRecord record = LoadServerInfo(request, thread_data, server_key);
-				if (filterMatches(record, request.m_filters)) {
-					results.push_back(record);
-				}
+				server_keys.push_back(server_key);
 			}
+
+			std::vector<MM::ServerRecord> loaded_servers = LoadServerInfo(request, thread_data, server_keys);
+			results.insert(results.end(), loaded_servers.begin(), loaded_servers.end());
 		} while(cursor != 0);
 
 		error_cleanup:

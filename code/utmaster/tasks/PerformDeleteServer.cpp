@@ -14,7 +14,7 @@ namespace MM {
 
         if(server_key.length() > 0) {
             //perform delete
-            Redis::Command(thread_data->mp_redis_connection, 1, "HSET %s deleted 1", server_key.c_str());
+            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s deleted 1", server_key.c_str());
 			std::ostringstream s;
 			s << "\\del\\" << server_key.c_str();
 			thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());

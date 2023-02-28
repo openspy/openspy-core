@@ -6,7 +6,7 @@
 namespace MM {
 	int GetServerID(TaskThreadData *thread_data) {
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "INCR %s", mp_pk_name);
+		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "INCR %s", mp_pk_name);
 		Redis::Value v = resp.values.front();
 		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
 			ret = v.value._int;
@@ -18,7 +18,7 @@ namespace MM {
 	}
 	bool isServerDeleted(TaskThreadData *thread_data, std::string server_key) {
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "HGET %s deleted", server_key.c_str());
+		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s deleted", server_key.c_str());
 		Redis::Value v = resp.values.front();
 		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
 			ret = atoi(v.value._str.c_str());
@@ -29,7 +29,7 @@ namespace MM {
 	}
     bool serverRecordExists(TaskThreadData* thread_data, std::string server_key) {
         int ret = -1;
-        Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "EXISTS %s", server_key.c_str());
+        Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS %s", server_key.c_str());
         Redis::Value v = resp.values.front();
         if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
             ret = atoi(v.value._str.c_str());

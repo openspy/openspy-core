@@ -69,15 +69,17 @@ namespace Redis {
 
 	//TODO: PING/RECONNECT, 
 
+	#define REDIS_FLAG_NO_SUB_ARRAYS 1 //used for batch HMGET (where multiple array are returned - cannot distinguish when its intended to be nested or not otherwise)
+
 	Connection *Connect(const char *hostname, bool use_ssl, const char *username, const char *password, struct timeval tv);
-	Response Command(Connection *conn, time_t sleepMS, const char *fmt, ...);
+	Response Command(Connection *conn, int flags, const char *fmt, ...);
 
 	//for SUBSCRIBE/DEBUGGER, etc -- REMOVED due to not used anymore... and we set recv timeout, which would cause this to do a reconnect loop as currently implemented
 	//void LoopingCommand(Connection *conn, time_t sleepMS, void(*mpFunc)(Connection *, Response, void *), void *extra, const char *fmt, ...); 
 	void SelectDb(Connection *connection, int db);
 	void Disconnect(Connection *connection);
 	void CancelLooping(Connection *connection);
-	void parse_response(std::string resp_str, int &diff, Redis::Response *resp, Redis::ArrayValue *arr_val);
+	void parse_response(std::string resp_str, int &diff, Redis::Response *resp, Redis::ArrayValue *arr_val, int flags);
 	bool CheckError(Response r);
 	void Reconnect(Connection *connection);
 	void performAddressConnect(Connection *connection, const char *address, uint16_t port);

@@ -329,7 +329,6 @@ namespace MM {
             while (it != server.m_keys.end()) {
                 std::pair<std::string, std::string> p = *it;
                 s << " " << p.first.c_str() << " \"" << OS::escapeJSON(p.second).c_str() << "\"";
-                //Redis::Command(thread_data->mp_redis_connection, 0, "HSET %scustkeys %s \"%s\"", server_key.c_str(), p.first.c_str(), OS::escapeJSON(p.second).c_str());
                 it++;
             }
             Redis::Command(thread_data->mp_redis_connection, 0, s.str().c_str());

@@ -177,23 +177,7 @@ namespace Redis {
 
 		return r;
 	}
-	Redis::ArrayValue read_array(std::string str, int &diff, Redis::Response *resp, Redis::ArrayValue *arr_val) {
-		Redis::ArrayValue arr;
-		std::string len_line = Redis::read_line(str).substr(1);
-		int num_elements = atoi(len_line.c_str());
-		diff += (int)len_line.length() + ENDLINE_STR_COUNT + 1; // +1 for the operator
-		if (diff > (int)str.length()) {
-			diff = (int)str.length();
-		}
-		str = str.substr(diff);
-		for (int i = 0; i < num_elements; i++) {
-			int tdiff = 0;
-			parse_response(str, tdiff, resp, &arr);
-			str = str.substr(tdiff);
-			diff += tdiff;
-		}
-		return arr;
-	}
+
 	Redis::Value read_scalar(std::string str, int &diff, Redis::Response *resp, Redis::ArrayValue *arr_val) {
 		Redis::Value v;
 		std::string info_line = Redis::read_line(str);
@@ -241,7 +225,36 @@ namespace Redis {
 
 		return v;
 	}
-	void parse_response(std::string resp_str, int &diff, Redis::Response *resp, Redis::ArrayValue *arr_val) {
+
+	Redis::ArrayValue read_array(std::string str, int& diff, Redis::Response* resp, Redis::ArrayValue* arr_val, int flags) {
+		Redis::ArrayValue arr;
+		std::string len_line = Redis::read_line(str).substr(1);
+		int num_elements = atoi(len_line.c_str());
+		diff += (int)len_line.length() + ENDLINE_STR_COUNT + 1; // +1 for the operator
+		if (diff > (int)str.length()) {
+			diff = (int)str.length();
+		}
+		str = str.substr(diff);
+		for (int i = 0; i < num_elements; i++) {
+			int tdiff = 0;
+			if (flags & REDIS_FLAG_NO_SUB_ARRAYS) {
+				Redis::Value v = read_scalar(str, tdiff, resp, arr_val);
+				std::pair<REDIS_RESPONSE_TYPE, Redis::Value> p;
+				p.first = v.type;
+				p.second = v;				
+				arr.values.push_back(p);
+			}
+			else {
+				parse_response(str, tdiff, resp, &arr, flags);
+			}
+			
+			str = str.substr(tdiff);
+			diff += tdiff;
+		}
+		return arr;
+	}
+
+	void parse_response(std::string resp_str, int &diff, Redis::Response *resp, Redis::ArrayValue *arr_val, int flags) {
 		std::string str = resp_str;
 		Redis::ArrayValue av;
 		Redis::Value v;
@@ -251,7 +264,7 @@ namespace Redis {
 			if (str.length() == 0) break;
 			switch (str[0]) {
 			case '*':
-				av = read_array(str, diff, resp, arr_val);
+				av = read_array(str, diff, resp, arr_val, flags);
 				v.arr_value = av;
 				v.type = Redis::REDIS_RESPONSE_TYPE_ARRAY;
 				break;
@@ -357,7 +370,7 @@ namespace Redis {
 		conn->read_buff[total_len] = 0;
 		return total_len;
 	}
-	Response Command(Connection *conn, time_t sleepMS, const char *fmt, ...) {
+	Response Command(Connection *conn, int flags, const char *fmt, ...) {
 		conn->mp_mutex->lock();
 		Response resp;
 		va_list args;
@@ -374,8 +387,6 @@ namespace Redis {
 		
 		va_end(args);
 
-		if (sleepMS != 0)
-			OS::Sleep((int)sleepMS);
 		int len = Recv(conn);
 		int diff = 0;
 		if (len <= 0) {
@@ -390,7 +401,7 @@ namespace Redis {
 			Reconnect(conn);
 			if (conn->command_recursion_depth < REDIS_MAX_RECONNECT_RECURSION_DEPTH) {
 				conn->command_recursion_depth++;
-				resp = Command(conn, sleepMS, "%s", cmd.c_str());
+				resp = Command(conn, flags, "%s", cmd.c_str());
 				conn->command_recursion_depth = 0;
 				goto exit_early;
 			}
@@ -404,7 +415,7 @@ namespace Redis {
 		}
 
 		
-		parse_response(conn->read_buff, diff, &resp, NULL);
+		parse_response(conn->read_buff, diff, &resp, NULL, flags);
 		exit_early:
 		conn->mp_mutex->unlock();
 		return resp;
