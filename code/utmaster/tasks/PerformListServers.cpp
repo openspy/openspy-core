@@ -126,6 +126,7 @@ namespace MM {
 		while (itf != request.m_filters.end()) {
 			FilterProperties p = *itf;
 			lookup_keys.push_back(p.field);
+			lookup_str += " " + p.field;
 			itf++;
 		}
 
@@ -156,7 +157,7 @@ namespace MM {
 
 			//Checking port because id is not set yet it seems...
 			if (result.m_address.GetPort() == 0) {
-				Redis::Command(thread_data->mp_redis_connection, 0, "ZREM %s \"%s\"", request.peer->GetGameData().gamename, server_key.c_str());
+				Redis::Command(thread_data->mp_redis_connection, 0, "ZREM %s \"%s\"", request.peer->GetGameData().gamename.c_str(), server_key.c_str());
 				continue;
 			}
 			LoadServerCustomKeys(request, thread_data, result, custom_keys.arr_value.values, lookup_keys);
@@ -194,7 +195,12 @@ namespace MM {
 			if (!hasMutator(record, property.property)) {
 				comparison = 1;
 			}
-		} else if (string_comparision) {
+		} else if (stricmp(property.field.c_str(), "nomutators") == 0) {
+			if(record.m_mutators.empty()) {
+				comparison = 1;
+			}
+		}
+		else if (string_comparision) {
 			comparison = strcasecmp(property.property.c_str(), p.second.c_str());
 		}
 		else {
