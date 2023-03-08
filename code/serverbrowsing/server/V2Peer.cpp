@@ -446,6 +446,10 @@ namespace SB {
 
 		MM::MMQueryRequest req;
 		req.address = address;
+		
+		req.req.all_keys = true;
+		req.req.all_player_keys = true;
+		req.req.all_team_keys = true;
 
 		req.type = MM::EMMQueryRequestType_GetServerByIP;
 		req.address = address;

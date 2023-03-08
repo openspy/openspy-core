@@ -85,7 +85,7 @@ namespace MM {
 
 		ServerRecord result;
 
-		std::string basic_lookup_str;
+		std::ostringstream basic_lookup_str;
 
 		std::vector<std::string> basic_lookup_keys;
 		basic_lookup_keys.push_back("id");
@@ -96,11 +96,11 @@ namespace MM {
 
 		std::vector<std::string>::iterator it = basic_lookup_keys.begin();
 		while (it != basic_lookup_keys.end()) {
-			basic_lookup_str += " " + *it;
+			basic_lookup_str << " " << *it;
 			it++;
 		}
 
-		std::string lookup_str;
+		std::ostringstream lookup_str;
 		std::vector<std::string> lookup_keys;
 		
 		//These are returned in order for parsing, first 6 are specially handled
@@ -118,7 +118,7 @@ namespace MM {
 		it = lookup_keys.begin();
 
 		while (it != lookup_keys.end()) {
-			lookup_str += " " + *it;
+			lookup_str << " " << *it;
 			it++;
 		}
 
@@ -126,7 +126,7 @@ namespace MM {
 		while (itf != request.m_filters.end()) {
 			FilterProperties p = *itf;
 			lookup_keys.push_back(p.field);
-			lookup_str += " " + p.field;
+			lookup_str << " " << p.field;
 			itf++;
 		}
 
@@ -138,8 +138,8 @@ namespace MM {
 		std::vector<std::string>::const_iterator its = server_keys.begin();
 		while (its != server_keys.end()) {
 			const std::string server_key = *its;
-			cmds << "HMGET " << server_key << basic_lookup_str << "\r\n";
-			cmds << "HMGET " << server_key << "custkeys" << lookup_str << "\r\n";
+			cmds << "HMGET " << server_key << basic_lookup_str.str() << "\r\n";
+			cmds << "HMGET " << server_key << "custkeys" << lookup_str.str() << "\r\n";
 			its++;
 		}
 

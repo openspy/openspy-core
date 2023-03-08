@@ -5,7 +5,7 @@
 namespace MM {
     bool PerformGetServerByIP(MMQueryRequest request, TaskThreadData *thread_data) {
 		ServerListQuery ret;
-		Server *serv = GetServerByIP(thread_data, request.address, request.req.m_for_game);
+		Server *serv = GetServerByIP(thread_data, request.address, request.req.m_for_game, request.req.include_deleted, request.req.all_player_keys && request.req.all_team_keys);
 		if(serv)
 			ret.list.push_back(serv);
 
@@ -18,7 +18,7 @@ namespace MM {
 		FreeServerListQuery(&ret);
         return true;
     }
-	Server *GetServerByIP(TaskThreadData *thread_data, OS::Address address, OS::GameData game) {
+	Server *GetServerByIP(TaskThreadData *thread_data, OS::Address address, OS::GameData game, bool include_deleted, bool all_player_and_team_keys) {
 		Server *server = NULL;
 
 		std::ostringstream s;
@@ -36,7 +36,7 @@ namespace MM {
 		v = reply.values.front();
 
 		if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			server = GetServerByKey(thread_data, v.value._str);
+			server = GetServerByKey(thread_data, v.value._str, include_deleted, all_player_and_team_keys);
 		}
 
 		return server;

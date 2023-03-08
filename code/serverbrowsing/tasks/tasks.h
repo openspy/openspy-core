@@ -23,6 +23,7 @@ namespace MM {
 			Server() {
 				id = 0;
 				allow_unsolicited_udp = false;
+				deleted = false;
 			}
 			~Server() {
 
@@ -43,6 +44,7 @@ namespace MM {
 
 
 			int id;		
+			bool deleted;
 	};
 
 	class ServerListQuery {
@@ -78,6 +80,8 @@ namespace MM {
 				no_list_cache = false;
 				send_fields_for_all = false;
 				all_keys = false;
+				all_player_keys = false;
+				all_team_keys = false;
 				send_compressed = true;
 			}
 			~sServerListReq() {
@@ -113,6 +117,9 @@ namespace MM {
 			std::string m_from_gamename;
 
 			bool all_keys;
+			bool all_player_keys;
+			bool all_team_keys;
+			bool include_deleted;
 		
 	};
 
@@ -173,15 +180,20 @@ namespace MM {
 	void AppendServerEntry(TaskThreadData *thread_data, std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, const sServerListReq *req);
 	void AppendGroupEntry(TaskThreadData *thread_data, const char *entry_name, ServerListQuery *ret, bool all_keys, const MMQueryRequest *request, std::vector<CToken> token_list);
 
-	bool FindAppend_ServKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key);
-	bool FindAppend_PlayerKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key, int index);
-	bool FindAppend_TeamKVFields(TaskThreadData *thread_data, Server *server, std::string entry_name, std::string key, int index);
+	void BuildServerListRequestData(const sServerListReq* req, std::vector<std::string>& basic_lookup_keys, std::vector<std::string>& lookup_keys, std::ostringstream& basic_lookup_str, std::ostringstream& lookup_str, std::vector<CToken>& out_token_list);
+	void AppendServerEntries(TaskThreadData* thread_data, std::vector<std::string> server_keys, ServerListQuery* query_response, const sServerListReq* req);
+	void AppendServerEntries_AllKeys(TaskThreadData* thread_data, std::vector<std::string> server_keys, ServerListQuery* query_response, const sServerListReq* req);
+	bool LoadBasicServerInfo(MM::Server* server, Redis::Value basic_keys_response);
+	void LoadCustomServerInfo(MM::Server* server, std::vector<std::string>& basic_lookup_keys, Redis::Value basic_keys_response);
+	void LoadCustomServerInfo_AllKeys(MM::Server* server, Redis::Value custom_keys_response);
+	void LoadCustomInfo_AllPlayerKeys(TaskThreadData* thread_data, MM::Server* server, std::string server_key);
+	void LoadCustomInfo_AllTeamKeys(TaskThreadData* thread_data, MM::Server* server, std::string server_key);
 
-	Server *GetServerByKey(TaskThreadData *thread_data, std::string key, bool include_deleted = false);
-	Server *GetServerByIP(TaskThreadData *thread_data, OS::Address address, OS::GameData game);
+	Server *GetServerByKey(TaskThreadData *thread_data, std::string key, bool include_deleted = false, bool include_player_and_team_keys = false);
+	Server *GetServerByIP(TaskThreadData *thread_data, OS::Address address, OS::GameData game, bool include_deleted = false, bool include_player_and_team_keys = false);
 
-	ServerListQuery GetServers(TaskThreadData *thread_data, const sServerListReq *req, const MMQueryRequest *request = NULL);
-	ServerListQuery GetGroups(TaskThreadData *thread_data, const sServerListReq *req, const MMQueryRequest *request = NULL);
+	ServerListQuery GetServers(TaskThreadData *thread_data, const MMQueryRequest *request);
+	ServerListQuery GetGroups(TaskThreadData *thread_data, const MMQueryRequest *request);
 
 	void FreeServerListQuery(MM::ServerListQuery *query);
 
