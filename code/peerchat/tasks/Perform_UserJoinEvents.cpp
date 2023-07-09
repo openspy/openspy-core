@@ -70,7 +70,9 @@ namespace Peerchat {
         current_modeflags |= initial_flags;
 
         if(current_modeflags != old_modeflags) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", request.channel_summary.channel_id, request.peer->GetBackendId(), current_modeflags);
+            void *reply = redisCommand(thread_data->mp_redis_connection, "HSET channel_%d_user_%d modeflags %d", request.channel_summary.channel_id, request.peer->GetBackendId(), current_modeflags);
+            freeReplyObject(reply);
+            
             request.peer->SetChannelFlags(request.channel_summary.channel_id, current_modeflags);
             SendUpdateUserChanModeflags(thread_data, request.channel_summary.channel_id, request.peer->GetBackendId(), current_modeflags, old_modeflags);
         }

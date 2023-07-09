@@ -3,8 +3,6 @@
 #include <algorithm>
 
 #include <OS/TaskPool.h>
-#include <OS/Redis.h>
-
 #include <sstream>
 
 #include "tasks.h"

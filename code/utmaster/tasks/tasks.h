@@ -5,7 +5,6 @@
 #include <OS/Task/TaskScheduler.h>
 #include <OS/Task/ScheduledTask.h>
 
-#include <OS/Redis.h>
 #include <OS/MessageQueue/MQInterface.h>
 
 #define MM_REDIS_EXPIRE_TIME 500
@@ -61,7 +60,8 @@ namespace MM {
 	enum UTMasterRequestType {
 		UTMasterRequestType_ListServers,
 		UTMasterRequestType_Heartbeat,
-        UTMasterRequestType_DeleteServer
+        UTMasterRequestType_DeleteServer,
+        UTMasterRequestType_InternalLoadGamename, //used on startup to load game data
 	};
 
 	class MMTaskResponse {
@@ -109,8 +109,6 @@ namespace MM {
 			UT::Peer *peer;
 
 			ServerRecord record;
-			//std::map<std::string, std::string> m_filter_items;
-			//std::map<std::string, std::string> m_filter_negate_items;
 			std::vector<FilterProperties> m_filters;
 
 			MMTaskResponseCallback callback;
@@ -123,12 +121,14 @@ namespace MM {
 	bool PerformHeartbeat(UTMasterRequest request, TaskThreadData *thread_data);
 	bool PerformListServers(UTMasterRequest request, TaskThreadData *thread_data);
 	bool PerformDeleteServer(UTMasterRequest request, TaskThreadData *thread_data);
+	bool PerformInternalLoadGameData(UTMasterRequest request, TaskThreadData *thread_data);
 
 	int GetServerID(TaskThreadData *thread_data);
 	bool isServerDeleted(TaskThreadData* thread_data, std::string server_key);
 	bool serverRecordExists(TaskThreadData* thread_data, std::string server_key);
 	std::string GetServerKey_FromIPMap(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info);
 
+	void selectQRRedisDB(TaskThreadData *thread_data);
 
 	extern const char *mm_channel_exchange;
     extern const char *mp_pk_name;

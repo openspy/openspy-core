@@ -7,16 +7,20 @@
 namespace Peerchat {
 	const char *mp_pk_temporary_usermode_id = "USERMODEID";
 	int GetTemporaryUsermodeId(TaskThreadData *thread_data) {
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "INCR %s", mp_pk_temporary_usermode_id);
-		Redis::Value v = resp.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			ret = v.value._int;
-		}
-		else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ret = atoi(v.value._str.c_str());
-		}
+
+        redisReply *reply;
+
+		redisAppendCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+		redisAppendCommand(thread_data->mp_redis_connection, "INCR %s", mp_pk_temporary_usermode_id);
+		
+		redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+		freeReplyObject(reply);
+
+		redisGetReply(thread_data->mp_redis_connection,(void**)&reply);	
+		ret = reply->integer;
+		freeReplyObject(reply);
+		
 		return -ret;
 	}
 	UsermodeRecord GetUsermodeFromJson(json_t* item) {
@@ -100,145 +104,36 @@ namespace Peerchat {
 		return record;
 	}
 	void LoadUsermodeFromCache(TaskThreadData* thread_data, std::string cacheKey, UsermodeRecord &record) {
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+		redisReply *reply;
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HMGET %s id chanmask hostname comment machineid profileid modeflags gameid expiresAt setAt setBy setByHost setByPid setByNick", cacheKey.c_str());
 
-		Redis::Response reply;
-		Redis::Value v;
+		record.usermodeid = atoi(reply->element[0]->str);
+		record.chanmask = reply->element[1]->str;
+		record.hostmask = reply->element[2]->str;
+		record.comment = reply->element[3]->str;
+		record.machineid = reply->element[4]->str;
+		record.profileid = atoi(reply->element[5]->str);
+		record.modeflags = atoi(reply->element[6]->str);
 
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s id", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.usermodeid = atoi(OS::strip_quotes(v.value._str).c_str());
-		}
-
-		record.isGlobal = record.usermodeid > 0;
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s chanmask", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.chanmask = OS::strip_quotes(v.value._str).c_str();
-		}
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s hostmask", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.hostmask = OS::strip_quotes(v.value._str).c_str();
-		}
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s comment", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.comment = OS::strip_quotes(v.value._str).c_str();
-		}
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s machineid", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.machineid = OS::strip_quotes(v.value._str).c_str();
-		}
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s profileid", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.profileid = atoi(OS::strip_quotes(v.value._str).c_str());
-		}
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s modeflags", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.modeflags = atoi(OS::strip_quotes(v.value._str).c_str());
-		}
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s gameid", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		record.gameid = -1;
 		record.has_gameid = false;
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.gameid = atoi(OS::strip_quotes(v.value._str).c_str());
+		if(reply->element[7]->type == REDIS_REPLY_STRING) {
+			record.gameid = atoi(reply->element[7]->str);
 			record.has_gameid = true;
 		}
 
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s expiresAt", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.expires_at.tv_sec = atoi(OS::strip_quotes(v.value._str).c_str());
-		}
+		record.expires_at.tv_sec = atoi(reply->element[8]->str);
+		record.set_at.tv_sec = atoi(reply->element[9]->str);
 
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s setAt", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.set_at.tv_sec = atoi(OS::strip_quotes(v.value._str).c_str());
-		}
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s setBy", cacheKey.c_str());
-		if (Redis::CheckError(reply)) {
-			goto end_error;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			record.setByUserSummary = UserSummary(OS::strip_quotes(v.value._str).c_str());
+		if(reply->element[10]->type == REDIS_REPLY_STRING) {
+			record.setByUserSummary = UserSummary(reply->element[10]->str);
 		} else {
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s setByHost", cacheKey.c_str());
-			if (Redis::CheckError(reply)) {
-				goto end_error;
-			}
-			v = reply.values.front();
-			if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-				record.setByUserSummary.hostname = OS::strip_quotes(v.value._str).c_str();
-			}
-
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s setByPid", cacheKey.c_str());
-			if (Redis::CheckError(reply)) {
-				goto end_error;
-			}
-			v = reply.values.front();
-			if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-				record.setByUserSummary.profileid = atoi(OS::strip_quotes(v.value._str).c_str());
-			}	
-
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s setByNick", cacheKey.c_str());
-			if (Redis::CheckError(reply)) {
-				goto end_error;
-			}
-			v = reply.values.front();
-			if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-				record.setByUserSummary.nick = OS::strip_quotes(v.value._str).c_str();
-			}			
+			record.setByUserSummary.hostname = reply->element[11]->str;
+			record.setByUserSummary.profileid = atoi(reply->element[12]->str);
+			record.setByUserSummary.nick = reply->element[13]->str;
 		}
+		
 
-		end_error:
-		return;
+		freeReplyObject(reply);
 	}
 	bool UsermodeMatchesUser(UsermodeRecord usermode, UserSummary summary) {
 		if(usermode.profileid != 0 && summary.profileid == usermode.profileid) {
@@ -261,47 +156,42 @@ namespace Peerchat {
 	int getEffectiveUsermode(TaskThreadData* thread_data, int channel_id, UserSummary summary, Peer *peer) {
 
 		int modeflags = 0;
-
-		Redis::Response reply;
-		Redis::Value v, arr;
-
 		UsermodeRecord record;
 
 		std::string keyname;
 
+		redisReply *reply;
+
 		int cursor = 0;
 		//scan channel usermodes
 		do {
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HSCAN channel_%d_usermodes %d match *", channel_id, cursor);
-			if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
-				goto error_cleanup;
+			reply = (redisReply *) redisCommand(thread_data->mp_redis_connection, "HSCAN channel_%d_usermodes %d match *", channel_id, cursor);
 
-			v = reply.values[0].arr_value.values[0].second;
-			arr = reply.values[0].arr_value.values[1].second;
-			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-				if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					cursor = atoi(v.value._str.c_str());
-				} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.value._int;
+            if (reply == NULL || thread_data->mp_redis_connection->err || reply->elements < 2) {
+				if(reply) {
+					freeReplyObject(reply);
 				}
+                goto error_cleanup;
+            }
 
-				if(arr.arr_value.values.size() <= 0) {
-					break;
-				}
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if (reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
 
-				for(size_t i=0;i<arr.arr_value.values.size();i++) {
-					if(i % 2 == 0) {
-						keyname = "USERMODE_" + arr.arr_value.values[i].second.value._str;
-						record = UsermodeRecord();
-						LoadUsermodeFromCache(thread_data, keyname, record);
-						if(UsermodeMatchesUser(record, summary)) {
-							modeflags |= record.modeflags;
-						}
-						
+			for(size_t i=0;i<reply->element[1]->elements;i++) {
+				if(i % 2 == 0) {
+					keyname = std::string("USERMODE_") + reply->element[1]->element[i]->str;
+					record = UsermodeRecord();
+					LoadUsermodeFromCache(thread_data, keyname, record);
+					if(UsermodeMatchesUser(record, summary)) {
+						modeflags |= record.modeflags;
 					}
-						
-				}
+					
+				}	
 			}
+			freeReplyObject(reply);
 		} while(cursor != 0);
 
 
@@ -319,29 +209,37 @@ namespace Peerchat {
 	void WriteUsermodeToCache(UsermodeRecord usermode, TaskThreadData* thread_data) { 
 		
 
-		std::ostringstream s;
-		s << "USERMODE_" << usermode.usermodeid;
-		std::string key_name = s.str();
+		std::ostringstream ss;
+		ss << "USERMODE_" << usermode.usermodeid;
+		std::string key_name = ss.str();
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s id %d", key_name.c_str(), usermode.usermodeid);
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s chanmask \"%s\"", key_name.c_str(), usermode.chanmask.c_str());
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s hostmask \"%s\"", key_name.c_str(), usermode.hostmask.c_str());
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s comment \"%s\"", key_name.c_str(), usermode.comment.c_str());
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s machineid \"%s\"", key_name.c_str(), usermode.machineid.c_str());
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s profileid %d", key_name.c_str(), usermode.profileid);
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s modeflags %d", key_name.c_str(), usermode.modeflags);
+		ss.str("");
+
+		ss << "HMSET " << key_name;
+		ss << "id \"" << usermode.usermodeid << "\"";
+		ss << "chanmask \"" << usermode.chanmask << "\"";
+		ss << "hostmask \"" << usermode.hostmask << "\"";
+		ss << "comment \"" << usermode.comment << "\"";
+		ss << "machineid \"" << usermode.machineid << "\"";
+		ss << "profileid \"" << usermode.profileid << "\"";
+		ss << "modeflags \"" << usermode.modeflags << "\"";
+
 		if(usermode.has_gameid) {
-			Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", key_name.c_str(), usermode.gameid);
+			ss << "gameid \"" << usermode.gameid << "\"";
 		}
-			
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s isGlobal %d", key_name.c_str(), usermode.usermodeid > 0);
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s setByNick \"%s\"", key_name.c_str(), usermode.setByUserSummary.nick.c_str());
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s setByHost \"%s\"", key_name.c_str(), usermode.setByUserSummary.hostname.c_str());
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s setByPid \"%d\"", key_name.c_str(), usermode.setByUserSummary.profileid);
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s setAt %d", key_name.c_str(), usermode.set_at.tv_sec);
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s expiresAt %d", key_name.c_str(), usermode.expires_at.tv_sec);
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "ZINCRBY usermodes 1 %d", usermode.usermodeid);
+		ss << "isGlobal \"" << (usermode.usermodeid > 0) << "\"";
+		ss << "setByNick \"" << usermode.setByUserSummary.nick.c_str() << "\"";
+		ss << "setByHost \"" << usermode.setByUserSummary.hostname.c_str() << "\"";
+		ss << "setByPid \"" << usermode.setByUserSummary.profileid << "\"";
+		ss << "setAt \"" << usermode.set_at.tv_sec << "\"";
+		ss << "expiresAt \"" << usermode.expires_at.tv_sec << "\"";
+
+		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, ss.str().c_str());
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZINCRBY usermodes 1 %d", usermode.usermodeid);
+		freeReplyObject(reply);
 	}
 
 

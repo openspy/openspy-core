@@ -9,12 +9,18 @@ namespace MM {
         MMTaskResponse response;
         response.peer = request.peer;
         
+        selectQRRedisDB(thread_data);
+        
         OS::GameData game_info = request.peer->GetGameData();
         std::string server_key = GetServerKey_FromIPMap(request, thread_data, game_info);
 
         if(server_key.length() > 0) {
             //perform delete
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s deleted 1", server_key.c_str());
+            redisReply *reply = (redisReply *) redisCommand(thread_data->mp_redis_connection, "HSET %s deleted 1", server_key.c_str());
+            if(reply) {
+                freeReplyObject(reply);
+            }
+            
 			std::ostringstream s;
 			s << "\\del\\" << server_key.c_str();
 			thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());

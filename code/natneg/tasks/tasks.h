@@ -6,8 +6,6 @@
 
 #include <OS/Task/TaskScheduler.h>
 
-
-#include <OS/Redis.h>
 #include <OS/MessageQueue/MQInterface.h>
 
 #define NN_REDIS_EXPIRE_TIME 500
@@ -30,7 +28,6 @@ namespace NN {
     bool PerformSubmitJson(NNRequestData, TaskThreadData *);
 
     bool Handle_HandleRecvMessage(TaskThreadData *, std::string message);
-    ConnectionSummary LoadConnectionSummary(Redis::Connection *redis_connection, std::string redis_key);
     TaskScheduler<NNRequestData, TaskThreadData> * InitTasks(INetServer *server);
 }
 #endif // _NN_TASKS_H

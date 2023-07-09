@@ -13,8 +13,12 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 			m_sd = sd;  
 			m_address = m_sd->address; 
 			m_delete_flag = false; 
-			m_timeout_flag = false; };
-		virtual ~INetPeer() { GetDriver()->getNetIOInterface()->closeSocket(m_sd); }
+			m_timeout_flag = false; 
+			m_socket_deleted = false;
+		}
+		virtual ~INetPeer() { 
+			CloseSocket();
+		}
 
 		void SetAddress(OS::Address address) { m_address = address; }
 		virtual void OnConnectionReady() = 0;
@@ -34,8 +38,16 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		struct timeval m_last_recv, m_last_ping;
 		OS::Address m_address;
 
+		bool m_socket_deleted;
 		bool m_delete_flag;
 		bool m_timeout_flag;
+
+		void CloseSocket() {
+            if(!m_socket_deleted) {
+                m_socket_deleted = true;
+                GetDriver()->getNetIOInterface()->closeSocket(m_sd);
+            }
+		}
 	private:
 
 	};

@@ -36,7 +36,8 @@ namespace Peerchat {
 					if (p.first.length() > 2 && p.first.substr(0, 2).compare("b_") == 0) {
 						broadcast_keys[p.first] = p.second;
 					}
-					Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d \"custkey_%s\" \"%s\"", summary.channel_id, user_summary.id, p.first.c_str(), p.second.c_str());
+					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET channel_%d_user_%d \"custkey_%s\" \"%s\"", summary.channel_id, user_summary.id, p.first.c_str(), p.second.c_str());
+					freeReplyObject(reply);
 					it++;
 				}
 

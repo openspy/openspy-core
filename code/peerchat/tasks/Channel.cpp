@@ -10,125 +10,50 @@
 namespace Peerchat {
     const char *mp_pk_channel_name = "PEERCHATCHANID";
 	int GetPeerchatChannelID(TaskThreadData *thread_data) {
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "INCR %s", mp_pk_channel_name);
-		Redis::Value v = resp.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			ret = v.value._int;
-		}
-		else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ret = atoi(v.value._str.c_str());
-		}
+
+        redisReply *reply;
+
+		redisAppendCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+		redisAppendCommand(thread_data->mp_redis_connection, "INCR %s", mp_pk_channel_name);
+		
+		redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+		freeReplyObject(reply);
+
+		redisGetReply(thread_data->mp_redis_connection,(void**)&reply);	
+		ret = reply->integer;
+		freeReplyObject(reply);
+		
 		return ret;
 	}
 
     ChannelSummary LookupChannelById(TaskThreadData *thread_data, int channel_id) {
         ChannelSummary summary;
-        Redis::Response reply;
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d name", channel_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			goto error_end;
-		}
-		summary.channel_name = reply.values[0].value._str;
 
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d entrymsg", channel_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			goto error_end;
-		}
-		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			summary.entrymsg = reply.values[0].value._str.c_str();
-		}
+		std::ostringstream ss;
+		ss << "HMGET channel_" << channel_id << " name entrymsg modeflags password limit created_at topic topic_time topic_user";
 
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d modeflags", channel_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			goto error_end;
-		}
-		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			summary.basic_mode_flags = atoi(reply.values[0].value._str.c_str());
-		}
-		else if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			summary.basic_mode_flags = reply.values[0].value._int;
-		}
+		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, ss.str().c_str());
 
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d password", channel_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			goto error_end;
+		if(reply) {
+			summary.channel_name = reply->element[0]->str;
+			summary.entrymsg = reply->element[1]->str;
+			summary.basic_mode_flags = atoi(reply->element[2]->str);
+			summary.password = reply->element[3]->str;
+			summary.limit = atoi(reply->element[4]->str);
+			summary.created_at.tv_sec = atoi(reply->element[5]->str);
+			summary.topic = reply->element[6]->str;
+			summary.topic_time.tv_sec = atoi(reply->element[7]->str);
+			summary.topic_user_summary = reply->element[8]->str;
+			freeReplyObject(reply);
 		}
-		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			summary.password = reply.values[0].value._str.c_str();
-		}
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d limit", channel_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			goto error_end;
-		}
-		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			summary.limit = atoi(reply.values[0].value._str.c_str());
-		}
-		else if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			summary.limit = reply.values[0].value._int;
-		}
-		else {
-			summary.limit = 0;
-		}
-
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d created_at", channel_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			goto error_end;
-		}
-
-		summary.created_at.tv_usec = 0;
-		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			summary.created_at.tv_sec = atoi(reply.values[0].value._str.c_str());
-		}
-		else if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			summary.created_at.tv_sec = reply.values[0].value._int;
-		}
-
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d topic", channel_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			goto error_end;
-		}
-		if(reply.values.size() > 0 && reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			summary.topic = reply.values[0].value._str;
-		}		
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d topic_time", channel_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			goto error_end;
-		}
-
-		summary.topic_time.tv_usec = 0;
-		summary.topic_time.tv_sec = 0;
-		if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			summary.topic_time.tv_sec = atoi(reply.values[0].value._str.c_str());
-		}
-		else if (reply.values[0].type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			summary.topic_time.tv_sec = reply.values[0].value._int;
-		}
-
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d topic_user", channel_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			goto error_end;
-		}
-		if(reply.values.size() > 0 && reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			summary.topic_user_summary = reply.values[0].value._str;
-		}
-
-		summary.channel_id = channel_id;
-
-		summary.users = GetChannelUsers(thread_data, channel_id);
-
-		error_end:
+ 
+        
 		return summary;
 	}
 	void AssociateUsermodeToChannel(UsermodeRecord record, ChannelSummary summary, TaskThreadData* thread_data) {
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_usermodes \"%d\" %s", summary.channel_id, record.usermodeid, record.chanmask.c_str());
+		void *reply = redisCommand(thread_data->mp_redis_connection, "HSET channel_%d_usermodes \"%d\" %s", summary.channel_id, record.usermodeid, record.chanmask.c_str());
+		freeReplyObject(reply);
 	}
 	void LoadUsermodesForChannel(ChannelSummary summary, TaskThreadData* thread_data) {
 		json_t* send_json = json_object();
@@ -164,8 +89,8 @@ namespace Peerchat {
 			json_decref(send_json);
 	}
 	ChannelSummary CreateChannel(TaskThreadData* thread_data, std::string name) {
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-
+		//Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+		redisReply *reply;
 
 		std::string formatted_name;
 		std::transform(name.begin(),name.end(),std::back_inserter(formatted_name),tolower);
@@ -185,19 +110,22 @@ namespace Peerchat {
 		gettimeofday(&curtime, NULL);
 		summary.created_at = curtime;
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channels \"%s\" %d", formatted_name.c_str(), channel_id);
-
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d name \"%s\"", channel_id, name.c_str());
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d modeflags 0", channel_id);
+		int total_redis_calls = 0;
 
 		struct timeval now;
 		gettimeofday(&now, NULL);
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d created_at %d", channel_id, now.tv_sec);
-		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d %d", channel_id, CHANNEL_EXPIRE_TIME);
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SET channelname_%s %d", formatted_name.c_str(), channel_id);
-		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channelname_%s %d", formatted_name.c_str(), CHANNEL_EXPIRE_TIME);
+		redisAppendCommand(thread_data->mp_redis_connection, "HSET channels \"%s\" %d", formatted_name.c_str(), channel_id); total_redis_calls++;
+		redisAppendCommand(thread_data->mp_redis_connection, "HMSET channel_%d name \"%s\" modeflags \"0\" created_at \"%d\"", channel_id, name.c_str(), now.tv_sec); total_redis_calls++;
 
+		 redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d %d", channel_id, CHANNEL_EXPIRE_TIME); total_redis_calls++;
+		 redisAppendCommand(thread_data->mp_redis_connection, "SET channelname_%s %d", formatted_name.c_str(), channel_id); total_redis_calls++;
+		 redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE channelname_%s %d", formatted_name.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
+
+		 for(int i=0;i<total_redis_calls;i++) {
+			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+            freeReplyObject(reply);  
+		 }
 		
 		//load chanprops & usermodes
 		ApplyChanProps(summary);
@@ -209,25 +137,25 @@ namespace Peerchat {
 	}
 
 	int GetChannelIdByName(TaskThreadData* thread_data, std::string name) {
-		Redis::Value v;
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-		Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET channelname_%s", name.c_str());
-		if (Redis::CheckError(reply))
-			return 0;
-		if (reply.values.size() < 1)
-			return 0;
-		v = reply.values[0];
-
 		int id = 0;
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			id = atoi(v.value._str.c_str());
+
+		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET channelname_%s", name.c_str());
+
+		if(reply->type == REDIS_REPLY_STRING) {
+			id = atoi(reply->str);
+		} else if(reply->type == REDIS_REPLY_INTEGER) {
+			id = reply->integer;
 		}
-		else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			id = v.value._int;
-		}
+		freeReplyObject(reply);
 		if (id != 0) {
-			Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channelname_%s %d", name.c_str(), CHANNEL_EXPIRE_TIME);
-			Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d %d", id, CHANNEL_EXPIRE_TIME);
+			redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE channelname_%s %d", name.c_str(), CHANNEL_EXPIRE_TIME);
+			redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d %d", id, CHANNEL_EXPIRE_TIME);
+		
+			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+			freeReplyObject(reply);
+
+			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+			freeReplyObject(reply);
 		}
 		return id;
 	}
@@ -255,14 +183,17 @@ namespace Peerchat {
 	}
 
 	void AddUserToChannel(TaskThreadData* thread_data, UserSummary user, ChannelSummary channel, int initial_flags) {
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-		Redis::Command(thread_data->mp_redis_connection, 0, "ZINCRBY channel_%d_users 1 \"%d\"", channel.channel_id, user.id);
-		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_users %d", channel.channel_id, CHANNEL_EXPIRE_TIME);
+		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZINCRBY channel_%d_users 1 \"%d\"", channel.channel_id, user.id);
+		freeReplyObject(reply);
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d modeflags %d", channel.channel_id, user.id, initial_flags);
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d_users %d", channel.channel_id, CHANNEL_EXPIRE_TIME);
+		freeReplyObject(reply);
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET channel_%d_user_%d channel_id %d", channel.channel_id, user.id, channel.channel_id);
-		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d_user_%d %d", channel.channel_id, user.id, CHANNEL_EXPIRE_TIME);
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HMSET channel_%d_user_%d modeflags \"%d\" channel_id \"%d\"", channel.channel_id, user.id, initial_flags, channel.channel_id);
+		freeReplyObject(reply);
+
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d_user_%d %d", channel.channel_id, user.id, CHANNEL_EXPIRE_TIME);
+		freeReplyObject(reply);
 
 		std::ostringstream id;
 		id << "channel_" << channel.channel_id << "_user_" << user.id;
@@ -280,14 +211,19 @@ namespace Peerchat {
 	void RemoveUserFromChannel(TaskThreadData* thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target, bool silent, int requiredChanUserModes) {
 
 		std::ostringstream message;
+		redisReply *reply;
 
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+		//Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 		if (target.id != 0) {
-			Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, target.id);
-			Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_user_%d", channel.channel_id, target.id);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZREM channel_%d_users \"%d\"", channel.channel_id, target.id);
+			freeReplyObject(reply);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL channel_%d_user_%d", channel.channel_id, target.id);
+			freeReplyObject(reply);
 		} else {
-			Redis::Command(thread_data->mp_redis_connection, 0, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
-			Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_user_%d", channel.channel_id, user.id);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
+			freeReplyObject(reply);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL channel_%d_user_%d", channel.channel_id, user.id);
+			freeReplyObject(reply);
 		}
 
 		int old_modeflags = LookupUserChannelModeFlags(thread_data, channel.channel_id, user.id);
@@ -316,82 +252,83 @@ namespace Peerchat {
     }
 
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {
-		Redis::Response reply;
-		Redis::Value v;
-
-
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d_user_%d modeflags", channel_id, user_id);
-		if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-			return 0;
-		}
-		v = reply.values[0];
-
 		int modeflags = 0;
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			modeflags = atoi(v.value._str.c_str());
-		}
-		else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			modeflags = v.value._int;
+		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET channel_%d_user_%d modeflags", channel_id, user_id);
+
+		if(reply) {
+			if(reply->type == REDIS_REPLY_INTEGER) {
+				modeflags = reply->integer;
+			} else if(reply->type == REDIS_REPLY_STRING) {
+				modeflags = atoi(reply->str);
+			}
+			freeReplyObject(reply);
 		}
 		return modeflags;
 	}
     int CountChannelUsers(TaskThreadData *thread_data, int channel_id) {
 		int count = 0;
-        std::vector<ChannelUserSummary> result;
-        Redis::Response reply;
-		Redis::Value v, arr;
         int cursor = 0;
 
-        do {
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "ZSCAN channel_%d_users %d", channel_id, cursor);
-			if (Redis::CheckError(reply) || reply.values.size() == 0 || reply.values[0].arr_value.values.size() < 2)
-				goto error_cleanup;
+		redisReply *reply;
 
-			v = reply.values[0].arr_value.values[0].second;
-			arr = reply.values[0].arr_value.values[1].second;
+		do {
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZSCAN channel_%d_users %d", channel_id, cursor);
 
-		 	if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-		 		cursor = atoi(v.value._str.c_str());
-		 	} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-		 		cursor = v.value._int;
+			if (reply == NULL)
+				break;
+
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if (reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
 		 	}
-			count += arr.arr_value.values.size() / 2;
-        } while(cursor != 0);
-        error_cleanup:
+
+			count += reply->element[1]->elements / 2;
+
+			freeReplyObject(reply);
+		} while(cursor != 0);
+
         return count;
     }
 	void DeleteChannelById(TaskThreadData *thread_data, int channel_id) {
-		ChannelSummary channel = LookupChannelById(thread_data, channel_id);		
-		Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE channel_%d %d", channel_id, CHANNEL_DELETE_EXPIRE_TIME); //keep basic information around for short time (for PART events, etc)
+		ChannelSummary channel = LookupChannelById(thread_data, channel_id);	
+		redisReply *reply;	
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d %d", channel_id, CHANNEL_DELETE_EXPIRE_TIME); //keep basic information around for short time (for PART events, etc)
+		freeReplyObject(reply);
 		
-		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channelname_%s", channel.channel_name.c_str());
-		Redis::Command(thread_data->mp_redis_connection, 0, "HDEL channels %s", channel.channel_name.c_str());
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL channelname_%s", channel.channel_name.c_str());
+		freeReplyObject(reply);
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HDEL channels %s", channel.channel_name.c_str());
+		freeReplyObject(reply);
 
 		DeleteTemporaryUsermodesForChannel(thread_data, channel);
-		Redis::Command(thread_data->mp_redis_connection, 0, "DEL channel_%d_usermodes", channel_id);
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL channel_%d_usermodes", channel_id);
+		freeReplyObject(reply);
 	}
     std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id) {
         std::vector<ChannelUserSummary> result;
-        Redis::Response reply;
-		Redis::Value v, arr;
+        
         int cursor = 0;
+		redisReply *reply;
 
         do {
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "ZSCAN channel_%d_users %d", channel_id, cursor);
-			if (Redis::CheckError(reply) || reply.values.size() == 0 || reply.values[0].arr_value.values.size() < 2)
-				goto error_cleanup;
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZSCAN channel_%d_users %d", channel_id, cursor);
 
-			v = reply.values[0].arr_value.values[0].second;
-			arr = reply.values[0].arr_value.values[1].second;
-
-		 	if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-		 		cursor = atoi(v.value._str.c_str());
-		 	} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-		 		cursor = v.value._int;
+            if (reply == NULL || thread_data->mp_redis_connection->err || reply->elements < 2) {
+				if(reply) {
+					freeReplyObject(reply);
+				}
+                return result;
+            }
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if (reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
 		 	}
-            for(size_t i=0;i<arr.arr_value.values.size();i+=2) {
-                ChannelUserSummary summary;
-                std::string user_id = arr.arr_value.values[i].second.value._str;
+
+			for(size_t i = 0; i < reply->element[1]->elements;i++) {
+				ChannelUserSummary summary;
+				std::string user_id = reply->element[1]->element[i]->str;
                 summary.channel_id = channel_id;
                 summary.user_id = atoi(user_id.c_str());
 				summary.userSummary = LookupUserById(thread_data, summary.user_id);
@@ -401,9 +338,12 @@ namespace Peerchat {
 				}
 				summary.modeflags = LookupUserChannelModeFlags(thread_data, channel_id, summary.user_id);
                 result.push_back(summary);
-            }
+			}
+
+			freeReplyObject(reply);
+
         } while(cursor != 0);
-        error_cleanup:
+
         return result;
     }
 	int GetUserChannelModeLevel(int modeflags) {

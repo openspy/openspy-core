@@ -2,7 +2,7 @@
 #define MAX_SSL_ACCEPT_ATTEMPTS 5
 
 namespace SSLNetIOIFace {
-    SSL_Socket::SSL_Socket(SSL_CTX *ctx, ESSL_Type ssl_version) {
+    SSL_Socket::SSL_Socket(SSL_CTX *ctx, OS::ESSL_Type ssl_version) {
 		m_ssl_handshake_complete = false;
 		m_ssl_handshake_attempts = 0;
         if(ctx) {
@@ -17,18 +17,18 @@ namespace SSLNetIOIFace {
             SSL_free(mp_ssl);
         }
     }
-	void SSL_Socket::init(SSL_CTX *ctx, ESSL_Type ssl_version) {
-		if (ssl_version != ESSL_None) {
+	void SSL_Socket::init(SSL_CTX *ctx, OS::ESSL_Type ssl_version) {
+		if (ssl_version != OS::ESSL_None) {
 			mp_ssl_ctx = ctx;
 			mp_ssl = SSL_new(mp_ssl_ctx);
 			SSL_set_fd(mp_ssl, (int)sd);
 		}
 
 	}
-    SSLNetIOInterface::SSLNetIOInterface(ESSL_Type type, std::string privateKey_raw, std::string cert_raw) {
+    SSLNetIOInterface::SSLNetIOInterface(OS::ESSL_Type type, std::string privateKey_raw, std::string cert_raw) {
 		m_ssl_version = type;
         switch (m_ssl_version) {
-            case ESSL_SSLv23:
+            case OS::ESSL_SSLv23:
                 mp_ssl_ctx = SSL_CTX_new(SSLv23_method());
                 break;
             //# ifndef OPENSSL_NO_SSL2_METHOD
@@ -36,21 +36,21 @@ namespace SSLNetIOIFace {
                 //mp_ssl_ctx = SSL_CTX_new(SSLv2_method());
                 //break;
             //#endif
-            # ifndef OPENSSL_NO_SSL3_METHOD
-            case ESSL_SSLv3:
+            # if !defined(OPENSSL_NO_SSL3_METHOD) && !defined(OPENSSL_NO_DEPRECATED_1_1_0)
+            case OS::ESSL_SSLv3:
                 mp_ssl_ctx = SSL_CTX_new(SSLv3_method());
                 break;
             #endif
-            case ESSL_TLS10:
+            case OS::ESSL_TLS10:
                 mp_ssl_ctx = SSL_CTX_new(TLSv1_method());
                 break;
-            case ESSL_TLS11:
+            case OS::ESSL_TLS11:
                 mp_ssl_ctx = SSL_CTX_new(TLSv1_1_method());
                 break;
-            case ESSL_TLS12:
+            case OS::ESSL_TLS12:
                 mp_ssl_ctx = SSL_CTX_new(TLSv1_2_method());
                 break;
-            case ESSL_None:
+            case OS::ESSL_None:
             default:
                 mp_ssl_ctx = NULL;
                 break;

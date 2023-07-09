@@ -21,7 +21,7 @@
 namespace GP {
 	class Peer;
 	class Driver;
-	class Driver : public TCPDriver {
+	class Driver : public OS::TCPDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
 		Peer *FindPeerByProfileID(int profileid);

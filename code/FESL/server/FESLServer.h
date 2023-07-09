@@ -2,7 +2,7 @@
 #define _SMSERVER_H
 #include <stdint.h>
 #include <OS/Net/NetServer.h>
-#include <OS/Net/IOIfaces/SSLIOInterface.h>
+#include <SSL/SSLIOInterface.h>
 #include <OS/Task/TaskScheduler.h>
 #include <OS/SharedTasks/tasks.h>
 #include <server/tasks/tasks.h>

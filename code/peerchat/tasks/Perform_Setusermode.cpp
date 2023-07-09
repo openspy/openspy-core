@@ -93,38 +93,36 @@ namespace Peerchat {
 	void DeleteTemporaryUsermodesForChannel(TaskThreadData* thread_data, ChannelSummary channel) {
 		int channel_id = channel.channel_id;
 		int cursor = 0;
-		Redis::Response reply;
-		Redis::Value v, arr;
+		redisReply *scan_reply, *reply;
 
 		//scan channel usermodes
 		do {
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "HSCAN channel_%d_usermodes %d match *", channel_id, cursor);
-			if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
+			scan_reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN channel_%d_usermodes %d match *", channel_id, cursor);
+			if (scan_reply == NULL)
 				return;
 
-			v = reply.values[0].arr_value.values[0].second;
-			arr = reply.values[0].arr_value.values[1].second;
-			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-				if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					cursor = atoi(v.value._str.c_str());
-				} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.value._int;
-				}
 
-				if(arr.arr_value.values.size() <= 0) {
-					break;
-				}
+			if(thread_data->mp_redis_connection->err || scan_reply->elements < 2) {
+				freeReplyObject(scan_reply);
+				return;
+			}
 
-				for(size_t i=0;i<arr.arr_value.values.size();i++) {
-					if(i % 2 == 0) {
-						int usermode_id = atoi(arr.arr_value.values[i].second.value._str.c_str());
-						if(usermode_id < 0) {
-							std::string keyname = "USERMODE_" + arr.arr_value.values[i].second.value._str;
-							Redis::Command(thread_data->mp_redis_connection, 0, "DEL %s", keyname.c_str());							
-						}
+		 	if(scan_reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(scan_reply->element[0]->str);
+		 	} else if (scan_reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = scan_reply->element[0]->integer;
+		 	}
+
+			for(size_t i=0;i<reply->element[1]->elements;i++) {
+				if(i % 2 == 0) {
+					int usermode_id = atoi(reply->element[1]->str);
+					if(usermode_id < 0) {
+						std::string keyname = std::string("USERMODE_") + reply->element[1]->str;
+						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", keyname.c_str());							
+						freeReplyObject(reply);
 					}
-						
 				}
+					
 			}
 		} while(cursor != 0);
 	}

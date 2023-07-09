@@ -5,6 +5,7 @@
 namespace Peerchat {
 
 	bool Perform_GetUserKeys(PeerchatBackendRequest request, TaskThreadData *thread_data) {
+		redisReply *reply;
 		TaskResponse response;
 
 		UserSummary user_summary = GetUserSummaryByName(thread_data, request.summary.username);
@@ -21,18 +22,13 @@ namespace Peerchat {
 			while (it != iterators.second) {
 				std::pair<std::string, std::string> p = *(it++);
 
-				Redis::Response reply;
-				Redis::Value v;
-
-				reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET user_%d custkey_%s", user_summary.id, p.first.c_str());
-				if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
+				reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET user_%d custkey_%s", user_summary.id, p.first.c_str());
+				if (reply == NULL) {
 					continue;
 				}
-				v = reply.values[0];
-
-				ss << "\\" << p.first << "\\";
-				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					ss << v.value._str;
+					ss << "\\" << p.first << "\\";
+				if (reply->type == REDIS_REPLY_STRING) {
+					ss << reply->str;
 				}
 			}
 		}

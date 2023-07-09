@@ -11,7 +11,7 @@
 
 
 namespace FESL {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path, const char *rsa_priv_path, SSLNetIOIFace::ESSL_Type ssl_version, bool proxyFlag) : TCPDriver(server, host, port, proxyFlag, x509_path, rsa_priv_path, ssl_version) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path, const char *rsa_priv_path, OS::ESSL_Type ssl_version, bool proxyFlag) : TCPDriver(server, host, port, proxyFlag, x509_path, rsa_priv_path, ssl_version) {
 
 		//setup config vars
 		m_server_info.domainPartition = public_info.domainPartition;

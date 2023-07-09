@@ -151,6 +151,7 @@ namespace UT {
 	}
 
 	void Peer::Delete(bool timeout) {
+        CloseSocket();
 		delete_server();
 
 		m_timeout_flag = timeout;

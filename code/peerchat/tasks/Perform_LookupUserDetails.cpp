@@ -4,79 +4,64 @@
 
 namespace Peerchat {
 	void AssignChannelSummariesToResponse(TaskThreadData* thread_data, TaskResponse &response, int user_id) {
-		Redis::Response reply;
-
-		std::string key;
-		Redis::Value v, arr;
+		redisReply *scan_reply, *reply;
 
 		int cursor = 0;
         int channel_id;
 
         do {
-            reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH channel_*_user_%d", cursor, user_id);
-            if (Redis::CheckError(reply))
-                return;
+            scan_reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SCAN %d MATCH channel_*_user_%d", cursor, user_id);
+			if (scan_reply == NULL)
+				return;
 
-            v = reply.values[0].arr_value.values[0].second;
-            arr = reply.values[0].arr_value.values[1].second;
 
-			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+			if(thread_data->mp_redis_connection->err || scan_reply->elements < 2) {
+				freeReplyObject(scan_reply);
+				return;
+			}
 
-				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					cursor = atoi(v.value._str.c_str());
-				}
-				else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.value._int;
-				}
-				for (size_t i = 0; i < arr.arr_value.values.size(); i++) {
-					if (arr.arr_value.values[i].first != Redis::REDIS_RESPONSE_TYPE_STRING)
-						continue;
+		 	if(scan_reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(scan_reply->element[0]->str);
+		 	} else if (scan_reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = scan_reply->element[0]->integer;
+		 	}
 
-					key = arr.arr_value.values[i].second.value._str;
-                    
-                    reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s channel_id" , key.c_str());
+			for (size_t i = 0; i < scan_reply->element[1]->elements; i++) {
 
-                    channel_id = atoi(reply.values[0].value._str.c_str());
+				std::string key = scan_reply->element[1]->element[i]->str;
+				
+				reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s channel_id" , key.c_str());
 
-                    ChannelSummary channel_summary = LookupChannelById(thread_data, channel_id);
+				channel_id = atoi(reply->str);
 
-					response.channel_summaries.push_back(channel_summary);
-                }
-            }
+				freeReplyObject(reply);
+
+				ChannelSummary channel_summary = LookupChannelById(thread_data, channel_id);
+
+				response.channel_summaries.push_back(channel_summary);
+			}
+			freeReplyObject(scan_reply);
         } while(cursor != 0);
 	}
 	int CountUserChannels(TaskThreadData *thread_data, int user_id) {
-		Redis::Response reply;
-
-		std::string key;
-		Redis::Value v, arr;
+		redisReply *scan_reply, *reply;
 
 		int cursor = 0;
         int count = 0;
 
         do {
-            reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH channel_*_user_%d", cursor, user_id);
-            if (Redis::CheckError(reply))
+            scan_reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SCAN %d MATCH channel_*_user_%d", cursor, user_id);
+            if (scan_reply == NULL)
                 return 0;
 
-            v = reply.values[0].arr_value.values[0].second;
-            arr = reply.values[0].arr_value.values[1].second;
 
-			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+		 	if(scan_reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(scan_reply->element[0]->str);
+		 	} else if (scan_reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = scan_reply->element[0]->integer;
+		 	}
 
-				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					cursor = atoi(v.value._str.c_str());
-				}
-				else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.value._int;
-				}
-				for (size_t i = 0; i < arr.arr_value.values.size(); i++) {
-					if (arr.arr_value.values[i].first != Redis::REDIS_RESPONSE_TYPE_STRING)
-						continue;
-
-					count++;
-                }
-            }
+			count += scan_reply->element[1]->elements;
         } while(cursor != 0);
 		return count;
 	}

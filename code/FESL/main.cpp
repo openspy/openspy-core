@@ -3,14 +3,14 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include <openssl/ssl.h>
+
 #include <OS/Config/AppConfig.h>
 #include <OS/SharedTasks/tasks.h>
 
 #include <OS/Net/NetPeer.h>
 #include "server/FESLServer.h"
 #include "server/FESLDriver.h"
-#include <OS/StringCrypter.h>
+#include <SSL/StringCrypter.h>
 INetServer *g_gameserver = NULL;
 bool g_running = true;
 
@@ -43,30 +43,30 @@ std::string get_file_contents(std::string path) {
 	return ret;
 }
 
-SSLNetIOIFace::ESSL_Type getSSLVersion(std::string driver_name, AppConfig *app_config) {
+OS::ESSL_Type getSSLVersion(std::string driver_name, AppConfig *app_config) {
 	std::string ssl_version;
 
 	app_config->GetVariableString(driver_name, "ssl-version", ssl_version);
 
 	if (ssl_version.compare("SSLv2") == 0) {
-		return SSLNetIOIFace::ESSL_SSLv2;
+		return OS::ESSL_SSLv2;
 	}
 	if (ssl_version.compare("SSLv23") == 0) {
-		return SSLNetIOIFace::ESSL_SSLv23;
+		return OS::ESSL_SSLv23;
 	}
 	if (ssl_version.compare("SSLv3") == 0) {
-		return SSLNetIOIFace::ESSL_SSLv3;
+		return OS::ESSL_SSLv3;
 	}
 	if (ssl_version.compare("TLS1.0") == 0) {
-		return SSLNetIOIFace::ESSL_TLS10;
+		return OS::ESSL_TLS10;
 	}
 	if (ssl_version.compare("TLS1.1") == 0) {
-		return SSLNetIOIFace::ESSL_TLS11;
+		return OS::ESSL_TLS11;
 	}
 	if (ssl_version.compare("TLS1.2") == 0) {
-		return SSLNetIOIFace::ESSL_TLS12;
+		return OS::ESSL_TLS12;
 	}
-	return SSLNetIOIFace::ESSL_None;
+	return OS::ESSL_None;
 }
 
 #include <curl/curl.h>
@@ -94,14 +94,14 @@ int main() {
 		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
 		OS::Address address = addresses.front();
 
-		SSLNetIOIFace::ESSL_Type ssl_version = getSSLVersion(s, app_config);
+		OS::ESSL_Type ssl_version = getSSLVersion(s, app_config);
 
 		std::string x509_path, rsa_path;
 
 		std::string stringCrypterPKey;
 		app_config->GetVariableString(s, "stringCrypterPKey", stringCrypterPKey);
 
-		if (ssl_version != SSLNetIOIFace::ESSL_None) {
+		if (ssl_version != OS::ESSL_None) {
 			app_config->GetVariableString(s, "x509", x509_path);
 			app_config->GetVariableString(s, "x509_pkey", rsa_path);
 		}
@@ -129,7 +129,7 @@ int main() {
 		server_info.termsOfServiceData = get_file_contents(tos_path);
 
 		FESL::Driver *driver = new FESL::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), server_info, stringCrypterPKey, x509_path.c_str(), rsa_path.c_str(), ssl_version, proxyFlag);
-		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s (ssl: %d) proxy flag: %d, gameid: %d\n", address.ToString().c_str(), ssl_version != SSLNetIOIFace::ESSL_None, proxyFlag, server_info.gameid);
+		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s (ssl: %d) proxy flag: %d, gameid: %d\n", address.ToString().c_str(), ssl_version != OS::ESSL_None, proxyFlag, server_info.gameid);
 		g_gameserver->addNetworkDriver(driver);
 		it++;
 	}

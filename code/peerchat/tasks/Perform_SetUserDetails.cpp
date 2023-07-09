@@ -2,20 +2,27 @@
 namespace Peerchat {
     const char *mp_pk_name = "PEERCHATID";
 	int GetPeerchatUserID(TaskThreadData *thread_data) {
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
-		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 1, "INCR %s", mp_pk_name);
-		Redis::Value v = resp.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			ret = v.value._int;
-		}
-		else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ret = atoi(v.value._str.c_str());
-		}
+        int ret;
+        
+        redisAppendCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+        redisAppendCommand(thread_data->mp_redis_connection, "INCR %s", mp_pk_name);
+
+        redisReply *reply;
+        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+        freeReplyObject(reply);
+
+        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
+
+        ret = reply->integer;
+
+        freeReplyObject(reply);
 		return ret;
 	}
     bool Perform_SetUserDetails(PeerchatBackendRequest request, TaskThreadData *thread_data) {
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+        redisReply *reply;
+
+        redisAppendCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+
         TaskResponse response;
         response.summary = request.summary;
         response.profile.uniquenick = request.summary.nick;
@@ -36,18 +43,16 @@ namespace Peerchat {
             nick_update = true;
         }
 
-        Redis::Response reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS usernick_%s", formatted_name.c_str());
-        Redis::Value v;
+        redisAppendCommand(thread_data->mp_redis_connection, "EXISTS usernick_%s", formatted_name.c_str());
+
+        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+        freeReplyObject(reply);
 
         bool nick_exists = false;
-        if (Redis::CheckError(reply) || reply.values.size() == 0) {
-            nick_exists = true;
-        } else {
-            v = reply.values[0];
-            if ((v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) || (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0)) {
-                nick_exists = true;
-            }
-        }
+
+        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+        nick_exists = reply->integer;
+        freeReplyObject(reply);
 
         if(request.summary.nick.compare(userDetails.nick) == 0) {
             nick_exists = false;
@@ -58,14 +63,16 @@ namespace Peerchat {
 
 		request.summary.address = request.peer->getAddress();
 		response.summary.address = request.summary.address;
+
+        int cmd_count = 0;
         if(!nick_exists) {
             response.summary.nick = request.summary.nick;
             if(nick_update) {
-                Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", formatted_name_original.c_str());
+                redisAppendCommand(thread_data->mp_redis_connection, "DEL usernick_%s", formatted_name_original.c_str()); cmd_count++;
 
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d nick %s", response.summary.id, request.summary.nick.c_str());
+				redisAppendCommand(thread_data->mp_redis_connection, "HSET user_%d nick %s", response.summary.id, request.summary.nick.c_str()); cmd_count++;
 
-                Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", formatted_name.c_str(), response.summary.id);
+                redisAppendCommand(thread_data->mp_redis_connection, "SET usernick_%s %d", formatted_name.c_str(), response.summary.id); cmd_count++;
             } else {
                 response.summary.nick = userDetails.nick;
 
@@ -73,15 +80,21 @@ namespace Peerchat {
                 ApplyUserKeys(thread_data, "", request.summary, "custkey_");
 
                 if(formatted_name.length() != 0) {
-                    Redis::Command(thread_data->mp_redis_connection, 0, "DEL usernick_%s", formatted_name.c_str());
-                    Redis::Command(thread_data->mp_redis_connection, 0, "SET usernick_%s %d", formatted_name.c_str(), response.summary.id);
+                    redisAppendCommand(thread_data->mp_redis_connection, "DEL usernick_%s", formatted_name.c_str()); cmd_count++;
+                    redisAppendCommand(thread_data->mp_redis_connection, "SET usernick_%s %d", formatted_name.c_str(), response.summary.id); cmd_count++;
                 }
             }
 
-            Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE user_%d %d", response.summary.id, USER_EXPIRE_TIME);
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE user_%d %d", response.summary.id, USER_EXPIRE_TIME); cmd_count++;
 
-            if(formatted_name.length() != 0)
-                Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE usernick_%s %d", formatted_name.c_str(), USER_EXPIRE_TIME);
+            if(formatted_name.length() != 0) {
+                redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE usernick_%s %d", formatted_name.c_str(), USER_EXPIRE_TIME); cmd_count++;
+            }
+
+            for(int i=0;i<cmd_count;i++) {
+                redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+                freeReplyObject(reply);
+            }
 
             response.error_details.response_code = TaskShared::WebErrorCode_Success;
         } else {

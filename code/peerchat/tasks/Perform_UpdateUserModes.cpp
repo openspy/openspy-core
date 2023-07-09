@@ -19,7 +19,11 @@ namespace Peerchat {
 			}
 		}
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "HSET user_%d modeflags %d", summary.id, summary.modeflags);
+		void *reply;
+
+		reply = redisCommand(thread_data->mp_redis_connection, "HSET user_%d modeflags %d", summary.id, summary.modeflags);
+
+		freeReplyObject(reply);
 
 		response.error_details.response_code = TaskShared::WebErrorCode_Success;
 

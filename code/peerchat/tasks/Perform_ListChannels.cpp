@@ -50,57 +50,59 @@ namespace Peerchat {
 		}
 	}
 	std::vector<ChannelSummary> ListChannels(PeerchatBackendRequest request, TaskThreadData *thread_data) {
-        Redis::Response reply;
-		Redis::Value v, arr;
+        
         int cursor = 0;
 		std::vector<ChannelSummary> channels;
 		ChannelSummary summary;
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+
+		redisReply *scan_reply, *reply;
+
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+		freeReplyObject(reply);
+
         do {
-            reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH channelname_*", cursor);
-			if (Redis::CheckError(reply))
+            scan_reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SCAN %d MATCH channelname_*", cursor);
+			if (scan_reply == NULL)
 				goto error_cleanup;
 
-			v = reply.values[0].arr_value.values[0].second;
-			arr = reply.values[0].arr_value.values[1].second;
+			if(thread_data->mp_redis_connection->err || scan_reply->elements < 2) {
+				freeReplyObject(scan_reply);
+				goto error_cleanup;
+			}
 
-			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+		 	if(scan_reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(scan_reply->element[0]->str);
+		 	} else if (scan_reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = scan_reply->element[0]->integer;
+		 	}
 
-				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					cursor = atoi(v.value._str.c_str());
-				}
-				else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.value._int;
-				}
-				for (size_t i = 0; i < arr.arr_value.values.size(); i++) {
-					if (arr.arr_value.values[i].first != Redis::REDIS_RESPONSE_TYPE_STRING)
+			for (size_t i = 0; i < scan_reply->element[1]->elements; i++) {
+				if (scan_reply->element[1]->element[i]->type != REDIS_REPLY_STRING)
+					continue;
+
+				std::string key = scan_reply->element[1]->element[i]->str;
+				if (key.length() <= 12)
+					continue;
+
+				key = key.substr(12);
+				summary = GetChannelSummaryByName(thread_data, key, false);
+
+				if (summary.channel_id != 0) {
+					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET channel_%d custkey_groupname", summary.channel_id);
+					if (reply == NULL) {
 						continue;
+					}
 
-					std::string key = arr.arr_value.values[i].second.value._str;
-					if (key.length() <= 12)
-						continue;
-
-					key = key.substr(12);
-					summary = GetChannelSummaryByName(thread_data, key, false);
-
-					if (summary.channel_id != 0) {
-						Redis::Response reply;
-						Redis::Value v;
-
-						reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET channel_%d custkey_groupname", summary.channel_id);
-						if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-							continue;
-						}
-						v = reply.values[0];
-
-						std::string group = v.value._str;
+					if(reply->type == REDIS_REPLY_STRING) {
+						std::string group = reply->str;
 						if (request.channel_summary.channel_name.compare(group) == 0 || match2(request.channel_summary.channel_name.c_str(), summary.channel_name.c_str()) == 0) {
 							channels.push_back(summary);
 						}
 					}
+					freeReplyObject(reply);
+					
 				}
 			}
-			else break;
         } while(cursor != 0 && (channels.size() < (size_t)request.channel_summary.limit || request.channel_summary.limit == 0));
 
 	AppendNonExistentPersistentChannels(request, thread_data, channels);

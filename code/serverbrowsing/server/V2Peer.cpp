@@ -246,7 +246,7 @@ namespace SB {
 			buffer.WriteInt(getAddress().GetInAddr().sin_addr.s_addr);
 		}
 		
-		buffer.WriteShort(htons(list_req.m_from_game.queryport));
+		buffer.WriteShort(htons(list_req.m_for_game.queryport));
 
 		if(!list_req.no_server_list) {
 			buffer.WriteByte((uint8_t)list_req.field_list.size());
@@ -793,11 +793,18 @@ namespace SB {
 
 		} else {
 			SendListQueryResp(results, request.req, true);
+            
+            if(results.last_set) { //End of message stream, no updates requested, close connection
+                Delete();
+            }
 		}
 
 	}
 	void V2Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		SendListQueryResp(results, request.req);
+        if(results.last_set) { //End of message stream, close connection
+            Delete();
+        }
 	}
 	void V2Peer::OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		if (results.list.size() == 0) return;

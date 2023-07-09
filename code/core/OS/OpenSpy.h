@@ -21,8 +21,8 @@ typedef int socklen_t;
 #define close closesocket
 int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #else
-//#define EVTMGR_USE_SELECT 0
-#define EVTMGR_USE_EPOLL 1
+#define EVTMGR_USE_SELECT 1
+//#define EVTMGR_USE_EPOLL 1
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -51,13 +51,13 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <stdint.h>
 #include <memory.h>
 #include <map>
-#include <OS/Redis.h>
 
 #include <OS/Logger.h>
 #include <OS/Config/Config.h>
 
 class AppConfig;
 
+#include <hiredis/hiredis.h>
 #include <curl/curl.h>
 
 class Config;
@@ -73,7 +73,6 @@ namespace OS {
 	extern const char *g_redisAddress;
 	extern const char *g_redisUsername;
 	extern const char *g_redisPassword;
-	extern bool		   g_redisUseSSL;
 	extern const char *g_webServicesURL;
 	extern const char *g_webServicesAPIKey;
 	extern int		   g_numAsync;
@@ -120,8 +119,9 @@ namespace OS {
 		std::map<std::string, uint8_t> push_keys; //SB push keys + type(hostname/KEYTYPE_STRING)
 	};
 
-	GameData GetGameByName(const char *from_gamename, Redis::Connection *redis_ctx = NULL);
-	GameData GetGameByID(int gameid, Redis::Connection *redis_ctx = NULL);
+	GameData GetGameByName(const char *from_gamename, redisContext *redis_ctx);
+	GameData GetGameByID(int gameid, redisContext *redis_ctx);
+	OS::GameData GetGameByRedisKey(const char *key, redisContext *redis_ctx);
 	enum ERedisDB {
 		ERedisDB_QR,
 		ERedisDB_SBGroups,
@@ -169,6 +169,8 @@ namespace OS {
 
 	void Init(const char *appName, AppConfig *appConfig);
 	void Shutdown();
+
+	void get_server_address_port(const char *input, char *address, uint16_t &port);
 
 	std::map<std::string, std::string> KeyStringToMap(std::string input);
 	std::vector<std::string> KeyStringToVector(std::string input, bool skip_null = false, char delimator = '\\');

@@ -227,39 +227,45 @@ namespace Peerchat {
 			if(base_key.length() == 0) {
 				ss << "user_" << userSummary.id;
 				base_key = ss.str();
+				ss.str("");
 			}
-			
+			ss << "HMSET " << base_key;
+
 			if(user_base.length() > 0) {
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %susername %s", base_key.c_str(), user_base.c_str(), userSummary.username.c_str());
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %snick %s", base_key.c_str(), user_base.c_str(), userSummary.nick.c_str());
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %srealname %s", base_key.c_str(), user_base.c_str(), userSummary.realname.c_str());
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sgameid %d", base_key.c_str(), user_base.c_str(), userSummary.gameid);
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %shostname %s", base_key.c_str(), user_base.c_str(), userSummary.hostname.c_str());
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sprofileid %d", base_key.c_str(), user_base.c_str(), userSummary.profileid);
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %suserid %d", base_key.c_str(), user_base.c_str(), userSummary.userid);
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %sbackendid %d", base_key.c_str(), user_base.c_str(), userSummary.id);
+				ss << " " << user_base << "username" << " " << userSummary.username; 
+				ss << " " << user_base << "nick" << " " << userSummary.nick;
+				ss << " " << user_base << "realname" << " " << userSummary.realname;
+				ss << " " << user_base << "gameid" << " " << userSummary.gameid; 
+				ss << " " << user_base << "hostname" << " " << userSummary.hostname; 
+				ss << " " << user_base << "profileid" << " " << userSummary.profileid; 
+				ss << " " << user_base << "userid" << " " << userSummary.userid; 
+				ss << " " << user_base << "backendid" << " " << userSummary.id;
 
 				if(show_private) {
-					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %saddress %s", base_key.c_str(), user_base.c_str(), userSummary.address.ToString(true).c_str());
-					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %smodeflags %d", base_key.c_str(), user_base.c_str(), userSummary.modeflags);
-					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s %operflags %d", base_key.c_str(), user_base.c_str(), userSummary.operflags);
+					ss << " " << user_base << "address" << " " << userSummary.address.ToString(true);
+					ss << " " << user_base << "modeflags" << " " << userSummary.modeflags;
+					ss << " " << user_base << "operflags" << " " << userSummary.operflags;
 				}
 			} else {
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s username %s", base_key.c_str(), userSummary.username.c_str());
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s nick %s", base_key.c_str(), userSummary.nick.c_str());
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s realname %s", base_key.c_str(), userSummary.realname.c_str());
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", base_key.c_str(), userSummary.gameid);
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s hostname %s", base_key.c_str(), userSummary.hostname.c_str());
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s profileid %d", base_key.c_str(), userSummary.profileid);
-				Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s userid %d", base_key.c_str(), userSummary.userid);
+				ss << " " << "username" << " " << userSummary.username; 
+				ss << " " << "nick" << " " << userSummary.nick;
+				ss << " " << "realname" << " " << userSummary.realname;
+				ss << " " << "gameid" << " " << userSummary.gameid; 
+				ss << " " << "hostname" << " " << userSummary.hostname; 
+				ss << " " << "profileid" << " " << userSummary.profileid; 
+				ss << " " << "userid" << " " << userSummary.userid; 
+				ss << " " << "backendid" << " " << userSummary.id;
 
 				if(show_private) {
-					
-					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s address %s", base_key.c_str(), userSummary.address.ToString(true).c_str());
-					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s modeflags %d", base_key.c_str(), userSummary.modeflags);
-					Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s operflags %d", base_key.c_str(), userSummary.operflags);
+					ss << " " << "address" << " " << userSummary.address.ToString(true);
+					ss << " " << "modeflags" << " " << userSummary.modeflags;
+					ss << " " << "operflags" << " " << userSummary.operflags;
 				}
 			}
+
+			void *reply =redisCommand(thread_data->mp_redis_connection, ss.str().c_str());
+			freeReplyObject(reply);
+			
 		}
 
 		int channelUserModesStringToFlags(std::string mode_string) {

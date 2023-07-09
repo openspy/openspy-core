@@ -5,7 +5,6 @@
 #include <OS/Task/TaskScheduler.h>
 #include <OS/Task/ScheduledTask.h>
 
-#include <OS/Redis.h>
 #include <OS/MessageQueue/MQInterface.h>
 
 #include <OS/GPShared.h>

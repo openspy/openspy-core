@@ -6,56 +6,61 @@
 namespace MM {
 	int GetServerID(TaskThreadData *thread_data) {
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "INCR %s", mp_pk_name);
-		Redis::Value v = resp.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			ret = v.value._int;
+		redisReply *resp = (redisReply *) redisCommand(thread_data->mp_redis_connection, "INCR %s", mp_pk_name);
+		if (resp == NULL) {
+			return 0;
 		}
-		else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ret = atoi(v.value._str.c_str());
-		}
+
+        if (resp->type == REDIS_REPLY_INTEGER) {
+            ret = resp->integer;
+        }
+        freeReplyObject(resp);
 		return ret;
 	}
 	bool isServerDeleted(TaskThreadData *thread_data, std::string server_key) {
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s deleted", server_key.c_str());
-		Redis::Value v = resp.values.front();
-		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ret = atoi(v.value._str.c_str());
-		} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			ret = v.value._int;
-		}		
+		redisReply *resp = (redisReply *) redisCommand(thread_data->mp_redis_connection, "HGET %s deleted", server_key.c_str());
+		if (resp == NULL) {
+			return true;
+		}
+
+        if (resp->type == REDIS_REPLY_INTEGER) {
+            ret = resp->integer;
+        }
+        freeReplyObject(resp);
 		return ret == 1;
 	}
     bool serverRecordExists(TaskThreadData* thread_data, std::string server_key) {
         int ret = -1;
-        Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS %s", server_key.c_str());
-        Redis::Value v = resp.values.front();
-        if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-            ret = atoi(v.value._str.c_str());
+        redisReply *resp = (redisReply *) redisCommand(thread_data->mp_redis_connection, "EXISTS %s", server_key.c_str());
+
+		if (resp == NULL) {
+			return false;
+		}
+        
+        if (resp->type == REDIS_REPLY_INTEGER) {
+            ret = resp->integer;
         }
-        else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-            ret = v.value._int;
-        }
+        freeReplyObject(resp);
         return ret == 1;
     }
     std::string GetServerKey_FromIPMap(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info) {
         std::ostringstream s;
         s << "IPMAP_" << request.record.m_address.ToString(true) << "-" << request.record.m_address.GetPort();
 
+        std::string ipmap_key = s.str();
         std::string server_key = "";
-		Redis::Response reply;
-		Redis::Value v;
 
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", s.str().c_str());
-		if (Redis::CheckError(reply)) {
-			return server_key;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			server_key = OS::strip_quotes(v.value._str).c_str();
-		}
 
+		redisReply *reply = (redisReply *) redisCommand(thread_data->mp_redis_connection, "GET %s", ipmap_key.c_str());
+		if (reply == NULL) {
+			return "";
+		}
+		if (reply->type == REDIS_REPLY_STRING) {
+			server_key = reply->str;
+		}
+        freeReplyObject(reply);
+        
         if(server_key.length() != 0) {
             if(isServerDeleted(thread_data, server_key)) {
                 return "";
@@ -90,13 +95,7 @@ namespace MM {
 
     }
     void injectFilterVariables(UTMasterRequest request, TaskThreadData *thread_data, std::string cust_keys) {
-        //for filters -- this stuff might end up being UT2004 specific
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s currentplayers %d", cust_keys.c_str(), request.record.num_players);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s category \"%s\"", cust_keys.c_str(), request.record.bot_level.c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s freespace %d", cust_keys.c_str(), request.record.num_players < request.record.max_players);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s nomutators %s", cust_keys.c_str(), request.record.m_mutators.size() == 0 ? "true" : "false");
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s standard %s", cust_keys.c_str(), request.record.isStandardServer() ? "true" : "false");
-
+        
         int nobots = true;
         if(request.record.m_rules.find("MinPlayers") != request.record.m_rules.end()) {
             std::string MinPlayersStr = request.record.m_rules["MinPlayers"];
@@ -106,85 +105,177 @@ namespace MM {
                 nobots = false;
             }
         }
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s nobots %s", cust_keys.c_str(), nobots ? "true" : "false");
-
-
+        
+        std::string transloc = "False";
+        std::string weaponstay = "False";
+        std::string stats = "False";
+        std::string password = "False";
+        
+        std::ostringstream ss;
+        
+        std::string currentplayers;
+        ss << request.record.num_players;
+        currentplayers = ss.str();
+        ss.str("");
+        
+        std::string freespace;
+        ss << (request.record.num_players < request.record.max_players);
+        freespace = ss.str();
+        ss.str("");
+        
+        
         if(request.record.m_rules.find("Translocator") != request.record.m_rules.end()) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s transloc \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.m_rules["Translocator"]).c_str());
-        } else {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s transloc \"False\"", cust_keys.c_str());
-        }
-
-        if(request.record.m_rules.find("WeaponStay") != request.record.m_rules.end()) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s weaponstay \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.m_rules["WeaponStay"]).c_str());
-        } else {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s weaponstay \"False\"", cust_keys.c_str());
-        }
-
-        if(request.record.m_rules.find("GameStats") != request.record.m_rules.end()) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s stats \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.m_rules["GameStats"]).c_str());
-        } else {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s stats \"False\"", cust_keys.c_str());
-        }
-
-        if(request.record.m_rules.find("GamePassword") != request.record.m_rules.end()) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s password \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.m_rules["GamePassword"]).c_str());
-        } else {
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s password \"False\"", cust_keys.c_str());
+            transloc = request.record.m_rules["Translocator"];
         }
         
+        if(request.record.m_rules.find("WeaponStay") != request.record.m_rules.end()) {
+            weaponstay = request.record.m_rules["WeaponStay"];
+        }
+        
+        if(request.record.m_rules.find("GameStats") != request.record.m_rules.end()) {
+            stats = request.record.m_rules["GameStats"];
+        }
+        
+        if(request.record.m_rules.find("GamePassword") != request.record.m_rules.end()) {
+            password = request.record.m_rules["GamePassword"];
+        }
+        
+        const char *keys_cmd[] = {
+            "HMSET", cust_keys.c_str(),
+            "currentplayers", currentplayers.c_str(),
+            "category", request.record.bot_level.c_str(),
+            "freespace", freespace.c_str(),
+            "nomutators", request.record.m_mutators.size() == 0 ? "true" : "false",
+            "standard", request.record.isStandardServer() ? "true" : "false",
+            "nobots", nobots ? "true" : "false",
+            "transloc", transloc.c_str(),
+            "weaponstay", weaponstay.c_str(),
+            "stats", stats.c_str(),
+            "password", password.c_str()
+        };
+        
+        redisAppendCommandArgv(thread_data->mp_redis_connection, sizeof(keys_cmd) / sizeof(const char *), keys_cmd, NULL);
     }
     void WriteServerData(UTMasterRequest request, TaskThreadData *thread_data, OS::GameData game_info, std::string server_key, int id) {
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_port %d", server_key.c_str(), request.record.m_address.GetPort());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s wan_ip \"%s\"", server_key.c_str(), request.record.m_address.ToString(true).c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gameid %d", server_key.c_str(), game_info.gameid);
-        if(id > 0)
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s id %d", server_key.c_str(), id);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s deleted 0", server_key.c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HINCRBY %s num_updates 1", server_key.c_str());
-
-        if(request.record.m_mutators.size() > 0) {
-            std::string mutators = GetMutatorsString(request);
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s mutators \"%s\"", server_key.c_str(), OS::escapeJSON(mutators).c_str());
-        }
-
-        std::string ipinput = request.record.m_address.ToString(true);
-        Redis::Command(thread_data->mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), request.record.m_address.GetPort(), server_key.c_str());
-
-        //write cust keys
+        int num_cmds = 0;
+        std::ostringstream ss;
+        
+        std::string mutators = GetMutatorsString(request);
+        
+        std::string wanport_str, wanip_str, gameid_str;
+        
+        ss << request.record.m_address.GetPort();
+        wanport_str = ss.str();
+        ss.str("");
+        
+        ss << request.record.m_address.ToString(true);
+        wanip_str = ss.str();
+        ss.str("");
+        
+        ss << request.record.gameid;
+        gameid_str = ss.str();
+        ss.str("");
+        
+        std::string last_heartbeat;
+        struct timeval current_time;
+        gettimeofday(&current_time, NULL);
+        
+        ss << current_time.tv_sec;
+        last_heartbeat = ss.str();
+        ss.str("");
+        
+        const char *basic_keys_cmd[] = {
+            "HMSET", server_key.c_str(),
+            "wan_port", wanport_str.c_str(),
+            "wan_ip", wanip_str.c_str(),
+            "gameid", gameid_str.c_str(),
+            "id", server_key.c_str(),
+            "deleted", "0",
+            "mutators", mutators.c_str(),
+            "last_heartbeat", last_heartbeat.c_str()
+        };
+        redisAppendCommandArgv(thread_data->mp_redis_connection, sizeof(basic_keys_cmd) / sizeof(const char *), basic_keys_cmd, NULL); num_cmds++;
+        
         std::string cust_keys = server_key + "custkeys";
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gamename \"%s\"", cust_keys.c_str(), game_info.gamename.c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s hostname \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.hostname).c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s mapname \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.level).c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s gametype \"%s\"", cust_keys.c_str(), OS::escapeJSON(request.record.game_group).c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s botlevel \"%s\"", cust_keys.c_str(), request.record.bot_level.c_str());
+        
+        std::string gamename = game_info.gamename;
+        std::string numplayers_str, maxplayers_str;
+        
 
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s numplayers %d", cust_keys.c_str(), request.record.num_players);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s maxplayers %d", cust_keys.c_str(), request.record.max_players);
-
-        injectFilterVariables(request, thread_data, cust_keys);
-
+        ss << request.record.num_players;
+        numplayers_str = ss.str();
+        ss.str("");
+        
+        ss << request.record.max_players;
+        maxplayers_str = ss.str();
+        ss.str("");
+        
+        
+        const char *custkeys_cmd[] = {
+            "HMSET", cust_keys.c_str(),
+            "gamename", gamename.c_str(),
+            "hostname", request.record.hostname.c_str(),
+            "mapname", request.record.level.c_str(),
+            "gametype", request.record.game_group.c_str(),
+            "botlevel", request.record.bot_level.c_str(),
+            "numplayers", numplayers_str.c_str(),
+            "maxplayers", maxplayers_str.c_str()
+        };
+        redisAppendCommandArgv(thread_data->mp_redis_connection, sizeof(custkeys_cmd) / sizeof(const char *), custkeys_cmd, NULL); num_cmds++;
+        
+        //inject rules
+        int num_keys = 2 + (request.record.m_rules.size() * 2);
+        const char **rules_cmd = (const char **)malloc(sizeof(const char *) * num_keys);
+        rules_cmd[0] = "HMSET";
+        rules_cmd[1] = cust_keys.c_str();
+        int idx = 2;
         std::map<std::string, std::string>::iterator it = request.record.m_rules.begin();
         while(it != request.record.m_rules.end()) {
             std::pair<std::string, std::string> p = *it;
-            Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s \"%s\" \"%s\"", cust_keys.c_str(), OS::escapeJSON(p.first).c_str(), OS::escapeJSON(p.second).c_str());
+            rules_cmd[idx++] = strdup(p.first.c_str());
+            rules_cmd[idx++] = strdup(p.second.c_str());
             it++;
         }
-
-        struct timeval current_time;
-        gettimeofday(&current_time, NULL);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s last_heartbeat %d", server_key.c_str(), current_time.tv_sec);
-
-        Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d %d", request.record.m_address.ToString(true).c_str(), request.record.m_address.GetPort(), MM_REDIS_EXPIRE_TIME);
-        Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %s %d", server_key.c_str(), MM_REDIS_EXPIRE_TIME);
-        Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %scustkeys %d", server_key.c_str(), MM_REDIS_EXPIRE_TIME);
-
-        Redis::Command(thread_data->mp_redis_connection, 0, "ZADD %s %d \"%s\"", game_info.gamename.c_str(), id, server_key.c_str());
+        
+        redisAppendCommandArgv(thread_data->mp_redis_connection, idx, rules_cmd, NULL); num_cmds++;
+        for(int i = 2;i < idx; i++) {
+            free((void *)rules_cmd[i]);
+        }
+        free((void *)rules_cmd);
+        
+        //inject filter stuff
+        injectFilterVariables(request, thread_data, cust_keys); num_cmds++;
+        
+        
+        ss << "IPMAP_" << request.record.m_address.ToString(true) << "-" << request.record.m_address.GetPort();
+        
+        std::string ipmap_str = ss.str();
+        ss.str("");
+        
+        redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", ipmap_str.c_str(), server_key.c_str());  num_cmds++;
+        
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", ipmap_str.c_str(), MM_REDIS_EXPIRE_TIME);  num_cmds++;
+        
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", server_key.c_str(), MM_REDIS_EXPIRE_TIME);  num_cmds++;
+        
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", cust_keys.c_str(), MM_REDIS_EXPIRE_TIME);  num_cmds++;
+        
+        redisAppendCommand(thread_data->mp_redis_connection, "ZADD %s %d %s", game_info.gamename.c_str(), id, server_key.c_str()); num_cmds++;
+        
+        for(int i=0;i<num_cmds;i++) {
+            void *reply;
+            int r = redisGetReply(thread_data->mp_redis_connection, (void **)&reply);
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);
+            }
+        }
     }
     bool PerformHeartbeat(UTMasterRequest request, TaskThreadData *thread_data) {
 
         MMTaskResponse response;
         response.peer = request.peer;
+        
+        selectQRRedisDB(thread_data);
         
         OS::GameData game_info = request.peer->GetGameData();
         bool is_new_server = false;

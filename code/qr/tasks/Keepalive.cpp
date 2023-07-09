@@ -15,6 +15,8 @@ namespace MM {
         response.from_address = request.from_address;
         response.challenge = request.gamename; //copy echo key
 
+        selectQRRedisDB(thread_data);
+
         std::string server_key = GetServerKey_FromRequest(request, thread_data);
         if(server_key.length() == 0) {
             response.error_message = "No server registered";

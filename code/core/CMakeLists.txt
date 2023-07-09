@@ -1,8 +1,21 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.22)
 
 project(openspy_core)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+find_package(SSL)
+find_package(hiredis REQUIRED)
+find_package(Jansson REQUIRED)
+find_package(pugixml REQUIRED)
+find_package(rabbitmq-c REQUIRED)
+find_package(CURL REQUIRED)
+
+#get_cmake_property(_variableNames VARIABLES)
+#list (SORT _variableNames)
+#foreach (_variableName ${_variableNames})
+#    message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
 
 file (GLOB OS_SRCS "OS/*.cpp")
 file (GLOB OS_HDRS "OS/*.h")
@@ -49,9 +62,10 @@ file (GLOB SHAREDTASK_GEO_HDRS "OS/SharedTasks/Geo/*.h")
 file (GLOB MQ_SRCS "OS/MessageQueue/*.cpp" "OS/MessageQueue/rabbitmq/*.cpp")
 file (GLOB MQ_HDRS "OS/MessageQueue/*.h" "OS/MessageQueue/rabbitmq/*.h")
 
-set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${NET_DRIVERS_SRCS} ${NET_DRIVERS_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${NET_PROCESSORS_SRCS} ${NET_PROCESSORS_HDRS} ${MQ_SRCS} ${MQ_HDRS} ${TASK_HDRS} ${SHAREDTASK_ACCOUNT_SRCS} ${SHAREDTASK_AUTH_SRCS} ${SHAREDTASK_ACCOUNT_TASKS_SRCS} ${SHAREDTASK_AUTH_TASKS_SRCS} ${SHAREDTASK_CDKEY_SRCS} ${SHAREDTASK_CDKEY_TASKS_SRCS} ${SHAREDTASK_CDKEY_HDRS} ${SHAREDTASK_GEO_SRCS} ${SHAREDTASK_GEO_HDRS} ${SHAREDTASK_GEO_TASKS_SRCS})
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+set (ALL_SRCS ${SSL_SRCS} ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${NET_DRIVERS_SRCS} ${NET_DRIVERS_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${TIMER_SRCS} ${TIMER_HDRS} ${NET_EVENTMGR_SRCS} ${NET_IOIFACES_SRCS} ${NET_PROCESSORS_SRCS} ${NET_PROCESSORS_HDRS} ${MQ_SRCS} ${MQ_HDRS} ${TASK_HDRS} ${SHAREDTASK_ACCOUNT_SRCS} ${SHAREDTASK_AUTH_SRCS} ${SHAREDTASK_ACCOUNT_TASKS_SRCS} ${SHAREDTASK_AUTH_TASKS_SRCS} ${SHAREDTASK_CDKEY_SRCS} ${SHAREDTASK_CDKEY_TASKS_SRCS} ${SHAREDTASK_CDKEY_HDRS} ${SHAREDTASK_GEO_SRCS} ${SHAREDTASK_GEO_HDRS} ${SHAREDTASK_GEO_TASKS_SRCS})
+
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${hiredis_INCLUDE_DIRS})
 
 source_group("Sources\\OS\\Net" FILES ${NET_SRCS})
 source_group("Sources\\OS\\Net\\EventMgrs" FILES ${NET_EVENTMGR_SRCS})
@@ -95,8 +109,8 @@ IF(WIN32)
 	source_group("Headers\\OS\\Timer\\Win32\\" FILES ${PLAT_TIMER_HDRS})
 
 	set (ALL_PLAT ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
-	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
-	target_link_libraries(openspy ws2_32.lib curl jansson libcurl_imp pugixml libeay32 ssleay32)
+	add_library (openspy SHARED ${ALL_SRCS} ${ALL_PLAT})
+	target_link_libraries(openspy ws2_32.lib ${CURL_LIBRARIES} pugixml rabbitmq::rabbitmq ${JANSSON_LIBRARIES} ${hiredis_LIBRARIES} ${SSL_LIBS})
 
 ELSE() #unix
 	
@@ -119,8 +133,8 @@ ELSE() #unix
 	source_group("Headers\\OS\\Timer\\Unix\\" FILES ${PLAT_TIMER_HDRS})
 
 	set (ALL_PLAT ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
-	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
-	target_link_libraries(openspy pthread ssl crypto curl z jansson pugixml rabbitmq)
+	add_library (openspy SHARED ${ALL_SRCS} ${ALL_PLAT})
+	target_link_libraries(openspy pthread ${CURL_LIBRARIES} z pugixml rabbitmq::rabbitmq ${JANSSON_LIBRARIES} ${hiredis_LIBRARIES} ${SSL_LIBS})
 ENDIF()
 
 INSTALL(TARGETS openspy

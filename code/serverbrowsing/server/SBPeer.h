@@ -33,6 +33,8 @@ namespace SB {
 		
 		bool serverMatchesLastReq(MM::Server *server, bool require_push_flag = true);
 
+		int GetVersion() { return m_version; }
+
 		virtual void informDeleteServers(MM::Server *server) = 0;
 		virtual void informNewServers(MM::Server *server) = 0;
 		virtual void informUpdateServers(MM::Server *server) = 0;

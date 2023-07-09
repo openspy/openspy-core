@@ -226,17 +226,27 @@ namespace SB {
 		}
 		void V1Peer::OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 			SendServerInfo(results);
+            //if(results.last_set) {
+            //   Delete();
+            //}
 		}
 		void V1Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 			if (request.req.all_keys) {
 				SendServerInfo(results);
 			}
-			else {
-				SendServers(results);
-			}			
+            else {
+                SendServers(results);
+            }
+            if(results.last_set) {
+                Delete();
+            }
 		}
 		void V1Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 			SendGroups(results);
+            
+            if(results.last_set) {
+                Delete();
+            }
 		}
 		void V1Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {
 			

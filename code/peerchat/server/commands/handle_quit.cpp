@@ -15,10 +15,10 @@
 #include <server/Peer.h>
 
 namespace Peerchat {
-	static void Peer::OnQuit_TaskComplete(TaskResponse response_data, Peer *peer) {
+	void Peer::OnQuit_TaskComplete(TaskResponse response_data, Peer *peer) {
 		peer->m_delete_flag = true;
 	}
-	static void Peer::OnDelete_TaskComplete(TaskResponse response_data, Peer *peer) {
+	void Peer::OnDelete_TaskComplete(TaskResponse response_data, Peer *peer) {
 		if (peer->m_user_details.id != 0) {
 			TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(peer->GetDriver()->getServer()))->GetPeerchatTask();
 			PeerchatBackendRequest req;

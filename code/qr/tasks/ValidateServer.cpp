@@ -9,18 +9,16 @@ namespace MM {
 
     std::string GetV2CalculatedChallenge(MMPushRequest request, TaskThreadData *thread_data, std::string server_key) {
         
-		Redis::Response reply;
-		Redis::Value v;
+		redisReply *reply;
+        std::string challenge = "";
+        reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s challenge", server_key.c_str());
+        if(reply) {
+            if (reply->type == REDIS_REPLY_STRING) {
+                challenge = OS::strip_quotes(reply->str);
+            }
+            freeReplyObject(reply);
+        }
 
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s challenge", server_key.c_str());
-		if (Redis::CheckError(reply)) {
-			return "";
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			std::string challenge = OS::strip_quotes(v.value._str).c_str();
-            return challenge;
-		}
         return "";
     }
     bool PerformValidate(MMPushRequest request, TaskThreadData *thread_data) {
@@ -28,6 +26,8 @@ namespace MM {
         response.v2_instance_key = request.v2_instance_key;
         response.driver = request.driver;
         response.from_address = request.from_address;
+
+        //selectQRRedisDB(thread_data);
 
         std::string server_key = GetServerKey_FromRequest(request, thread_data);
 
@@ -38,6 +38,7 @@ namespace MM {
         }
 
         response.query_address = GetQueryAddressForServer(thread_data, server_key);
+        response.challenge = server_key;
 
         std::string expected_challenge = GetV2CalculatedChallenge(request, thread_data, server_key);
         std::string chopped_challenge = request.gamename;
@@ -49,7 +50,6 @@ namespace MM {
             response.error_message = "Invalid challenge response";
         } else if(isServerDeleted(thread_data, server_key, true)) {
             SetServerDeleted(thread_data, server_key, 0);
-            Redis::Command(thread_data->mp_redis_connection, 0, "HDEL %s challenge", server_key.c_str());
 
             if(request.version != 1) { //version 1 new event is only after collection of first heartbeat
                 std::ostringstream s;

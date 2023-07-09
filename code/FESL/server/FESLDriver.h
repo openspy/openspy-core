@@ -2,9 +2,9 @@
 #define _GPDRIVER_H
 #include <stdint.h>
 #include "../main.h"
-#include <OS/StringCrypter.h>
+#include <SSL/StringCrypter.h>
 #include <OS/Net/drivers/TCPDriver.h>
-#include <OS/Net/IOIfaces/SSLIOInterface.h>
+#include <SSL/SSLIOInterface.h>
 #include "FESLPeer.h"
 
 #include <map>
@@ -34,9 +34,9 @@ namespace FESL {
 
 	class Peer;
 
-	class Driver : public TCPDriver {
+	class Driver : public OS::TCPDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path = NULL, const char *rsa_priv_path = NULL, SSLNetIOIFace::ESSL_Type ssl_version = SSLNetIOIFace::ESSL_None, bool proxyFlag = false);
+		Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path = NULL, const char *rsa_priv_path = NULL, OS::ESSL_Type ssl_version = OS::ESSL_None, bool proxyFlag = false);
 		~Driver();
 
 		PublicInfo GetServerInfo() { return m_server_info; };
@@ -47,8 +47,6 @@ namespace FESL {
 
 		INetPeer *CreatePeer(INetIOSocket *socket);
 	private:
-		RSA *m_encrypted_login_info_key;
-
 		PublicInfo m_server_info;
 
 		OS::StringCrypter *mp_string_crypter;

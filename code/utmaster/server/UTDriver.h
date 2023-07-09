@@ -38,11 +38,12 @@ namespace UT {
 			std::vector<UT::PackageItem> packages;
 	};
 
-	class Driver : public TCPDriver {
+	class Driver : public OS::TCPDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
 		void SetConfig(std::vector<UT::Config*> config);
 		UT::Config *FindConfigByClientName(std::string clientName);
+        std::vector<UT::Config *> GetConfig() { return m_config; }
 	protected:
 		virtual INetPeer *CreatePeer(INetIOSocket *socket);
 		std::vector<UT::Config *> m_config;

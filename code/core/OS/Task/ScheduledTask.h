@@ -1,7 +1,6 @@
 #ifndef _SCHEDULEDTASK_H
 #define _SCHEDULEDTASK_H
 #include <OS/OpenSpy.h>
-#include <OS/Redis.h>
 #include <OS/MessageQueue/MQInterface.h>
 #include <OS/Net/NetServer.h>
 #include <OS/Task.h>
@@ -13,7 +12,8 @@
 class TaskThreadData {
 	public:
 		MQ::IMQInterface *mp_mqconnection;
-		Redis::Connection *mp_redis_connection;
+		redisOptions redis_options;
+		redisContext *mp_redis_connection;
 		INetServer *server;
 		OS::CThread *mp_thread;
 		void *scheduler;
@@ -71,7 +71,6 @@ class ScheduledTask : public OS::Task<ReqClass>, public OS::LinkedList<Scheduled
 			this->mp_mutex->unlock();
 			if(!empty)
 				mp_request_callback(mp_task_scheduler, task_params,mp_thread_data);
-
 		}
 	private:
 	ThreadData mp_thread_data;

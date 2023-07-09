@@ -81,6 +81,9 @@ socktype_t SelectNetEventManager::setup_fdset() {
 void SelectNetEventManager::RegisterSocket(INetPeer *peer, bool notify_driver_only) {
 }
 void SelectNetEventManager::UnregisterSocket(INetPeer *peer) {
+    mp_mutex->lock();
+    FD_CLR(peer->GetSocket()->sd, &m_fdset);
+    mp_mutex->unlock(); //overkill?
 }
 
 #endif

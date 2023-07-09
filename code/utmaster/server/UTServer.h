@@ -16,6 +16,7 @@ namespace UT {
 		void tick();
 		void shutdown();
 		TaskScheduler<MM::UTMasterRequest, TaskThreadData> *getScheduler() { return mp_task_scheduler; };
+        void doInternalLoadGameData(redisContext *ctx); //called by async task on startup
 		private:
 			TaskScheduler<MM::UTMasterRequest, TaskThreadData> *mp_task_scheduler;
 	};

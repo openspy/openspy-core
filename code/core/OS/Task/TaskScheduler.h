@@ -1,9 +1,10 @@
 #ifndef _TASKSCHEDULER_H
 #define _TASKSCHEDULER_H
 
+#define REDIS_PING_SECS 60
+
 #include <OS/OpenSpy.h>
 #include <OS/Config/AppConfig.h>
-#include <OS/Redis.h>
 #include <OS/MessageQueue/MQInterface.h>
 #include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 #include <OS/Net/NetServer.h>
@@ -13,6 +14,7 @@
 #include <stack>
 #include <string>
 #include <map>
+#include <hiredis/hiredis.h>
 
 #include "ScheduledTask.h"
 
@@ -125,17 +127,32 @@ class TaskScheduler {
 		}
 
 		static ThreadData *DefaultThreadDataFactory(TaskScheduler<ReqClass, ThreadData> *scheduler, EThreadInitState state, ThreadData *data) {
-			struct timeval t;
-			t.tv_usec = 0;
-			t.tv_sec = 60;
 			int i = 0;
+			void *redisReply = NULL;
+			char address[64];
+			uint16_t port = 6379;
+
 			OS::LinkedListIterator<ScheduledTask<ReqClass, ThreadData*, TaskScheduler<ReqClass, ThreadData> >*, ThreadData*> iterator(scheduler->mp_tasks);
 			switch(state) {
 				case EThreadInitState_AllocThreadData:					
 					data = new ThreadData;
 					if(scheduler->mp_mqconnection != NULL)
 						data->mp_mqconnection = scheduler->mp_mqconnection->clone();
-					data->mp_redis_connection = Redis::Connect(OS::g_redisAddress, OS::g_redisUseSSL, OS::g_redisUsername, OS::g_redisPassword, t);
+					
+
+					OS::get_server_address_port(OS::g_redisAddress, address, port);
+                    gettimeofday(&scheduler->m_last_redis_ping, NULL);
+
+					data->redis_options = {0};
+					REDIS_OPTIONS_SET_TCP(&data->redis_options, address, port);
+
+					data->mp_redis_connection = redisConnectWithOptions(&data->redis_options);
+					
+					if(OS::g_redisUsername != NULL && OS::g_redisPassword != NULL) {
+						redisReply = redisCommand(data->mp_redis_connection, "AUTH %s %s", OS::g_redisUsername, OS::g_redisPassword);
+						freeReplyObject(redisReply);
+					}
+					
 					data->scheduler = (void *)scheduler;
 					data->server = scheduler->mp_server;
 					data->mp_mutex = OS::CreateMutex();
@@ -156,8 +173,8 @@ class TaskScheduler {
 				case EThreadInitState_DeallocThreadData:
 					if(scheduler->mp_mqconnection != NULL)
 						delete data->mp_mqconnection;
-					Redis::Disconnect(data->mp_redis_connection);
-					data->mp_redis_connection = NULL;
+					//Redis::Disconnect(data->mp_redis_connection);
+					//data->mp_redis_connection = NULL;
 					delete data->mp_mutex;
 					delete data;
 				break;
@@ -200,12 +217,37 @@ class TaskScheduler {
 			}
 			if (handler) {
 				data->mp_mutex->lock();
+                scheduler->redisCheckConnection(data);
 				handler(request, data);
 				data->mp_mutex->unlock();
 			}
 		}
 	protected:
+        void redisCheckConnection(ThreadData *data) {
+            struct timeval current_time;
+            gettimeofday(&current_time, NULL);
+            
+            if(current_time.tv_sec - m_last_redis_ping.tv_sec > REDIS_PING_SECS) {
+                void *redisReply = redisCommand(data->mp_redis_connection, "PING");
+                if(redisReply) {
+                    freeReplyObject(redisReply);
+                    gettimeofday(&m_last_redis_ping, NULL);
+                }
 
+            }
+            if(data->mp_redis_connection && data->mp_redis_connection->err) {
+                int err = redisReconnect(data->mp_redis_connection);
+                if(err == REDIS_OK) {
+                    if(OS::g_redisUsername != NULL && OS::g_redisPassword != NULL) {
+                        void *redisReply = redisCommand(data->mp_redis_connection, "AUTH %s %s", OS::g_redisUsername, OS::g_redisPassword);
+                        freeReplyObject(redisReply);
+                    }
+                } else {
+                    OS::LogText(OS::ELogLevel_Error, "Failed to reconnect to redis, err: %d\n", err);
+                }
+                
+            }
+        }
 		void setupTasks() {
 			if(m_tasks_setup) return;
 			m_tasks_setup = true;
@@ -250,6 +292,8 @@ class TaskScheduler {
 		bool m_tasks_setup;
 
 		OS::GameCache *mp_shared_game_cache;
+    
+        struct timeval m_last_redis_ping;
 
 };
 

@@ -15,7 +15,7 @@ namespace QR {
 			return;
 		}
         response.driver->perform_v1_key_scan(response.query_address);
-        OS::LogText(OS::ELogLevel_Info, "[%s] Server Registered", response.from_address.ToString().c_str());
+        OS::LogText(OS::ELogLevel_Info, "[%s] Server Registered - %s", response.from_address.ToString().c_str(), response.challenge.c_str());
     }
     void Driver::handle_v1_validate(OS::Address from_address, OS::KVReader reader) {
         std::string challenge = reader.GetValue("validate");

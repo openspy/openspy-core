@@ -63,8 +63,7 @@ namespace Peerchat {
 	}
 
 	bool Perform_ListUsermodes_Cached(PeerchatBackendRequest request, TaskThreadData* thread_data) {
-		Redis::Response reply;
-		Redis::Value v, arr;
+		redisReply *reply;
 
 		std::string keyname;
 
@@ -73,7 +72,8 @@ namespace Peerchat {
 		TaskResponse response;
 		response.channel_summary.channel_name = request.usermodeRecord.chanmask;
 
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+		freeReplyObject(reply);
 
 		response.is_start = true;
 		response.is_end = false;
@@ -82,33 +82,32 @@ namespace Peerchat {
 
 		//scan channel usermodes
 		do {
-			reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH USERMODE_*", cursor);
-			if (reply.values.size() < 1 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR || reply.values[0].arr_value.values.size() < 2)
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SCAN %d MATCH USERMODE_*", cursor);
+			if (reply == NULL)
 				goto end_error;
 
-			v = reply.values[0].arr_value.values[0].second;
-			arr = reply.values[0].arr_value.values[1].second;
-			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
-				if(v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					cursor = atoi(v.value._str.c_str());
-				} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.value._int;
-				}
 
-				if(arr.arr_value.values.size() <= 0) {
-					break;
-				}
-
-				for(size_t i=0;i<arr.arr_value.values.size();i++) {
-					LoadUsermodeFromCache(thread_data, arr.arr_value.values[i].second.value._str, response.usermode);
-					
-
-					if (request.callback)
-						request.callback(response, request.peer);
-
-					response.is_start = false;
-				}
+			if(thread_data->mp_redis_connection->err || reply->elements < 2) {
+				freeReplyObject(reply);
+				goto end_error;
 			}
+
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if (reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
+
+			for(size_t i=0;i<reply->element[1]->elements;i++) {
+				LoadUsermodeFromCache(thread_data, reply->element[1]->element[i]->str, response.usermode);
+				
+
+				if (request.callback)
+					request.callback(response, request.peer);
+
+				response.is_start = false;
+			}
+			freeReplyObject(reply);
 		} while(cursor != 0);
 
 		response.is_end = true;

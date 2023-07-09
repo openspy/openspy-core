@@ -17,7 +17,7 @@
 namespace SM {
 	class Peer;
 
-	class Driver : public TCPDriver {
+	class Driver : public OS::TCPDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
 	protected:

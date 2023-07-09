@@ -63,7 +63,7 @@ namespace Peerchat {
 			int modeflags;
 	};
 
-	class Driver : public TCPDriver {
+	class Driver : public OS::TCPDriver {
 	public:
 		Driver(INetServer *server, std::string server_name, const char *host, uint16_t port, bool proxyHeaders = false );
 		virtual ~Driver();

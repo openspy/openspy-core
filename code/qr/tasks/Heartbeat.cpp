@@ -10,21 +10,25 @@ namespace MM {
         std::ostringstream s;
         s << "IPINSTMAP_" << instance_key << "-" << address.ToString(true) << "-" << address.GetPort();
 
-		Redis::Response reply;
-		Redis::Value v;
+		redisReply *reply;
+		
 
         std::string server_key = "";
+        
+        std::string ipmap_str = s.str();
 
+		redisAppendCommand(thread_data->mp_redis_connection, "GET %s", ipmap_str.c_str());
+        
+		int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
+        if(r != REDIS_OK) {
+            return "";
+        }
+        
+        if(reply->type == REDIS_REPLY_STRING) {
+            server_key = reply->str;
+        }
+        freeReplyObject(reply);
 
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", s.str().c_str());
-		if (Redis::CheckError(reply)) {
-			return server_key;
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			server_key = OS::strip_quotes(v.value._str).c_str();
-		}
         if(server_key.length() != 0) {
             if(isServerDeleted(thread_data, server_key)) {
                 return "";
@@ -61,7 +65,7 @@ namespace MM {
 		*(backend_flags+1) = hex_chars[rand() % (sizeof(hex_chars)-1)];
 
         char *ip_string = (char *)&challenge[8];
-        sprintf(ip_string,"%08X%04X", htonl(from_address.GetIP()), from_address.GetPort());
+        snprintf(ip_string, sizeof(challenge) - 7,"%08X%04X", htonl(from_address.GetIP()), from_address.GetPort());
 
         return challenge;
     }
@@ -69,22 +73,35 @@ namespace MM {
         return GetNewServerKey(thread_data, request.v2_instance_key, request.server.m_address, gamename, server_id);
     }
     std::string Get_QR1_Stored_Address_ServerKey(MMPushRequest request, TaskThreadData *thread_data) {
+        std::string server_key;
+
         std::ostringstream s;
         s << "QR1MAP_" << request.from_address.ToString(true) << "-" << request.from_address.GetPort();
 
-		Redis::Response reply;
-		Redis::Value v;
+        redisReply *reply;
 
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
-		reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", s.str().c_str());
-		if (Redis::CheckError(reply)) {
-			return "";
-		}
-		v = reply.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			return OS::strip_quotes(v.value._str).c_str();
-		}
-        return "";
+		redisAppendCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_QR);
+        
+        std::string qrmap_key = s.str();
+		redisAppendCommand(thread_data->mp_redis_connection, "GET %s", qrmap_key.c_str());
+
+		int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+        if(r == REDIS_OK) {
+            freeReplyObject(reply);  
+        }
+
+		r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+
+        if(r != REDIS_OK) {
+            return "";
+        }
+
+        if(reply->type == REDIS_REPLY_STRING) {
+            server_key = reply->str;
+        }
+        freeReplyObject(reply);
+    
+        return OS::strip_quotes(server_key.c_str());
     }
     std::string GetServerKey_FromRequest(MMPushRequest request, TaskThreadData *thread_data) {
         std::string key;
@@ -113,8 +130,7 @@ namespace MM {
         return key;
     }
     bool CheckServerKey_HasRecentHeartbeat_V1(MMPushRequest request, TaskThreadData* thread_data, std::string server_key) {
-        Redis::Response reply;
-        Redis::Value v;
+        redisReply* reply;
 
         if (server_key.length() < 1) {
             return false;
@@ -122,37 +138,44 @@ namespace MM {
 
         std::string hbtime_key = server_key + "_hbblock";
         bool keyExists = false;
-        reply = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", hbtime_key.c_str());
-        if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-            //createKey = true;
+        reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET %s", hbtime_key.c_str());
+        
+        if(!reply) {
+            return false;
         }
-
-
-        v = reply.values.front();
-        if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-            if (v.value._int >= MM_QRV1_NUM_BURST_REQS)
+        if (reply->type == REDIS_REPLY_INTEGER) {
+            if (reply->integer >= MM_QRV1_NUM_BURST_REQS)
                 keyExists = true;
         }
-        else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-            if (atoi(v.value._str.c_str()) >= MM_QRV1_NUM_BURST_REQS)
+        else if (reply->type == REDIS_REPLY_STRING) {
+            if (atoi(reply->str) >= MM_QRV1_NUM_BURST_REQS)
                 keyExists = true;
         }
+        
+        freeReplyObject(reply);
 
         //add key to block future  requests
         if (!keyExists) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "INCR %s", hbtime_key.c_str());
-            Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %s %d", hbtime_key.c_str(), MM_IGNORE_TIME_SECS);
+            redisAppendCommand(thread_data->mp_redis_connection, "INCR %s", hbtime_key.c_str());
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", hbtime_key.c_str(), MM_IGNORE_TIME_SECS);
+
+            int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);  
+            }
+
+            r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);  
+            }
         }
         return keyExists; //if a key is created, that means the request can be processed (future ones will be blocked)
     }
     bool CheckServerKey_HasRecentHeartbeat(MMPushRequest request, TaskThreadData* thread_data, std::string server_key) {
-
+        redisReply* reply;
         if (request.version == 1) {
             return CheckServerKey_HasRecentHeartbeat_V1(request, thread_data, server_key);
         }
-
-        Redis::Response reply;
-        Redis::Value v;
 
         if (server_key.length() < 1) {
             return false;
@@ -160,25 +183,34 @@ namespace MM {
 
         std::string hbtime_key = server_key + "_hbblock";
         bool keyExists = false;
-        reply = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS %s", hbtime_key.c_str());
-        if (reply.values.size() == 0 || reply.values.front().type == Redis::REDIS_RESPONSE_TYPE_ERROR) {
-            //createKey = true;
+        reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXISTS %s", hbtime_key.c_str());
+       
+        if(!reply) {
+            return false;
         }
 
-        v = reply.values.front();
-        if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-            if (v.value._int != 0)
-                keyExists = true;
-        }
-        else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-            if (!atoi(v.value._str.c_str()))
+        if (reply->type == REDIS_REPLY_INTEGER) {
+            if (reply->integer != 0)
                 keyExists = true;
         }
 
+        freeReplyObject(reply);
+        
         //add key to block future  requests
         if (!keyExists) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "SET %s 1", hbtime_key.c_str());
-            Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %s %d", hbtime_key.c_str(), MM_IGNORE_TIME_SECS);
+            redisAppendCommand(thread_data->mp_redis_connection, "SET %s 1", hbtime_key.c_str());
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", hbtime_key.c_str(), MM_IGNORE_TIME_SECS);
+
+            int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);  
+            }
+
+            r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);  
+            }
+
         }
         return keyExists; //if a key is created, that means the request can be processed (future ones will be blocked)
     }
@@ -188,8 +220,6 @@ namespace MM {
         response.driver = request.driver;
         response.from_address = request.from_address;
         response.query_address = request.server.m_address;
-
-        Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 
         int statechanged = 1;
         if(request.server.m_keys.find("statechanged") != request.server.m_keys.end()) {
@@ -224,12 +254,14 @@ namespace MM {
 
             std::string gamename = request.server.m_keys["gamename"];
             OS::GameData game_info = OS::GetGameByName(gamename.c_str(), thread_data->mp_redis_connection);
+            selectQRRedisDB(thread_data);
             if(game_info.secretkey.length() == 0) {
                 //return adderror
                 response.error_message = "No such gamename";
                 request.callback(response);
                 return true;
             }
+
 
             int server_id;
             server_key = GetNewServerKey_FromRequest(request, thread_data, gamename, server_id);
@@ -289,50 +321,70 @@ namespace MM {
         return true;
     }
     void WriteLastHeartbeatTime(TaskThreadData *thread_data, std::string server_key, OS::Address address, uint32_t instance_key, OS::Address from_address) {
+        int count = 0;
         struct timeval current_time;
         gettimeofday(&current_time, NULL);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s last_heartbeat %d", server_key.c_str(), current_time.tv_sec);
+        redisAppendCommand(thread_data->mp_redis_connection, "HSET %s last_heartbeat %d", server_key.c_str(), current_time.tv_sec); count++;
 
         if(instance_key == 0 && address.GetPort() != from_address.GetPort()) { //instance key is 0, likely QR1
-            Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE QR1MAP_%s-%d %d", from_address.ToString(true).c_str(), from_address.GetPort(), MM_PUSH_EXPIRE_TIME);
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE QR1MAP_%s-%d %d", from_address.ToString(true).c_str(), from_address.GetPort(), MM_PUSH_EXPIRE_TIME); count++;
         }
         
-        Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE IPMAP_%s-%d %d", address.ToString(true).c_str(), address.GetPort(), MM_PUSH_EXPIRE_TIME);
-        Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE IPINSTMAP_%ld-%s-%d %d", instance_key, address.ToString(true).c_str(), address.GetPort(), MM_PUSH_EXPIRE_TIME);
-        Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %s %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME);
-        Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %scustkeys %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME);
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE IPMAP_%s-%d %d", address.ToString(true).c_str(), address.GetPort(), MM_PUSH_EXPIRE_TIME); count++;
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE IPINSTMAP_%ld-%s-%d %d", instance_key, address.ToString(true).c_str(), address.GetPort(), MM_PUSH_EXPIRE_TIME); count++;
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME); count++;
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %scustkeys %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME); count++;
+
+        void *reply;
+        for(int i =0;i<count;i++) {
+            int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);
+            }
+        }        
     }
     void WriteServerData(TaskThreadData *thread_data, std::string server_key, ServerInfo server, uint32_t instance_key, OS::Address from_address) {
+        int total_redis_calls = 0;
         std::string ipinput = server.m_address.ToString(true);
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "SET IPMAP_%s-%d %s", ipinput.c_str(), server.m_address.GetPort(), server_key.c_str());
+		redisAppendCommand(thread_data->mp_redis_connection, "SET IPMAP_%s-%d %s", ipinput.c_str(), server.m_address.GetPort(), server_key.c_str()); total_redis_calls++;
 
         if(instance_key == 0 && server.m_address.GetPort() != from_address.GetPort()) {
-            Redis::Command(thread_data->mp_redis_connection, 0, "SET QR1MAP_%s-%d %s", from_address.ToString(true).c_str(), from_address.GetPort(), server_key.c_str());
+            redisAppendCommand(thread_data->mp_redis_connection, "SET QR1MAP_%s-%d %s", from_address.ToString(true).c_str(), from_address.GetPort(), server_key.c_str()); total_redis_calls++;
         }
             
 
-        Redis::Command(thread_data->mp_redis_connection, 0, "SET IPINSTMAP_%ld-%s-%d %s", instance_key, ipinput.c_str(), server.m_address.GetPort(), server_key.c_str());
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s instance_key %ld", server_key.c_str(), instance_key);
+        redisAppendCommand(thread_data->mp_redis_connection, "SET IPINSTMAP_%ld-%s-%d %s", instance_key, ipinput.c_str(), server.m_address.GetPort(), server_key.c_str()); total_redis_calls++;
+        redisAppendCommand(thread_data->mp_redis_connection, "HSET %s instance_key %ld", server_key.c_str(), instance_key); total_redis_calls++;
 
-		Redis::Command(thread_data->mp_redis_connection, 0, "HINCRBY %s num_updates 1", server_key.c_str());
-
-
-        std::ostringstream s;
-        //std::string custkey_command = "HMSET " + server_key + "custkeys ";
-
-
+		redisAppendCommand(thread_data->mp_redis_connection, "HINCRBY %s num_updates 1", server_key.c_str()); total_redis_calls++;
+       
         if (!server.m_keys.empty()) {
+            std::string custkeys_key = server_key + "custkeys";
+            
+            int num_keys = 2 + (server.m_keys.size() * 2);
+            
+            const char **args = (const char **)malloc(num_keys * sizeof(const char *));
+            
             //HMSET is being deprecated, but currently the server needs it... just only involve changing HMSET to HSET (but keeping same syntax) when change is needed
-            s << "HMSET " << server_key << "custkeys";
+            args[0] = "HMSET";
+            args[1] = custkeys_key.c_str();
+            
+            int idx = 2;
+
             std::map<std::string, std::string>::iterator it = server.m_keys.begin();
             while (it != server.m_keys.end()) {
                 std::pair<std::string, std::string> p = *it;
-                s << " " << p.first.c_str() << " \"" << OS::escapeJSON(p.second).c_str() << "\"";
+                args[idx++] = strdup(p.first.c_str());
+                args[idx++] = strdup(p.second.c_str());
                 it++;
             }
-            Redis::Command(thread_data->mp_redis_connection, 0, s.str().c_str());
-            s.str("");
+            
+            redisAppendCommandArgv(thread_data->mp_redis_connection, num_keys, args, NULL); total_redis_calls++;
+            for(int i = 2;i<num_keys;i++) {
+                free((void *)args[i]);
+            }
+            free(args);
         }
 
 
@@ -389,84 +441,159 @@ namespace MM {
         std::map<std::string, std::vector<std::pair<std::string, std::string>>>::iterator transposed_keys_it = transposed_keys.begin();
         while (transposed_keys_it != transposed_keys.end()) {
             auto p = *transposed_keys_it;
-            std::ostringstream ss;
-            ss << "HMSET " << p.first;
             std::vector<std::pair<std::string, std::string>>::iterator keys_it = p.second.begin();
+            
+            if(!p.second.empty()) {
+                int num_keys = 2 + (p.second.size() * 2);
+                
+                const char **args = (const char **)malloc(num_keys * sizeof(const char *));
+                
+                args[0] = "HMSET";
+                args[1] = p.first.c_str();
+                
+                int idx = 2;
 
-            bool got_any = false;
-            while (keys_it != p.second.end()) {
-                std::pair<std::string, std::string> kv_pair = *keys_it;
-                if (!kv_pair.second.empty()) {
-                    ss << " " << kv_pair.first << " \"" << kv_pair.second << "\"";
-                    got_any = true;
+                while (keys_it != p.second.end()) {
+                    std::pair<std::string, std::string> kv_pair = *keys_it;
+                    if (!kv_pair.second.empty()) {
+                        //ss << " " << kv_pair.first << " \"" << kv_pair.second << "\"";
+                        args[idx++] = strdup(kv_pair.first.c_str());
+                        args[idx++] = strdup(kv_pair.second.c_str());
+                    }
+                    keys_it++;
                 }
-                keys_it++;
+
+                redisAppendCommandArgv(thread_data->mp_redis_connection, idx, args, NULL); total_redis_calls++;
+                for(int i = 2;i<num_keys;i++) {
+                    free((void *)args[i]);
+                }
+                redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", p.first.c_str(), MM_PUSH_EXPIRE_TIME); total_redis_calls++;
+                free(args);
             }
 
-            if (got_any) {
-                Redis::Command(thread_data->mp_redis_connection, 0, ss.str().c_str());
-                Redis::Command(thread_data->mp_redis_connection, 0, "EXPIRE %s %d", p.first.c_str(), MM_PUSH_EXPIRE_TIME);
-            }
             transposed_keys_it++;
         }
 
+        redisReply *reply;
+        for(int i =0;i<total_redis_calls;i++) {
+            int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);  
+            }
+        }
 		WriteLastHeartbeatTime(thread_data, server_key, server.m_address, instance_key, from_address);
 
     }
 	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted) {
-        Redis::Command(thread_data->mp_redis_connection, 0, "HSET %s deleted %d", server_key.c_str(), deleted);
-        Redis::Command(thread_data->mp_redis_connection, 0, "HDEL %s num_updates", server_key.c_str());
+        void *reply;
+        redisAppendCommand(thread_data->mp_redis_connection, "HSET %s deleted %d", server_key.c_str(), deleted);
+        redisAppendCommand(thread_data->mp_redis_connection, "HDEL %s num_updates", server_key.c_str());
+
+        int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
+        if(r == REDIS_OK) {
+            freeReplyObject(reply);  
+        }
+
+        r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+        if(r == REDIS_OK) {
+            freeReplyObject(reply);  
+        }
     }
 	void SetServerInitialInfo(TaskThreadData *thread_data, OS::Address driver_address, std::string server_key, OS::GameData game_info, std::string challenge_response, OS::Address address, int id, OS::Address from_address) {
+        
         std::ostringstream ss;
-        ss << "HMSET " << server_key;
-
-        ss << " driver_address \"" << driver_address.ToString() << "\"";
-        ss << " driver_hostname \"" << OS::g_hostName << "\"";
-
-        ss << " qr_port " << from_address.GetPort();
-        ss << " wan_port " << address.GetPort();
-        ss << " wan_ip \"" << address.ToString(true) << "\"";
-        ss << " gameid " << game_info.gameid;
-        ss << " id " << id;
-        ss << " challenge \"" << challenge_response << "\"";
-        Redis::Command(thread_data->mp_redis_connection, 0, ss.str().c_str());
-
-        Redis::Command(thread_data->mp_redis_connection, 0, "ZADD %s %d \"%s\"", game_info.gamename.c_str(), id, server_key.c_str());
+        
+        std::string qrport_str, wanport_str, wanip_str, gameid_str, id_str;
+        
+        ss << from_address.GetPort();
+        qrport_str = ss.str();
+        ss.str("");
+        
+        ss << address.GetPort();
+        wanport_str = ss.str();
+        ss.str("");
+        
+        ss << address.ToString(true);
+        wanip_str = ss.str();
+        ss.str("");
+        
+        ss << game_info.gameid;
+        gameid_str = ss.str();
+        ss.str("");
+        
+        ss << id;
+        id_str = ss.str();
+        ss.str("");
+        
+        std::string driver_address_str = driver_address.ToString();
+        const char *keys[] = {
+            "HMSET", server_key.c_str(),
+            "driver_address", driver_address_str.c_str(),
+            "driver_hostname", OS::g_hostName,
+            "qr_port", qrport_str.c_str(),
+            "wan_port", wanport_str.c_str(),
+            "wan_ip", wanip_str.c_str(),
+            "gameid", gameid_str.c_str(),
+            "id", id_str.c_str(),
+            "challenge", challenge_response.c_str()
+        };
+        
+        int x = sizeof(keys) / sizeof(const char *);
+        
+        redisAppendCommandArgv(thread_data->mp_redis_connection, x, keys, NULL);
+        redisAppendCommand(thread_data->mp_redis_connection, "ZADD %s %d %s", game_info.gamename.c_str(), id, server_key.c_str());
+ 
+        void *reply;
+        int r = redisGetReply(thread_data->mp_redis_connection, &reply);
+        if(r == REDIS_OK) {
+            freeReplyObject(reply);
+        }
+        
+        r = redisGetReply(thread_data->mp_redis_connection, &reply);
+        if(r == REDIS_OK) {
+            freeReplyObject(reply);
+        }
     }
     void ClearServerCustKeys(TaskThreadData *thread_data, std::string server_key) {
-		Redis::Response reply;
-
-		std::string key;
-		Redis::Value v, arr;
-
-		int cursor = 0;
-
+        int cursor = 0;
+        redisReply *reply;
+        std::string cust_keys_match = server_key + "custkeys*";
         do {
-            reply = Redis::Command(thread_data->mp_redis_connection, 0, "SCAN %d MATCH %scustkeys*", cursor, server_key.c_str());
-            if (Redis::CheckError(reply))
-                return;
+            reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SCAN %d MATCH %s", cursor, cust_keys_match.c_str());
+            if (reply == NULL || thread_data->mp_redis_connection->err) {
+                goto error_cleanup;
+            }
+			if (reply->elements < 2) {
+				goto error_cleanup;
+			}
 
-            v = reply.values[0].arr_value.values[0].second;
-            arr = reply.values[0].arr_value.values[1].second;
+		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
+		 		cursor = atoi(reply->element[0]->str);
+		 	} else if (reply->element[0]->type == REDIS_REPLY_INTEGER) {
+		 		cursor = reply->element[0]->integer;
+		 	}
 
-			if (arr.type == Redis::REDIS_RESPONSE_TYPE_ARRAY) {
+            //issue delete cmds
+			for(size_t i=0;i<reply->element[1]->elements;i += 2) {
+			 	std::string key = reply->element[1]->element[i]->str;
+			 	redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", key.c_str());
+			}
 
-				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					cursor = atoi(v.value._str.c_str());
-				}
-				else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-					cursor = v.value._int;
-				}
-				for (size_t i = 0; i < arr.arr_value.values.size(); i++) {
-					if (arr.arr_value.values[i].first != Redis::REDIS_RESPONSE_TYPE_STRING)
-						continue;
-
-					key = arr.arr_value.values[i].second.value._str;
-                    Redis::Command(thread_data->mp_redis_connection, 0, "DEL %s", key.c_str());
+            //now free resources
+            for(size_t i=0;i<reply->element[1]->elements;i += 2) {
+                void *sub_reply;
+                int r = redisGetReply(thread_data->mp_redis_connection,(void**)&sub_reply);		
+                if(r == REDIS_OK) {
+                    freeReplyObject(sub_reply);  
                 }
             }
         } while(cursor != 0);
-        
+
+        reply = NULL;
+
+		error_cleanup:
+        if(reply != NULL) {
+            freeReplyObject(reply);
+        }     
     }
 }

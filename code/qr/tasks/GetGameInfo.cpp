@@ -4,7 +4,7 @@ namespace MM {
     bool PerformGetGameInfo(MMPushRequest request, TaskThreadData  *thread_data) {
 		OS::GameData game_info;
         game_info = OS::GetGameByName(request.gamename.c_str(), thread_data->mp_redis_connection);
-
+        selectQRRedisDB(thread_data);
         MMTaskResponse response;
         response.driver = request.driver;
         response.from_address = request.from_address;

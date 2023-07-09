@@ -25,53 +25,63 @@ namespace MM {
         return true;
     }
 	int GetServerID(TaskThreadData *thread_data) {
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
+		//Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "INCR %s", mp_pk_name);
-		Redis::Value v = resp.values.front();
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			ret = v.value._int;
-		}
-		else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ret = atoi(v.value._str.c_str());
-		}
+        redisReply *resp = (redisReply *)redisCommand(thread_data->mp_redis_connection, "INCR %s", mp_pk_name);
+        if(resp) {
+            if(resp->type == REDIS_REPLY_STRING) {
+                ret = atoi(resp->str);
+            } else if(resp->type == REDIS_REPLY_INTEGER) {
+                ret = resp->integer;
+            }
+            freeReplyObject(resp);
+        }
 		return ret;
 	}
+
 	int TryFindServerID(TaskThreadData *thread_data, OS::Address address) {
 		std::string ip = address.ToString(true);
 		std::stringstream map;
 		map << "IPMAP_" << ip << "-" << address.GetPort();
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "EXISTS %s", map.str().c_str());
-		Redis::Value v = resp.values.front();
+        std::string map_str = map.str();
+        redisReply *resp = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXISTS %s", map_str.c_str());
+        
+        if(!resp) {
+            return -1;
+        }
+        
 		int ret = -1;
-		if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			ret = v.value._int;
-		}
-		else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ret = atoi(v.value._str.c_str());
-		}
+        if(resp) {
+            if (resp->type == REDIS_REPLY_INTEGER) {
+                ret = resp->integer;
+            }
+            else if (resp->type == REDIS_REPLY_STRING) {
+                ret = atoi(resp->str);
+            }
+            freeReplyObject(resp);
+        }
+        
 		if (ret == 1) {
 			ret = -1;
-			resp = Redis::Command(thread_data->mp_redis_connection, 0, "GET %s", map.str().c_str());
-			v = resp.values.front();
-			if(resp.values.size() > 0) {
-				std::string server_key; 
-				if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-					server_key = v.value._str;
-				}
+			resp = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET %s", map_str.c_str());
+            
+            std::string server_key;
+            if (resp) {
+                if(resp->type == REDIS_REPLY_STRING) {
+                    server_key = resp->str;
+                }
+                freeReplyObject(resp);
+            }
 
-				resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s id", server_key.c_str());
-				if(resp.values.size() > 0) {
-					v = resp.values.front();
-					if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-						ret = v.value._int;
-					}
-					else if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-						ret = atoi(v.value._str.c_str());
-					}
-				}
-			}
+            resp = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s id", server_key.c_str());
+            if(resp) {
+                if(resp->type == REDIS_REPLY_INTEGER) {
+                    ret = resp->integer;
+                } else if(resp->type == REDIS_REPLY_STRING) {
+                    ret = atoi(resp->str);
+                }
+                freeReplyObject(resp);
+            }
 			return ret;
 		}
 		else {
@@ -82,22 +92,30 @@ namespace MM {
 		OS::Address result;
 
 		std::string ip;
-		uint16_t port;
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s wan_ip", server_key.c_str());
-		Redis::Value v = resp.values.front();
-		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ip = v.value._str.c_str();
-		}
+        uint16_t port = 0;
 
-		resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s wan_port", server_key.c_str());
-		v = resp.values.front();
-		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			port = atoi(v.value._str.c_str());
-		} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			port = v.value._int;
-		}
+        redisReply *reply;
+        
+        redisAppendCommand(thread_data->mp_redis_connection, "HGET %s wan_ip", server_key.c_str());
+        redisAppendCommand(thread_data->mp_redis_connection, "HGET %s wan_port", server_key.c_str());
 
+        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
+        if(reply) {
+            if(reply->type == REDIS_REPLY_STRING) {
+                ip = reply->str;
+            }
+            freeReplyObject(reply);
+        }
+        
+        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
+        if(reply) {
+            if(reply->type == REDIS_REPLY_STRING) {
+                port = atoi(reply->str);
+            } else if(reply->type == REDIS_REPLY_INTEGER) {
+                port = reply->integer;
+            }
+            freeReplyObject(reply);
+        }
 
 		std::stringstream ss;
 		ss << ip << ":" << port;
@@ -107,44 +125,51 @@ namespace MM {
 	}
 	bool isServerDeleted(TaskThreadData *thread_data, std::string server_key, bool ignoreChallengeExists) {
 		std::string ip;
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = -1;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s deleted", server_key.c_str());
-		Redis::Value v = resp.values.front();
-		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ret = atoi(v.value._str.c_str());
-		} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			ret = v.value._int;
-		}
-
 		bool challenge_exists = false;
-
-		if(!ignoreChallengeExists) {
-			resp = Redis::Command(thread_data->mp_redis_connection, 0, "HEXISTS %s challenge", server_key.c_str());
-
-			
-			if (Redis::CheckError(resp) || resp.values.size() == 0) {
-				challenge_exists = true;
-			} else {
-				v = resp.values[0];
-				if ((v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER && v.value._int == 1) || (v.type == Redis::REDIS_RESPONSE_TYPE_STRING && v.value._str.compare("1") == 0)) {
-					challenge_exists = true;
-				}
-			}	
-		}
 		
+        redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s deleted", server_key.c_str());
+        if(reply) {
+            if(reply->type == REDIS_REPLY_INTEGER) {
+                ret = reply->integer;
+            } else if (reply->type == REDIS_REPLY_STRING) {
+                ret = atoi(reply->str);
+            }
+            freeReplyObject(reply);
+        }
+        
+        if(!ignoreChallengeExists) {
+            reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HEXISTS %s challenge", server_key.c_str());
+            if(reply) {
+                if(reply->type == REDIS_REPLY_INTEGER && reply->integer) {
+                    challenge_exists = true;
+                } else if(reply->type == REDIS_REPLY_STRING && atoi(reply->str)) {
+                    challenge_exists = true;
+                }
+                freeReplyObject(reply);
+            }
+        }
 		return ret == 1 && !challenge_exists;
 	}
 	int GetNumHeartbeats(TaskThreadData *thread_data, std::string server_key) {
-		Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_QR);
 		int ret = 0;
-		Redis::Response resp = Redis::Command(thread_data->mp_redis_connection, 0, "HGET %s num_updates", server_key.c_str());
-		Redis::Value v = resp.values.front();
-		 if (v.type == Redis::REDIS_RESPONSE_TYPE_STRING) {
-			ret = atoi(v.value._str.c_str());
-		} else if (v.type == Redis::REDIS_RESPONSE_TYPE_INTEGER) {
-			ret = v.value._int;
-		}
+        redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s num_updates", server_key.c_str());
+        if(reply) {
+            if(reply->type == REDIS_REPLY_INTEGER) {
+                ret = reply->integer;
+            } else if(reply->type == REDIS_REPLY_STRING) {
+                ret = atoi(reply->str);
+            }
+            freeReplyObject(reply);
+        }
 		return ret;
+	}
+
+	void selectQRRedisDB(TaskThreadData *thread_data) {
+		void *reply;
+		reply = redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_QR);
+		if(reply) {
+			freeReplyObject(reply);
+		}
 	}
 }

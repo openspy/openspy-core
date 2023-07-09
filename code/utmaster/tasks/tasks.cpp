@@ -13,6 +13,7 @@ namespace MM {
 		{UTMasterRequestType_Heartbeat, PerformHeartbeat},
 		{UTMasterRequestType_ListServers, PerformListServers},
 		{UTMasterRequestType_DeleteServer, PerformDeleteServer},
+        {UTMasterRequestType_InternalLoadGamename, PerformInternalLoadGameData},
 		{-1, NULL}
 	};
 
@@ -25,9 +26,23 @@ namespace MM {
 
         scheduler->SetThreadDataFactory(TaskScheduler<UTMasterRequest, TaskThreadData>::DefaultThreadDataFactory);
 
-		scheduler->DeclareReady();
+		scheduler->DeclareReady();        
+        
+        //trigger load initial data
+        UTMasterRequest req;
+        req.peer = NULL;
+        req.callback = NULL;
+        scheduler->AddRequest(UTMasterRequestType_InternalLoadGamename, req);
 
         return scheduler;
+    }
+
+    void selectQRRedisDB(TaskThreadData *thread_data) {
+        void *reply;
+        reply = redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_QR);
+        if(reply) {
+            freeReplyObject(reply);
+        }
     }
 
 }
