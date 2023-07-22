@@ -560,7 +560,7 @@ namespace MM {
 				server->wan_address.ip = inet_addr(basic_keys_response->element[i]->str);
 				break;
 			case 5:
-				server->icmp_address.ip = atoi(basic_keys_response->element[i]->str);
+				server->icmp_address.ip = inet_addr(basic_keys_response->element[i]->str);
 				break;
 			case 6:
 				server->allow_unsolicited_udp = atoi(basic_keys_response->element[i]->str);
