@@ -793,10 +793,6 @@ namespace SB {
 
 		} else {
 			SendListQueryResp(results, request.req, true);
-            
-            if(results.last_set) { //End of message stream, no updates requested, close connection
-                Delete();
-            }
 		}
 
 	}
