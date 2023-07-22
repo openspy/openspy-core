@@ -172,6 +172,9 @@ namespace MM {
         return keyExists; //if a key is created, that means the request can be processed (future ones will be blocked)
     }
     bool CheckServerKey_HasRecentHeartbeat(MMPushRequest request, TaskThreadData* thread_data, std::string server_key) {
+        #if 1
+        return false;
+        #else
         redisReply* reply;
         if (request.version == 1) {
             return CheckServerKey_HasRecentHeartbeat_V1(request, thread_data, server_key);
@@ -213,6 +216,7 @@ namespace MM {
 
         }
         return keyExists; //if a key is created, that means the request can be processed (future ones will be blocked)
+        #endif
     }
     bool PerformHeartbeat(MMPushRequest request, TaskThreadData *thread_data) {
         MMTaskResponse response;
