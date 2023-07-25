@@ -619,7 +619,7 @@ namespace SB {
 						/*
 							This optimziation works on HAS_KEY_FLAG only
 						*/
-						if(type == KEYTYPE_STRING && m_last_list_req.push_updates == false)
+						if(type == KEYTYPE_STRING && push == false)
 							buffer->WriteByte(0xFF); //string index, -1 = no index
 						if (value.length() > 0) {
 
@@ -771,36 +771,15 @@ namespace SB {
 
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
-		if(request.req.push_updates == true) {
-			if(results.first_set) {
-				MM::ServerListQuery empty_results = results;
-				empty_results.list = std::vector<MM::Server *>();
-				empty_results.last_set = true;
-				SendListQueryResp(empty_results, request.req);
-			}
-
-			if (!m_sent_push_keys) {
-				m_sent_push_keys = true;
-				SendPushKeys();
-			}
-
-			std::vector<MM::Server*>::iterator it = results.list.begin();
-			while (it != results.list.end()) {
-				MM::Server* server = *it;
-				sendServerData(server, true, true, NULL, false, NULL, false, false);
-				it++;
-			}
-
-		} else {
-			SendListQueryResp(results, request.req, true);
-		}
+        SendListQueryResp(results, request.req, true);
+        if (!m_sent_push_keys && results.last_set) {
+            m_sent_push_keys = true;
+            SendPushKeys();
+        }
 
 	}
 	void V2Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		SendListQueryResp(results, request.req);
-        if(results.last_set) { //End of message stream, close connection
-            Delete();
-        }
 	}
 	void V2Peer::OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		if (results.list.size() == 0) return;
@@ -810,4 +789,3 @@ namespace SB {
 		}
 	}
 }
-
