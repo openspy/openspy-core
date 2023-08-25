@@ -199,7 +199,9 @@ namespace MM {
         int cmd_count = 0;
         while(del_it != keys_to_delete.end()) {
             std::string key = *del_it;
-            redisAppendCommand(thread_data->mp_redis_connection, "ZREM %s %s", request.peer->GetGameData().gamename.c_str(), key.c_str());
+            std::string gamename =  request.peer->GetGameData().gamename; //incase of reference issue
+            const char *args[] = {"ZREM" , gamename.c_str(), key.c_str()};
+            redisAppendCommandArgv(thread_data->mp_redis_connection, 3, args, NULL);
             cmd_count++;
             del_it++;
         }
