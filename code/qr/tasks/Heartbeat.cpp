@@ -330,14 +330,28 @@ namespace MM {
         gettimeofday(&current_time, NULL);
         redisAppendCommand(thread_data->mp_redis_connection, "HSET %s last_heartbeat %d", server_key.c_str(), current_time.tv_sec); count++;
 
+        std::ostringstream s;
+
         if(instance_key == 0 && address.GetPort() != from_address.GetPort()) { //instance key is 0, likely QR1
-            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE QR1MAP_%s-%d %d", from_address.ToString(true).c_str(), from_address.GetPort(), MM_PUSH_EXPIRE_TIME); count++;
+            s << "QR1MAP_" << from_address.ToString(true) << "-" << from_address.GetPort();
+            std::string qr1map_key = s.str();
+            s.str("");
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", qr1map_key.c_str(), MM_PUSH_EXPIRE_TIME); count++;
         }
+        std::string server_key_custkeys = server_key + "custkeys";
         
-        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE IPMAP_%s-%d %d", address.ToString(true).c_str(), address.GetPort(), MM_PUSH_EXPIRE_TIME); count++;
-        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE IPINSTMAP_%ld-%s-%d %d", instance_key, address.ToString(true).c_str(), address.GetPort(), MM_PUSH_EXPIRE_TIME); count++;
+        
+        s << "IPINSTMAP_" << instance_key << "-" << address.ToString(true) << "-" << address.GetPort();
+        std::string ipinstmap_str = s.str();
+        s.str("");
+
+        s << "IPMAP_" << address.ToString(true) << "-" << address.GetPort();
+        std::string ipmap_str = s.str();
+
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", ipmap_str.c_str(), MM_PUSH_EXPIRE_TIME); count++;
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", ipinstmap_str.c_str(), MM_PUSH_EXPIRE_TIME); count++;
         redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME); count++;
-        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %scustkeys %d", server_key.c_str(), MM_PUSH_EXPIRE_TIME); count++;
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", server_key_custkeys.c_str(), MM_PUSH_EXPIRE_TIME); count++;
 
         void *reply;
         for(int i =0;i<count;i++) {
@@ -351,14 +365,26 @@ namespace MM {
         int total_redis_calls = 0;
         std::string ipinput = server.m_address.ToString(true);
 
-		redisAppendCommand(thread_data->mp_redis_connection, "SET IPMAP_%s-%d %s", ipinput.c_str(), server.m_address.GetPort(), server_key.c_str()); total_redis_calls++;
+        std::ostringstream s;
+        s << "IPINSTMAP_" << instance_key << "-" << server.m_address.ToString(true) << "-" << server.m_address.GetPort();
+        std::string ipinstmap_str = s.str();
+        s.str("");
+
+        s << "IPMAP_" << server.m_address.ToString(true) << "-" << server.m_address.GetPort();
+        std::string ipmap_str = s.str();
+        s.str("");
+
+		redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", ipmap_str.c_str(), server_key.c_str()); total_redis_calls++;
 
         if(instance_key == 0 && server.m_address.GetPort() != from_address.GetPort()) {
-            redisAppendCommand(thread_data->mp_redis_connection, "SET QR1MAP_%s-%d %s", from_address.ToString(true).c_str(), from_address.GetPort(), server_key.c_str()); total_redis_calls++;
+            s << "QR1MAP_" << from_address.ToString(true) << "-" << from_address.GetPort();
+            std::string qr1map_key = s.str();
+            s.str("");
+            redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", qr1map_key.c_str(), server_key.c_str()); total_redis_calls++;
         }
             
 
-        redisAppendCommand(thread_data->mp_redis_connection, "SET IPINSTMAP_%ld-%s-%d %s", instance_key, ipinput.c_str(), server.m_address.GetPort(), server_key.c_str()); total_redis_calls++;
+        redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", ipinstmap_str.c_str(), server_key.c_str()); total_redis_calls++;
         redisAppendCommand(thread_data->mp_redis_connection, "HSET %s instance_key %ld", server_key.c_str(), instance_key); total_redis_calls++;
 
 		redisAppendCommand(thread_data->mp_redis_connection, "HINCRBY %s num_updates 1", server_key.c_str()); total_redis_calls++;
