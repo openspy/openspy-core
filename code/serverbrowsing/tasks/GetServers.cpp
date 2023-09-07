@@ -133,6 +133,9 @@ namespace MM {
 
 		std::vector<CToken> token_list;
 
+		redisReply *reply = (redisReply *) redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_QR);
+		freeReplyObject(reply);
+
 		BuildServerListRequestData(req, basic_lookup_keys, lookup_keys, token_list, 0);
 
 		std::ostringstream cmds;

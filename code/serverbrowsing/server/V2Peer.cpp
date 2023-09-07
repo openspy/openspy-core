@@ -459,7 +459,7 @@ namespace SB {
 		AddRequest(req);
 	}
 	void V2Peer::send_ping() {
-		if (!m_last_list_req.push_updates || m_in_message) return;
+		if (m_in_message) return;
 		//check for timeout
 		struct timeval current_time;
 
