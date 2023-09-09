@@ -478,16 +478,11 @@ namespace SB {
 	void V2Peer::think(bool waiting_packet) {
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
-		if (waiting_packet) {
-			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
-			
-			int len = io_resp.comm_len;
-
-			if (len <= 0) {
-				goto end;
-			}
-
+		OS::Buffer recv_buffer;
+		io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
+		
+		int len = io_resp.comm_len;
+		if (len > 0) {	
 			if(m_next_packet_send_msg) {
 				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", getAddress().ToString().c_str(), len);
 				MM::MMQueryRequest req;
@@ -500,10 +495,9 @@ namespace SB {
 				m_next_packet_send_msg = false;
 			} else {
 				this->handle_packet(recv_buffer);
-			}
-		}
-
-		end:
+			}		
+        }
+        
 		send_ping();
 
 		//check for timeout
