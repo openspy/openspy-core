@@ -42,18 +42,6 @@
 				driver->think(true);
 			}
 		}
-
-
-		//force TCP accept, incase of high connection load, will not block due to non-blocking sockets
-		if(nr_events == 0) {
-			std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
-			while(it != m_net_drivers.end()) {
-				INetDriver *driver = *it;
-				driver->think(true);
-				it++;
-			}
-		}
-		flushSendQueue();
 	}
 	void EPollNetEventManager::RegisterSocket(INetPeer *peer, bool notify_driver_only) {
 		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {

@@ -43,8 +43,6 @@ void SelectNetEventManager::run() {
 		it++;
 	}
 
-	flushSendQueue();
-
 	mp_mutex->unlock();
 }
 socktype_t SelectNetEventManager::setup_fdset() {

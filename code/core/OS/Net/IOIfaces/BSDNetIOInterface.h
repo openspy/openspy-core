@@ -159,17 +159,6 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 					ret.error_flag = true;
 				}
 			}
-			if (ret.comm_len != (int)buffer.bytesWritten()) {
-				switch (errno) {
-				case EAGAIN:
-				#if EWOULDBLOCK != EAGAIN
-				case EWOULDBLOCK:
-				#endif
-					//queue data for resend
-					m_stream_send_queue[socket].push_back(buffer);
-					break;
-				}
-			}
 			return ret;
 		}
 
@@ -246,78 +235,14 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 			NetIOCommResp ret;
 			const sockaddr_in addr = (const sockaddr_in)socket->address.GetInAddr();
 			ret.comm_len = sendto(socket->sd, (const char *)buffer.GetHead(), (int)buffer.bytesWritten(), MSG_NOSIGNAL, (const sockaddr *)&addr, sizeof(sockaddr));
-			if (ret.comm_len != (int)buffer.bytesWritten()) {
-				switch (errno) {
-				case EAGAIN:
-				#if EWOULDBLOCK != EAGAIN
-				case EWOULDBLOCK:
-				#endif
-					//queue data for resend
-					m_datagram_send_queue[socket].push_back(buffer);
-					break;
-				}
-			}
 			return ret;
 		}
 		void closeSocket(INetIOSocket *socket) {
 			if (!socket->shared_socket)
 				close(socket->sd);
-			flushSocketFromSendQueue(socket);
 			delete socket;
 		}
 
-		void flushSendQueue() {
-			std::vector<OS::Buffer>::iterator it2;
-			std::map<INetIOSocket *, std::vector<OS::Buffer> > map_cpy = m_datagram_send_queue;
-			m_datagram_send_queue.clear();
-
-			//send UDP pending packets
-			std::map<INetIOSocket *, std::vector<OS::Buffer> >::iterator it = map_cpy.begin();
-			while (it != map_cpy.end()) {
-				std::vector<OS::Buffer> send_list = (*it).second;
-				it2 = send_list.begin();
-				while (it2 != send_list.end()) {
-					this->datagramSend((*it).first, *it2);
-					it2++;
-				}
-				it++;
-			}
-
-			//send TCP pending packets
-			map_cpy = m_stream_send_queue;
-			it = map_cpy.begin();
-			while (it != map_cpy.end()) {
-				std::vector<OS::Buffer> send_list = (*it).second;
-				it2 = send_list.begin();
-				while (it2 != send_list.end()) {
-					this->streamSend((*it).first, *it2);
-					it2++;
-				}
-				it++;
-			}
-		}
-
-		void flushSocketFromSendQueue(INetIOSocket *socket) {
-			std::map<INetIOSocket *, std::vector<OS::Buffer> >::iterator it = m_datagram_send_queue.begin();
-			while (it != m_datagram_send_queue.end()) {
-				if ((*it).first == socket) {
-					m_datagram_send_queue.erase(it);
-					it = m_datagram_send_queue.begin();
-					continue;
-				}
-				it++;
-			}
-
-			it = m_stream_send_queue.begin();
-			while (it != m_stream_send_queue.end()) {
-				if ((*it).first == socket) {
-					m_stream_send_queue.erase(it);
-					it = m_stream_send_queue.begin();
-					continue;
-				}
-				it++;
-			}
-		}
 		void makeNonBlocking(socktype_t sd) {
 			unsigned long mode = 1;
 			#ifdef _WIN32
@@ -339,8 +264,6 @@ class BSDNetIOInterface : public INetIOInterface<S> {
 		}
 		//
 	protected:
-		std::map<INetIOSocket *, std::vector<OS::Buffer> > m_datagram_send_queue;
-		std::map<INetIOSocket *, std::vector<OS::Buffer> > m_stream_send_queue;
 };
 
 #endif //_BSDNETIOINTERFACE_H

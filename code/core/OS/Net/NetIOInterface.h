@@ -80,8 +80,6 @@ class INetIOInterface {
 		virtual NetIOCommResp datagramSend(INetIOSocket *socket, OS::Buffer &buffer) = 0;
 
 		virtual void closeSocket(INetIOSocket *socket) = 0;
-		virtual void flushSendQueue() = 0;
-		virtual void flushSocketFromSendQueue(INetIOSocket *socket) = 0;
 
 		virtual S *createSocket() = 0;
 

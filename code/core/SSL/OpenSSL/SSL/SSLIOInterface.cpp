@@ -111,7 +111,6 @@ namespace SSLNetIOIFace {
             int c = SSL_write(ssl_socket->mp_ssl, buffer.GetHead(), buffer.bytesWritten());
 			int e = SSL_get_error(ssl_socket->mp_ssl, c);
 			if (e == SSL_ERROR_WANT_WRITE) {
-				m_stream_send_queue[socket].push_back(buffer);
 				return resp;
 			}
             if(c <= 0) {
