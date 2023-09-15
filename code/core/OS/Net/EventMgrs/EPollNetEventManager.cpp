@@ -60,7 +60,7 @@
 			EPollDataInfo *data_info = new EPollDataInfo();
 
 			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+			ev.events = EPOLLIN | EPOLLOUT;
 			ev.data.ptr = data_info;
 
 			data_info->ptr = peer;
@@ -75,7 +75,7 @@
 	bool EPollNetEventManager::LLIterator_UnregisterSocket(EPollDataInfo* data_info, UnregisterSocketIteratorState* state) {
 		if(data_info->is_peer && data_info->ptr == state->unregisterTarget) {
 			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+			ev.events = EPOLLIN | EPOLLOUT;
 			ev.data.ptr = state->unregisterTarget;
 			epoll_ctl(state->event_manager->m_epollfd, EPOLL_CTL_DEL, state->unregisterTarget->GetSocket()->sd, &ev);
 			
@@ -115,7 +115,7 @@
 			mp_data_info_head->AddToList(data_info);			
 
 			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+			ev.events = EPOLLIN | EPOLLOUT;
 			ev.data.ptr = data_info;
 
 			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, driver->getListenerSocket()->sd, &ev);
