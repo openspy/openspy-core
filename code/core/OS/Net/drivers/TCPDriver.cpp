@@ -85,6 +85,9 @@ namespace OS {
     }
     void TCPDriver::OnPeerMessage(INetPeer *peer) {
         OS::Address source_address, proxy_server_address;
+        if(!peer->GetSocket()) {
+            return;
+        }
         bool success = getNetIOInterface()->ReadProxyAddress(peer->GetSocket(), source_address, proxy_server_address);
 
         if(success) {

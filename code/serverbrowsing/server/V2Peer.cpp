@@ -13,7 +13,7 @@
 #define QR2_USE_QUERY_CHALLENGE 128
 
 namespace SB {
-	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : Peer(driver, sd, 2) {
+	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : SB::Peer(driver, sd, 2) {
 		m_next_packet_send_msg = false;
 		m_sent_crypt_header = false;
 		m_sent_push_keys = false;

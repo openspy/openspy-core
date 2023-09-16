@@ -70,7 +70,6 @@ namespace SB {
 	}
 
 	void Peer::Delete(bool timeout) {
-        CloseSocket();
 		m_timeout_flag = timeout;
 		m_delete_flag = true;
 	}

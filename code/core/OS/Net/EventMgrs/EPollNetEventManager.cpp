@@ -5,7 +5,7 @@
 	#include <OS/Net/NetServer.h>
 	#include <OS/Net/NetPeer.h>
 	#include <algorithm>
-
+	#define EPOLL_FLAGS EPOLLIN
 	EPollNetEventManager::EPollNetEventManager() : INetEventManager(), BSDNetIOInterface() {
 		m_epollfd = epoll_create(MAX_EPOLL_EVENTS);
 		m_added_drivers = false;
@@ -34,7 +34,7 @@
 				if(data->is_peer_notify_driver) {
 					driver = peer->GetDriver();
 					driver->OnPeerMessage(peer);
-				} else {
+				} else if(!peer->ShouldDelete()) {
 					peer->think(true);
 				}
 			} else {
@@ -48,7 +48,7 @@
 			EPollDataInfo *data_info = new EPollDataInfo();
 
 			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLOUT;
+			ev.events = EPOLL_FLAGS;
 			ev.data.ptr = data_info;
 
 			data_info->ptr = peer;
@@ -56,14 +56,13 @@
 			data_info->is_peer_notify_driver = notify_driver_only;
 
 			mp_data_info_head->AddToList(data_info);
-
 			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, peer->GetSocket()->sd, &ev);
 		}
 	}
 	bool EPollNetEventManager::LLIterator_UnregisterSocket(EPollDataInfo* data_info, UnregisterSocketIteratorState* state) {
 		if(data_info->is_peer && data_info->ptr == state->unregisterTarget) {
 			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLOUT;
+			ev.events = EPOLL_FLAGS;
 			ev.data.ptr = state->unregisterTarget;
 			epoll_ctl(state->event_manager->m_epollfd, EPOLL_CTL_DEL, state->unregisterTarget->GetSocket()->sd, &ev);
 			
@@ -103,9 +102,8 @@
 			mp_data_info_head->AddToList(data_info);			
 
 			struct epoll_event ev;
-			ev.events = EPOLLIN | EPOLLOUT;
+			ev.events = EPOLL_FLAGS;
 			ev.data.ptr = data_info;
-
 			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, driver->getListenerSocket()->sd, &ev);
 			it++;
 		}
