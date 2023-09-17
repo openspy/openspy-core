@@ -32,6 +32,13 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		OS::Address getAddress() { return m_address; };
 
 		virtual void Delete(bool timeout = false) = 0;
+
+		void CloseSocket() {
+            if(!m_socket_deleted) {
+                m_socket_deleted = true;
+                GetDriver()->getNetIOInterface()->closeSocket(m_sd);
+            }
+		}
 	protected:
 		INetIOSocket *m_sd;
 		INetDriver *mp_driver;
@@ -41,14 +48,5 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		bool m_socket_deleted;
 		bool m_delete_flag;
 		bool m_timeout_flag;
-
-		void CloseSocket() {
-            if(!m_socket_deleted) {
-                m_socket_deleted = true;
-                GetDriver()->getNetIOInterface()->closeSocket(m_sd);
-            }
-		}
-	private:
-
 	};
 #endif

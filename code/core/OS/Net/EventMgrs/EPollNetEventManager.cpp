@@ -5,89 +5,55 @@
 	#include <OS/Net/NetServer.h>
 	#include <OS/Net/NetPeer.h>
 	#include <algorithm>
-	#define EPOLL_FLAGS EPOLLIN
 	EPollNetEventManager::EPollNetEventManager() : INetEventManager(), BSDNetIOInterface() {
-		m_epollfd = epoll_create(MAX_EPOLL_EVENTS);
+		m_epoll_peers_fd = epoll_create(MAX_EPOLL_EVENTS);
+		m_epoll_drivers_fd = epoll_create(MAX_EPOLL_EVENTS);
 		m_added_drivers = false;
-		mp_data_info_head = new OS::LinkedListHead<EPollDataInfo *>();
 	}
 	EPollNetEventManager::~EPollNetEventManager() {
-		UnregisterSocketIteratorState state;
-		state.event_manager = this;
-		state.unregisterTarget = NULL;
-
-		OS::LinkedListIterator<EPollDataInfo*, UnregisterSocketIteratorState*> iterator(mp_data_info_head);
-		iterator.Iterate(LLIterator_DeleteAll, &state);
-		delete mp_data_info_head;
-		close(m_epollfd);
+		close(m_epoll_peers_fd);
+		close(m_epoll_drivers_fd);
 	}
 	void EPollNetEventManager::run() {
 		INetDriver *driver = NULL;
 		if(!m_added_drivers) {
 			setupDrivers();
 		}
-		int nr_events = epoll_wait (m_epollfd, (epoll_event *)&m_events, MAX_EPOLL_EVENTS, EPOLL_TIMEOUT);
+
+		struct epoll_event events[MAX_EPOLL_EVENTS];
+
+		int nr_events = epoll_wait(m_epoll_drivers_fd, (epoll_event *)&events, MAX_EPOLL_EVENTS, 15);
 		for(int i=0;i<nr_events;i++) {
-			EPollDataInfo *data = (EPollDataInfo *)m_events[i].data.ptr;
-			if(data->is_peer) {
-				INetPeer *peer = (INetPeer *)data->ptr;
-				if(data->is_peer_notify_driver) {
-					driver = peer->GetDriver();
-					driver->OnPeerMessage(peer);
-				} else if(!peer->ShouldDelete()) {
-					peer->think(true);
-				}
-			} else {
-				driver = (INetDriver *)data->ptr;
-				driver->think(true);
+			INetDriver *driver = (INetDriver *)events[i].data.ptr;
+			if(driver == NULL) {
+				continue;
 			}
+			driver->think(true);
+		}
+
+		nr_events = epoll_wait(m_epoll_peers_fd, (epoll_event *)&events, MAX_EPOLL_EVENTS, 15);
+		for(int i=0;i<nr_events;i++) {
+			INetPeer *peer = (INetPeer *)events[i].data.ptr;
+			if(peer == NULL) {
+				continue;
+			}
+			peer->think(true);
 		}
 	}
 	void EPollNetEventManager::RegisterSocket(INetPeer *peer, bool notify_driver_only) {
 		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {
-			EPollDataInfo *data_info = new EPollDataInfo();
-
 			struct epoll_event ev;
-			ev.events = EPOLL_FLAGS;
-			ev.data.ptr = data_info;
-
-			data_info->ptr = peer;
-			data_info->is_peer = true;
-			data_info->is_peer_notify_driver = notify_driver_only;
-
-			mp_data_info_head->AddToList(data_info);
-			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, peer->GetSocket()->sd, &ev);
+			ev.events = EPOLLIN;
+			ev.data.ptr = peer;
+			if(notify_driver_only) {
+				//XXX: unhandled! needed for proxy headers
+				OS::LogText(OS::ELogLevel_Info, "Warning: unhandled epoll driver notify");
+			}
+			epoll_ctl(m_epoll_peers_fd, EPOLL_CTL_ADD, peer->GetSocket()->sd, &ev);
 		}
-	}
-	bool EPollNetEventManager::LLIterator_UnregisterSocket(EPollDataInfo* data_info, UnregisterSocketIteratorState* state) {
-		if(data_info->is_peer && data_info->ptr == state->unregisterTarget) {
-			struct epoll_event ev;
-			ev.events = EPOLL_FLAGS;
-			ev.data.ptr = state->unregisterTarget;
-			epoll_ctl(state->event_manager->m_epollfd, EPOLL_CTL_DEL, state->unregisterTarget->GetSocket()->sd, &ev);
-			
-			
-			state->event_manager->mp_data_info_head->RemoveFromList(data_info);
-			delete data_info;
-			return false;
-		}
-		return true;
 	}
 	void EPollNetEventManager::UnregisterSocket(INetPeer *peer) {
-		if(peer->GetDriver()->getListenerSocket() != peer->GetSocket()) {
-
-			UnregisterSocketIteratorState state;
-			state.event_manager = this;
-			state.unregisterTarget = peer;
-
-			OS::LinkedListIterator<EPollDataInfo*, UnregisterSocketIteratorState*> iterator(mp_data_info_head);
-    		iterator.Iterate(LLIterator_UnregisterSocket, &state);
-		}
-	}
-	bool EPollNetEventManager::LLIterator_DeleteAll(EPollDataInfo* data_info, UnregisterSocketIteratorState* state) {
-		state->event_manager->mp_data_info_head->RemoveFromList(data_info);
-		delete data_info;
-		return true;
+		epoll_ctl(m_epoll_peers_fd, EPOLL_CTL_DEL, peer->GetSocket()->sd, NULL);
 	}
 
 	void EPollNetEventManager::setupDrivers() {
@@ -95,16 +61,10 @@
 		while(it != m_net_drivers.end()) {
 			INetDriver *driver = *it;
 
-			EPollDataInfo *data_info = new EPollDataInfo();
-			data_info->ptr = driver;
-			data_info->is_peer = false;
-
-			mp_data_info_head->AddToList(data_info);			
-
 			struct epoll_event ev;
-			ev.events = EPOLL_FLAGS;
-			ev.data.ptr = data_info;
-			epoll_ctl(m_epollfd, EPOLL_CTL_ADD, driver->getListenerSocket()->sd, &ev);
+			ev.events = EPOLLIN;
+			ev.data.ptr = driver;
+			epoll_ctl(m_epoll_drivers_fd, EPOLL_CTL_ADD, driver->getListenerSocket()->sd, &ev);
 			it++;
 		}
 		m_added_drivers = true;
