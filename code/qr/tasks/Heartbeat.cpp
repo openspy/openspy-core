@@ -286,7 +286,7 @@ namespace MM {
             }
             WriteServerData(thread_data, server_key, request.server, request.v2_instance_key, request.from_address);
             SetServerDeleted(thread_data, server_key, 1);
-            SetServerInitialInfo(thread_data, request.driver->getListenerSocket()->address, server_key, game_info, challenge_resp, request.server.m_address, server_id, request.from_address);
+            SetServerInitialInfo(thread_data, request.driver->GetAddress(), server_key, game_info, challenge_resp, request.server.m_address, server_id, request.from_address);
 
             response.challenge = challenge_string;
             request.callback(response);
@@ -296,7 +296,9 @@ namespace MM {
 
                 std::ostringstream s;
                 s << "\\del\\" << server_key.c_str();
-                thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+                
+                std::string msg = s.str();
+                sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str());
 
                 request.callback(response);
                 return true;
@@ -316,7 +318,8 @@ namespace MM {
             
 
             if(!(server_key.length() > 7 && server_key.substr(0, 7).compare("thugpro") == 0)) { //temporarily supress thugpro updates
-                thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+                std::string msg = s.str();
+                sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str());
             }
             
             

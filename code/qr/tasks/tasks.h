@@ -9,6 +9,8 @@
 
 #include <OS/SharedTasks/WebError.h>
 
+#include <uv.h>
+
 #define NN_REDIS_EXPIRE_TIME 500
 namespace QR {
     class Server;
@@ -74,6 +76,23 @@ namespace MM {
 
 		MMTaskResponseCallback callback;
 	};
+
+	class MMWorkData {
+		public:
+			MMWorkData() : request(), response() {
+
+			}
+			MMPushRequest request;
+			MMTaskResponse response;
+
+	};
+
+	void InitTasks();
+
+	void PerformUVWorkRequest(uv_work_t *req);
+	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
+
+	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody);
     
     bool PerformGetGameInfo(MMPushRequest request, TaskThreadData *thread_data);
 	bool PerformKeepalive(MMPushRequest request, TaskThreadData *thread_data);
@@ -84,7 +103,7 @@ namespace MM {
     //server update functions
     bool PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request, TaskThreadData *thread_data);
 
-    bool Handle_QRMessage(TaskThreadData *thread_data, std::string message);
+    bool Handle_QRMessage(std::string message);
 
     TaskScheduler<MMPushRequest, TaskThreadData> *InitTasks(INetServer *server);
 

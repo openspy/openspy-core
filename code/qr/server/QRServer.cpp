@@ -3,9 +3,14 @@
 #include <iterator>
 
 #include <tasks/tasks.h>
+
+#include <uv.h>
+
 namespace QR {
 
 	Server::Server() : INetServer() {
+		uv_loop_set_data(uv_default_loop(), this);
+		//MM::InitTasks();
 	}
 
 	Server::~Server() {
@@ -15,19 +20,10 @@ namespace QR {
 			delete driver;
 			it++;
 		}
-		delete mp_task_scheduler;
 	}
 	void Server::init() {
-		mp_task_scheduler = MM::InitTasks(this);
 	}
 	void Server::tick() {
-		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
-		while (it != m_net_drivers.end()) {
-			INetDriver *driver = *it;
-			driver->think(false);
-			it++;
-		}
-		NetworkTick();
 	}
 	void Server::shutdown() {
 

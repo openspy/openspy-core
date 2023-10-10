@@ -54,7 +54,9 @@ namespace MM {
             if(request.version != 1) { //version 1 new event is only after collection of first heartbeat
                 std::ostringstream s;
                 s << "\\new\\" << server_key.c_str();
-                thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+                
+                std::string msg = s.str();
+                sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str());
             }
             
         }

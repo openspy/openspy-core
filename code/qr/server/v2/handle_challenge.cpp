@@ -25,7 +25,6 @@ namespace QR {
     void Driver::handle_v2_challenge(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
         std::string challenge = buffer.ReadNTS();
 
-		TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
 		MM::MMPushRequest req;
 
 		req.gamename = challenge;
@@ -36,6 +35,6 @@ namespace QR {
         req.version = 2;
 
 		req.type = MM::EMMPushRequestType_ValidateServer;
-		scheduler->AddRequest(req.type, req);
+		AddRequest(req);
     }
 }

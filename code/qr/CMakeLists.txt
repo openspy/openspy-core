@@ -35,5 +35,5 @@ add_executable (qr ${ALL_SRCS} ${MAIN_SRCS} ${MAIN_HDRS})
 IF(WIN32)	
 	target_link_libraries(qr ws2_32.lib openspy.lib)
 ELSE() #unix
-	target_link_libraries(qr pthread openspy)
+	target_link_libraries(qr pthread openspy libuv::uv)
 ENDIF()

@@ -10,6 +10,8 @@ enable_testing()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+find_package(libuv REQUIRED)
+
 include_directories("core")
 
 
@@ -24,13 +26,13 @@ if(UNIX)
 endif()
 
 add_subdirectory(core)
-add_subdirectory(utmaster)
-add_subdirectory(GP)
-add_subdirectory(gamestats)
-add_subdirectory(search)
-add_subdirectory(FESL)
+#add_subdirectory(utmaster)
+#add_subdirectory(GP)
+#add_subdirectory(gamestats)
+#add_subdirectory(search)
+#add_subdirectory(FESL)
 add_subdirectory(serverbrowsing)
 add_subdirectory(qr)
-add_subdirectory(natneg)
-add_subdirectory(peerchat)
-add_subdirectory(cdkey)
+#add_subdirectory(natneg)
+#add_subdirectory(peerchat)
+#add_subdirectory(cdkey)

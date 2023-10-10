@@ -14,6 +14,8 @@
 
 #include <OS/Config/AppConfig.h>
 
+#include <uv.h>
+
 namespace OS {
 	Logger *g_logger = NULL;
 	AppConfig *g_config = NULL;
@@ -57,26 +59,37 @@ namespace OS {
 		curl_share_setopt(g_curlShare, CURLSHOPT_UNLOCKFUNC, curlUnlockCallback);
 		curl_share_setopt(g_curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
 
-		std::string hostname, redis_address, webservices_url, apikey, redis_username, redis_password;
-		OS::g_config->GetVariableString(appName, "redis-address", redis_address);
-		OS::g_config->GetVariableString(appName, "redis-username", redis_username);
-		OS::g_config->GetVariableString(appName, "redis-password", redis_password);
-
-		OS::g_config->GetVariableInt(appName, "num-async-tasks", g_numAsync);
-		OS::g_config->GetVariableString(appName, "hostname", hostname);
-		OS::g_config->GetVariableString(appName, "webservices-url", webservices_url);
-		OS::g_config->GetVariableString(appName, "webservices-apikey", apikey);
-
 		g_appName = appName;
-		g_hostName = strdup(hostname.c_str());
-		g_webServicesURL = strdup(webservices_url.c_str());
-		g_webServicesAPIKey = strdup(apikey.c_str());
-		g_redisAddress = strdup(redis_address.c_str());
 
-		if(redis_username.length() > 0)
-			g_redisUsername = strdup(redis_username.c_str());
-		if(redis_password.length() > 0)
-			g_redisPassword = strdup(redis_password.c_str());
+		char temp_env_buffer[256];
+		size_t temp_env_sz = sizeof(temp_env_buffer);
+
+		uv_os_getenv("OPENSPY_HOSTNAME", (char *)&temp_env_buffer, &temp_env_sz);
+		g_hostName = strdup(temp_env_buffer);
+
+		temp_env_sz = sizeof(temp_env_buffer);
+		uv_os_getenv("OPENSPY_WEBSERVICES_URL", (char *)&temp_env_buffer, &temp_env_sz);
+		g_webServicesURL = strdup(temp_env_buffer);
+
+		temp_env_sz = sizeof(temp_env_buffer);
+		uv_os_getenv("OPENSPY_API_KEY", (char *)&temp_env_buffer, &temp_env_sz);
+		g_webServicesAPIKey = strdup(temp_env_buffer);
+
+		temp_env_sz = sizeof(temp_env_buffer);
+		uv_os_getenv("OPENSPY_REDIS_URL", (char *)&temp_env_buffer, &temp_env_sz);
+		g_redisAddress = strdup(temp_env_buffer);
+
+		if(strlen(g_redisAddress) > 0) {
+			temp_env_sz = sizeof(temp_env_buffer);
+			uv_os_getenv("OPENSPY_REDIS_USER", (char *)&temp_env_buffer, &temp_env_sz);
+			g_redisUsername = strdup(temp_env_buffer);
+		}
+			
+		if(strlen(g_redisAddress) > 0) {
+			temp_env_sz = sizeof(temp_env_buffer);
+			uv_os_getenv("OPENSPY_REDIS_PASSWORD", (char *)&temp_env_buffer, &temp_env_sz);
+			g_redisPassword = strdup(temp_env_buffer);
+		}
 
 		#ifndef _WIN32
 			g_logger = new UnixLogger(appName);

@@ -2,6 +2,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <uv.h>
 #include <OS/Config/AppConfig.h>
 #include <OS/Net/NetServer.h>
 #include "server/SBServer.h"
@@ -23,7 +24,17 @@ void sig_handler(int signo)
 }
 #endif
 
+void idle_handler(uv_idle_t* handle) {
+	g_gameserver->tick();
+}
+
 int main() {
+	uv_loop_t *loop = uv_default_loop();
+	uv_idle_t idler;
+
+	uv_idle_init(uv_default_loop(), &idler);
+    uv_idle_start(&idler, idle_handler);
+
     int i = atexit(on_exit);
     if (i != 0) {
        fprintf(stderr, "cannot set exit function\n");
@@ -60,9 +71,10 @@ int main() {
 	}
 
 	g_gameserver->init();
-	while(g_running) {
-		g_gameserver->tick();
-	}
+
+    uv_run(loop, UV_RUN_DEFAULT);
+
+    uv_loop_close(loop);
 
     printf("Shutting down!\n");
 

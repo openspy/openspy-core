@@ -3,8 +3,8 @@
 #include <tasks/tasks.h>
 #include <sstream>
 namespace MM {
-    bool Handle_QRMessage(TaskThreadData *thread_data, std::string message) {
-		QR::Server *server = (QR::Server *)thread_data->server;
+    bool Handle_QRMessage(std::string message) {
+		QR::Server *server = (QR::Server *)uv_loop_get_data(uv_default_loop());
 
 		json_t *root = json_loads(message.c_str(), 0, NULL);
 		if(!root) return false;

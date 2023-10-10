@@ -18,10 +18,8 @@ namespace QR {
 		void init();
 		void tick();
 		void shutdown();
-		TaskScheduler<MM::MMPushRequest, TaskThreadData> *getScheduler() { return mp_task_scheduler; };
 		Driver *findDriverByAddress(OS::Address address);
 	private:
-		TaskScheduler<MM::MMPushRequest, TaskThreadData> *mp_task_scheduler;
 	};
 }
 #endif //_CHCGAMESERVER_H

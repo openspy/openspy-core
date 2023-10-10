@@ -6,6 +6,8 @@
 #include <OS/Mutex.h>
 #include <OS/Net/NetDriver.h>
 
+#include <uv.h>
+
 
 #include <map>
 #include <vector>
@@ -29,9 +31,17 @@ namespace QR {
 		~Driver();
 		void think(bool listener_waiting);
 
+		static void on_udp_read(uv_udp_t* handle,
+                               ssize_t nread,
+                               const uv_buf_t* buf,
+                               const struct sockaddr* addr,
+                               unsigned flags);
+
+		static void on_send_callback(uv_udp_send_t* req, int status);
+
 		//v1
 		void perform_v1_key_scan(OS::Address from_address);
-		void handle_v1_packet(INetIODatagram &packet);
+		void handle_v1_packet(OS::Address address, OS::Buffer buffer);
 		void handle_v1_heartbeat(OS::Address from_address, OS::KVReader reader);
 		void handle_v1_heartbeat_data(OS::Address from_address, OS::KVReader reader);
 		void handle_v1_validate(OS::Address from_address, OS::KVReader reader);
@@ -44,7 +54,7 @@ namespace QR {
 		
 
 		//v2
-		void handle_v2_packet(INetIODatagram &packet);		
+		void handle_v2_packet(OS::Address address, OS::Buffer buffer);		
 		void handle_v2_available(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer);		
 		void handle_v2_heartbeat(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer);		
 		void handle_v2_challenge(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer);		
@@ -66,14 +76,18 @@ namespace QR {
 		void SendPacket(OS::Address to, OS::Buffer buffer);
 
 		INetIOSocket *getListenerSocket() const;
+		struct sockaddr_in GetAddress() { return m_recv_addr; };
 		const std::vector<INetIOSocket *> getSockets() const;
 		void OnPeerMessage(INetPeer *peer);
 
 		void handle_v1_packet(OS::KVReader data_parser);
+
+		void AddRequest(MM::MMPushRequest req);
 	private:
 		struct timeval m_server_start;
 
-		INetIOSocket *mp_socket;
+		uv_udp_t m_recv_socket;
+		struct sockaddr_in m_recv_addr;
 
 	};
 }

@@ -20,7 +20,6 @@ namespace QR {
     void Driver::handle_v1_validate(OS::Address from_address, OS::KVReader reader) {
         std::string challenge = reader.GetValue("validate");
 
-		TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
 		MM::MMPushRequest req;
 
 		req.gamename = challenge;
@@ -32,7 +31,7 @@ namespace QR {
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got challenge response: %s", from_address.ToString().c_str(), challenge.c_str());
 		req.type = MM::EMMPushRequestType_ValidateServer;
-		scheduler->AddRequest(req.type, req);
+		AddRequest(req);
     }
 }
     

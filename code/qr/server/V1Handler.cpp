@@ -6,23 +6,24 @@
 #include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 #include "v2.h"
 namespace QR {
-    void Driver::handle_v1_packet(INetIODatagram &packet) {
-        std::string input = std::string((char *)packet.buffer.GetHead(), packet.buffer.readRemaining());        
-        packet.buffer.SetReadCursor(packet.buffer.readRemaining());
+    void Driver::handle_v1_packet(OS::Address address, OS::Buffer buffer) {
+        std::string input = std::string((char *)buffer.GetHead(), buffer.readRemaining());        
+        buffer.SetReadCursor(buffer.readRemaining());
 
         OS::KVReader data_parser = input;
+
 
         std::string message_type = data_parser.GetKeyByIdx(0);
 
         if(message_type.compare("heartbeat") == 0) {
-            handle_v1_heartbeat(packet.address, data_parser);
+            handle_v1_heartbeat(address, data_parser);
         } else if(message_type.compare("validate") == 0) {
-            handle_v1_validate(packet.address, data_parser);
+            handle_v1_validate(address, data_parser);
         } else if (message_type.compare("echo") == 0) {
-            handle_v1_echo(packet.address, data_parser);
+            handle_v1_echo(address, data_parser);
         } else {
             //read heartbeat server info
-            handle_v1_heartbeat_data(packet.address, data_parser);
+            handle_v1_heartbeat_data(address, data_parser);
         }
     }
 }

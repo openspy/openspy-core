@@ -33,7 +33,6 @@ namespace QR {
     void Driver::handle_v2_client_message_ack(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
         uint32_t key = buffer.ReadInt();
 
-        TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
         MM::MMPushRequest req;
 
         req.callback = NULL;
@@ -47,6 +46,6 @@ namespace QR {
 
 
         req.type = MM::EMMPushRequestType_ClientMessageAck;
-        scheduler->AddRequest(req.type, req);
+        AddRequest(req);
     }
 }

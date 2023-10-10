@@ -27,9 +27,7 @@ namespace QR {
     void Driver::handle_v2_keepalive(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
         //send response
         OS::LogText(OS::ELogLevel_Info, "[%s] Got keepalive", from_address.ToString().c_str());
-
-
-        TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
+        
         MM::MMPushRequest req;
 
         req.callback = on_v2_keepalive_processed;
@@ -40,6 +38,6 @@ namespace QR {
 
         
         req.type = MM::EMMPushRequestType_Keepalive;
-        scheduler->AddRequest(req.type, req);
+        AddRequest(req);
     }
 }

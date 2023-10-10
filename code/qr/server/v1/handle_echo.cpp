@@ -26,8 +26,6 @@ namespace QR {
     void Driver::handle_v1_echo(OS::Address from_address, OS::KVReader reader) {
         OS::LogText(OS::ELogLevel_Info, "[%s] Got echo", from_address.ToString().c_str());
 
-
-        TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
         MM::MMPushRequest req;
 
         req.callback = on_v1_echo_processed;
@@ -39,7 +37,7 @@ namespace QR {
 
         
         req.type = MM::EMMPushRequestType_Keepalive;
-        scheduler->AddRequest(req.type, req);
+        AddRequest(req);
     }
 }
     

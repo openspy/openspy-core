@@ -57,7 +57,6 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", from_address.ToString().c_str(), ss.str().c_str());
 		ss.str("");
         
-        TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
         MM::MMPushRequest req;        
 
         req.from_address = from_address;
@@ -67,7 +66,7 @@ namespace QR {
         req.version = 1;
         req.type = MM::EMMPushRequestType_Heartbeat;
         req.callback = on_v1_heartbeat_processed;
-        scheduler->AddRequest(req.type, req);
+        AddRequest(req);
     }
 
 
@@ -110,7 +109,6 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", from_address.ToString().c_str(), ss.str().c_str());
 		ss.str("");
 
-        TaskScheduler<MM::MMPushRequest, TaskThreadData> *scheduler = ((QR::Server *)(getServer()))->getScheduler();
         MM::MMPushRequest req;        
 
         req.from_address = from_address;
@@ -120,7 +118,7 @@ namespace QR {
         req.version = 1;
         req.type = MM::EMMPushRequestType_Heartbeat;
         req.callback = on_v1_heartbeat_data_processed;
-        scheduler->AddRequest(req.type, req);
+        AddRequest(req);
     }
 }
     

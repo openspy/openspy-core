@@ -2,6 +2,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <uv.h>
 #include <OS/Config/AppConfig.h>
 #include <OS/Net/NetServer.h>
 #include "server/QRServer.h"
@@ -21,7 +22,18 @@ void sig_handler(int signo)
 }
 
 
+void idle_handler(uv_idle_t* handle) {
+	g_gameserver->tick();
+}
+
+
 int main() {
+	uv_loop_t *loop = uv_default_loop();
+	uv_idle_t idler;
+
+	uv_idle_init(uv_default_loop(), &idler);
+    uv_idle_start(&idler, idle_handler);
+
     int i = atexit(on_exit);
     if (i != 0) {
        fprintf(stderr, "cannot set exit function\n");
@@ -38,33 +50,23 @@ int main() {
 	#endif
 
 
-	OS::Config *cfg = new OS::Config("openspy.xml");
-	AppConfig *app_config = new AppConfig(cfg, "qr");
-	OS::Init("qr", app_config);
+	OS::Init("qr", NULL);
 
 	g_gameserver = new QR::Server();
 
+	const char *address = "0.0.0.0";
+	uint16_t port = 27900;
 
-	std::vector<std::string> drivers = app_config->getDriverNames();
-	std::vector<std::string>::iterator it = drivers.begin();
-	while (it != drivers.end()) {
-		std::string s = *it;
+	QR::Driver *driver = new QR::Driver(g_gameserver, address, port);
 
+	OS::LogText(OS::ELogLevel_Info, "Adding QR Driver: %s:%d\n", address, port);
+	g_gameserver->addNetworkDriver(driver);
 
-		bool proxyFlag = false;
-		std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
-		OS::Address address = addresses.front();
-		
-		QR::Driver *driver = new QR::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort());
-
-		OS::LogText(OS::ELogLevel_Info, "Adding QR Driver: %s:%d\n", address.ToString(true).c_str(), address.GetPort());
-		g_gameserver->addNetworkDriver(driver);
-		it++;
-	}
   	g_gameserver->init();
-  	while(g_running) {
-  		g_gameserver->tick();
-  	}
+
+    uv_run(loop, UV_RUN_DEFAULT);
+
+    uv_loop_close(loop);
 
     delete g_gameserver;
     OS::Shutdown();

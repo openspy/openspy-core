@@ -10,69 +10,87 @@
 
 
 namespace QR {
+	void alloc_buffer(uv_handle_t* handle,
+                            size_t suggested_size,
+                            uv_buf_t* buf) {
+		buf->base = (char *)malloc(suggested_size);
+		buf->len = suggested_size;
+	}
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
-		OS::Address bind_address(0, port);
-		mp_net_io_interface = new BSDNetIOInterface<>();
-		mp_socket = getNetIOInterface()->BindUDP(bind_address);
+		uv_udp_init(uv_default_loop(), &m_recv_socket);
+		uv_handle_set_data((uv_handle_t*) &m_recv_socket, this);
+		
+    	uv_ip4_addr("0.0.0.0", port, &m_recv_addr);
+
+    	uv_udp_bind(&m_recv_socket, (const struct sockaddr *)&m_recv_addr, UV_UDP_REUSEADDR);
+    	uv_udp_recv_start(&m_recv_socket, alloc_buffer, Driver::on_udp_read);
 
 		gettimeofday(&m_server_start, NULL);
-
 	}
 	Driver::~Driver() {
-		getNetIOInterface()->closeSocket(mp_socket);
-		delete mp_net_io_interface;
+		uv_udp_recv_stop(&m_recv_socket);
 	}
 	void Driver::think(bool listener_waiting) {
-		if (listener_waiting) {
-			std::vector<INetIODatagram> datagrams;
-			getNetIOInterface()->datagramRecv(mp_socket, datagrams);
-			std::vector<INetIODatagram>::iterator it = datagrams.begin();
-			while (it != datagrams.end()) {
-				INetIODatagram dgram = *it;
-				if (dgram.comm_len == 0) {
-					it++;
-					continue;
-				}
-				if (dgram.error_flag) {
-					//log error??
-				}
-				else {
-					char firstChar = dgram.buffer.ReadByte();
-					dgram.buffer.resetReadCursor();
-					
-					//PROCESS PACKET HERE
-					if(firstChar == '\\') { //v1
-						handle_v1_packet(dgram);
-					} else { //v2
-						handle_v2_packet(dgram);
-					}
-				}
-				it++;
+	}
+
+	void Driver::on_udp_read(uv_udp_t* handle,
+                               ssize_t nread,
+                               const uv_buf_t* buf,
+                               const struct sockaddr* addr,
+                               unsigned flags) {
+		
+		Driver *driver = (Driver *)uv_handle_get_data((uv_handle_t*) handle);
+		if(nread > 0) {
+			OS::Buffer buffer;
+			buffer.WriteBuffer(buf->base, nread);
+			buffer.resetReadCursor();
+
+			OS::Address address = *(struct sockaddr_in *)addr;
+
+			if(buf->base[0] == '\\') {
+				driver->handle_v1_packet(address, buffer);
+			} else {
+				driver->handle_v2_packet(address, buffer);
 			}
 		}
 	}
 
 
 	INetIOSocket *Driver::getListenerSocket() const {
-		return mp_socket;
+		return NULL;
 	}
 	const std::vector<INetIOSocket *> Driver::getSockets() const {
 		std::vector<INetIOSocket *> ret;
-		ret.push_back(mp_socket);
 		return ret;
 	}
 
 	void Driver::OnPeerMessage(INetPeer *peer) {
 
 	}
-	void Driver::SendPacket(OS::Address to, OS::Buffer buffer) {
-		INetIOSocket client_socket = *mp_socket;
-		client_socket.address = to;
-		client_socket.shared_socket = true;
 
-		NetIOCommResp resp = getNetIOInterface()->datagramSend(&client_socket, buffer);
-		if (resp.disconnect_flag || resp.error_flag) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d %d", to.ToString().c_str(), resp.disconnect_flag, resp.error_flag);
+	void Driver::on_send_callback(uv_udp_send_t* req, int status) {
+		OS::Buffer *buffer = (OS::Buffer *)uv_handle_get_data((uv_handle_t*) req);
+		delete buffer;
+
+	}
+	void Driver::SendPacket(OS::Address to, OS::Buffer buffer) {
+		uv_udp_send_t *req = (uv_udp_send_t *)malloc(sizeof(uv_udp_send_t));
+		struct sockaddr_in addr = to.GetInAddr();
+
+		OS::Buffer *copy_buffer = new OS::Buffer(buffer);
+		uv_handle_set_data((uv_handle_t*) req, copy_buffer);
+
+		uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
+
+		int r = uv_udp_send(req,
+			&m_recv_socket,
+			&buf,
+			1,
+			(const struct sockaddr*) &addr,
+			Driver::on_send_callback);
+
+		if (r < 0) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", to.ToString().c_str(), r);
 		}
 	}
 
@@ -101,5 +119,16 @@ namespace QR {
 		OS::Buffer buffer;
 		buffer.WriteBuffer(message.c_str(),message.length());
 		SendPacket(to, buffer);
+	}
+
+	void Driver::AddRequest(MM::MMPushRequest req) {
+		uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+
+		MM::MMWorkData *work_data = new MM::MMWorkData();
+		work_data->request = req;
+
+		uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+
+		uv_queue_work(uv_default_loop(), uv_req, MM::PerformUVWorkRequest, MM::PerformUVWorkRequestCleanup);
 	}
 }
