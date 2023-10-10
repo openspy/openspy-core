@@ -8,18 +8,6 @@
 #include "server/QRServer.h"
 #include "server/QRDriver.h"
 INetServer *g_gameserver = NULL;
-bool g_running = true;
-void shutdown();
-
-void on_exit(void) {
-    shutdown();
-}
-
-
-void sig_handler(int signo)
-{
-    shutdown();
-}
 
 
 void idle_handler(uv_idle_t* handle) {
@@ -34,32 +22,23 @@ int main() {
 	uv_idle_init(uv_default_loop(), &idler);
     uv_idle_start(&idler, idle_handler);
 
-    int i = atexit(on_exit);
-    if (i != 0) {
-       fprintf(stderr, "cannot set exit function\n");
-       exit(EXIT_FAILURE);
-    }
-
-
-	#ifndef _WIN32
-		signal(SIGINT, sig_handler);
-		signal(SIGTERM, sig_handler);
-	#else
-		WSADATA wsdata;
-		WSAStartup(MAKEWORD(1, 0), &wsdata);
-	#endif
-
 
 	OS::Init("qr", NULL);
 
 	g_gameserver = new QR::Server();
 
-	const char *address = "0.0.0.0";
-	uint16_t port = 27900;
+	char address_buff[256];
+	char port_buff[16];
+	size_t temp_env_sz = sizeof(address_buff);
 
-	QR::Driver *driver = new QR::Driver(g_gameserver, address, port);
+	uv_os_getenv("OPENSPY_QR_BIND_ADDR", (char *)&address_buff, &temp_env_sz);
+	temp_env_sz = sizeof(port_buff);
+	uv_os_getenv("OPENSPY_QR_BIND_PORT", (char *)&port_buff, &temp_env_sz);
+	uint16_t port = atoi(port_buff);
 
-	OS::LogText(OS::ELogLevel_Info, "Adding QR Driver: %s:%d\n", address, port);
+	QR::Driver *driver = new QR::Driver(g_gameserver, address_buff, port);
+
+	OS::LogText(OS::ELogLevel_Info, "Adding QR Driver: %s:%d\n", address_buff, port);
 	g_gameserver->addNetworkDriver(driver);
 
   	g_gameserver->init();
@@ -71,10 +50,4 @@ int main() {
     delete g_gameserver;
     OS::Shutdown();
 	return 0;
-}
-
-void shutdown() {
-    if(g_running) {
-        g_running = false;
-    }
 }

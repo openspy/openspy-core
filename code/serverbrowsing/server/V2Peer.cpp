@@ -13,7 +13,7 @@
 #define QR2_USE_QUERY_CHALLENGE 128
 
 namespace SB {
-	V2Peer::V2Peer(Driver *driver, INetIOSocket *sd) : SB::Peer(driver, sd, 2) {
+	V2Peer::V2Peer(Driver *driver, uv_tcp_t *sd) : SB::Peer(driver, sd, 2) {
 		m_next_packet_send_msg = false;
 		m_sent_crypt_header = false;
 		m_sent_push_keys = false;
@@ -365,10 +365,17 @@ namespace SB {
 
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.bytesWritten() - header_len);
 
-		NetIOCommResp io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
-		if(io_resp.disconnect_flag || io_resp.error_flag) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d %d", getAddress().ToString().c_str(), io_resp.disconnect_flag, io_resp.error_flag);
-			Delete();
+		uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
+
+		OS::Buffer *copy_buffer = new OS::Buffer(buffer);
+		uv_handle_set_data((uv_handle_t*) req, copy_buffer);
+
+		uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
+
+		int r = uv_write(req, (uv_stream_t*)&m_socket, &buf, 1, Peer::write_callback);
+
+		if (r < 0) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", getAddress().ToString().c_str(), r);
 		}
 	}
 	void V2Peer::ProcessListRequest(OS::Buffer &buffer) {
@@ -475,33 +482,27 @@ namespace SB {
 		}
 
 	}
+	void V2Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+		OS::Buffer buffer;
+		buffer.WriteBuffer(buf->base, nread);
+		buffer.resetReadCursor();
+		if(m_next_packet_send_msg) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", getAddress().ToString().c_str(), nread);
+			MM::MMQueryRequest req;
+			req.type = MM::EMMQueryRequestType_SubmitData;
+			req.from = getAddress();
+			req.to = m_send_msg_to;
+			req.buffer.WriteBuffer(buf->base, nread);
+			req.req.m_for_game = m_game;
+			AddRequest(req);
+			m_next_packet_send_msg = false;
+		} else {
+			this->handle_packet(buffer);
+		}
+	}
 	void V2Peer::think(bool waiting_packet) {
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
-		if (waiting_packet) {
-			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
-			
-			int len = io_resp.comm_len;
-
-			if (len <= 0) {
-				goto end;
-			}
-
-			if(m_next_packet_send_msg) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", getAddress().ToString().c_str(), len);
-				MM::MMQueryRequest req;
-				req.type = MM::EMMQueryRequestType_SubmitData;
-				req.from = getAddress();
-				req.to = m_send_msg_to;
-				req.buffer.WriteBuffer(recv_buffer.GetHead(), len);
-				req.req.m_for_game = m_game;
-				AddRequest(req);
-				m_next_packet_send_msg = false;
-			} else {
-				this->handle_packet(recv_buffer);
-			}
-		}
 
 		end:
 		send_ping();
@@ -763,12 +764,19 @@ namespace SB {
 
 		OS::Buffer buffer((void *)&send_str, len);
 
-		NetIOCommResp io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s, fatal: %d", getAddress().ToString().c_str(), send_str, die);
-		if (io_resp.disconnect_flag || io_resp.error_flag || die)
-			Delete();
-	}
+		uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
 
+		OS::Buffer *copy_buffer = new OS::Buffer(buffer);
+		uv_handle_set_data((uv_handle_t*) req, copy_buffer);
+
+		uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
+
+		int r = uv_write(req, (uv_stream_t*)&m_socket, &buf, 1, Peer::write_callback);
+
+		if (r < 0) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", getAddress().ToString().c_str(), r);
+		}
+	}
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
         SendListQueryResp(results, request.req, true);

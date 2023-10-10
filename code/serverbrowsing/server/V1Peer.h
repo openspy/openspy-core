@@ -14,13 +14,13 @@ namespace SB {
 
 	class V1Peer : public Peer {
 	public:
-		V1Peer(Driver *driver, INetIOSocket *sd);
+		V1Peer(Driver *driver, uv_tcp_t *sd);
 		~V1Peer();
 		
 		void send_ping();
 		void think(bool packet_waiting); //called when no data is recieved
 		void Delete(bool timeout = false);
-		
+		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 
 		void informDeleteServers(MM::Server *server);
 		void informNewServers(MM::Server *server);

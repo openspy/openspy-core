@@ -12,9 +12,7 @@
 
 #include <SSL/SSLIOInterface.h>
 
-#define TCP_PING_TIME (60)
 #define DRIVER_THREAD_TIME 1000
-#define CONNECTIONS_RESERVE_SIZE 1024
 
 namespace OS {
 	class TCPDriver : public INetDriver {
@@ -31,17 +29,18 @@ namespace OS {
 			static bool LLIterator_TickOrDeleteClient(INetPeer* peer, TCPDriver* driver);
 			//
 		protected:
-			virtual INetPeer *CreatePeer(INetIOSocket *socket) = 0;
+			virtual INetPeer *CreatePeer(uv_tcp_t *socket) = 0;
 			static void *TaskThread(OS::CThread *thread);
 			virtual void TickConnections();
 			void DeleteClients();
+			static void on_new_connection(uv_stream_t *server, int status);
 
 			struct timeval m_server_start;
 
 			OS::CMutex *mp_mutex;
 			OS::CThread *mp_thread;
 
-			INetIOSocket *mp_socket;
+			uv_tcp_t m_listener_socket;
 
 			bool m_proxy_headers;
 	};

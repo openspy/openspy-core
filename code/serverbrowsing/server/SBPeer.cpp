@@ -8,7 +8,7 @@
 #include <serverbrowsing/filter/filter.h>
 
 namespace SB {
-	Peer::Peer(Driver *driver, INetIOSocket *sd, int version) : INetPeer(driver, sd) {
+	Peer::Peer(Driver *driver, uv_tcp_t *sd, int version) : INetPeer(driver, sd) {
 		mp_driver = driver;
 		m_delete_flag = false;
 		m_timeout_flag = false;
@@ -18,8 +18,6 @@ namespace SB {
 		m_version = version;
 		
 		mp_mutex = OS::CreateMutex();
-
-		
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
@@ -44,18 +42,17 @@ namespace SB {
 		return false;
 	}
 	void Peer::AddRequest(MM::MMQueryRequest req) {
-		TaskScheduler<MM::MMQueryRequest, TaskThreadData> *scheduler = ((SBServer *)(GetDriver()->getServer()))->getScheduler();
-		if (req.type != MM::EMMQueryRequestType_GetGameInfoByGameName && req.type != MM::EMMQueryRequestType_GetGameInfoPairByGameName) {
-			if (m_game.secretkey[0] == 0) {
-				m_pending_request_list.push(req);
-				return;
-			}
-		}
-		req.peer = this;
-		req.peer->IncRef();
-		req.driver = mp_driver;
 
-		scheduler->AddRequest(req.type, req);
+		uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+
+		MM::MMWorkData *work_data = new MM::MMWorkData();
+		req.peer = this;
+		this->IncRef();
+		work_data->request = req;
+
+		uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+
+		uv_queue_work(uv_default_loop(), uv_req, MM::PerformUVWorkRequest, MM::PerformUVWorkRequestCleanup);
 	}
 	void Peer::FlushPendingRequests() {
 		while (!m_pending_request_list.empty()) {
@@ -73,5 +70,10 @@ namespace SB {
 		CloseSocket(); //closed for improved V1 speeds
 		m_timeout_flag = timeout;
 		m_delete_flag = true;
+	}
+
+	void Peer::write_callback(uv_write_t *req, int status) {
+		OS::Buffer *buffer = (OS::Buffer *)uv_handle_get_data((uv_handle_t*) req);
+		delete buffer;
 	}
 }

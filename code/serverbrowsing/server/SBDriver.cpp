@@ -76,15 +76,15 @@ namespace SB {
 		m_server_update_queue.push(serv);
 		mp_mutex->unlock();
 	}
-	INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
+	INetPeer *Driver::CreatePeer(uv_tcp_t *listener_socket) {
 		Peer *peer = NULL;
 
 		switch (m_version) {
 		case 1:
-			peer = new V1Peer(this, socket);
+			peer = new V1Peer(this, listener_socket);
 			break;
 		case 2:
-			peer = new V2Peer(this, socket);
+			peer = new V2Peer(this, listener_socket);
 			break;
 		}
 		return peer;

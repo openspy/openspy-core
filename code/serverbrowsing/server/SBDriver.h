@@ -37,7 +37,7 @@ namespace SB {
 		void AddNewServer(MM::Server serv);
 		void AddUpdateServer(MM::Server serv);
 		void TickConnections();
-		INetPeer *CreatePeer(INetIOSocket *socket);
+		INetPeer *CreatePeer(uv_tcp_t *socket);
 	private:
 		int m_version;
 

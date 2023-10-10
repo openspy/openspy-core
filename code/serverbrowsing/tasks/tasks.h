@@ -7,6 +7,8 @@
 
 #include <OS/MessageQueue/MQInterface.h>
 
+#include <uv.h>
+
 #define NN_REDIS_EXPIRE_TIME 500
 
 class CToken;
@@ -160,7 +162,20 @@ namespace MM {
 			void *extra;
 	};
 
-	TaskScheduler<MMQueryRequest, TaskThreadData> *InitTasks(INetServer *server);
+	class MMWorkData {
+		public:
+			MMWorkData() : request()/*, response()*/ {
+
+			}
+			MMQueryRequest request;
+			//MMTaskResponse response;
+
+	};
+
+	void PerformUVWorkRequest(uv_work_t *req);
+	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
+
+	void InitTasks();
 
     bool PerformGetServers(MMQueryRequest request, TaskThreadData *thread_data);
     bool PerformGetGroups(MMQueryRequest request, TaskThreadData *thread_data);
@@ -171,7 +186,7 @@ namespace MM {
     bool PerformGetGameInfoPairByGameName(MMQueryRequest request, TaskThreadData *thread_data);
 
     //server update functions
-    bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::string message);
+    bool Handle_ServerEventMsg(std::string message);
 
 	//shared functions
 	void AppendServerEntry(TaskThreadData *thread_data, std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, const sServerListReq *req);
@@ -193,6 +208,8 @@ namespace MM {
 	void GetGroups(TaskThreadData *thread_data, const MMQueryRequest *request);
 
 	void FreeServerListQuery(MM::ServerListQuery *query);
+
+	redisContext *getThreadLocalRedisContext();
 
 	extern const char *mm_channel_exchange;
 

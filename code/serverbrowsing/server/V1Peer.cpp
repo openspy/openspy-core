@@ -17,7 +17,8 @@
 #include <filter/CToken.h>
 
 namespace SB {
-		V1Peer::V1Peer(Driver *driver, INetIOSocket *sd) : SB::Peer(driver, sd, 1) {
+		V1Peer::V1Peer(Driver *driver, uv_tcp_t *sd) : SB::Peer(driver, sd, 1) {
+			printf("new V1Peer\n");
 			memset(&m_challenge,0,sizeof(m_challenge));
 			OS::gen_random((char *)&m_challenge,6);
 
@@ -27,6 +28,8 @@ namespace SB {
 
 			m_sent_validation = false;
 			m_sent_crypt_key = false;
+
+			OnConnectionReady(); //XXX: (this won't work with proxy headers - fix later)
 
 		}
 		V1Peer::~V1Peer() {
@@ -59,22 +62,12 @@ namespace SB {
 				//SendPacket((uint8_t *)&buff, len, true);
 			}
 		}
-		void V1Peer::think(bool packet_waiting) {
-			NetIOCommResp io_resp;
-			if (m_delete_flag) return;
-			if (m_waiting_gamedata == 2) {
-				m_waiting_gamedata = 0;
-                flushWaitingPackets();
-			}
-			if (packet_waiting) {
-				OS::Buffer recv_buffer;
-				io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
+		void V1Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+				printf("on_stream_read: %d\n", nread);
+				// OS::Buffer buffer;
+				// buffer.WriteBuffer(buf->base, nread);
+				// buffer.resetReadCursor();
 
-				int len = io_resp.comm_len;
-				if (len <= 0) {
-					goto end;
-				}
-		
 				/*
 				This scans the incoming packets for \\final\\ and splits based on that,
 
@@ -83,7 +76,7 @@ namespace SB {
 				*/
 				std::string recv_buf = m_kv_accumulator;
 				m_kv_accumulator.clear();
-				recv_buf.append((const char *)recv_buffer.GetHead(), len);
+				recv_buf.append((const char *)buf->base, nread);
 				size_t final_pos = 0, last_pos = 0;
 				do {
 					final_pos = recv_buf.find("\\final\\", last_pos);
@@ -102,7 +95,7 @@ namespace SB {
 
 
 				//check for extra data that didn't have the final string -- incase of incomplete data
-				if (last_pos < (size_t)len) {
+				if (last_pos < (size_t)nread) {
 					std::string remaining_str = recv_buf.substr(last_pos);
 
 					if (remaining_str.length() > 0) {
@@ -114,8 +107,13 @@ namespace SB {
 					Delete();
 					return;
 				}
-
-				
+		}
+		void V1Peer::think(bool packet_waiting) {
+			NetIOCommResp io_resp;
+			if (m_delete_flag) return;
+			if (m_waiting_gamedata == 2) {
+				m_waiting_gamedata = 0;
+                flushWaitingPackets();
 			}
 
 			end:
@@ -447,17 +445,33 @@ namespace SB {
 		}
 
 		void V1Peer::Enctype1_FlushPackets() {
+			if(m_delete_flag) {
+				return;
+			}
 			OS::Buffer encrypted_buffer;
 
 			create_enctype1_buffer((const char *)&m_challenge, m_enctype1_accumulator, encrypted_buffer);
 
-			this->GetDriver()->getNetIOInterface()->streamSend(m_sd, encrypted_buffer);
+			uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
+
+			OS::Buffer *copy_buffer = new OS::Buffer(encrypted_buffer);
+			uv_handle_set_data((uv_handle_t*) req, copy_buffer);
+
+			uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
+
+			int r = uv_write(req, (uv_stream_t*)&m_socket, &buf, 1, Peer::write_callback);
+
+			if (r < 0) {
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", getAddress().ToString().c_str(), r);
+			}
 		}
 		void V1Peer::SendPacket_Enctype1(OS::Buffer buffer) {
 			m_enctype1_accumulator.WriteBuffer(buffer.GetHead(), buffer.bytesWritten());
 		}
 		void V1Peer::SendPacket(const uint8_t *buff, size_t len, bool attach_final, bool skip_encryption) {
-
+			if(m_delete_flag) {
+				return;
+			}
 			OS::Buffer buffer;
 			OS::Buffer output_buffer;
 			int skip_len = 0;
@@ -482,10 +496,17 @@ namespace SB {
 				}
 			}
 
-			NetIOCommResp io_resp;
-			io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
-			if(io_resp.disconnect_flag || io_resp.error_flag) {
-				Delete();
+			uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
+
+			OS::Buffer *copy_buffer = new OS::Buffer(buffer);
+			uv_handle_set_data((uv_handle_t*) req, copy_buffer);
+
+			uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
+
+			int r = uv_write(req, (uv_stream_t*)&m_socket, &buf, 1, Peer::write_callback);
+
+			if (r < 0) {
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", getAddress().ToString().c_str(), r);
 			}
 		}
 		void V1Peer::send_crypt_header(int enctype, OS::Buffer &buffer) {

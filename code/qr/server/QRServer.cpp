@@ -31,8 +31,8 @@ namespace QR {
 	QR::Driver *Server::findDriverByAddress(OS::Address address) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {
-			INetDriver *driver = *it;
-			if(driver->getListenerSocket()->address == address) {
+			QR::Driver *driver = (QR::Driver *)*it;
+			if(OS::Address(driver->GetAddress()) == address) {
 				return (QR::Driver *)driver;
 			}
 			it++;

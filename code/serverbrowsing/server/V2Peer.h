@@ -54,7 +54,7 @@
 namespace SB {
 		class V2Peer : public Peer {
 			public:
-				V2Peer(Driver *driver, INetIOSocket *sd);
+				V2Peer(Driver *driver, uv_tcp_t *sd);
 				~V2Peer();
 				void think(bool packet_waiting);
 				void informDeleteServers(MM::Server *server);
@@ -66,7 +66,7 @@ namespace SB {
 
 
 
-				
+				void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 				void SendPacket(uint8_t *buff, size_t len, bool prepend_length);
 				void send_ping();
 				void handle_packet(OS::Buffer &buffer);

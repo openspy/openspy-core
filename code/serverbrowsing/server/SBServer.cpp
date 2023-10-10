@@ -6,10 +6,9 @@
 SBServer::SBServer() : INetServer() {
 }
 SBServer::~SBServer() {
-	delete mp_task_scheduler;
 }
 void SBServer::init() {
-	mp_task_scheduler = MM::InitTasks(this);
+	MM::InitTasks();
 }
 void SBServer::tick() {
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

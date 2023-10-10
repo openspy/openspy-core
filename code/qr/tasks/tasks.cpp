@@ -24,16 +24,6 @@ namespace MM {
 
     const char *mp_pk_name = "QRID";
 
-	TaskScheduler<MMPushRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
-		{EMMPushRequestType_GetGameInfoByGameName, PerformGetGameInfo},
-		{EMMPushRequestType_Heartbeat, PerformHeartbeat},
-		{EMMPushRequestType_Heartbeat_ClearExistingKeys, PerformHeartbeat},
-		{EMMPushRequestType_ValidateServer, PerformValidate},
-		{EMMPushRequestType_Keepalive, PerformKeepalive},
-		{EMMPushRequestType_ClientMessageAck, PerformClientMessageAck},
-		{-1, NULL}
-	};
-
 	void amqp_do_consume(void *arg) {
 		amqp_rpc_reply_t res;
 		amqp_envelope_t envelope;		
@@ -167,10 +157,24 @@ namespace MM {
 		TaskThreadData temp_data;
 		temp_data.mp_redis_connection = getThreadLocalRedisContext();
 		MM::MMWorkData *work_data = (MM::MMWorkData *) uv_handle_get_data((uv_handle_t*) req);
-		for(int i = 0;i < sizeof(requestTable) / sizeof(TaskScheduler<MMPushRequest, TaskThreadData>::RequestHandlerEntry); i++) {
-			if(requestTable[i].type == work_data->request.type) {
-				requestTable[i].handler(work_data->request, &temp_data);
-			}
+		
+		switch(work_data->request.type) {
+			case EMMPushRequestType_GetGameInfoByGameName:
+				PerformGetGameInfo(work_data->request, &temp_data);
+			break;
+			case EMMPushRequestType_Heartbeat:
+			case EMMPushRequestType_Heartbeat_ClearExistingKeys:
+				PerformHeartbeat(work_data->request, &temp_data);
+			break;
+			case EMMPushRequestType_ValidateServer:
+				PerformValidate(work_data->request, &temp_data);
+			break;
+			case EMMPushRequestType_Keepalive:
+				PerformKeepalive(work_data->request, &temp_data);
+			break;
+			case EMMPushRequestType_ClientMessageAck:
+				PerformClientMessageAck(work_data->request, &temp_data);
+			break;
 		}
 	}
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status) {

@@ -20,7 +20,7 @@ namespace QR {
 		uv_udp_init(uv_default_loop(), &m_recv_socket);
 		uv_handle_set_data((uv_handle_t*) &m_recv_socket, this);
 		
-    	uv_ip4_addr("0.0.0.0", port, &m_recv_addr);
+    	uv_ip4_addr(host, port, &m_recv_addr);
 
     	uv_udp_bind(&m_recv_socket, (const struct sockaddr *)&m_recv_addr, UV_UDP_REUSEADDR);
     	uv_udp_recv_start(&m_recv_socket, alloc_buffer, Driver::on_udp_read);

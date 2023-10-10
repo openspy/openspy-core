@@ -76,7 +76,7 @@ namespace OS {
 		g_webServicesAPIKey = strdup(temp_env_buffer);
 
 		temp_env_sz = sizeof(temp_env_buffer);
-		uv_os_getenv("OPENSPY_REDIS_URL", (char *)&temp_env_buffer, &temp_env_sz);
+		uv_os_getenv("OPENSPY_REDIS_ADDRESS", (char *)&temp_env_buffer, &temp_env_sz);
 		g_redisAddress = strdup(temp_env_buffer);
 
 		if(strlen(g_redisAddress) > 0) {
