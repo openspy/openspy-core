@@ -73,8 +73,6 @@ namespace QR {
 		static void on_v2_heartbeat_processed(MM::MMTaskResponse response);
 		static void on_got_v2_challenge_response(MM::MMTaskResponse response);		
 
-		void SendPacket(OS::Address to, OS::Buffer buffer);
-
 		INetIOSocket *getListenerSocket() const;
 		struct sockaddr_in GetAddress() { return m_recv_addr; };
 		const std::vector<INetIOSocket *> getSockets() const;
@@ -85,9 +83,6 @@ namespace QR {
 		void AddRequest(MM::MMPushRequest req);
 	private:
 		struct timeval m_server_start;
-
-		uv_udp_t m_recv_socket;
-		struct sockaddr_in m_recv_addr;
 
 	};
 }

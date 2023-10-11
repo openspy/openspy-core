@@ -6,11 +6,12 @@
 #include <tasks/tasks.h>
 namespace UT {
 	Server::Server() : INetServer(){
+		init();
 	}
 	Server::~Server() {
 	}
 	void Server::init() {
-		mp_task_scheduler = MM::InitTasks(this);
+		MM::InitTasks();
 	}
 	void Server::tick() {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

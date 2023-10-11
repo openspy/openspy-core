@@ -5,7 +5,7 @@
 #include <OS/Task/TaskScheduler.h>
 #include <OS/Task/ScheduledTask.h>
 
-#include <OS/MessageQueue/MQInterface.h>
+#include <uv.h>
 
 #define MM_REDIS_EXPIRE_TIME 500
 namespace UT {
@@ -115,7 +115,23 @@ namespace MM {
 
 	};
 
-	TaskScheduler<UTMasterRequest, TaskThreadData> *InitTasks(INetServer *server);
+	class MMWorkData {
+		public:
+			MMWorkData() : request(), response() {
+
+			}
+			UTMasterRequest request;
+			MMTaskResponse response;
+			MMTaskResponseCallback original_callback;
+
+	};
+
+	void PerformUVWorkRequest(uv_work_t *req);
+	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
+	redisContext *getThreadLocalRedisContext();
+	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody);
+
+	void InitTasks();
 
 	bool PerformAllocateServerId(UTMasterRequest request, TaskThreadData *thread_data);
 	bool PerformHeartbeat(UTMasterRequest request, TaskThreadData *thread_data);

@@ -48,8 +48,6 @@ namespace SB {
 		virtual void OnRecievedGameInfoPair(const OS::GameData game_data_first, const OS::GameData game_data_second, void *extra) = 0;
 
 		virtual void Delete(bool timeout = false);
-
-		static void write_callback(uv_write_t *req, int status);
 	protected:
 		int m_version;
 

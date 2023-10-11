@@ -19,7 +19,7 @@ namespace QR {
 
 		buffer.WriteByte(PACKET_CLIENT_REGISTERED);
 		buffer.WriteInt(response.v2_instance_key);
-		response.driver->SendPacket(response.from_address, buffer);
+		response.driver->SendUDPPacket(response.from_address, buffer);
         OS::LogText(OS::ELogLevel_Info, "[%s] Server Registered - %s", response.from_address.ToString().c_str(), response.challenge.c_str());
     }
     void Driver::handle_v2_challenge(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {

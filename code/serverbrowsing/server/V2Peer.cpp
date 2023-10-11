@@ -365,18 +365,7 @@ namespace SB {
 
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.bytesWritten() - header_len);
 
-		uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
-
-		OS::Buffer *copy_buffer = new OS::Buffer(buffer);
-		uv_handle_set_data((uv_handle_t*) req, copy_buffer);
-
-		uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
-
-		int r = uv_write(req, (uv_stream_t*)&m_socket, &buf, 1, Peer::write_callback);
-
-		if (r < 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", getAddress().ToString().c_str(), r);
-		}
+		append_send_buffer(buffer);
 	}
 	void V2Peer::ProcessListRequest(OS::Buffer &buffer) {
 		MM::MMQueryRequest req;

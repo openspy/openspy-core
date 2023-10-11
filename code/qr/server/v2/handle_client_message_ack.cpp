@@ -26,7 +26,7 @@ namespace QR {
 
             buffer.WriteInt(message_key);
             buffer.WriteBuffer(message_buffer.GetHead(), message_buffer.bytesWritten());
-            SendPacket(to_address, buffer);
+            SendUDPPacket(to_address, buffer);
             
         }
     }

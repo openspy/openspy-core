@@ -94,14 +94,13 @@ namespace UT {
 		ss << m_client_version;
 		record.m_rules["ServerVersion"] = ss.str();
 
-        TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
         MM::UTMasterRequest req;        
         req.type = MM::UTMasterRequestType_Heartbeat;
 		req.peer = this;
 		req.peer->IncRef();
 		req.callback = NULL;
 		req.record = record;
-        scheduler->AddRequest(req.type, req);
+        AddRequest(req);
 
 	}
 

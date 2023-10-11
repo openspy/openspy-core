@@ -26,7 +26,6 @@ namespace OS {
         DeleteClients();
     }
     void TCPDriver::on_new_connection(uv_stream_t *server, int status) {
-        printf("new connection\n");
         TCPDriver *driver = (TCPDriver*)uv_handle_get_data((uv_handle_t*)server);
         INetPeer *peer = driver->CreatePeer((uv_tcp_t *)server);
         driver->mp_mutex->lock();
@@ -114,4 +113,5 @@ namespace OS {
         OS::LinkedListIterator<INetPeer*, TCPDriver*> iterator(mp_peers);
         iterator.Iterate(LLIterator_DeleteAllClients, this);
     }
+    
 }

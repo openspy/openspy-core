@@ -7,24 +7,17 @@
 #include <OS/LinkedList.h>
 
 #include <uv.h>
+#include <stack>
+class UVWriteData {
+	public:
+		OS::Buffer send_buffer;
+		uv_buf_t uv_buffer;
+};
+
 class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 	public:
-		INetPeer(INetDriver* driver, uv_tcp_t *sd) : OS::Ref(), OS::LinkedList<INetPeer *>()
-		{ 
-			printf("NetPeer\n");
-			mp_driver = driver; 
-			//m_address = m_sd->address; 
-			m_delete_flag = false; 
-			m_timeout_flag = false; 
-			m_socket_deleted = false;
-
-			uv_tcp_init(uv_default_loop(), &m_socket);
-			uv_accept((uv_stream_t*)sd, (uv_stream_t *)&m_socket);
-			uv_handle_set_data((uv_handle_t *)&m_socket, this);
-			uv_read_start((uv_stream_t *)&m_socket, INetPeer::read_alloc_cb, INetPeer::stream_read);
-		}
-		virtual ~INetPeer() { 
-			CloseSocket();
+		INetPeer(INetDriver* driver, uv_tcp_t *sd);
+		virtual ~INetPeer() {
 		}
 
 		void SetAddress(OS::Address address) { m_address = address; }
@@ -41,11 +34,16 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 
 		static void stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 		virtual void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) = 0;
+		static void write_callback(uv_write_t *req, int status);
 
+		static void close_callback(uv_handle_t *handle) {
+			INetPeer *peer = (INetPeer *)uv_handle_get_data(handle);
+			peer->DecRef();
+		}
 		void CloseSocket() {
             if(!m_socket_deleted) {
                 m_socket_deleted = true;
-                uv_close((uv_handle_t*)&m_socket, NULL);
+                uv_close((uv_handle_t*)&m_socket, close_callback);
             }
 		}
 	protected:
@@ -62,5 +60,11 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		bool m_socket_deleted;
 		bool m_delete_flag;
 		bool m_timeout_flag;
+
+		static void clear_send_buffer(uv_async_t *handle);
+		void append_send_buffer(OS::Buffer buffer);
+		uv_async_t m_async_send_handle;
+		std::stack<OS::Buffer> m_send_buffer;
+		uv_mutex_t m_send_mutex;
 	};
 #endif

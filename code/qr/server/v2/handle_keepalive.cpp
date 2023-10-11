@@ -21,7 +21,7 @@ namespace QR {
             send_buffer.WriteByte(PACKET_KEEPALIVE);
             send_buffer.WriteInt(response.v2_instance_key);
             send_buffer.WriteInt(current_time.tv_sec);
-            response.driver->SendPacket(response.from_address, send_buffer);			
+            response.driver->SendUDPPacket(response.from_address, send_buffer);			
 		}
     }
     void Driver::handle_v2_keepalive(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {

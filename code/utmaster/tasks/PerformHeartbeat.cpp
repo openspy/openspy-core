@@ -292,7 +292,8 @@ namespace MM {
             //send update
             s << "\\update\\" << key.c_str();
         }
-        thread_data->mp_mqconnection->sendMessage(mm_channel_exchange, mm_server_event_routingkey, s.str());
+        std::string str = s.str();
+        sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, str.c_str());
 
         if(request.peer) {
             request.peer->DecRef();

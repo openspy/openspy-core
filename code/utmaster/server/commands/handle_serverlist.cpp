@@ -125,7 +125,6 @@ namespace UT {
 		response.peer->Delete();
 	}
 	void Peer::handle_request_server_list(OS::Buffer recv_buffer) {
-		TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
         MM::UTMasterRequest req;     
 
 		std::stringstream ss;
@@ -176,7 +175,7 @@ namespace UT {
 		req.peer = this;
 		req.peer->IncRef();
 		req.callback = on_get_server_list;
-        scheduler->AddRequest(req.type, req);
+        AddRequest(req);
 
 	}
 }

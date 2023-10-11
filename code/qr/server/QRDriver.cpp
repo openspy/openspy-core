@@ -17,18 +17,18 @@ namespace QR {
 		buf->len = suggested_size;
 	}
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
-		uv_udp_init(uv_default_loop(), &m_recv_socket);
-		uv_handle_set_data((uv_handle_t*) &m_recv_socket, this);
+		uv_udp_init(uv_default_loop(), &m_recv_udp_socket);
+		uv_handle_set_data((uv_handle_t*) &m_recv_udp_socket, this);
 		
     	uv_ip4_addr(host, port, &m_recv_addr);
 
-    	uv_udp_bind(&m_recv_socket, (const struct sockaddr *)&m_recv_addr, UV_UDP_REUSEADDR);
-    	uv_udp_recv_start(&m_recv_socket, alloc_buffer, Driver::on_udp_read);
+    	uv_udp_bind(&m_recv_udp_socket, (const struct sockaddr *)&m_recv_addr, UV_UDP_REUSEADDR);
+    	uv_udp_recv_start(&m_recv_udp_socket, alloc_buffer, Driver::on_udp_read);
 
 		gettimeofday(&m_server_start, NULL);
 	}
 	Driver::~Driver() {
-		uv_udp_recv_stop(&m_recv_socket);
+		uv_udp_recv_stop(&m_recv_udp_socket);
 	}
 	void Driver::think(bool listener_waiting) {
 	}
@@ -38,7 +38,6 @@ namespace QR {
                                const uv_buf_t* buf,
                                const struct sockaddr* addr,
                                unsigned flags) {
-		
 		Driver *driver = (Driver *)uv_handle_get_data((uv_handle_t*) handle);
 		if(nread > 0) {
 			OS::Buffer buffer;
@@ -68,32 +67,6 @@ namespace QR {
 
 	}
 
-	void Driver::on_send_callback(uv_udp_send_t* req, int status) {
-		OS::Buffer *buffer = (OS::Buffer *)uv_handle_get_data((uv_handle_t*) req);
-		delete buffer;
-
-	}
-	void Driver::SendPacket(OS::Address to, OS::Buffer buffer) {
-		uv_udp_send_t *req = (uv_udp_send_t *)malloc(sizeof(uv_udp_send_t));
-		struct sockaddr_in addr = to.GetInAddr();
-
-		OS::Buffer *copy_buffer = new OS::Buffer(buffer);
-		uv_handle_set_data((uv_handle_t*) req, copy_buffer);
-
-		uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
-
-		int r = uv_udp_send(req,
-			&m_recv_socket,
-			&buf,
-			1,
-			(const struct sockaddr*) &addr,
-			Driver::on_send_callback);
-
-		if (r < 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", to.ToString().c_str(), r);
-		}
-	}
-
 	void Driver::send_v2_error(OS::Address to, uint32_t instance_key, uint8_t error_code, const char *error_message) {
 		OS::Buffer buffer;		
 		buffer.WriteByte(QR_MAGIC_1);
@@ -102,7 +75,7 @@ namespace QR {
 		buffer.WriteInt(instance_key);
 		buffer.WriteByte(error_code); //error code
 		buffer.WriteNTS(error_message);
-		SendPacket(to, buffer);
+		SendUDPPacket(to, buffer);
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Send Error: %s", to.ToString().c_str(), error_message);
 	}
@@ -118,7 +91,7 @@ namespace QR {
 
 		OS::Buffer buffer;
 		buffer.WriteBuffer(message.c_str(),message.length());
-		SendPacket(to, buffer);
+		SendUDPPacket(to, buffer);
 	}
 
 	void Driver::AddRequest(MM::MMPushRequest req) {

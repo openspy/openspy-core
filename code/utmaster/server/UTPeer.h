@@ -5,9 +5,12 @@
 #include <OS/OpenSpy.h>
 #include <OS/Net/NetPeer.h>
 
+#include <stack>
+
 #define UTMASTER_PING_TIME 120
 
 namespace MM {
+	class UTMasterRequest;
 	class MMTaskResponse;
 	class ServerRecord;
 }
@@ -67,7 +70,7 @@ namespace UT {
 
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, INetIOSocket *sd);
+		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();
 		
 		void OnConnectionReady();
@@ -84,12 +87,11 @@ namespace UT {
 
 		void send_ping();
 
-		
-
 		void Delete(bool timeout = false);
 		OS::GameData GetGameData();
 		private:
 			
+			void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 
 			void send_challenge_response(std::string response);
 			void send_challenge_authorization();
@@ -138,6 +140,8 @@ namespace UT {
 			static const CommandEntry m_client_commands[];
 			static const CommandEntry m_server_commands[];
 
+			void AddRequest(MM::UTMasterRequest req);
+
 
 			EConnectionState m_state;
 			UT::Config *m_config;
@@ -146,9 +150,7 @@ namespace UT {
 
 			uint32_t m_client_version;
 
-
-
-			bool m_got_server_init;
+			bool m_got_server_init;	
 
 	};
 }

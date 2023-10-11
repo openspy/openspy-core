@@ -17,7 +17,7 @@ namespace QR {
 
         OS::Buffer buffer;
         buffer.WriteBuffer(message.c_str(),message.length());
-        SendPacket(from_address, buffer);
+        SendUDPPacket(from_address, buffer);
     }
 }
     

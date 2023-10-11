@@ -20,7 +20,7 @@ namespace UT {
 		CommandEntry(EServerIncomingRequest_PackagesVersion, &Peer::handle_packages_version),
 		CommandEntry(-1, NULL)
 	};
-	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
+	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		gettimeofday(&m_last_ping, NULL);
@@ -28,6 +28,7 @@ namespace UT {
 		m_state = EConnectionState_WaitChallengeResponse;
 		m_config = NULL;
 		m_got_server_init = false;
+		OnConnectionReady();
 		
 	}
 	void Peer::OnConnectionReady() {
@@ -38,23 +39,7 @@ namespace UT {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
 	}
 	void Peer::think(bool packet_waiting) {
-		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
-
-		if (packet_waiting) {
-			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
-
-			int len = io_resp.comm_len;
-
-			if (len <= 0) {
-				goto end;
-			}
-			gettimeofday(&m_last_recv, NULL);
-
-			handle_packet(recv_buffer);
-
-		}
 
 	end:
 		send_ping();
@@ -64,9 +49,15 @@ namespace UT {
 		gettimeofday(&current_time, NULL);
 		if (current_time.tv_sec - m_last_recv.tv_sec > UTMASTER_PING_TIME) {
 			Delete(true);
-		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
-			Delete();
 		}
+	}
+
+	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+		OS::Buffer buffer;
+		buffer.WriteBuffer(buf->base, nread);
+		buffer.resetReadCursor();
+
+		this->handle_packet(buffer);
 	}
 	void Peer::handle_packet(OS::Buffer recv_buffer) {
 		uint8_t req_type;
@@ -138,16 +129,15 @@ namespace UT {
 
 
 	void Peer::send_packet(OS::Buffer buffer) {
+		if(m_delete_flag) {
+			return;
+		}
 		OS::Buffer send_buffer;
 		send_buffer.WriteInt((uint32_t)buffer.bytesWritten());
-		
-
 		send_buffer.WriteBuffer((char *)buffer.GetHead(), buffer.bytesWritten());
-		NetIOCommResp io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, send_buffer);
-		if(io_resp.disconnect_flag || io_resp.error_flag) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Send Exit: %d %d", getAddress().ToString().c_str(), io_resp.disconnect_flag, io_resp.error_flag);
-			Delete();
-		}
+
+		append_send_buffer(send_buffer);
+
 	}
 
 	void Peer::Delete(bool timeout) {
@@ -155,6 +145,7 @@ namespace UT {
 
 		m_timeout_flag = timeout;
 		m_delete_flag = true;
+		CloseSocket();
 		
 	}
 
@@ -193,10 +184,10 @@ namespace UT {
 
 	void Peer::Write_CompactInt(OS::Buffer& buffer, int value) {
 		int abs_val = abs(value);
-		uint8_t B0 = ((value >= 0) ? 0 : 0x80) + ((abs_val < 0x40) ? abs_val : ((abs_val & 0x3f) + 0x40));
-		buffer.WriteByte(B0);
+		uint8_t b0 = ((value >= 0) ? 0 : 0x80) + ((abs_val < 0x40) ? abs_val : ((abs_val & 0x3f) + 0x40));
+		buffer.WriteByte(b0);
 
-		if (B0 & 0x40)
+		if (b0 & 0x40)
 		{
 			abs_val >>= 6;
 			uint8_t B1 = (abs_val < 0x80) ? abs_val : ((abs_val & 0x7f) + 0x80);
@@ -256,14 +247,24 @@ namespace UT {
 	}
 	void Peer::delete_server() {
 		if(m_config != NULL && m_config->is_server) {
-			TaskScheduler<MM::UTMasterRequest, TaskThreadData> *scheduler = ((UT::Server *)(this->GetDriver()->getServer()))->getScheduler();
 			MM::UTMasterRequest req;        
 			req.type = MM::UTMasterRequestType_DeleteServer;
 			req.peer = this;
 			req.peer->IncRef();
 			req.record.m_address = m_server_address;
 			req.callback = NULL;
-			scheduler->AddRequest(req.type, req);
+			AddRequest(req);
 		}
 	}
+	void Peer::AddRequest(MM::UTMasterRequest req) {
+		uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+
+		MM::MMWorkData *work_data = new MM::MMWorkData();
+		work_data->request = req;
+
+		uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+
+		uv_queue_work(uv_default_loop(), uv_req, MM::PerformUVWorkRequest, MM::PerformUVWorkRequestCleanup);
+	}
+	
 }

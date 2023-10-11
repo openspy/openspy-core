@@ -7,7 +7,7 @@
 namespace UT {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
 	}
-	INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
+	INetPeer *Driver::CreatePeer(uv_tcp_t *socket) {
 		return new Peer(this, socket);
 	}
 	UT::Config *Driver::FindConfigByClientName(std::string clientName) {

@@ -106,48 +106,53 @@ std::vector<UT::Config *> LoadConfigMapping(std::string filePath) {
 	return result;
 }
 
+void idle_handler(uv_idle_t* handle) {
+	g_gameserver->tick();
+}
+
 int main() {
-	#ifndef _WIN32
-		signal(SIGINT, sig_handler);
-		signal(SIGTERM, sig_handler);
-	#else
-		WSADATA wsdata;
-		WSAStartup(MAKEWORD(1, 0), &wsdata);
-	#endif
+	uv_loop_t *loop = uv_default_loop();
+	uv_idle_t idler;
 
-		OS::Config *cfg = new OS::Config("openspy.xml");
-		AppConfig *app_config = new AppConfig(cfg, "utmaster");
-		OS::Init("utmaster", app_config);
+	uv_idle_init(uv_default_loop(), &idler);
+    uv_idle_start(&idler, idle_handler);
 
-		g_gameserver = new UT::Server();
+	OS::Init("utmaster", NULL);
+
+	g_gameserver = new UT::Server();
+
+	char address_buff[256];
+	char port_buff[16];
+	size_t temp_env_sz = sizeof(address_buff);
+
+	if(uv_os_getenv("OPENSPY_UTMASTER_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
+		temp_env_sz = sizeof(port_buff);
+		uv_os_getenv("OPENSPY_UTMASTER_BIND_PORT", (char *)&port_buff, &temp_env_sz);
+		uint16_t port = atoi(port_buff);
+
+		UT::Driver *driver = new UT::Driver(g_gameserver, address_buff, port, false);
+
+		char mapping_buff[256];
+		temp_env_sz = sizeof(mapping_buff);
+		uv_os_getenv("OPENSPY_UTMASTER_MAPPINGS_PATH", (char *)&mapping_buff, &temp_env_sz);
+
+		std::vector<UT::Config *> configMapping = LoadConfigMapping(mapping_buff);
+		driver->SetConfig(configMapping);
 
 
-		std::vector<std::string> drivers = app_config->getDriverNames();
-		std::vector<std::string>::iterator it = drivers.begin();
-		while (it != drivers.end()) {
-			std::string s = *it;
-			bool proxyFlag = false;
-			std::vector<OS::Address> addresses = app_config->GetDriverAddresses(s, proxyFlag);
-			OS::Address address = addresses.front();
-			std::string mappingLocation;
-			app_config->GetVariableString(s, "client-mapping", mappingLocation);
-			std::vector<UT::Config *> configMapping = LoadConfigMapping(mappingLocation);
-			UT::Driver *driver = new UT::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), proxyFlag);
-			driver->SetConfig(configMapping);
-			OS::LogText(OS::ELogLevel_Info, "Adding utmaster Driver: %s:%d proxy: %d\n", address.ToString(true).c_str(), address.GetPort(), proxyFlag);
-			g_gameserver->addNetworkDriver(driver);
-			it++;
+		OS::LogText(OS::ELogLevel_Info, "Adding UT Driver: %s:%d\n", address_buff, port);
+		g_gameserver->addNetworkDriver(driver);
 	}
 
-	g_gameserver->init();
-	while(g_running) {
-		g_gameserver->tick();
-	}
+	
+    uv_run(loop, UV_RUN_DEFAULT);
+
+    uv_loop_close(loop);
 
     delete g_gameserver;
 
     OS::Shutdown();
-    return 0;
+	return 0;
 }
 
 void shutdown() {

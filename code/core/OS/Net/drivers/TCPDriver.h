@@ -42,7 +42,7 @@ namespace OS {
 
 			uv_tcp_t m_listener_socket;
 
-			bool m_proxy_headers;
+			bool m_proxy_headers;		
 	};
 }
 #endif //_TCPDRIVER_H

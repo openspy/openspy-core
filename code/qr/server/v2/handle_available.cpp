@@ -19,7 +19,7 @@ namespace QR {
 
 		buffer.WriteByte(PACKET_AVAILABLE);
 		buffer.WriteInt(htonl(response.game_data.disabled_services));
-		response.driver->SendPacket(response.from_address, buffer);
+		response.driver->SendUDPPacket(response.from_address, buffer);
     }
 
     void Driver::handle_v2_available(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {

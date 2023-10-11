@@ -57,7 +57,6 @@ namespace MM {
 
 
 	void InitTasks() {
-		printf("InitTasks\n");
 		m_amqp_listener_conn = amqp_new_connection();
 		amqp_socket_t *amqp_socket = amqp_tcp_socket_new(m_amqp_listener_conn);
 

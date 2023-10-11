@@ -20,7 +20,7 @@ namespace QR {
 			buffer.WriteByte(PACKET_CHALLENGE);
 			buffer.WriteInt(response.v2_instance_key);
 			buffer.WriteNTS(response.challenge);
-			response.driver->SendPacket(response.from_address, buffer);
+			response.driver->SendUDPPacket(response.from_address, buffer);
 		}
     }
     void Driver::handle_v2_heartbeat(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {

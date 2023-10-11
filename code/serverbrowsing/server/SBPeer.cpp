@@ -71,9 +71,4 @@ namespace SB {
 		m_timeout_flag = timeout;
 		m_delete_flag = true;
 	}
-
-	void Peer::write_callback(uv_write_t *req, int status) {
-		OS::Buffer *buffer = (OS::Buffer *)uv_handle_get_data((uv_handle_t*) req);
-		delete buffer;
-	}
 }

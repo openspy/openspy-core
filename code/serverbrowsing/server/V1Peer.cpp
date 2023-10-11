@@ -18,7 +18,6 @@
 
 namespace SB {
 		V1Peer::V1Peer(Driver *driver, uv_tcp_t *sd) : SB::Peer(driver, sd, 1) {
-			printf("new V1Peer\n");
 			memset(&m_challenge,0,sizeof(m_challenge));
 			OS::gen_random((char *)&m_challenge,6);
 
@@ -450,20 +449,8 @@ namespace SB {
 			}
 			OS::Buffer encrypted_buffer;
 
-			create_enctype1_buffer((const char *)&m_challenge, m_enctype1_accumulator, encrypted_buffer);
-
-			uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
-
-			OS::Buffer *copy_buffer = new OS::Buffer(encrypted_buffer);
-			uv_handle_set_data((uv_handle_t*) req, copy_buffer);
-
-			uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
-
-			int r = uv_write(req, (uv_stream_t*)&m_socket, &buf, 1, Peer::write_callback);
-
-			if (r < 0) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", getAddress().ToString().c_str(), r);
-			}
+			create_enctype1_buffer((const char *)&m_challenge, m_enctype1_accumulator, encrypted_buffer);			
+			append_send_buffer(encrypted_buffer);
 		}
 		void V1Peer::SendPacket_Enctype1(OS::Buffer buffer) {
 			m_enctype1_accumulator.WriteBuffer(buffer.GetHead(), buffer.bytesWritten());
@@ -496,18 +483,7 @@ namespace SB {
 				}
 			}
 
-			uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
-
-			OS::Buffer *copy_buffer = new OS::Buffer(buffer);
-			uv_handle_set_data((uv_handle_t*) req, copy_buffer);
-
-			uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
-
-			int r = uv_write(req, (uv_stream_t*)&m_socket, &buf, 1, Peer::write_callback);
-
-			if (r < 0) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", getAddress().ToString().c_str(), r);
-			}
+			append_send_buffer(buffer);
 		}
 		void V1Peer::send_crypt_header(int enctype, OS::Buffer &buffer) {
 			if(m_sent_crypt_key) return;

@@ -21,7 +21,7 @@ namespace QR {
 
         OS::Buffer buffer;
         buffer.WriteBuffer(message.c_str(),message.length());
-        response.driver->SendPacket(response.from_address, buffer);
+        response.driver->SendUDPPacket(response.from_address, buffer);
     }
     void Driver::handle_v1_echo(OS::Address from_address, OS::KVReader reader) {
         OS::LogText(OS::ELogLevel_Info, "[%s] Got echo", from_address.ToString().c_str());

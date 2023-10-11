@@ -45,7 +45,7 @@ namespace UT {
 		UT::Config *FindConfigByClientName(std::string clientName);
         std::vector<UT::Config *> GetConfig() { return m_config; }
 	protected:
-		virtual INetPeer *CreatePeer(INetIOSocket *socket);
+		virtual INetPeer *CreatePeer(uv_tcp_t *socket);
 		std::vector<UT::Config *> m_config;
 	};
 }

@@ -21,9 +21,9 @@ namespace QR {
 
 			OS::Buffer buffer;
             buffer.WriteBuffer(message.c_str(),message.length());
-            response.driver->SendPacket(response.query_address, buffer);  //some games like roguespaer require it to be sent to the query address (most games will accept this still)
+            response.driver->SendUDPPacket(response.query_address, buffer);  //some games like roguespaer require it to be sent to the query address (most games will accept this still)
             if(response.from_address != response.query_address) {
-                response.driver->SendPacket(response.from_address, buffer);  //other games require it to be sent to the from address (thps4ps2)
+                response.driver->SendUDPPacket(response.from_address, buffer);  //other games require it to be sent to the from address (thps4ps2)
             }
             
 		} else {
