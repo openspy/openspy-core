@@ -23,6 +23,7 @@ public:
 
 	void SendUDPPacket(OS::Address to, OS::Buffer buffer);
 	static void on_udp_send_callback(uv_udp_send_t* req, int status);
+	struct sockaddr_in GetAddress() { return m_recv_addr; };
 protected:
 	static void clear_send_buffer(uv_async_t *handle);
 	INetServer *m_server;

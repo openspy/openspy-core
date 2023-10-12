@@ -363,7 +363,9 @@ namespace SB {
 		}
 		buffer.WriteBuffer(buff, len);
 
+        uv_mutex_lock(&m_crypto_mutex);
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.bytesWritten() - header_len);
+        uv_mutex_unlock(&m_crypto_mutex);
 
 		append_send_buffer(buffer);
 	}
@@ -432,8 +434,6 @@ namespace SB {
 			servers.requested_fields = req.req.field_list;
 			SendListQueryResp(servers, req.req);
 		}
-
-		FlushPendingRequests();
 	}
 	void V2Peer::ProcessInfoRequest(OS::Buffer &buffer) {
 		OS::Address address;
@@ -503,7 +503,7 @@ namespace SB {
 			Delete(true);
 		} else if((io_resp.disconnect_flag || io_resp.error_flag) && waiting_packet) {
 			Delete();
-		}
+		}		
 	}
 	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, OS::Buffer *sendBuffer, bool full_keys, const std::map<std::string, int> *optimized_fields, bool no_keys, bool first_set) {
 		OS::Buffer *buffer = sendBuffer;
@@ -753,18 +753,7 @@ namespace SB {
 
 		OS::Buffer buffer((void *)&send_str, len);
 
-		uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
-
-		OS::Buffer *copy_buffer = new OS::Buffer(buffer);
-		uv_handle_set_data((uv_handle_t*) req, copy_buffer);
-
-		uv_buf_t buf = uv_buf_init((char *)copy_buffer->GetHead(), copy_buffer->bytesWritten());
-
-		int r = uv_write(req, (uv_stream_t*)&m_socket, &buf, 1, Peer::write_callback);
-
-		if (r < 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", getAddress().ToString().c_str(), r);
-		}
+		append_send_buffer(buffer);
 	}
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {

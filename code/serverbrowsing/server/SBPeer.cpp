@@ -17,11 +17,16 @@ namespace SB {
 
 		m_version = version;
 		
-		mp_mutex = OS::CreateMutex();
+		uv_mutex_init(&mp_mutex);
+		uv_async_init(uv_default_loop(), &mp_pending_request_flush_async, flush_pending_requests);
+		uv_handle_set_data((uv_handle_t*)&mp_pending_request_flush_async, this);
+
+		uv_mutex_init(&m_crypto_mutex);
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
-		delete mp_mutex;
+		uv_mutex_destroy(&mp_mutex);
+		uv_mutex_destroy(&m_crypto_mutex);
 	}
 
 	void Peer::OnConnectionReady() {
@@ -42,32 +47,48 @@ namespace SB {
 		return false;
 	}
 	void Peer::AddRequest(MM::MMQueryRequest req) {
-
-		uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
-
-		MM::MMWorkData *work_data = new MM::MMWorkData();
-		req.peer = this;
-		this->IncRef();
-		work_data->request = req;
-
-		uv_handle_set_data((uv_handle_t*) uv_req, work_data);
-
-		uv_queue_work(uv_default_loop(), uv_req, MM::PerformUVWorkRequest, MM::PerformUVWorkRequestCleanup);
+		uv_mutex_lock(&mp_mutex);
+		m_pending_request_list.push(req);
+		uv_mutex_unlock(&mp_mutex);
+		uv_async_send(&mp_pending_request_flush_async);
 	}
 	void Peer::FlushPendingRequests() {
+		uv_mutex_lock(&mp_mutex);
 		while (!m_pending_request_list.empty()) {
-			TaskScheduler<MM::MMQueryRequest, TaskThreadData> *scheduler = ((SBServer *)(GetDriver()->getServer()))->getScheduler();
-			MM::MMQueryRequest req = m_pending_request_list.front();
-			req.peer = this;
-			req.peer->IncRef();
-			req.driver = mp_driver;
-			scheduler->AddRequest(req.type, req);
+			// TaskScheduler<MM::MMQueryRequest, TaskThreadData> *scheduler = ((SBServer *)(GetDriver()->getServer()))->getScheduler();
+			// MM::MMQueryRequest req = m_pending_request_list.front();
+			// req.peer = this;
+			// req.peer->IncRef();
+			// req.driver = mp_driver;
+			// scheduler->AddRequest(req.type, req);
+			// m_pending_request_list.pop();
+			uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+			MM::MMQueryRequest req = m_pending_request_list.top();
 			m_pending_request_list.pop();
+
+			MM::MMWorkData *work_data = new MM::MMWorkData();
+			req.peer = this;
+			this->IncRef();
+			work_data->request = req;
+
+			uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+
+			uv_queue_work(uv_default_loop(), uv_req, MM::PerformUVWorkRequest, MM::PerformUVWorkRequestCleanup);
 		}
+		uv_mutex_unlock(&mp_mutex);
+	}
+
+	void Peer::flush_pending_requests(uv_async_t *handle) {
+		
+		Peer *peer = (Peer *)uv_handle_get_data((uv_handle_t*)handle);
+		peer->FlushPendingRequests();
 	}
 
 	void Peer::Delete(bool timeout) {
-		CloseSocket(); //closed for improved V1 speeds
+		if(!m_delete_flag) {
+			IncRef();
+			uv_close((uv_handle_t*)&mp_pending_request_flush_async, close_callback);
+		}
 		m_timeout_flag = timeout;
 		m_delete_flag = true;
 	}

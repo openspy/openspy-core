@@ -74,7 +74,6 @@ namespace QR {
 		static void on_got_v2_challenge_response(MM::MMTaskResponse response);		
 
 		INetIOSocket *getListenerSocket() const;
-		struct sockaddr_in GetAddress() { return m_recv_addr; };
 		const std::vector<INetIOSocket *> getSockets() const;
 		void OnPeerMessage(INetPeer *peer);
 

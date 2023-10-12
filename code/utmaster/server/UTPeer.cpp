@@ -144,9 +144,7 @@ namespace UT {
 		delete_server();
 
 		m_timeout_flag = timeout;
-		m_delete_flag = true;
-		CloseSocket();
-		
+		m_delete_flag = true;		
 	}
 
 	int Peer::Read_CompactInt(OS::Buffer &buffer)

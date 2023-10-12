@@ -7,18 +7,19 @@
 #include <OS/LinkedList.h>
 
 #include <uv.h>
-#include <stack>
+#include <queue>
+class INetPeer;
 class UVWriteData {
 	public:
 		OS::Buffer send_buffer;
 		uv_buf_t uv_buffer;
+		INetPeer *peer;
 };
 
 class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 	public:
 		INetPeer(INetDriver* driver, uv_tcp_t *sd);
-		virtual ~INetPeer() {
-		}
+		virtual ~INetPeer();
 
 		void SetAddress(OS::Address address) { m_address = address; }
 		virtual void OnConnectionReady() = 0;
@@ -39,13 +40,12 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		static void close_callback(uv_handle_t *handle) {
 			INetPeer *peer = (INetPeer *)uv_handle_get_data(handle);
 			peer->DecRef();
+			if(peer->GetRefCount() == 0) {
+				delete peer;
+			}
+			
 		}
-		void CloseSocket() {
-            if(!m_socket_deleted) {
-                m_socket_deleted = true;
-                uv_close((uv_handle_t*)&m_socket, close_callback);
-            }
-		}
+		void CloseSocket();
 	protected:
 		static void read_alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
 			buf->base = (char*)malloc(suggested_size);
@@ -64,7 +64,7 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		static void clear_send_buffer(uv_async_t *handle);
 		void append_send_buffer(OS::Buffer buffer);
 		uv_async_t m_async_send_handle;
-		std::stack<OS::Buffer> m_send_buffer;
+		std::queue<OS::Buffer> m_send_buffer;
 		uv_mutex_t m_send_mutex;
 	};
 #endif

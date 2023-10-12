@@ -35,6 +35,9 @@ namespace SB {
 
 		}
 		void V1Peer::Delete(bool timeout) {
+			if(m_delete_flag) {
+				return;
+			}
 			if(m_enctype == 1) {
 				Enctype1_FlushPackets();
 			}
@@ -62,7 +65,6 @@ namespace SB {
 			}
 		}
 		void V1Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
-				printf("on_stream_read: %d\n", nread);
 				// OS::Buffer buffer;
 				// buffer.WriteBuffer(buf->base, nread);
 				// buffer.resetReadCursor();
@@ -257,8 +259,6 @@ namespace SB {
                     return;
                 }
             }
-			FlushPendingRequests();
-            flushWaitingPackets();
 		}
 		void V1Peer::handle_list(std::string data) {
 			std::string mode, gamename;
@@ -444,13 +444,16 @@ namespace SB {
 		}
 
 		void V1Peer::Enctype1_FlushPackets() {
-			if(m_delete_flag) {
-				return;
-			}
 			OS::Buffer encrypted_buffer;
 
 			create_enctype1_buffer((const char *)&m_challenge, m_enctype1_accumulator, encrypted_buffer);			
 			append_send_buffer(encrypted_buffer);
+
+			uv_async_t fake_handle;
+			uv_handle_set_data((uv_handle_t*)&fake_handle, this);
+
+			IncRef();
+			clear_send_buffer(&fake_handle); //bit of a hack, this should only be called from the event loop thread though
 		}
 		void V1Peer::SendPacket_Enctype1(OS::Buffer buffer) {
 			m_enctype1_accumulator.WriteBuffer(buffer.GetHead(), buffer.bytesWritten());
@@ -462,8 +465,11 @@ namespace SB {
 			OS::Buffer buffer;
 			OS::Buffer output_buffer;
 			int skip_len = 0;
-			if(m_validated && m_enctype == 2)
+			if(m_validated && m_enctype == 2) {
+				uv_mutex_lock(&m_crypto_mutex);
 				send_crypt_header(m_enctype, buffer);
+				uv_mutex_unlock(&m_crypto_mutex);
+			}
 
 			skip_len += buffer.bytesWritten();
 			buffer.WriteBuffer((void *)buff, len);
@@ -478,7 +484,9 @@ namespace SB {
 					SendPacket_Enctype1(buffer);
 					return;
 				case 2:
+					uv_mutex_lock(&m_crypto_mutex);
 					crypt_docrypt(&m_crypt_key_enctype2, (unsigned char *)buffer.GetHead() + skip_len, (int)buffer.bytesWritten() - skip_len);
+					uv_mutex_unlock(&m_crypto_mutex);
 					break;
 				}
 			}

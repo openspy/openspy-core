@@ -7,7 +7,6 @@
 INetPeer::INetPeer(INetDriver* driver, uv_tcp_t *sd) : OS::Ref(), OS::LinkedList<INetPeer *>()
 { 
     mp_driver = driver; 
-    //m_address = m_sd->address; 
     m_delete_flag = false; 
     m_timeout_flag = false; 
     m_socket_deleted = false;
@@ -19,7 +18,16 @@ INetPeer::INetPeer(INetDriver* driver, uv_tcp_t *sd) : OS::Ref(), OS::LinkedList
     uv_tcp_init(uv_default_loop(), &m_socket);
     uv_accept((uv_stream_t*)sd, (uv_stream_t *)&m_socket);
     uv_handle_set_data((uv_handle_t *)&m_socket, this);
+
+    struct sockaddr_in name;
+    int nlen = sizeof(name);
+    uv_tcp_getpeername(&m_socket, (struct sockaddr *)&name, &nlen);
+
+    m_address = OS::Address(name);
+
     uv_read_start((uv_stream_t *)&m_socket, INetPeer::read_alloc_cb, INetPeer::stream_read);
+}
+INetPeer::~INetPeer() {
 }
 void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     INetPeer *peer = (INetPeer*)uv_handle_get_data((const uv_handle_t*)stream);
@@ -39,6 +47,7 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
 
 	void INetPeer::write_callback(uv_write_t *req, int status) {
         UVWriteData *write_data = (UVWriteData *)uv_handle_get_data((uv_handle_t*) req);
+        write_data->peer->DecRef();
         delete write_data;
 	}
 
@@ -46,26 +55,26 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
 	void INetPeer::clear_send_buffer(uv_async_t *handle) {
 		//std::vector<OS::Buffer> m_send_buffer;
 		INetPeer *peer = (INetPeer *)uv_handle_get_data((uv_handle_t*)handle);
-		if(peer->m_delete_flag) {
-			return;
-		}
-
+        
 		uv_mutex_lock(&peer->m_send_mutex);
+        
 		
 		while(!peer->m_send_buffer.empty()) {
-			OS::Buffer send_buffer = peer->m_send_buffer.top();
+            OS::Buffer send_buffer = peer->m_send_buffer.front();
 
 			uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
 
 			UVWriteData *write_data = new UVWriteData();
 			write_data->send_buffer.WriteBuffer(send_buffer.GetHead(), send_buffer.bytesWritten());
 			write_data->uv_buffer = uv_buf_init((char *)write_data->send_buffer.GetHead(), write_data->send_buffer.bytesWritten());
+            write_data->peer = peer;
+            //peer->IncRef();
 			uv_handle_set_data((uv_handle_t*) req, write_data);
 
 			int r = uv_write(req, (uv_stream_t*)&peer->m_socket, &write_data->uv_buffer, 1, write_callback);
 
 			if (r < 0) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d", peer->getAddress().ToString().c_str(), r);
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d - %s", peer->getAddress().ToString().c_str(), r, uv_err_name(r));
 			}
 
 			peer->m_send_buffer.pop();
@@ -75,7 +84,19 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
     void INetPeer::append_send_buffer(OS::Buffer buffer) {
 		uv_mutex_lock(&m_send_mutex);
 		m_send_buffer.push(buffer);
+        IncRef();
 		uv_mutex_unlock(&m_send_mutex);
 
-		uv_async_send(&m_async_send_handle);
+		int r = uv_async_send(&m_async_send_handle);
     }
+    void INetPeer::CloseSocket() {
+    if(!m_socket_deleted) {
+        m_socket_deleted = true;
+        
+        IncRef();
+        uv_close((uv_handle_t*)&m_async_send_handle, close_callback);
+
+        IncRef();
+        uv_close((uv_handle_t*)&m_socket, close_callback);
+    }
+}

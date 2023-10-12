@@ -40,6 +40,7 @@ namespace SB {
 		INetPeer *CreatePeer(uv_tcp_t *socket);
 	private:
 		int m_version;
+		uv_mutex_t m_mutex;
 
 		static bool LLIterator_SendDeleteServer(INetPeer* peer, MM::Server* server);
 		static bool LLIterator_SendNewServer(INetPeer* peer, MM::Server* server);

@@ -12,65 +12,23 @@ namespace OS {
         uv_tcp_bind(&m_listener_socket, (const sockaddr *)&saddr, 0);
         uv_handle_set_data((uv_handle_t*) &m_listener_socket, this);
 
-
-        mp_mutex = OS::CreateMutex();
-        mp_thread = OS::CreateThread(TCPDriver::TaskThread, this, true);
-
         uv_listen((uv_stream_t *)&m_listener_socket, 128, TCPDriver::on_new_connection);
     }
     TCPDriver::~TCPDriver() {
-        mp_thread->SignalExit(true);
-        delete mp_thread;
-        delete mp_mutex;
-
         DeleteClients();
     }
     void TCPDriver::on_new_connection(uv_stream_t *server, int status) {
         TCPDriver *driver = (TCPDriver*)uv_handle_get_data((uv_handle_t*)server);
         INetPeer *peer = driver->CreatePeer((uv_tcp_t *)server);
-        driver->mp_mutex->lock();
         //peer->SetAddress(sda->address);
         driver->m_server->RegisterSocket(peer, driver->m_proxy_headers);
         driver->mp_peers->AddToList(peer);
-        driver->mp_mutex->unlock();
 
     }
     void TCPDriver::think(bool listener_waiting) {
-        // if (listener_waiting) {
-        //     std::vector<INetIOSocket *> sockets = getNetIOInterface()->TCPAccept(mp_socket);
-        //     std::vector<INetIOSocket *>::iterator it = sockets.begin();
-        //     while (it != sockets.end()) {
-        //         INetIOSocket *sda = *it;
-        //         if (sda == NULL) return;
-        //         INetPeer *peer = CreatePeer(sda);//new INetPeer(this, sda);
-
-        //         mp_mutex->lock();
-
-        //         peer->SetAddress(sda->address);
-
-        //         m_server->RegisterSocket(peer, m_proxy_headers);
-        //         if(!m_proxy_headers)
-        //             peer->OnConnectionReady();
-                
-        //         mp_peers->AddToList(peer);
-                
-        //         mp_mutex->unlock();
-        //         it++;
-        //     }
-        // }
+        TickConnections();
     }
 
-    void *TCPDriver::TaskThread(OS::CThread *thread) {
-        TCPDriver *driver = (TCPDriver *)thread->getParams();
-        while (thread->isRunning()) {
-            driver->mp_mutex->lock();
-
-            driver->TickConnections();
-            driver->mp_mutex->unlock();
-            OS::Sleep(DRIVER_THREAD_TIME);
-        }
-        return NULL;
-    }
     void TCPDriver::TickConnections() {
         OS::LinkedListIterator<INetPeer*, TCPDriver*> iterator(mp_peers);
         iterator.Iterate(LLIterator_TickOrDeleteClient, this);
@@ -81,7 +39,7 @@ namespace OS {
                 driver->mp_peers->RemoveFromList(peer);
                 driver->m_server->UnregisterSocket(peer);
                 peer->DecRef();
-                delete peer;
+                peer->CloseSocket(); //this will delete itself
             }
         }
         else {
