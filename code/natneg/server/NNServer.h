@@ -19,10 +19,8 @@ namespace NN {
 			void init();
 			void tick();
 			void shutdown();
-			TaskScheduler<NNRequestData, TaskThreadData> *getScheduler() { return mp_task_scheduler; };
 			NN::Driver *findDriverByAddress(OS::Address address);
 		private:
-			TaskScheduler<NNRequestData, TaskThreadData> *mp_task_scheduler;
 	};
 }
 #endif //_CHCGAMESERVER_H

@@ -5,10 +5,10 @@
 namespace NN {
 
 	Server::Server() : INetServer() {
-		mp_task_scheduler = InitTasks(this);
+		uv_loop_set_data(uv_default_loop(), this);
+		InitTasks();
 	}
 	Server::~Server() {
-		delete mp_task_scheduler;
 	}
 	void Server::init() {
 		
@@ -29,7 +29,7 @@ namespace NN {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {
 			INetDriver *driver = *it;
-			if(driver->getListenerSocket()->address == address) {
+			if(OS::Address(driver->GetAddress()) == address) {
 				return (NN::Driver *)driver;
 			}
 			it++;

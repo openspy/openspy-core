@@ -117,12 +117,10 @@ namespace MM {
 
 	class MMWorkData {
 		public:
-			MMWorkData() : request(), response() {
+			MMWorkData() : request() {
 
 			}
 			UTMasterRequest request;
-			MMTaskResponse response;
-			MMTaskResponseCallback original_callback;
 
 	};
 

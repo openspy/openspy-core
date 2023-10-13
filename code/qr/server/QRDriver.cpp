@@ -28,7 +28,7 @@ namespace QR {
 		gettimeofday(&m_server_start, NULL);
 	}
 	Driver::~Driver() {
-		uv_udp_recv_stop(&m_recv_udp_socket);
+		uv_close((uv_handle_t *)&m_recv_udp_socket, NULL); //XXX: this should actually be moved to not be in the ctor..
 	}
 	void Driver::think(bool listener_waiting) {
 	}

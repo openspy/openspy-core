@@ -6,109 +6,107 @@
 #include "NNDriver.h"
 #include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 namespace NN {
+	void alloc_buffer(uv_handle_t* handle,
+                            size_t suggested_size,
+                            uv_buf_t* buf) {
+		buf->base = (char *)malloc(suggested_size);
+		buf->len = suggested_size;
+	}
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
-		OS::Address bind_address(0, port);
-		mp_net_io_interface = new BSDNetIOInterface<>();
-		mp_socket = getNetIOInterface()->BindUDP(bind_address);
+		uv_udp_init(uv_default_loop(), &m_recv_udp_socket);
+		uv_handle_set_data((uv_handle_t*) &m_recv_udp_socket, this);
+		
+    	uv_ip4_addr(host, port, &m_recv_addr);
+
+    	uv_udp_bind(&m_recv_udp_socket, (const struct sockaddr *)&m_recv_addr, UV_UDP_REUSEADDR);
+    	uv_udp_recv_start(&m_recv_udp_socket, alloc_buffer, Driver::on_udp_read);
 
 		gettimeofday(&m_server_start, NULL);
-
-		mp_mutex = OS::CreateMutex();
 	}
 	Driver::~Driver() {
-		getNetIOInterface()->closeSocket(mp_socket);
-		delete mp_net_io_interface;
-		delete mp_mutex;
+		uv_close((uv_handle_t *)&m_recv_udp_socket, NULL); //XXX: this should actually be moved to not be in the ctor..
 	}
-	void Driver::think(bool listener_waiting) {
-		mp_mutex->lock();
-		if (listener_waiting) {
-			std::vector<INetIODatagram> datagrams;
-			getNetIOInterface()->datagramRecv(mp_socket, datagrams);
-			std::vector<INetIODatagram>::iterator it = datagrams.begin();
-			while (it != datagrams.end()) {
-				INetIODatagram dgram = *it;
-				if (dgram.comm_len == 0) {
-					it++;
-					continue;
-				}
-				if (dgram.error_flag) {
-					//log error??
-				}
-				else {
-					NatNegPacket packet;
 
-					dgram.buffer.resetReadCursor();
-					//PROCESS PACKET HERE
-					do {
-						void *begin = dgram.buffer.GetReadCursor();
-						dgram.buffer.ReadBuffer(&packet.magic, NATNEG_MAGIC_LEN);
-						if(memcmp(&NNMagicData,&packet.magic, NATNEG_MAGIC_LEN) != 0) {
-							//skip invalid packet
-							break;
-						}
-						memset(&packet.Packet.Init, 0, sizeof(packet.Packet.Init));
-						packet.version = dgram.buffer.ReadByte();
-						packet.packettype = dgram.buffer.ReadByte();
-						packet.cookie = dgram.buffer.ReadInt();
+	void Driver::on_udp_read(uv_udp_t* handle,
+                               ssize_t nread,
+                               const uv_buf_t* buf,
+                               const struct sockaddr* addr,
+                               unsigned flags) {
+		Driver *driver = (Driver *)uv_handle_get_data((uv_handle_t*) handle);
+		if(nread > 0) {
+			OS::Buffer buffer;
+			buffer.WriteBuffer(buf->base, nread);
+			buffer.resetReadCursor();
 
-						int packetSize = packetSizeFromType(packet.packettype, packet.version);
-						std::string gamename;
+			OS::Address address = *(struct sockaddr_in *)addr;
 
-						
-						size_t new_pos = 0;
-						switch(packet.packettype) {
-							case NN_INIT:
-								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-								if(packet.version > 1) {
-									gamename = dgram.buffer.ReadNTS();
-								}								
-								handle_init_packet(dgram.address, &packet, gamename);
-							break;
-							case NN_CONNECT_ACK:
-								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-								handle_connect_ack_packet(dgram.address, &packet);
-							break;
-							case NN_ADDRESS_CHECK:
-								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-								new_pos = ((size_t)begin-(size_t)dgram.buffer.GetHead());
-								new_pos += sizeof(packet);
-								dgram.buffer.SetReadCursor(new_pos);
-								handle_address_check_packet(dgram.address, &packet);
-							break;
-							case NN_REPORT:
-								dgram.buffer.ReadBuffer(&packet.Packet.Report, packetSize);
-								handle_report_packet(dgram.address, &packet);
-							break;
-							case NN_NATIFY_REQUEST:
-								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-								new_pos = ((size_t)begin-(size_t)dgram.buffer.GetHead());
-								new_pos += sizeof(packet);
-								dgram.buffer.SetReadCursor(new_pos);
-								handle_natify_packet(dgram.address, &packet);
-							break;
-							case NN_ERTACK:
-								dgram.buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-								handle_ert_ack_packet(dgram.address, &packet);
-							break;
-						}
+			NatNegPacket packet;
 
-					} while(dgram.buffer.readRemaining() > 0);
-				}
-				it++;
+			void *begin = buffer.GetReadCursor();
+			buffer.ReadBuffer(&packet.magic, NATNEG_MAGIC_LEN);
+			if(memcmp(&NNMagicData,&packet.magic, NATNEG_MAGIC_LEN) != 0) {
+				//skip invalid packet
+				return;
 			}
+			memset(&packet.Packet.Init, 0, sizeof(packet.Packet.Init));
+			packet.version = buffer.ReadByte();
+			packet.packettype = buffer.ReadByte();
+			packet.cookie = buffer.ReadInt();
+
+			int packetSize = packetSizeFromType(packet.packettype, packet.version);
+			std::string gamename;
+
+			
+			size_t new_pos = 0;
+			switch(packet.packettype) {
+				case NN_INIT:
+					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+					if(packet.version > 1) {
+						gamename = buffer.ReadNTS();
+					}								
+					driver->handle_init_packet(address, &packet, gamename);
+				break;
+				case NN_CONNECT_ACK:
+					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+					driver->handle_connect_ack_packet(address, &packet);
+				break;
+				case NN_ADDRESS_CHECK:
+					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+					new_pos = ((size_t)begin-(size_t)buffer.GetHead());
+					new_pos += sizeof(packet);
+					buffer.SetReadCursor(new_pos);
+					driver->handle_address_check_packet(address, &packet);
+				break;
+				case NN_REPORT:
+					buffer.ReadBuffer(&packet.Packet.Report, packetSize);
+					driver->handle_report_packet(address, &packet);
+				break;
+				case NN_NATIFY_REQUEST:
+					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+					new_pos = ((size_t)begin-(size_t)buffer.GetHead());
+					new_pos += sizeof(packet);
+					buffer.SetReadCursor(new_pos);
+					driver->handle_natify_packet(address, &packet);
+				break;
+				case NN_ERTACK:
+					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+					driver->handle_ert_ack_packet(address, &packet);
+				break;
+			}			
 		}
-		mp_mutex->unlock();
+	}
+
+	void Driver::think(bool listener_waiting) {
+
 	}
 	const std::vector<INetPeer *> Driver::getPeers(bool inc_ref) {
 		return std::vector<INetPeer *>();
 	}
 	INetIOSocket *Driver::getListenerSocket() const {
-		return mp_socket;
+		return NULL;
 	}
 	const std::vector<INetIOSocket *> Driver::getSockets() const {
 		std::vector<INetIOSocket *> ret;
-		ret.push_back(mp_socket);
 		return ret;
 	}
 	void Driver::OnPeerMessage(INetPeer *peer) {
@@ -146,19 +144,22 @@ namespace NN {
 		return size;
 	}
 	void Driver::SendPacket(OS::Address to,NatNegPacket *packet) {
-		INetIOSocket client_socket = *mp_socket;
-		client_socket.address = to;
-		client_socket.shared_socket = true;
-
 		int size = packetSizeFromType(packet->packettype, packet->version) + BASEPACKET_SIZE;
 		memcpy(&packet->magic, NNMagicData, NATNEG_MAGIC_LEN);
 
 		OS::Buffer buffer(size);
 		buffer.WriteBuffer(packet, size);
 
-		NetIOCommResp resp = getNetIOInterface()->datagramSend(&client_socket, buffer);
-		if (resp.disconnect_flag || resp.error_flag) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d %d", to.ToString().c_str(), resp.disconnect_flag, resp.error_flag);
-		}
+		SendUDPPacket(to, buffer);
+	}
+	void Driver::AddRequest(NNRequestData req) {
+		uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+
+		NNRequestData *work_data = new NNRequestData();
+		*work_data = req;
+
+		uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+
+		uv_queue_work(uv_default_loop(), uv_req, PerformUVWorkRequest, PerformUVWorkRequestCleanup);
 	}
 }

@@ -10,10 +10,10 @@
 #include <jansson.h>
 
 namespace NN {
-   json_t *get_natify_object(OS::Address from, NatNegPacket *packet, INetIOSocket *socket) {
+   json_t *get_natify_object(OS::Address from, NatNegPacket *packet) {
 		json_t *packet_obj = json_object();
 		json_object_set_new(packet_obj, "from_address", json_string(from.ToString().c_str()));
-        json_object_set_new(packet_obj, "driver_address", json_string(socket->address.ToString().c_str()));
+        //json_object_set_new(packet_obj, "driver_address", json_string(socket->address.ToString().c_str()));
         json_object_set_new(packet_obj, "hostname", json_string(OS::g_hostName));
         //
         json_object_set_new(packet_obj, "version", json_integer(packet->version));
@@ -40,14 +40,13 @@ namespace NN {
             return;
         }
 
-        json_t *json_obj = get_natify_object(from, packet, mp_socket);
+        json_t *json_obj = get_natify_object(from, packet);
         char *json_data = json_dumps(json_obj, 0);
 
-		TaskScheduler<NNRequestData, TaskThreadData> *scheduler = ((NN::Server *)(getServer()))->getScheduler();
 		NNRequestData req;
         req.type = ENNRequestType_SubmitJson;
 		req.send_string = json_data;
-		scheduler->AddRequest(ENNRequestType_SubmitJson, req);
+		AddRequest(req);
         json_decref(json_obj);
 
 		if (json_data)

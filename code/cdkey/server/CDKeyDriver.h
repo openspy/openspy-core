@@ -31,13 +31,13 @@ namespace CDKey {
 		void handle_auth_packet(OS::Address from, OS::KVReader data_parser);
 		void SendPacket(OS::Address to, std::string message);
 	private:
-		static void *TaskThread(OS::CThread *thread);
+		static void on_udp_read(uv_udp_t* handle,
+                               ssize_t nread,
+                               const uv_buf_t* buf,
+                               const struct sockaddr* addr,
+                               unsigned flags);
 
 		struct timeval m_server_start;
-
-		OS::CMutex *mp_mutex;
-
-		INetIOSocket *mp_socket;
 	};
 }
 #endif //_NNDRIVER_H

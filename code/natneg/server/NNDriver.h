@@ -27,9 +27,14 @@ namespace NN {
 		void OnPeerMessage(INetPeer *peer);
 		void SendPacket(OS::Address to, NatNegPacket *packet);
 	private:
-		static void *TaskThread(OS::CThread *thread);
+		static void on_udp_read(uv_udp_t* handle,
+                               ssize_t nread,
+                               const uv_buf_t* buf,
+                               const struct sockaddr* addr,
+                               unsigned flags);
 
-		int packetSizeFromType(uint8_t type, uint8_t version);
+
+		static int packetSizeFromType(uint8_t type, uint8_t version);
 		void handle_init_packet(OS::Address from, NatNegPacket *packet, std::string gamename);
 		void handle_connect_ack_packet(OS::Address from, NatNegPacket *packet);
 		void handle_address_check_packet(OS::Address from, NatNegPacket *packet);
@@ -37,13 +42,10 @@ namespace NN {
 		void handle_preinit_packet(OS::Address from, NatNegPacket *packet);
 		void handle_natify_packet(OS::Address from, NatNegPacket *packet);
 		void handle_ert_ack_packet(OS::Address from, NatNegPacket *packet);
+		void AddRequest(NNRequestData req);
 
 
 		struct timeval m_server_start;
-
-		OS::CMutex *mp_mutex;
-
-		INetIOSocket *mp_socket;
 	};
 }
 #endif //_NNDRIVER_H

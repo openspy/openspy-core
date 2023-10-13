@@ -27,7 +27,12 @@ namespace NN {
 
     bool PerformSubmitJson(NNRequestData, TaskThreadData *);
 
+	void PerformUVWorkRequest(uv_work_t *req);
+	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
+
     bool Handle_HandleRecvMessage(TaskThreadData *, std::string message);
-    TaskScheduler<NNRequestData, TaskThreadData> * InitTasks(INetServer *server);
+    void InitTasks();
+
+    amqp_connection_state_t getThreadLocalAmqpConnection();
 }
 #endif // _NN_TASKS_H
