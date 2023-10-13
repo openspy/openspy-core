@@ -13,9 +13,7 @@ namespace GS {
 		void init();
 		void tick();
 		void shutdown();
-		TaskScheduler<PersistBackendRequest, TaskThreadData> *GetGamestatsTask() { return mp_gamestats_tasks; };
 	private:
-		TaskScheduler<PersistBackendRequest, TaskThreadData> *mp_gamestats_tasks;
 	};
 }
 #endif //_GPSERVER_H

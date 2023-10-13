@@ -59,7 +59,6 @@ namespace GS {
 		persist_request_data->profileid = 0;
 		persist_request_data->operation_id = local_id;
 
-		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = persist_request_data;
@@ -67,6 +66,6 @@ namespace GS {
 		req.callback = onGetGameDataCallback;
 		req.game_instance_identifier = gamename;
 		IncRef();
-		scheduler->AddRequest(req.type, req);
+		AddRequest(req);
 	}
 }

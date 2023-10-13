@@ -22,7 +22,7 @@ namespace GS {
 		}
 		return NULL;
 	}
-	INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
-		return new Peer(this, socket);
+	INetPeer *Driver::CreatePeer(uv_tcp_t *sd) {
+		return new Peer(this, sd);
 	}
 }

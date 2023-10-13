@@ -57,7 +57,6 @@ namespace GS {
 		}
 
 		game_data = OS::KeyStringToMap(gamedata);
-		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.profileid = m_profile.id;
 		req.mp_peer = this;
@@ -68,7 +67,7 @@ namespace GS {
 		req.kvMap = game_data;
 		req.game_instance_identifier = m_game_session_backend_identifier_map[sesskey];
 		IncRef();
-		scheduler->AddRequest(req.type, req);
+		AddRequest(req);
 
 		mp_mutex->unlock();
 	}

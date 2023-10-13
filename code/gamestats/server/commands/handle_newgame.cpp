@@ -42,7 +42,6 @@ namespace GS {
 	}
 	void Peer::handle_newgame(OS::KVReader data_parser) {
 		size_t session_id = (size_t)data_parser.GetValueInt("sesskey"); //identifier, used incase of multiple game sessions happening at once
-		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = (void *)session_id;
@@ -50,6 +49,6 @@ namespace GS {
 		req.type = EPersistRequestType_NewGame;
 		req.callback = newGameCreateCallback;
 		IncRef();
-		scheduler->AddRequest(req.type, req);
+		AddRequest(req);
 	}
 }

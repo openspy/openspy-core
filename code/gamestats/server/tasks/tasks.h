@@ -94,7 +94,9 @@ namespace GS {
 	bool Perform_CDKeyAuth(PersistBackendRequest request, TaskThreadData *thread_data);
 	bool Perform_GetProfileIDFromCD(PersistBackendRequest request, TaskThreadData *thread_data);
 
-	TaskScheduler<PersistBackendRequest, TaskThreadData> *InitTasks(INetServer *server);
+	void InitTasks();
+	void PerformUVWorkRequest(uv_work_t *req);
+	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
 
 	//void Handle_WebError(TaskShared::AuthData &data, json_t *error_obj);
 }

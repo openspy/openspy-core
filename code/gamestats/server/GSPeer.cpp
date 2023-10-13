@@ -19,7 +19,7 @@ using namespace GPShared;
 
 namespace GS {
 
-	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
+	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		
@@ -81,65 +81,8 @@ namespace GS {
 	}
 	void Peer::think(bool packet_waiting) {
 		
-		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
-		if (packet_waiting) {
-			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
-			int len = io_resp.comm_len;
-
-			if (len <= 0) {
-				goto end;
-			}
-
-			gamespy3dxor((char *)recv_buffer.GetHead(), recv_buffer.bytesWritten());
-
-			/*
-				This scans the incoming packets for \\final\\ and splits based on that,
-				
-				
-				as well as handles incomplete packets -- due to TCP preserving data order, this is possible, and cannot be used on UDP protocols				
-			*/
-			std::string recv_buf = m_kv_accumulator;
-			m_kv_accumulator.clear();
-			recv_buf.append((const char *)recv_buffer.GetHead(), len);
-
-			size_t final_pos = 0, last_pos = 0;
-
-			do {
-				final_pos = recv_buf.find("\\final\\", last_pos);
-				if (final_pos == std::string::npos) break;
-
-				std::string partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
-				handle_packet(partial_string);
-
-				last_pos = final_pos + 7; // 7 = strlen of \\final
-			} while (final_pos != std::string::npos);
-
-
-			//check for extra data that didn't have the final string -- incase of incomplete data
-			if (last_pos < (size_t)len) {
-				std::string remaining_str = recv_buf.substr(last_pos);
-				m_kv_accumulator.append(remaining_str);
-			}
-
-			if (m_kv_accumulator.length() > MAX_UNPROCESSED_DATA) {
-				Delete();
-				return;
-			}
-		}
-		end:
 		send_ping();
-
-		/*
-		//check for timeout -- Removed: not implemented in most clients
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
-		if(current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME*2) {
-			Delete(true);
-		} else */if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
-			Delete();
-		}
 	}
 	void Peer::handle_packet(std::string packet_string) {
 		OS::LogText(OS::ELogLevel_Debug, "[%s] Recv: %s", getAddress().ToString().c_str(), packet_string.c_str());
@@ -192,13 +135,16 @@ namespace GS {
 		OS::LogText(OS::ELogLevel_Debug, "[%s] Send: %s", getAddress().ToString().c_str(), std::string((const char *)buffer.GetHead(), buffer.bytesWritten()).c_str());
 		gamespy3dxor((char *)send_buffer.GetHead(), send_buffer.bytesWritten());
 
-		buffer.resetReadCursor();
 
-		NetIOCommResp io_resp;
-		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, send_buffer);
-		if (io_resp.disconnect_flag || io_resp.error_flag) {
-			Delete();
-		}
+		append_send_buffer(send_buffer);
+
+		// buffer.resetReadCursor();
+
+		// NetIOCommResp io_resp;
+		// io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, send_buffer);
+		// if (io_resp.disconnect_flag || io_resp.error_flag) {
+		// 	Delete();
+		// }
 	}
 	void Peer::send_ping() {
 		//check for timeout
@@ -312,5 +258,59 @@ namespace GS {
 			}
 		}
 		mp_mutex->unlock();
+	}
+	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+		OS::Buffer recv_buffer;
+		recv_buffer.WriteBuffer(buf->base, nread);
+		recv_buffer.resetReadCursor();
+
+		int len = recv_buffer.bytesWritten();
+		gamespy3dxor((char *)recv_buffer.GetHead(), len);
+
+		/*
+			This scans the incoming packets for \\final\\ and splits based on that,
+			
+			
+			as well as handles incomplete packets -- due to TCP preserving data order, this is possible, and cannot be used on UDP protocols				
+		*/
+		std::string recv_buf = m_kv_accumulator;
+		m_kv_accumulator.clear();
+		recv_buf.append((const char *)recv_buffer.GetHead(), len);
+
+		size_t final_pos = 0, last_pos = 0;
+
+		do {
+			final_pos = recv_buf.find("\\final\\", last_pos);
+			if (final_pos == std::string::npos) break;
+
+			std::string partial_string = recv_buf.substr(last_pos, final_pos - last_pos);
+			handle_packet(partial_string);
+
+			last_pos = final_pos + 7; // 7 = strlen of \\final
+		} while (final_pos != std::string::npos);
+
+
+		//check for extra data that didn't have the final string -- incase of incomplete data
+		if (last_pos < (size_t)len) {
+			std::string remaining_str = recv_buf.substr(last_pos);
+			m_kv_accumulator.append(remaining_str);
+		}
+
+		if (m_kv_accumulator.length() > MAX_UNPROCESSED_DATA) {
+			Delete();
+			return;
+		}
+	}
+
+
+	void Peer::AddRequest(PersistBackendRequest req) {
+		uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+
+		PersistBackendRequest *work_data = new PersistBackendRequest();
+		*work_data = req;
+
+		uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+
+		uv_queue_work(uv_default_loop(), uv_req, PerformUVWorkRequest, PerformUVWorkRequestCleanup);
 	}
 }

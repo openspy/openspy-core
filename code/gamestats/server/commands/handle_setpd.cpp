@@ -73,7 +73,6 @@ namespace GS {
 		persist_request_data->operation_id = operation_id;
 		persist_request_data->wait_index = m_set_request_index++;
 
-		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = persist_request_data;
@@ -90,7 +89,7 @@ namespace GS {
 		}
 		
 		IncRef();
-		scheduler->AddRequest(req.type, req);
+		AddRequest(req);
 
 
 		

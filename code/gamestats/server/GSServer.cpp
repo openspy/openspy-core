@@ -6,10 +6,9 @@
 
 namespace GS {
 	Server::Server() : INetServer(){
-		mp_gamestats_tasks = GS::InitTasks(this);
+		GS::InitTasks();
 	}
 	Server::~Server() {
-		delete mp_gamestats_tasks;
 	}
 	void Server::init() {
 		

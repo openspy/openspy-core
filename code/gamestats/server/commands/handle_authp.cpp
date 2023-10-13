@@ -19,7 +19,6 @@ using namespace GPShared;
 
 namespace GS {
 	void Peer::perform_pid_auth(int profileid, const char *response, int operation_id) {
-		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = (void *)(ptrdiff_t)operation_id;
@@ -30,10 +29,9 @@ namespace GS {
 		req.modified_since = m_session_key;
 		req.authCallback = m_nick_email_auth_cb;
 		IncRef();
-		scheduler->AddRequest(req.type, req);
+		AddRequest(req);
 	}
 	void Peer::perform_preauth_auth(std::string auth_token, const char *response, int operation_id) {
-		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = (void *)(ptrdiff_t)operation_id;
@@ -45,10 +43,9 @@ namespace GS {
 		req.data_index = operation_id;
 		req.authCallback = m_nick_email_auth_cb;
 		IncRef();
-		scheduler->AddRequest(req.type, req);
+		AddRequest(req);
 	}
 	void Peer::perform_cdkey_auth(std::string cdkey, std::string response, std::string nick, int operation_id) {
-		TaskScheduler<PersistBackendRequest, TaskThreadData> *scheduler = ((GS::Server *)(GetDriver()->getServer()))->GetGamestatsTask();
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = (void *)(ptrdiff_t)operation_id;
@@ -62,7 +59,7 @@ namespace GS {
 		req.data_index = operation_id;
 		req.authCallback = m_nick_email_auth_cb;
 		IncRef();
-		scheduler->AddRequest(req.type, req);
+		AddRequest(req);
 	}
 	void Peer::handle_authp(OS::KVReader data_parser) {
 		// TODO: CD KEY AUTH

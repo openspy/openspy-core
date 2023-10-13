@@ -39,12 +39,14 @@ namespace GS {
 
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, INetIOSocket *sd);
+		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();
 		
 		void think(bool packet_waiting);
 		void handle_packet(std::string packet_string);
 		void Delete(bool timeout = false);
+		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
+		void AddRequest(PersistBackendRequest req);
 
 		int GetProfileID();
 
