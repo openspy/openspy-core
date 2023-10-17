@@ -30,7 +30,7 @@ namespace GP {
 			} while ((peer = (Peer*)peer->GetNext()) != NULL);
 		}
 	}
-	INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
+	INetPeer *Driver::CreatePeer(uv_tcp_t *socket) {
 		return new Peer(this, socket);
 	}
 }

@@ -33,7 +33,7 @@ namespace FESL {
 		delete mp_string_crypter;
 	}
 	void Driver::OnUserAuth(std::string session_key, int userid, int profileid) {
-		mp_mutex->lock();
+		//mp_mutex->lock();
 		Peer* peer = (Peer*)GetPeerList()->GetHead();
 		if (peer != NULL) {
 			do {
@@ -46,9 +46,9 @@ namespace FESL {
 				}
 			} while ((peer = (Peer*)peer->GetNext()) != NULL);
 		}
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 	}
-	INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
-		return new Peer(this, socket);
+	INetPeer *Driver::CreatePeer(uv_tcp_t *sd) {
+		return new Peer(this, sd);
 	}
 }

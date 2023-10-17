@@ -165,7 +165,7 @@ namespace Peerchat {
 
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, INetIOSocket *sd);
+		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();
 
 		void OnConnectionReady();
@@ -226,6 +226,7 @@ namespace Peerchat {
 		static void OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer);
 		static void OnTopic_FetchChannelInfo(TaskResponse response_data, Peer* peer);
 	private:
+		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void* extra, INetPeer* peer);
 		static void OnGetBackendId(TaskResponse response_data, Peer *peer);

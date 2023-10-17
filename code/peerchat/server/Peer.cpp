@@ -58,7 +58,7 @@ namespace Peerchat {
 		CommandEntry("SETCHANPROPS", true, 1, &Peer::handle_setchanprops, OPERPRIVS_GLOBALOWNER),
 		CommandEntry("DELCHANPROPS", true, 1, &Peer::handle_delchanprops, OPERPRIVS_GLOBALOWNER),
 	};
-	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
+	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
 		m_user_details.id = 0;
 		mp_user_address_visibility_list = new OS::LinkedListHead<UserAddressVisibiltyInfo*>();
 		m_sent_client_init = false;
@@ -111,6 +111,71 @@ namespace Peerchat {
 		send_quit(reason);
 	}
 	
+	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+		OS::Buffer recv_buffer;
+		recv_buffer.WriteBuffer(buf->base, nread);
+
+		gettimeofday(&m_last_recv, NULL);
+
+		if(m_using_encryption) {
+			gs_crypt((unsigned char*)recv_buffer.GetHead(), nread, &m_crypt_key_in);
+		}
+
+		
+
+		std::string command_upper;
+		bool command_found = false;
+		std::string recv_buf;
+		recv_buf.append((const char *)recv_buffer.GetHead(), nread);
+
+		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s", getAddress().ToString().c_str(), m_profile.id, recv_buf.c_str());
+
+		std::vector<std::string> commands = OS::KeyStringToVector(recv_buf, false, '\n');
+		std::vector<std::string>::iterator it = commands.begin();
+		while(it != commands.end() && !m_delete_flag) {
+			std::string command_line = OS::strip_whitespace(*it);
+			std::vector<std::string> command_items = OS::KeyStringToVector(command_line, false, ' ');
+
+			if (command_items.size() == 0) break;
+			std::string command = command_items.at(0);
+
+			command_upper = "";
+			std::transform(command.begin(),command.end(),std::back_inserter(command_upper),toupper);
+			
+			for(size_t i=0;i<sizeof(m_commands)/sizeof(CommandEntry);i++) {
+				CommandEntry entry = m_commands[i];
+				if (command_upper.compare(entry.name) == 0) {
+					if (entry.login_required) {
+						if(m_user_details.id == 0 || !m_sent_client_init) break;
+					}
+					if(entry.required_operflags != 0) {
+						if(!(GetOperFlags() & entry.required_operflags)) {
+							break;
+						}
+					}
+					command_found = true;
+
+					if (((int)command_items.size()) >= entry.minimum_args+1) {
+						m_flood_weight += entry.weight;
+						if(m_flood_weight >= WARNING_FLOOD_WEIGHT_THRESHOLD) {
+							send_flood_warning();
+						}
+						(*this.*entry.callback)(command_items);
+					}
+					else {
+						send_numeric(461, command_upper + " :Not enough parameters", true);
+					}
+					break;
+				}
+			}					
+			*it++;
+		}
+		if(!command_found) {
+			std::ostringstream s;
+			s << command_upper << " :Unknown Command";
+			send_numeric(421, s.str(), true);
+		}
+	}
 	void Peer::think(bool packet_waiting) {
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
@@ -125,77 +190,77 @@ namespace Peerchat {
 			packet_waiting = false; //don't process anything until you have a backend id
 		}
 
-		if (packet_waiting) {
-			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
+		// if (packet_waiting) {
+		// 	OS::Buffer recv_buffer;
+		// 	io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 
-			int len = io_resp.comm_len;
+		// 	int len = io_resp.comm_len;
 
-			if (len <= 0) {
-				goto end;
-			}
+		// 	if (len <= 0) {
+		// 		goto end;
+		// 	}
 
-			gettimeofday(&m_last_recv, NULL);
+		// 	gettimeofday(&m_last_recv, NULL);
 
-			if(m_using_encryption) {
-				gs_crypt((unsigned char*)recv_buffer.GetHead(), len, &m_crypt_key_in);
-			}
+		// 	if(m_using_encryption) {
+		// 		gs_crypt((unsigned char*)recv_buffer.GetHead(), len, &m_crypt_key_in);
+		// 	}
 
 			
 
-			std::string command_upper;
-			bool command_found = false;
-			std::string recv_buf;
-			recv_buf.append((const char *)recv_buffer.GetHead(), len);
+		// 	std::string command_upper;
+		// 	bool command_found = false;
+		// 	std::string recv_buf;
+		// 	recv_buf.append((const char *)recv_buffer.GetHead(), len);
 
-			OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s", getAddress().ToString().c_str(), m_profile.id, recv_buf.c_str());
+		// 	OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s", getAddress().ToString().c_str(), m_profile.id, recv_buf.c_str());
 
-			std::vector<std::string> commands = OS::KeyStringToVector(recv_buf, false, '\n');
-			std::vector<std::string>::iterator it = commands.begin();
-			while(it != commands.end() && !m_delete_flag) {
-				std::string command_line = OS::strip_whitespace(*it);
-				std::vector<std::string> command_items = OS::KeyStringToVector(command_line, false, ' ');
+		// 	std::vector<std::string> commands = OS::KeyStringToVector(recv_buf, false, '\n');
+		// 	std::vector<std::string>::iterator it = commands.begin();
+		// 	while(it != commands.end() && !m_delete_flag) {
+		// 		std::string command_line = OS::strip_whitespace(*it);
+		// 		std::vector<std::string> command_items = OS::KeyStringToVector(command_line, false, ' ');
 
-				if (command_items.size() == 0) break;
-				std::string command = command_items.at(0);
+		// 		if (command_items.size() == 0) break;
+		// 		std::string command = command_items.at(0);
 
-				command_upper = "";
-				std::transform(command.begin(),command.end(),std::back_inserter(command_upper),toupper);
+		// 		command_upper = "";
+		// 		std::transform(command.begin(),command.end(),std::back_inserter(command_upper),toupper);
 				
-				for(size_t i=0;i<sizeof(m_commands)/sizeof(CommandEntry);i++) {
-					CommandEntry entry = m_commands[i];
-					if (command_upper.compare(entry.name) == 0) {
-						if (entry.login_required) {
-							if(m_user_details.id == 0 || !m_sent_client_init) break;
-						}
-						if(entry.required_operflags != 0) {
-							if(!(GetOperFlags() & entry.required_operflags)) {
-								break;
-							}
-						}
-						command_found = true;
+		// 		for(size_t i=0;i<sizeof(m_commands)/sizeof(CommandEntry);i++) {
+		// 			CommandEntry entry = m_commands[i];
+		// 			if (command_upper.compare(entry.name) == 0) {
+		// 				if (entry.login_required) {
+		// 					if(m_user_details.id == 0 || !m_sent_client_init) break;
+		// 				}
+		// 				if(entry.required_operflags != 0) {
+		// 					if(!(GetOperFlags() & entry.required_operflags)) {
+		// 						break;
+		// 					}
+		// 				}
+		// 				command_found = true;
 
-						if (((int)command_items.size()) >= entry.minimum_args+1) {
-							m_flood_weight += entry.weight;
-							if(m_flood_weight >= WARNING_FLOOD_WEIGHT_THRESHOLD) {
-								send_flood_warning();
-							}
-							(*this.*entry.callback)(command_items);
-						}
-						else {
-							send_numeric(461, command_upper + " :Not enough parameters", true);
-						}
-						break;
-					}
-				}					
-				*it++;
-			}
-			if(!command_found) {
-				std::ostringstream s;
-				s << command_upper << " :Unknown Command";
-				send_numeric(421, s.str(), true);
-			}
-		}
+		// 				if (((int)command_items.size()) >= entry.minimum_args+1) {
+		// 					m_flood_weight += entry.weight;
+		// 					if(m_flood_weight >= WARNING_FLOOD_WEIGHT_THRESHOLD) {
+		// 						send_flood_warning();
+		// 					}
+		// 					(*this.*entry.callback)(command_items);
+		// 				}
+		// 				else {
+		// 					send_numeric(461, command_upper + " :Not enough parameters", true);
+		// 				}
+		// 				break;
+		// 			}
+		// 		}					
+		// 		*it++;
+		// 	}
+		// 	if(!command_found) {
+		// 		std::ostringstream s;
+		// 		s << command_upper << " :Unknown Command";
+		// 		send_numeric(421, s.str(), true);
+		// 	}
+		// }
 
 	end:
 		send_ping();
@@ -282,11 +347,7 @@ namespace Peerchat {
 			gs_crypt((unsigned char *)buffer.GetHead(), buffer.bytesWritten(), &m_crypt_key_out);
 		}
 
-		NetIOCommResp io_resp;
-		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
-		if (io_resp.disconnect_flag || io_resp.error_flag) {
-			Delete(false, "Connection severed");
-		}
+		append_send_buffer(buffer);
 	}
 
 	void Peer::send_numeric(int num, std::string str, bool no_colon, std::string target_name, bool append_name, std::string default_name) {

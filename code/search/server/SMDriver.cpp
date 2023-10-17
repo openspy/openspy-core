@@ -8,7 +8,7 @@
 namespace SM {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
 	}
-	INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
-		return new Peer(this, socket);
+	INetPeer *Driver::CreatePeer(uv_tcp_t *sd) {
+		return new Peer(this, sd);
 	}
 }

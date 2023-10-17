@@ -57,7 +57,7 @@ namespace SM {
 	class Driver;
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, INetIOSocket *sd);
+		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();
 		
 		void OnConnectionReady();
@@ -72,6 +72,8 @@ namespace SM {
 
 		void Delete(bool timeout = false);
 	private:
+
+		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 
 		void handle_search(OS::KVReader data_parser);
 		static void m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);

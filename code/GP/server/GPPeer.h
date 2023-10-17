@@ -67,7 +67,7 @@ namespace GP {
 
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, INetIOSocket *sd);
+		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();
 
 		void OnConnectionReady();
@@ -103,6 +103,8 @@ namespace GP {
 		void send_list_status();
 
 	private:
+		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
+
 		//packet handlers
 		void handle_login(OS::KVReader data_parser);
 		void handle_auth(OS::KVReader data_parser); //possibly for unexpected loss of connection to retain existing session

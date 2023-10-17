@@ -29,7 +29,7 @@ namespace GP {
 		void InformStatusUpdate(int from_profileid, GPShared::GPStatus status);
 		
 	protected:
-		virtual INetPeer *CreatePeer(INetIOSocket *socket);
+		virtual INetPeer *CreatePeer(uv_tcp_t *socket);
 	};
 }
 #endif //_SBDRIVER_H

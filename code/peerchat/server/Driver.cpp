@@ -31,14 +31,14 @@ namespace Peerchat {
 		state.summary = summary;
 		state.peer = NULL;
 
-		mp_mutex->lock();
+		//mp_mutex->lock();
 		OS::LinkedListIterator<INetPeer*, FindPeerByUserSummaryState*> iterator(mp_peers);
     	iterator.Iterate(LLIterator_FindPeerByUserSummary, &state);
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 
 		return state.peer;   
     }
-    INetPeer *Driver::CreatePeer(INetIOSocket *socket) {
+    INetPeer *Driver::CreatePeer(uv_tcp_t *socket) {
         return new Peer(this, socket);
     }
 	bool Driver::LLIterator_SendUserMessageToVisibleUsers(INetPeer* peer, SendMessageIteratorState* state) {
@@ -58,10 +58,10 @@ namespace Peerchat {
 		state.message = message;
 		state.includeSelf = includeSelf;
 
-		mp_mutex->lock();
+		//mp_mutex->lock();
 		OS::LinkedListIterator<INetPeer*, SendMessageIteratorState*> iterator(mp_peers);
     	iterator.Iterate(LLIterator_SendUserMessageToVisibleUsers, &state);
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 	}
 	bool Driver::LLIterator_OnChannelMessage(INetPeer* peer, SendMessageIteratorState* state)
 	{
@@ -110,10 +110,10 @@ namespace Peerchat {
 		state.requiredOperFlags = requiredOperFlags;
 		state.onlyVisibleTo = onlyVisibleTo;
 
-		mp_mutex->lock();
+		//mp_mutex->lock();
 		OS::LinkedListIterator<INetPeer*, SendMessageIteratorState*> iterator(mp_peers);
     	iterator.Iterate(LLIterator_OnChannelMessage, &state);
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 	}
 	bool Driver::LLIterator_OnSetUserChannelKeys(INetPeer* peer, SetChannelKeysIteratorState* state) {
 		Peer *p = (Peer *)peer;
@@ -132,10 +132,10 @@ namespace Peerchat {
 		ss << summary.channel_name << " " << user_summary.nick << " BCAST :" << keys.ToString();
 		state.keys_message = ss.str();
 
-		mp_mutex->lock();
+		//mp_mutex->lock();
 		OS::LinkedListIterator<INetPeer*, SetChannelKeysIteratorState*> iterator(mp_peers);
     	iterator.Iterate(LLIterator_OnSetUserChannelKeys, &state);
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 	}
 
 	bool Driver::LLIterator_OnSetChannelKeys(INetPeer* peer, SetChannelKeysIteratorState* state) {
@@ -155,10 +155,10 @@ namespace Peerchat {
 		ss << summary.channel_name << " BCAST :" << keys.ToString();
 		state.keys_message = ss.str();
 
-		mp_mutex->lock();
+		//mp_mutex->lock();
 		OS::LinkedListIterator<INetPeer*, SetChannelKeysIteratorState*> iterator(mp_peers);
     	iterator.Iterate(LLIterator_OnSetChannelKeys, &state);
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 	}
 
 	bool Driver::LLIterator_OnChannelBroadcast(INetPeer* peer, OnChannelBroadcastState* state) {
@@ -189,10 +189,10 @@ namespace Peerchat {
 		state.message = message;
 		state.includeSelf = includeSelf;
 
-		mp_mutex->lock();		
+		//mp_mutex->lock();		
 		OS::LinkedListIterator<INetPeer*, OnChannelBroadcastState*> iterator(mp_peers);
     	iterator.Iterate(LLIterator_OnChannelBroadcast, &state);
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 	}
 	bool Driver::LLIterator_OnSetUserChanModeFlags(INetPeer* peer, OnSetUserChanModeFlagsState* state) {
 		Peer *p = (Peer *)peer;
@@ -209,10 +209,10 @@ namespace Peerchat {
 		state.channel_id = channel_id;
 		state.modeflags = modeflags;
 
-		mp_mutex->lock();		
+		//mp_mutex->lock();		
 		OS::LinkedListIterator<INetPeer*, OnSetUserChanModeFlagsState*> iterator(mp_peers);
     	iterator.Iterate(LLIterator_OnSetUserChanModeFlags, &state);
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 
 	}
 }

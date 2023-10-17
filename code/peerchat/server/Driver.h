@@ -77,7 +77,7 @@ namespace Peerchat {
 		std::string getServerName() { return m_server_name;}
 		void OnSetUserChanModeFlags(int user_id, int channel_id, int modeflags);
 	protected:
-		virtual INetPeer *CreatePeer(INetIOSocket *socket);
+		virtual INetPeer *CreatePeer(uv_tcp_t *sd);
 
 	private:
 		std::string m_server_name;

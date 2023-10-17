@@ -21,7 +21,7 @@
 
 namespace GP {
 
-	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
+	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		m_got_buddies = false;
@@ -36,7 +36,7 @@ namespace GP {
 		m_status.status_str[0] = 0;
 		m_status.location_str[0] = 0;
 		m_status.quiet_flags = GP_SILENCE_NONE;
-		m_status.address = sd->address;
+		m_status.address = getAddress();
 
 		RegisterCommands();
 
@@ -74,25 +74,25 @@ namespace GP {
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 
-		if (packet_waiting) {
-			OS::Buffer recv_buffer;
-			io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
+		// if (packet_waiting) {
+		// 	OS::Buffer recv_buffer;
+		// 	io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
 
-			int len = io_resp.comm_len;
+		// 	int len = io_resp.comm_len;
 
-			if (len <= 0) {
-				goto end;
-			}
+		// 	if (len <= 0) {
+		// 		goto end;
+		// 	}
 
-			std::vector<OS::KVReader> data_parser;
-			if (mp_proto_processor->ProcessIncoming(recv_buffer, data_parser)) {
-				std::vector<OS::KVReader>::iterator it = data_parser.begin();
-				while(it != data_parser.end()) {
-					handle_packet(*it);
-					it++;
-				}				
-			}
-		}
+		// 	std::vector<OS::KVReader> data_parser;
+		// 	if (mp_proto_processor->ProcessIncoming(recv_buffer, data_parser)) {
+		// 		std::vector<OS::KVReader>::iterator it = data_parser.begin();
+		// 		while(it != data_parser.end()) {
+		// 			handle_packet(*it);
+		// 			it++;
+		// 		}				
+		// 	}
+		// }
 
 	end:
 		run_timed_operations();
@@ -184,18 +184,23 @@ namespace GP {
 		}
 		SendPacket((const uint8_t *)s.str().c_str(),s.str().length());
 	}
-	void Peer::SendPacket(const uint8_t *buff, size_t len) {
-		OS::Buffer buffer;
-		buffer.WriteBuffer((void *)buff, len);
-		buffer.WriteBuffer((void *)"\\final\\", 7);
+	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+		OS::Buffer recv_buffer;
+		recv_buffer.WriteBuffer(buf->base, nread);
 
-		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s\n", getAddress().ToString().c_str(), m_profile.id, std::string((const char *)buff, len).c_str());
-
-		NetIOCommResp io_resp;
-		io_resp = this->GetDriver()->getNetIOInterface()->streamSend(m_sd, buffer);
-		if (io_resp.disconnect_flag || io_resp.error_flag) {
-			Delete();
+		std::vector<OS::KVReader> data_parser;
+		if (mp_proto_processor->ProcessIncoming(recv_buffer, data_parser)) {
+			std::vector<OS::KVReader>::iterator it = data_parser.begin();
+			while(it != data_parser.end()) {
+				handle_packet(*it);
+				it++;
+			}				
 		}
+	}
+	void Peer::SendPacket(const uint8_t *buff, size_t len) {
+		OS::Buffer buffer((void *)buff, len);
+		buffer.WriteBuffer((void *)"\\final\\", 7);
+		append_send_buffer(buffer);
 	}
 	void Peer::run_timed_operations() {
 		//check for timeout

@@ -36,7 +36,7 @@ namespace FESL {
 		{ FESL_TYPE_ACCOUNT, "SendAccountName", &Peer::m_acct_send_account_name},
 		{ FESL_TYPE_ACCOUNT, "SendPassword", &Peer::m_acct_send_account_password},
 	};
-	Peer::Peer(Driver *driver, INetIOSocket *sd) : INetPeer(driver, sd) {
+	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 
@@ -62,49 +62,41 @@ namespace FESL {
 	void Peer::OnConnectionReady() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());
 	}
+	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+		OS::Buffer recv_buffer = OS::Buffer((void *)buf->base, nread);
+
+		if (nread < sizeof(FESL_HEADER)) {
+			return;
+		}
+
+		FESL_HEADER header;
+		recv_buffer.ReadBuffer(&header, sizeof(header));
+
+		gettimeofday(&m_last_recv, NULL);
+
+		int buf_len = nread - sizeof(FESL_HEADER);
+
+		std::string request_data = std::string((const char *)recv_buffer.GetReadCursor(), buf_len);
+		OS::KVReader kv_data(request_data, '=', '\n');
+		char *type;
+		for (size_t i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
+			if (Peer::m_commands[i].type == ntohl(header.type)) {
+				if (Peer::m_commands[i].command.compare(kv_data.GetValue("TXN")) == 0) {
+					type = (char *)&Peer::m_commands[i].type;
+					OS::LogText(OS::ELogLevel_Info, "[%s] Got Command: %c%c%c%c %s", getAddress().ToString().c_str(), type[3], type[2], type[1], type[0], Peer::m_commands[i].command.c_str());
+					(*this.*Peer::m_commands[i].mpFunc)(kv_data);
+					return;
+				}
+			}
+		}
+		header.type = ntohl(header.type);
+		type = (char *)&header.type;
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", getAddress().ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
+	}
 	void Peer::think(bool packet_waiting) {
 		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
-		if (packet_waiting) {
-			OS::Buffer recv_buffer;
 
-			io_resp = ((FESL::Driver *)GetDriver())->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
-
-			int len = io_resp.comm_len;
-
-			if (len <= 0) {
-				goto end;
-			}
-
-			FESL_HEADER header;
-			recv_buffer.ReadBuffer(&header, sizeof(header));
-
-			gettimeofday(&m_last_recv, NULL);
-
-			int buf_len = len - sizeof(FESL_HEADER);
-
-			if (buf_len < 0) {
-				goto end;
-			}
-			std::string request_data = std::string((const char *)recv_buffer.GetReadCursor(), buf_len);
-			OS::KVReader kv_data(request_data, '=', '\n');
-			char *type;
-			for (size_t i = 0; i < sizeof(m_commands) / sizeof(CommandHandler); i++) {
-				if (Peer::m_commands[i].type == ntohl(header.type)) {
-					if (Peer::m_commands[i].command.compare(kv_data.GetValue("TXN")) == 0) {
-						type = (char *)&Peer::m_commands[i].type;
-						OS::LogText(OS::ELogLevel_Info, "[%s] Got Command: %c%c%c%c %s", getAddress().ToString().c_str(), type[3], type[2], type[1], type[0], Peer::m_commands[i].command.c_str());
-						(*this.*Peer::m_commands[i].mpFunc)(kv_data);
-						return;
-					}
-				}
-			}
-			header.type = ntohl(header.type);
-			type = (char *)&header.type;
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", getAddress().ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
-		}
-
-		end:
 		send_ping();
 
 		//check for timeout
@@ -133,11 +125,7 @@ namespace FESL {
 		send_buf.WriteBuffer((void *)&header, sizeof(header));
 		send_buf.WriteNTS(data);
 
-		NetIOCommResp io_resp = ((FESL::Driver *)GetDriver())->getNetIOInterface()->streamSend(m_sd, send_buf);
-
-		if (io_resp.disconnect_flag || io_resp.error_flag)
-			Delete();
-
+		append_send_buffer(send_buf);
 	}
 	void Peer::m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		((Peer *)peer)->mp_mutex->lock();

@@ -21,7 +21,7 @@ namespace SM {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
 	protected:
-		virtual INetPeer *CreatePeer(INetIOSocket *socket);
+		virtual INetPeer *CreatePeer(uv_tcp_t *sd);
 	};
 }
 #endif //_SBDRIVER_H

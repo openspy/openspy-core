@@ -104,7 +104,7 @@ namespace FESL {
     class ObjectInventoryItem;
 	class Peer : public INetPeer {
 	public:
-		Peer(Driver *driver, INetIOSocket *sd);
+		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();
 		
 		void think(bool packet_waiting);
@@ -127,6 +127,7 @@ namespace FESL {
 		void DuplicateLoginExit();
 		std::string getSessionKey() { return m_session_key; };
 	private:
+		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 		bool m_fsys_hello_handler(OS::KVReader kv_list);
 		bool m_fsys_ping_handler(OS::KVReader kv_list);
 		bool m_fsys_memcheck_handler(OS::KVReader kv_list);

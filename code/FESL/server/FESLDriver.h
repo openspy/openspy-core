@@ -45,7 +45,7 @@ namespace FESL {
 
 		void OnUserAuth(std::string session_key, int userid, int profileid);
 
-		INetPeer *CreatePeer(INetIOSocket *socket);
+		INetPeer *CreatePeer(uv_tcp_t *sd);
 	private:
 		PublicInfo m_server_info;
 
