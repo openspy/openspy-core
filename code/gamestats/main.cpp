@@ -18,7 +18,7 @@ int main() {
 	uv_idle_init(uv_default_loop(), &idler);
     uv_idle_start(&idler, idle_handler);
 
-	OS::Init("GS", NULL);
+	OS::Init("GS");
 	g_gameserver = new GS::Server();
 
 	char address_buff[256];

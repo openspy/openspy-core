@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
@@ -74,8 +73,7 @@ namespace FESL {
 
 			request.objectInventoryItemsCallback = m_get_object_inventory_callback;
 
-			TaskScheduler<FESLRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetFESLTasks();
-			scheduler->AddRequest(request.type, request);
+			AddFESLTaskRequest(request);
 		}
 		return true;
 	}

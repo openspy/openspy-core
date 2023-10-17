@@ -3,16 +3,12 @@
 #include <string>
 
 #include <OS/KVReader.h>
-#include <OS/Task/TaskScheduler.h>
-#include <OS/Task/ScheduledTask.h>
-
-#include <OS/MessageQueue/MQInterface.h>
 
 #include <OS/GPShared.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 
+#include <hiredis/hiredis.h>
 #include <curl/curl.h>
 #include <jansson.h>
 
@@ -20,6 +16,12 @@
 namespace GS {
 	class Peer;
 	class Driver;
+
+	class TaskThreadData {
+		public:
+			redisContext *mp_redis_connection;
+	};
+
 
 	/********
 	persisttype_t

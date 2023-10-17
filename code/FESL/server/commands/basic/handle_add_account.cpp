@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
@@ -45,8 +44,7 @@ namespace FESL {
 
 		req.profile_params = profile;
 		req.search_params = user;
-		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetUserTask();
-		scheduler->AddRequest(req.type, req);
+		AddUserTaskRequest(req);
 		
 		return true;
 	}

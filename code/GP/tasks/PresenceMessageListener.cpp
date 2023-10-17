@@ -4,7 +4,7 @@
 #include <sstream>
 namespace GP {
 	bool Handle_AuthEvent(TaskThreadData *thread_data, std::string message) {
-		GP::Server *server = (GP::Server *)thread_data->server;
+		GP::Server *server = (GP::Server *)uv_loop_get_data(uv_default_loop());
 		OS::KVReader reader = OS::KVReader(message);
 		std::string msg_type = reader.GetValue("type");
 		if (msg_type.compare("auth_event") == 0) {
@@ -22,7 +22,7 @@ namespace GP {
 		return true;
 	}
     bool Handle_PresenceMessage(TaskThreadData *thread_data, std::string message) {
-		GP::Server *server = (GP::Server *)thread_data->server;
+		GP::Server *server = (GP::Server *)uv_loop_get_data(uv_default_loop());
 
 		std::string msg_type, reason;
 		int to_profileid, from_profileid;

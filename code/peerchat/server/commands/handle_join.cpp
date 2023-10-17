@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -18,7 +17,6 @@
 
 namespace Peerchat {
     void Peer::handle_channel_join_events(ChannelSummary channel) {
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)GetDriver()->getServer())->GetPeerchatTask();
         PeerchatBackendRequest req;
 
         req.channel_summary = channel;
@@ -27,20 +25,19 @@ namespace Peerchat {
         req.peer = this;
         req.peer->IncRef();
         req.callback = NULL;
-        scheduler->AddRequest(req.type, req);
+        AddPeerchatTaskRequest(req);
     }
 	void Peer::OnJoinChannel(TaskResponse response_data, Peer* peer) {
         if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
-            peer->mp_mutex->lock();
+            uv_mutex_lock(&peer->m_mutex);
             peer->m_channel_flags[response_data.channel_summary.channel_id] = response_data.summary.id;
-            peer->mp_mutex->unlock();
+            uv_mutex_unlock(&peer->m_mutex);
         }
 
 	}
     void Peer::handle_join(std::vector<std::string> data_parser) {
         std::string target = data_parser.at(1);
 
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
 
         if (data_parser.size() > 2) {
@@ -75,7 +72,7 @@ namespace Peerchat {
             
             req.peer->IncRef();
             req.callback = OnJoinChannel;
-            scheduler->AddRequest(req.type, req);
+            AddPeerchatTaskRequest(req);
         }
 
 

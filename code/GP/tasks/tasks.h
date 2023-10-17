@@ -2,26 +2,32 @@
 #define _GP_TASKS_H
 #include <string>
 
-#include <OS/Task/TaskScheduler.h>
-#include <OS/Task/ScheduledTask.h>
-
-#include <OS/MessageQueue/MQInterface.h>
 
 #include <OS/GPShared.h>
 
 #define GP_STATUS_EXPIRE_TIME 500
 
-#include <OS/SharedTasks/tasks.h>
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 
+#include <hiredis/hiredis.h>
 #include <curl/curl.h>
 #include <jansson.h>
 
+#include <OS/SharedTasks/Account/UserTasks.h>
 #include <OS/SharedTasks/Account/ProfileTasks.h>
+#include <OS/SharedTasks/CDKey/CDKeyTasks.h>
 
 #include <server/GPPeer.h>
 
+
+
 namespace GP {
+	class TaskThreadData {
+		public:
+			redisContext *mp_redis_connection;
+	};
+
+
     enum EGPRedisRequestType {
 		EGPRedisRequestType_AddBuddy,
 		EGPRedisRequestType_AuthorizeAdd,
@@ -106,7 +112,9 @@ namespace GP {
 	//authorizeadd, blockbuddy, addbuddy
 	bool Perform_ToFromProfileAction(GPBackendRedisRequest request, TaskThreadData *thread_data);
 
-    TaskScheduler<GPBackendRedisRequest, TaskThreadData> *InitTasks(INetServer *server);
+    void InitTasks();
 	void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request, struct curl_slist **out_list);
+
+	void AddGPTaskRequest(GPBackendRedisRequest request);
 }
 #endif //_MM_TASKS_H

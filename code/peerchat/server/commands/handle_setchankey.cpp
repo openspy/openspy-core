@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -36,7 +35,6 @@ namespace Peerchat {
 			}
 		}
 
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
         req.type = EPeerchatRequestType_SetChannelKeys;
         req.peer = this;
@@ -45,7 +43,7 @@ namespace Peerchat {
         
         req.peer->IncRef();
         req.callback = OnSetChanKey;
-        scheduler->AddRequest(req.type, req);
+        AddPeerchatTaskRequest(req);
         
     }
 }

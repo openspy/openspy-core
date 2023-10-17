@@ -2,15 +2,9 @@
 #define _PEERCHAT_TASKS_H
 #include <string>
 
-#include <OS/Task/TaskScheduler.h>
-#include <OS/Task/ScheduledTask.h>
-
-#include <OS/MessageQueue/MQInterface.h>
-
-
-#include <OS/SharedTasks/tasks.h>
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 
+#include <hiredis/hiredis.h>
 #include <curl/curl.h>
 #include <jansson.h>
 
@@ -21,6 +15,11 @@
 #define USER_EXPIRE_TIME 900
 
 namespace Peerchat {
+	class TaskThreadData {
+		public:
+			redisContext *mp_redis_connection;
+	};
+
 	enum EOperPrivileges {
 		OPERPRIVS_NONE = 0,
 		OPERPRIVS_INVISIBLE = 1 << 0,
@@ -323,7 +322,7 @@ namespace Peerchat {
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message);
 	bool Handle_Broadcast(TaskThreadData *thread_data, std::string message);
 
-  	TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server);
+  	void InitTasks();
 
 	//user
 	UserSummary LookupUserById(TaskThreadData *thread_data, int user_id);
@@ -382,5 +381,8 @@ namespace Peerchat {
 	extern const char *peerchat_key_updates_routingkey;
 	extern const char *peerchat_broadcast_routingkey;
 	extern UserSummary		   *server_userSummary;
+
+	void AddPeerchatTaskRequest(PeerchatBackendRequest request);
+	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody);
 }
 #endif //_MM_TASKS_H

@@ -3,16 +3,8 @@
 #include <tasks/tasks.h>
 namespace Peerchat {
     Server::Server() {
-      mp_auth_tasks = TaskShared::InitAuthTasks(this);
-      mp_user_tasks = TaskShared::InitUserTasks(this);
-      mp_profile_tasks = TaskShared::InitProfileTasks(this);
-      mp_peerchat_tasks = Peerchat::InitTasks(this);
     }
     Server::~Server() {
-      delete mp_peerchat_tasks;
-      delete mp_profile_tasks;
-      delete mp_user_tasks;
-      delete mp_auth_tasks;
     }
     void Server::init() {
 

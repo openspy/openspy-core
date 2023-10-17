@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
@@ -13,7 +12,7 @@ typedef struct {
 } DisableSubAccountData;
 namespace FESL {
 	bool Peer::m_acct_disable_sub_account(OS::KVReader kv_list) {
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		std::vector<OS::Profile>::iterator it = m_profiles.begin();
 		int tid = -1;
 		if(kv_list.HasKey("TID")) {
@@ -34,21 +33,20 @@ namespace FESL {
 				request.peer->IncRef();
 				request.type = TaskShared::EProfileSearch_DeleteProfile;
 				request.callback = Peer::m_delete_profile_callback;
-				mp_mutex->unlock();
-				TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetProfileTask();
-				scheduler->AddRequest(request.type, request);
+				uv_mutex_unlock(&m_mutex);
+				AddProfileTaskRequest(request);
 				return true;
 			}
 			it++;
 		}
 		SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_ACCOUNT_NOT_FOUND, "DisableSubAccount", tid);
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 		return true;
 	}
 	void Peer::m_delete_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
 		DisableSubAccountData *data = (DisableSubAccountData *)extra;
 		if (error_details.response_code == TaskShared::WebErrorCode_Success) {
-			((Peer *)peer)->mp_mutex->lock();
+			uv_mutex_lock(&((Peer *)peer)->m_mutex);
 			std::vector<OS::Profile>::iterator it = ((Peer *)peer)->m_profiles.begin();
 			while (it != ((Peer *)peer)->m_profiles.end()) {
 				OS::Profile profile = *it;
@@ -58,7 +56,7 @@ namespace FESL {
 				}
 				it++;
 			}
-			((Peer *)peer)->mp_mutex->unlock();
+			uv_mutex_unlock(&((Peer *)peer)->m_mutex);
 
 			std::ostringstream s;
 			s << "TXN=DisableSubAccount\n";

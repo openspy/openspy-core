@@ -32,7 +32,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 add_executable (peerchat ${ALL_SRCS})
 
 IF(WIN32)	
-	target_link_libraries(peerchat openspy.lib)
+	target_link_libraries(peerchat openspy.lib SharedTasks)
 ELSE() #unix
-	target_link_libraries(peerchat openspy)
+	target_link_libraries(peerchat openspy SharedTasks)
 ENDIF()

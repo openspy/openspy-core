@@ -16,14 +16,13 @@ namespace GP {
 	void Peer::handle_revoke(OS::KVReader data_parser) {
 		if (data_parser.HasKey("profileid")) {
 			int delprofileid = data_parser.GetValueInt("profileid");
-			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 			GPBackendRedisRequest req;
 			req.type = EGPRedisRequestType_DelBuddy;
 			req.peer = this;
 			req.peer->IncRef();
 			req.ToFromData.to_profileid = m_profile.id;
 			req.ToFromData.from_profileid = delprofileid;
-			scheduler->AddRequest(req.type, req);
+			AddGPTaskRequest(req);
 		} else {
 			send_error(GPShared::GP_PARSE);
 			return;

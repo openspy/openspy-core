@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
@@ -10,7 +9,7 @@
 namespace FESL {
 	void Peer::loginToSubAccount(std::string uniquenick, int tid) {
 		std::ostringstream s;
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		bool loggedIn = false;
 		std::vector<OS::Profile>::iterator it = m_profiles.begin();
 		while (it != m_profiles.end()) {
@@ -33,7 +32,7 @@ namespace FESL {
 		if (!loggedIn) {
 			SendError(FESL_TYPE_ACCOUNT, FESL_ERROR_ACCOUNT_NOT_FOUND, "LoginSubAccount", tid);
 		}
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 	}
 	bool Peer::m_acct_login_sub_account(OS::KVReader kv_list) {
 		int tid = -1;

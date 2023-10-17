@@ -105,8 +105,7 @@ namespace GP {
 
 		req.gamename = gamename;
 
-		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetUserTask();
-		scheduler->AddRequest(req.type, req);
+		AddUserTaskRequest(req);
 	}
 	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer) {
 		int err_code = 0;
@@ -173,7 +172,6 @@ namespace GP {
 		request.peer->IncRef();
 		request.type = TaskShared::ECDKeyType_AssociateToProfile;
 		request.callback = NULL;
-		TaskScheduler<TaskShared::CDKeyRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetCDKeyTasks();
-		scheduler->AddRequest(request.type, request);
+		AddCDKeyTaskRequest(request);
 	}
 }

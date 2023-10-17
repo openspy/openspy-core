@@ -11,7 +11,7 @@
 #include <GP/server/GPDriver.h>
 #include <GP/server/GPServer.h>
 
-
+#include "../../tasks/tasks.h"
 namespace GP {
 	void Peer::handle_addblock(OS::KVReader data_parser) {
 		if (data_parser.HasKey("profileid")) {
@@ -22,14 +22,14 @@ namespace GP {
 			}
 
 			m_blocks.push_back(profileid);
-			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
+
 			GPBackendRedisRequest req;
 			req.type = EGPRedisRequestType_AddBlock;
 			req.peer = this;
 			req.peer->IncRef();
 			req.ToFromData.to_profileid = profileid;
 			req.ToFromData.from_profileid = m_profile.id;
-			scheduler->AddRequest(req.type, req);
+			AddGPTaskRequest(req);
 		} else {
 			send_error(GPShared::GP_PARSE);
 			return;

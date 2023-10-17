@@ -71,7 +71,6 @@ namespace GP {
 		}
 	}
 	void Peer::perform_uniquenick_auth(const char *uniquenick, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
-		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_Auth_Uniquenick_GPHash;
 		req.profile.uniquenick = uniquenick;
@@ -85,7 +84,7 @@ namespace GP {
 		req.peer = this;
 		req.peer->IncRef();
 
-		scheduler->AddRequest(req.type, req);
+		AddGPTaskRequest(req);
 	}
 	void Peer::perform_nick_email_auth(const char *nick_email, int partnercode, int namespaceid, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
 		const char *email = NULL;
@@ -100,7 +99,6 @@ namespace GP {
 			email = first_at+1;
 		}
 
-		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_Auth_NickEmail_GPHash;
 		req.profile.nick = nick;
@@ -115,10 +113,9 @@ namespace GP {
 		req.peer = this;
 		req.peer->IncRef();
 		
-		scheduler->AddRequest(req.type, req);
+		AddGPTaskRequest(req);
 	}
 	void Peer::perform_preauth_auth(const char *auth_token, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
-		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_Auth_PreAuth_Token_GPHash;
 		req.server_challenge = server_challenge;
@@ -130,10 +127,9 @@ namespace GP {
 		req.peer = this;
 		req.peer->IncRef();
 
-		scheduler->AddRequest(req.type, req);
+		AddGPTaskRequest(req);
 	}
 	void Peer::perform_loginticket_auth(const char *login_ticket, const char *server_challenge, const char *client_challenge, const char *response, int operation_id, INetPeer *peer) {
-		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_Auth_LoginTicket;
 		req.server_challenge = server_challenge;
@@ -144,7 +140,7 @@ namespace GP {
 		req.auth_token = login_ticket;
 		req.peer = this;
 		req.peer->IncRef();
-		scheduler->AddRequest(req.type, req);
+		AddGPTaskRequest(req);
 	}
 	
 	void Peer::m_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {

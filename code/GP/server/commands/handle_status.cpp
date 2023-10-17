@@ -24,17 +24,16 @@ namespace GP {
 			m_status.location_str = data_parser.GetValue("locstring");
 		}
 
-		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_UpdateStatus;
 		req.peer = this;
 		req.peer->IncRef();
 		req.StatusInfo = m_status;
-		scheduler->AddRequest(req.type, req);
+		AddGPTaskRequest(req);
 	}
 	void Peer::inform_status_update(int profileid, GPStatus status, bool no_update) {
 		std::ostringstream ss;
-		mp_mutex->lock();
+		//mp_mutex->lock();
 		bool is_blocked = std::find(m_blocks.begin() ,m_blocks.end(), profileid) != m_blocks.end() || std::find(m_blocked_by.begin(), m_blocked_by.end(), profileid) != m_blocked_by.end();
 		if(m_buddies.find(profileid) != m_buddies.end() || is_blocked) {
 
@@ -72,7 +71,7 @@ namespace GP {
 			}
 			SendPacket((const uint8_t *)ss.str().c_str(),ss.str().length());
 		}
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 	}
 	void Peer::m_session_handle_update(TaskShared::WebErrorDetails error_details, std::map<int, GPShared::GPStatus> results, void *extra, INetPeer *peer)  {
 		std::map<int, GPShared::GPStatus>::iterator it = results.begin();

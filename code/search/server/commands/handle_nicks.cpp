@@ -6,8 +6,6 @@
 
 #include <sstream>
 
-#include <OS/Task/TaskScheduler.h>
-#include <OS/SharedTasks/tasks.h>
 #include <OS/GPShared.h>
 
 #include <server/SMPeer.h>
@@ -27,8 +25,7 @@ namespace SM {
 			request.profile_search_details.namespaceid = namespaceid;
 			peer->IncRef();
 			request.callback = Peer::m_nicks_cb;
-			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData>* scheduler = ((SM::Server*)(peer->GetDriver()->getServer()))->GetProfileTask();
-			scheduler->AddRequest(request.type, request);
+			AddProfileTaskRequest(request);
 
 		}
 		else {
@@ -133,7 +130,6 @@ namespace SM {
 		request.peer = this;
 		IncRef();
 		request.callback = Peer::m_nicks_auth_cb;
-		TaskScheduler<TaskShared::AuthRequest, TaskThreadData>* scheduler = ((SM::Server*)(GetDriver()->getServer()))->GetAuthTask();
-		scheduler->AddRequest(request.type, request);
+		AddAuthTaskRequest(request);
 	}
 }

@@ -4,7 +4,6 @@
 #include <iomanip>
 #include <OS/User.h>
 #include <OS/Profile.h>
-#include <OS/Mutex.h>
 
 #include <OS/Net/NetPeer.h>
 #include <OS/KVReader.h>
@@ -351,7 +350,7 @@ namespace Peerchat {
 
 		UserSummary m_user_details;
 
-		OS::CMutex *mp_mutex;
+		uv_mutex_t m_mutex;
 
 		bool m_sent_client_init;
 

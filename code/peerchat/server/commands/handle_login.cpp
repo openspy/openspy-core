@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -65,8 +64,7 @@ namespace Peerchat {
             request.profile.nick = nick;
         }
 
-		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetAuthTask();
-		scheduler->AddRequest(request.type, request);
+		AddAuthTaskRequest(request);
     }
 
     void Peer::handle_loginpreauth(std::vector<std::string> data_parser) {
@@ -81,9 +79,6 @@ namespace Peerchat {
 
         request.type = TaskShared::EAuthType_TestPreAuth;
 
-        TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetAuthTask();
-		scheduler->AddRequest(request.type, request);
-
-        
+        AddAuthTaskRequest(request);        
     }
 }

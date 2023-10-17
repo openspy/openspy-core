@@ -92,9 +92,9 @@ namespace GS {
 		persisttype_t persist_type = (persisttype_t)data_parser.GetValueInt("ptype");
 
 		if(persist_type == pd_private_ro || persist_type == pd_private_rw) {
-			mp_mutex->lock();
+			uv_mutex_lock(&m_mutex);
 			bool profile_authenticated = std::find(m_authenticated_profileids.begin(), m_authenticated_profileids.end(), pid) != m_authenticated_profileids.end();
-			mp_mutex->unlock();
+			uv_mutex_unlock(&m_mutex);
 			if (!profile_authenticated) {
 				send_error(GPShared::GP_NOT_LOGGED_IN);
 				return;

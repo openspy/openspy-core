@@ -17,7 +17,6 @@ namespace GP {
 		if (data_parser.HasKey("delprofileid")) {
 			int delprofileid = data_parser.GetValueInt("delprofileid");
 			if (m_buddies.find(delprofileid) != m_buddies.end()) {
-				TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 				GPBackendRedisRequest req;
 				req.type = EGPRedisRequestType_DelBuddy;
 				req.peer = (GP::Peer *)this;
@@ -25,7 +24,7 @@ namespace GP {
 				req.ToFromData.from_profileid = m_profile.id;
 				req.ToFromData.to_profileid = delprofileid;
 				m_buddies.erase(delprofileid);
-				scheduler->AddRequest(req.type, req);
+				AddGPTaskRequest(req);
 			}
 			else {
 				send_error(GPShared::GP_DELBUDDY_NOT_BUDDY);

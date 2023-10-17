@@ -6,8 +6,6 @@
 
 #include <sstream>
 
-#include <OS/Task/TaskScheduler.h>
-#include <OS/SharedTasks/tasks.h>
 #include <OS/GPShared.h>
 
 #include <server/SMPeer.h>
@@ -115,9 +113,7 @@ namespace SM {
 		request.create_session = false;
 		request.callback = m_nick_email_auth_cb;
 		IncRef();
-
-		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetAuthTask();
-		scheduler->AddRequest(request.type, request);
+		AddAuthTaskRequest(request);
 	}
 
 }

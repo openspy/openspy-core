@@ -1,9 +1,10 @@
 #ifndef OS_TASKS_USER_TASKS_H
 #define OS_TASKS_USER_TASKS_H
-#include <OS/Task/TaskScheduler.h>
 #include <OS/OpenSpy.h>
 #include <OS/Profile.h>
 #include <OS/User.h>
+#include "../../tasks.h"
+#include "../../WebError.h"
 namespace TaskShared {
 	typedef void (*UserSearchCallback)(TaskShared::WebErrorDetails error_details, std::vector<OS::User> results, void *extra, INetPeer *peer);
 	
@@ -37,6 +38,8 @@ namespace TaskShared {
 
 	bool PerformUserRequest(UserRequest request, TaskThreadData *thread_data);
 	bool PerformUserRegisterRequest(UserRequest request, TaskThreadData *thread_data);
+
+	void AddUserTaskRequest(UserRequest request);
 
 }
 #endif //_USER_TASKS_H

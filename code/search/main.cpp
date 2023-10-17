@@ -20,7 +20,7 @@ int main() {
     uv_idle_start(&idler, idle_handler);
 
 
-	OS::Init("SM", NULL);
+	OS::Init("SM");
 
 	g_gameserver = new SM::Server();
 
@@ -34,7 +34,7 @@ int main() {
 		uv_os_getenv("OPENSPY_SM_BIND_PORT", (char *)&port_buff, &temp_env_sz);
 		uint16_t port = atoi(port_buff);
 
-		SM::Driver *driver = new SM::Driver(g_gameserver, address_buff, port, false);
+		SM::Driver *driver = new SM::Driver(g_gameserver, address_buff, port);
 
 		OS::LogText(OS::ELogLevel_Info, "Adding SM Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(driver);

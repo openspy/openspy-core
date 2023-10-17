@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -21,12 +20,11 @@ namespace Peerchat {
         peer->send_numeric(251, s.str());
     }
     void Peer::handle_lusers(std::vector<std::string> data_parser) {
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
         req.type = EPeerchatRequestType_CountServerUsers;
         req.peer = this;
         req.peer->IncRef();
         req.callback = OnFetch_LUsers;
-        scheduler->AddRequest(req.type, req);
+        AddPeerchatTaskRequest(req);
     }
 }

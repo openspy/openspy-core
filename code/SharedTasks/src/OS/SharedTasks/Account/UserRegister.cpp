@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 #include <OS/Net/NetPeer.h>
-#include <OS/SharedTasks/tasks.h>
 #include "ProfileTasks.h"
 #include "UserTasks.h"
 namespace TaskShared {
@@ -99,10 +98,7 @@ namespace TaskShared {
 		//game lookup used for GP register, cd key aassociation
 		if(request.gamename.length() > 0) {
 			OS::GameData game_info;
-			if(!thread_data->shared_game_cache->LookupGameByName(request.gamename.c_str(), game_info)) {
-				game_info = OS::GetGameByName(request.gamename.c_str(), thread_data->mp_redis_connection);
-				thread_data->shared_game_cache->AddGame(thread_data->id, game_info);
-			}
+			game_info = OS::GetGameByName(request.gamename.c_str(), thread_data->mp_redis_connection);
 			register_data.gamedata = game_info;
 		}
 

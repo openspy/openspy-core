@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -15,7 +14,6 @@
 #include <server/Peer.h>
 namespace Peerchat {
 	void Peer::SendNickUpdate(std::string newNick) {
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary;
 		req.peer = this;
@@ -32,7 +30,7 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = NULL;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 	}
     void Peer::OnNickReserve(TaskResponse response_data, Peer *peer) {
         if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
@@ -58,7 +56,6 @@ namespace Peerchat {
     }
     void Peer::OnNickReserve_DuplicateRemoteKill(TaskResponse response_data, Peer *peer) {
         if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
-            TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(peer->GetDriver()->getServer()))->GetPeerchatTask();
             PeerchatBackendRequest req;
             req.type = EPeerchatRequestType_SetUserDetails;
             req.peer = peer;
@@ -66,11 +63,10 @@ namespace Peerchat {
             req.summary.nick = response_data.profile.uniquenick;
             req.peer->IncRef();
             req.callback = OnNickReserve;
-            scheduler->AddRequest(req.type, req);
+            AddPeerchatTaskRequest(req);
         }
     }
     void Peer::perform_acquire_uniquenick(UserSummary target) {
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
         req.type = EPeerchatRequestType_RemoteKill_ByName;
         req.peer = this;
@@ -80,10 +76,9 @@ namespace Peerchat {
 
         req.peer->IncRef();
         req.callback = OnNickReserve_DuplicateRemoteKill;
-        scheduler->AddRequest(req.type, req);
+        AddPeerchatTaskRequest(req);
     }
     void Peer::handle_nick(std::vector<std::string> data_parser) {
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
         req.type = EPeerchatRequestType_SetUserDetails;
         req.peer = this;
@@ -106,6 +101,6 @@ namespace Peerchat {
         req.summary.nick = nick;
         req.peer->IncRef();
         req.callback = OnNickReserve;
-        scheduler->AddRequest(req.type, req);
+        AddPeerchatTaskRequest(req);
     }
 }

@@ -14,7 +14,6 @@
 
 #include <map>
 #include <utility>
-
 using namespace GPShared;
 
 namespace GS {
@@ -23,7 +22,7 @@ namespace GS {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		
-		mp_mutex = OS::CreateMutex();
+		uv_mutex_init(&m_mutex);
 
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
@@ -38,17 +37,17 @@ namespace GS {
 		m_getpd_wait_ctx.wait_index = 0;
 		m_getpd_wait_ctx.top_index = 0;
 		m_get_request_index = 0;
-		m_getpd_wait_ctx.mutex = OS::CreateMutex();
+		uv_mutex_init(&m_getpd_wait_ctx.mutex);
 
 		m_setpd_wait_ctx.wait_index = 0;
 		m_setpd_wait_ctx.top_index = 0;
 		m_set_request_index = 0;
-		m_setpd_wait_ctx.mutex = OS::CreateMutex();
+		uv_mutex_init(&m_setpd_wait_ctx.mutex);
 
 		m_getpid_request_index = 0;
 		m_getpid_wait_ctx.wait_index = 0;
 		m_getpid_wait_ctx.top_index = 0;
-		m_getpid_wait_ctx.mutex = OS::CreateMutex();
+		uv_mutex_init(&m_getpid_wait_ctx.mutex);
 
 		m_updgame_increfs = 0;
 		m_last_authp_operation_id = 0;
@@ -56,10 +55,10 @@ namespace GS {
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", getAddress().ToString().c_str());
-		delete m_getpd_wait_ctx.mutex;
-		delete m_setpd_wait_ctx.mutex;
-		delete m_getpid_wait_ctx.mutex;
-		delete mp_mutex;
+		uv_mutex_destroy(&m_getpd_wait_ctx.mutex);
+		uv_mutex_destroy(&m_setpd_wait_ctx.mutex);
+		uv_mutex_destroy(&m_getpid_wait_ctx.mutex);
+		uv_mutex_destroy(&m_mutex);
 	}
 	void Peer::OnConnectionReady() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",getAddress().ToString().c_str());
@@ -181,7 +180,6 @@ namespace GS {
 	    static const char gamespy[] = "GameSpy3D\0";
 	    char  *gs;
 
-		mp_mutex->lock();
 	    gs = (char *)((ptrdiff_t)gamespy) + m_xor_index;
 	    while(len-- && len >= 0) {
 			if(strncmp(data,"\\final\\",7) == 0)  {
@@ -194,7 +192,6 @@ namespace GS {
 	        if(!*gs) gs = (char *)gamespy;
 	    }
 		m_xor_index = gs - ((char *)gamespy);
-		mp_mutex->unlock();
 	}
 	bool Peer::IsResponseValid(const char *response) {
 		int chrespnum = gs_chresp_num(m_challenge);
@@ -231,14 +228,16 @@ namespace GS {
 		m_timeout_flag = timeout;
 	}
 	void Peer::SendOrWaitBuffer(uint32_t index, WaitBufferCtx &wait_ctx, OS::Buffer buffer) {
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		if (index > wait_ctx.top_index) {
 			wait_ctx.top_index = index;
 		}
 		if (index == wait_ctx.wait_index) {
 			wait_ctx.buffer_map.erase(index);
 			this->SendPacket(buffer);
-			OS::CMutex::SafeIncr(&wait_ctx.wait_index);
+			wait_ctx.wait_index.fetch_add(1);
+			
+
 		}
 		else {
 			wait_ctx.buffer_map[index] = OS::Buffer(buffer);
@@ -248,7 +247,7 @@ namespace GS {
 			std::map<int, OS::Buffer>::iterator it = wait_ctx.buffer_map.find(wait_ctx.wait_index);
 			if (it != wait_ctx.buffer_map.end()) {
 				this->SendPacket((*it).second);
-				OS::CMutex::SafeIncr(&wait_ctx.wait_index);
+				wait_ctx.wait_index.fetch_add(1);
 				wait_ctx.buffer_map.erase(it);
 				top_index--;
 
@@ -257,7 +256,7 @@ namespace GS {
 				break;
 			}
 		}
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 	}
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 		OS::Buffer recv_buffer;

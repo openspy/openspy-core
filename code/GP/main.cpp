@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include <OS/SharedTasks/tasks.h>
 #include "server/GPServer.h"
 #include "server/GPDriver.h"
 INetServer *g_gameserver = NULL;
@@ -21,7 +20,7 @@ int main() {
     uv_idle_start(&idler, idle_handler);
 
 
-	OS::Init("GP", NULL);
+	OS::Init("GP");
 
 	g_gameserver = new GP::Server();
 
@@ -35,7 +34,7 @@ int main() {
 		uv_os_getenv("OPENSPY_GP_BIND_PORT", (char *)&port_buff, &temp_env_sz);
 		uint16_t port = atoi(port_buff);
 
-		GP::Driver *driver = new GP::Driver(g_gameserver, address_buff, port, false);
+		GP::Driver *driver = new GP::Driver(g_gameserver, address_buff, port);
 
 		OS::LogText(OS::ELogLevel_Info, "Adding GP Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(driver);

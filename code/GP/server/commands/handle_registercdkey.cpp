@@ -66,7 +66,6 @@ namespace GP {
 		request.peer->IncRef();
 		request.type = TaskShared::ECDKeyType_AssociateToProfile;
 		request.callback = Peer::m_set_cdkey_callback;
-		TaskScheduler<TaskShared::CDKeyRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetCDKeyTasks();
-		scheduler->AddRequest(request.type, request);
+		AddCDKeyTaskRequest(request);
 	}
 }

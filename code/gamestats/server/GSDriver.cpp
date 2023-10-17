@@ -9,7 +9,7 @@
 #include <OS/GPShared.h>
 
 namespace GS {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port) : TCPDriver(server, host, port) {
 	}
 	Peer *Driver::FindPeerByProfileID(int profileid) {
 		Peer* peer = (Peer *)GetPeerList()->GetHead();

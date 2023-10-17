@@ -6,13 +6,13 @@
 
 #include <sstream>
 
-#include <OS/Task/TaskScheduler.h>
-#include <OS/SharedTasks/tasks.h>
+
 #include <OS/GPShared.h>
 
 #include <server/SMPeer.h>
 #include <server/SMDriver.h>
 #include <server/SMServer.h>
+#include <OS/SharedTasks/CDKey/CDKeyTasks.h>
 
 namespace SM {
 	void Peer::m_newuser_cb(bool success, OS::User user, OS::Profile profile, TaskShared::UserRegisterData auth_data, void *extra, INetPeer *peer) {
@@ -140,8 +140,7 @@ namespace SM {
 		req.search_params.password = password;
 		req.registerCallback = m_newuser_cb;
 
-		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetUserTask();
-		scheduler->AddRequest(req.type, req);
+		AddUserTaskRequest(req);
 
 	}
 	void Peer::post_register_registercdkey() {
@@ -155,7 +154,6 @@ namespace SM {
 		request.peer->IncRef();
 		request.type = TaskShared::ECDKeyType_AssociateToProfile;
 		request.callback = NULL;
-		TaskScheduler<TaskShared::CDKeyRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetCDKeyTasks();
-		scheduler->AddRequest(request.type, request);
+		AddCDKeyTaskRequest(request);
 	}
 }

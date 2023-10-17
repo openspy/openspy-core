@@ -6,7 +6,7 @@
 #include "SMDriver.h"
 
 namespace SM {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port) : TCPDriver(server, host, port) {
 	}
 	INetPeer *Driver::CreatePeer(uv_tcp_t *sd) {
 		return new Peer(this, sd);

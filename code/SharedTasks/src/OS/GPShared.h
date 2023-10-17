@@ -1,5 +1,8 @@
 #ifndef _GPSHARED_H
 #define _GPSHARED_H
+
+#include <string>
+#include <OS/OpenSpy.h>
 namespace GPShared {
 
 	#define GPI_READ_SIZE                  (16 * 1024)

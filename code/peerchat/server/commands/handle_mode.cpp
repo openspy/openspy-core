@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -88,8 +87,6 @@ namespace Peerchat {
 		}
 	}
 	void Peer::handle_ban_hostmask(std::string channel, std::string hostmask, bool set) {
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
-
 		PeerchatBackendRequest req;
 		req.channel_summary.channel_name = channel;
 		req.type = EPeerchatRequestType_UpdateChannelModes_BanMask;
@@ -103,10 +100,9 @@ namespace Peerchat {
 			req.channel_modify.unset_usermodes[hostmask] |= EUserChannelFlag_Banned;
 		}
 
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 	}
 	void Peer::handle_channel_mode_command(std::vector<std::string> data_parser) {
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		bool includeBanLookup = false;
 
@@ -119,7 +115,7 @@ namespace Peerchat {
 			req.channel_summary.channel_name = data_parser.at(1);
 			req.peer->IncRef();
 			req.callback = OnMode_FetchChannelInfo;
-			scheduler->AddRequest(req.type, req);
+			AddPeerchatTaskRequest(req);
 		}
 		else if (data_parser.size() >= 3) { //set/unset
 			// +m-n
@@ -252,7 +248,7 @@ namespace Peerchat {
 			req.channel_modify.unset_mode_flags = unset_flags;
 			req.peer->IncRef();
 			req.callback = OnMode_FetchChannelInfo;
-			scheduler->AddRequest(req.type, req);
+			AddPeerchatTaskRequest(req);
 
 
 			if (includeBanLookup) {
@@ -261,12 +257,11 @@ namespace Peerchat {
 				req.usermodeRecord.chanmask = data_parser.at(1);
 				req.peer->IncRef();
 				req.callback = OnMode_FetchBanInfo;
-				scheduler->AddRequest(req.type, req);
+				AddPeerchatTaskRequest(req);
 			}
 		}
 	}
 	void Peer::handle_user_mode_command(std::vector<std::string> data_parser) {
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		if (data_parser.size() == 2) {
 			//lookup
@@ -275,7 +270,7 @@ namespace Peerchat {
 			req.summary.username = data_parser.at(1);
 			req.peer->IncRef();
 			req.callback = OnMode_FetchUserInfo;
-			scheduler->AddRequest(req.type, req);
+			AddPeerchatTaskRequest(req);
 		}
 		else if (data_parser.size() >= 3) { //set/unset
 			// +m-n
@@ -320,12 +315,12 @@ namespace Peerchat {
 			req.channel_modify.unset_mode_flags = unset_flags;
 			req.peer->IncRef();
 			req.callback = OnMode_UpdateUserMode;
-			scheduler->AddRequest(req.type, req);
+			AddPeerchatTaskRequest(req);
 
 
 			//unset quiet flags, resend channel names list
 			if((unset_flags & EUserMode_Quiet) && !(set_flags & EUserMode_Quiet)) {
-					mp_mutex->lock();
+					uv_mutex_lock(&m_mutex);
 					std::map<int, int>::iterator it = m_channel_flags.begin();
 					while (it != m_channel_flags.end()) {
 						std::pair<int, int> p = *it;
@@ -336,12 +331,12 @@ namespace Peerchat {
 							req.peer->IncRef();
 							req.callback = OnNames_FetchChannelInfo;
 							req.channel_summary.channel_id = p.first;
-							scheduler->AddRequest(req.type, req);
+							AddPeerchatTaskRequest(req);
 						}
 						
 						it++;
 					}
-					mp_mutex->unlock();
+					uv_mutex_unlock(&m_mutex);
 			}
 		}
 	}

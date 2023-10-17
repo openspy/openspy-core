@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -27,7 +26,6 @@ namespace Peerchat {
     void Peer::handle_delusermode(std::vector<std::string> data_parser) {
         std::string usermodeid_string = data_parser.at(1);
 
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 
 		req.type = EPeerchatRequestType_DeleteUserMode;
@@ -40,7 +38,7 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnDeleteUserMode;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 
     }
 }

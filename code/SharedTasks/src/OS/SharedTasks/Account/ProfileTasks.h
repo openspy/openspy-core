@@ -1,10 +1,11 @@
 #ifndef OS_TASKS_PROFILE_TASKS_H
 #define OS_TASKS_PROFILE_TASKS_H
-#include <OS/Task/TaskScheduler.h>
 #include <OS/OpenSpy.h>
-#include <OS/Profile.h>
-#include <OS/User.h>
-#include <OS/GPShared.h>
+#include "../../tasks.h"
+#include "../../WebError.h"
+#include "../../Profile.h"
+#include "../../User.h"
+#include "../../GPShared.h"
 namespace TaskShared {
 	typedef void (*ProfileSearchCallback)(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 	typedef void (*ProfileSearchBuddyCallback)(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer);
@@ -39,5 +40,10 @@ namespace TaskShared {
 
 	void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileRequest request, struct curl_slist **out_list);
 	bool PerformProfileRequest(ProfileRequest request, TaskThreadData *thread_data);
+
+	void PerformProfileUVWorkRequest(uv_work_t *req);
+	void PerformProfileUVWorkRequestCleanup(uv_work_t *req, int status);
+
+	void AddProfileTaskRequest(ProfileRequest request);
 }
 #endif //OS_TASKS_PROFILE_TASKS_H

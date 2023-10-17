@@ -52,85 +52,85 @@ namespace Peerchat {
 			{EUserChannelFlag_GameidPermitted, 'p'}
 		};
 
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
-			{EPeerchatRequestType_SetUserDetails, Perform_SetUserDetails},
-			{EPeerchatRequestType_SendMessageToTarget, Perform_SendMessageToTarget},
-			{EPeerchatRequestType_UserJoinChannel, Perform_UserJoinChannel},
-			{EPeerchatRequestType_UserPartChannel, Perform_UserPartChannel},
-			{EPeerchatRequestType_UserKickChannel, Perform_UserKickChannel},
-			{EPeerchatRequestType_LookupChannelDetails, Perform_LookupChannelDetails},
-			{EPeerchatRequestType_LookupUserDetailsByName, Perform_LookupUserDetailsByName},
-			{EPeerchatRequestType_UpdateChannelModes, Perform_UpdateChannelModes},
-			{EPeerchatRequestType_UpdateUserModes, Perform_UpdateUserModes},
-			{EPeerchatRequestType_ListChannels, Perform_ListChannels},
-			{EPeerchatRequestType_SetChannelUserKeys, Perform_SetChannelUserKeys},
-			{EPeerchatRequestType_GetChannelUserKeys, Perform_GetChannelUserKeys},
-			{EPeerchatRequestType_SetUserKeys, Perform_SetUserKeys},
-			{EPeerchatRequestType_GetUserKeys, Perform_GetUserKeys},
-			{EPeerchatRequestType_SetChannelKeys, Perform_SetChannelKeys},
-			{EPeerchatRequestType_GetChannelKeys, Perform_GetChannelKeys},
+		// TaskScheduler<PeerchatBackendRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
+		// 	{EPeerchatRequestType_SetUserDetails, Perform_SetUserDetails},
+		// 	{EPeerchatRequestType_SendMessageToTarget, Perform_SendMessageToTarget},
+		// 	{EPeerchatRequestType_UserJoinChannel, Perform_UserJoinChannel},
+		// 	{EPeerchatRequestType_UserPartChannel, Perform_UserPartChannel},
+		// 	{EPeerchatRequestType_UserKickChannel, Perform_UserKickChannel},
+		// 	{EPeerchatRequestType_LookupChannelDetails, Perform_LookupChannelDetails},
+		// 	{EPeerchatRequestType_LookupUserDetailsByName, Perform_LookupUserDetailsByName},
+		// 	{EPeerchatRequestType_UpdateChannelModes, Perform_UpdateChannelModes},
+		// 	{EPeerchatRequestType_UpdateUserModes, Perform_UpdateUserModes},
+		// 	{EPeerchatRequestType_ListChannels, Perform_ListChannels},
+		// 	{EPeerchatRequestType_SetChannelUserKeys, Perform_SetChannelUserKeys},
+		// 	{EPeerchatRequestType_GetChannelUserKeys, Perform_GetChannelUserKeys},
+		// 	{EPeerchatRequestType_SetUserKeys, Perform_SetUserKeys},
+		// 	{EPeerchatRequestType_GetUserKeys, Perform_GetUserKeys},
+		// 	{EPeerchatRequestType_SetChannelKeys, Perform_SetChannelKeys},
+		// 	{EPeerchatRequestType_GetChannelKeys, Perform_GetChannelKeys},
 
-			{EPeerchatRequestType_SetBroadcastToVisibleUsers, Perform_SetBroadcastToVisibleUsers},
-			{EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary, Perform_SetBroadcastToVisibleUsers},
-			{EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource, Perform_SetBroadcastToVisibleUsers},
+		// 	{EPeerchatRequestType_SetBroadcastToVisibleUsers, Perform_SetBroadcastToVisibleUsers},
+		// 	{EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary, Perform_SetBroadcastToVisibleUsers},
+		// 	{EPeerchatRequestType_SetBroadcastToVisibleUsers_SkipSource, Perform_SetBroadcastToVisibleUsers},
 
-			{EPeerchatRequestType_DeleteUser, Perform_DeleteUser},
-			{EPeerchatRequestType_KeepaliveUser, Perform_KeepaliveUser},
-			{EPeerchatRequestType_UserJoinEvents, Perform_UserJoinEvents},
+		// 	{EPeerchatRequestType_DeleteUser, Perform_DeleteUser},
+		// 	{EPeerchatRequestType_KeepaliveUser, Perform_KeepaliveUser},
+		// 	{EPeerchatRequestType_UserJoinEvents, Perform_UserJoinEvents},
 
-			{EPeerchatRequestType_CreateUserMode, Perform_SetUsermode},
-			{EPeerchatRequestType_ListUserModes, Perform_ListUsermodes},
-			{EPeerchatRequestType_ListUserModes_CacheLookup, Perform_ListUsermodes_Cached},
+		// 	{EPeerchatRequestType_CreateUserMode, Perform_SetUsermode},
+		// 	{EPeerchatRequestType_ListUserModes, Perform_ListUsermodes},
+		// 	{EPeerchatRequestType_ListUserModes_CacheLookup, Perform_ListUsermodes_Cached},
 			
-			{EPeerchatRequestType_DeleteUserMode, Perform_DeleteUsermode},
-			{EPeerchatRequestType_LookupGameInfo, Perform_LookupGameInfo},
-			{EPeerchatRequestType_LookupGlobalUsermode, Perform_LookupGlobalUsermode},
+		// 	{EPeerchatRequestType_DeleteUserMode, Perform_DeleteUsermode},
+		// 	{EPeerchatRequestType_LookupGameInfo, Perform_LookupGameInfo},
+		// 	{EPeerchatRequestType_LookupGlobalUsermode, Perform_LookupGlobalUsermode},
 
-			{EPeerchatRequestType_SetChanProps, Perform_SetChanprops},
-			{EPeerchatRequestType_ListChanProps, Perform_ListChanprops},
-			{EPeerchatRequestType_DeleteChanProps, Perform_DelChanprops},
+		// 	{EPeerchatRequestType_SetChanProps, Perform_SetChanprops},
+		// 	{EPeerchatRequestType_ListChanProps, Perform_ListChanprops},
+		// 	{EPeerchatRequestType_DeleteChanProps, Perform_DelChanprops},
 
-			{EPeerchatRequestType_RemoteKill_ByName, Perform_RemoteKill_ByName},
-			{EPeerchatRequestType_UpdateChannelModes_BanMask, Perform_UpdateChannelModes_BanMask},
-			{EPeerchatRequestType_OperCheck, Perform_OperCheck},
-			{EPeerchatRequestType_CountServerUsers, Perform_CountServerUsers},
-			{-1, NULL}
-		};
+		// 	{EPeerchatRequestType_RemoteKill_ByName, Perform_RemoteKill_ByName},
+		// 	{EPeerchatRequestType_UpdateChannelModes_BanMask, Perform_UpdateChannelModes_BanMask},
+		// 	{EPeerchatRequestType_OperCheck, Perform_OperCheck},
+		// 	{EPeerchatRequestType_CountServerUsers, Perform_CountServerUsers},
+		// 	{-1, NULL}
+		// };
 
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
-			{peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg},
-			{peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates},
-			{peerchat_channel_exchange, peerchat_broadcast_routingkey, Handle_Broadcast},
-			{NULL, NULL, NULL}
-		};
+		// TaskScheduler<PeerchatBackendRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
+		// 	{peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg},
+		// 	{peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates},
+		// 	{peerchat_channel_exchange, peerchat_broadcast_routingkey, Handle_Broadcast},
+		// 	{NULL, NULL, NULL}
+		// };
 
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server) {
-			server_userSummary = new UserSummary();
-			server_userSummary->nick = "SERVER";
-			server_userSummary->username = "SERVER";
-			server_userSummary->hostname = "Matrix";
-			server_userSummary->id = -1;
+        // TaskScheduler<PeerchatBackendRequest, TaskThreadData> *InitTasks(INetServer *server) {
+		// 	server_userSummary = new UserSummary();
+		// 	server_userSummary->nick = "SERVER";
+		// 	server_userSummary->username = "SERVER";
+		// 	server_userSummary->hostname = "Matrix";
+		// 	server_userSummary->id = -1;
 
-			channel_mode_flag_map = (ModeFlagMap*)&local_channel_mode_flag_map;
-			num_channel_mode_flags = sizeof(local_channel_mode_flag_map) / sizeof(ModeFlagMap);
+		// 	channel_mode_flag_map = (ModeFlagMap*)&local_channel_mode_flag_map;
+		// 	num_channel_mode_flags = sizeof(local_channel_mode_flag_map) / sizeof(ModeFlagMap);
 
-			user_mode_flag_map = (ModeFlagMap*)&local_user_mode_flag_map;
-			num_user_mode_flags = sizeof(local_user_mode_flag_map) / sizeof(ModeFlagMap);
+		// 	user_mode_flag_map = (ModeFlagMap*)&local_user_mode_flag_map;
+		// 	num_user_mode_flags = sizeof(local_user_mode_flag_map) / sizeof(ModeFlagMap);
 
-			user_join_chan_flag_map = (ModeFlagMap*)&local_user_join_chan_flag_map;
-			num_user_join_chan_flags = sizeof(local_user_join_chan_flag_map) / sizeof(ModeFlagMap);
+		// 	user_join_chan_flag_map = (ModeFlagMap*)&local_user_join_chan_flag_map;
+		// 	num_user_join_chan_flags = sizeof(local_user_join_chan_flag_map) / sizeof(ModeFlagMap);
 
-            TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = new TaskScheduler<PeerchatBackendRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, listenerTable);
+        //     TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = new TaskScheduler<PeerchatBackendRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, listenerTable);
 
 			
-			scheduler->DeclareReady();
+		// 	scheduler->DeclareReady();
 
-            return scheduler;
-        }
+        //     return scheduler;
+        // }
 
 
 		bool Handle_Broadcast(TaskThreadData *thread_data, std::string message) {
-			Peerchat::Server* server = (Peerchat::Server*)thread_data->server;
+			Peerchat::Server* server = (Peerchat::Server*)uv_loop_get_data(uv_default_loop());
 
 			OS::KVReader reader = message;
 			
@@ -181,7 +181,7 @@ namespace Peerchat {
 		}
 
 		bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message) {
-			Peerchat::Server* server = (Peerchat::Server*)thread_data->server;
+			Peerchat::Server* server = (Peerchat::Server*)uv_loop_get_data(uv_default_loop());
 			OS::KVReader reader = message;
 			
 			uint8_t* data_out;

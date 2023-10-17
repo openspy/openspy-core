@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
@@ -41,8 +40,7 @@ namespace FESL {
 		request.user.password = kv_list.GetValue("password");
 		request.user.email = kv_list.GetValue("nuid");
 
-		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetAuthTask();
-		scheduler->AddRequest(request.type, request);
+		AddAuthTaskRequest(request);
 		return true;
 	}
 
@@ -75,8 +73,8 @@ namespace FESL {
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
-			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((FESL::Server *)(peer->GetDriver()->getServer()))->GetProfileTask();
-			scheduler->AddRequest(request.type, request);
+			
+			AddProfileTaskRequest(request);
 		}
 		else {
 			((Peer *)peer)->handle_web_error(auth_data.error_details, FESL_TYPE_ACCOUNT, "NuLogin", (int)(ptrdiff_t)extra);

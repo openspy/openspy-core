@@ -1,14 +1,16 @@
 #ifndef OS_TASKSHARED_AUTH_H
 #define OS_TASKSHARED_AUTH_H
-#include <OS/Task/TaskScheduler.h>
-#include <OS/SharedTasks/tasks.h>
 #include <OS/OpenSpy.h>
 #include <OS/Profile.h>
 #include <OS/User.h>
 #include <curl/curl.h>
 #include <jansson.h>
 #include <string>
-#include <OS/Cache/GameCache.h>
+
+#include <OS/Net/NetPeer.h>
+
+#include "../../WebError.h"
+#include "../../tasks.h"
 
 namespace TaskShared {
      enum EAuthType {
@@ -67,5 +69,7 @@ namespace TaskShared {
 	bool PerformAuth_MakeAuthSession(AuthRequest request, TaskThreadData *thread_data);
 	bool PerformAuth_DeleteAuthSession(AuthRequest request, TaskThreadData *thread_data);
 	bool PerformAuth_TestPreAuth(AuthRequest request, TaskThreadData *thread_data);	
+
+	void AddAuthTaskRequest(AuthRequest request);
 }
 #endif //OS_TASKSHARED_AUTH_H

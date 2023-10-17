@@ -17,7 +17,7 @@ namespace Peerchat {
 		message << "\\type\\REMOTE_KILL\\user_id\\" << summary.id << "\\reason\\" << base64;
 
         free((void*)base64);
-		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
+		sendAMQPMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
 
         response.profile.uniquenick = request.summary.username;
 		response.error_details.response_code = TaskShared::WebErrorCode_Success;

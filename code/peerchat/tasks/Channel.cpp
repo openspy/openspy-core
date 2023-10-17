@@ -204,7 +204,7 @@ namespace Peerchat {
 
 		std::ostringstream message;
 		message << "\\type\\JOIN\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << user.ToBase64String(true) << "\\includeSelf\\1";
-		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
+		sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
 
 	}
 
@@ -237,7 +237,7 @@ namespace Peerchat {
 			if (target.id != 0) {
 				message << "\\toUserSummary\\" << target.ToBase64String(true);
 			}
-			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
+			sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, message.str().c_str());
 			free((void*)base64);
 		}
 
@@ -436,6 +436,6 @@ namespace Peerchat {
 	void SendUpdateUserChanModeflags(TaskThreadData* thread_data, int channel_id, int user_id, int modeflags, int old_modeflags) {
 		std::ostringstream message;
 		message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\channel_id\\" << channel_id << "\\user_id\\" << user_id << "\\modeflags\\" << modeflags << "\\old_modeflags\\" << old_modeflags;
-		thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
+		sendAMQPMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
 	}
 }

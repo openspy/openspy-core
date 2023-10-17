@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
@@ -10,7 +9,7 @@
 namespace FESL {
 	void Peer::loginToPersona(std::string uniquenick, int tid) {
 		std::ostringstream s;
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		std::vector<OS::Profile>::iterator it = m_profiles.begin();
 		while (it != m_profiles.end()) {
 			OS::Profile profile = *it;
@@ -28,7 +27,7 @@ namespace FESL {
 			}
 			it++;
 		}
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 	}
 	bool Peer::m_acct_login_persona(OS::KVReader kv_list) {
 		std::ostringstream s;

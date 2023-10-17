@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -35,7 +34,6 @@ namespace Peerchat {
 		else {
             std::string target = data_parser.at(1);
 
-            TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
             PeerchatBackendRequest req;
             req.type = EPeerchatRequestType_LookupUserDetailsByName;
             req.peer = this;
@@ -43,7 +41,7 @@ namespace Peerchat {
 
             req.peer->IncRef();
             req.callback = OnUsrip_FetchUser;
-            scheduler->AddRequest(req.type, req);
+            AddPeerchatTaskRequest(req);
 		}
 	}
 }

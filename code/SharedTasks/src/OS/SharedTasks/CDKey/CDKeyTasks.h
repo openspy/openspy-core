@@ -1,15 +1,14 @@
 #ifndef OS_TASKSHARED_CDKEY_H
 #define OS_TASKSHARED_CDKEY_H
-#include <OS/Task/TaskScheduler.h>
-#include <OS/SharedTasks/tasks.h>
 #include <OS/OpenSpy.h>
 #include <OS/Profile.h>
 #include <OS/User.h>
 #include <curl/curl.h>
 #include <jansson.h>
 #include <string>
-#include <OS/Cache/GameCache.h>
 
+#include "../../WebError.h"
+#include "../../tasks.h"
 namespace TaskShared {
      enum ECDKeyType {
         ECDKeyType_AssociateToProfile,
@@ -53,5 +52,7 @@ namespace TaskShared {
     bool PerformCDKey_AssociateToProfile(CDKeyRequest request, TaskThreadData *thread_data);
     bool PerformCDKey_GetProfileByCDKey(CDKeyRequest request, TaskThreadData *thread_data);
     bool PerformCDKey_TestCDKeyValid(CDKeyRequest request, TaskThreadData *thread_data);
+
+	void AddCDKeyTaskRequest(CDKeyRequest request);
 }
 #endif //OS_TASKSHARED_AUTH_H

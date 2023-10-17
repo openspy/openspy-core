@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include <OS/SharedTasks/tasks.h>
 #include "server/Server.h"
 #include "server/Driver.h"
 INetServer *g_gameserver = NULL;
@@ -21,7 +20,7 @@ int main() {
     uv_idle_start(&idler, idle_handler);
 
 
-	OS::Init("Peerchat", NULL);
+	OS::Init("Peerchat");
 
 	g_gameserver = new Peerchat::Server();
 
@@ -39,7 +38,7 @@ int main() {
 		temp_env_sz = sizeof(server_name_buff);
 		uv_os_getenv("OPENSPY_PEERCHAT_SERVER_NAME", (char *)&server_name_buff, &temp_env_sz);
 
-		Peerchat::Driver *driver = new Peerchat::Driver(g_gameserver, server_name_buff, address_buff, port, false);
+		Peerchat::Driver *driver = new Peerchat::Driver(g_gameserver, server_name_buff, address_buff, port);
 
 		OS::LogText(OS::ELogLevel_Info, "Adding Peerchat Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(driver);

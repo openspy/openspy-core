@@ -29,7 +29,7 @@ namespace Peerchat {
             requiredOperFlags = OPERPRIVS_INVISIBLE;
 
             mq_message << "\\type\\NOTICE\\toChannelId\\" << request.channel_summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\-1\\requiredOperFlags\\" << requiredOperFlags << "\\includeSelf\\1";
-            thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
+            sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
         }
         if (initial_flags & EUserChannelFlag_Voice) {
             std::string message = "+v :" + request.peer->GetUserDetails().nick;
@@ -39,7 +39,7 @@ namespace Peerchat {
 
             std::ostringstream mode_message;
             mode_message << "\\type\\MODE\\toChannelId\\" << request.channel_summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\-1\\includeSelf\\1\\requiredOperFlags\\" << requiredOperFlags;
-            thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mode_message.str().c_str());
+            sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mode_message.str().c_str());
         }
         if (initial_flags & EUserChannelFlag_HalfOp || initial_flags & EUserChannelFlag_Op || initial_flags & EUserChannelFlag_Owner) {
             std::string message = "+o :" + request.peer->GetUserDetails().nick;
@@ -49,7 +49,7 @@ namespace Peerchat {
 
             std::ostringstream mode_message;
             mode_message << "\\type\\MODE\\toChannelId\\" << request.channel_summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\-1\\includeSelf\\1\\requiredOperFlags\\" << requiredOperFlags;
-            thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mode_message.str().c_str());
+            sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mode_message.str().c_str());
         }
 
         ChannelSummary channel =  LookupChannelById(thread_data, request.channel_summary.channel_id);
@@ -62,7 +62,7 @@ namespace Peerchat {
 
 
 			entry_message << "\\type\\NOTICE\\toChannelId\\" << channel.channel_id << "\\fromUserSummary\\" << server_userSummary->ToBase64String(true) << "\\includeSelf\\1\\message\\" << b64_string << "\\onlyVisibleTo\\" << request.peer->GetBackendId();
-			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, entry_message.str().c_str());
+			sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, entry_message.str().c_str());
 		}
 
         int current_modeflags = request.peer->GetChannelFlags(request.channel_summary.channel_id);

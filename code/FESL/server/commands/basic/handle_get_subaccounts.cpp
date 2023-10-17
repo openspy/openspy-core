@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
@@ -10,7 +9,7 @@
 namespace FESL {
 	void Peer::send_subaccounts() {
 		std::ostringstream s;
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		std::vector<OS::Profile>::iterator it = m_profiles.begin();
 		int i = 0;
 		s << "TXN=GetSubAccounts\n";
@@ -24,7 +23,7 @@ namespace FESL {
 			it++;
 		}
 		
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 		SendPacket(FESL_TYPE_ACCOUNT, s.str());
 	}
 	bool Peer::m_acct_get_sub_accounts(OS::KVReader kv_list) {

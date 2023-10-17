@@ -1,22 +1,13 @@
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 #include "GPPeer.h"
 #include "GPServer.h"
 #include "GPDriver.h"
+#include "tasks/tasks.h"
 namespace GP {
 	Server::Server() : INetServer() {
-		mp_auth_tasks = TaskShared::InitAuthTasks(this);
-		mp_user_tasks = TaskShared::InitUserTasks(this);
-		mp_profile_tasks = TaskShared::InitProfileTasks(this);
-		mp_cdkey_tasks = TaskShared::InitCDKeyTasks(this);
-		mp_gp_tasks = GP::InitTasks(this);
+		InitTasks();
 	}
 	Server::~Server() {
-		delete mp_gp_tasks;
-		delete mp_cdkey_tasks;
-		delete mp_profile_tasks;
-		delete mp_user_tasks;
-		delete mp_auth_tasks;
 	}
 	void Server::init() {
 

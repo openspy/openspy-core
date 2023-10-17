@@ -65,7 +65,6 @@ namespace GP {
 		request.peer->IncRef();
 		request.type = TaskShared::EProfileSearch_UpdateProfile;
 		request.callback = Peer::m_update_registernick_callback;
-		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
-		scheduler->AddRequest(request.type, request);
+		AddProfileTaskRequest(request);
 	}
 }

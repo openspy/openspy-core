@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -45,8 +44,6 @@ namespace Peerchat {
 
 		OS::KVReader usermode_properties = usermode_properties_string;
 
-
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 
 		UsermodeRecord usermodeRecord;
@@ -92,7 +89,7 @@ namespace Peerchat {
 		req.peer = this;
 		req.peer->IncRef();
 		req.callback = OnSetUserMode;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 
     }
 }

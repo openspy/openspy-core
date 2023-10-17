@@ -58,8 +58,7 @@ namespace GP {
 		request.peer->IncRef();
 		request.type = TaskShared::EProfileSearch_UpdateProfile;
 		request.callback = Peer::m_update_profile_callback;
-		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
-		scheduler->AddRequest(request.type, request);
+		AddProfileTaskRequest(request);
 
 		if(send_userupdate) {
 			TaskShared::UserRequest user_request;
@@ -69,8 +68,7 @@ namespace GP {
 			user_request.peer = this;
 			user_request.peer->IncRef();
 			user_request.callback = NULL;
-			TaskScheduler<TaskShared::UserRequest, TaskThreadData> *user_scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetUserTask();
-			user_scheduler->AddRequest(user_request.type, user_request);
+			AddUserTaskRequest(user_request);
 		}
 	}
 	void Peer::m_update_profile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {

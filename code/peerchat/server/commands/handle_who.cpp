@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -87,7 +86,6 @@ namespace Peerchat {
 			
 	}
     void Peer::handle_who(std::vector<std::string> data_parser) {
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
 		std::string target = data_parser.at(1);
 
@@ -97,7 +95,7 @@ namespace Peerchat {
 			req.channel_summary.channel_name = target;
 			req.peer->IncRef();
 			req.callback = OnWho_FetchChannelInfo;
-			scheduler->AddRequest(req.type, req);
+			AddPeerchatTaskRequest(req);
 		}
 		else {
 			req.type = EPeerchatRequestType_LookupUserDetailsByName;
@@ -105,7 +103,7 @@ namespace Peerchat {
 			req.summary.username = target;
 			req.peer->IncRef();
 			req.callback = OnWho_FetchUserInfo;
-			scheduler->AddRequest(req.type, req);
+			AddPeerchatTaskRequest(req);
 		}
     }
 }

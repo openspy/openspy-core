@@ -2,13 +2,12 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <peerchat/tasks/tasks.h>
-#include <OS/SharedTasks/tasks.h>
 #include "Driver.h"
 
 #include <sstream>
 namespace Peerchat {
 
-    Driver::Driver(INetServer *server, std::string server_name, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
+    Driver::Driver(INetServer *server, std::string server_name, const char *host, uint16_t port) : TCPDriver(server, host, port) {
 		m_server_name = server_name;
     }
 	Driver::~Driver() {

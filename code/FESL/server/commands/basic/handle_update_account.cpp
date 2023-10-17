@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
@@ -62,8 +61,7 @@ namespace FESL {
 			user_request.peer = this;
 			user_request.peer->IncRef();
 			user_request.callback = Peer::m_update_user_callback;
-			TaskScheduler<TaskShared::UserRequest, TaskThreadData> *user_scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetUserTask();
-			user_scheduler->AddRequest(user_request.type, user_request);
+			AddUserTaskRequest(user_request);
 		}
 		else if (update_info->profile_update) {
 			TaskShared::ProfileRequest profile_request;
@@ -73,8 +71,7 @@ namespace FESL {
 			profile_request.peer->IncRef();
 			profile_request.type = TaskShared::EProfileSearch_UpdateProfile;
 			profile_request.callback = Peer::m_update_user_profile_callback;
-			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *profile_scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetProfileTask();
-			profile_scheduler->AddRequest(profile_request.type, profile_request);
+			AddProfileTaskRequest(profile_request);
 		} else {
 			std::ostringstream s;
 			s << "TXN=UpdateAccount\n";
@@ -121,8 +118,7 @@ namespace FESL {
 				profile_request.peer->IncRef();
 				profile_request.type = TaskShared::EProfileSearch_UpdateProfile;
 				profile_request.callback = Peer::m_update_user_profile_callback;
-				TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *profile_scheduler = ((FESL::Server *)(peer->GetDriver()->getServer()))->GetProfileTask();
-				profile_scheduler->AddRequest(profile_request.type, profile_request);
+				AddProfileTaskRequest(profile_request);
 				return;
 			}
 			else {

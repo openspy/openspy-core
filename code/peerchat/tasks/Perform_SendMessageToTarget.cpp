@@ -7,7 +7,7 @@ namespace Peerchat {
         uint8_t *data_out;
 		size_t data_len;
 
-        Peerchat::Server *server = (Peerchat::Server *)thread_data->server;
+        Peerchat::Server *server = (Peerchat::Server *)uv_loop_get_data(uv_default_loop());
         OS::KVReader reader = OS::KVReader(message);
 
         
@@ -116,7 +116,7 @@ namespace Peerchat {
 			mq_message << "\\type\\" << request.message_type.c_str() << "\\toUserId\\" << to_summary.id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id;
 		}
 	 	
-        thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
+        sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
 
 		if (request.peer) {
 			request.peer->DecRef();

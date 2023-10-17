@@ -2,37 +2,37 @@
 namespace GP {
         const char *gp_channel_exchange = "presence.core";
         const char *gp_client_message_routingkey = "presence.buddies";
-		TaskScheduler<GPBackendRedisRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
-			{EGPRedisRequestType_AuthorizeAdd, Perform_ToFromProfileAction},
-			{EGPRedisRequestType_AddBlock, Perform_ToFromProfileAction},
-			{EGPRedisRequestType_DelBlock, Perform_ToFromProfileAction},
-			{EGPRedisRequestType_Auth_NickEmail_GPHash, Perform_Auth_NickEmail_GPHash},
-			{EGPRedisRequestType_Auth_Uniquenick_GPHash, Perform_Auth_Uniquenick_GPHash},
+		// TaskScheduler<GPBackendRedisRequest, TaskThreadData>::RequestHandlerEntry requestTable[] = {
+		// 	{EGPRedisRequestType_AuthorizeAdd, Perform_ToFromProfileAction},
+		// 	{EGPRedisRequestType_AddBlock, Perform_ToFromProfileAction},
+		// 	{EGPRedisRequestType_DelBlock, Perform_ToFromProfileAction},
+		// 	{EGPRedisRequestType_Auth_NickEmail_GPHash, Perform_Auth_NickEmail_GPHash},
+		// 	{EGPRedisRequestType_Auth_Uniquenick_GPHash, Perform_Auth_Uniquenick_GPHash},
 
-			{EGPRedisRequestType_AddBuddy, Perform_BuddyRequest},
-			{EGPRedisRequestType_UpdateStatus, Perform_SetPresenceStatus},
-			{EGPRedisRequestType_DelBuddy, Perform_ToFromProfileAction},
-			{EGPRedisRequestType_BuddyMessage, Perform_SendBuddyMessage},
+		// 	{EGPRedisRequestType_AddBuddy, Perform_BuddyRequest},
+		// 	{EGPRedisRequestType_UpdateStatus, Perform_SetPresenceStatus},
+		// 	{EGPRedisRequestType_DelBuddy, Perform_ToFromProfileAction},
+		// 	{EGPRedisRequestType_BuddyMessage, Perform_SendBuddyMessage},
 
-			{EGPRedisRequestType_LookupBuddyStatus, Perform_GetBuddyStatus},
-			{EGPRedisRequestType_LookupBlockStatus, Perform_GetBuddyStatus},
-			{EGPRedisRequestType_Auth_PreAuth_Token_GPHash, Perform_Auth_PreAuth_Token_GPHash},
-			{EGPRedisRequestType_Auth_LoginTicket, Perform_Auth_LoginTicket_GPHash},
-			{-1, NULL}
-		};
+		// 	{EGPRedisRequestType_LookupBuddyStatus, Perform_GetBuddyStatus},
+		// 	{EGPRedisRequestType_LookupBlockStatus, Perform_GetBuddyStatus},
+		// 	{EGPRedisRequestType_Auth_PreAuth_Token_GPHash, Perform_Auth_PreAuth_Token_GPHash},
+		// 	{EGPRedisRequestType_Auth_LoginTicket, Perform_Auth_LoginTicket_GPHash},
+		// 	{-1, NULL}
+		// };
 
-		TaskScheduler<GPBackendRedisRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
-			{gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage},
-			{"openspy.core", "auth.events", Handle_AuthEvent},
-			{NULL, NULL, NULL}
-		};
-        TaskScheduler<GPBackendRedisRequest, TaskThreadData> *InitTasks(INetServer *server) {
-            TaskScheduler<GPBackendRedisRequest, TaskThreadData> *scheduler = new TaskScheduler<GPBackendRedisRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, listenerTable);
+		// TaskScheduler<GPBackendRedisRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
+		// 	{gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage},
+		// 	{"openspy.core", "auth.events", Handle_AuthEvent},
+		// 	{NULL, NULL, NULL}
+		// };
+        // TaskScheduler<GPBackendRedisRequest, TaskThreadData> *InitTasks(INetServer *server) {
+        //     TaskScheduler<GPBackendRedisRequest, TaskThreadData> *scheduler = new TaskScheduler<GPBackendRedisRequest, TaskThreadData>(OS::g_numAsync, server, requestTable, listenerTable);
 
-			scheduler->DeclareReady();
+		// 	scheduler->DeclareReady();
 
-            return scheduler;
-        }
+        //     return scheduler;
+        // }
 
 		void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request, struct curl_slist **out_list) {
 			struct curl_slist *chunk = NULL;

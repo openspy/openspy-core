@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -90,7 +89,6 @@ namespace Peerchat {
     void Peer::handle_listusermodes(std::vector<std::string> data_parser) {
         std::string chanmask = data_parser.at(1);
 
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 
         /*if(chanmask.find("*") == std::string::npos) {
@@ -108,6 +106,6 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnListUserModes;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
     }
 }

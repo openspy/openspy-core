@@ -232,7 +232,7 @@ namespace Peerchat {
 			std::ostringstream mq_message;
 			mq_message << "\\type\\MODE\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\1" << "\\oldModeflags\\" << old_modeflags << "\\newModeflags\\" << summary.basic_mode_flags;
 
-			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
+			sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
 		}
 
 		if (request.channel_modify.topic.size()) {
@@ -244,7 +244,7 @@ namespace Peerchat {
 			std::ostringstream mq_message;
 			mq_message << "\\type\\TOPIC\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id << "\\includeSelf\\1";
 
-			thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
+			sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
 		}
         
 		if (request.callback) {

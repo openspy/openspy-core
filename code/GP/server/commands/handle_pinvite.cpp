@@ -31,7 +31,6 @@ namespace GP {
 		//s << "|signed|d41d8cd98f00b204e9800998ecf8427e"; //temp until calculation fixed
 		//GPBackend::GPBackendRedisTask::SendMessage(this, profileid, GPI_BM_INVITE, s.str().c_str());
 
-		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_BuddyMessage;
 		req.peer = this;
@@ -41,6 +40,6 @@ namespace GP {
 		req.BuddyMessage.message = s.str();	
 		
 		
-		scheduler->AddRequest(req.type, req);
+		AddGPTaskRequest(req);
 	}
 }

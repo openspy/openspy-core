@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -26,14 +25,13 @@ namespace Peerchat {
 
     }
 	void Peer::send_topic(std::string channel) {
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_LookupChannelDetails;
 		req.peer = this;
 		req.channel_summary.channel_name = channel;
 		req.peer->IncRef();
 		req.callback = OnTopic_FetchChannelInfo;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 	}
     void Peer::handle_topic(std::vector<std::string> data_parser) {
 		if (data_parser.size() == 2) { //topic lookup
@@ -54,7 +52,6 @@ namespace Peerchat {
 				}
 			}
 
-			TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 			PeerchatBackendRequest req;
 			req.type = EPeerchatRequestType_UpdateChannelModes;
 			req.peer = this;
@@ -67,7 +64,7 @@ namespace Peerchat {
 			req.channel_modify.topic = message;
 			req.peer->IncRef();
 			req.callback = NULL;
-			scheduler->AddRequest(req.type, req);
+			AddPeerchatTaskRequest(req);
 		}
 		
     }

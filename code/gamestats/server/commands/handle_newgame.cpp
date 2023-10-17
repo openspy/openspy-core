@@ -19,7 +19,7 @@ using namespace GPShared;
 
 namespace GS {
 	void Peer::newGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-		peer->mp_mutex->lock();
+		uv_mutex_lock(&peer->m_mutex);
 		size_t sesskey = (size_t)extra;
 		peer->m_game_session_backend_identifier_map[sesskey] = response_data.game_instance_identifier;
 		
@@ -37,7 +37,7 @@ namespace GS {
 			}
 			peer->m_updgame_sesskey_wait_list.erase(it);
 		}
-		peer->mp_mutex->unlock();
+		uv_mutex_unlock(&peer->m_mutex);
 
 	}
 	void Peer::handle_newgame(OS::KVReader data_parser) {

@@ -105,8 +105,6 @@ namespace SM {
 		void post_register_registercdkey();
 		static const char *mp_hidden_str;
 
-		OS::CMutex *mp_mutex;
-
 		std::string m_kv_accumulator;
 		std::string m_postregister_cdkey;
 		int m_postregister_gameid;

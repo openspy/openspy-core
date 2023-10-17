@@ -4,7 +4,6 @@
 #include "../main.h"
 #include <SSL/StringCrypter.h>
 #include <OS/Net/drivers/TCPDriver.h>
-#include <SSL/SSLIOInterface.h>
 #include "FESLPeer.h"
 
 #include <map>
@@ -36,7 +35,7 @@ namespace FESL {
 
 	class Driver : public OS::TCPDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, const char *x509_path = NULL, const char *rsa_priv_path = NULL, OS::ESSL_Type ssl_version = OS::ESSL_None, bool proxyFlag = false);
+		Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key);
 		~Driver();
 
 		PublicInfo GetServerInfo() { return m_server_info; };

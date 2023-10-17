@@ -40,7 +40,6 @@ namespace GP {
 				return;
 			}
 
-			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 			GPBackendRedisRequest req;
 			req.type = EGPRedisRequestType_BuddyMessage;
 			req.peer = this;
@@ -48,7 +47,7 @@ namespace GP {
 			req.BuddyMessage.type = msg_type;
 			req.BuddyMessage.to_profileid = to_profileid;
 			req.BuddyMessage.message = msg;
-			scheduler->AddRequest(req.type, req);
+			AddGPTaskRequest(req);
 		}
 		else {
 			send_error(GPShared::GP_PARSE);

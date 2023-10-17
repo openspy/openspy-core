@@ -6,13 +6,13 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
-#include <tasks/tasks.h>
 
 
 #include "GPPeer.h"
 #include "GPDriver.h"
 #include "GPServer.h"
+
+#include "../tasks/tasks.h"
 
 /*
 	TODO: delete/create profile errors
@@ -26,7 +26,6 @@ namespace GP {
 		m_timeout_flag = false;
 		m_got_buddies = false;
 		m_got_blocks = false;
-		mp_mutex = OS::CreateMutex();
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
 		gettimeofday(&m_status_refresh, NULL);
@@ -51,7 +50,6 @@ namespace GP {
 	Peer::~Peer() {
 		delete mp_proto_processor;
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
-		delete mp_mutex;
 	}
 	void Peer::Delete(bool timeout) {
 		if(m_profile.id != 0) {
@@ -62,8 +60,7 @@ namespace GP {
 			req.StatusInfo = GPShared::gp_default_status;
 			req.extra = NULL;
 
-			TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
-			scheduler->AddRequest(req.type, req);
+			AddGPTaskRequest(req);
 		}
 
 		m_delete_flag = true;
@@ -71,42 +68,17 @@ namespace GP {
 	}
 	void Peer::think(bool packet_waiting) {
 		
-		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 
-		// if (packet_waiting) {
-		// 	OS::Buffer recv_buffer;
-		// 	io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
-
-		// 	int len = io_resp.comm_len;
-
-		// 	if (len <= 0) {
-		// 		goto end;
-		// 	}
-
-		// 	std::vector<OS::KVReader> data_parser;
-		// 	if (mp_proto_processor->ProcessIncoming(recv_buffer, data_parser)) {
-		// 		std::vector<OS::KVReader>::iterator it = data_parser.begin();
-		// 		while(it != data_parser.end()) {
-		// 			handle_packet(*it);
-		// 			it++;
-		// 		}				
-		// 	}
-		// }
-
-	end:
 		run_timed_operations();
 
 		//check for timeout
+		/* ping doesn't exist in older games -- XX: VERIFY?
 		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
-		/* ping doesn't exist in older games
+		gettimeofday(&current_time, NULL);		
 		if (current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME * 2) {
 			Delete(true);
-		} else */
-		if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
-			Delete();
-		}
+		}*/
 	}
 
 	void Peer::RegisterCommands() {
@@ -221,13 +193,12 @@ namespace GP {
 			gettimeofday(&m_status_refresh, NULL);
 			//often called with keep alives
 			if (m_profile.id) {
-				TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 				GPBackendRedisRequest req;
 				req.type = EGPRedisRequestType_UpdateStatus;
 				req.peer = this;
 				req.peer->IncRef();
 				req.StatusInfo = m_status;
-				scheduler->AddRequest(req.type, req);
+				AddGPTaskRequest(req);
 			}
 		}
 	}
@@ -298,7 +269,6 @@ namespace GP {
 		((GP::Peer *)peer)->SendPacket((const uint8_t *)ss.str().c_str(), ss.str().length());
 	}
 	void Peer::refresh_session() {
-		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetAuthTask();
 		TaskShared::AuthRequest req;
 		req.type = TaskShared::EAuthType_MakeAuthSession;
 		req.callback = m_session_renew_callback;
@@ -307,13 +277,12 @@ namespace GP {
 		req.peer = this;
 		req.peer->IncRef();
 
-		scheduler->AddRequest(req.type, req);
+		AddAuthTaskRequest(req);
 	}
 
 	void Peer::m_session_delete_callback(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 	}
 	void Peer::delete_session() {
-		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetAuthTask();
 		TaskShared::AuthRequest req;
 		req.type = TaskShared::EAuthType_DeleteAuthSession;
 		req.callback = m_session_delete_callback;
@@ -322,7 +291,7 @@ namespace GP {
 		req.peer = this;
 		req.peer->IncRef();
 
-		scheduler->AddRequest(req.type, req);
+		AddAuthTaskRequest(req);
 	}
 	bool Peer::OnAuth(std::string session_key) {
 		/* This functionality cannot be used for certain games, such as Gauntlet PS2, which shares an account between all players.

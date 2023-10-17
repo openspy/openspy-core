@@ -1,23 +1,23 @@
 #include <OS/OpenSpy.h>
 #include <OS/Net/NetPeer.h>
-#include <OS/SharedTasks/tasks.h>
-
+#include "../../tasks.h"
+#include "AuthTasks.h"
 namespace TaskShared {
-		TaskScheduler<AuthRequest, TaskThreadData>::RequestHandlerEntry AuthTask_HandlerTable[] = {
-			{EAuthType_User_EmailPassword, PerformAuth_Email_Password},
-			{EAuthType_Uniquenick_Password, PerformAuth_UniqueNick_Password},
-			{EAuthType_MakeAuthTicket, PerformAuth_MakeAuthTicket},
-			{EAuthType_NickEmail, PerformAuth_NickEmail},
-			{EAuthType_MakeAuthSession, PerformAuth_MakeAuthSession},
-			{EAuthType_DeleteAuthSession, PerformAuth_DeleteAuthSession},
-			{EAuthType_TestPreAuth, PerformAuth_TestPreAuth},
-			{-1, NULL}
-		};
-        TaskScheduler<AuthRequest, TaskThreadData> *InitAuthTasks(INetServer *server) {
-            TaskScheduler<AuthRequest, TaskThreadData> *scheduler = new TaskScheduler<AuthRequest, TaskThreadData>(OS::g_numAsync, server, AuthTask_HandlerTable, NULL);
-			scheduler->DeclareReady();
-            return scheduler;
-        }
+		// TaskScheduler<AuthRequest, TaskThreadData>::RequestHandlerEntry AuthTask_HandlerTable[] = {
+		// 	{EAuthType_User_EmailPassword, PerformAuth_Email_Password},
+		// 	{EAuthType_Uniquenick_Password, PerformAuth_UniqueNick_Password},
+		// 	{EAuthType_MakeAuthTicket, PerformAuth_MakeAuthTicket},
+		// 	{EAuthType_NickEmail, PerformAuth_NickEmail},
+		// 	{EAuthType_MakeAuthSession, PerformAuth_MakeAuthSession},
+		// 	{EAuthType_DeleteAuthSession, PerformAuth_DeleteAuthSession},
+		// 	{EAuthType_TestPreAuth, PerformAuth_TestPreAuth},
+		// 	{-1, NULL}
+		// };
+        // TaskScheduler<AuthRequest, TaskThreadData> *InitAuthTasks(INetServer *server) {
+        //     TaskScheduler<AuthRequest, TaskThreadData> *scheduler = new TaskScheduler<AuthRequest, TaskThreadData>(OS::g_numAsync, server, AuthTask_HandlerTable, NULL);
+		// 	scheduler->DeclareReady();
+        //     return scheduler;
+        // }
 
 
 		/* callback for curl fetch */

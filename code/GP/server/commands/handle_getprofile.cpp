@@ -25,8 +25,7 @@ namespace GP {
 			request.callback = Peer::m_getprofile_callback;
 			request.type = TaskShared::EProfileSearch_Profiles;
 
-			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
-			scheduler->AddRequest(request.type, request);
+			AddProfileTaskRequest(request);
 		}
 	}
     void Peer::m_getprofile_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {

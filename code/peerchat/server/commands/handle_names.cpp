@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -50,13 +49,12 @@ namespace Peerchat {
 		peer->send_numeric(366, "End of /NAMES list.", false, response_data.channel_summary.channel_name);
     }
     void Peer::handle_names(std::vector<std::string> data_parser) {
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
         req.type = EPeerchatRequestType_LookupChannelDetails;
         req.peer = this;
         req.channel_summary.channel_name = data_parser.at(1);
         req.peer->IncRef();
         req.callback = OnNames_FetchChannelInfo;
-        scheduler->AddRequest(req.type, req);
+        AddPeerchatTaskRequest(req);
     }
 }

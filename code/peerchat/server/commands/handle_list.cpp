@@ -5,7 +5,6 @@
 #include <sstream>
 #include <algorithm>
 
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -72,7 +71,6 @@ namespace Peerchat {
 		return;
 	}
 	void Peer::handle_list(std::vector<std::string> data_parser) {
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 
 		std::string target = "*";
@@ -101,10 +99,9 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnListChannels;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 	}
 	void Peer::handle_listlimit(std::vector<std::string> data_parser) {
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		req.channel_modify.update_topic = false;
 		req.channel_summary.channel_id = 0;
@@ -127,7 +124,7 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnListChannels;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 
 	}
 }

@@ -6,8 +6,6 @@
 
 #include <sstream>
 
-#include <OS/Task/TaskScheduler.h>
-#include <OS/SharedTasks/tasks.h>
 #include <OS/GPShared.h>
 
 #include <server/SMPeer.h>

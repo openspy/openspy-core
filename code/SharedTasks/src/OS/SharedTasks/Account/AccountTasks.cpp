@@ -1,41 +1,40 @@
 #include <OS/OpenSpy.h>
 #include <OS/Net/NetPeer.h>
-#include <OS/SharedTasks/tasks.h>
 #include "ProfileTasks.h"
 #include "UserTasks.h"
 #define MAX_SUGGESTIONS 5
 namespace TaskShared {
 
-		TaskScheduler<UserRequest, TaskThreadData>::RequestHandlerEntry UserTasks_requestTable[] = {
-			{EUserRequestType_Search, PerformUserRequest},
-			{EUserRequestType_Update, PerformUserRequest},
-			{EUserRequestType_Create, PerformUserRegisterRequest},
-			{-1, NULL}
-		};
-        TaskScheduler<UserRequest, TaskThreadData> *InitUserTasks(INetServer *server) {
-            TaskScheduler<UserRequest, TaskThreadData> *scheduler = new TaskScheduler<UserRequest, TaskThreadData>(OS::g_numAsync, server, UserTasks_requestTable, NULL);
-            scheduler->SetThreadDataFactory(TaskScheduler<UserRequest, TaskThreadData>::DefaultThreadDataFactory);
-			scheduler->DeclareReady();
-            return scheduler;
-        }
-		TaskScheduler<ProfileRequest, TaskThreadData>::RequestHandlerEntry ProfileTasks_requestTable[] = {
-			{EProfileSearch_Profiles, PerformProfileRequest},
-			{EProfileSearch_CreateProfile, PerformProfileRequest},
-			{EProfileSearch_DeleteProfile, PerformProfileRequest},
-			{EProfileSearch_UpdateProfile, PerformProfileRequest},
-			{EProfileSearch_SuggestUniquenick, Perform_SuggestUniquenick},
+		// TaskScheduler<UserRequest, TaskThreadData>::RequestHandlerEntry UserTasks_requestTable[] = {
+		// 	{EUserRequestType_Search, PerformUserRequest},
+		// 	{EUserRequestType_Update, PerformUserRequest},
+		// 	{EUserRequestType_Create, PerformUserRegisterRequest},
+		// 	{-1, NULL}
+		// };
+        // TaskScheduler<UserRequest, TaskThreadData> *InitUserTasks(INetServer *server) {
+        //     TaskScheduler<UserRequest, TaskThreadData> *scheduler = new TaskScheduler<UserRequest, TaskThreadData>(OS::g_numAsync, server, UserTasks_requestTable, NULL);
+        //     scheduler->SetThreadDataFactory(TaskScheduler<UserRequest, TaskThreadData>::DefaultThreadDataFactory);
+		// 	scheduler->DeclareReady();
+        //     return scheduler;
+        // }
+		// TaskScheduler<ProfileRequest, TaskThreadData>::RequestHandlerEntry ProfileTasks_requestTable[] = {
+		// 	{EProfileSearch_Profiles, PerformProfileRequest},
+		// 	{EProfileSearch_CreateProfile, PerformProfileRequest},
+		// 	{EProfileSearch_DeleteProfile, PerformProfileRequest},
+		// 	{EProfileSearch_UpdateProfile, PerformProfileRequest},
+		// 	{EProfileSearch_SuggestUniquenick, Perform_SuggestUniquenick},
 
-			{EProfileSearch_Buddies, Perform_BuddyRequest},
-			{EProfileSearch_Buddies_Reverse, Perform_BuddyRequest},
-			{EProfileSearch_Blocks, Perform_BuddyRequest},
-			{-1, NULL}
-		};
-        TaskScheduler<ProfileRequest, TaskThreadData> *InitProfileTasks(INetServer *server) {
-            TaskScheduler<ProfileRequest, TaskThreadData> *scheduler = new TaskScheduler<ProfileRequest, TaskThreadData>(OS::g_numAsync, server, ProfileTasks_requestTable, NULL);
+		// 	{EProfileSearch_Buddies, Perform_BuddyRequest},
+		// 	{EProfileSearch_Buddies_Reverse, Perform_BuddyRequest},
+		// 	{EProfileSearch_Blocks, Perform_BuddyRequest},
+		// 	{-1, NULL}
+		// };
+        // TaskScheduler<ProfileRequest, TaskThreadData> *InitProfileTasks(INetServer *server) {
+        //     TaskScheduler<ProfileRequest, TaskThreadData> *scheduler = new TaskScheduler<ProfileRequest, TaskThreadData>(OS::g_numAsync, server, ProfileTasks_requestTable, NULL);
 
-			scheduler->DeclareReady();
-            return scheduler;
-        }
+		// 	scheduler->DeclareReady();
+        //     return scheduler;
+        // }
 		void ProfileReq_InitCurl(void *curl, char *post_data, void *write_data, ProfileRequest request, struct curl_slist **out_list) {
 			struct curl_slist *chunk = NULL;
 			std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);

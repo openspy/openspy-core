@@ -6,8 +6,6 @@
 
 #include <sstream>
 
-#include <OS/Task/TaskScheduler.h>
-#include <OS/SharedTasks/tasks.h>
 #include <OS/GPShared.h>
 
 #include <server/SMPeer.h>
@@ -44,7 +42,6 @@ namespace SM {
 		request.peer = this;
 		IncRef();
 		request.callback = Peer::m_search_valid_callback;
-		TaskScheduler<TaskShared::UserRequest, TaskThreadData> *scheduler = ((SM::Server *)(GetDriver()->getServer()))->GetUserTask();
-		scheduler->AddRequest(request.type, request);
+		AddUserTaskRequest(request);
 	}
 }

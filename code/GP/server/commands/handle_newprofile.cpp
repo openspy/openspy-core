@@ -76,8 +76,7 @@ namespace GP {
 		request.callback = Peer::m_create_profile_replace_update_callback;
 
 
-		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(peer->GetDriver()->getServer()))->GetProfileTask();
-		scheduler->AddRequest(request.type, request);
+		AddProfileTaskRequest(request);
 
 		//free(extra);
 	}
@@ -98,8 +97,7 @@ namespace GP {
 
 			info->deleted_profile = profile;
 
-			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(peer->GetDriver()->getServer()))->GetProfileTask();
-			scheduler->AddRequest(request.type, request);
+			AddProfileTaskRequest(request);
 		}
 	}
 	void Peer::handle_newprofile(OS::KVReader data_parser) {
@@ -136,7 +134,6 @@ namespace GP {
 		}
 
 
-		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
-		scheduler->AddRequest(request.type, request);
+		AddProfileTaskRequest(request);
 	}
 }

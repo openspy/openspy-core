@@ -21,7 +21,7 @@ namespace GS {
 	class Driver;
 	class Driver : public OS::TCPDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
+		Driver(INetServer *server, const char *host, uint16_t port);
 		Peer *FindPeerByProfileID(int profileid);
 	protected:
 		virtual INetPeer *CreatePeer(uv_tcp_t *sd);

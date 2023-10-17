@@ -13,6 +13,7 @@
 #include <GP/server/GPDriver.h>
 #include <GP/server/GPServer.h>
 
+#include "../../tasks/tasks.h"
 namespace GP {
 	void Peer::handle_addbuddy(OS::KVReader data_parser) {
 		//OS::KVReader data_parser = OS::KVReader(std::string(data));
@@ -30,19 +31,18 @@ namespace GP {
 			return;
 		}
 
-		mp_mutex->lock();
+		//mp_mutex->lock();
 		if(m_buddies.find(newprofileid) != m_buddies.end()) {
-			mp_mutex->unlock();
+			//mp_mutex->unlock();
 			send_error(GP_ADDBUDDY_ALREADY_BUDDY);
 			return;
 		} else if(std::find(m_blocks.begin(),m_blocks.end(), newprofileid) != m_blocks.end()) {
-			mp_mutex->unlock();
+			//mp_mutex->unlock();
 			send_error(GP_ADDBUDDY_IS_ON_BLOCKLIST);
 			return;
 		}
-		mp_mutex->unlock();
+		//mp_mutex->unlock();
 
-		TaskScheduler<GP::GPBackendRedisRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetGPTask();
 		GPBackendRedisRequest req;
 		req.type = EGPRedisRequestType_AddBuddy;
 		req.peer = this;
@@ -50,7 +50,7 @@ namespace GP {
 		req.BuddyRequest.from_profileid = m_profile.id;
 		req.BuddyRequest.to_profileid = newprofileid;
 		req.BuddyRequest.reason = reason;
-		scheduler->AddRequest(req.type, req);
+		AddGPTaskRequest(req);
 	}
 	void Peer::send_add_buddy_request(int from_profileid, const char *reason) {
 		////\bm\1\f\157928340\msg\I have authorized your request to add me to your list\final

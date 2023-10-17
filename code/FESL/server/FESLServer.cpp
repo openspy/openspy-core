@@ -1,22 +1,11 @@
-#include <OS/SharedTasks/tasks.h>
 #include "FESLServer.h"
 #include "FESLDriver.h"
 #include "FESLPeer.h"
 
 namespace FESL {
 	Server::Server() : INetServer() {
-		mp_auth_tasks = TaskShared::InitAuthTasks(this);
-		mp_user_tasks = TaskShared::InitUserTasks(this);
-		mp_profile_tasks = TaskShared::InitProfileTasks(this);
-		mp_geo_tasks = TaskShared::InitGeoTasks(this);
-		mp_fesl_tasks = FESL::InitTasks(this);
 	}
 	Server::~Server() {
-		delete mp_fesl_tasks;
-		delete mp_geo_tasks;
-		delete mp_profile_tasks;
-		delete mp_user_tasks;
-		delete mp_auth_tasks;
 	}
 	void Server::init() {
 		TaskShared::GeoRequest request;
@@ -24,7 +13,7 @@ namespace FESL {
 		request.extra = this;
 		request.peer = NULL;
 		request.callback = GetCountriesCallback;
-		mp_geo_tasks->AddRequest(request.type, request);
+		AddGeoTaskRequest(request);
 	}
 	void Server::GetCountriesCallback(TaskShared::GeoTaskData auth_data, void *extra, INetPeer *peer) {
 		if (auth_data.error_details.response_code == TaskShared::WebErrorCode_Success) {

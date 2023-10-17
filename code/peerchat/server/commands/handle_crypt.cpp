@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -43,14 +42,14 @@ namespace Peerchat {
         peer->m_using_encryption = true;
         peer->m_user_details.gameid = response_data.game_data.gameid;
 
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(peer->GetDriver()->getServer()))->GetPeerchatTask();
+        
         PeerchatBackendRequest req;
         req.type = EPeerchatRequestType_SetUserDetails;
         req.peer = peer;
         req.summary = peer->GetUserDetails();
         req.peer->IncRef();
         req.callback = NULL;
-        scheduler->AddRequest(req.type, req);
+        AddPeerchatTaskRequest(req);
 
     }
 
@@ -59,16 +58,12 @@ namespace Peerchat {
 
         PeerchatBackendRequest req;
 
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
-
 		req.type = EPeerchatRequestType_LookupGameInfo;
 		req.peer = this;
         req.gamename = gamename;
 
 		req.peer->IncRef();
 		req.callback = OnGetGameInfo_Crypt;
-		scheduler->AddRequest(req.type, req);
-
-
+		AddPeerchatTaskRequest(req);
     }
 }

@@ -2,24 +2,24 @@
 #define _FESL_TASKS_H
 #include <string>
 
-#include <OS/Task/TaskScheduler.h>
-#include <OS/Task/ScheduledTask.h>
-
-#include <OS/MessageQueue/MQInterface.h>
-
-#include <OS/SharedTasks/tasks.h>
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 
 #include <curl/curl.h>
 #include <jansson.h>
 
 #include <OS/SharedTasks/Account/ProfileTasks.h>
+#include <OS/SharedTasks/Geo/GeographyTasks.h>
 
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
 
 namespace FESL {
+	class TaskThreadData {
+		public:
+			redisContext *mp_redis_connection;
+	};
+    
      enum EFESLRequestType {
         EFESLRequestType_GetEntitledGameFeatures,
         EFESLRequestType_GetObjectInventory,
@@ -69,6 +69,7 @@ namespace FESL {
     bool Perform_GetObjectInventory(FESLRequest request, TaskThreadData *thread_data);
 
     bool Handle_AuthEvent(TaskThreadData *thread_data, std::string message);
-    TaskScheduler<FESLRequest, TaskThreadData> *InitTasks(INetServer *server);
+    void InitTasks();
+    void AddFESLTaskRequest(FESLRequest request);
 }
 #endif //_MM_TASKS_H

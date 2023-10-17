@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include "FESLServer.h"
 #include "FESLDriver.h"
 #include "FESLPeer.h"
@@ -49,7 +48,7 @@ namespace FESL {
 		m_got_profiles = false;
 		m_pending_nuget_personas = false;
 
-		mp_mutex = OS::CreateMutex();
+		uv_mutex_init(&m_mutex);
 
 		m_last_profile_lookup_tid = -1;
 
@@ -57,7 +56,7 @@ namespace FESL {
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
-		delete mp_mutex;
+		uv_mutex_destroy(&m_mutex);
 	}
 	void Peer::OnConnectionReady() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());
@@ -94,7 +93,6 @@ namespace FESL {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", getAddress().ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
 	}
 	void Peer::think(bool packet_waiting) {
-		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 
 		send_ping();
@@ -104,9 +102,6 @@ namespace FESL {
 		gettimeofday(&current_time, NULL);
 		if (current_time.tv_sec - m_last_recv.tv_sec > FESL_PING_TIME * 2) {
 			Delete(true);
-		}
-		else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
-			Delete();
 		}
 	}
 	void Peer::SendPacket(FESL_COMMAND_TYPE type, std::string data, int force_sequence) {
@@ -128,9 +123,9 @@ namespace FESL {
 		append_send_buffer(send_buf);
 	}
 	void Peer::m_search_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer) {
-		((Peer *)peer)->mp_mutex->lock();
+		uv_mutex_lock(&((Peer *)peer)->m_mutex);
 		((Peer *)peer)->m_profiles = results;
-		((Peer *)peer)->mp_mutex->unlock();
+		uv_mutex_unlock(&((Peer *)peer)->m_mutex);
 		((Peer *)peer)->m_got_profiles = true;
 		if (((Peer *)peer)->m_pending_subaccounts) {
 			((Peer *)peer)->m_pending_subaccounts = false;

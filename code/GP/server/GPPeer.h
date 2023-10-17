@@ -3,7 +3,6 @@
 #include "../main.h"
 #include <OS/User.h>
 #include <OS/Profile.h>
-#include <OS/Mutex.h>
 
 #include <OS/GPShared.h>
 
@@ -13,6 +12,11 @@
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 #include <OS/SharedTasks/Account/ProfileTasks.h>
 #include <OS/Net/Processors/KVProcessor.h>
+
+#include <OS/SharedTasks/Account/UserTasks.h>
+#include <OS/SharedTasks/Account/ProfileTasks.h>
+#include <OS/SharedTasks/CDKey/CDKeyTasks.h>
+
 
 // Extended message support
 #define GPI_NEW_AUTH_NOTIFICATION	(1<<0)
@@ -198,8 +202,6 @@ namespace GP {
 
 		OS::User m_user;
 		OS::Profile m_profile;
-
-		OS::CMutex *mp_mutex;
 
 		std::vector<CommandEntry> m_commands;
 

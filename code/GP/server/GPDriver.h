@@ -23,7 +23,7 @@ namespace GP {
 	class Driver;
 	class Driver : public OS::TCPDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
+		Driver(INetServer *server, const char *host, uint16_t port);
 		Peer *FindPeerByProfileID(int profileid);
 
 		void InformStatusUpdate(int from_profileid, GPShared::GPStatus status);

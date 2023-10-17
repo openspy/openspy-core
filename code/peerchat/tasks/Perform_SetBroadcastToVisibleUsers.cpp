@@ -46,7 +46,7 @@ namespace Peerchat {
         }
         
         mq_message << "\\includeSelf\\" << (bool)(request.type == EPeerchatRequestType_SetBroadcastToVisibleUsers || request.type == EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary);
-        thread_data->mp_mqconnection->sendMessage(peerchat_channel_exchange, peerchat_broadcast_routingkey, mq_message.str().c_str());
+        sendAMQPMessage(peerchat_channel_exchange, peerchat_broadcast_routingkey, mq_message.str().c_str());
 
         TaskResponse response;
         response.error_details.response_code = TaskShared::WebErrorCode_Success;

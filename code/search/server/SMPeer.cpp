@@ -6,8 +6,6 @@
 
 #include <sstream>
 
-#include <OS/Task/TaskScheduler.h>
-#include <OS/SharedTasks/tasks.h>
 #include <OS/GPShared.h>
 
 #include "SMPeer.h"
@@ -19,7 +17,6 @@ namespace SM {
 	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
-		mp_mutex = OS::CreateMutex();
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
 		
@@ -29,7 +26,6 @@ namespace SM {
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
-		delete mp_mutex;
 	}
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {	
 		/*
@@ -67,17 +63,13 @@ namespace SM {
 		}
 	}
 	void Peer::think(bool packet_waiting) {
-		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 
-	end:
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
 		if (current_time.tv_sec - m_last_recv.tv_sec > SM_PING_TIME * 2) {
 			Delete(true);
-		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
-			Delete();
 		}
 	}
 	void Peer::handle_packet(std::string data) {

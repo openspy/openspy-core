@@ -6,12 +6,13 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 #include <GP/server/GPPeer.h>
 #include <GP/server/GPDriver.h>
 #include <GP/server/GPServer.h>
+
+#include <OS/SharedTasks/Account/ProfileTasks.h>
 
 namespace GP {
 	void Peer::send_list_status() {
@@ -51,7 +52,7 @@ namespace GP {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
-		((GP::Peer *)peer)->mp_mutex->lock();
+		//((GP::Peer *)peer)->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\blk\\" << results.size();
 			s << "\\list\\";
@@ -66,14 +67,14 @@ namespace GP {
 			((GP::Peer *)peer)->SendPacket((const uint8_t *)str.c_str(),str.length());
 		}
 		((GP::Peer *)peer)->m_got_blocks = true;
-		((GP::Peer *)peer)->mp_mutex->unlock();
+		//((GP::Peer *)peer)->mp_mutex->unlock();
 		((GP::Peer *)peer)->send_list_status();
     }
     void Peer::m_buddy_list_lookup_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, std::map<int, GPShared::GPStatus> status_map, void *extra, INetPeer *peer) {
 		std::ostringstream s;
 		std::string str;
 		std::vector<OS::Profile>::iterator it = results.begin();
-		((GP::Peer *)peer)->mp_mutex->lock();
+		//((GP::Peer *)peer)->mp_mutex->lock();
 		if(results.size() > 0) {
 			s << "\\bdy\\" << results.size();
 			s << "\\list\\";
@@ -94,7 +95,7 @@ namespace GP {
 			((GP::Peer *)peer)->SendPacket((const uint8_t *)str.c_str(),str.length());
 		}
 		((GP::Peer *)peer)->m_got_buddies = true;
-		((GP::Peer *)peer)->mp_mutex->unlock();
+		//((GP::Peer *)peer)->mp_mutex->unlock();
 		((GP::Peer *)peer)->send_list_status();
     }
 
@@ -105,8 +106,7 @@ namespace GP {
 		request.peer->IncRef();
 		request.type = TaskShared::EProfileSearch_Buddies;
 		request.buddyCallback = Peer::m_buddy_list_lookup_callback;
-		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
-		scheduler->AddRequest(request.type, request);
+		TaskShared::AddProfileTaskRequest(request);
 	}
 	void Peer::send_blocks() {
 		TaskShared::ProfileRequest request;
@@ -115,7 +115,6 @@ namespace GP {
 		request.peer->IncRef();
 		request.type = TaskShared::EProfileSearch_Blocks;
 		request.buddyCallback = Peer::m_block_list_lookup_callback;
-		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((GP::Server *)(GetDriver()->getServer()))->GetProfileTask();
-		scheduler->AddRequest(request.type, request);
+		TaskShared::AddProfileTaskRequest(request);
 	}
 }

@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -63,7 +62,7 @@ namespace Peerchat {
 		mp_user_address_visibility_list = new OS::LinkedListHead<UserAddressVisibiltyInfo*>();
 		m_sent_client_init = false;
 		m_stream_waiting = false;
-		mp_mutex = OS::CreateMutex();
+		uv_mutex_init(&m_mutex);
 		m_using_encryption = false;
 		m_got_delete = false;
 		m_flood_weight = 0;
@@ -72,13 +71,12 @@ namespace Peerchat {
 		gettimeofday(&m_connect_time, NULL);		
 		gettimeofday(&m_last_keepalive, NULL);
 
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_SetUserDetails;
 		req.peer = this;
 		req.peer->IncRef();
 		req.callback = OnGetBackendId;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
@@ -86,7 +84,7 @@ namespace Peerchat {
 		PurgeUserAddressVisibility();
 		delete mp_user_address_visibility_list;
 		
-		delete mp_mutex;
+		uv_mutex_destroy(&m_mutex);
 		
 	}
 	void Peer::OnGetBackendId(TaskResponse response_data, Peer *peer) {
@@ -177,7 +175,6 @@ namespace Peerchat {
 		}
 	}
 	void Peer::think(bool packet_waiting) {
-		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 
 		if(m_stream_waiting) {
@@ -289,8 +286,6 @@ namespace Peerchat {
 		}
 		else if (current_time.tv_sec - m_last_recv.tv_sec > PEERCHAT_PING_TIMEOUT_TIME) {
 			Delete(true, "Ping Timeout");
-		} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
-			Delete(false, "Connection severed");
 		}
 	}
 	void Peer::send_ping() {
@@ -316,14 +311,13 @@ namespace Peerchat {
 
 		if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_PING_TIMEOUT_TIME) {
 			gettimeofday(&m_last_keepalive, NULL);
-			TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
 			PeerchatBackendRequest req;
 			req.type = EPeerchatRequestType_KeepaliveUser;
 			req.summary = GetUserDetails();
 			req.peer = this;
 			req.peer->IncRef();
 			req.callback = NULL;
-			scheduler->AddRequest(req.type, req);
+			AddPeerchatTaskRequest(req);
 		}
 	}
 	void Peer::handle_packet(OS::KVReader data_parser) {
@@ -458,14 +452,13 @@ namespace Peerchat {
 		peer->refresh_user_details(true);
 	}
 	void Peer::refresh_user_details(bool user_registration) {
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_SetUserDetails;
 		req.peer = this;
 		req.summary = GetUserDetails();
 		req.peer->IncRef();
 		req.callback = user_registration ? OnUserRegistered : NULL;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 	}
 	void Peer::OnUserMaybeRegistered() {
 		if(m_user_details.nick.length() == 0 || m_user_details.username.length() == 0 || m_sent_client_init) {
@@ -474,14 +467,13 @@ namespace Peerchat {
 
 		m_sent_client_init = true;
 
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_LookupGlobalUsermode;
 		req.peer = this;
 		req.summary = m_user_details;
 		req.peer->IncRef();
 		req.callback = OnLookupGlobalUsermode;
-		scheduler->AddRequest(req.type, req);
+		AddPeerchatTaskRequest(req);
 	}
 	void Peer::OnRecvDirectMsg(UserSummary from, std::string msg, std::string type) {
 		send_message(type, msg, from.ToString(), m_user_details.nick);	
@@ -491,11 +483,11 @@ namespace Peerchat {
 	}
 	int Peer::GetChannelFlags(int channel_id) {
 		int flags = 0;
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		if (m_channel_flags.find(channel_id) != m_channel_flags.end()) {
 			flags = m_channel_flags[channel_id];
 		}		
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 		return flags;
 	}
 	void Peer::SetChannelFlags(int channel_id, int mode_flags) {
@@ -505,9 +497,9 @@ namespace Peerchat {
 			current_modeflags = m_channel_flags[channel_id];
 		}
 
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		m_channel_flags[channel_id] = mode_flags;
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 
 		
 		//check if needs to refresh user address visibility list for channel or purge channel address visibility
@@ -522,14 +514,14 @@ namespace Peerchat {
 	}
 	std::vector<int> Peer::GetChannels() {
 		std::vector<int> channels;
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		std::map<int, int>::iterator it = m_channel_flags.begin();
 		while (it != m_channel_flags.end()) {
 			std::pair<int, int> p = *it;
 			channels.push_back(p.first);
 			it++;
 		}
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 		return channels;
 	}
 	void Peer::send_flood_warning() {
@@ -559,9 +551,9 @@ namespace Peerchat {
 		return state.found;
 	}
 	void Peer::AddUserToAddressVisbilityList(int user_id, int channel_id) {
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		mp_user_address_visibility_list->AddToList(new UserAddressVisibiltyInfo(user_id, channel_id));
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 	}
 	bool Peer::LLIterator_RemoveUserAddressVisibility_ByChannel(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
 		if(info->channel_id == state->channel_id) {
@@ -575,9 +567,9 @@ namespace Peerchat {
 		state.channel_id = channel_id;
 		state.peer = this;
 		OS::LinkedListIterator<UserAddressVisibiltyInfo*, IterateUserAddressVisibiltyInfoState*> iterator(mp_user_address_visibility_list);
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		iterator.Iterate(LLIterator_RemoveUserAddressVisibility_ByChannel, &state);
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 	}
 	bool Peer::LLIterator_RemoveUserAddressVisibility_ByChannelUser(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
 		if(info->channel_id == state->channel_id && info->user_id == state->user_id) {
@@ -592,9 +584,9 @@ namespace Peerchat {
 		state.user_id = user_id;
 		state.peer = this;
 		OS::LinkedListIterator<UserAddressVisibiltyInfo*, IterateUserAddressVisibiltyInfoState*> iterator(mp_user_address_visibility_list);
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		iterator.Iterate(LLIterator_RemoveUserAddressVisibility_ByChannelUser, &state);
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 	}
 	bool Peer::LLIterator_RemoveUserAddressVisibility_ByUser(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
 		if(info->user_id == state->user_id) {
@@ -608,9 +600,9 @@ namespace Peerchat {
 		state.user_id = user_id;
 		state.peer = this;
 		OS::LinkedListIterator<UserAddressVisibiltyInfo*, IterateUserAddressVisibiltyInfoState*> iterator(mp_user_address_visibility_list);
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		iterator.Iterate(LLIterator_RemoveUserAddressVisibility_ByUser, &state);
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 	}
 	void Peer::OnLookup_RefreshUserAddressVisibility_ByChannel(TaskResponse response_data, Peer *peer) {
 		std::vector<ChannelUserSummary>::iterator it = response_data.channel_summary.users.begin();
@@ -622,14 +614,13 @@ namespace Peerchat {
 		}
 	}
 	void Peer::RefreshUserAddressVisibility_ByChannel(int channel_id) {
-        TaskScheduler<PeerchatBackendRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetPeerchatTask();
         PeerchatBackendRequest req;
         req.type = EPeerchatRequestType_LookupChannelDetails;
         req.peer = this;
         req.channel_summary.channel_id = channel_id;
         req.peer->IncRef();
         req.callback = OnLookup_RefreshUserAddressVisibility_ByChannel;
-        scheduler->AddRequest(req.type, req);
+        AddPeerchatTaskRequest(req);
 	}
 	bool Peer::LLIterator_PurgeUserAddressVisibility(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
 		state->peer->mp_user_address_visibility_list->RemoveFromList(info);
@@ -640,9 +631,9 @@ namespace Peerchat {
 		IterateUserAddressVisibiltyInfoState state;
 		state.peer = this;
 		OS::LinkedListIterator<UserAddressVisibiltyInfo*, IterateUserAddressVisibiltyInfoState*> iterator(mp_user_address_visibility_list);
-		mp_mutex->lock();
+		uv_mutex_lock(&m_mutex);
 		iterator.Iterate(LLIterator_RemoveUserAddressVisibility_ByUser, &state);
-		mp_mutex->unlock();
+		uv_mutex_unlock(&m_mutex);
 	}
 	void Peer::OnSetExternalUserChanModeFlags(int user_id, int channel_id, int modeflags) {
 		int current_modeflags = GetChannelFlags(channel_id);

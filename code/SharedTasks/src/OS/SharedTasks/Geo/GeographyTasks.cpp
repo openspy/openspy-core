@@ -1,18 +1,17 @@
 #include <OS/OpenSpy.h>
 #include <OS/Net/NetPeer.h>
-#include <OS/SharedTasks/tasks.h>
 #include "GeographyTasks.h"
 namespace TaskShared {
-	TaskScheduler<GeoRequest, TaskThreadData>::RequestHandlerEntry GeoTask_HandlerTable[] = {
-		{EGeoTaskType_GetCountries, PerformGeo_GetCountries},
-		{-1, NULL}
-	};
-	TaskScheduler<GeoRequest, TaskThreadData> *InitGeoTasks(INetServer *server) {
-		TaskScheduler<GeoRequest, TaskThreadData> *scheduler = new TaskScheduler<GeoRequest, TaskThreadData>(OS::g_numAsync, server, GeoTask_HandlerTable, NULL);
-		scheduler->SetThreadDataFactory(TaskScheduler<GeoRequest, TaskThreadData>::DefaultThreadDataFactory);
-		scheduler->DeclareReady();
-		return scheduler;
-	}
+	// TaskScheduler<GeoRequest, TaskThreadData>::RequestHandlerEntry GeoTask_HandlerTable[] = {
+	// 	{EGeoTaskType_GetCountries, PerformGeo_GetCountries},
+	// 	{-1, NULL}
+	// };
+	// TaskScheduler<GeoRequest, TaskThreadData> *InitGeoTasks(INetServer *server) {
+	// 	TaskScheduler<GeoRequest, TaskThreadData> *scheduler = new TaskScheduler<GeoRequest, TaskThreadData>(OS::g_numAsync, server, GeoTask_HandlerTable, NULL);
+	// 	scheduler->SetThreadDataFactory(TaskScheduler<GeoRequest, TaskThreadData>::DefaultThreadDataFactory);
+	// 	scheduler->DeclareReady();
+	// 	return scheduler;
+	// }
 	void GeoReq_InitCurl(void *curl, char *post_data, void *write_data, GeoRequest request, struct curl_slist **out_list) {
 		struct curl_slist *chunk = NULL;
 		std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);

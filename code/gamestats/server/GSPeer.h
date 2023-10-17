@@ -7,7 +7,6 @@
 
 #include <OS/User.h>
 #include <OS/Profile.h>
-#include <OS/Mutex.h>
 
 #include <OS/Buffer.h>
 
@@ -28,12 +27,13 @@ namespace GS {
 
 
 	//probably should be moved into seperate lib
-	typedef struct {
-		uint32_t wait_index;
-		uint32_t top_index;
-		OS::CMutex *mutex;
-		std::map<int, OS::Buffer> buffer_map;
-	} WaitBufferCtx;
+	class WaitBufferCtx {
+		public:
+			std::atomic<uint32_t> wait_index;
+			uint32_t top_index;
+			uv_mutex_t mutex;
+			std::map<int, OS::Buffer> buffer_map;
+	} ;
 
 	class Driver;
 
@@ -126,7 +126,7 @@ namespace GS {
 		OS::User m_user;
 		OS::Profile m_profile;
 
-		OS::CMutex *mp_mutex;
+		uv_mutex_t m_mutex;
 
 		uint16_t m_game_port;
 

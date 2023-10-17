@@ -1,20 +1,19 @@
 #include <OS/OpenSpy.h>
 #include <OS/Net/NetPeer.h>
-#include <OS/SharedTasks/tasks.h>
 #include "CDKeyTasks.h"
 namespace TaskShared {
-    TaskScheduler<CDKeyRequest, TaskThreadData>::RequestHandlerEntry CDKey_RequestHandler[] = {
-        {ECDKeyType_AssociateToProfile, PerformCDKey_AssociateToProfile},
-        {ECDKeyType_GetProfileByCDKey, PerformCDKey_GetProfileByCDKey},
-        {ECDKeyType_TestCDKeyValid, PerformCDKey_TestCDKeyValid},
-        {-1, NULL}
-    };
-    TaskScheduler<CDKeyRequest, TaskThreadData> *InitCDKeyTasks(INetServer *server) {
-            TaskScheduler<CDKeyRequest, TaskThreadData> *scheduler = new TaskScheduler<CDKeyRequest, TaskThreadData>(OS::g_numAsync, server, CDKey_RequestHandler, NULL);
-            scheduler->SetThreadDataFactory(TaskScheduler<CDKeyRequest, TaskThreadData>::DefaultThreadDataFactory);
-			scheduler->DeclareReady();
-            return scheduler;
-    }
+    // TaskScheduler<CDKeyRequest, TaskThreadData>::RequestHandlerEntry CDKey_RequestHandler[] = {
+    //     {ECDKeyType_AssociateToProfile, PerformCDKey_AssociateToProfile},
+    //     {ECDKeyType_GetProfileByCDKey, PerformCDKey_GetProfileByCDKey},
+    //     {ECDKeyType_TestCDKeyValid, PerformCDKey_TestCDKeyValid},
+    //     {-1, NULL}
+    // };
+    // TaskScheduler<CDKeyRequest, TaskThreadData> *InitCDKeyTasks(INetServer *server) {
+    //         TaskScheduler<CDKeyRequest, TaskThreadData> *scheduler = new TaskScheduler<CDKeyRequest, TaskThreadData>(OS::g_numAsync, server, CDKey_RequestHandler, NULL);
+    //         scheduler->SetThreadDataFactory(TaskScheduler<CDKeyRequest, TaskThreadData>::DefaultThreadDataFactory);
+	// 		scheduler->DeclareReady();
+    //         return scheduler;
+    // }
     void CDKeyReq_InitCurl(void *curl, char *post_data, void *write_data, CDKeyRequest request, struct curl_slist **out_list) {
         struct curl_slist *chunk = NULL;
         std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);

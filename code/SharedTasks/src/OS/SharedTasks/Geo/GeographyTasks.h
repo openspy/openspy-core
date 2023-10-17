@@ -1,14 +1,14 @@
 #ifndef OS_TASKSHARED_GEOGRAPHY_H
 #define OS_TASKSHARED_GEOGRAPHY_H
-#include <OS/Task/TaskScheduler.h>
-#include <OS/SharedTasks/tasks.h>
 #include <OS/OpenSpy.h>
 #include <OS/Profile.h>
 #include <OS/User.h>
 #include <curl/curl.h>
 #include <jansson.h>
 #include <string>
-#include <OS/Cache/GameCache.h>
+
+#include "../../WebError.h"
+#include "../../tasks.h"
 
 #define REGIONID_AMERICAS 1
 #define REGIONID_NORTH_AMERICA 2
@@ -71,5 +71,7 @@ namespace TaskShared {
 
 	void GeoReq_InitCurl(void *curl, char *post_data, void *write_data, GeoRequest request, struct curl_slist **out_list);
     bool PerformGeo_GetCountries(GeoRequest request, TaskThreadData *thread_data);
+
+	void AddGeoTaskRequest(GeoRequest request);
 }
 #endif //OS_TASKSHARED_GEOGRAPHY_H

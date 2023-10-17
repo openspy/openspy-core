@@ -1,6 +1,5 @@
 #include <OS/OpenSpy.h>
 
-#include <OS/SharedTasks/tasks.h>
 #include <server/FESLServer.h>
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
@@ -78,8 +77,7 @@ namespace FESL {
 			request.peer = peer;
 			peer->IncRef();
 			request.callback = Peer::m_search_callback;
-			TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((FESL::Server *)(peer->GetDriver()->getServer()))->GetProfileTask();
-			scheduler->AddRequest(request.type, request);
+			AddProfileTaskRequest(request);
 
 	}
 	void Peer::m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
@@ -103,8 +101,7 @@ namespace FESL {
 
 			request.gameFeaturesCallback = m_login_fetched_game_entitlements_auth_cb;
 
-			TaskScheduler<FESLRequest, TaskThreadData> *scheduler = ((FESL::Server *)(peer->GetDriver()->getServer()))->GetFESLTasks();
-			scheduler->AddRequest(request.type, request);
+			AddFESLTaskRequest(request);
 			
 
 		}
@@ -144,8 +141,7 @@ namespace FESL {
 		request.user.partnercode = OS_EA_PARTNER_CODE;
 		request.user.password = password;
 
-		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((FESL::Server *)(GetDriver()->getServer()))->GetAuthTask();
-		scheduler->AddRequest(request.type, request);
+		AddAuthTaskRequest(request);
 		return true;
 	}
 }

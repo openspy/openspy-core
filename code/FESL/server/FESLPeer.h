@@ -8,6 +8,10 @@
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 #include <OS/SharedTasks/Account/ProfileTasks.h>
 
+#include <OS/SharedTasks/Account/UserTasks.h>
+#include <OS/SharedTasks/Account/ProfileTasks.h>
+#include <OS/SharedTasks/Geo/GeographyTasks.h>
+
 #define FESL_READ_SIZE                  (16 * 1024)
 
 #define MAX_SSL_FAILS 5
@@ -168,7 +172,7 @@ namespace FESL {
 		int m_last_profile_lookup_tid;
 
 		
-		OS::CMutex *mp_mutex;
+		uv_mutex_t m_mutex;
 		int m_sequence_id;
 		OS::User m_user;
 		OS::Profile m_account_profile; //main user profile

@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -36,8 +35,7 @@ namespace Peerchat {
         request.profile.id = m_profile.id;
         
 
-		TaskScheduler<PeerchatBackendRequest, TaskThreadData>* scheduler = ((Peerchat::Server*)(GetDriver()->getServer()))->GetPeerchatTask();
-		scheduler->AddRequest(request.type, request);
+		AddPeerchatTaskRequest(request);
     }
     void Peer::m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
         if(auth_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
@@ -65,7 +63,6 @@ namespace Peerchat {
         request.user.partnercode = OS_GAMESPY_PARTNER_CODE;
         request.profile.namespaceid = 1;
 
-		TaskScheduler<TaskShared::AuthRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetAuthTask();
-		scheduler->AddRequest(request.type, request);
+		AddAuthTaskRequest(request);
     }
 }

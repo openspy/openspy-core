@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include <OS/gamespy/gamespy.h>
-#include <OS/SharedTasks/tasks.h>
 #include <tasks/tasks.h>
 
 
@@ -35,7 +34,6 @@ namespace Peerchat {
 		request.peer->IncRef();
 		request.type = TaskShared::EProfileSearch_UpdateProfile;
 		request.callback = Peer::m_registernick_callback;
-		TaskScheduler<TaskShared::ProfileRequest, TaskThreadData> *scheduler = ((Peerchat::Server *)(GetDriver()->getServer()))->GetProfileTask();
-		scheduler->AddRequest(request.type, request);
+		AddProfileTaskRequest(request);
     }
 }
