@@ -2,7 +2,6 @@
 #define _QRSERVER_H
 #include <stdint.h>
 #include <OS/OpenSpy.h>
-#include <OS/Task/TaskScheduler.h>
 #include <OS/Net/NetServer.h>
 
 #include <tasks/tasks.h>

@@ -3,8 +3,6 @@
 #include <vector>
 #include <OS/OpenSpy.h>
 #include "NetDriver.h"
-#include "NetEventManager.h"
-#include "NetIOInterface.h"
 class INetServer {
 public:
 	INetServer();

@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include "../main.h"
 #include <OS/Net/NetDriver.h>
-#include <OS/Net/NetIOInterface.h>
 #include <OS/Net/drivers/TCPDriver.h>
 
 #include "SBPeer.h"

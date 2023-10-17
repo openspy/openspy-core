@@ -1,5 +1,5 @@
 #include <server/SBPeer.h>
-#include <tasks/tasks.h>
+#include "tasks.h"
 #include <sstream>
 namespace MM {
 	bool PerformSubmitData(MMQueryRequest request, TaskThreadData  *thread_data) {
@@ -35,7 +35,9 @@ namespace MM {
 			dst_ip << "\\" <<
 			request.to.GetPort() << "\\" <<
 			b64_string;
-		thread_data->mp_mqconnection->sendMessage(MM::mm_channel_exchange, MM::mm_client_message_routingkey, message.str());
+
+		b64_string = message.str();
+		sendAMQPMessage(MM::mm_channel_exchange, MM::mm_client_message_routingkey, b64_string.c_str());
 
 		exit_clean:
 		if(request.peer) {

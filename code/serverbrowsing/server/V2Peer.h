@@ -6,7 +6,6 @@
 #include <map>
 #include <string>
 
-#include <OS/Mutex.h>
 #include <OS/Buffer.h>
 
 //message types for outgoing requests

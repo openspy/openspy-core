@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <queue>
 #include <OS/OpenSpy.h>
-#include <OS/Mutex.h>
 #include <OS/Net/NetDriver.h>
 
 #include <uv.h>
@@ -72,10 +71,6 @@ namespace QR {
 		static void on_got_v2_available_data(MM::MMTaskResponse response);
 		static void on_v2_heartbeat_processed(MM::MMTaskResponse response);
 		static void on_got_v2_challenge_response(MM::MMTaskResponse response);		
-
-		INetIOSocket *getListenerSocket() const;
-		const std::vector<INetIOSocket *> getSockets() const;
-		void OnPeerMessage(INetPeer *peer);
 
 		void handle_v1_packet(OS::KVReader data_parser);
 

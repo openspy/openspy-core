@@ -1,7 +1,7 @@
-#include <OS/Config/AppConfig.h>
-#include <OS/Task/TaskScheduler.h>
-
 #include "tasks.h"
+
+#include <amqp.h>
+#include <amqp_tcp_socket.h>
 
 
 namespace MM {

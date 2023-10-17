@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <uv.h>
-#include <OS/Config/AppConfig.h>
 #include <OS/Net/NetServer.h>
 #include "server/QRServer.h"
 #include "server/QRDriver.h"

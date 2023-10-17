@@ -4,7 +4,6 @@
 #include <sstream>
 #include <OS/Net/NetServer.h>
 
-#include <OS/Config/AppConfig.h>
 #include <OS/SharedTasks/tasks.h>
 
 #include <OS/Net/NetPeer.h>

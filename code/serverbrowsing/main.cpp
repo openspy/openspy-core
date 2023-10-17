@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <uv.h>
-#include <OS/Config/AppConfig.h>
 #include <OS/Net/NetServer.h>
 #include "server/SBServer.h"
 #include "server/SBDriver.h"

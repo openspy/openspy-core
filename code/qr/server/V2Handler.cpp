@@ -3,7 +3,6 @@
 #include  <algorithm>
 #include "QRServer.h"
 #include "QRDriver.h"
-#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 #include "v2.h"
 namespace QR {
     void Driver::handle_v2_packet(OS::Address address, OS::Buffer buffer) {

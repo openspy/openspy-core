@@ -7,6 +7,8 @@
 #include <server/QRDriver.h>
 #include <OS/gamespy/gsmsalg.h>
 
+#include <jansson.h>
+
 namespace MM {
     bool PerformClientMessageAck(MMPushRequest request, TaskThreadData *thread_data) {
         MMTaskResponse response;
@@ -21,7 +23,8 @@ namespace MM {
         json_object_set_new(send_obj, "identifier", json_integer(request.server.id));
 
         json_object_set_new(send_obj, "hostname", json_string(OS::g_hostName));
-        json_object_set_new(send_obj, "driver_address", json_string(request.driver->getListenerSocket()->address.ToString().c_str()));
+        OS::Address address = request.driver->GetAddress();
+        json_object_set_new(send_obj, "driver_address", json_string(address.ToString().c_str()));
         json_object_set_new(send_obj, "from_address", json_string(request.from_address.ToString().c_str()));
 
         char *json_dump = json_dumps(send_obj, 0);

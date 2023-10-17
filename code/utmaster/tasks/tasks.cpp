@@ -1,6 +1,5 @@
-#include <OS/Config/AppConfig.h>
-#include <OS/Task/TaskScheduler.h>
-
+#include <amqp.h>
+#include <amqp_tcp_socket.h>
 #include "tasks.h"
 
 

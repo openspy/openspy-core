@@ -6,9 +6,6 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <WinSock.h>
-#include "Threads/Win32/WinThread.h"
-#include "Threads/Win32/Win32Mutex.h"
-#include "Threads/Win32/Win32ThreadPoller.h"
 typedef int socklen_t;
 #ifndef snprintf
 	#define snprintf sprintf_s
@@ -27,11 +24,7 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <netinet/in.h>
 #include <signal.h>
 #include <netdb.h>
-#include <pthread.h>
 #include <sys/times.h>
-#include "Threads/PThreads/PThread.h"
-#include "Threads/PThreads/PMutex.h"
-#include "Threads/PThreads/PThreadPoller.h"
 
 #define stricmp strcasecmp
 #define sprintf_s snprintf
@@ -48,6 +41,8 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <memory.h>
 #include <map>
 
+#include <uv.h>
+
 #include <OS/Logger.h>
 #include <OS/Config/Config.h>
 
@@ -61,7 +56,7 @@ namespace OS {
 	extern AppConfig *g_config;
 	extern CURL *g_curl; //only used for curl_easy_escape
 	extern CURLSH *g_curlShare;
-	extern CMutex **g_curlMutexes;
+	extern uv_mutex_t *g_curlMutexes;
 	class Logger;
 	extern Logger *g_logger;
 	extern const char *g_appName;
@@ -184,11 +179,6 @@ namespace OS {
 	const char *BinToBase64Str(const uint8_t *in, size_t in_len);
 
 	const char *MD5String(const char *string);
-
-	//thread
-	CThread *CreateThread(ThreadEntry *entry, void *param, bool auto_start);
-	CMutex *CreateMutex();
-	CThreadPoller *CreateThreadPoller();
 
 	void Sleep(int time_ms);
 

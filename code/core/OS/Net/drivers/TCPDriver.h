@@ -3,26 +3,18 @@
 
 #include <OS/User.h>
 #include <OS/Profile.h>
-#include <OS/Mutex.h>
 
 #include <OS/Net/NetPeer.h>
 #include <OS/KVReader.h>
-
-#include <OS/SSL.h>
-
-#include <SSL/SSLIOInterface.h>
 
 #define DRIVER_THREAD_TIME 1000
 
 namespace OS {
 	class TCPDriver : public INetDriver {
 		public:
-			TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false, const char *x509_path = NULL, const char *rsa_priv_path = NULL, ESSL_Type ssl_version = ESSL_None);
+			TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
 			virtual ~TCPDriver();
 			void think(bool packet_waiting);
-
-			INetIOSocket *getListenerSocket() const;
-			void OnPeerMessage(INetPeer *peer);
 
 			//Linked List iterators
 			static bool LLIterator_DeleteAllClients(INetPeer* peer, TCPDriver* driver);

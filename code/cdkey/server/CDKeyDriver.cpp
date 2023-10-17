@@ -6,7 +6,6 @@
 #include <OS/gamespy/gamespy.h>
 
 #include "CDKeyDriver.h"
-#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 #include <OS/KVReader.h>
 
 namespace CDKey {
@@ -58,16 +57,6 @@ namespace CDKey {
 	}
 	const std::vector<INetPeer *> Driver::getPeers(bool inc_ref) {
 		return std::vector<INetPeer *>();
-	}
-	INetIOSocket *Driver::getListenerSocket() const {
-		return NULL;
-	}
-	const std::vector<INetIOSocket *> Driver::getSockets() const {
-		std::vector<INetIOSocket *> ret;
-		return ret;
-	}
-	void Driver::OnPeerMessage(INetPeer *peer) {
-
 	}
 	void Driver::SendPacket(OS::Address to, std::string message) {
 		OS::Buffer buffer;

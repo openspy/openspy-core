@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include <OS/Config/AppConfig.h>
 #include <OS/SharedTasks/tasks.h>
 #include "server/Server.h"
 #include "server/Driver.h"

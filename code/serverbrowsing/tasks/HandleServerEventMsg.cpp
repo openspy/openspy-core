@@ -10,21 +10,21 @@ namespace MM {
 
 		TaskThreadData thread_data;
 		thread_data.mp_redis_connection = getThreadLocalRedisContext();
-		thread_data.server = (INetServer *)uv_loop_get_data(uv_default_loop());
+		SBServer *server = (SBServer *)uv_loop_get_data(uv_default_loop());
 
 
-		MM::Server *server = GetServerByKey(&thread_data, server_key, msg_type.compare("del") == 0);
+		MM::Server *gameserver = GetServerByKey(&thread_data, server_key, msg_type.compare("del") == 0);
 		if(!server) return false;
 
-		MM::Server server_cpy = *server;
-		delete server;
+		MM::Server server_cpy = *gameserver;
+		delete gameserver;
 
 		if(msg_type.compare("del") == 0) {
-			((SBServer *)thread_data.server)->OnDeleteServer(server_cpy);
+			server->OnDeleteServer(server_cpy);
 		} else if(msg_type.compare("new") == 0) {
-			((SBServer *)thread_data.server)->OnNewServer(server_cpy);
+			server->OnNewServer(server_cpy);
 		} else if(msg_type.compare("update") == 0) {
-			((SBServer *)thread_data.server)->OnUpdateServer(server_cpy);
+			server->OnUpdateServer(server_cpy);
 		}
         return true;
     }

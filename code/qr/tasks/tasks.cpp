@@ -1,5 +1,3 @@
-#include <OS/Config/AppConfig.h>
-#include <OS/Task/TaskScheduler.h>
 //#include "../server/QRPeer.h"
 
 #include "tasks.h"

@@ -2,7 +2,6 @@
 #define _SMSERVER_H
 #include <stdint.h>
 #include <OS/Net/NetServer.h>
-#include <OS/SharedTasks/tasks.h>
 namespace MM {
 	class UTMasterRequest;
 }

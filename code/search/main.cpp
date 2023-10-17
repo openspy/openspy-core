@@ -3,7 +3,6 @@
 #include <string>
 #include <sstream>
 #include <OS/Net/NetServer.h>
-#include <OS/Config/AppConfig.h>
 #include "server/SMServer.h"
 #include "server/SMDriver.h"
 INetServer *g_gameserver = NULL;

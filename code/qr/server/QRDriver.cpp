@@ -4,7 +4,6 @@
 #include <sstream>
 #include "QRServer.h"
 #include "QRDriver.h"
-#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 
 #include "v2.h"
 
@@ -54,18 +53,6 @@ namespace QR {
 		}
 	}
 
-
-	INetIOSocket *Driver::getListenerSocket() const {
-		return NULL;
-	}
-	const std::vector<INetIOSocket *> Driver::getSockets() const {
-		std::vector<INetIOSocket *> ret;
-		return ret;
-	}
-
-	void Driver::OnPeerMessage(INetPeer *peer) {
-
-	}
 
 	void Driver::send_v2_error(OS::Address to, uint32_t instance_key, uint8_t error_code, const char *error_message) {
 		OS::Buffer buffer;		

@@ -1,14 +1,9 @@
 #ifndef _MM_TASKS_H
 #define _MM_TASKS_H
 #include <string>
-
-#include <OS/Task/TaskScheduler.h>
-#include <OS/Task/ScheduledTask.h>
-
-#include <OS/MessageQueue/MQInterface.h>
-
-#include <OS/SharedTasks/WebError.h>
-
+#include <OS/OpenSpy.h>
+#include <OS/Buffer.h>
+#include <hiredis/hiredis.h>
 #include <uv.h>
 
 #define NN_REDIS_EXPIRE_TIME 500
@@ -17,6 +12,11 @@ namespace QR {
 	class Driver;
 }
 namespace MM {
+	class TaskThreadData {
+		public:
+			redisContext *mp_redis_connection;
+	};
+
 	typedef struct {
 		OS::GameData m_game;
 		OS::Address  m_address;
@@ -104,8 +104,6 @@ namespace MM {
     bool PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request, TaskThreadData *thread_data);
 
     bool Handle_QRMessage(std::string message);
-
-    TaskScheduler<MMPushRequest, TaskThreadData> *InitTasks(INetServer *server);
 
 	//shared functions
 	int TryFindServerID(TaskThreadData *thread_data, OS::Address address);

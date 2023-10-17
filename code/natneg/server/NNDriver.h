@@ -22,9 +22,6 @@ namespace NN {
 		void think(bool packet_waiting);
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
-		INetIOSocket *getListenerSocket() const;
-		const std::vector<INetIOSocket *> getSockets() const;
-		void OnPeerMessage(INetPeer *peer);
 		void SendPacket(OS::Address to, NatNegPacket *packet);
 	private:
 		static void on_udp_read(uv_udp_t* handle,

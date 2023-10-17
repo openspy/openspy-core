@@ -1,9 +1,8 @@
-#include <OS/SharedTasks/tasks.h>
 #include "UTPeer.h"
 #include "UTServer.h"
 #include "UTDriver.h"
 
-#include <tasks/tasks.h>
+#include "../tasks/tasks.h"
 namespace UT {
 	Server::Server() : INetServer(){
 		init();

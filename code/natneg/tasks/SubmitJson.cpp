@@ -1,13 +1,8 @@
-#include <OS/Config/AppConfig.h>
-#include <OS/Task/TaskScheduler.h>
 #include <algorithm>
 
-#include <OS/TaskPool.h>
 #include <sstream>
 
 #include "tasks.h"
-
-#include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 
 namespace NN {
     bool PerformSubmitJson(NNRequestData request, TaskThreadData  *thread_data) {

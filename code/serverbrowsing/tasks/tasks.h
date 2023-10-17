@@ -1,11 +1,9 @@
 #ifndef _MM_TASKS_H
 #define _MM_TASKS_H
 #include <string>
-
-#include <OS/Task/TaskScheduler.h>
-#include <OS/Task/ScheduledTask.h>
-
-#include <OS/MessageQueue/MQInterface.h>
+#include <OS/OpenSpy.h>
+#include <OS/Buffer.h>
+#include <hiredis/hiredis.h>
 
 #include <uv.h>
 
@@ -18,6 +16,11 @@ namespace SB {
     class Server;
 }
 namespace MM {
+
+	class TaskThreadData {
+		public:
+			redisContext *mp_redis_connection;
+	};
 
 	class Server {
 		public:
@@ -217,6 +220,8 @@ namespace MM {
 	extern const char *mm_server_event_routingkey;
 
     extern const char *mp_pk_name;
+
+	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody);
 
 }
 #endif //_MM_TASKS_H

@@ -490,7 +490,6 @@ namespace SB {
 		}
 	}
 	void V2Peer::think(bool waiting_packet) {
-		NetIOCommResp io_resp;
 		if (m_delete_flag) return;
 
 		end:
@@ -501,9 +500,7 @@ namespace SB {
 		gettimeofday(&current_time, NULL);
 		if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
 			Delete(true);
-		} else if((io_resp.disconnect_flag || io_resp.error_flag) && waiting_packet) {
-			Delete();
-		}		
+		}	
 	}
 	void V2Peer::sendServerData(MM::Server *server, bool usepopularlist, bool push, OS::Buffer *sendBuffer, bool full_keys, const std::map<std::string, int> *optimized_fields, bool no_keys, bool first_set) {
 		OS::Buffer *buffer = sendBuffer;

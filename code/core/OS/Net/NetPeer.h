@@ -1,8 +1,9 @@
 #ifndef _NETPEER_H
 #define _NETPEER_H
+#include <OS/OpenSpy.h>
+#include <OS/Buffer.h>
 #include <OS/Ref.h>
 #include "NetDriver.h"
-#include "NetIOInterface.h"
 #include <OS/Net/NetServer.h>
 #include <OS/LinkedList.h>
 

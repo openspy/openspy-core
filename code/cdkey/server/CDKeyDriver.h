@@ -24,9 +24,6 @@ namespace CDKey {
 		void think(bool packet_waiting);
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
-		INetIOSocket *getListenerSocket() const;
-		const std::vector<INetIOSocket *> getSockets() const;
-		void OnPeerMessage(INetPeer *peer);
 
 		void handle_auth_packet(OS::Address from, OS::KVReader data_parser);
 		void SendPacket(OS::Address to, std::string message);

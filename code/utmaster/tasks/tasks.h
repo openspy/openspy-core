@@ -1,10 +1,8 @@
 #ifndef _MM_TASKS_H
 #define _MM_TASKS_H
 #include <string>
-
-#include <OS/Task/TaskScheduler.h>
-#include <OS/Task/ScheduledTask.h>
-
+#include <OS/OpenSpy.h>
+#include <hiredis/hiredis.h>
 #include <uv.h>
 
 #define MM_REDIS_EXPIRE_TIME 500
@@ -14,6 +12,11 @@ namespace UT {
 }
 
 namespace MM {
+
+	class TaskThreadData {
+		public:
+			redisContext *mp_redis_connection;
+	};
 
 	class PlayerRecord {
 		public:

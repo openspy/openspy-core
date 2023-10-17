@@ -12,8 +12,6 @@
 	#include "OS/Logger/Win32/Win32Logger.h"
 #endif
 
-#include <OS/Config/AppConfig.h>
-
 #include <uv.h>
 
 namespace OS {
@@ -29,7 +27,7 @@ namespace OS {
 	int			g_numAsync = 0;
 	CURL *g_curl = NULL;
 	CURLSH *g_curlShare = NULL;
-	CMutex **g_curlMutexes= NULL;
+	uv_mutex_t *g_curlMutexes= NULL;
 
 	void get_server_address_port(const char *input, char *address, uint16_t &port) {
 		const char *seperator = strrchr(input, ':');
@@ -50,9 +48,9 @@ namespace OS {
 		OS::g_curl = curl_easy_init(); //only used for curl_easy_escape
 
 		g_curlShare = curl_share_init();
-		g_curlMutexes = (OS::CMutex **)malloc(sizeof(CMutex *) * CURL_LOCK_DATA_LAST);
+		g_curlMutexes = (uv_mutex_t *)malloc(sizeof(uv_mutex_t) * CURL_LOCK_DATA_LAST);
 		for(int i=0;i<CURL_LOCK_DATA_LAST;i++) {
-			g_curlMutexes[i] = OS::CreateMutex();
+			uv_mutex_init(&g_curlMutexes[i]);
 		}
 
 		curl_share_setopt(g_curlShare, CURLSHOPT_LOCKFUNC, curlLockCallback);
@@ -107,7 +105,7 @@ namespace OS {
 		curl_global_cleanup();
 
 		for(int i=0;i<CURL_LOCK_DATA_LAST;i++) {
-			delete g_curlMutexes[i];
+			uv_close((uv_handle_t*)&g_curlMutexes[i], NULL);
 		}
 
 		free((void *)g_hostName);
@@ -340,27 +338,6 @@ namespace OS {
 	}
 
 
-	CThread *CreateThread(OS::ThreadEntry *entry, void *param,  bool auto_start) {
-		#if _WIN32
-			return new OS::CWin32Thread(entry, param, auto_start);
-		#else
-			return new OS::CPThread(entry, param, auto_start);
-		#endif
-	}
-	CMutex *CreateMutex() {
-		#if _WIN32
-			return new OS::CWin32Mutex();
-		#else
-			return new OS::CPMutex();
-		#endif
-	}
-	CThreadPoller *CreateThreadPoller() {
-		#if _WIN32
-		return new OS::CWin32ThreadPoller();
-		#else
-		return new OS::CPThreadPoller();
-		#endif
-	}
 	std::string strip_quotes(std::string s) {
 		if(s[0] != '"' || s[s.length()-1] != '"')
 			return s;
@@ -544,10 +521,10 @@ namespace OS {
 	}
 
 	void curlLockCallback(CURL *handle, curl_lock_data data, curl_lock_access access, void *userptr) {
-		g_curlMutexes[data]->lock();
+		uv_mutex_lock(&g_curlMutexes[data]);
 	}
 	void curlUnlockCallback(CURL *handle, curl_lock_data data, void *userptr) {
-		g_curlMutexes[data]->unlock();
+		uv_mutex_unlock(&g_curlMutexes[data]);
 	}
 
 

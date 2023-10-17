@@ -1,6 +1,6 @@
 #include "TCPDriver.h"
 namespace OS {
-    TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders, const char *x509_path, const char *rsa_priv_path, ESSL_Type ssl_version) : INetDriver(server) {
+    TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : INetDriver(server) {
         struct sockaddr_in saddr;
         uv_ip4_addr(host, port, &saddr);
 
@@ -46,20 +46,6 @@ namespace OS {
             peer->think(false);
         }
         return true;
-    }
-    void TCPDriver::OnPeerMessage(INetPeer *peer) {
-        // OS::Address source_address, proxy_server_address;
-        // if(!peer->GetSocket()) {
-        //     return;
-        // }
-        // bool success = getNetIOInterface()->ReadProxyAddress(peer->GetSocket(), source_address, proxy_server_address);
-
-        // if(success) {
-        //     m_server->UnregisterSocket(peer);
-        //     m_server->RegisterSocket(peer);
-        //     peer->SetAddress(source_address);
-        //     peer->OnConnectionReady();
-        // }
     }
     bool TCPDriver::LLIterator_DeleteAllClients(INetPeer* peer, TCPDriver* driver) {
         //no need to remove from linked list, since this method is *only* called on TCPDriver delete

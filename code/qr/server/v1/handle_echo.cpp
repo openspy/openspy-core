@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <server/QRServer.h>
 #include <server/QRDriver.h>
-#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
-#include <qr/tasks/tasks.h>
 #include <tasks/tasks.h>
 #include <server/v2.h>
 namespace QR {

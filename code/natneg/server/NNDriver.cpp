@@ -4,7 +4,6 @@
 #include "NNServer.h"
 
 #include "NNDriver.h"
-#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 namespace NN {
 	void alloc_buffer(uv_handle_t* handle,
                             size_t suggested_size,
@@ -102,16 +101,7 @@ namespace NN {
 	const std::vector<INetPeer *> Driver::getPeers(bool inc_ref) {
 		return std::vector<INetPeer *>();
 	}
-	INetIOSocket *Driver::getListenerSocket() const {
-		return NULL;
-	}
-	const std::vector<INetIOSocket *> Driver::getSockets() const {
-		std::vector<INetIOSocket *> ret;
-		return ret;
-	}
-	void Driver::OnPeerMessage(INetPeer *peer) {
 
-	}
 
 	int Driver::packetSizeFromType(uint8_t type, uint8_t version) {
 		int size = 0;

@@ -5,7 +5,6 @@
 #include "../../tasks/tasks.h"
 
 #include "../NNDriver.h"
-#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 
 #include <jansson.h>
 

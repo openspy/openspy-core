@@ -3,8 +3,6 @@
 #include <algorithm>
 #include "../CDKeyServer.h"
 #include "../CDKeyDriver.h"
-#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
-
 #include <sstream>
 
 namespace CDKey {

@@ -4,7 +4,6 @@
 #include "../NNServer.h"
 
 #include "../NNDriver.h"
-#include <OS/Net/IOIfaces/BSDNetIOInterface.h>
 
 #include <jansson.h>
 

@@ -110,7 +110,6 @@ namespace SB {
 				}
 		}
 		void V1Peer::think(bool packet_waiting) {
-			NetIOCommResp io_resp;
 			if (m_delete_flag) return;
 			if (m_waiting_gamedata == 2) {
 				m_waiting_gamedata = 0;
@@ -125,8 +124,6 @@ namespace SB {
 			gettimeofday(&current_time, NULL);
 			if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
 				Delete(true);
-			} else if ((io_resp.disconnect_flag || io_resp.error_flag) && packet_waiting) {
-				Delete();
 			}
 		}
 

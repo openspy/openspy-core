@@ -2,6 +2,7 @@
 #include <server/QRDriver.h>
 #include <tasks/tasks.h>
 #include <sstream>
+#include <jansson.h>
 namespace MM {
     bool Handle_QRMessage(std::string message) {
 		QR::Server *server = (QR::Server *)uv_loop_get_data(uv_default_loop());

@@ -1,17 +1,11 @@
-#include <OS/Config/AppConfig.h>
-#include <OS/Task/TaskScheduler.h>
 #include <server/NNServer.h>
 #include <server/NNDriver.h>
 #include <server/NATMapper.h>
 #include <algorithm>
 
-#include <OS/TaskPool.h>
-
 #include <sstream>
 
 #include "tasks.h"
-
-#include <OS/MessageQueue/rabbitmq/rmqConnection.h>
 
 #include <jansson.h>
 
@@ -127,7 +121,7 @@ namespace NN {
 		}
 	}
 	bool Handle_HandleRecvMessage(TaskThreadData  *thread_data, std::string message) {
-		NN::Server *server = (NN::Server *)thread_data->server;
+		NN::Server *server = (NN::Server*)uv_loop_get_data(uv_default_loop());
 		json_t *root = json_loads(message.c_str(), 0, NULL);
 		if(!root) return false;
 
