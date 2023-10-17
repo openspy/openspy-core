@@ -27,7 +27,7 @@ source_group("Headers\\Commands\\Server" FILES ${SERVER_CMDS_HDRS})
 add_executable (SM ${ALL_SRCS})
 
 IF(WIN32)	
-	target_link_libraries(SM ws2_32.lib openspy.lib)
+	target_link_libraries(SM openspy.lib)
 ELSE() #unix
-	target_link_libraries(SM pthread openspy)
+	target_link_libraries(SM openspy)
 ENDIF()

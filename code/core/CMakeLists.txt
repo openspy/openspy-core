@@ -43,8 +43,6 @@ set (ALL_SRCS ${SSL_SRCS} ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_
 include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${hiredis_INCLUDE_DIRS})
 
 source_group("Sources\\OS\\Net" FILES ${NET_SRCS})
-source_group("Sources\\OS\\Net\\EventMgrs" FILES ${NET_EVENTMGR_SRCS})
-source_group("Sources\\OS\\Net\\IOFaces" FILES ${NET_IOIFACES_SRCS})
 source_group("Sources\\OS\\Net\\Drivers" FILES ${NET_DRIVERS_SRCS})
 source_group("Sources\\OS\\Gamespy" FILES ${LEGACY_SRCS})
 source_group("Sources\\OS\\Logger" FILES ${LOGGER_SRCS})
@@ -52,8 +50,6 @@ source_group("Sources\\OS\\Logger" FILES ${LOGGER_SRCS})
 
 source_group("Headers\\OS\\Gamespy" FILES ${LEGACY_HDRS})
 source_group("Headers\\OS\\Net" FILES ${NET_HDRS})
-source_group("Headers\\OS\\Net\\EventMgrs" FILES ${NET_EVENTMGR_HDRS})
-source_group("Headers\\OS\\Net\\IOFaces" FILES ${NET_IOIFACES_HDRS})
 source_group("Headers\\OS\\Net\\Drivers" FILES ${NET_DRIVERS_SRCS})
 
 source_group("Sources\\OS\\Logger" FILES ${LOGGER_HDRS})

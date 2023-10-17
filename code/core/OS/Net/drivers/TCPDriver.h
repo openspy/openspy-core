@@ -4,8 +4,6 @@
 #include <OS/Net/NetPeer.h>
 #include <OS/KVReader.h>
 
-#define DRIVER_THREAD_TIME 1000
-
 namespace OS {
 	class TCPDriver : public INetDriver {
 		public:

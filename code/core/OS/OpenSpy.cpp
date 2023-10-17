@@ -26,7 +26,7 @@ namespace OS {
 	int			g_numAsync = 0;
 	CURL *g_curl = NULL;
 	CURLSH *g_curlShare = NULL;
-	uv_mutex_t *g_curlMutexes= NULL;
+	uv_mutex_t g_curlMutexes[CURL_LOCK_DATA_LAST];
 
 	void get_server_address_port(const char *input, char *address, uint16_t &port) {
 		const char *seperator = strrchr(input, ':');
@@ -46,7 +46,6 @@ namespace OS {
 		OS::g_curl = curl_easy_init(); //only used for curl_easy_escape
 
 		g_curlShare = curl_share_init();
-		g_curlMutexes = (uv_mutex_t *)malloc(sizeof(uv_mutex_t) * CURL_LOCK_DATA_LAST);
 		for(int i=0;i<CURL_LOCK_DATA_LAST;i++) {
 			uv_mutex_init(&g_curlMutexes[i]);
 		}
@@ -452,13 +451,6 @@ namespace OS {
 			ss << ((char)ch);
 		}
 		return ss.str();
-	}
-	void Sleep(int time_ms) {
-		#ifdef _WIN32
-		::Sleep(time_ms);
-		#else
-		sleep(time_ms / 1000);
-		#endif
 	}
 
 	template<typename Out>

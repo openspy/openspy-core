@@ -31,7 +31,7 @@ source_group("Headers\\Tasks" FILES ${TASKS_HDRS})
 add_executable (serverbrowsing ${ALL_SRCS} ${MAIN_SRCS} ${MAIN_HDRS})
 
 IF(WIN32)	
-	target_link_libraries(serverbrowsing ws2_32.lib openspy.lib)
+	target_link_libraries(serverbrowsing openspy.lib)
 ELSE() #unix
-	target_link_libraries(serverbrowsing pthread openspy libuv::uv)
+	target_link_libraries(serverbrowsing openspy libuv::uv)
 ENDIF()

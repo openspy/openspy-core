@@ -11,7 +11,7 @@ add_executable (test_buffer ${ALL_SRCS} OS/test_buffer.cpp)
 add_test(NAME test_buffer COMMAND test_buffer WORKING_DIRECTORY .)
 
 IF(WIN32)	
-	target_link_libraries(test_buffer ws2_32.lib openspy.lib)
+	target_link_libraries(test_buffer openspy.lib)
 ELSE() #unix
-	target_link_libraries(test_buffer pthread openspy)
+	target_link_libraries(test_buffer openspy)
 ENDIF()

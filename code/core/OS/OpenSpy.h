@@ -53,7 +53,6 @@ class Config;
 namespace OS {
 	extern CURL *g_curl; //only used for curl_easy_escape
 	extern CURLSH *g_curlShare;
-	extern uv_mutex_t *g_curlMutexes;
 	class Logger;
 	extern Logger *g_logger;
 	extern const char *g_appName;
@@ -176,8 +175,6 @@ namespace OS {
 	const char *BinToBase64Str(const uint8_t *in, size_t in_len);
 
 	const char *MD5String(const char *string);
-
-	void Sleep(int time_ms);
 
 	std::string FindBestMatch(std::vector<std::string> matches, std::string name);
 

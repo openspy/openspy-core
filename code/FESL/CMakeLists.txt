@@ -35,7 +35,7 @@ source_group("Headers\\Server\\commands\\nu" FILES ${SERVER_NU_COMMANDS_HDRS})
 add_executable (FESL ${ALL_SRCS})
 
 IF(WIN32)	
-	target_link_libraries(FESL ws2_32.lib openspy.lib)
+	target_link_libraries(FESL openspy.lib)
 ELSE() #unix
-	target_link_libraries(FESL pthread openspy)
+	target_link_libraries(FESL openspy)
 ENDIF()
