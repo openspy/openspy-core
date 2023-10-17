@@ -492,7 +492,6 @@ namespace SB {
 	void V2Peer::think(bool waiting_packet) {
 		if (m_delete_flag) return;
 
-		end:
 		send_ping();
 
 		//check for timeout

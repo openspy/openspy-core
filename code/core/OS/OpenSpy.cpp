@@ -16,7 +16,6 @@
 
 namespace OS {
 	Logger *g_logger = NULL;
-	AppConfig *g_config = NULL;
 	const char *g_appName = NULL;
 	const char *g_hostName = NULL;
 	const char *g_redisAddress = NULL;
@@ -40,11 +39,10 @@ namespace OS {
 		address[len] = 0;
 	}
 
-	void Init(const char *appName, AppConfig *appConfig) {
+	void Init(const char *appName) {
 		//SSL_library_init();
 		curl_global_init(CURL_GLOBAL_SSL);
 
-		OS::g_config = appConfig;
 		OS::g_curl = curl_easy_init(); //only used for curl_easy_escape
 
 		g_curlShare = curl_share_init();
@@ -99,7 +97,6 @@ namespace OS {
 	}
 	void Shutdown() {
 		delete g_logger;
-		delete OS::g_config;
 		curl_easy_cleanup(OS::g_curl);
 		curl_share_cleanup(OS::g_curlShare);
 		curl_global_cleanup();

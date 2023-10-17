@@ -5,7 +5,7 @@
 #include "UTDriver.h"
 
 namespace UT {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port) : TCPDriver(server, host, port) {
 	}
 	INetPeer *Driver::CreatePeer(uv_tcp_t *socket) {
 		return new Peer(this, socket);

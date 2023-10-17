@@ -46,14 +46,11 @@ int gettimeofday(struct timeval *tp, struct timezone *tzp);
 #include <OS/Logger.h>
 #include <OS/Config/Config.h>
 
-class AppConfig;
-
 #include <hiredis/hiredis.h>
 #include <curl/curl.h>
 
 class Config;
 namespace OS {
-	extern AppConfig *g_config;
 	extern CURL *g_curl; //only used for curl_easy_escape
 	extern CURLSH *g_curlShare;
 	extern uv_mutex_t *g_curlMutexes;
@@ -158,7 +155,7 @@ namespace OS {
 	void split(const std::string &s, char delim, Out result);
 	std::vector<std::string> split(const std::string &s, char delim);
 
-	void Init(const char *appName, AppConfig *appConfig);
+	void Init(const char *appName);
 	void Shutdown();
 
 	void get_server_address_port(const char *input, char *address, uint16_t &port);

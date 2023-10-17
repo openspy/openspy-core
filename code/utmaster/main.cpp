@@ -116,7 +116,7 @@ int main() {
 	uv_idle_init(uv_default_loop(), &idler);
     uv_idle_start(&idler, idle_handler);
 
-	OS::Init("utmaster", NULL);
+	OS::Init("utmaster");
 
 	g_gameserver = new UT::Server();
 
@@ -129,7 +129,7 @@ int main() {
 		uv_os_getenv("OPENSPY_UTMASTER_BIND_PORT", (char *)&port_buff, &temp_env_sz);
 		uint16_t port = atoi(port_buff);
 
-		UT::Driver *driver = new UT::Driver(g_gameserver, address_buff, port, false);
+		UT::Driver *driver = new UT::Driver(g_gameserver, address_buff, port);
 
 		char mapping_buff[256];
 		temp_env_sz = sizeof(mapping_buff);

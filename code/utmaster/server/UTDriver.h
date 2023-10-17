@@ -40,7 +40,7 @@ namespace UT {
 
 	class Driver : public OS::TCPDriver {
 	public:
-		Driver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders = false);
+		Driver(INetServer *server, const char *host, uint16_t port);
 		void SetConfig(std::vector<UT::Config*> config);
 		UT::Config *FindConfigByClientName(std::string clientName);
         std::vector<UT::Config *> GetConfig() { return m_config; }

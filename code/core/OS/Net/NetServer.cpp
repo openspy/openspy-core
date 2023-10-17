@@ -16,7 +16,3 @@ void INetServer::tick() {
 }
 void INetServer::NetworkTick() {
 }
-void INetServer::RegisterSocket(INetPeer *peer, bool notify_driver_only) {
-}
-void INetServer::UnregisterSocket(INetPeer *peer) {
-}

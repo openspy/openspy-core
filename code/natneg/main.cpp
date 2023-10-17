@@ -21,7 +21,7 @@ int main() {
     uv_idle_start(&idler, idle_handler);
 
 
-	OS::Init("qr", NULL);
+	OS::Init("qr");
 
 	g_gameserver = new NN::Server();
 

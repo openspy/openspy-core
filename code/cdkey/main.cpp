@@ -20,7 +20,7 @@ int main() {
 	uv_idle_init(uv_default_loop(), &idler);
     uv_idle_start(&idler, idle_handler);
 
-	OS::Init("cdkey", NULL);
+	OS::Init("cdkey");
 	g_gameserver = new CDKey::Server();
 
 	char address_buff[256];

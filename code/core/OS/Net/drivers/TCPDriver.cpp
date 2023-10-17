@@ -1,12 +1,11 @@
 #include "TCPDriver.h"
 namespace OS {
-    TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port, bool proxyHeaders) : INetDriver(server) {
+    TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
         struct sockaddr_in saddr;
         uv_ip4_addr(host, port, &saddr);
 
         gettimeofday(&m_server_start, NULL);
 
-        m_proxy_headers = proxyHeaders;
 
         uv_tcp_init(uv_default_loop(), &m_listener_socket);
         uv_tcp_bind(&m_listener_socket, (const sockaddr *)&saddr, 0);
@@ -21,7 +20,6 @@ namespace OS {
         TCPDriver *driver = (TCPDriver*)uv_handle_get_data((uv_handle_t*)server);
         INetPeer *peer = driver->CreatePeer((uv_tcp_t *)server);
         //peer->SetAddress(sda->address);
-        driver->m_server->RegisterSocket(peer, driver->m_proxy_headers);
         driver->mp_peers->AddToList(peer);
 
     }
@@ -37,7 +35,6 @@ namespace OS {
         if (peer->ShouldDelete()) {
             if (peer->GetRefCount() == 1) { //only 1 reference (the drivers reference)
                 driver->mp_peers->RemoveFromList(peer);
-                driver->m_server->UnregisterSocket(peer);
                 peer->DecRef();
                 peer->CloseSocket(); //this will delete itself
             }
@@ -49,7 +46,6 @@ namespace OS {
     }
     bool TCPDriver::LLIterator_DeleteAllClients(INetPeer* peer, TCPDriver* driver) {
         //no need to remove from linked list, since this method is *only* called on TCPDriver delete
-        driver->m_server->UnregisterSocket(peer);
         delete peer;
         return true;
     }

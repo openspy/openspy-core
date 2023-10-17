@@ -115,8 +115,7 @@ namespace SB {
 				m_waiting_gamedata = 0;
                 flushWaitingPackets();
 			}
-
-			end:
+			
 			send_ping();
 
 			//check for timeout

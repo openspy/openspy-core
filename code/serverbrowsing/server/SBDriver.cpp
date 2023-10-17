@@ -12,7 +12,7 @@
 #include <tasks/tasks.h>
 namespace SB {
 	
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version, bool proxyHeaders) : TCPDriver(server, host, port, proxyHeaders) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port, int version) : TCPDriver(server, host, port) {
 		m_version = version;
 		uv_mutex_init(&m_mutex);
 	}

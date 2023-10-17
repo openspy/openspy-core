@@ -13,9 +13,6 @@ public:
 		Currently the driver is aware of what type of NetServer its connected to.
 	*/
 	void addNetworkDriver(INetDriver *driver);
-
-	void RegisterSocket(INetPeer *peer, bool notify_driver_only = false);
-	void UnregisterSocket(INetPeer *peer);
 protected:
 	void NetworkTick(); //fires the INetEventMgr
 //private:
