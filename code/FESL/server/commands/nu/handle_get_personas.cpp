@@ -33,8 +33,7 @@ namespace FESL {
 		if (!m_got_profiles) {
 			m_pending_nuget_personas= true;
 		}
-		else {
-			
+		else {			
 			send_personas();
 		}
 		return true;

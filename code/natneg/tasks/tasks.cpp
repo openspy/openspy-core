@@ -35,7 +35,7 @@ namespace NN {
 
 			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
 
-			//Handle_QRMessage(message);
+			Handle_HandleRecvMessage(message);
 
 			amqp_destroy_envelope(&envelope);
 		}
@@ -140,12 +140,9 @@ namespace NN {
 			break;
 		}
 	}
-	void work_close_callback(uv_handle_t *handle) {
-		free(handle);
-	}
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status) {
 		NNRequestData *work_data = (NNRequestData *) uv_handle_get_data((uv_handle_t*) req);
 		delete work_data;
-		uv_close((uv_handle_t*)req, work_close_callback);
+		free((void *)req);
 	}
 }

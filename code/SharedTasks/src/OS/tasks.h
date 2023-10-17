@@ -13,5 +13,6 @@ namespace TaskShared {
 	};
 
     size_t curl_callback(void *contents, size_t size, size_t nmemb, void *userp);
+	
 }
 #endif //_TASKS_SHARED_H
