@@ -34,9 +34,7 @@ namespace SM {
 			it++;
 		}
 		s << "\\bsrdone\\";
-		((Peer *)peer)->SendPacket(s.str().c_str());
-
-		((Peer *)peer)->Delete();
+		((Peer *)peer)->SendPacket(s.str().c_str(), true, true);
 	}
 	void Peer::handle_search(OS::KVReader data_parser) {
 		TaskShared::ProfileRequest request;

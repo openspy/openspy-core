@@ -10,6 +10,7 @@ INetPeer::INetPeer(INetDriver* driver, uv_tcp_t *sd) : OS::Ref(), OS::LinkedList
     m_delete_flag = false; 
     m_timeout_flag = false; 
     m_socket_deleted = false;
+    m_close_when_sendbuffer_empty = false;
 
     uv_async_init(uv_default_loop(), &m_async_send_handle, clear_send_buffer);
     uv_handle_set_data((uv_handle_t *)&m_async_send_handle, this);
@@ -48,44 +49,52 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
 	void INetPeer::write_callback(uv_write_t *req, int status) {
         UVWriteData *write_data = (UVWriteData *)uv_handle_get_data((uv_handle_t*) req);
         write_data->peer->DecRef();
+        free((void *)req);
+
+        if(write_data->peer->m_close_when_sendbuffer_empty) {
+            write_data->peer->CloseSocket();
+        }
         delete write_data;
 	}
 
 
 	void INetPeer::clear_send_buffer(uv_async_t *handle) {
-		//std::vector<OS::Buffer> m_send_buffer;
 		INetPeer *peer = (INetPeer *)uv_handle_get_data((uv_handle_t*)handle);
-        
+
 		uv_mutex_lock(&peer->m_send_mutex);
-        
-		
-		while(!peer->m_send_buffer.empty()) {
-            OS::Buffer send_buffer = peer->m_send_buffer.front();
 
-			uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
+        if(!peer->m_send_buffer.empty()) {
+            
+            int num_buffers = peer->m_send_buffer.size();
+            UVWriteData *write_data = new UVWriteData(num_buffers, peer);
+            
+            uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
+            uv_handle_set_data((uv_handle_t*) req, write_data);
+            
+            
+            for(int i=0;i<num_buffers;i++) {
+                OS::Buffer send_buffer = peer->m_send_buffer.front();
+                write_data->send_buffers[i].WriteBuffer(send_buffer.GetHead(), send_buffer.bytesWritten());
+                write_data->uv_buffers[i] =  uv_buf_init((char *)write_data->send_buffers[i].GetHead(), write_data->send_buffers[i].bytesWritten());
+                peer->m_send_buffer.pop();
+            }
+            int r = uv_write(req, (uv_stream_t*)&peer->m_socket, write_data->uv_buffers, num_buffers, write_callback);
+            if (r < 0) {
+                OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d - %s", peer->getAddress().ToString().c_str(), r, uv_err_name(r));
+            }
 
-			UVWriteData *write_data = new UVWriteData();
-			write_data->send_buffer.WriteBuffer(send_buffer.GetHead(), send_buffer.bytesWritten());
-			write_data->uv_buffer = uv_buf_init((char *)write_data->send_buffer.GetHead(), write_data->send_buffer.bytesWritten());
-            write_data->peer = peer;
-            //peer->IncRef();
-			uv_handle_set_data((uv_handle_t*) req, write_data);
-
-			int r = uv_write(req, (uv_stream_t*)&peer->m_socket, &write_data->uv_buffer, 1, write_callback);
-
-			if (r < 0) {
-				OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d - %s", peer->getAddress().ToString().c_str(), r, uv_err_name(r));
-			}
-
-			peer->m_send_buffer.pop();
-		}
-		uv_mutex_unlock(&peer->m_send_mutex);
+        }
+		uv_mutex_unlock(&peer->m_send_mutex);        
 	}
-    void INetPeer::append_send_buffer(OS::Buffer buffer) {
+    void INetPeer::append_send_buffer(OS::Buffer buffer, bool close_after) {
 		uv_mutex_lock(&m_send_mutex);
 		m_send_buffer.push(buffer);
         IncRef();
 		uv_mutex_unlock(&m_send_mutex);
+
+        if(close_after) {
+            m_close_when_sendbuffer_empty = true;
+        }
 
 		int r = uv_async_send(&m_async_send_handle);
     }

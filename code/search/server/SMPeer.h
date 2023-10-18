@@ -67,7 +67,7 @@ namespace SM {
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 
-		void SendPacket(std::string string, bool attach_final = true);
+		void SendPacket(std::string string, bool attach_final = true, bool die_after = false);
 		void send_error(GPShared::GPErrorCode code, std::string addon_data = "");
 
 		void Delete(bool timeout = false);

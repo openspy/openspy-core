@@ -120,15 +120,13 @@ namespace SM {
 		if (addon_data.length())
 			ss << addon_data;
 		
-		SendPacket(ss.str().c_str());
-		if (error_data.die) {
-			Delete();
-		}
+		SendPacket(ss.str().c_str(), true, error_data.die);
 	}
-	void Peer::SendPacket(std::string string, bool attach_final) {
+	void Peer::SendPacket(std::string string, bool attach_final, bool die_after) {
 		const char *str = string.c_str();
-		OS::Buffer buffer((void *)str, string.length());
-		append_send_buffer(buffer);
+		OS::Buffer buffer;
+		buffer.WriteBuffer(str, string.length());
+		append_send_buffer(buffer, die_after);
 	}
 	void Peer::Delete(bool timeout) {
 		m_timeout_flag = timeout;

@@ -12,8 +12,17 @@
 class INetPeer;
 class UVWriteData {
 	public:
-		OS::Buffer send_buffer;
-		uv_buf_t uv_buffer;
+		UVWriteData(int num_buffers, INetPeer *peer) {
+			send_buffers = new OS::Buffer[num_buffers];
+			uv_buffers = (uv_buf_t*)malloc(num_buffers * sizeof(uv_buf_t*));
+			this->peer = peer;
+		}
+		~UVWriteData() {
+			delete[] send_buffers;
+			free((void *)uv_buffers);
+		}
+		OS::Buffer *send_buffers;
+		uv_buf_t *uv_buffers;
 		INetPeer *peer;
 };
 
@@ -63,9 +72,10 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		bool m_timeout_flag;
 
 		static void clear_send_buffer(uv_async_t *handle);
-		void append_send_buffer(OS::Buffer buffer);
+		void append_send_buffer(OS::Buffer buffer, bool close_after = false);
 		uv_async_t m_async_send_handle;
 		std::queue<OS::Buffer> m_send_buffer;
+		bool m_close_when_sendbuffer_empty;
 		uv_mutex_t m_send_mutex;
 	};
 #endif

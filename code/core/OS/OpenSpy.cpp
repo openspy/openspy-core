@@ -56,7 +56,7 @@ namespace OS {
 
 		g_appName = appName;
 
-		char temp_env_buffer[256];
+		char temp_env_buffer[4096];
 		size_t temp_env_sz = sizeof(temp_env_buffer);
 
 		uv_os_getenv("OPENSPY_HOSTNAME", (char *)&temp_env_buffer, &temp_env_sz);
@@ -101,7 +101,7 @@ namespace OS {
 		curl_global_cleanup();
 
 		for(int i=0;i<CURL_LOCK_DATA_LAST;i++) {
-			uv_close((uv_handle_t*)&g_curlMutexes[i], NULL);
+			uv_mutex_destroy(&g_curlMutexes[i]);
 		}
 
 		free((void *)g_hostName);
