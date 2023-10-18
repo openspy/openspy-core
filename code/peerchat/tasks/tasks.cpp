@@ -1,7 +1,15 @@
 #include "tasks.h"
 #include <sstream>
 #include <server/Server.h>
+
+#include <amqp.h>
+#include <amqp_tcp_socket.h>
+
 namespace Peerchat {
+	uv_once_t mm_tls_init_once = UV_ONCE_INIT;
+	uv_key_t mm_redis_connection_key;
+	uv_key_t mm_amqp_connection_key;
+
         const char *peerchat_channel_exchange = "peerchat.core";
 
 		/*
@@ -128,6 +136,11 @@ namespace Peerchat {
         //     return scheduler;
         // }
 
+
+	void do_init_thread_tls_key() {
+		uv_key_create(&mm_redis_connection_key);
+		uv_key_create(&mm_amqp_connection_key);
+	}
 
 		bool Handle_Broadcast(TaskThreadData *thread_data, std::string message) {
 			Peerchat::Server* server = (Peerchat::Server*)uv_loop_get_data(uv_default_loop());
@@ -305,4 +318,65 @@ namespace Peerchat {
 			json_object_set_new(item, "profileid", json_integer(summary.profileid));
 			return item;
 		}
+		void AddPeerchatTaskRequest(PeerchatBackendRequest request) {
+
+		}
+
+	amqp_connection_state_t getThreadLocalAmqpConnection() {
+		uv_once(&mm_tls_init_once, do_init_thread_tls_key);
+		amqp_connection_state_t connection = (amqp_connection_state_t)uv_key_get(&mm_amqp_connection_key);
+
+		if(connection != NULL) {
+			return connection;
+		}
+
+		char address_buffer[32];
+		char port_buffer[32];
+
+		char user_buffer[32];
+		char pass_buffer[32];
+		size_t temp_env_sz = sizeof(address_buffer);
+
+		connection = amqp_new_connection();
+		amqp_socket_t *amqp_socket = amqp_tcp_socket_new(connection);
+
+
+		uv_os_getenv("OPENSPY_AMQP_ADDRESS", (char *)&address_buffer, &temp_env_sz);
+
+		temp_env_sz = sizeof(port_buffer);
+		uv_os_getenv("OPENSPY_AMQP_PORT", (char *)&port_buffer, &temp_env_sz);
+		int status = amqp_socket_open(amqp_socket, address_buffer, atoi(port_buffer));
+
+		temp_env_sz = sizeof(user_buffer);
+		uv_os_getenv("OPENSPY_AMQP_USER", (char *)&user_buffer, &temp_env_sz);
+		temp_env_sz = sizeof(pass_buffer);
+		uv_os_getenv("OPENSPY_AMQP_PASSWORD", (char *)&pass_buffer, &temp_env_sz);
+
+		if(status) {
+			perror("error opening amqp listener socket");
+		}
+
+		amqp_login(connection, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer);
+
+		amqp_channel_open(connection, 1);
+
+		uv_key_set(&mm_amqp_connection_key, connection);
+
+		return connection;
+
+	}
+
+	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody) {
+		amqp_connection_state_t connection = getThreadLocalAmqpConnection();
+
+		amqp_basic_properties_t props;
+		props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
+		props.content_type = amqp_cstring_bytes("text/plain");
+		props.delivery_mode = 1;
+
+		amqp_basic_publish(connection, 1, amqp_cstring_bytes(exchange),
+                                    amqp_cstring_bytes(routingkey), 0, 0,
+                                    &props, amqp_cstring_bytes(messagebody));
+
+	}
 }

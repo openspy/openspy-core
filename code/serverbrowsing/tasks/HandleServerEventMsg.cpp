@@ -9,7 +9,7 @@ namespace MM {
 		std::string server_key = vec.at(1);
 
 		TaskThreadData thread_data;
-		thread_data.mp_redis_connection = getThreadLocalRedisContext();
+		thread_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
 		SBServer *server = (SBServer *)uv_loop_get_data(uv_default_loop());
 
 

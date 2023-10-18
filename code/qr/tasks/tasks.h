@@ -6,6 +6,8 @@
 #include <hiredis/hiredis.h>
 #include <uv.h>
 
+#include <OS/tasks.h>
+
 #define NN_REDIS_EXPIRE_TIME 500
 namespace QR {
     class Server;
@@ -91,8 +93,6 @@ namespace MM {
 
 	void PerformUVWorkRequest(uv_work_t *req);
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
-
-	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody);
     
     bool PerformGetGameInfo(MMPushRequest request, TaskThreadData *thread_data);
 	bool PerformKeepalive(MMPushRequest request, TaskThreadData *thread_data);

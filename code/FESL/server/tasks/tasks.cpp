@@ -33,4 +33,9 @@ namespace FESL {
 		}
 		return true;
 	}
+	void InitTasks() {
+	}
+    void AddFESLTaskRequest(FESLRequest request) {
+
+	}
 }

@@ -4,6 +4,7 @@
 #include <OS/OpenSpy.h>
 #include <hiredis/hiredis.h>
 #include <uv.h>
+#include <OS/tasks.h>
 
 #define MM_REDIS_EXPIRE_TIME 500
 namespace UT {
@@ -129,8 +130,6 @@ namespace MM {
 
 	void PerformUVWorkRequest(uv_work_t *req);
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
-	redisContext *getThreadLocalRedisContext();
-	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody);
 
 	void InitTasks();
 

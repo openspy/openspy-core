@@ -298,7 +298,7 @@ namespace MM {
                 s << "\\del\\" << server_key.c_str();
                 
                 std::string msg = s.str();
-                sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str());
+                TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str());
 
                 request.callback(response);
                 return true;
@@ -319,7 +319,7 @@ namespace MM {
 
             if(!(server_key.length() > 7 && server_key.substr(0, 7).compare("thugpro") == 0)) { //temporarily supress thugpro updates
                 std::string msg = s.str();
-                sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str());
+                TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str());
             }
             
             

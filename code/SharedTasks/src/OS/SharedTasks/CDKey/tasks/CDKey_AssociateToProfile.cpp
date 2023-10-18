@@ -1,6 +1,8 @@
 #include <OS/OpenSpy.h>
 #include <OS/Net/NetPeer.h>
-#include <OS/SharedTasks/tasks.h>
+#include <OS/Profile.h>
+#include <OS/User.h>
+#include "../CDKeyTasks.h"
 
 namespace TaskShared {
     bool PerformCDKey_AssociateToProfile(CDKeyRequest request, TaskThreadData *thread_data) {

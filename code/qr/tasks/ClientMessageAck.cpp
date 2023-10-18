@@ -30,7 +30,7 @@ namespace MM {
         char *json_dump = json_dumps(send_obj, 0);
 
 
-        sendAMQPMessage(mm_channel_exchange, mm_server_client_acks_routingkey, json_dump);
+        TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_client_acks_routingkey, json_dump);
 
 		if (json_dump) {
 			free((void *)json_dump);

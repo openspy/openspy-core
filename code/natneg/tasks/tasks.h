@@ -3,7 +3,6 @@
 #include <OS/OpenSpy.h>
 #include <string>
 #include <amqp.h>
-#include <hiredis/hiredis.h>
 #include <server/structs.h>
 #include <uv.h>
 
@@ -11,11 +10,6 @@
 
 NN::ConnectionSummary LoadConnectionSummary(std::string redis_key);
 namespace NN {
-	class TaskThreadData {
-		public:
-			redisContext *mp_redis_connection;
-	};
-
     class Server;
     class Peer;
     enum ENNRequestType {
@@ -29,14 +23,12 @@ namespace NN {
     extern const char *nn_channel_exchange;
     extern const char *nn_channel_routingkey;
 
-    bool PerformSubmitJson(NNRequestData, TaskThreadData *);
+    bool PerformSubmitJson(NNRequestData);
 
 	void PerformUVWorkRequest(uv_work_t *req);
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
 
-    bool Handle_HandleRecvMessage(TaskThreadData *, std::string message);
+    bool Handle_HandleRecvMessage(std::string message);
     void InitTasks();
-
-    amqp_connection_state_t getThreadLocalAmqpConnection();
 }
 #endif // _NN_TASKS_H

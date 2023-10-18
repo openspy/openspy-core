@@ -34,6 +34,10 @@ namespace GP {
         //     return scheduler;
         // }
 
+		void InitTasks() {
+			
+		}
+
 		void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request, struct curl_slist **out_list) {
 			struct curl_slist *chunk = NULL;
 			std::string apiKey = "APIKey: " + std::string(OS::g_webServicesAPIKey);
@@ -125,6 +129,9 @@ namespace GP {
 			if(out_list != NULL) {
 				*out_list = chunk;
 			}
+		}
+
+		void AddGPTaskRequest(GPBackendRedisRequest request) {
 
 		}
 }

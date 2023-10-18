@@ -71,4 +71,35 @@ namespace TaskShared {
             *out_list = chunk;
         }
     }
+    void PerformCDKeyUVWorkRequest(uv_work_t *req) {
+        TaskThreadData thread_data;
+        thread_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
+
+        CDKeyRequest *work_data = (CDKeyRequest *) uv_handle_get_data((uv_handle_t*) req);
+        switch(work_data->type) {
+            case ECDKeyType_AssociateToProfile:
+                PerformCDKey_AssociateToProfile(*work_data, &thread_data);
+                break;
+            case ECDKeyType_GetProfileByCDKey:
+                PerformCDKey_GetProfileByCDKey(*work_data, &thread_data);
+                break;
+            case ECDKeyType_TestCDKeyValid:
+                PerformCDKey_TestCDKeyValid(*work_data, &thread_data);
+                break;                    
+        }	
+    }
+	void PerformCDKeyUVWorkRequestCleanup(uv_work_t *req, int status) {
+        CDKeyRequest *work_data = (CDKeyRequest *) uv_handle_get_data((uv_handle_t*) req);
+        delete work_data;
+        free((void *)req);
+	}
+    void AddCDKeyTaskRequest(CDKeyRequest request) {
+        uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+
+        CDKeyRequest *work_data = new CDKeyRequest();
+        *work_data = request;
+
+        uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+        uv_queue_work(uv_default_loop(), uv_req, PerformCDKeyUVWorkRequest, PerformCDKeyUVWorkRequestCleanup);
+    }
 }

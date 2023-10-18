@@ -39,6 +39,9 @@ namespace TaskShared {
 	bool PerformUserRequest(UserRequest request, TaskThreadData *thread_data);
 	bool PerformUserRegisterRequest(UserRequest request, TaskThreadData *thread_data);
 
+
+	void PerformUserTaskWorkRequest(uv_work_t *req);
+	void PerformUserTaskWorkRequestCleanup(uv_work_t *req, int status);
 	void AddUserTaskRequest(UserRequest request);
 
 }

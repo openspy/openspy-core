@@ -37,7 +37,7 @@ namespace MM {
 			b64_string;
 
 		b64_string = message.str();
-		sendAMQPMessage(MM::mm_channel_exchange, MM::mm_client_message_routingkey, b64_string.c_str());
+		TaskShared::sendAMQPMessage(MM::mm_channel_exchange, MM::mm_client_message_routingkey, b64_string.c_str());
 
 		exit_clean:
 		if(request.peer) {

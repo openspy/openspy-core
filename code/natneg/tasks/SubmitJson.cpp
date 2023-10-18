@@ -4,15 +4,17 @@
 
 #include "tasks.h"
 
+#include <OS/tasks.h>
+
 namespace NN {
-    bool PerformSubmitJson(NNRequestData request, TaskThreadData  *thread_data) {
+    bool PerformSubmitJson(NNRequestData request) {
         // MQ::MQMessageProperties props;
         // props.exchange = nn_channel_exchange;
         // props.routingKey = nn_channel_routingkey;
         // props.headers["appName"] = OS::g_appName;
         // props.headers["hostname"] = OS::g_hostName;
 
-		amqp_connection_state_t connection = getThreadLocalAmqpConnection();
+		amqp_connection_state_t connection = TaskShared::getThreadLocalAmqpConnection();
 
 		amqp_basic_properties_t props;
 		props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;

@@ -70,6 +70,8 @@ namespace TaskShared {
 	bool PerformAuth_DeleteAuthSession(AuthRequest request, TaskThreadData *thread_data);
 	bool PerformAuth_TestPreAuth(AuthRequest request, TaskThreadData *thread_data);	
 
+	void PerformAuthUVWorkRequest(uv_work_t *req);
+	void PerformAuthUVWorkRequestCleanup(uv_work_t *req, int status);
 	void AddAuthTaskRequest(AuthRequest request);
 }
 #endif //OS_TASKSHARED_AUTH_H

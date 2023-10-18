@@ -1,6 +1,4 @@
-#include <OS/SharedTasks/tasks.h>
 #include <OS/Net/NetPeer.h>
-#include <OS/SharedTasks/tasks.h>
 #include "../AuthTasks.h"
 namespace TaskShared {
     bool PerformAuth_MakeAuthTicket(AuthRequest request, TaskThreadData *thread_data) {

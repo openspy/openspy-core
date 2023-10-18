@@ -29,7 +29,7 @@ source_group("Headers\\Tasks" FILES ${TASKS_HDRS})
 add_executable (utmaster ${ALL_SRCS} ${MAIN_SRCS} ${MAIN_HDRS})
 
 IF(WIN32)	
-	target_link_libraries(utmaster openspy.lib)
+	target_link_libraries(utmaster openspy.lib SharedTasks)
 ELSE() #unix
-	target_link_libraries(utmaster openspy)
+	target_link_libraries(utmaster openspy SharedTasks)
 ENDIF()

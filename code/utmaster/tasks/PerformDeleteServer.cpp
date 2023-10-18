@@ -24,7 +24,7 @@ namespace MM {
 			std::ostringstream s;
 			s << "\\del\\" << server_key.c_str();
             std::string str = s.str();
-			sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, str.c_str());
+			TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, str.c_str());
         }
 
         if(request.peer) {

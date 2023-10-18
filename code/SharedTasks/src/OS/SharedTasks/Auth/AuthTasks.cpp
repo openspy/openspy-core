@@ -191,4 +191,47 @@ namespace TaskShared {
 			end_error:
 			return false;
 		}
+		void PerformAuthUVWorkRequest(uv_work_t *req) {
+			TaskThreadData thread_data;
+			thread_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
+
+			AuthRequest *work_data = (AuthRequest *) uv_handle_get_data((uv_handle_t*) req);
+			switch(work_data->type) {
+				case EAuthType_User_EmailPassword:
+					PerformAuth_Email_Password(*work_data, &thread_data);
+				break;
+				case EAuthType_Uniquenick_Password:
+					PerformAuth_UniqueNick_Password(*work_data, &thread_data);
+				break;
+				case EAuthType_MakeAuthTicket:
+					PerformAuth_MakeAuthTicket(*work_data, &thread_data);
+				break;
+				case EAuthType_NickEmail:
+					PerformAuth_NickEmail(*work_data, &thread_data);
+				break;
+				case EAuthType_MakeAuthSession:
+					PerformAuth_MakeAuthSession(*work_data, &thread_data);
+				break;
+				case EAuthType_DeleteAuthSession:
+					PerformAuth_DeleteAuthSession(*work_data, &thread_data);
+				break;
+				case EAuthType_TestPreAuth:
+					PerformAuth_TestPreAuth(*work_data, &thread_data);
+				break;
+			}	
+		}
+		void PerformAuthUVWorkRequestCleanup(uv_work_t *req, int status) {
+			AuthRequest *work_data = (AuthRequest *) uv_handle_get_data((uv_handle_t*) req);
+			delete work_data;
+			free((void *)req);
+		}
+		void AddAuthTaskRequest(AuthRequest request) {
+			uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+
+			AuthRequest *work_data = new AuthRequest();
+			*work_data = request;
+
+			uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+			uv_queue_work(uv_default_loop(), uv_req, PerformAuthUVWorkRequest, PerformAuthUVWorkRequestCleanup);
+		}
 }

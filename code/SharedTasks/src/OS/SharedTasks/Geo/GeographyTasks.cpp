@@ -65,4 +65,29 @@ namespace TaskShared {
 			*out_list = chunk;
 		}
 	}
+    void PerformGeoUVWorkRequest(uv_work_t *req) {
+        TaskThreadData thread_data;
+        thread_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
+
+        GeoRequest *work_data = (GeoRequest *) uv_handle_get_data((uv_handle_t*) req);
+        switch(work_data->type) {
+                case EGeoTaskType_GetCountries:
+					PerformGeo_GetCountries(*work_data, &thread_data);
+				break;
+        }	
+    }
+	void PerformGeoUVWorkRequestCleanup(uv_work_t *req, int status) {
+        GeoRequest *work_data = (GeoRequest *) uv_handle_get_data((uv_handle_t*) req);
+        delete work_data;
+		free((void *)req);
+	}
+	void AddGeoTaskRequest(GeoRequest request) {
+        uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+
+        GeoRequest *work_data = new GeoRequest();
+        *work_data = request;
+
+        uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+        uv_queue_work(uv_default_loop(), uv_req, PerformGeoUVWorkRequest, PerformGeoUVWorkRequestCleanup);
+	}
 }

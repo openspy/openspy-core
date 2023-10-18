@@ -7,6 +7,8 @@
 
 #include <uv.h>
 
+#include <OS/tasks.h>
+
 #define NN_REDIS_EXPIRE_TIME 500
 
 class CToken;
@@ -212,16 +214,12 @@ namespace MM {
 
 	void FreeServerListQuery(MM::ServerListQuery *query);
 
-	redisContext *getThreadLocalRedisContext();
-
 	extern const char *mm_channel_exchange;
 
 	extern const char *mm_client_message_routingkey;
 	extern const char *mm_server_event_routingkey;
 
     extern const char *mp_pk_name;
-
-	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody);
 
 }
 #endif //_MM_TASKS_H
