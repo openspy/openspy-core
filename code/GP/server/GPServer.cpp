@@ -5,6 +5,7 @@
 #include "tasks/tasks.h"
 namespace GP {
 	Server::Server() : INetServer() {
+		uv_loop_set_data(uv_default_loop(), this);
 		InitTasks();
 	}
 	Server::~Server() {

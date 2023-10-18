@@ -5,6 +5,7 @@
 #include "../tasks/tasks.h"
 namespace UT {
 	Server::Server() : INetServer(){
+		uv_loop_set_data(uv_default_loop(), this);
 		init();
 	}
 	Server::~Server() {

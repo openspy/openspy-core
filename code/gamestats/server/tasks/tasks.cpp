@@ -41,12 +41,11 @@ namespace GS {
 			break;
 		}
 	}
-	void work_close_callback(uv_handle_t *handle) {
-		free(handle);
-	}
+
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status) {
 		PersistBackendRequest *work_data = (PersistBackendRequest *) uv_handle_get_data((uv_handle_t*) req);
 		delete work_data;
-		uv_close((uv_handle_t*)&req, work_close_callback);
+		free((void *)req);
+		
 	}
 }

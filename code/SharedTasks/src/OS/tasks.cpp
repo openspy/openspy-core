@@ -2,8 +2,8 @@
 #include <uv.h>
 
 
-#include <amqp.h>
-#include <amqp_tcp_socket.h>
+#include <rabbitmq-c/amqp.h>
+#include <rabbitmq-c/tcp_socket.h>
 
 #include <OS/OpenSpy.h>
 

@@ -2,7 +2,7 @@
 #define _NN_TASKS_H
 #include <OS/OpenSpy.h>
 #include <string>
-#include <amqp.h>
+#include <rabbitmq-c/amqp.h>
 #include <server/structs.h>
 #include <uv.h>
 

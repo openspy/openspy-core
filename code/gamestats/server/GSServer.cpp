@@ -4,7 +4,8 @@
 #include "GSDriver.h"
 
 namespace GS {
-	Server::Server() : INetServer(){
+	Server::Server() : INetServer() {
+		uv_loop_set_data(uv_default_loop(), this);
 		GS::InitTasks();
 	}
 	Server::~Server() {

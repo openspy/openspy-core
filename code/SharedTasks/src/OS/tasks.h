@@ -2,7 +2,7 @@
 #define _TASKS_SHARED_H
 #include <string>
 #include <hiredis/hiredis.h>
-#include <amqp.h>
+#include <rabbitmq-c/amqp.h>
 namespace TaskShared {
 	class TaskThreadData {
 		public:

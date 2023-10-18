@@ -112,12 +112,12 @@ namespace TaskShared {
 		if (send_obj)
 			json_decref(send_obj);
 
+		if (request.registerCallback != NULL)
+			request.registerCallback(register_data.error_details.response_code == TaskShared::WebErrorCode_Success, register_data.user, register_data.profile, register_data, request.extra, request.peer);
+
 		if (request.peer != NULL) {
 			request.peer->DecRef();
 		}
-
-		if (request.registerCallback != NULL)
-			request.registerCallback(register_data.error_details.response_code == TaskShared::WebErrorCode_Success, register_data.user, register_data.profile, register_data, request.extra, request.peer);
 		return true;
 	}
 }
