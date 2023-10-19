@@ -443,13 +443,7 @@ namespace SB {
 			OS::Buffer encrypted_buffer;
 
 			create_enctype1_buffer((const char *)&m_challenge, m_enctype1_accumulator, encrypted_buffer);			
-			append_send_buffer(encrypted_buffer);
-
-			uv_async_t fake_handle;
-			uv_handle_set_data((uv_handle_t*)&fake_handle, this);
-
-			IncRef();
-			clear_send_buffer(&fake_handle); //bit of a hack, this should only be called from the event loop thread though
+			append_send_buffer(encrypted_buffer, true);
 		}
 		void V1Peer::SendPacket_Enctype1(OS::Buffer buffer) {
 			m_enctype1_accumulator.WriteBuffer(buffer.GetHead(), buffer.bytesWritten());
