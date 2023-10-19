@@ -114,7 +114,6 @@ namespace OS {
 		if(g_redisPassword != NULL) {
 			free((void *)g_redisPassword);
 		}
-		free((void *)g_curlMutexes);
 	}
 	OS::GameData GetGameByRedisKey(const char *key, redisContext *redis_ctx) {
 		GameData game;

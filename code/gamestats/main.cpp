@@ -7,16 +7,16 @@
 #include "server/GSDriver.h"
 INetServer *g_gameserver = NULL;
 
-void idle_handler(uv_idle_t* handle) {
+void tick_handler(uv_timer_t* handle) {
 	g_gameserver->tick();
 }
 
 int main() {
 	uv_loop_t *loop = uv_default_loop();
-	uv_idle_t idler;
+	uv_timer_t tick_timer;
 
-	uv_idle_init(uv_default_loop(), &idler);
-    uv_idle_start(&idler, idle_handler);
+	uv_timer_init(uv_default_loop(), &tick_timer);
+    uv_timer_start(&tick_timer, tick_handler, 0, 250);
 
 	OS::Init("GS");
 	g_gameserver = new GS::Server();

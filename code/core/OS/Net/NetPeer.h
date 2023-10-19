@@ -14,7 +14,7 @@ class UVWriteData {
 	public:
 		UVWriteData(int num_buffers, INetPeer *peer) {
 			send_buffers = new OS::Buffer[num_buffers];
-			uv_buffers = (uv_buf_t*)malloc(num_buffers * sizeof(uv_buf_t*));
+			uv_buffers = (uv_buf_t*)malloc(num_buffers * sizeof(uv_buf_t));
 			this->peer = peer;
 		}
 		~UVWriteData() {
