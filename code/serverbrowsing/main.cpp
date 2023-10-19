@@ -39,7 +39,7 @@ int main() {
 		OS::LogText(OS::ELogLevel_Info, "Adding V1 Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(v1_driver);
 	} else {
-		OS::LogText(OS::ELogLevel_Warning, "Missing SBV1 bind address environment variables");
+		OS::LogText(OS::ELogLevel_Warning, "Missing SBV1 bind address environment variable");
 	}
 
 	if(uv_os_getenv("OPENSPY_SBV2_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
@@ -55,7 +55,7 @@ int main() {
 		OS::LogText(OS::ELogLevel_Info, "Adding V2 Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(v2_driver);
 	} else {
-		OS::LogText(OS::ELogLevel_Warning, "Missing SBV2 bind address environment variables");
+		OS::LogText(OS::ELogLevel_Warning, "Missing SBV2 bind address environment variable");
 	}
 	
 	g_gameserver->init();

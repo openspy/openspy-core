@@ -125,22 +125,27 @@ int main() {
 	size_t temp_env_sz = sizeof(address_buff);
 
 	if(uv_os_getenv("OPENSPY_UTMASTER_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
+		uint16_t port = 28902;
 		temp_env_sz = sizeof(port_buff);
-		uv_os_getenv("OPENSPY_UTMASTER_BIND_PORT", (char *)&port_buff, &temp_env_sz);
-		uint16_t port = atoi(port_buff);
-
+		if(uv_os_getenv("OPENSPY_UTMASTER_BIND_PORT", (char *)&port_buff, &temp_env_sz) != UV_ENOENT) {
+			port = atoi(port_buff);
+		}
 		UT::Driver *driver = new UT::Driver(g_gameserver, address_buff, port);
 
 		char mapping_buff[256];
 		temp_env_sz = sizeof(mapping_buff);
-		uv_os_getenv("OPENSPY_UTMASTER_MAPPINGS_PATH", (char *)&mapping_buff, &temp_env_sz);
-
-		std::vector<UT::Config *> configMapping = LoadConfigMapping(mapping_buff);
-		driver->SetConfig(configMapping);
-
+		int r = uv_os_getenv("OPENSPY_UTMASTER_MAPPINGS_PATH", (char *)&mapping_buff, &temp_env_sz);
+		if(r == 0) {
+			std::vector<UT::Config *> configMapping = LoadConfigMapping(mapping_buff);
+			driver->SetConfig(configMapping);
+		} else {
+			OS::LogText(OS::ELogLevel_Warning, "Missing utmaster mappings environment variable: %s", uv_strerror(r));
+		}
 
 		OS::LogText(OS::ELogLevel_Info, "Adding UT Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(driver);
+	} else {
+		OS::LogText(OS::ELogLevel_Warning, "Missing utmaster bind address environment variable");
 	}
 
 	

@@ -18,7 +18,7 @@ int main() {
 	uv_timer_init(uv_default_loop(), &tick_timer);
     uv_timer_start(&tick_timer, tick_handler, 0, 250);
 
-	OS::Init("GS");
+	OS::Init("gstats");
 	g_gameserver = new GS::Server();
 
 	char address_buff[256];
@@ -27,13 +27,18 @@ int main() {
 
 	if(uv_os_getenv("OPENSPY_GSTATS_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
 		temp_env_sz = sizeof(port_buff);
-		uv_os_getenv("OPENSPY_GSTATS_BIND_PORT", (char *)&port_buff, &temp_env_sz);
-		uint16_t port = atoi(port_buff);
 
-		GS::Driver *driver = new GS::Driver(g_gameserver, address_buff, atoi(port_buff));
+		uint16_t port = 29920;
+		if(uv_os_getenv("OPENSPY_GSTATS_BIND_PORT", (char *)&port_buff, &temp_env_sz) != UV_ENOENT) {
+			port = atoi(port_buff);
+		}
 
-		OS::LogText(OS::ELogLevel_Info, "Adding Driver: %s:%d\n", address_buff, port);
+		GS::Driver *driver = new GS::Driver(g_gameserver, address_buff, port);
+
+		OS::LogText(OS::ELogLevel_Info, "Adding gstats Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(driver);
+	} else {
+		OS::LogText(OS::ELogLevel_Warning, "Missing gstats bind address environment variable");
 	}
 
 	g_gameserver->init();

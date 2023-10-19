@@ -22,20 +22,24 @@ int main() {
 
 	g_gameserver = new SM::Server();
 
-
 	char address_buff[256];
 	char port_buff[16];
 	size_t temp_env_sz = sizeof(address_buff);
 
 	if(uv_os_getenv("OPENSPY_SM_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
 		temp_env_sz = sizeof(port_buff);
-		uv_os_getenv("OPENSPY_SM_BIND_PORT", (char *)&port_buff, &temp_env_sz);
-		uint16_t port = atoi(port_buff);
+
+		uint16_t port = 29901;
+		if(uv_os_getenv("OPENSPY_SM_BIND_PORT", (char *)&port_buff, &temp_env_sz) != UV_ENOENT) {
+			port = atoi(port_buff);
+		}
 
 		SM::Driver *driver = new SM::Driver(g_gameserver, address_buff, port);
 
 		OS::LogText(OS::ELogLevel_Info, "Adding SM Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(driver);
+	} else {
+		OS::LogText(OS::ELogLevel_Warning, "Missing GP bind address environment variable");
 	}
 
 

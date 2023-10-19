@@ -32,8 +32,12 @@ int main() {
 
 	if(uv_os_getenv("OPENSPY_FESL_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
 		temp_env_sz = sizeof(port_buff);
-		uv_os_getenv("OPENSPY_FESL_BIND_PORT", (char *)&port_buff, &temp_env_sz);
-		uint16_t port = atoi(port_buff);
+		uint16_t port = 29900;
+		if(uv_os_getenv("OPENSPY_FESL_BIND_PORT", (char *)&port_buff, &temp_env_sz) != UV_ENOENT) {
+			port = atoi(port_buff);
+		} else {
+			OS::LogText(OS::ELogLevel_Warning, "Missing FESL bind port environment variable");
+		}
 
 		FESL::PublicInfo public_info;
 		std::string str_crypter_rsa_key;
@@ -42,6 +46,8 @@ int main() {
 
 		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(driver);
+	} else {
+		OS::LogText(OS::ELogLevel_Warning, "Missing FESL bind address environment variable");
 	}
 
 
