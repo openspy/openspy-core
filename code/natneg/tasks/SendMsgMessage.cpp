@@ -120,7 +120,7 @@ namespace NN {
 			OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s) - %d", to_address.ToString().c_str(), connect_address.ToString().c_str(), summary.cookie);
 		}
 	}
-	bool Handle_HandleRecvMessage(std::string message) {
+	bool Handle_HandleRecvMessage(TaskShared::TaskThreadData *thread_data, std::string message) {
 		NN::Server *server = (NN::Server*)uv_loop_get_data(uv_default_loop());
 		json_t *root = json_loads(message.c_str(), 0, NULL);
 		if(!root) return false;

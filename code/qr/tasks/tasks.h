@@ -13,12 +13,10 @@ namespace QR {
     class Server;
 	class Driver;
 }
-namespace MM {
-	class TaskThreadData {
-		public:
-			redisContext *mp_redis_connection;
-	};
 
+using namespace TaskShared;
+
+namespace MM {
 	typedef struct {
 		OS::GameData m_game;
 		OS::Address  m_address;
@@ -103,7 +101,7 @@ namespace MM {
     //server update functions
     bool PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request, TaskThreadData *thread_data);
 
-    bool Handle_QRMessage(std::string message);
+    bool Handle_QRMessage(TaskShared::TaskThreadData *thread_data, std::string message);
 
 	//shared functions
 	int TryFindServerID(TaskThreadData *thread_data, OS::Address address);

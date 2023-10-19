@@ -55,13 +55,6 @@ namespace SB {
 	void Peer::FlushPendingRequests() {
 		uv_mutex_lock(&mp_mutex);
 		while (!m_pending_request_list.empty()) {
-			// TaskScheduler<MM::MMQueryRequest, TaskThreadData> *scheduler = ((SBServer *)(GetDriver()->getServer()))->getScheduler();
-			// MM::MMQueryRequest req = m_pending_request_list.front();
-			// req.peer = this;
-			// req.peer->IncRef();
-			// req.driver = mp_driver;
-			// scheduler->AddRequest(req.type, req);
-			// m_pending_request_list.pop();
 			uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
 			MM::MMQueryRequest req = m_pending_request_list.top();
 			m_pending_request_list.pop();

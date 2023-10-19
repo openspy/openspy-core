@@ -4,7 +4,7 @@
 #include <sstream>
 #include <jansson.h>
 namespace MM {
-    bool Handle_QRMessage(std::string message) {
+    bool Handle_QRMessage(TaskShared::TaskThreadData *thread_data, std::string message) {
 		QR::Server *server = (QR::Server *)uv_loop_get_data(uv_default_loop());
 
 		json_t *root = json_loads(message.c_str(), 0, NULL);

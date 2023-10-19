@@ -17,16 +17,27 @@ INetPeer::INetPeer(INetDriver* driver, uv_tcp_t *sd) : OS::Ref(), OS::LinkedList
     uv_mutex_init(&m_send_mutex);
 
     uv_tcp_init(uv_default_loop(), &m_socket);
-    uv_accept((uv_stream_t*)sd, (uv_stream_t *)&m_socket);
     uv_handle_set_data((uv_handle_t *)&m_socket, this);
+
+    int r = uv_accept((uv_stream_t*)sd, (uv_stream_t *)&m_socket);
+    if(r < 0) {
+        OS::LogText(OS::ELogLevel_Error, "Failed to accept TCP connection: %s", uv_strerror(r));
+    }
+
 
     struct sockaddr_in name;
     int nlen = sizeof(name);
-    uv_tcp_getpeername(&m_socket, (struct sockaddr *)&name, &nlen);
+    r = uv_tcp_getpeername(&m_socket, (struct sockaddr *)&name, &nlen);
+    if(r < 0) {
+        OS::LogText(OS::ELogLevel_Error, "[%s] TCP getpeername failed: %s", m_address.ToString().c_str(), uv_strerror(r));
+    }
 
     m_address = OS::Address(name);
 
-    uv_read_start((uv_stream_t *)&m_socket, INetPeer::read_alloc_cb, INetPeer::stream_read);
+    r = uv_read_start((uv_stream_t *)&m_socket, INetPeer::read_alloc_cb, INetPeer::stream_read);
+    if(r < 0) {
+        OS::LogText(OS::ELogLevel_Error, "[%s] Failed to start TCP reader: %s", m_address.ToString().c_str(), uv_strerror(r));
+    }
 }
 INetPeer::~INetPeer() {
 }
@@ -34,7 +45,7 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
     INetPeer *peer = (INetPeer*)uv_handle_get_data((const uv_handle_t*)stream);
     if (nread < 0) {
         if (nread != UV_EOF) {
-            fprintf(stderr, "Read error %s\n", uv_err_name(nread));
+            OS::LogText(OS::ELogLevel_Info, "[%s] Read error %s\n", peer->m_address.ToString().c_str(), uv_err_name(nread));
         }
         peer->Delete();
     } else if (nread > 0) {        
@@ -108,4 +119,12 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
         IncRef();
         uv_close((uv_handle_t*)&m_socket, close_callback);
     }
+}
+void INetPeer::close_callback(uv_handle_t *handle) {
+    INetPeer *peer = (INetPeer *)uv_handle_get_data(handle);
+    peer->DecRef();
+    if(peer->GetRefCount() == 0) {
+        delete peer;
+    }
+    
 }

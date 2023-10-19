@@ -8,10 +8,16 @@ namespace OS {
 
 
         uv_tcp_init(uv_default_loop(), &m_listener_socket);
-        uv_tcp_bind(&m_listener_socket, (const sockaddr *)&saddr, 0);
+        int r = uv_tcp_bind(&m_listener_socket, (const sockaddr *)&saddr, 0);
+        if(r != 0) {
+            OS::LogText(OS::ELogLevel_Error, "[%s:%d] Failed to bind TCP Address: %s", host, port, uv_strerror(r));
+        }
         uv_handle_set_data((uv_handle_t*) &m_listener_socket, this);
 
-        uv_listen((uv_stream_t *)&m_listener_socket, 128, TCPDriver::on_new_connection);
+        r = uv_listen((uv_stream_t *)&m_listener_socket, 128, TCPDriver::on_new_connection);
+        if(r != 0) {
+            OS::LogText(OS::ELogLevel_Error, "[%s:%d] Failed to start listener: %s for address", host, port, uv_strerror(r));
+        }
     }
     TCPDriver::~TCPDriver() {
         DeleteClients();

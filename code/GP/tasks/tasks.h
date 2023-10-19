@@ -19,15 +19,9 @@
 
 #include <server/GPPeer.h>
 
-
+using namespace TaskShared;
 
 namespace GP {
-	class TaskThreadData {
-		public:
-			redisContext *mp_redis_connection;
-	};
-
-
     enum EGPRedisRequestType {
 		EGPRedisRequestType_AddBuddy,
 		EGPRedisRequestType_AuthorizeAdd,

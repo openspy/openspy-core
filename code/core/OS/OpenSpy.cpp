@@ -18,12 +18,8 @@ namespace OS {
 	Logger *g_logger = NULL;
 	const char *g_appName = NULL;
 	const char *g_hostName = NULL;
-	const char *g_redisAddress = NULL;
 	const char *g_webServicesURL = NULL;
 	const char *g_webServicesAPIKey = NULL;
-	const char *g_redisUsername = NULL;
-	const char *g_redisPassword = NULL;
-	int			g_numAsync = 0;
 	CURL *g_curl = NULL;
 	CURLSH *g_curlShare = NULL;
 	uv_mutex_t g_curlMutexes[CURL_LOCK_DATA_LAST];
@@ -70,29 +66,13 @@ namespace OS {
 		uv_os_getenv("OPENSPY_API_KEY", (char *)&temp_env_buffer, &temp_env_sz);
 		g_webServicesAPIKey = strdup(temp_env_buffer);
 
-		temp_env_sz = sizeof(temp_env_buffer);
-		uv_os_getenv("OPENSPY_REDIS_ADDRESS", (char *)&temp_env_buffer, &temp_env_sz);
-		g_redisAddress = strdup(temp_env_buffer);
-
-		if(strlen(g_redisAddress) > 0) {
-			temp_env_sz = sizeof(temp_env_buffer);
-			uv_os_getenv("OPENSPY_REDIS_USER", (char *)&temp_env_buffer, &temp_env_sz);
-			g_redisUsername = strdup(temp_env_buffer);
-		}
-			
-		if(strlen(g_redisAddress) > 0) {
-			temp_env_sz = sizeof(temp_env_buffer);
-			uv_os_getenv("OPENSPY_REDIS_PASSWORD", (char *)&temp_env_buffer, &temp_env_sz);
-			g_redisPassword = strdup(temp_env_buffer);
-		}
-
 		#ifndef _WIN32
 			g_logger = new UnixLogger(appName);
 		#elif _WIN32
 			g_logger = new Win32Logger(appName);
 		#endif
 
-		OS::LogText(OS::ELogLevel_Info, "%s Init (num async: %d, hostname: %s, redis addr: %s, redis creds: %s, webservices: %s)\n", appName, g_numAsync, g_hostName, g_redisAddress, g_redisUsername, g_webServicesURL);
+		OS::LogText(OS::ELogLevel_Info, "%s Init (hostname: %s, webservices: %s)\n", appName, g_hostName, g_webServicesURL);
 	}
 	void Shutdown() {
 		delete g_logger;
@@ -107,19 +87,10 @@ namespace OS {
 		free((void *)g_hostName);
 		free((void *)g_webServicesURL);
 		free((void *)g_webServicesAPIKey);
-		free((void *)g_redisAddress);
-		if(g_redisUsername != NULL) {
-			free((void *)g_redisUsername);
-		}
-		if(g_redisPassword != NULL) {
-			free((void *)g_redisPassword);
-		}
 	}
 	OS::GameData GetGameByRedisKey(const char *key, redisContext *redis_ctx) {
 		GameData game;
 		redisReply *reply;
-
-		bool must_unlock = false;
 
 		redisAppendCommand(redis_ctx, "SELECT %d", ERedisDB_Game);
 		redisAppendCommand(redis_ctx, "HMGET %s gameid secretkey description gamename disabled_services queryport backendflags", key);
@@ -202,9 +173,7 @@ namespace OS {
 		redisReply *reply;
 
 		OS::GameData game_data;
-
-		bool must_unlock = false;
-
+		
 		redisAppendCommand(redis_ctx, "SELECT %d", ERedisDB_Game);
 		redisAppendCommand(redis_ctx, "GET %s", from_gamename);
 

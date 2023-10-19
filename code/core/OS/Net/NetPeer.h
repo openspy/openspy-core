@@ -47,14 +47,7 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		virtual void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) = 0;
 		static void write_callback(uv_write_t *req, int status);
 
-		static void close_callback(uv_handle_t *handle) {
-			INetPeer *peer = (INetPeer *)uv_handle_get_data(handle);
-			peer->DecRef();
-			if(peer->GetRefCount() == 0) {
-				delete peer;
-			}
-			
-		}
+		static void close_callback(uv_handle_t *handle);
 		void CloseSocket();
 	protected:
 		static void read_alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {

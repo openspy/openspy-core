@@ -1,99 +1,18 @@
 #include "tasks.h"
 #include <rabbitmq-c/tcp_socket.h>
 
+#include <OS/tasks.h>
+
 namespace GP {
 	const char *gp_channel_exchange = "presence.core";
 	const char *gp_client_message_routingkey = "presence.buddies";
 
-	typedef struct {
-		const char *amqp_exchange;
-		const char *amqp_routing_key;
-		bool (*amqp_event_callback)(TaskThreadData *, std::string);
-		uv_thread_t amqp_authevent_consumer_thread;
-		amqp_connection_state_t amqp_listener_conn;
-		amqp_socket_t *amqp_socket;
-	} ListenerArgs;
+	TaskShared::ListenerArgs consume_presence_message = {gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage};
+	TaskShared::ListenerArgs consume_authevent_message = {"openspy.core", "auth.events", Handle_AuthEvent};
 
-	ListenerArgs consume_presence_message = {gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage};
-	ListenerArgs consume_authevent_message = {"openspy.core", "auth.events", Handle_AuthEvent};
-
-
-	void amqp_do_consume(void *arg) {
-		ListenerArgs *listener_args = (ListenerArgs *)arg;
-		amqp_rpc_reply_t res;
-		amqp_envelope_t envelope;		
-		
-		amqp_bytes_t queuename;
-
-		amqp_queue_declare_ok_t *r = amqp_queue_declare(
-        	listener_args->amqp_listener_conn, 1, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
-
-		queuename = amqp_bytes_malloc_dup(r->queue);
-
-  		amqp_queue_bind(listener_args->amqp_listener_conn, 1, queuename, amqp_cstring_bytes(listener_args->amqp_exchange),
-                  amqp_cstring_bytes(listener_args->amqp_routing_key), amqp_empty_table);
-
-		for(;;) {
-			res = amqp_consume_message(listener_args->amqp_listener_conn, &envelope, NULL, 0);
-
-			if (AMQP_RESPONSE_NORMAL != res.reply_type) {
-				break;
-			}
-
-			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
-
-			listener_args->amqp_event_callback(NULL, message);
-
-			amqp_destroy_envelope(&envelope);
-		}
-
-		amqp_channel_close(listener_args->amqp_listener_conn, 1, AMQP_REPLY_SUCCESS);
-		amqp_connection_close(listener_args->amqp_listener_conn, AMQP_REPLY_SUCCESS);
-		amqp_destroy_connection(listener_args->amqp_listener_conn);
-	}
 	void InitTasks() {
-		char address_buffer[32];
-		char port_buffer[32];
-
-		char user_buffer[32];
-		char pass_buffer[32];
-		size_t temp_env_sz = sizeof(address_buffer);
-
-		uv_os_getenv("OPENSPY_AMQP_ADDRESS", (char *)&address_buffer, &temp_env_sz);
-
-		temp_env_sz = sizeof(port_buffer);
-		uv_os_getenv("OPENSPY_AMQP_PORT", (char *)&port_buffer, &temp_env_sz);		
-
-		temp_env_sz = sizeof(user_buffer);
-		uv_os_getenv("OPENSPY_AMQP_USER", (char *)&user_buffer, &temp_env_sz);
-		temp_env_sz = sizeof(pass_buffer);
-		uv_os_getenv("OPENSPY_AMQP_PASSWORD", (char *)&pass_buffer, &temp_env_sz);
-
-
-
-		//setup generic presence listener
-		consume_presence_message.amqp_listener_conn = amqp_new_connection();
-		consume_presence_message.amqp_socket = amqp_tcp_socket_new(consume_presence_message.amqp_listener_conn);
-		int status = amqp_socket_open(consume_presence_message.amqp_socket, address_buffer, atoi(port_buffer));
-		if(status) {
-			perror("error opening presence amqp listener socket");
-		}
-		amqp_login(consume_presence_message.amqp_listener_conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer);
-		amqp_channel_open(consume_presence_message.amqp_listener_conn, 1);
-		uv_thread_create(&consume_presence_message.amqp_authevent_consumer_thread, amqp_do_consume, &consume_presence_message);
-
-	
-	
-		//setup auth event listener
-		consume_authevent_message.amqp_listener_conn = amqp_new_connection();
-		consume_authevent_message.amqp_socket = amqp_tcp_socket_new(consume_authevent_message.amqp_listener_conn);
-		status = amqp_socket_open(consume_authevent_message.amqp_socket, address_buffer, atoi(port_buffer));
-		if(status) {
-			perror("error opening auth event amqp listener socket");
-		}
-		amqp_login(consume_authevent_message.amqp_listener_conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer);
-		amqp_channel_open(consume_authevent_message.amqp_listener_conn, 1);
-		uv_thread_create(&consume_authevent_message.amqp_authevent_consumer_thread, amqp_do_consume, &consume_authevent_message);
+		setup_listener(&consume_presence_message);
+		setup_listener(&consume_authevent_message);
 	}
 
 	void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request, struct curl_slist **out_list) {

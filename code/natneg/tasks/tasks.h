@@ -6,7 +6,11 @@
 #include <server/structs.h>
 #include <uv.h>
 
+#include <OS/tasks.h>
+
 #define NN_REDIS_EXPIRE_TIME 500
+
+using namespace TaskShared;
 
 NN::ConnectionSummary LoadConnectionSummary(std::string redis_key);
 namespace NN {
@@ -28,7 +32,7 @@ namespace NN {
 	void PerformUVWorkRequest(uv_work_t *req);
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
 
-    bool Handle_HandleRecvMessage(std::string message);
+    bool Handle_HandleRecvMessage(TaskShared::TaskThreadData *thread_data, std::string message);
     void InitTasks();
 }
 #endif // _NN_TASKS_H

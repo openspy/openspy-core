@@ -8,8 +8,6 @@ namespace MM {
 	const char *mm_server_event_routingkey = "server.event";
     const char *mp_pk_name = "QRID";
 
-	uv_thread_t m_amqp_consumer_thread;
-
     void InitTasks() {
 		
 		MM::MMWorkData *work_data = new MM::MMWorkData();

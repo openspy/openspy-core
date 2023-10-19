@@ -11,18 +11,16 @@
 
 #define NN_REDIS_EXPIRE_TIME 500
 
+using namespace TaskShared;
+
 class CToken;
 namespace SB {
     class Peer;
     class Driver;
     class Server;
 }
-namespace MM {
 
-	class TaskThreadData {
-		public:
-			redisContext *mp_redis_connection;
-	};
+namespace MM {
 
 	class Server {
 		public:
@@ -191,7 +189,7 @@ namespace MM {
     bool PerformGetGameInfoPairByGameName(MMQueryRequest request, TaskThreadData *thread_data);
 
     //server update functions
-    bool Handle_ServerEventMsg(std::string message);
+    bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::string message);
 
 	//shared functions
 	void AppendServerEntry(TaskThreadData *thread_data, std::string entry_name, ServerListQuery *ret, bool all_keys, bool include_deleted, const sServerListReq *req);
