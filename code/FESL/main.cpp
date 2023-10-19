@@ -22,9 +22,6 @@ int main() {
 	uv_timer_init(uv_default_loop(), &tick_timer);
     uv_timer_start(&tick_timer, tick_handler, 0, 250);
 
-	uv_idle_init(uv_default_loop(), &idler);
-    uv_idle_start(&idler, idle_handler);
-
 	OS::Init("FESL");
 	g_gameserver = new FESL::Server();
 
