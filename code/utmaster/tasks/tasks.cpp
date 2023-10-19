@@ -10,17 +10,16 @@ namespace MM {
 
 	uv_thread_t m_amqp_consumer_thread;
 
-	uv_work_t internal_game_load_work;
-
-
     void InitTasks() {
 		
 		MM::MMWorkData *work_data = new MM::MMWorkData();
 		work_data->request.type = UTMasterRequestType_InternalLoadGamename;
 
-		uv_handle_set_data((uv_handle_t*) &internal_game_load_work, work_data);
+		uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
 
-		uv_queue_work(uv_default_loop(), &internal_game_load_work, MM::PerformUVWorkRequest, MM::PerformUVWorkRequestCleanup);
+		uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+
+		uv_queue_work(uv_default_loop(), uv_req, MM::PerformUVWorkRequest, MM::PerformUVWorkRequestCleanup);
     }
 
     void selectQRRedisDB(TaskThreadData *thread_data) {
