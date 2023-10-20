@@ -333,7 +333,10 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 
 			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
 
-			listener_args->amqp_event_callback(NULL, message);
+			TaskThreadData thread_data;
+			thread_data.mp_redis_connection = getThreadLocalRedisContext();
+
+			listener_args->amqp_event_callback(&thread_data, message);
 
 			amqp_destroy_envelope(&envelope);
 		}
