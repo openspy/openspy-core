@@ -333,6 +333,11 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 
 			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
 
+			OS::LogText(OS::ELogLevel_Debug, "MQ: [%s] Message: %.*s\n",
+				queuename.bytes,
+				(int)envelope.message.body.len,
+				(char *)envelope.message.body.bytes);
+
 			TaskThreadData thread_data;
 			thread_data.mp_redis_connection = getThreadLocalRedisContext();
 
