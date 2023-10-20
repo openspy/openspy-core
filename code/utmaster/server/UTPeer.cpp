@@ -8,18 +8,6 @@
 #include <tasks/tasks.h>
 
 namespace UT {
-	const CommandEntry Peer::m_client_commands[] = {
-		CommandEntry(EClientIncomingRequest_ServerList, &Peer::handle_request_server_list),
-		CommandEntry(EClientIncomingRequest_MOTD, &Peer::handle_motd),
-		CommandEntry(-1, NULL)
-	};
-
-	const CommandEntry Peer::m_server_commands[] = {
-		CommandEntry(EServerIncomingRequest_Heartbeat, &Peer::handle_heartbeat),
-		CommandEntry(EServerIncomingRequest_StatsUpdate, &Peer::handle_stats_update),
-		CommandEntry(EServerIncomingRequest_PackagesVersion, &Peer::handle_packages_version),
-		CommandEntry(-1, NULL)
-	};
 	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
@@ -41,7 +29,6 @@ namespace UT {
 	void Peer::think(bool packet_waiting) {
 		if (m_delete_flag) return;
 
-	end:
 		send_ping();
 
 		//check for timeout
@@ -89,30 +76,50 @@ namespace UT {
 			break;
 			case EConnectionState_WaitRequest:
 				req_type = parse_buffer.ReadByte();
-				const CommandEntry *entry = GetCommandByCode(req_type);
-				if(entry) {
-					(*this.*entry->callback)(parse_buffer);
+				bool success = false;
+				if(m_config->is_server) {
+					success = handle_server_command(req_type, parse_buffer);
 				} else {
+					success = handle_client_command(req_type, parse_buffer);
+				}
+				if(!success) {
 					OS::LogText(OS::ELogLevel_Info, "[%s] Got unhandled request type %d", getAddress().ToString().c_str(), req_type);
-					//Delete();
+					Delete();
 				}
 		}
 
 	}
 
-	const CommandEntry *Peer::GetCommandByCode(uint8_t code) {
-		const CommandEntry *table = (const CommandEntry *)(&Peer::m_client_commands);
-		if(m_config->is_server) {
-			table =  (const CommandEntry *)(&Peer::m_server_commands);
+	bool Peer::handle_server_command(uint8_t msgid, OS::Buffer &parse_buffer) {
+		switch(msgid) {
+			case EServerIncomingRequest_Heartbeat:
+				handle_heartbeat(parse_buffer);
+				break;
+			case EServerIncomingRequest_StatsUpdate:
+				handle_stats_update(parse_buffer);
+				break;
+			case EServerIncomingRequest_PackagesVersion:
+				handle_packages_version(parse_buffer);
+				break;
+			default:
+				return false;
 		}
-		int idx = 0;
-		while(true) {
-			if(table[idx].code == -1 || table[idx].callback == NULL) break;
-			if(table[idx].code == code) return &table[idx];
-			idx++;
-		}
-		return NULL;
+		return true;
 	}
+	bool Peer::handle_client_command(uint8_t msgid, OS::Buffer &parse_buffer) {
+		switch(msgid) {
+			case EClientIncomingRequest_ServerList:
+				handle_request_server_list(parse_buffer);
+				break;
+			case EClientIncomingRequest_MOTD:
+				handle_motd(parse_buffer);
+				break;
+			default:
+				return false;
+		}
+		return true;
+	}
+
 
 	void Peer::send_ping() {
 		//struct timeval current_time;

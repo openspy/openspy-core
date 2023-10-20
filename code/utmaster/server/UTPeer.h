@@ -136,9 +136,8 @@ namespace UT {
 			static void Write_CompactInt(OS::Buffer& buffer, int value);
 			static void Write_FString(std::string input, OS::Buffer &buffer);
 
-			const CommandEntry* GetCommandByCode(uint8_t code);
-			static const CommandEntry m_client_commands[];
-			static const CommandEntry m_server_commands[];
+			bool handle_server_command(uint8_t msgid, OS::Buffer &parse_buffer);
+			bool handle_client_command(uint8_t msgid, OS::Buffer &parse_buffer);
 
 			void AddRequest(MM::UTMasterRequest req);
 
