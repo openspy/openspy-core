@@ -5,7 +5,7 @@
 
 
 namespace MM {
-	const char *mm_channel_exchange = "amq.topic";
+	const char *mm_channel_exchange = "openspy.master";
 
 	const char *mm_client_message_routingkey = "client.message";
 	const char *mm_server_event_routingkey = "server.event";
