@@ -38,7 +38,7 @@ namespace OS {
 		return ret;
 
 	}
-	std::string Address::ToString(bool ip_only) {
+	std::string Address::ToString(bool ip_only) const {
 		struct sockaddr_in addr;
 		addr.sin_port = (port);
 		addr.sin_addr.s_addr = (ip);

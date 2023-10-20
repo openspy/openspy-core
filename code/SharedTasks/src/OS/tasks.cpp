@@ -149,20 +149,87 @@ namespace TaskShared {
 
 		return connection;
 	}
+bool print_amqp_error(amqp_rpc_reply_t x, char const *context) {
+  switch (x.reply_type) {
+    case AMQP_RESPONSE_NORMAL:
+      return false;
 
-	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody) {
-		amqp_connection_state_t connection = getThreadLocalAmqpConnection();
+    case AMQP_RESPONSE_NONE:
+      OS::LogText(OS::ELogLevel_Error, "%s: missing RPC reply type!\n", context);
+      break;
 
-		amqp_basic_properties_t props;
-		props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
-		props.content_type = amqp_cstring_bytes("text/plain");
-		props.delivery_mode = 1;
+    case AMQP_RESPONSE_LIBRARY_EXCEPTION:
+      OS::LogText(OS::ELogLevel_Error, "%s: %s\n", context, amqp_error_string2(x.library_error));
+      break;
 
-		amqp_basic_publish(connection, 1, amqp_cstring_bytes(exchange),
-                                    amqp_cstring_bytes(routingkey), 0, 0,
-                                    &props, amqp_cstring_bytes(messagebody));
+    case AMQP_RESPONSE_SERVER_EXCEPTION:
+      switch (x.reply.id) {
+        case AMQP_CONNECTION_CLOSE_METHOD: {
+          amqp_connection_close_t *m =
+              (amqp_connection_close_t *)x.reply.decoded;
+          OS::LogText(OS::ELogLevel_Error, "%s: server connection error %uh, message: %.*s\n",
+                  context, m->reply_code, (int)m->reply_text.len,
+                  (char *)m->reply_text.bytes);
+          break;
+        }
+        case AMQP_CHANNEL_CLOSE_METHOD: {
+          amqp_channel_close_t *m = (amqp_channel_close_t *)x.reply.decoded;
+          OS::LogText(OS::ELogLevel_Error, "%s: server channel error %uh, message: %.*s\n",
+                  context, m->reply_code, (int)m->reply_text.len,
+                  (char *)m->reply_text.bytes);
+          break;
+        }
+        default:
+          OS::LogText(OS::ELogLevel_Error, "%s: unknown server error, method id 0x%08X\n",
+                  context, x.reply.id);
+          break;
+      }
+      break;
+  }
+  return true;
+}
 
+bool print_amqp_error(int x, char const *context) {
+	amqp_rpc_reply_t r;
+	r.reply_type = (amqp_response_type_enum_)x;
+	return print_amqp_error(r, context);
+}
+
+void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody, const OS::Address *peer_address) {
+	amqp_connection_state_t connection = getThreadLocalAmqpConnection();
+
+	amqp_basic_properties_t props;
+	props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
+	props.content_type = amqp_cstring_bytes("text/plain");
+	props.delivery_mode = 1;
+
+
+	const int NUM_ENTRIES = 3;
+	amqp_table_entry_t entries[NUM_ENTRIES];
+	entries[0].key = amqp_cstring_bytes("OS-Application");
+	entries[0].value.value.bytes = amqp_cstring_bytes(OS::g_appName);
+	entries[0].value.kind = AMQP_FIELD_KIND_UTF8;
+
+	entries[1].key = amqp_cstring_bytes("OS-Hostname");
+	entries[1].value.value.bytes = amqp_cstring_bytes(OS::g_hostName);
+	entries[1].value.kind = AMQP_FIELD_KIND_UTF8;
+
+	if(peer_address != NULL) {
+		std::string addr = peer_address->ToString();
+		entries[2].key = amqp_cstring_bytes("OS-Peer-Address");
+		entries[2].value.value.bytes = amqp_cstring_bytes(addr.c_str());
+		entries[2].value.kind = AMQP_FIELD_KIND_UTF8;
 	}
+
+
+	props.headers.entries = (amqp_table_entry_t*)&entries;
+	props.headers.num_entries = NUM_ENTRIES;
+
+	amqp_basic_publish(connection, 1, amqp_cstring_bytes(exchange),
+								amqp_cstring_bytes(routingkey), 0, 0,
+								&props, amqp_cstring_bytes(messagebody));
+
+}
 
 	void setup_listener(ListenerArgs *listener) {
 		char address_buffer[32];
@@ -203,7 +270,7 @@ namespace TaskShared {
 		if(status) {
 			OS::LogText(OS::ELogLevel_Error, "error opening amqp listener socket");
 		}
-		amqp_login(listener->amqp_listener_conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer);
+		print_amqp_error(amqp_login(listener->amqp_listener_conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer), "Login");
 		amqp_channel_open(listener->amqp_listener_conn, 1);
 		uv_thread_create(&listener->amqp_authevent_consumer_thread, TaskShared::amqp_listenerargs_consume_thread, listener);
 	}
@@ -218,16 +285,50 @@ namespace TaskShared {
 		amqp_queue_declare_ok_t *r = amqp_queue_declare(
         	listener_args->amqp_listener_conn, 1, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
 
+		if(!r){ 
+			OS::LogText(OS::ELogLevel_Error, "Failed to declare queue");
+			return;
+		} else {
+			OS::LogText(OS::ELogLevel_Error, "Listener queue for (%s,%s): %s", listener_args->amqp_exchange, listener_args->amqp_routing_key, r->queue.bytes);
+		}
+
 		queuename = amqp_bytes_malloc_dup(r->queue);
 
   		amqp_queue_bind(listener_args->amqp_listener_conn, 1, queuename, amqp_cstring_bytes(listener_args->amqp_exchange),
                   amqp_cstring_bytes(listener_args->amqp_routing_key), amqp_empty_table);
 
+		amqp_basic_consume_ok_t *consume = amqp_basic_consume(listener_args->amqp_listener_conn, 1, queuename, amqp_empty_bytes, 0, 1, 0,
+							amqp_empty_table);
+
+		if(!consume) {
+			if(queuename.bytes != NULL) {
+				OS::LogText(OS::ELogLevel_Error, "Failed to consume queue");
+				amqp_bytes_free(queuename);
+			}
+			return;
+		} else {
+			OS::LogText(OS::ELogLevel_Error, "Consumer for (%s,%s): %s", listener_args->amqp_exchange, listener_args->amqp_routing_key, consume->consumer_tag.bytes);
+		}
+
 		for(;;) {
 			res = amqp_consume_message(listener_args->amqp_listener_conn, &envelope, NULL, 0);
 
 			if (AMQP_RESPONSE_NORMAL != res.reply_type) {
+				print_amqp_error(res, "consume message");
 				break;
+			}
+
+			OS::LogText(OS::ELogLevel_Debug, "MQ: [%s] Delivery %u, exchange %.*s routingkey %.*s\n",
+					queuename.bytes,
+					(unsigned)envelope.delivery_tag, (int)envelope.exchange.len,
+					(char *)envelope.exchange.bytes, (int)envelope.routing_key.len,
+					(char *)envelope.routing_key.bytes);
+
+			if (envelope.message.properties._flags & AMQP_BASIC_CONTENT_TYPE_FLAG) {
+				OS::LogText(OS::ELogLevel_Debug, "MQ: [%s] Content-type: %.*s\n",
+					queuename.bytes,
+					(int)envelope.message.properties.content_type.len,
+					(char *)envelope.message.properties.content_type.bytes);
 			}
 
 			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
@@ -240,6 +341,10 @@ namespace TaskShared {
 		amqp_channel_close(listener_args->amqp_listener_conn, 1, AMQP_REPLY_SUCCESS);
 		amqp_connection_close(listener_args->amqp_listener_conn, AMQP_REPLY_SUCCESS);
 		amqp_destroy_connection(listener_args->amqp_listener_conn);
+
+		if(queuename.bytes != NULL) {
+			amqp_bytes_free(queuename);
+		}
 	}
 
 }

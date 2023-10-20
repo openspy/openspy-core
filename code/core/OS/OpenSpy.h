@@ -123,7 +123,7 @@ namespace OS {
 		uint32_t GetIP() const { return ip; };
 		uint16_t GetPort() const;
 		const struct sockaddr_in GetInAddr();
-		std::string ToString(bool ip_only = false);
+		std::string ToString(bool ip_only = false) const;
 
 		bool operator==(const Address &addr) const {
 			return addr.GetIP() == this->GetIP() && addr.GetPort() == this->GetPort();

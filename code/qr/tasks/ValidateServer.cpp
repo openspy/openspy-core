@@ -56,7 +56,7 @@ namespace MM {
                 s << "\\new\\" << server_key.c_str();
                 
                 std::string msg = s.str();
-                TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str());
+                TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str(), &request.from_address);
             }
             
         }

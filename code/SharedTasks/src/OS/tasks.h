@@ -4,6 +4,9 @@
 #include <hiredis/hiredis.h>
 #include <rabbitmq-c/amqp.h>
 #include <uv.h>
+namespace OS {
+	class Address;
+}
 namespace TaskShared {
 	class TaskThreadData {
 		public:
@@ -27,7 +30,7 @@ namespace TaskShared {
 
 	amqp_connection_state_t getThreadLocalAmqpConnection();
 	redisContext *getThreadLocalRedisContext();
-	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody);
+	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody, const OS::Address *peer_address = NULL);
 	void setup_listener(ListenerArgs *args);
 	void amqp_listenerargs_consume_thread(void *arg);
 	

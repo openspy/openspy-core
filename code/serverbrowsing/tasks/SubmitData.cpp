@@ -12,11 +12,11 @@ namespace MM {
 				request.buffer.resetReadCursor();
 				if (request.buffer.readRemaining() != 10) {
 					OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting non-10 submit data (%d)", request.peer->getAddress().ToString().c_str(), request.buffer.readRemaining());
-					goto exit_clean;
+					return true;
 				}
 				if (memcmp(request.buffer.GetHead(), "\xFD\xFC\x1E\x66\x6A\xB2", 6) != 0) {
 					OS::LogText(OS::ELogLevel_Warning, "[%s] Rejecting non-natneg submit data", request.peer->getAddress().ToString().c_str());
-					goto exit_clean;
+					return true;
 				}
 		}
 
@@ -37,9 +37,10 @@ namespace MM {
 			b64_string;
 
 		b64_string = message.str();
-		TaskShared::sendAMQPMessage(MM::mm_channel_exchange, MM::mm_client_message_routingkey, b64_string.c_str());
 
-		exit_clean:
+		OS::Address address = request.peer->getAddress();
+		TaskShared::sendAMQPMessage(MM::mm_channel_exchange, MM::mm_client_message_routingkey, b64_string.c_str(), &address);
+
 		if(request.peer) {
 			request.peer->DecRef();
 		}

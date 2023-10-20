@@ -55,7 +55,7 @@ namespace OS {
 		char temp_env_buffer[4096];
 		size_t temp_env_sz = sizeof(temp_env_buffer);
 
-		uv_os_getenv("OPENSPY_HOSTNAME", (char *)&temp_env_buffer, &temp_env_sz);
+		uv_os_gethostname((char *)&temp_env_buffer, &temp_env_sz);
 		g_hostName = strdup(temp_env_buffer);
 
 		temp_env_sz = sizeof(temp_env_buffer);
