@@ -11,14 +11,13 @@
 #include <OS/SharedTasks/Account/ProfileTasks.h>
 
 #include <server/Peer.h>
+#include <OS/tasks.h>
 
 #define USER_EXPIRE_TIME 900
 
+using namespace TaskShared;
+
 namespace Peerchat {
-	class TaskThreadData {
-		public:
-			redisContext *mp_redis_connection;
-	};
 
 	enum EOperPrivileges {
 		OPERPRIVS_NONE = 0,
@@ -383,6 +382,5 @@ namespace Peerchat {
 	extern UserSummary		   *server_userSummary;
 
 	void AddPeerchatTaskRequest(PeerchatBackendRequest request);
-	void sendAMQPMessage(const char *exchange, const char *routingkey, const char *messagebody);
 }
 #endif //_MM_TASKS_H

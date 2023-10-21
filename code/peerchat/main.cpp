@@ -5,6 +5,7 @@
 #include <OS/Net/NetServer.h>
 #include "server/Server.h"
 #include "server/Driver.h"
+#include "tasks/tasks.h"
 INetServer *g_gameserver = NULL;
 
 void tick_handler(uv_timer_t* handle) {
@@ -42,6 +43,7 @@ int main() {
 		g_gameserver->addNetworkDriver(driver);
 	}
 
+	Peerchat::InitTasks();
     uv_run(loop, UV_RUN_DEFAULT);
 
     uv_loop_close(loop);

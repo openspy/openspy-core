@@ -4,7 +4,6 @@
 namespace Peerchat {
     Server::Server() {
       uv_loop_set_data(uv_default_loop(), this);
-      InitTasks();
     }
     Server::~Server() {
     }
