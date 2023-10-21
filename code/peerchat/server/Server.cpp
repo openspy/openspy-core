@@ -8,9 +8,6 @@ namespace Peerchat {
     }
     Server::~Server() {
     }
-    void Server::init() {
-
-    }
     void Server::tick() {
       std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
       while (it != m_net_drivers.end()) {
@@ -19,9 +16,6 @@ namespace Peerchat {
         it++;
       }
       NetworkTick();
-    }
-    void Server::shutdown() {
-
     }
     INetPeer *Server::findPeerByProfile(int profile_id, bool inc_ref) {
         return NULL;

@@ -9,8 +9,6 @@ namespace SM {
 	}
 	Server::~Server() {
 	}
-	void Server::init() {
-	}
 	void Server::tick() {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {
@@ -19,8 +17,5 @@ namespace SM {
 			it++;
 		}
 		NetworkTick();
-	}
-	void Server::shutdown() {
-
 	}
 }

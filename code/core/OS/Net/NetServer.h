@@ -7,7 +7,6 @@ class INetServer {
 public:
 	INetServer();
 	virtual ~INetServer();
-	virtual void init() = 0;
 	virtual void tick();
 	/*
 		Currently the driver is aware of what type of NetServer its connected to.

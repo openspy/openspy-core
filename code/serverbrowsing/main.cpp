@@ -57,8 +57,6 @@ int main() {
 	} else {
 		OS::LogText(OS::ELogLevel_Warning, "Missing SBV2 bind address environment variable");
 	}
-	
-	g_gameserver->init();
 
     uv_run(loop, UV_RUN_DEFAULT);
 

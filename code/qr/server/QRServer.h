@@ -15,9 +15,7 @@ namespace QR {
 	public:
 		Server();
 		~Server();
-		void init();
 		void tick();
-		void shutdown();
 		Driver *findDriverByAddress(OS::Address address);
 	private:
 	};

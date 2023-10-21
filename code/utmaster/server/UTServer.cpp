@@ -6,12 +6,9 @@
 namespace UT {
 	Server::Server() : INetServer(){
 		uv_loop_set_data(uv_default_loop(), this);
-		init();
+		MM::InitTasks();
 	}
 	Server::~Server() {
-	}
-	void Server::init() {
-		MM::InitTasks();
 	}
 	void Server::tick() {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

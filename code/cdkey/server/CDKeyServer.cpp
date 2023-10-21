@@ -4,11 +4,9 @@
 namespace CDKey {
 
 	Server::Server() : INetServer() {
+		uv_loop_set_data(uv_default_loop(), this);
 	}
 	Server::~Server() {
-	}
-	void Server::init() {
-		
 	}
 	void Server::tick() {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

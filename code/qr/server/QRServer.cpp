@@ -21,12 +21,7 @@ namespace QR {
 			it++;
 		}
 	}
-	void Server::init() {
-	}
 	void Server::tick() {
-	}
-	void Server::shutdown() {
-
 	}
 	QR::Driver *Server::findDriverByAddress(OS::Address address) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

@@ -8,7 +8,6 @@ class SBServer : public INetServer {
 public:
 	SBServer();
 	~SBServer();
-	void init();
 	void tick();
 
 	void OnNewServer(MM::Server server);

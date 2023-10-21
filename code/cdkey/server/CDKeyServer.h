@@ -10,7 +10,6 @@ namespace CDKey {
 		public:
 			Server();
 			virtual ~Server();
-			void init();
 			void tick();
 			void shutdown();
 			CDKey::Driver *findDriverByAddress(OS::Address address);

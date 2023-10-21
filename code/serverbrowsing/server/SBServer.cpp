@@ -4,11 +4,10 @@
 #include <OS/OpenSpy.h>
 #include <tasks/tasks.h>
 SBServer::SBServer() : INetServer() {
+	uv_loop_set_data(uv_default_loop(), this);
+	MM::InitTasks();
 }
 SBServer::~SBServer() {
-}
-void SBServer::init() {
-	MM::InitTasks();
 }
 void SBServer::tick() {
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

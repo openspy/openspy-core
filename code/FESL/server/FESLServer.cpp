@@ -30,8 +30,6 @@ namespace FESL {
 		}
 		NetworkTick();
 	}
-	void Server::shutdown() {
-	}
 	void Server::OnUserAuth(std::string session_key, int userid, int profileid) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {

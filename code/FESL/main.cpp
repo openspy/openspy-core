@@ -81,7 +81,7 @@ int main() {
 	// OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s (ssl: %d) proxy flag: %d, gameid: %d\n", address.ToString().c_str(), ssl_version != OS::ESSL_None, proxyFlag, server_info.gameid);
 	// g_gameserver->addNetworkDriver(driver);
 
-  	g_gameserver->init();
+  	((FESL::Server *)g_gameserver)->init();
 
     uv_run(loop, UV_RUN_DEFAULT);
 

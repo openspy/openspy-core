@@ -10,7 +10,6 @@ namespace UT {
 	public:
 		Server();
 		virtual ~Server();
-		void init();
 		void tick();
 		void shutdown();
         void doInternalLoadGameData(redisContext *ctx); //called by async task on startup

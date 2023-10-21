@@ -15,9 +15,7 @@ namespace NN {
 		public:
 			Server();
 			virtual ~Server();
-			void init();
 			void tick();
-			void shutdown();
 			NN::Driver *findDriverByAddress(OS::Address address);
 		private:
 	};

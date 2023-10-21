@@ -12,7 +12,6 @@ namespace FESL {
 		virtual ~Server();
 		void init();
 		void tick();
-		void shutdown();
 		void OnUserAuth(std::string session_key, int userid, int profileid);
 		std::vector<TaskShared::CountryRegion> GetCountries() {
 			return m_countries;

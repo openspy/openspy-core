@@ -9,7 +9,6 @@ namespace GP {
 	public:
 		Server();
 		virtual ~Server();
-		void init();
 		void tick();
 		void shutdown();
 		INetPeer *findPeerByProfile(int profile_id, bool inc_ref = true);

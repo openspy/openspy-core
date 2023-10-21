@@ -10,9 +10,6 @@ namespace NN {
 	}
 	Server::~Server() {
 	}
-	void Server::init() {
-		
-	}
 	void Server::tick() {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 		while (it != m_net_drivers.end()) {
@@ -21,9 +18,6 @@ namespace NN {
 			it++;
 		}
 		NetworkTick();
-	}
-	void Server::shutdown() {
-
 	}
 	NN::Driver *Server::findDriverByAddress(OS::Address address) {
 		std::vector<INetDriver *>::iterator it = m_net_drivers.begin();

@@ -7,9 +7,7 @@ namespace GS {
 	public:
 		Server();
 		~Server();
-		void init();
 		void tick();
-		void shutdown();
 	private:
 	};
 }

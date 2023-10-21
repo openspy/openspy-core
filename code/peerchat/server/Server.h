@@ -11,9 +11,7 @@ namespace Peerchat {
 	public:
 		Server();
 		~Server();
-		void init();
 		void tick();
-		void shutdown();
 		std::string getServerName() {  return "s"; };
 		INetPeer *findPeerByProfile(int profile_id, bool inc_ref = true);
 
