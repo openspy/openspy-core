@@ -206,17 +206,17 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 
 	const int NUM_ENTRIES = 3;
 	amqp_table_entry_t entries[NUM_ENTRIES];
-	entries[0].key = amqp_cstring_bytes("OS-Application");
+	entries[0].key = amqp_cstring_bytes("X-OS-Application");
 	entries[0].value.value.bytes = amqp_cstring_bytes(OS::g_appName);
 	entries[0].value.kind = AMQP_FIELD_KIND_UTF8;
 
-	entries[1].key = amqp_cstring_bytes("OS-Hostname");
+	entries[1].key = amqp_cstring_bytes("X-OS-Hostname");
 	entries[1].value.value.bytes = amqp_cstring_bytes(OS::g_hostName);
 	entries[1].value.kind = AMQP_FIELD_KIND_UTF8;
 
 	if(peer_address != NULL) {
 		std::string addr = peer_address->ToString();
-		entries[2].key = amqp_cstring_bytes("OS-Peer-Address");
+		entries[2].key = amqp_cstring_bytes("X-OS-Peer-Address");
 		entries[2].value.value.bytes = amqp_cstring_bytes(addr.c_str());
 		entries[2].value.kind = AMQP_FIELD_KIND_UTF8;
 	}

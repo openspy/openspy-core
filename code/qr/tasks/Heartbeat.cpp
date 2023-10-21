@@ -276,7 +276,7 @@ namespace MM {
             gsseckey((unsigned char *)&challenge_resp, challenge_string.c_str(), (const unsigned char *)game_info.secretkey.c_str(), 0);
 
             if(request.version == 1) {
-                const int V1_MAX_CHALLENGE_LEN = 8;
+                const int V1_MAX_CHALLENGE_LEN = 8; //some especially old UT games like unreal will ignore anything beyond this length
                 challenge_resp[V1_MAX_CHALLENGE_LEN] = 0;
                 challenge_string = challenge_string.substr(0, V1_MAX_CHALLENGE_LEN);
             }
