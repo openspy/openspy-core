@@ -2,15 +2,10 @@
 #include "QRDriver.h"
 #include <iterator>
 
-#include <tasks/tasks.h>
-
-#include <uv.h>
-
 namespace QR {
 
 	Server::Server() : INetServer() {
 		uv_loop_set_data(uv_default_loop(), this);
-		MM::InitTasks();
 	}
 
 	Server::~Server() {

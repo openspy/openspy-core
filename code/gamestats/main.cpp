@@ -5,6 +5,7 @@
 #include <OS/Net/NetServer.h>
 #include "server/GSServer.h"
 #include "server/GSDriver.h"
+#include "server/tasks/tasks.h"
 INetServer *g_gameserver = NULL;
 
 void tick_handler(uv_timer_t* handle) {
@@ -40,6 +41,8 @@ int main() {
 	} else {
 		OS::LogText(OS::ELogLevel_Warning, "Missing gstats bind address environment variable");
 	}
+
+	GS::InitTasks();
 
     uv_run(loop, UV_RUN_DEFAULT);
 

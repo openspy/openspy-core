@@ -2,10 +2,8 @@
 #include "SBServer.h"
 #include "SBDriver.h"
 #include <OS/OpenSpy.h>
-#include <tasks/tasks.h>
 SBServer::SBServer() : INetServer() {
 	uv_loop_set_data(uv_default_loop(), this);
-	MM::InitTasks();
 }
 SBServer::~SBServer() {
 }

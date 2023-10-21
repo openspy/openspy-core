@@ -5,19 +5,8 @@
 #include <OS/Net/NetServer.h>
 #include "server/UTServer.h"
 #include "server/UTDriver.h"
+#include "tasks/tasks.h"
 INetServer *g_gameserver = NULL;
-bool g_running = true;
-
-void shutdown();
-
-void on_exit(void) {
-    shutdown();
-}
-
-void sig_handler(int signo)
-{
-    shutdown();
-}
 
 std::string get_file_contents(std::string path) {
 	std::string ret;
@@ -148,7 +137,8 @@ int main() {
 		OS::LogText(OS::ELogLevel_Warning, "Missing utmaster bind address environment variable");
 	}
 
-	
+    MM::InitTasks();
+    
     uv_run(loop, UV_RUN_DEFAULT);
 
     uv_loop_close(loop);
@@ -157,10 +147,4 @@ int main() {
 
     OS::Shutdown();
 	return 0;
-}
-
-void shutdown() {
-    if(g_running) {
-        g_running = false;
-    }
 }

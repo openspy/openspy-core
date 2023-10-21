@@ -6,6 +6,7 @@
 #include <OS/Net/NetServer.h>
 #include "server/QRServer.h"
 #include "server/QRDriver.h"
+#include "tasks/tasks.h"
 INetServer *g_gameserver = NULL;
 
 
@@ -43,7 +44,8 @@ int main() {
 	} else {
 		OS::LogText(OS::ELogLevel_Warning, "Missing QR bind address environment variable");
 	}
-
+	
+	MM::InitTasks();
     uv_run(loop, UV_RUN_DEFAULT);
 
     uv_loop_close(loop);

@@ -39,17 +39,6 @@ namespace OS {
 		}
 	}
 
-	void get_server_address_port(const char *input, char *address, uint16_t &port) {
-		const char *seperator = strrchr(input, ':');
-		size_t len = strlen(input);
-		if (seperator) {
-			port = atoi(seperator + 1);
-			len = seperator - input;
-		}
-		strncpy(address, input, len);
-		address[len] = 0;
-	}
-
 	void Init(const char *appName) {
 		uv_signal_init(uv_default_loop(), &g_uv_signal_handler_shutdown);
 		uv_signal_start(&g_uv_signal_handler_shutdown, signal_handler, SIGINT);
@@ -194,24 +183,28 @@ namespace OS {
 		redisReply *reply;
 
 		OS::GameData game_data;
-		
-		redisAppendCommand(redis_ctx, "SELECT %d", ERedisDB_Game);
-		redisAppendCommand(redis_ctx, "GET %s", from_gamename);
-
-		int r = redisGetReply(redis_ctx,(void**)&reply);
         
-        if(r == REDIS_OK) {
-            freeReplyObject(reply);
+        if(redis_ctx) {
+            redisAppendCommand(redis_ctx, "SELECT %d", ERedisDB_Game);
+            redisAppendCommand(redis_ctx, "GET %s", from_gamename);
+
+            int r = redisGetReply(redis_ctx,(void**)&reply);
+            
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);
+            }
+
+            r = redisGetReply(redis_ctx,(void**)&reply);
+
+            if(reply && r == REDIS_OK) {
+                if(reply->type == REDIS_REPLY_STRING) {
+                    game_data = OS::GetGameByRedisKey(reply->str, redis_ctx);
+                }
+                freeReplyObject(reply);
+            }
         }
+		
 
-		r = redisGetReply(redis_ctx,(void**)&reply);
-
-		if(reply && r == REDIS_OK) {
-			if(reply->type == REDIS_REPLY_STRING) {
-				game_data = OS::GetGameByRedisKey(reply->str, redis_ctx);
-			}			
-			freeReplyObject(reply);
-		}
 
 		return game_data;
 	}
@@ -219,22 +212,23 @@ namespace OS {
 		redisReply* reply;
 
 		OS::GameData ret;
+        if(redis_ctx) {
+            redisAppendCommand(redis_ctx, "SELECT %d", ERedisDB_Game);
+            redisAppendCommand(redis_ctx, "GET gameid_%d",gameid);
 
-		redisAppendCommand(redis_ctx, "SELECT %d", ERedisDB_Game);
-		redisAppendCommand(redis_ctx, "GET gameid_%d",gameid);
-
-		int r = redisGetReply(redis_ctx,(void**)&reply);
-        if(r == REDIS_OK) {
-            freeReplyObject(reply);
-        }
-
-		r = redisGetReply(redis_ctx,(void**)&reply);
-		if(r == REDIS_OK) {
-            if(reply->type == REDIS_REPLY_STRING) {
-                ret = GetGameByRedisKey(reply->str, redis_ctx);
+            int r = redisGetReply(redis_ctx,(void**)&reply);
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);
             }
-            freeReplyObject(reply);
-		}
+
+            r = redisGetReply(redis_ctx,(void**)&reply);
+            if(r == REDIS_OK) {
+                if(reply->type == REDIS_REPLY_STRING) {
+                    ret = GetGameByRedisKey(reply->str, redis_ctx);
+                }
+                freeReplyObject(reply);
+            }
+        }
 		return ret;
 	}
 	std::map<std::string, std::string> KeyStringToMap(std::string input) {

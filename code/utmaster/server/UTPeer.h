@@ -52,19 +52,6 @@ namespace UT {
 	};
 
 
-	class Peer;
-	typedef void(Peer::*RequestHandler)(OS::Buffer recv_buffer);
-	class CommandEntry {
-	public:
-		CommandEntry(uint8_t code, RequestHandler callback) {
-			this->callback = callback;
-			this->code = code;
-		}
-		uint8_t code;
-		RequestHandler callback;
-	};
-
-
 	class Driver;
 	class Config;
 

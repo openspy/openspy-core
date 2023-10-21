@@ -6,6 +6,7 @@
 #include <OS/Net/NetServer.h>
 #include "server/SBServer.h"
 #include "server/SBDriver.h"
+#include "tasks/tasks.h"
 INetServer *g_gameserver = NULL;
 
 void tick_handler(uv_timer_t* handle) {
@@ -58,6 +59,7 @@ int main() {
 		OS::LogText(OS::ELogLevel_Warning, "Missing SBV2 bind address environment variable");
 	}
 
+	MM::InitTasks();
     uv_run(loop, UV_RUN_DEFAULT);
 
     uv_loop_close(loop);

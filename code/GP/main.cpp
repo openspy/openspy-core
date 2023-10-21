@@ -5,6 +5,7 @@
 #include <OS/Net/NetServer.h>
 #include "server/GPServer.h"
 #include "server/GPDriver.h"
+#include "tasks/tasks.h"
 INetServer *g_gameserver = NULL;
 
 void tick_handler(uv_timer_t* handle) {
@@ -43,6 +44,7 @@ int main() {
 		OS::LogText(OS::ELogLevel_Warning, "Missing GP bind address environment variable");
 	}
 
+	GP::InitTasks();
     uv_run(loop, UV_RUN_DEFAULT);
 
     uv_loop_close(loop);
