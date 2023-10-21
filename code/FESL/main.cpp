@@ -8,6 +8,7 @@
 #include "server/FESLServer.h"
 #include "server/FESLDriver.h"
 #include <SSL/StringCrypter.h>
+#include <OS/tasks.h>
 INetServer *g_gameserver = NULL;
 
 
@@ -122,6 +123,7 @@ int main() {
 		OS::LogText(OS::ELogLevel_Warning, "Failed to get FESL bind address environment variable");
 	}
 
+	FESL::InitTasks();
   	((FESL::Server *)g_gameserver)->init();
 
     uv_run(loop, UV_RUN_DEFAULT);

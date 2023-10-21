@@ -1,22 +1,10 @@
 #include "tasks.h"
+
 namespace FESL {
 	const char *auth_channel_exchange = "presence.core";
 	const char *auth_routingkey = "presence.buddies";
 
-	// TaskScheduler<FESLRequest, TaskThreadData>::ListenerHandlerEntry listenerTable[] = {
-	// 	{"openspy.core", "auth.events", Handle_AuthEvent},
-	// 	{NULL, NULL, NULL}
-	// };
-	// 	TaskScheduler<FESLRequest, TaskThreadData>::RequestHandlerEntry FESLTasks_requestTable[] = {
-	// 		{EFESLRequestType_GetEntitledGameFeatures, Perform_GetEntitledGameFeatures},
-	// 		{EFESLRequestType_GetObjectInventory, Perform_GetObjectInventory},
-	// 		{-1, NULL}
-	// 	};
-	// TaskScheduler<FESLRequest, TaskThreadData> *InitTasks(INetServer *server) {
-	// 	TaskScheduler<FESLRequest, TaskThreadData> *scheduler = new TaskScheduler<FESLRequest, TaskThreadData>(OS::g_numAsync, server, FESLTasks_requestTable, listenerTable);
-	// 	scheduler->DeclareReady();
-	// 	return scheduler;
-	// }
+	TaskShared::ListenerArgs consume_authevent_message = {"openspy.core", "auth.events", Handle_AuthEvent};
 
 	bool Handle_AuthEvent(TaskThreadData *thread_data, std::string message) {
 		FESL::Server *server = (FESL::Server *)uv_loop_get_data(uv_default_loop());
@@ -34,8 +22,35 @@ namespace FESL {
 		return true;
 	}
 	void InitTasks() {
+		setup_listener(&consume_authevent_message);
+	}
+	void PerformUVWorkRequest(uv_work_t *req) {
+		TaskThreadData temp_data;
+		temp_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
+		FESLRequest *work_data = (FESLRequest *) uv_handle_get_data((uv_handle_t*) req);
+		
+		switch(work_data->type) {
+			case EFESLRequestType_GetEntitledGameFeatures:
+				Perform_GetEntitledGameFeatures(*work_data, &temp_data);
+				break;
+			case EFESLRequestType_GetObjectInventory:
+				Perform_GetObjectInventory(*work_data, &temp_data);
+				break;
+
+		}
+	}
+	void PerformUVWorkRequestCleanup(uv_work_t *req, int status) {
+		FESLRequest *work_data = (FESLRequest *) uv_handle_get_data((uv_handle_t*) req);
+		delete work_data;
+		free((void *)req);
 	}
     void AddFESLTaskRequest(FESLRequest request) {
+			uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
 
+			FESLRequest *work_data = new FESLRequest();
+			*work_data = request;
+
+			uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+			uv_queue_work(uv_default_loop(), uv_req, PerformUVWorkRequest, PerformUVWorkRequestCleanup);
 	}
 }

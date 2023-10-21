@@ -14,12 +14,11 @@
 #include <server/FESLDriver.h>
 #include <server/FESLPeer.h>
 
-namespace FESL {
-	class TaskThreadData {
-		public:
-			redisContext *mp_redis_connection;
-	};
-    
+#include <OS/tasks.h>
+
+using namespace TaskShared;
+
+namespace FESL {   
      enum EFESLRequestType {
         EFESLRequestType_GetEntitledGameFeatures,
         EFESLRequestType_GetObjectInventory,
