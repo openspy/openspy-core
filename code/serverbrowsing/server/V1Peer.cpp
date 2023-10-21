@@ -434,9 +434,6 @@ namespace SB {
 				it++;
 			}
 			SendPacket((const uint8_t *)buffer.GetHead(), buffer.bytesWritten(), results.last_set);
-			if (results.last_set) {
-				Delete();
-			}
 		}
 
 		void V1Peer::Enctype1_FlushPackets() {
@@ -481,7 +478,7 @@ namespace SB {
 				}
 			}
 
-			append_send_buffer(buffer);
+			append_send_buffer(buffer, attach_final);
 		}
 		void V1Peer::send_crypt_header(int enctype, OS::Buffer &buffer) {
 			if(m_sent_crypt_key) return;
