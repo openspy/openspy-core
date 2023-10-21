@@ -15,6 +15,78 @@ void tick_handler(uv_timer_t* handle) {
 	g_gameserver->tick();
 }
 
+std::string get_file_contents(std::string path) {
+	std::string ret;
+	FILE *fd = fopen(path.c_str(),"r");
+	if(fd) {
+		fseek(fd,0,SEEK_END);
+		int len = ftell(fd);
+		fseek(fd,0,SEEK_SET);
+
+		char *str_data = (char *)malloc(len+1);
+		fread(str_data, len, 1, fd);
+		str_data[len] = 0;
+		ret = str_data;
+		free((void *)str_data);
+	}
+	fclose(fd);
+	return ret;
+}
+
+std::string GetStringCryptPrivateKey() {
+	std::string stringCrypterPKey;
+
+	char env_buffer[256];
+	size_t temp_env_sz = sizeof(env_buffer);
+
+	if(uv_os_getenv("OPENSPY_FESL_STRCRYPT_PKEY", (char *)&env_buffer, &temp_env_sz) == 0) {
+			stringCrypterPKey = std::string(env_buffer, temp_env_sz);
+	}
+	return stringCrypterPKey;
+}
+FESL::PublicInfo GetPublicInfo() {
+	char env_buffer[256];
+	size_t temp_env_sz = sizeof(env_buffer);
+
+	FESL::PublicInfo result;
+
+	if(uv_os_getenv("OPENSPY_FESL_TOS_PATH", (char *)&env_buffer, &temp_env_sz) == 0) {
+			result.termsOfServiceData = get_file_contents(std::string(env_buffer, temp_env_sz));
+	}
+
+	if(uv_os_getenv("OPENSPY_FESL_DOMAIN_PARTITION", (char *)&env_buffer, &temp_env_sz) == 0) {
+			result.domainPartition = std::string(env_buffer, temp_env_sz);
+	}
+
+	if(uv_os_getenv("OPENSPY_FESL_SUBDOMAIN", (char *)&env_buffer, &temp_env_sz) == 0) {
+			result.subDomain = std::string(env_buffer, temp_env_sz);
+	}
+
+	if(uv_os_getenv("OPENSPY_FESL_MESSAGINGHOSTNAME", (char *)&env_buffer, &temp_env_sz) == 0) {
+			result.messagingHostname = std::string(env_buffer, temp_env_sz);
+	}
+
+	if(uv_os_getenv("OPENSPY_FESL_MESSAGINGPORT", (char *)&env_buffer, &temp_env_sz) == 0) {
+			std::string input = std::string(env_buffer, temp_env_sz);
+			result.messagingPort = atoi(input.c_str());
+	}
+
+	if(uv_os_getenv("OPENSPY_FESL_THEATREHOSTNAME", (char *)&env_buffer, &temp_env_sz) == 0) {
+			result.theaterHostname = std::string(env_buffer, temp_env_sz);
+	}
+
+	if(uv_os_getenv("OPENSPY_FESL_THEATREPORT", (char *)&env_buffer, &temp_env_sz) == 0) {
+			std::string input = std::string(env_buffer, temp_env_sz);
+			result.theaterPort = atoi(input.c_str());
+	}
+
+	if(uv_os_getenv("OPENSPY_FESL_GAMEID", (char *)&env_buffer, &temp_env_sz) == 0) {
+			std::string input = std::string(env_buffer, temp_env_sz);
+			result.gameid = atoi(input.c_str());
+	}
+	return result;
+}
+
 int main() {
 	uv_loop_t *loop = uv_default_loop();
 	uv_timer_t tick_timer;
@@ -30,56 +102,25 @@ int main() {
 	char port_buff[16];
 	size_t temp_env_sz = sizeof(address_buff);
 
-	if(uv_os_getenv("OPENSPY_FESL_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
+	if(uv_os_getenv("OPENSPY_FESL_BIND_ADDR", (char *)&address_buff, &temp_env_sz) == 0) {
 		temp_env_sz = sizeof(port_buff);
-		uint16_t port = 29900;
-		if(uv_os_getenv("OPENSPY_FESL_BIND_PORT", (char *)&port_buff, &temp_env_sz) != UV_ENOENT) {
+		uint16_t port = 18000;
+		if(uv_os_getenv("OPENSPY_FESL_BIND_PORT", (char *)&port_buff, &temp_env_sz) == 0) {
 			port = atoi(port_buff);
 		} else {
-			OS::LogText(OS::ELogLevel_Warning, "Missing FESL bind port environment variable");
+			OS::LogText(OS::ELogLevel_Warning, "Failed to get FESL bind port environment variable");
 		}
 
-		FESL::PublicInfo public_info;
-		std::string str_crypter_rsa_key;
+		FESL::PublicInfo public_info = GetPublicInfo();
+		std::string str_crypter_rsa_key = GetStringCryptPrivateKey();
 
 		FESL::Driver *driver = new FESL::Driver(g_gameserver, address_buff, port, public_info, str_crypter_rsa_key);
 
 		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(driver);
 	} else {
-		OS::LogText(OS::ELogLevel_Warning, "Missing FESL bind address environment variable");
+		OS::LogText(OS::ELogLevel_Warning, "Failed to get FESL bind address environment variable");
 	}
-
-
-
-	// std::string stringCrypterPKey;
-	// app_config->GetVariableString(s, "stringCrypterPKey", stringCrypterPKey);
-
-	// FESL::PublicInfo server_info;
-
-	// std::string tos_path;
-	// app_config->GetVariableString(s, "tosFile", tos_path);
-	// app_config->GetVariableString(s, "domainPartition", server_info.domainPartition);
-	// app_config->GetVariableString(s, "subDomain", server_info.subDomain);
-
-	// app_config->GetVariableString(s, "messagingHostname", server_info.messagingHostname);
-	
-	// int port;
-	// app_config->GetVariableInt(s, "messagingPort", port);
-	// server_info.messagingPort = (uint16_t)port;
-
-	// app_config->GetVariableString(s, "theaterHostname", server_info.theaterHostname);
-	// app_config->GetVariableInt(s, "theaterPort", port);
-	// server_info.theaterPort = (uint16_t)port;
-
-	// app_config->GetVariableInt(s, "gameid", port);
-	// server_info.gameid = (uint16_t)port;
-
-	// server_info.termsOfServiceData = get_file_contents(tos_path);
-
-	// FESL::Driver *driver = new FESL::Driver(g_gameserver, address.ToString(true).c_str(), address.GetPort(), server_info, stringCrypterPKey, x509_path.c_str(), rsa_path.c_str(), ssl_version, proxyFlag);
-	// OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s (ssl: %d) proxy flag: %d, gameid: %d\n", address.ToString().c_str(), ssl_version != OS::ESSL_None, proxyFlag, server_info.gameid);
-	// g_gameserver->addNetworkDriver(driver);
 
   	((FESL::Server *)g_gameserver)->init();
 

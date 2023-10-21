@@ -79,7 +79,7 @@ ELSE() #unix
 	
 ENDIF()
 add_library (openspy SHARED ${ALL_SRCS} ${ALL_PLAT})
-target_link_libraries(openspy ${CURL_LIBRARIES} z pugixml rabbitmq::rabbitmq libuv::uv ${JANSSON_LIBRARIES} ${hiredis_LIBRARIES} ${SSL_LIBS})
+target_link_libraries(openspy ${CURL_LIBRARIES} z pugixml rabbitmq::rabbitmq libuv::uv jansson::jansson ${hiredis_LIBRARIES} ${SSL_LIBS})
 
 INSTALL(TARGETS openspy
   ARCHIVE DESTINATION lib
