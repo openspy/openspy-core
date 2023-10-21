@@ -88,7 +88,10 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
                 write_data->send_buffers[i].WriteBuffer(send_buffer.GetHead(), send_buffer.bytesWritten());
                 write_data->uv_buffers[i] =  uv_buf_init((char *)write_data->send_buffers[i].GetHead(), write_data->send_buffers[i].bytesWritten());
                 peer->m_send_buffer.pop();
+                peer->DecRef();
             }
+            
+            peer->IncRef();
             int r = uv_write(req, (uv_stream_t*)&peer->m_socket, write_data->uv_buffers, num_buffers, write_callback);
             if (r < 0) {
                 OS::LogText(OS::ELogLevel_Info, "[%s] Got Send error - %d - %s", peer->getAddress().ToString().c_str(), r, uv_err_name(r));
