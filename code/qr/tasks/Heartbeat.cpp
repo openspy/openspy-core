@@ -65,7 +65,7 @@ namespace MM {
 		*(backend_flags+1) = hex_chars[rand() % (sizeof(hex_chars)-1)];
 
         char *ip_string = (char *)&challenge[8];
-        snprintf(ip_string, sizeof(challenge) - 7,"%08X%04X", htonl(from_address.GetIP()), from_address.GetPort());
+        snprintf(ip_string, sizeof(challenge) - 8,"%08X%04X", htonl(from_address.GetIP()), from_address.GetPort());
 
         return challenge;
     }
@@ -235,7 +235,12 @@ namespace MM {
         //check for server by instance key + ip:port
         std::string server_key = GetServerKey_FromRequest(request, thread_data);
 
+
+
         if (statechanged == 1) {
+            //This is a transparent error (the server will not return an error) - 
+            // this is because the throttling does not mean the server will removed / not registered - it just means this heartbeat is ignored
+            // the error response means to the client the server is no longer registered
             if (CheckServerKey_HasRecentHeartbeat(request, thread_data, server_key)) {
                 OS::LogText(OS::ELogLevel_Info, "[%s] Rejecting request due to recent heartbeat - %s", request.from_address.ToString().c_str(), server_key.c_str());
                 request.callback(response);
