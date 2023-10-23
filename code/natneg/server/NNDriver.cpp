@@ -105,6 +105,9 @@ namespace NN {
 				break;
 			}			
 		}
+		if(buf && buf->base) {
+			free((void *)buf->base);
+		}
 	}
 
 	void Driver::think(bool listener_waiting) {

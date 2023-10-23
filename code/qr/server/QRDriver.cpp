@@ -63,6 +63,9 @@ namespace QR {
 				driver->handle_v2_packet(address, buffer);
 			}
 		}
+		if(buf && buf->base) {
+			free((void *)buf->base);
+		}
 	}
 
 
