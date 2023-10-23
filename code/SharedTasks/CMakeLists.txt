@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.22)
 
 project(openspy_SharedTasks)
 
-find_package(Jansson REQUIRED)
+find_package(jansson REQUIRED)
 find_package(CURL REQUIRED)
 
 file(GLOB MAIN_SRCS "src/OS/*.cpp" "src/OS/SharedTasks/Account/*.cpp" "src/OS/SharedTasks/Account/tasks/*.cpp" "src/OS/SharedTasks/Auth/*.cpp" "src/OS/SharedTasks/Auth/tasks/*.cpp" "src/OS/SharedTasks/CDKey/*.cpp" "src/OS/SharedTasks/CDKey/tasks/*.cpp" "src/OS/SharedTasks/Geo/*.cpp" "src/OS/SharedTasks/Geo/tasks/*.cpp")

@@ -6,7 +6,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 find_package(SSL)
 find_package(hiredis REQUIRED)
-find_package(Jansson REQUIRED)
+find_package(jansson REQUIRED)
 find_package(pugixml REQUIRED)
 find_package(rabbitmq-c REQUIRED)
 find_package(CURL REQUIRED)
