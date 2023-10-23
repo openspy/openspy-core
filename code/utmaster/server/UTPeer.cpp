@@ -11,7 +11,6 @@ namespace UT {
 	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
-		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
 		m_state = EConnectionState_WaitChallengeResponse;
 		m_config = NULL;
@@ -29,8 +28,6 @@ namespace UT {
 	void Peer::think(bool packet_waiting) {
 		if (m_delete_flag) return;
 
-		send_ping();
-
 		//check for timeout
 		struct timeval current_time;
 		gettimeofday(&current_time, NULL);
@@ -40,6 +37,8 @@ namespace UT {
 	}
 
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+		gettimeofday(&m_last_recv, NULL);
+
 		OS::Buffer buffer;
 		buffer.WriteBuffer(buf->base, nread);
 		buffer.resetReadCursor();
@@ -119,21 +118,6 @@ namespace UT {
 		}
 		return true;
 	}
-
-
-	void Peer::send_ping() {
-		//struct timeval current_time;
-
-		//gettimeofday(&current_time, NULL);
-		//if(current_time.tv_sec - m_last_ping.tv_sec > UTMASTER_PING_TIME) {
-		//	gettimeofday(&m_last_ping, NULL);
-		//	OS::Buffer send_buffer;
-		//	send_buffer.WriteInt(0);	
-		//	send_packet(send_buffer);
-		//}
-
-	}
-
 
 	void Peer::send_packet(OS::Buffer buffer) {
 		if(m_delete_flag) {
