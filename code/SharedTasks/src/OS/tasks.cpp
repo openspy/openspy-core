@@ -7,6 +7,8 @@
 
 #include <OS/OpenSpy.h>
 
+// #define AMQP_DEBUG_MESSAGES
+
 namespace TaskShared {
 	uv_once_t mm_tls_init_once = UV_ONCE_INIT;
 	uv_key_t mm_redis_connection_key;
@@ -318,6 +320,9 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 				break;
 			}
 
+			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
+
+			#if AMQP_DEBUG_MESSAGES
 			OS::LogText(OS::ELogLevel_Debug, "MQ: [%s] Delivery %u, exchange %.*s routingkey %.*s\n",
 					queuename.bytes,
 					(unsigned)envelope.delivery_tag, (int)envelope.exchange.len,
@@ -331,12 +336,11 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 					(char *)envelope.message.properties.content_type.bytes);
 			}
 
-			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
-
 			OS::LogText(OS::ELogLevel_Debug, "MQ: [%s] Message: %.*s\n",
 				queuename.bytes,
 				(int)envelope.message.body.len,
 				(char *)envelope.message.body.bytes);
+			#endif //AMQP_DEBUG_MESSAGES
 
 			TaskThreadData thread_data;
 			thread_data.mp_redis_connection = getThreadLocalRedisContext();
