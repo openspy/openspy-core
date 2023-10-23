@@ -13,6 +13,10 @@ namespace MM {
 
 		MM::Server *gameserver = GetServerByKey(thread_data, server_key, msg_type.compare("del") == 0);
 
+		if(!gameserver) {
+			return false;
+		}
+		
 		MM::Server server_cpy = *gameserver;
 		delete gameserver;
 
