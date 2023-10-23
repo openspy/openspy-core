@@ -15,7 +15,7 @@ namespace MM {
 
     const char *mp_pk_name = "QRID";
 
-	TaskShared::ListenerArgs consume_clientmsgs_message = {mm_channel_exchange, mm_server_client_acks_routingkey, Handle_QRMessage};
+	TaskShared::ListenerArgs consume_qrmsgs_message = {mm_channel_exchange, mm_client_message_routingkey, Handle_QRMessage};
 
 	void PerformUVWorkRequest(uv_work_t *req) {
 		TaskThreadData temp_data;
@@ -49,6 +49,6 @@ namespace MM {
 
 
 	void InitTasks() {
-		setup_listener(&consume_clientmsgs_message);
+		setup_listener(&consume_qrmsgs_message);
 	}
 }
