@@ -29,19 +29,21 @@ int main() {
 	char server_name_buff[256];
 	size_t temp_env_sz = sizeof(address_buff);
 
-	if(uv_os_getenv("OPENSPY_PEERCHAT_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
-		temp_env_sz = sizeof(port_buff);
-		uv_os_getenv("OPENSPY_PEERCHAT_BIND_PORT", (char *)&port_buff, &temp_env_sz);
-		uint16_t port = atoi(port_buff);
+    if(uv_os_getenv("OPENSPY_PEERCHAT_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
+        temp_env_sz = sizeof(port_buff);
 
-		temp_env_sz = sizeof(server_name_buff);
-		uv_os_getenv("OPENSPY_PEERCHAT_SERVER_NAME", (char *)&server_name_buff, &temp_env_sz);
+        uint16_t port = 6667;
+        if(uv_os_getenv("OPENSPY_PEERCHAT_BIND_PORT", (char *)&port_buff, &temp_env_sz) != UV_ENOENT) {
+            port = atoi(port_buff);
+        }
 
-		Peerchat::Driver *driver = new Peerchat::Driver(g_gameserver, server_name_buff, address_buff, port);
+        Peerchat::Driver *driver = new Peerchat::Driver(g_gameserver, "test", address_buff, port);
 
-		OS::LogText(OS::ELogLevel_Info, "Adding Peerchat Driver: %s:%d\n", address_buff, port);
-		g_gameserver->addNetworkDriver(driver);
-	}
+        OS::LogText(OS::ELogLevel_Info, "Adding Peerchat Driver: %s:%d\n", address_buff, port);
+        g_gameserver->addNetworkDriver(driver);
+    } else {
+        OS::LogText(OS::ELogLevel_Warning, "Missing Peerchat bind address environment variable");
+    }
 
 	Peerchat::InitTasks();
     uv_run(loop, UV_RUN_DEFAULT);

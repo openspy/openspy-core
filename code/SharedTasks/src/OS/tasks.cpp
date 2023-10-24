@@ -236,7 +236,11 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
         props.headers.num_entries = NUM_ENTRIES - 1;
     }
 	props.headers.entries = (amqp_table_entry_t*)&entries;
-	
+    
+    #if AMQP_DEBUG_MESSAGES
+    OS::LogText(OS::ELogLevel_Debug, "MQ: [%s,%s] Send Message: %s\n", exchange, routingkey, messagebody);
+    #endif //AMQP_DEBUG_MESSAGES
+
 
 	amqp_basic_publish(connection, 1, amqp_cstring_bytes(exchange),
 								amqp_cstring_bytes(routingkey), 0, 0,
@@ -284,8 +288,13 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 			OS::LogText(OS::ELogLevel_Error, "error opening amqp listener socket");
 		}
 		print_amqp_error(amqp_login(listener->amqp_listener_conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer), "Login");
-		amqp_channel_open(listener->amqp_listener_conn, 1);
-		uv_thread_create(&listener->amqp_authevent_consumer_thread, TaskShared::amqp_listenerargs_consume_thread, listener);
+        amqp_channel_open_ok_t *channel_open = amqp_channel_open(listener->amqp_listener_conn, 1);
+        if(channel_open) {
+            uv_thread_create(&listener->amqp_authevent_consumer_thread, TaskShared::amqp_listenerargs_consume_thread, listener);
+        } else {
+            OS::LogText(OS::ELogLevel_Error, "[%s,%s] error opening AMQP channel", listener->amqp_exchange, listener->amqp_routing_key);
+        }
+		
 	}
 
 	void amqp_listenerargs_consume_thread(void *arg) {
@@ -293,37 +302,47 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 		amqp_rpc_reply_t res;
 		amqp_envelope_t envelope;		
 		
-		amqp_bytes_t queuename;
+        std::string message;
+        
+        amqp_basic_consume_ok_t *consume;
+        amqp_queue_bind_ok_t *bind_response;
+        
+        amqp_bytes_t queuename;
+        queuename.bytes = NULL;
 
-		amqp_queue_declare_ok_t *r = amqp_queue_declare(
+		amqp_queue_declare_ok_t *queue = amqp_queue_declare(
         	listener_args->amqp_listener_conn, 1, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table);
 
-		if(!r){ 
-			OS::LogText(OS::ELogLevel_Error, "Failed to declare queue");
-			return;
-		} else {
-			OS::LogText(OS::ELogLevel_Error, "Listener queue for (%s,%s): %s", listener_args->amqp_exchange, listener_args->amqp_routing_key, r->queue.bytes);
-		}
+        bool listener_active = false;
+        if(queue) {
+            OS::LogText(OS::ELogLevel_Error, "Listener queue for (%s,%s): %s", listener_args->amqp_exchange, listener_args->amqp_routing_key, queue->queue.bytes);
+            
+            bind_response = amqp_queue_bind(listener_args->amqp_listener_conn, 1, queue->queue, amqp_cstring_bytes(listener_args->amqp_exchange),
+                      amqp_cstring_bytes(listener_args->amqp_routing_key), amqp_empty_table);
+            
+            if(bind_response) {
+                consume = amqp_basic_consume(listener_args->amqp_listener_conn, 1, queue->queue, amqp_empty_bytes, 0, 1, 0, amqp_empty_table);
+                if(consume) {
+                    OS::LogText(OS::ELogLevel_Error, "Consumer for (%s,%s): %s", listener_args->amqp_exchange, listener_args->amqp_routing_key, consume->consumer_tag.bytes);
+                    listener_active = true;
+                } else {
+                    OS::LogText(OS::ELogLevel_Error, "Failed to consume queue");
+                }
+            } else {
+                OS::LogText(OS::ELogLevel_Error, "Failed to bind queue: %s", queue->queue.bytes);
+                //amqp_queue_delete(listener_args->amqp_listener_conn, 1, queue->queue, 0, 0); -- This hangs for some reason
+            }
+        } else {
+            OS::LogText(OS::ELogLevel_Error, "Failed to declare queue");
+        }
+        
+        queuename = amqp_bytes_malloc_dup(queue->queue);
+        if (queuename.bytes == NULL) {
+            OS::LogText(OS::ELogLevel_Error, "OOM - Failed to duplicate queuename");
+            listener_active = false;
+        }
 
-		queuename = amqp_bytes_malloc_dup(r->queue);
-
-  		amqp_queue_bind(listener_args->amqp_listener_conn, 1, queuename, amqp_cstring_bytes(listener_args->amqp_exchange),
-                  amqp_cstring_bytes(listener_args->amqp_routing_key), amqp_empty_table);
-
-		amqp_basic_consume_ok_t *consume = amqp_basic_consume(listener_args->amqp_listener_conn, 1, queuename, amqp_empty_bytes, 0, 1, 0,
-							amqp_empty_table);
-
-		if(!consume) {
-			if(queuename.bytes != NULL) {
-				OS::LogText(OS::ELogLevel_Error, "Failed to consume queue");
-				amqp_bytes_free(queuename);
-			}
-			return;
-		} else {
-			OS::LogText(OS::ELogLevel_Error, "Consumer for (%s,%s): %s", listener_args->amqp_exchange, listener_args->amqp_routing_key, consume->consumer_tag.bytes);
-		}
-
-		for(;;) {
+		while(listener_active) {
             amqp_maybe_release_buffers(listener_args->amqp_listener_conn);
 			res = amqp_consume_message(listener_args->amqp_listener_conn, &envelope, NULL, 0);
 
@@ -332,24 +351,24 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 				break;
 			}
 
-			std::string message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
+			message = std::string((const char *)envelope.message.body.bytes, envelope.message.body.len);
 
 			#if AMQP_DEBUG_MESSAGES
 			OS::LogText(OS::ELogLevel_Debug, "MQ: [%s] Delivery %u, exchange %.*s routingkey %.*s\n",
-					queuename.bytes,
+                    queuename.bytes,
 					(unsigned)envelope.delivery_tag, (int)envelope.exchange.len,
 					(char *)envelope.exchange.bytes, (int)envelope.routing_key.len,
 					(char *)envelope.routing_key.bytes);
 
 			if (envelope.message.properties._flags & AMQP_BASIC_CONTENT_TYPE_FLAG) {
 				OS::LogText(OS::ELogLevel_Debug, "MQ: [%s] Content-type: %.*s\n",
-					queuename.bytes,
+                    queuename.bytes,
 					(int)envelope.message.properties.content_type.len,
 					(char *)envelope.message.properties.content_type.bytes);
 			}
 
 			OS::LogText(OS::ELogLevel_Debug, "MQ: [%s] Message: %.*s\n",
-				queuename.bytes,
+                queuename.bytes,
 				(int)envelope.message.body.len,
 				(char *)envelope.message.body.bytes);
 			#endif //AMQP_DEBUG_MESSAGES
@@ -361,14 +380,15 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 
 			amqp_destroy_envelope(&envelope);
 		}
-
-		amqp_channel_close(listener_args->amqp_listener_conn, 1, AMQP_REPLY_SUCCESS);
-		amqp_connection_close(listener_args->amqp_listener_conn, AMQP_REPLY_SUCCESS);
-		amqp_destroy_connection(listener_args->amqp_listener_conn);
-
-		if(queuename.bytes != NULL) {
-			amqp_bytes_free(queuename);
-		}
+        
+        if(queuename.bytes != NULL) {
+            amqp_bytes_free(queuename);
+        }
+        if(listener_args->amqp_listener_conn) {
+            amqp_channel_close(listener_args->amqp_listener_conn, 1, AMQP_REPLY_SUCCESS);
+            amqp_connection_close(listener_args->amqp_listener_conn, AMQP_REPLY_SUCCESS);
+            amqp_destroy_connection(listener_args->amqp_listener_conn);
+        }
 	}
 
 }

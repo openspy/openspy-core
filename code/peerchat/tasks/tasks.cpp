@@ -124,7 +124,7 @@ namespace Peerchat {
 
 		std::map<int, int> channel_mode_map;
 
-		int num_items = channel_list.size();
+		size_t num_items = channel_list.size();
 		for (int i = 0; i < num_items; i++) {
 			channel_mode_map[channel_list.at(i)] = channel_modes_list.at(i);
 		}

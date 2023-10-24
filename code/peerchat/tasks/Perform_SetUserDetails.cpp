@@ -22,6 +22,8 @@ namespace Peerchat {
         redisReply *reply;
 
         redisAppendCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
+        freeReplyObject(reply);
 
         TaskResponse response;
         response.summary = request.summary;
@@ -44,9 +46,6 @@ namespace Peerchat {
         }
 
         redisAppendCommand(thread_data->mp_redis_connection, "EXISTS usernick_%s", formatted_name.c_str());
-
-        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
-        freeReplyObject(reply);
 
         bool nick_exists = false;
 

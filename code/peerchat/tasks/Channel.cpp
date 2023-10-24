@@ -36,19 +36,44 @@ namespace Peerchat {
 		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, ss.str().c_str());
 
 		if(reply) {
-			summary.channel_name = reply->element[0]->str;
-			summary.entrymsg = reply->element[1]->str;
-			summary.basic_mode_flags = atoi(reply->element[2]->str);
-			summary.password = reply->element[3]->str;
-			summary.limit = atoi(reply->element[4]->str);
-			summary.created_at.tv_sec = atoi(reply->element[5]->str);
-			summary.topic = reply->element[6]->str;
-			summary.topic_time.tv_sec = atoi(reply->element[7]->str);
-			summary.topic_user_summary = reply->element[8]->str;
+            if(reply->element[0]->type == REDIS_REPLY_STRING) {
+                summary.channel_name = reply->element[0]->str;
+            }
+            
+            if(reply->element[1]->type == REDIS_REPLY_STRING) {
+                summary.entrymsg = reply->element[1]->str;
+            }
+            
+            if(reply->element[2]->type == REDIS_REPLY_STRING) {
+                summary.basic_mode_flags = atoi(reply->element[2]->str);
+            }
+            
+            if(reply->element[3]->type == REDIS_REPLY_STRING) {
+                summary.password = atoi(reply->element[3]->str);
+            }
+            
+            if(reply->element[4]->type == REDIS_REPLY_STRING) {
+                summary.limit = atoi(reply->element[4]->str);
+            }
+            
+            if(reply->element[5]->type == REDIS_REPLY_STRING) {
+                summary.created_at.tv_sec = atoi(reply->element[5]->str);
+            }
+            
+            if(reply->element[6]->type == REDIS_REPLY_STRING) {
+                summary.topic = atoi(reply->element[6]->str);
+            }
+            
+            if(reply->element[7]->type == REDIS_REPLY_STRING) {
+                summary.topic_time.tv_sec = atoi(reply->element[7]->str);
+            }
+            
+            if(reply->element[8]->type == REDIS_REPLY_STRING) {
+                summary.topic_user_summary = reply->element[8]->str;
+            }			
 			freeReplyObject(reply);
 		}
  
-        
 		return summary;
 	}
 	void AssociateUsermodeToChannel(UsermodeRecord record, ChannelSummary summary, TaskThreadData* thread_data) {
