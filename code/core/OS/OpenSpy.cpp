@@ -69,12 +69,14 @@ namespace OS {
 		g_hostName = strdup(temp_env_buffer);
 
 		temp_env_sz = sizeof(temp_env_buffer);
-		uv_os_getenv("OPENSPY_WEBSERVICES_URL", (char *)&temp_env_buffer, &temp_env_sz);
-		g_webServicesURL = strdup(temp_env_buffer);
+        if(uv_os_getenv("OPENSPY_WEBSERVICES_URL", (char *)&temp_env_buffer, &temp_env_sz) == 0) {
+            g_webServicesURL = strdup(temp_env_buffer);
+        }
 
 		temp_env_sz = sizeof(temp_env_buffer);
-		uv_os_getenv("OPENSPY_API_KEY", (char *)&temp_env_buffer, &temp_env_sz);
-		g_webServicesAPIKey = strdup(temp_env_buffer);
+        if(uv_os_getenv("OPENSPY_API_KEY", (char *)&temp_env_buffer, &temp_env_sz) == 0) {
+            g_webServicesAPIKey = strdup(temp_env_buffer);
+        }
 
 		#ifndef _WIN32
 			g_logger = new UnixLogger(appName);

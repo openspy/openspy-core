@@ -20,6 +20,10 @@ namespace MM {
 	void PerformUVWorkRequest(uv_work_t *req) {
 		TaskThreadData temp_data;
 		temp_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
+        if(temp_data.mp_redis_connection == NULL) {
+            return;
+        }
+        
 		MM::MMWorkData *work_data = (MM::MMWorkData *) uv_handle_get_data((uv_handle_t*) req);
 		
 		switch(work_data->request.type) {

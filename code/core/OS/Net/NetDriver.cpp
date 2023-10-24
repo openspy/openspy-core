@@ -25,6 +25,7 @@ void INetDriver::SendUDPPacket(OS::Address to, OS::Buffer buffer) {
 void INetDriver::on_udp_send_callback(uv_udp_send_t* req, int status) {
 	OS::Buffer *buffer = (OS::Buffer *)uv_handle_get_data((uv_handle_t*) req);
 	delete buffer;
+	free((void *)req);
 }
 
 void INetDriver::clear_send_buffer(uv_async_t *handle) {
