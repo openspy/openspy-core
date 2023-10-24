@@ -147,6 +147,7 @@ namespace NN {
 				
 
 				NN::Driver *driver = server->findDriverByAddress(driver_address);
+				
 				if(stricmp(type_str, "connect") == 0) {
 					Handle_ConnectPacket(root, driver);
 				}

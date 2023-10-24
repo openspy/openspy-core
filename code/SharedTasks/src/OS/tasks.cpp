@@ -201,31 +201,42 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 	amqp_connection_state_t connection = getThreadLocalAmqpConnection();
 
 	amqp_basic_properties_t props;
-	props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
+	props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG | AMQP_BASIC_HEADERS_FLAG;
 	props.content_type = amqp_cstring_bytes("text/plain");
 	props.delivery_mode = 1;
 
 
-	const int NUM_ENTRIES = 3;
+	const int NUM_ENTRIES = 5;
 	amqp_table_entry_t entries[NUM_ENTRIES];
 	entries[0].key = amqp_cstring_bytes("X-OS-Application");
 	entries[0].value.value.bytes = amqp_cstring_bytes(OS::g_appName);
 	entries[0].value.kind = AMQP_FIELD_KIND_UTF8;
 
+
 	entries[1].key = amqp_cstring_bytes("X-OS-Hostname");
 	entries[1].value.value.bytes = amqp_cstring_bytes(OS::g_hostName);
 	entries[1].value.kind = AMQP_FIELD_KIND_UTF8;
+        
+    //these 2 are here for compatibility (they are neede by the natneg helper)
+    entries[2].key = amqp_cstring_bytes("appName");
+    entries[2].value.value.bytes = amqp_cstring_bytes(OS::g_appName);
+    entries[2].value.kind = AMQP_FIELD_KIND_UTF8;
 
-	if(peer_address != NULL) {
-		std::string addr = peer_address->ToString();
-		entries[2].key = amqp_cstring_bytes("X-OS-Peer-Address");
-		entries[2].value.value.bytes = amqp_cstring_bytes(addr.c_str());
-		entries[2].value.kind = AMQP_FIELD_KIND_UTF8;
-	}
-
-
+    entries[3].key = amqp_cstring_bytes("hostname");
+    entries[3].value.value.bytes = amqp_cstring_bytes(OS::g_hostName);
+    entries[3].value.kind = AMQP_FIELD_KIND_UTF8;
+    
+    if(peer_address != NULL) {
+        std::string addr = peer_address->ToString();
+        entries[4].key = amqp_cstring_bytes("X-OS-Peer-Address");
+        entries[4].value.value.bytes = amqp_cstring_bytes(addr.c_str());
+        entries[4].value.kind = AMQP_FIELD_KIND_UTF8;
+        props.headers.num_entries = NUM_ENTRIES;
+    } else {
+        props.headers.num_entries = NUM_ENTRIES - 1;
+    }
 	props.headers.entries = (amqp_table_entry_t*)&entries;
-	props.headers.num_entries = NUM_ENTRIES;
+	
 
 	amqp_basic_publish(connection, 1, amqp_cstring_bytes(exchange),
 								amqp_cstring_bytes(routingkey), 0, 0,
