@@ -17,16 +17,14 @@ namespace MM {
 			return false;
 		}
 		
-		MM::Server server_cpy = *gameserver;
-		delete gameserver;
-
 		if(msg_type.compare("del") == 0) {
-			server->OnDeleteServer(server_cpy);
+			server->OnDeleteServer(*gameserver);
 		} else if(msg_type.compare("new") == 0) {
-			server->OnNewServer(server_cpy);
+			server->OnNewServer(*gameserver);
 		} else if(msg_type.compare("update") == 0) {
-			server->OnUpdateServer(server_cpy);
+			server->OnUpdateServer(*gameserver);
 		}
+		delete gameserver;
         return true;
     }
 }
