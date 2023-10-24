@@ -7,7 +7,7 @@
 
 #include <OS/OpenSpy.h>
 
-// #define AMQP_DEBUG_MESSAGES
+#define AMQP_DEBUG_MESSAGES 1
 
 namespace TaskShared {
 	uv_once_t mm_tls_init_once = UV_ONCE_INIT;
@@ -313,6 +313,7 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 		}
 
 		for(;;) {
+            amqp_maybe_release_buffers(listener_args->amqp_listener_conn);
 			res = amqp_consume_message(listener_args->amqp_listener_conn, &envelope, NULL, 0);
 
 			if (AMQP_RESPONSE_NORMAL != res.reply_type) {
