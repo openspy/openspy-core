@@ -126,7 +126,7 @@ namespace OS {
 		}
 		void Buffer::WriteNTS(std::string str) {
 			if (str.length()) {
-				int len = str.length();
+                size_t len = str.length();
 				IncWriteCursor(len + 1);
 				const char *c_str = str.c_str();
 				memcpy(_write_cursor_last, c_str, len + 1);
@@ -185,8 +185,8 @@ namespace OS {
 		}
 		void Buffer::realloc_buffer(size_t new_size) {
 			if (!mp_ctx->pointer_owner) return;
-			int write_offset = bytesWritten();
-			int read_offset = readRemaining();
+			size_t write_offset = bytesWritten();
+            size_t read_offset = readRemaining();
 			mp_ctx->_head = realloc(mp_ctx->_head, write_offset + new_size);
 			mp_ctx->alloc_size = write_offset + new_size;
 			resetCursors();

@@ -39,7 +39,7 @@ namespace TaskShared {
 
 					}
 					else {
-						int num_items = json_array_size(root);
+                        size_t num_items = json_array_size(root);
 						for (int i = 0; i < num_items; i++) {
 							GPShared::GPStatus status;
 							json_t *array_item = json_array_get(root, i);

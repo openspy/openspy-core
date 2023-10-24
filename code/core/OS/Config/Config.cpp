@@ -33,7 +33,7 @@ namespace OS {
 		//printf("node: %s\nnum siblings: %d\n", xml_node.name(), num_sibblings);
 	}
 	void Config::handle_variable_node(OS::ConfigNode &node, pugi::xml_node xml_node) {
-		int num_children = std::distance(xml_node.children().begin(), xml_node.children().end());
+        size_t num_children = std::distance(xml_node.children().begin(), xml_node.children().end());
 		pugi::xml_node_iterator it;
 		if (!strlen(xml_node.name())) return;
 

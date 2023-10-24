@@ -76,7 +76,7 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
 
         if(!peer->m_send_buffer.empty()) {
             
-            int num_buffers = peer->m_send_buffer.size();
+            size_t num_buffers = peer->m_send_buffer.size();
             UVWriteData *write_data = new UVWriteData(num_buffers, peer);
             
             uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));

@@ -294,7 +294,7 @@ namespace OS {
 		std::stringstream ss(values);
 		std::string token;
 		std::map<std::string, std::string> temp_map;
-		int field_count = fields.size();
+        size_t field_count = fields.size();
 
 		int idx = 0;
 

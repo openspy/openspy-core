@@ -96,7 +96,7 @@ unsigned char *gsseckey(
   const unsigned char *key,
   int           enctype) {
 
-    int             i,
+    size_t          i,
                     size,
                     keysz;
     unsigned char   enctmp[256],

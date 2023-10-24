@@ -28,7 +28,7 @@ namespace TaskShared {
 
 				}
 				else if (json_data && json_is_array(json_data)) {
-					int num_items = json_array_size(json_data);
+                    size_t num_items = json_array_size(json_data);
 					for (int i = 0; i < num_items; i++) {
 						json_t *arr_item = json_array_get(json_data, i);
 						CountryRegion country;

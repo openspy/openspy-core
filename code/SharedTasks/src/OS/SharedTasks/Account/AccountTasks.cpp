@@ -406,7 +406,7 @@ namespace TaskShared {
 
 				}
 				else if (json_data && json_is_array(json_data)) {
-					int arr_len = json_array_size(json_data);
+                    size_t arr_len = json_array_size(json_data);
 					for(int i=0;i<arr_len;i++) {
 						OS::Profile suggestedProfile;
 						suggestedProfile.uniquenick = json_string_value(json_array_get(json_data, i));

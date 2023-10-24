@@ -401,7 +401,7 @@ namespace MM {
         if (!server.m_keys.empty()) {
             std::string custkeys_key = server_key + "custkeys";
             
-            int num_keys = 2 + (server.m_keys.size() * 2);
+            size_t num_keys = 2 + (server.m_keys.size() * 2);
             
             const char **args = (const char **)malloc(num_keys * sizeof(const char *));
             
