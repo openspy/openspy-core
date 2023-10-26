@@ -16,12 +16,13 @@ namespace MM {
 
 	amqp_connection_state_t m_amqp_listener_conn = NULL;
 
-	TaskShared::ListenerArgs server_event_listener = {mm_channel_exchange, mm_server_event_routingkey, Handle_ServerEventMsg};
+	TaskShared::ListenerEventHandler server_event_handler = {mm_channel_exchange, mm_server_event_routingkey, Handle_ServerEventMsg};
+	TaskShared::ListenerEventHandler all_events[] = {server_event_handler};
+	TaskShared::ListenerArgs server_event_listener = {all_events, sizeof(all_events) / sizeof(TaskShared::ListenerEventHandler)};
 
 
 	void InitTasks() {
 		TaskShared::setup_listener(&server_event_listener);
-
 	}
 
 	void FreeServerListQuery(MM::ServerListQuery *query) {

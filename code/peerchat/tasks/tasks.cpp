@@ -56,9 +56,12 @@ namespace Peerchat {
 		{EUserChannelFlag_GameidPermitted, 'p'}
 	};
 
-	ListenerArgs consume_privmsg_message = {peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg};
-	ListenerArgs consume_keyupdates_message = {peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates};
-	ListenerArgs consume_broadcast_message = {peerchat_channel_exchange, peerchat_broadcast_routingkey, Handle_Broadcast};
+	ListenerEventHandler consume_privmsg_handler = {peerchat_channel_exchange, peerchat_client_message_routingkey, Handle_PrivMsg};
+	ListenerEventHandler consume_keyupdates_handler = {peerchat_channel_exchange, peerchat_key_updates_routingkey, Handle_KeyUpdates};
+	ListenerEventHandler consume_broadcast_handler = {peerchat_channel_exchange, peerchat_broadcast_routingkey, Handle_Broadcast};
+
+	TaskShared::ListenerEventHandler all_events[] = {consume_privmsg_handler, consume_keyupdates_handler, consume_broadcast_handler};
+	TaskShared::ListenerArgs peerchat_event_listener = {all_events, sizeof(all_events) / sizeof(TaskShared::ListenerEventHandler)};
 
 
 	void InitTasks() {
@@ -77,16 +80,16 @@ namespace Peerchat {
 		user_join_chan_flag_map = (ModeFlagMap*)&local_user_join_chan_flag_map;
 		num_user_join_chan_flags = sizeof(local_user_join_chan_flag_map) / sizeof(ModeFlagMap);
 
-		setup_listener(&consume_privmsg_message);
-		setup_listener(&consume_keyupdates_message);
-		setup_listener(&consume_broadcast_message);
-		
+		setup_listener(&peerchat_event_listener);		
 	}
 
 	bool Handle_Broadcast(TaskThreadData *thread_data, std::string message) {
 		Peerchat::Server* server = (Peerchat::Server*)uv_loop_get_data(uv_default_loop());
 
 		OS::KVReader reader = message;
+        
+        redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+        freeReplyObject(reply);
 		
 		uint8_t* data_out;
 		size_t data_len;
@@ -137,6 +140,9 @@ namespace Peerchat {
 	bool Handle_KeyUpdates(TaskThreadData *thread_data, std::string message) {
 		Peerchat::Server* server = (Peerchat::Server*)uv_loop_get_data(uv_default_loop());
 		OS::KVReader reader = message;
+        
+        redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+        freeReplyObject(reply);
 		
 		uint8_t* data_out;
 		size_t data_len;
@@ -178,48 +184,63 @@ namespace Peerchat {
 
 	void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base, bool show_private) {
 		std::ostringstream ss;
-		if(base_key.length() == 0) {
+		if(base_key.empty()) {
 			ss << "user_" << userSummary.id;
 			base_key = ss.str();
-			ss.str("");
-		}
-		ss << "HMSET " << base_key;
-
-		if(user_base.length() > 0) {
-			ss << " " << user_base << "username" << " " << userSummary.username; 
-			ss << " " << user_base << "nick" << " " << userSummary.nick;
-			ss << " " << user_base << "realname" << " " << userSummary.realname;
-			ss << " " << user_base << "gameid" << " " << userSummary.gameid; 
-			ss << " " << user_base << "hostname" << " " << userSummary.hostname; 
-			ss << " " << user_base << "profileid" << " " << userSummary.profileid; 
-			ss << " " << user_base << "userid" << " " << userSummary.userid; 
-			ss << " " << user_base << "backendid" << " " << userSummary.id;
-
-			if(show_private) {
-				ss << " " << user_base << "address" << " " << userSummary.address.ToString(true);
-				ss << " " << user_base << "modeflags" << " " << userSummary.modeflags;
-				ss << " " << user_base << "operflags" << " " << userSummary.operflags;
-			}
-		} else {
-			ss << " " << "username" << " " << userSummary.username; 
-			ss << " " << "nick" << " " << userSummary.nick;
-			ss << " " << "realname" << " " << userSummary.realname;
-			ss << " " << "gameid" << " " << userSummary.gameid; 
-			ss << " " << "hostname" << " " << userSummary.hostname; 
-			ss << " " << "profileid" << " " << userSummary.profileid; 
-			ss << " " << "userid" << " " << userSummary.userid; 
-			ss << " " << "backendid" << " " << userSummary.id;
-
-			if(show_private) {
-				ss << " " << "address" << " " << userSummary.address.ToString(true);
-				ss << " " << "modeflags" << " " << userSummary.modeflags;
-				ss << " " << "operflags" << " " << userSummary.operflags;
-			}
 		}
 
-		void *reply =redisCommand(thread_data->mp_redis_connection, ss.str().c_str());
-		freeReplyObject(reply);
+		std::string key = base_key + user_base;
+
+		std::string profileid, userid, backendid, address = userSummary.address.ToString(true), modeflags, operflags, gameid;
+
+		ss.str("");
+		ss << userSummary.gameid;
+		gameid = ss.str();
+
+		ss.str("");
+		ss << userSummary.id;
+		backendid = ss.str();
+
+		ss.str("");
+		ss << userSummary.profileid;
+		profileid = ss.str();
 		
+		ss.str("");
+		ss << userSummary.userid;
+		userid = ss.str();
+
+		ss.str("");
+		ss << userSummary.modeflags;
+		modeflags = ss.str();
+
+		ss.str("");
+		ss << userSummary.operflags;
+		operflags = ss.str();
+
+		const char *args[] = {
+			"HMSET", key.c_str(), 
+			"username", userSummary.username.c_str(),
+			"nick", userSummary.nick.c_str(),
+			"realname", userSummary.realname.c_str(),
+			"gameid", gameid.c_str(),
+			"hostname", userSummary.hostname.c_str(),
+			"profileid", profileid.c_str(),
+			"userid", userid.c_str(),
+			"backendid", backendid.c_str(),
+
+			//private args
+			"address", address.c_str(),
+			"modeflags", modeflags.c_str(),
+			"operflags", operflags.c_str()
+		};
+
+		int num_args = sizeof(args) / sizeof(const char *);
+		if(!show_private) {
+			num_args -= 3; //don't submit private args
+		}
+
+        redisReply *reply = (redisReply *)redisCommandArgv(thread_data->mp_redis_connection, num_args, args, NULL);
+		freeReplyObject(reply);
 	}
 
 	int channelUserModesStringToFlags(std::string mode_string) {
@@ -264,6 +285,9 @@ namespace Peerchat {
 		TaskThreadData temp_data;
 		temp_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
 		PeerchatBackendRequest *work_data = (PeerchatBackendRequest *) uv_handle_get_data((uv_handle_t*) req);
+        
+        redisReply *reply = (redisReply *)redisCommand(temp_data.mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+        freeReplyObject(reply);
 		
 		switch(work_data->type) {
 			case EPeerchatRequestType_SetUserDetails:

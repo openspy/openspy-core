@@ -60,19 +60,56 @@ namespace Peerchat {
              return summary;
         }
 
-        reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HMGET %s username nick realname hostname address modeflags operflags profileid userid gameid");
+        //reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HMGET %s username nick realname hostname address modeflags operflags profileid userid gameid");
+
+		const char *args[] = {
+			"HMGET", user_key.c_str(), "username", "nick", "realname", "hostname", "address", "modeflags", "operflags", "profileid", "userid", "gameid"
+		};
+
+        reply = (redisReply *)redisCommandArgv(thread_data->mp_redis_connection, sizeof(args) / sizeof(const char *), args, NULL);
 
         if(reply) {
-            if(reply->elements == 9) {
-                summary.username = reply->element[0]->str;
-                summary.nick = reply->element[1]->str;
-                summary.realname = reply->element[2]->str;
-                summary.address = OS::Address(reply->element[3]->str);
-                summary.modeflags = atoi(reply->element[4]->str);
-                summary.operflags = atoi(reply->element[5]->str);
-                summary.profileid = atoi(reply->element[6]->str);
-                summary.userid = atoi(reply->element[7]->str);
-                summary.gameid = atoi(reply->element[8]->str);
+            if(reply->elements == 10) {
+                if(reply->element[0]->type == REDIS_REPLY_STRING) {
+                    summary.username = reply->element[0]->str;
+                }
+
+                if(reply->element[1]->type == REDIS_REPLY_STRING) {
+                    summary.nick = reply->element[1]->str;
+                }
+
+                if(reply->element[2]->type == REDIS_REPLY_STRING) {
+                    summary.realname = reply->element[2]->str;
+                }
+
+
+                if(reply->element[3]->type == REDIS_REPLY_STRING) {
+                    summary.hostname = reply->element[3]->str;
+                }
+
+                if(reply->element[4]->type == REDIS_REPLY_STRING) {
+                    summary.address = OS::Address(reply->element[4]->str);
+                }
+
+                if(reply->element[5]->type == REDIS_REPLY_STRING) {
+                    summary.modeflags = atoi(reply->element[5]->str);
+                }
+
+                if(reply->element[6]->type == REDIS_REPLY_STRING) {
+                    summary.operflags = atoi(reply->element[6]->str);
+                }
+
+                if(reply->element[7]->type == REDIS_REPLY_STRING) {
+                    summary.profileid = atoi(reply->element[7]->str);
+                }
+
+                if(reply->element[8]->type == REDIS_REPLY_STRING) {
+                    summary.userid = atoi(reply->element[8]->str);
+                }
+
+                if(reply->element[9]->type == REDIS_REPLY_STRING) {
+                    summary.gameid = atoi(reply->element[9]->str);
+                }
             }
 
             freeReplyObject(reply);

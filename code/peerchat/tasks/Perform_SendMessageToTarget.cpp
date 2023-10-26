@@ -9,7 +9,9 @@ namespace Peerchat {
 
         Peerchat::Server *server = (Peerchat::Server *)uv_loop_get_data(uv_default_loop());
         OS::KVReader reader = OS::KVReader(message);
-
+        
+        redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
+        freeReplyObject(reply);
         
         OS::Base64StrToBin((const char *)reader.GetValue("message").c_str(), &data_out, data_len);
 

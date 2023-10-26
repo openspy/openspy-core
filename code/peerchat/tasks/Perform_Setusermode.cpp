@@ -95,9 +95,13 @@ namespace Peerchat {
 		int cursor = 0;
 		redisReply *scan_reply, *reply;
 
+		std::ostringstream ss;
+		ss << "channel_" << channel_id << "_usermodes";
+		std::string channel_usermodes_key = ss.str();
+
 		//scan channel usermodes
 		do {
-			scan_reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN channel_%d_usermodes %d match *", channel_id, cursor);
+			scan_reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN %s %d match *", channel_usermodes_key.c_str(), cursor);
 			if (scan_reply == NULL)
 				return;
 

@@ -12,8 +12,16 @@ namespace Peerchat {
         std::string formatted_name;
 		std::transform(userDetails.nick.begin(),userDetails.nick.end(),std::back_inserter(formatted_name),tolower);
 
-        redisAppendCommand(thread_data->mp_redis_connection, "DEL usernick_%s", formatted_name.c_str());
-        redisAppendCommand(thread_data->mp_redis_connection, "DEL user_%d", userDetails.id);
+        std::ostringstream ss;
+        ss << "usernick_" << formatted_name;
+        std::string formated_key = ss.str();
+
+        ss.str("");
+        ss << "user_" << userDetails.id;
+        std::string user_key = ss.str();
+
+        redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", formated_key.c_str());
+        redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", user_key.c_str());
 
         void *reply;
         redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		

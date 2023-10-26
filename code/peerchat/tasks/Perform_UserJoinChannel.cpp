@@ -57,7 +57,6 @@ namespace Peerchat {
 		initial_flags |= request.channel_modify.set_mode_flags;
 
 		UserSummary userSummary = request.summary;
-
 		
 		if(!is_in_channel) {
 			if(channel.basic_mode_flags & EChannelMode_UserCreated && created) {

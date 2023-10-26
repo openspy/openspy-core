@@ -4,7 +4,9 @@ namespace FESL {
 	const char *auth_channel_exchange = "presence.core";
 	const char *auth_routingkey = "presence.buddies";
 
-	TaskShared::ListenerArgs consume_authevent_message = {"openspy.core", "auth.events", Handle_AuthEvent};
+	TaskShared::ListenerEventHandler consume_authevent_handler = {"openspy.core", "auth.events", Handle_AuthEvent};
+	TaskShared::ListenerEventHandler all_events[] = {consume_authevent_handler};
+	TaskShared::ListenerArgs fesl_event_handler = {all_events, sizeof(all_events) / sizeof(TaskShared::ListenerEventHandler)};
 
 	bool Handle_AuthEvent(TaskThreadData *thread_data, std::string message) {
 		FESL::Server *server = (FESL::Server *)uv_loop_get_data(uv_default_loop());
@@ -22,7 +24,7 @@ namespace FESL {
 		return true;
 	}
 	void InitTasks() {
-		setup_listener(&consume_authevent_message);
+		setup_listener(&fesl_event_handler);
 	}
 	void PerformUVWorkRequest(uv_work_t *req) {
 		TaskThreadData temp_data;

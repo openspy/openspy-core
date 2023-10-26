@@ -8,8 +8,11 @@ namespace Peerchat {
         TaskResponse response;
         response.summary = request.summary;
 
-        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE user_%d %d", request.summary.id, USER_EXPIRE_TIME);
+        std::ostringstream ss;
+        ss << "user_" << request.summary.id;
+        std::string user_key = ss.str();
 
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", user_key.c_str(), USER_EXPIRE_TIME);
         void *reply;
 
         if(request.summary.nick.length() != 0) {
@@ -17,7 +20,11 @@ namespace Peerchat {
             std::string original_nick = request.summary.nick;
             std::transform(original_nick.begin(),original_nick.end(),std::back_inserter(formatted_name_original),tolower);
 
-            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE usernick_%s %d", formatted_name_original.c_str(), USER_EXPIRE_TIME);
+            ss.str("");
+            ss << "usernick_" << formatted_name_original;
+            std::string usernick_key = ss.str();
+
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", usernick_key.c_str(), USER_EXPIRE_TIME);
 
             redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
             freeReplyObject(reply);

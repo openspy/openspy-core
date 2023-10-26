@@ -17,6 +17,10 @@ namespace Peerchat {
 
 			UserSummary summary = GetUserSummaryByName(thread_data, name);
 
+			std::ostringstream chan_ss;
+			chan_ss << "channel_" << request.channel_summary.channel_id << "_user_" << summary.id;
+			std::string chan_user_key = chan_ss.str();
+
 			if (summary.id == 0) continue;
 
 			if (modes & EUserChannelFlag_Voice) {
@@ -31,7 +35,7 @@ namespace Peerchat {
 
 			redisReply *reply;
 
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET channel_%d_user_%d modeflags", request.channel_summary.channel_id, summary.id);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s modeflags", chan_user_key.c_str());
 			if (reply == NULL) {
 				goto error_end;
 			}
@@ -54,7 +58,7 @@ namespace Peerchat {
 			else {
 				modeflags |= modes;
 			}
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET channel_%d_user_%d modeflags %d", request.channel_summary.channel_id, summary.id, modeflags);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET %s modeflags %d", chan_user_key.c_str(), modeflags);
 			freeReplyObject(reply);
 
 			SendUpdateUserChanModeflags(thread_data, request.channel_summary.channel_id, summary.id, modeflags, original_modeflags);
@@ -189,32 +193,37 @@ namespace Peerchat {
 			}
 		}
 
+		std::string channel_key;
+		std::ostringstream chan_ss;
+		chan_ss << "channel_" << summary.channel_id;
+		channel_key = chan_ss.str();
+
 		
-		redisAppendCommand(thread_data->mp_redis_connection, "HSET channel_%d modeflags %d", summary.channel_id, summary.basic_mode_flags); cmd_count++;
+		redisAppendCommand(thread_data->mp_redis_connection, "HSET %s modeflags %d", channel_key.c_str(), summary.basic_mode_flags); cmd_count++;
 
 		if (request.channel_modify.update_limit && request.channel_modify.limit != 0) {
-			redisAppendCommand(thread_data->mp_redis_connection, "HSET channel_%d limit %d", summary.channel_id, request.channel_modify.limit); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HSET %s limit %d", channel_key.c_str(), request.channel_modify.limit); cmd_count++;
 		}
 		else if(request.channel_modify.update_limit){
-			redisAppendCommand(thread_data->mp_redis_connection, "HDEL channel_%d limit", summary.channel_id); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HDEL %s limit", channel_key.c_str()); cmd_count++;
 		}
 		if (request.channel_modify.update_password && request.channel_modify.password.length() != 0) {
-			redisAppendCommand(thread_data->mp_redis_connection, "HSET channel_%d password \"%s\"", summary.channel_id, request.channel_modify.password.c_str()); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HSET %s password \"%s\"", channel_key.c_str(), request.channel_modify.password.c_str()); cmd_count++;
 		}
 		else if (request.channel_modify.update_password) {
-			redisAppendCommand(thread_data->mp_redis_connection, "HDEL channel_%d password", summary.channel_id); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HDEL %s password", channel_key.c_str()); cmd_count++;
 		}
 
 		if(request.channel_modify.update_topic && request.channel_modify.topic.length() != 0) {
-			redisAppendCommand(thread_data->mp_redis_connection, "HSET channel_%d topic \"%s\"", summary.channel_id, request.channel_modify.topic.c_str()); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HSET %s topic \"%s\"", channel_key.c_str(), request.channel_modify.topic.c_str()); cmd_count++;
 			struct timeval now;
 			gettimeofday(&now, NULL);
-			redisAppendCommand(thread_data->mp_redis_connection, "HSET channel_%d topic_time %d", summary.channel_id, now.tv_sec); cmd_count++;
-			redisAppendCommand(thread_data->mp_redis_connection, "HSET channel_%d topic_user \"%s\"", summary.channel_id, request.peer->GetUserDetails().ToString().c_str()); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HSET %s topic_time %d", channel_key.c_str(), now.tv_sec); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HSET %s topic_user \"%s\"", channel_key.c_str(), request.peer->GetUserDetails().ToString().c_str()); cmd_count++;
 		} else if(request.channel_modify.update_topic) {
-			redisAppendCommand(thread_data->mp_redis_connection, "HDEL channel_%d topic", summary.channel_id); cmd_count++;
-			redisAppendCommand(thread_data->mp_redis_connection, "HDEL channel_%d topic_time", summary.channel_id); cmd_count++;
-			redisAppendCommand(thread_data->mp_redis_connection, "HDEL channel_%d topic_user", summary.channel_id); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HDEL %s topic", channel_key.c_str()); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HDEL %s topic_time", channel_key.c_str()); cmd_count++;
+			redisAppendCommand(thread_data->mp_redis_connection, "HDEL %s topic_user", channel_key.c_str()); cmd_count++;
 		}
 
 		for(int i = 0;i < cmd_count;i++) {

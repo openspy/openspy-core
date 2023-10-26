@@ -16,13 +16,20 @@ namespace Peerchat {
 		std::ostringstream ss;
 
 		if (user_summary.id != 0) {
+			std::string user_key;
+			ss << "user_" << user_summary.id;
+			user_key = ss.str();
+			ss.str("");
+
 			response.error_details.response_code = TaskShared::WebErrorCode_Success;
 			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> iterators = request.channel_modify.kv_data.GetHead();
 			std::vector<std::pair< std::string, std::string> >::const_iterator it = iterators.first;
 			while (it != iterators.second) {
 				std::pair<std::string, std::string> p = *(it++);
 
-				reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET user_%d custkey_%s", user_summary.id, p.first.c_str());
+				std::string custkey_str = "custkey_" + p.first;
+
+				reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s %s", user_key.c_str(), custkey_str.c_str());
 				if (reply == NULL) {
 					continue;
 				}

@@ -7,12 +7,13 @@ namespace GP {
 	const char *gp_channel_exchange = "presence.core";
 	const char *gp_client_message_routingkey = "presence.buddies";
 
-	TaskShared::ListenerArgs consume_presence_message = {gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage};
-	TaskShared::ListenerArgs consume_authevent_message = {"openspy.core", "auth.events", Handle_AuthEvent};
+	TaskShared::ListenerEventHandler consume_presence_handler = {gp_channel_exchange, gp_client_message_routingkey, Handle_PresenceMessage};
+	TaskShared::ListenerEventHandler consume_authevent_handler = {"openspy.core", "auth.events", Handle_AuthEvent};
+	TaskShared::ListenerEventHandler all_events[] = {consume_presence_handler, consume_authevent_handler};
+	TaskShared::ListenerArgs gp_event_handler = {all_events, sizeof(all_events) / sizeof(TaskShared::ListenerEventHandler)};
 
 	void InitTasks() {
-		setup_listener(&consume_presence_message);
-		setup_listener(&consume_authevent_message);
+		setup_listener(&gp_event_handler);
 	}
 
 	void GPReq_InitCurl(void *curl, char *post_data, void *write_data, GPBackendRedisRequest request, struct curl_slist **out_list) {

@@ -87,8 +87,12 @@ namespace Peerchat {
 				key = key.substr(12);
 				summary = GetChannelSummaryByName(thread_data, key, false);
 
+				std::ostringstream chan_ss;
+				chan_ss << "channel_" << summary.channel_id;
+				std::string channel_key = chan_ss.str();
+
 				if (summary.channel_id != 0) {
-					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET channel_%d custkey_groupname", summary.channel_id);
+					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s custkey_groupname", channel_key.c_str());
 					if (reply == NULL) {
 						continue;
 					}

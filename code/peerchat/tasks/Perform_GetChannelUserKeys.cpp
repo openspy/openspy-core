@@ -62,6 +62,10 @@ namespace Peerchat {
 
 		redisReply *reply;
 
+		ss << "channel_" << summary.channel_id << "_user_" << user_summary.id;
+		std::string chan_user_key = ss.str();
+		ss.str("");
+
 		if (summary.channel_id != 0 && user_summary.id != 0) {
 			response.error_details.response_code = TaskShared::WebErrorCode_Success;
 			std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> iterators = request.channel_modify.kv_data.GetHead();
@@ -70,7 +74,7 @@ namespace Peerchat {
 				std::pair<std::string, std::string> p = *(it++);
 
 				if(p.first.find_first_of('*') == std::string::npos) {
-					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET channel_%d_user_%d custkey_%s", summary.channel_id, user_summary.id, p.first.c_str());
+					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s custkey_%s", chan_user_key.c_str(), p.first.c_str());
 					if (reply == NULL) {
 						continue;
 					}
@@ -123,6 +127,11 @@ namespace Peerchat {
 				response.summary = user.userSummary;
 				response.channelUserSummary = user;
 
+				std::string chan_user_key;
+				ss << "channel_" << summary.channel_id << "user_" << user.user_id;
+				chan_user_key = ss.str();
+				ss.str("");
+
 
 				std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> iterators = request.channel_modify.kv_data.GetHead();
 				std::vector<std::pair< std::string, std::string> >::const_iterator it2 = iterators.first;
@@ -130,7 +139,7 @@ namespace Peerchat {
 					std::pair<std::string, std::string> p = *(it2++);
 
 					if(p.first.find_first_of('*') == std::string::npos) {
-						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET channel_%d_user_%d custkey_%s", summary.channel_id, user.user_id, p.first.c_str());
+						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s custkey_%s", chan_user_key.c_str(), p.first.c_str());
 						if (reply == NULL) {
 							continue;
 						}

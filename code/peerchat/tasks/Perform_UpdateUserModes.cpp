@@ -20,8 +20,11 @@ namespace Peerchat {
 		}
 
 		void *reply;
+		std::ostringstream ss;
+		ss << "user_" << summary.id;
+		std::string user_key = ss.str();
 
-		reply = redisCommand(thread_data->mp_redis_connection, "HSET user_%d modeflags %d", summary.id, summary.modeflags);
+		reply = redisCommand(thread_data->mp_redis_connection, "HSET %s modeflags %d", user_key.c_str(), summary.modeflags);
 
 		freeReplyObject(reply);
 

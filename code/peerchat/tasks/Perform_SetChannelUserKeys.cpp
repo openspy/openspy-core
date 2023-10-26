@@ -11,6 +11,10 @@ namespace Peerchat {
 		ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
 		UserSummary user_summary = GetUserSummaryByName(thread_data, request.summary.username);
 
+		std::ostringstream ss;
+		ss << "channel_" << summary.channel_id << "_user_" << user_summary.id;
+		std::string chan_user_key = ss.str();
+
 		if (user_summary.id != request.peer->GetBackendId()) {
 			int from_mode_flags = LookupUserChannelModeFlags(thread_data, summary.channel_id, request.peer->GetBackendId());
 			if (!CheckActionPermissions(request.peer, request.channel_summary.channel_name, from_mode_flags, 0, (int)EUserChannelFlag_Op)) {
@@ -36,7 +40,9 @@ namespace Peerchat {
 					if (p.first.length() > 2 && p.first.substr(0, 2).compare("b_") == 0) {
 						broadcast_keys[p.first] = p.second;
 					}
-					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET channel_%d_user_%d \"custkey_%s\" \"%s\"", summary.channel_id, user_summary.id, p.first.c_str(), p.second.c_str());
+
+					std::string custkey_key = "custkey_" + p.first;
+					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET %s %s \"%s\"", chan_user_key.c_str(), custkey_key.c_str(), p.second.c_str());
 					freeReplyObject(reply);
 					it++;
 				}

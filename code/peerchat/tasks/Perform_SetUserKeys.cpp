@@ -19,9 +19,13 @@ namespace Peerchat {
         std::pair<std::vector<std::pair< std::string, std::string> >::const_iterator, std::vector<std::pair< std::string, std::string> >::const_iterator> iterators = request.channel_modify.kv_data.GetHead();
         std::vector<std::pair< std::string, std::string> >::const_iterator it = iterators.first;
 		int cmd_count = 0;
+		std::ostringstream ss;
+		ss << "user_" << user_summary.id;
+		std::string user_key = ss.str();
+
         while (it != iterators.second) {
             std::pair<std::string, std::string> p = *it;
-            redisAppendCommand(thread_data->mp_redis_connection, "HSET user_%d \"custkey_%s\" \"%s\"", user_summary.id, p.first.c_str(), p.second.c_str());
+            redisAppendCommand(thread_data->mp_redis_connection, "HSET %s \"custkey_%s\" \"%s\"", user_key.c_str(), p.first.c_str(), p.second.c_str());
 			cmd_count++;
             it++;
         }

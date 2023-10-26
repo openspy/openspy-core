@@ -72,9 +72,6 @@ namespace Peerchat {
 		TaskResponse response;
 		response.channel_summary.channel_name = request.usermodeRecord.chanmask;
 
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
-		freeReplyObject(reply);
-
 		response.is_start = true;
 		response.is_end = false;
 

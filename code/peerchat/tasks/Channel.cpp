@@ -31,11 +31,18 @@ namespace Peerchat {
         ChannelSummary summary;
 
 		std::ostringstream ss;
-		ss << "HMGET channel_" << channel_id << " name entrymsg modeflags password limit created_at topic topic_time topic_user";
+		//ss << "HMGET channel_" << channel_id << " name entrymsg modeflags password limit created_at topic topic_time topic_user";
+		ss << "channel_" << channel_id;
 
-		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, ss.str().c_str());
+		std::string channel_name = ss.str();
+		const char *args[] = {
+			"HMGET", channel_name.c_str(), "name", "entrymsg", "modeflags", "password", "limit", "created_at", "topic", "topic_time", "topic_user"
+		};
 
+		redisReply *reply = (redisReply *)redisCommandArgv(thread_data->mp_redis_connection, sizeof(args) / sizeof(const char *), args, NULL);
+        
 		if(reply) {
+            summary.channel_id = channel_id;
             if(reply->element[0]->type == REDIS_REPLY_STRING) {
                 summary.channel_name = reply->element[0]->str;
             }
@@ -72,12 +79,16 @@ namespace Peerchat {
                 summary.topic_user_summary = reply->element[8]->str;
             }			
 			freeReplyObject(reply);
+            summary.users = GetChannelUsers(thread_data, summary.channel_id);
 		}
- 
 		return summary;
 	}
 	void AssociateUsermodeToChannel(UsermodeRecord record, ChannelSummary summary, TaskThreadData* thread_data) {
-		void *reply = redisCommand(thread_data->mp_redis_connection, "HSET channel_%d_usermodes \"%d\" %s", summary.channel_id, record.usermodeid, record.chanmask.c_str());
+		std::ostringstream ss;
+		ss << "channel_" << summary.channel_id << "_usermodes";
+
+		std::string channel = ss.str();
+		void *reply = redisCommand(thread_data->mp_redis_connection, "HSET %s %d %s", channel.c_str(), record.usermodeid, record.chanmask.c_str());
 		freeReplyObject(reply);
 	}
 	void LoadUsermodesForChannel(ChannelSummary summary, TaskThreadData* thread_data) {
@@ -101,7 +112,7 @@ namespace Peerchat {
 		TaskShared::WebErrorDetails error_info;
 
 		if (!TaskShared::Handle_WebError(send_json, error_info)) {
-			int num_items = json_array_size(send_json);
+			size_t num_items = json_array_size(send_json);
 			for (int i = 0; i < num_items; i++) {
 				json_t* item = json_array_get(send_json, i);
 
@@ -140,17 +151,34 @@ namespace Peerchat {
 		struct timeval now;
 		gettimeofday(&now, NULL);
 
-		redisAppendCommand(thread_data->mp_redis_connection, "HSET channels \"%s\" %d", formatted_name.c_str(), channel_id); total_redis_calls++;
-		redisAppendCommand(thread_data->mp_redis_connection, "HMSET channel_%d name \"%s\" modeflags \"0\" created_at \"%d\"", channel_id, name.c_str(), now.tv_sec); total_redis_calls++;
+		std::ostringstream ss;
+		ss << "channel_" << channel_id;
+		std::string channel = ss.str();
 
-		 redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d %d", channel_id, CHANNEL_EXPIRE_TIME); total_redis_calls++;
-		 redisAppendCommand(thread_data->mp_redis_connection, "SET channelname_%s %d", formatted_name.c_str(), channel_id); total_redis_calls++;
-		 redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE channelname_%s %d", formatted_name.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
+		ss.str("");
+		ss << "channelname_" << formatted_name.c_str();
+		std::string channel_name = ss.str();
 
-		 for(int i=0;i<total_redis_calls;i++) {
-			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
-            freeReplyObject(reply);  
-		 }
+		redisAppendCommand(thread_data->mp_redis_connection, "HSET channels %s %d", formatted_name.c_str(), channel_id); total_redis_calls++;
+
+		ss.str("");
+		ss << now.tv_sec;
+		std::string now_str = ss.str();
+
+		const char *args[] = {
+			"HMSET", channel.c_str(), "name", name.c_str(), "modeflags", "0", "created_at", now_str.c_str()
+		};
+		redisAppendCommandArgv(thread_data->mp_redis_connection, sizeof(args) / sizeof(const char *), args, NULL); total_redis_calls++;
+
+		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
+		redisAppendCommand(thread_data->mp_redis_connection, "SET %s %d", channel_name.c_str(), channel_id); total_redis_calls++;
+		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_name.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
+
+		for(int i=0;i<total_redis_calls;i++) {
+			if(redisGetReply(thread_data->mp_redis_connection,(void**)&reply) == REDIS_OK) {
+				freeReplyObject(reply);
+			}			
+		}
 		
 		//load chanprops & usermodes
 		ApplyChanProps(summary);
@@ -164,7 +192,11 @@ namespace Peerchat {
 	int GetChannelIdByName(TaskThreadData* thread_data, std::string name) {
 		int id = 0;
 
-		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET channelname_%s", name.c_str());
+		std::ostringstream ss;
+		ss << "channelname_" << name.c_str();
+		std::string channel_name = ss.str();
+
+		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET %s", channel_name.c_str());
 
 		if(reply->type == REDIS_REPLY_STRING) {
 			id = atoi(reply->str);
@@ -173,8 +205,13 @@ namespace Peerchat {
 		}
 		freeReplyObject(reply);
 		if (id != 0) {
-			redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE channelname_%s %d", name.c_str(), CHANNEL_EXPIRE_TIME);
-			redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d %d", id, CHANNEL_EXPIRE_TIME);
+
+			ss.str("");
+			ss << "channel_" << id;
+			std::string channel = ss.str();
+
+			redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_name.c_str(), CHANNEL_EXPIRE_TIME);
+			redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel.c_str(), CHANNEL_EXPIRE_TIME);
 		
 			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
 			freeReplyObject(reply);
@@ -208,17 +245,42 @@ namespace Peerchat {
 	}
 
 	void AddUserToChannel(TaskThreadData* thread_data, UserSummary user, ChannelSummary channel, int initial_flags) {
-		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZINCRBY channel_%d_users 1 \"%d\"", channel.channel_id, user.id);
-		freeReplyObject(reply);
+		std::ostringstream ss;
+		ss << "channel_" << channel.channel_id << "_users";
+		std::string channel_users_key = ss.str();
 
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d_users %d", channel.channel_id, CHANNEL_EXPIRE_TIME);
-		freeReplyObject(reply);
+		ss.str("");
+		ss << "channel_" << channel.channel_id << "_user_" << user.id;
+		std::string channel_user_key = ss.str();
 
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HMSET channel_%d_user_%d modeflags \"%d\" channel_id \"%d\"", channel.channel_id, user.id, initial_flags, channel.channel_id);
-		freeReplyObject(reply);
+		int total_redis_calls = 0;
 
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d_user_%d %d", channel.channel_id, user.id, CHANNEL_EXPIRE_TIME);
-		freeReplyObject(reply);
+		redisAppendCommand(thread_data->mp_redis_connection, "ZINCRBY %s 1 \"%d\"", channel_users_key.c_str(), user.id); total_redis_calls++;
+
+		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_users_key.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
+
+		std::string modeflags_str, channelid_str;
+		ss.str("");
+		ss << initial_flags;
+		modeflags_str = ss.str();
+
+		ss.str("");
+		ss << channel.channel_id;
+		channelid_str = ss.str();
+
+		const char *args[] = {
+			"HMSET", channel_user_key.c_str(), "modeflags", modeflags_str.c_str(), "channel_id", channelid_str.c_str()
+		};
+		redisAppendCommandArgv(thread_data->mp_redis_connection, sizeof(args) / sizeof(const char *), args, NULL); total_redis_calls++;
+		
+
+		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_user_key.c_str(), CHANNEL_EXPIRE_TIME);  total_redis_calls++;
+
+		void *reply;
+		for(int i=0;i<total_redis_calls;i++) {
+			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+			freeReplyObject(reply);
+		}
 
 		std::ostringstream id;
 		id << "channel_" << channel.channel_id << "_user_" << user.id;
@@ -234,20 +296,27 @@ namespace Peerchat {
 	}
 
 	void RemoveUserFromChannel(TaskThreadData* thread_data, UserSummary user, ChannelSummary channel, std::string type, std::string remove_message, UserSummary target, bool silent, int requiredChanUserModes) {
+		std::ostringstream ss;
+		ss << "channel_" << channel.channel_id << "_users";
+		std::string channel_users_key = ss.str();
+
+		ss.str("");
+		ss << "channel_" << channel.channel_id << "_user_" << user.id;
+		std::string channel_user_key = ss.str();
 
 		std::ostringstream message;
 		redisReply *reply;
 
 		//Redis::SelectDb(thread_data->mp_redis_connection, OS::ERedisDB_Chat);
 		if (target.id != 0) {
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZREM channel_%d_users \"%d\"", channel.channel_id, target.id);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), target.id);
 			freeReplyObject(reply);
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL channel_%d_user_%d", channel.channel_id, target.id);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", channel_user_key.c_str());
 			freeReplyObject(reply);
 		} else {
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZREM channel_%d_users \"%d\"", channel.channel_id, user.id);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), user.id);
 			freeReplyObject(reply);
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL channel_%d_user_%d", channel.channel_id, user.id);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", channel_user_key.c_str());
 			freeReplyObject(reply);
 		}
 
@@ -277,8 +346,12 @@ namespace Peerchat {
     }
 
 	int LookupUserChannelModeFlags(TaskThreadData* thread_data, int channel_id, int user_id) {
+		std::ostringstream ss;
+		ss << "channel_" << channel_id << "_user_" << user_id;
+		std::string channel_user_key = ss.str();
+
 		int modeflags = 0;
-		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET channel_%d_user_%d modeflags", channel_id, user_id);
+		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s modeflags", channel_user_key.c_str());
 
 		if(reply) {
 			if(reply->type == REDIS_REPLY_INTEGER) {
@@ -296,8 +369,12 @@ namespace Peerchat {
 
 		redisReply *reply;
 
+		std::ostringstream ss;
+		ss << "channel_" << channel_id << "_users";
+		std::string channel_users_key = ss.str();
+
 		do {
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZSCAN channel_%d_users %d", channel_id, cursor);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZSCAN %s %d", channel_users_key.c_str(), cursor);
 
 			if (reply == NULL)
 				break;
@@ -316,28 +393,47 @@ namespace Peerchat {
         return count;
     }
 	void DeleteChannelById(TaskThreadData *thread_data, int channel_id) {
-		ChannelSummary channel = LookupChannelById(thread_data, channel_id);	
+		ChannelSummary channel = LookupChannelById(thread_data, channel_id);
+
+		std::string channel_key, channelname_key, channel_usermodes;
+		std::ostringstream ss;
+		ss << "channelname_" << channel.channel_name;
+		channelname_key = ss.str();
+
+		ss.str("");
+		ss << "channel_" << channel_id;
+		channel_key = ss.str();
+
+		ss << "usermodes";
+		channel_usermodes = ss.str();
+
+		
 		redisReply *reply;	
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXPIRE channel_%d %d", channel_id, CHANNEL_DELETE_EXPIRE_TIME); //keep basic information around for short time (for PART events, etc)
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_key.c_str(), CHANNEL_DELETE_EXPIRE_TIME); //keep basic information around for short time (for PART events, etc)
 		freeReplyObject(reply);
 		
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL channelname_%s", channel.channel_name.c_str());
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", channelname_key.c_str());
 		freeReplyObject(reply);
 		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HDEL channels %s", channel.channel_name.c_str());
 		freeReplyObject(reply);
 
 		DeleteTemporaryUsermodesForChannel(thread_data, channel);
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL channel_%d_usermodes", channel_id);
+		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", channel_usermodes.c_str());
 		freeReplyObject(reply);
 	}
     std::vector<ChannelUserSummary> GetChannelUsers(TaskThreadData *thread_data, int channel_id) {
         std::vector<ChannelUserSummary> result;
+
+		std::string chan_users_str;
+		std::ostringstream ss;
+		ss << "channel_" << channel_id << "_users";
+		chan_users_str = ss.str();
         
         int cursor = 0;
 		redisReply *reply;
 
         do {
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZSCAN channel_%d_users %d", channel_id, cursor);
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZSCAN %s %d", chan_users_str.c_str(), cursor);
 
             if (reply == NULL || thread_data->mp_redis_connection->err || reply->elements < 2) {
 				if(reply) {

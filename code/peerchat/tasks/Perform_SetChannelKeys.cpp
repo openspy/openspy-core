@@ -10,6 +10,11 @@ namespace Peerchat {
 		std::map<std::string, std::string> broadcast_keys;
 		ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
 
+		std::ostringstream ss;
+		ss << "channel_" << summary.channel_id;
+
+		std::string channel_key = ss.str();
+
 		if (summary.channel_id != 0) {
 			response.error_details.response_code = TaskShared::WebErrorCode_Success;
 
@@ -37,7 +42,13 @@ namespace Peerchat {
 					if (p.first.length() > 2 && p.first.substr(0, 2).compare("b_") == 0) {
 						broadcast_keys[p.first] = p.second;
 					}
-					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET channel_%d \"custkey_%s\" \"%s\"", summary.channel_id, p.first.c_str(), p.second.c_str());
+
+					ss.str("");
+					ss << "custkey_" << p.first;
+					std::string custkey_key = ss.str();
+
+					
+					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET %s %s %s", channel_key.c_str(), custkey_key.c_str(), p.second.c_str());
 					freeReplyObject(reply);
 				}
 

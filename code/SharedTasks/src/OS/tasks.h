@@ -17,10 +17,14 @@ namespace TaskShared {
 		std::string buffer;
 	};
 
-	typedef struct {
+	typedef struct _ListenerEventHandler{
 		const char *amqp_exchange;
 		const char *amqp_routing_key;
 		bool (*amqp_event_callback)(TaskThreadData *, std::string);
+	} ListenerEventHandler;
+	typedef struct {
+		const struct _ListenerEventHandler *event_handlers;
+		const size_t num_event_handlers;
 		uv_thread_t amqp_authevent_consumer_thread;
 		amqp_connection_state_t amqp_listener_conn;
 		amqp_socket_t *amqp_socket;

@@ -46,10 +46,15 @@ namespace Peerchat {
         redisReply *reply;
         int cursor = 0;
 
+		std::string channel_key;
+		std::ostringstream chan_ss;
+		chan_ss << "channel_" << summary.channel_id;
+		channel_key = chan_ss.str();
+
 		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
 		freeReplyObject(reply);
         do {
-            reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN channel_%d %d MATCH custkey_%s", summary.channel_id, cursor, search_string.c_str());
+            reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN %s %d MATCH custkey_%s", channel_key.c_str(), cursor, search_string.c_str());
 			
             // if (reply == NULL || thread_data->mp_redis_connection->err) {
             //     goto error_cleanup;
@@ -59,12 +64,12 @@ namespace Peerchat {
 			// }
 
 			if(reply == NULL) {
-				goto error_cleanup;
+				return;
 			}
 
 			if(thread_data->mp_redis_connection->err || reply->elements < 2) {
 				freeReplyObject(reply);
-				goto error_cleanup;
+				return;
 			}
 
 		 	if(reply->element[0]->type == REDIS_REPLY_STRING) {
@@ -86,8 +91,6 @@ namespace Peerchat {
         } while(cursor != 0);
 
 		Perform_GetChannelKeys_InjectOverrides(summary, search_string, ss);
-		error_cleanup:
-		return;
 	}
 
 	bool Perform_GetChannelKeys(PeerchatBackendRequest request, TaskThreadData* thread_data) {
@@ -116,7 +119,7 @@ namespace Peerchat {
 
 					if(!Perform_GetChannelKeys_HandleOverrides(summary, p.first, computedOutput)) {
 						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET channel_%d custkey_%s", summary.channel_id, p.first.c_str());
-						if (reply == NULL || thread_data->mp_redis_connection->err != NULL) {
+						if (reply == NULL || thread_data->mp_redis_connection->err) {
 							if(reply) {
 								freeReplyObject(reply);
 							}

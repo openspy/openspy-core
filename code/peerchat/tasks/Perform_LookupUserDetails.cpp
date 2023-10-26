@@ -10,7 +10,10 @@ namespace Peerchat {
         int channel_id;
 
         do {
-            scan_reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SCAN %d MATCH channel_*_user_%d", cursor, user_id);
+			std::ostringstream chan_ss;
+			chan_ss << "channel_*_user_" << user_id;
+			std::string chan_user_key = chan_ss.str();
+            scan_reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SCAN %d MATCH %s", cursor, chan_user_key.c_str());
 			if (scan_reply == NULL)
 				return;
 

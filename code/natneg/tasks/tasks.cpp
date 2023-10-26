@@ -9,7 +9,9 @@
 namespace NN {
     const char *nn_channel_exchange = "openspy.natneg", *nn_channel_routingkey="natneg.core";
 
-	TaskShared::ListenerArgs consume_nn_message = {nn_channel_exchange, nn_channel_routingkey, Handle_HandleRecvMessage};
+	TaskShared::ListenerEventHandler nn_msg_handler = {nn_channel_exchange, nn_channel_routingkey, Handle_HandleRecvMessage};
+	TaskShared::ListenerEventHandler all_events[] = {nn_msg_handler};
+	TaskShared::ListenerArgs consume_nn_message = {all_events, sizeof(all_events) / sizeof(TaskShared::ListenerEventHandler)};
 
     void InitTasks() {
 		setup_listener(&consume_nn_message);
