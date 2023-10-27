@@ -20,12 +20,12 @@ namespace Peerchat {
         std::vector<std::pair< std::string, std::string> >::const_iterator it = iterators.first;
 		int cmd_count = 0;
 		std::ostringstream ss;
-		ss << "user_" << user_summary.id;
+		ss << "user_" << user_summary.id << "_custkeys";
 		std::string user_key = ss.str();
 
         while (it != iterators.second) {
             std::pair<std::string, std::string> p = *it;
-            redisAppendCommand(thread_data->mp_redis_connection, "HSET %s \"custkey_%s\" \"%s\"", user_key.c_str(), p.first.c_str(), p.second.c_str());
+            redisAppendCommand(thread_data->mp_redis_connection, "HSET %s %s %s", user_key.c_str(), p.first.c_str(), p.second.c_str());
 			cmd_count++;
             it++;
         }
@@ -37,7 +37,7 @@ namespace Peerchat {
 		}
 
 		ApplyUserKeys(thread_data, "", user_summary, "", true);
-		ApplyUserKeys(thread_data, "", user_summary, "custkey_");
+		ApplyUserKeys(thread_data, "", user_summary, "_custkeys");
 
 		if (request.callback) {
 			request.callback(response, request.peer);

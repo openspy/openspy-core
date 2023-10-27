@@ -17,7 +17,7 @@ namespace Peerchat {
 
 		if (user_summary.id != 0) {
 			std::string user_key;
-			ss << "user_" << user_summary.id;
+			ss  << "user_" << user_summary.id << "_custkeys";
 			user_key = ss.str();
 			ss.str("");
 
@@ -27,7 +27,7 @@ namespace Peerchat {
 			while (it != iterators.second) {
 				std::pair<std::string, std::string> p = *(it++);
 
-				std::string custkey_str = "custkey_" + p.first;
+				std::string custkey_str = p.first;
 
 				reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s %s", user_key.c_str(), custkey_str.c_str());
 				if (reply == NULL) {

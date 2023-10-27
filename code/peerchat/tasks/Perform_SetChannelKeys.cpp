@@ -11,7 +11,7 @@ namespace Peerchat {
 		ChannelSummary summary = GetChannelSummaryByName(thread_data, request.channel_summary.channel_name, false);
 
 		std::ostringstream ss;
-		ss << "channel_" << summary.channel_id;
+		ss << "channel_" << summary.channel_id << "_custkeys";
 
 		std::string channel_key = ss.str();
 
@@ -44,11 +44,11 @@ namespace Peerchat {
 					}
 
 					ss.str("");
-					ss << "custkey_" << p.first;
+					ss << p.first;
 					std::string custkey_key = ss.str();
 
 					
-					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET %s %s %s", channel_key.c_str(), custkey_key.c_str(), p.second.c_str());
+					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET %s %s %s", channel_key.c_str(), p.first.c_str(), p.second.c_str());
 					freeReplyObject(reply);
 				}
 

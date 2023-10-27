@@ -236,7 +236,7 @@ namespace Peerchat {
 
 		int num_args = sizeof(args) / sizeof(const char *);
 		if(!show_private) {
-			num_args -= 3; //don't submit private args
+			num_args -= 6; //don't submit private args
 		}
 
         redisReply *reply = (redisReply *)redisCommandArgv(thread_data->mp_redis_connection, num_args, args, NULL);

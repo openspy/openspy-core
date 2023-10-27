@@ -31,6 +31,9 @@ namespace Peerchat {
         std::string formatted_name_original;
         std::string original_nick = request.peer->GetUserDetails().nick;
 		std::transform(original_nick.begin(),original_nick.end(),std::back_inserter(formatted_name_original),tolower);
+        
+        std::string updated_name_key = "usernick_" + formatted_name;
+        std::string original_name_key = "usernick_" + formatted_name_original;
 
         UserSummary userDetails = request.peer->GetUserDetails();
         bool nick_update = false;
@@ -41,8 +44,8 @@ namespace Peerchat {
             nick_update = true;
         }
 
-        redisAppendCommand(thread_data->mp_redis_connection, "EXISTS usernick_%s", formatted_name.c_str());
 
+        redisAppendCommand(thread_data->mp_redis_connection, "EXISTS %s", updated_name_key.c_str());
         bool nick_exists = false;
 
         redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
@@ -61,37 +64,33 @@ namespace Peerchat {
 
         int cmd_count = 0;
         if(!nick_exists) {
-            std::string usernick_key = "usernick_" + formatted_name_original;
 
             std::ostringstream ss;
             ss << "user_" << response.summary.id;
-            
             std::string user_key = ss.str();
 
             response.summary.nick = request.summary.nick;
             if(nick_update) {
-                redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", usernick_key.c_str()); cmd_count++;
+                redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", original_name_key.c_str()); cmd_count++;
 
 				redisAppendCommand(thread_data->mp_redis_connection, "HSET %s nick %s", user_key.c_str(), request.summary.nick.c_str()); cmd_count++;
 
-                redisAppendCommand(thread_data->mp_redis_connection, "SET %s %d", usernick_key.c_str(), response.summary.id); cmd_count++;
+                redisAppendCommand(thread_data->mp_redis_connection, "SET %s %d", updated_name_key.c_str(), response.summary.id); cmd_count++;
             } else {
                 response.summary.nick = userDetails.nick;
 
                 ApplyUserKeys(thread_data, "", request.summary, "", true);
-                ApplyUserKeys(thread_data, "", request.summary, "custkey_");
+                ApplyUserKeys(thread_data, "", request.summary, "_custkeys");
 
                 if(formatted_name.length() != 0) {
-                    redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", usernick_key.c_str()); cmd_count++;
-                    redisAppendCommand(thread_data->mp_redis_connection, "SET %s %d", usernick_key.c_str(), response.summary.id); cmd_count++;
+                    redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", original_name_key.c_str()); cmd_count++;
+                    redisAppendCommand(thread_data->mp_redis_connection, "SET %s %d", updated_name_key.c_str(), response.summary.id); cmd_count++;
+                    redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", updated_name_key.c_str(), USER_EXPIRE_TIME); cmd_count++;
                 }
             }
 
             redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", user_key.c_str(), USER_EXPIRE_TIME); cmd_count++;
 
-            if(formatted_name.length() != 0) {
-                redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", usernick_key.c_str(), USER_EXPIRE_TIME); cmd_count++;
-            }
 
             for(int i=0;i<cmd_count;i++) {
                 redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		

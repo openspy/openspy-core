@@ -62,7 +62,7 @@ namespace Peerchat {
 
 		redisReply *reply;
 
-		ss << "channel_" << summary.channel_id << "_user_" << user_summary.id;
+		ss << "channel_" << summary.channel_id << "_user_" << user_summary.id << "_custkeys";
 		std::string chan_user_key = ss.str();
 		ss.str("");
 
@@ -74,7 +74,7 @@ namespace Peerchat {
 				std::pair<std::string, std::string> p = *(it++);
 
 				if(p.first.find_first_of('*') == std::string::npos) {
-					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s custkey_%s", chan_user_key.c_str(), p.first.c_str());
+					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s %s", chan_user_key.c_str(), p.first.c_str());
 					if (reply == NULL) {
 						continue;
 					}
@@ -128,7 +128,7 @@ namespace Peerchat {
 				response.channelUserSummary = user;
 
 				std::string chan_user_key;
-				ss << "channel_" << summary.channel_id << "user_" << user.user_id;
+				ss << "channel_" << summary.channel_id << "_user_" << user.user_id << "_custkeys";
 				chan_user_key = ss.str();
 				ss.str("");
 
@@ -139,7 +139,7 @@ namespace Peerchat {
 					std::pair<std::string, std::string> p = *(it2++);
 
 					if(p.first.find_first_of('*') == std::string::npos) {
-						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s custkey_%s", chan_user_key.c_str(), p.first.c_str());
+						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s %s", chan_user_key.c_str(), p.first.c_str());
 						if (reply == NULL) {
 							continue;
 						}

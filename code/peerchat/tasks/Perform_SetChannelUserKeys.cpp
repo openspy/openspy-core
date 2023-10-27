@@ -42,14 +42,14 @@ namespace Peerchat {
 					}
 
 					std::string custkey_key = "custkey_" + p.first;
-					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET %s %s \"%s\"", chan_user_key.c_str(), custkey_key.c_str(), p.second.c_str());
+					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET %s %s %s", chan_user_key.c_str(), custkey_key.c_str(), p.second.c_str());
 					freeReplyObject(reply);
 					it++;
 				}
 
                 request.summary.modeflags = 0;
 				ApplyUserKeys(thread_data, "", request.summary, "");
-                ApplyUserKeys(thread_data, "", request.summary, "custkey_");
+                ApplyUserKeys(thread_data, "", request.summary, "_custkeys");
 				
 
 

@@ -8,7 +8,9 @@ namespace Peerchat {
         std::string formatted_name;
         std::transform(name.begin(),name.end(),std::back_inserter(formatted_name),tolower);
 
-        redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXISTS usernick_%s", formatted_name.c_str());
+        std::string usernick_key = "usernick_" + formatted_name;
+
+        redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "EXISTS %s", usernick_key.c_str());
 
         bool exists = false;
         if(reply) {
@@ -21,7 +23,7 @@ namespace Peerchat {
         }
 
 
-        reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET usernick_%s", formatted_name.c_str());
+        reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET %s", usernick_key.c_str());
         
         int id = 0;
 

@@ -285,7 +285,7 @@ namespace Peerchat {
 		std::ostringstream id;
 		id << "channel_" << channel.channel_id << "_user_" << user.id;
 		user.modeflags = 0;
-		ApplyUserKeys(thread_data, id.str(), user, "custkey_");
+		ApplyUserKeys(thread_data, id.str(), user, "_custkeys");
 
 		SendUpdateUserChanModeflags(thread_data, channel.channel_id, user.id, initial_flags, 0);
 

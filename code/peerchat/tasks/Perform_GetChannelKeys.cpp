@@ -48,13 +48,14 @@ namespace Peerchat {
 
 		std::string channel_key;
 		std::ostringstream chan_ss;
-		chan_ss << "channel_" << summary.channel_id;
+		chan_ss << "channel_" << summary.channel_id << "_custkeys";
 		channel_key = chan_ss.str();
 
 		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
 		freeReplyObject(reply);
+        
         do {
-            reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN %s %d MATCH custkey_%s", channel_key.c_str(), cursor, search_string.c_str());
+            reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN %s %d MATCH *", channel_key.c_str(), cursor);
 			
             // if (reply == NULL || thread_data->mp_redis_connection->err) {
             //     goto error_cleanup;
