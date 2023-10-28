@@ -56,10 +56,6 @@ namespace Peerchat {
 		ChannelSummary summary;
 
 		redisReply *scan_reply, *reply;
-
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
-		freeReplyObject(reply);
-
         do {
             scan_reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SCAN %d MATCH channelname_*", cursor);
 			if (scan_reply == NULL)
@@ -88,23 +84,22 @@ namespace Peerchat {
 				summary = GetChannelSummaryByName(thread_data, key, false);
 
 				std::ostringstream chan_ss;
-				chan_ss << "channel_" << summary.channel_id;
+				chan_ss << "channel_" << summary.channel_id << "_custkeys";
 				std::string channel_key = chan_ss.str();
 
 				if (summary.channel_id != 0) {
-					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s custkey_groupname", channel_key.c_str());
-					if (reply == NULL) {
-						continue;
-					}
-
-					if(reply->type == REDIS_REPLY_STRING) {
-						std::string group = reply->str;
-						if (request.channel_summary.channel_name.compare(group) == 0 || match2(request.channel_summary.channel_name.c_str(), summary.channel_name.c_str()) == 0) {
-							channels.push_back(summary);
-						}
-					}
-					freeReplyObject(reply);
-					
+					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s groupname", channel_key.c_str());
+                    std::string group;
+                    if(reply) {
+                        if(reply->type == REDIS_REPLY_STRING) {
+                            group = reply->str;
+                        }
+                        freeReplyObject(reply);
+                    }
+                    
+                    if (request.channel_summary.channel_name.compare(group) == 0 || match2(request.channel_summary.channel_name.c_str(), summary.channel_name.c_str()) == 0) {
+                        channels.push_back(summary);
+                    }
 				}
 			}
         } while(cursor != 0 && (channels.size() < (size_t)request.channel_summary.limit || request.channel_summary.limit == 0));

@@ -50,9 +50,6 @@ namespace Peerchat {
 		std::ostringstream chan_ss;
 		chan_ss << "channel_" << summary.channel_id << "_custkeys";
 		channel_key = chan_ss.str();
-
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
-		freeReplyObject(reply);
         
         do {
             reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN %s %d MATCH *", channel_key.c_str(), cursor);
@@ -103,6 +100,10 @@ namespace Peerchat {
 
 		std::ostringstream ss;
 		std::ostringstream wildcard_ss;
+        
+        ss << "channel_" << summary.channel_id << "_custkeys";
+        std::string chan_key = ss.str();
+        ss.str("");
 
 		if (summary.channel_id != 0) {
 			response.error_details.response_code = TaskShared::WebErrorCode_Success;
@@ -119,7 +120,7 @@ namespace Peerchat {
 					std::string computedOutput;
 
 					if(!Perform_GetChannelKeys_HandleOverrides(summary, p.first, computedOutput)) {
-						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET channel_%d custkey_%s", summary.channel_id, p.first.c_str());
+						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s %s", chan_key.c_str(), p.first.c_str());
 						if (reply == NULL || thread_data->mp_redis_connection->err) {
 							if(reply) {
 								freeReplyObject(reply);
