@@ -14,7 +14,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include "chatCrypt.h"
+#include "gs_peerchat.h"
 #include <server/irc_common.h>
 
 #define PEERCHAT_PING_TIMEOUT_TIME 300
@@ -360,8 +360,8 @@ namespace Peerchat {
 
 		bool m_using_encryption;
 		bool m_stream_waiting;
-		gs_crypt_key m_crypt_key_in;
-		gs_crypt_key m_crypt_key_out;
+		gs_peerchat_ctx m_crypt_key_in;
+		gs_peerchat_ctx m_crypt_key_out;
 
 		int m_flood_weight;
 

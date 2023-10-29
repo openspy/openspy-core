@@ -116,7 +116,7 @@ namespace Peerchat {
 		gettimeofday(&m_last_recv, NULL);
 
 		if(m_using_encryption) {
-			gs_crypt((unsigned char*)recv_buffer.GetHead(), nread, &m_crypt_key_in);
+			gs_peerchat(&m_crypt_key_in, (unsigned char*)recv_buffer.GetHead(), nread);
 		}
 
 		
@@ -266,7 +266,7 @@ namespace Peerchat {
 		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Send: %s", getAddress().ToString().c_str(), m_profile.id, data.c_str());
 
 		if(m_using_encryption) {
-			gs_crypt((unsigned char *)buffer.GetHead(), buffer.bytesWritten(), &m_crypt_key_out);
+			gs_peerchat(&m_crypt_key_out, (unsigned char *)buffer.GetHead(), buffer.bytesWritten());
 		}
 
 		append_send_buffer(buffer);
