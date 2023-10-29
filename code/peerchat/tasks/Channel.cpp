@@ -5,8 +5,7 @@
 
 #include <OS/HTTP.h>
 
-#define CHANNEL_EXPIRE_TIME 86400
-#define CHANNEL_DELETE_EXPIRE_TIME 30
+
 namespace Peerchat {
     const char *mp_pk_channel_name = "PEERCHATCHANID";
 	int GetPeerchatChannelID(TaskThreadData *thread_data) {

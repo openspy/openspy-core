@@ -187,78 +187,6 @@ namespace Peerchat {
 			packet_waiting = false; //don't process anything until you have a backend id
 		}
 
-		// if (packet_waiting) {
-		// 	OS::Buffer recv_buffer;
-		// 	io_resp = this->GetDriver()->getNetIOInterface()->streamRecv(m_sd, recv_buffer);
-
-		// 	int len = io_resp.comm_len;
-
-		// 	if (len <= 0) {
-		// 		goto end;
-		// 	}
-
-		// 	gettimeofday(&m_last_recv, NULL);
-
-		// 	if(m_using_encryption) {
-		// 		gs_crypt((unsigned char*)recv_buffer.GetHead(), len, &m_crypt_key_in);
-		// 	}
-
-			
-
-		// 	std::string command_upper;
-		// 	bool command_found = false;
-		// 	std::string recv_buf;
-		// 	recv_buf.append((const char *)recv_buffer.GetHead(), len);
-
-		// 	OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s", getAddress().ToString().c_str(), m_profile.id, recv_buf.c_str());
-
-		// 	std::vector<std::string> commands = OS::KeyStringToVector(recv_buf, false, '\n');
-		// 	std::vector<std::string>::iterator it = commands.begin();
-		// 	while(it != commands.end() && !m_delete_flag) {
-		// 		std::string command_line = OS::strip_whitespace(*it);
-		// 		std::vector<std::string> command_items = OS::KeyStringToVector(command_line, false, ' ');
-
-		// 		if (command_items.size() == 0) break;
-		// 		std::string command = command_items.at(0);
-
-		// 		command_upper = "";
-		// 		std::transform(command.begin(),command.end(),std::back_inserter(command_upper),toupper);
-				
-		// 		for(size_t i=0;i<sizeof(m_commands)/sizeof(CommandEntry);i++) {
-		// 			CommandEntry entry = m_commands[i];
-		// 			if (command_upper.compare(entry.name) == 0) {
-		// 				if (entry.login_required) {
-		// 					if(m_user_details.id == 0 || !m_sent_client_init) break;
-		// 				}
-		// 				if(entry.required_operflags != 0) {
-		// 					if(!(GetOperFlags() & entry.required_operflags)) {
-		// 						break;
-		// 					}
-		// 				}
-		// 				command_found = true;
-
-		// 				if (((int)command_items.size()) >= entry.minimum_args+1) {
-		// 					m_flood_weight += entry.weight;
-		// 					if(m_flood_weight >= WARNING_FLOOD_WEIGHT_THRESHOLD) {
-		// 						send_flood_warning();
-		// 					}
-		// 					(*this.*entry.callback)(command_items);
-		// 				}
-		// 				else {
-		// 					send_numeric(461, command_upper + " :Not enough parameters", true);
-		// 				}
-		// 				break;
-		// 			}
-		// 		}					
-		// 		*it++;
-		// 	}
-		// 	if(!command_found) {
-		// 		std::ostringstream s;
-		// 		s << command_upper << " :Unknown Command";
-		// 		send_numeric(421, s.str(), true);
-		// 	}
-		// }
-
 	end:
 		send_ping();
 
@@ -296,7 +224,7 @@ namespace Peerchat {
 				char ping_key[9];
 
 				memset(&ping_key, 0, sizeof(ping_key));
-				OS::gen_random((char *)&ping_key, sizeof(ping_key)-1, 1);
+				OS::gen_random((char *)&ping_key, sizeof(ping_key)-1);
 				
 				std::ostringstream s;
 				s << " PING " << " :" << ping_key;
@@ -409,7 +337,6 @@ namespace Peerchat {
 		std::ostringstream s;
 
 		peer->m_user_details = response_data.summary;
-		peer->m_user_details.operflags = -1;
 		s << "Welcome to the Matrix " << peer->m_user_details.nick;
 		peer->send_numeric(1, s.str());
 		s.str("");

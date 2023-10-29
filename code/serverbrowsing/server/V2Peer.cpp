@@ -306,7 +306,6 @@ namespace SB {
 	}
 	size_t V2Peer::setupCryptHeader(OS::Buffer &buffer) {
 		size_t start_len = buffer.bytesWritten();
-		srand((u_int)time(NULL));
 		uint32_t cryptlen = CRYPTCHAL_LEN;
 		uint8_t cryptchal[CRYPTCHAL_LEN];
 		uint32_t servchallen = SERVCHAL_LEN;

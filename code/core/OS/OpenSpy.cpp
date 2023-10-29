@@ -40,6 +40,8 @@ namespace OS {
 	}
 
 	void Init(const char *appName) {
+        srand((unsigned) time(NULL));
+        
 		uv_signal_init(uv_default_loop(), &g_uv_signal_handler_shutdown);
 		uv_signal_start(&g_uv_signal_handler_shutdown, signal_handler, SIGINT);
 
@@ -578,9 +580,8 @@ namespace OS {
 		}
 		return match2(mask, name, match_count);
 	}
-	void gen_random(char *s, const int len, int time_multiplier) {
+	void gen_random(char *s, const int len) {
 		int i;
-		srand((unsigned int)time(NULL) * time_multiplier);
 		static const char alphanum[] =
 			"0123456789"
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"

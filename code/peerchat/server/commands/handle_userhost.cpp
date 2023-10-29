@@ -28,7 +28,7 @@ namespace Peerchat {
 	void Peer::handle_userhost(std::vector<std::string> data_parser) {
 		if (data_parser.size() < 2) {
 			std::ostringstream ss;
-			ss << m_user_details.nick << "=+" << m_user_details.username << "@" << m_user_details.hostname;
+			ss << m_user_details.nick << "=+" << m_user_details.username << "@" << getAddress().ToString(true);
 			send_numeric(302, ss.str(), false, "", true, ""); //silly peerchat quick, gotta send blank name, not "*" despite IRC spec
 		}
 		else {

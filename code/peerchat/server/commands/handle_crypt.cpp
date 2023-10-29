@@ -25,10 +25,10 @@ namespace Peerchat {
         char client_challenge[17], server_challenge[17];
 
         memset(&client_challenge, 0, sizeof(client_challenge));
-        OS::gen_random((char *)&client_challenge, sizeof(client_challenge)-1, 1);
+        OS::gen_random((char *)&client_challenge, sizeof(client_challenge)-1);
 
         memset(&server_challenge, 0, sizeof(server_challenge));
-        OS::gen_random((char *)&server_challenge, sizeof(server_challenge)-1, 2);
+        OS::gen_random((char *)&server_challenge, sizeof(server_challenge)-1);
 
         ss << client_challenge << " " << server_challenge;
 

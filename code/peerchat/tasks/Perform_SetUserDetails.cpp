@@ -62,6 +62,8 @@ namespace Peerchat {
 		request.summary.address = request.peer->getAddress();
 		response.summary.address = request.summary.address;
 
+        response.summary.hostname = response.summary.address.ToString(true);
+
         int cmd_count = 0;
         if(!nick_exists) {
 

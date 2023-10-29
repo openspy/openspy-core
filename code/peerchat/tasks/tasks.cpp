@@ -239,8 +239,19 @@ namespace Peerchat {
 			num_args -= 6; //don't submit private args
 		}
 
-        redisReply *reply = (redisReply *)redisCommandArgv(thread_data->mp_redis_connection, num_args, args, NULL);
-		freeReplyObject(reply);
+        
+		redisAppendCommandArgv(thread_data->mp_redis_connection, num_args, args, NULL);
+		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", key.c_str(), CHANNEL_EXPIRE_TIME);
+
+
+		redisReply *reply;
+		if(redisGetReply(thread_data->mp_redis_connection,(void**)&reply) == REDIS_OK) {
+			freeReplyObject(reply);
+		}		
+		
+		if(redisGetReply(thread_data->mp_redis_connection,(void**)&reply) == REDIS_OK) {
+			freeReplyObject(reply);
+		}
 	}
 
 	int channelUserModesStringToFlags(std::string mode_string) {
