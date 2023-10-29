@@ -255,7 +255,7 @@ namespace Peerchat {
 
 		int total_redis_calls = 0;
 
-		redisAppendCommand(thread_data->mp_redis_connection, "ZINCRBY %s 1 \"%d\"", channel_users_key.c_str(), user.id); total_redis_calls++;
+		redisAppendCommand(thread_data->mp_redis_connection, "ZINCRBY %s 1 %d", channel_users_key.c_str(), user.id); total_redis_calls++;
 
 		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_users_key.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
 
@@ -447,7 +447,7 @@ namespace Peerchat {
 		 		cursor = reply->element[0]->integer;
 		 	}
 
-			for(size_t i = 0; i < reply->element[1]->elements;i++) {
+			for(size_t i = 0; i < reply->element[1]->elements;i+=2) {
 				ChannelUserSummary summary;
 				std::string user_id = reply->element[1]->element[i]->str;
                 summary.channel_id = channel_id;

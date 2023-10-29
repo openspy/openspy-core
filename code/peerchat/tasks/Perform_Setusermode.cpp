@@ -117,17 +117,17 @@ namespace Peerchat {
 		 		cursor = scan_reply->element[0]->integer;
 		 	}
 
-			for(size_t i=0;i<reply->element[1]->elements;i++) {
+			for(size_t i=0;i<scan_reply->element[1]->elements;i++) {
 				if(i % 2 == 0) {
-					int usermode_id = atoi(reply->element[1]->str);
+					int usermode_id = atoi(scan_reply->element[1]->str);
 					if(usermode_id < 0) {
-						std::string keyname = std::string("USERMODE_") + reply->element[1]->str;
-						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", keyname.c_str());							
+						std::string keyname = std::string("USERMODE_") + scan_reply->element[1]->str;
+						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", keyname.c_str());
 						freeReplyObject(reply);
 					}
 				}
-					
 			}
+            freeReplyObject(scan_reply);
 		} while(cursor != 0);
 	}
 	bool Perform_SetGlobalUsermode(PeerchatBackendRequest request, TaskThreadData* thread_data) { 

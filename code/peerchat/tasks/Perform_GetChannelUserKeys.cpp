@@ -8,11 +8,15 @@ namespace Peerchat {
 
         redisReply *reply;
         int cursor = 0;
+        
+        std::ostringstream css;
+        css << "channel_" << channel_id << "user_" << user_id << "_custkeys";
+        std::string chan_user_key = css.str();
 
 		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
 		freeReplyObject(reply);
         do {
-            reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN channel_%d_user_%d %d MATCH custkey_%s", channel_id, user_id, cursor, search_string.c_str());
+            reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN %s %d MATCH %s", chan_user_key.c_str(), cursor, search_string.c_str());
 
 			if(reply == NULL) {
 				goto error_cleanup;

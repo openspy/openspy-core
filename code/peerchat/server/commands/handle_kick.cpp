@@ -21,7 +21,7 @@ namespace Peerchat {
 	}
 	/*
 -> s KICK #test CHC :hello there
-<- :CHC!CHC@99.243.125.215 KICK #test CHC :hello there
+<- :CHC!CHC@* KICK #test CHC :hello there
 	*/
 	void Peer::handle_kick(std::vector<std::string> data_parser) {
 		
