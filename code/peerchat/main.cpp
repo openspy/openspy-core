@@ -19,7 +19,7 @@ int main() {
 	uv_timer_init(uv_default_loop(), &tick_timer);
     uv_timer_start(&tick_timer, tick_handler, 0, 250);
 
-	OS::Init("Peerchat");
+	OS::Init("peerchat");
 
 	g_gameserver = new Peerchat::Server();
 

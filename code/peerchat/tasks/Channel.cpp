@@ -67,7 +67,7 @@ namespace Peerchat {
             }
             
             if(reply->element[6]->type == REDIS_REPLY_STRING) {
-                summary.topic = atoi(reply->element[6]->str);
+                summary.topic = reply->element[6]->str;
             }
             
             if(reply->element[7]->type == REDIS_REPLY_STRING) {
