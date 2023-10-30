@@ -29,7 +29,7 @@ int main() {
 	if(uv_os_getenv("OPENSPY_CDKEY_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
 		temp_env_sz = sizeof(port_buff);
 
-		uint16_t port = 27901;
+		uint16_t port = 29910;
 		if(uv_os_getenv("OPENSPY_CDKEY_BIND_PORT", (char *)&port_buff, &temp_env_sz) != UV_ENOENT) {
 			port = atoi(port_buff);
 		}
