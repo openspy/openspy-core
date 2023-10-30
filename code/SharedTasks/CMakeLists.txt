@@ -14,4 +14,4 @@ include_directories (${OPENSPY_SharedTasks_INCLUDE_DIRS})
 add_library (SharedTasks SHARED ${MAIN_SRCS})
 
 target_include_directories(SharedTasks PUBLIC "src/")
-target_link_libraries(SharedTasks openspy z ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+target_link_libraries(SharedTasks openspy ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
