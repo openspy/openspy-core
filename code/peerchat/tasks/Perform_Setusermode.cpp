@@ -119,12 +119,15 @@ namespace Peerchat {
 
 			for(size_t i=0;i<scan_reply->element[1]->elements;i++) {
 				if(i % 2 == 0) {
-					int usermode_id = atoi(scan_reply->element[1]->str);
-					if(usermode_id < 0) {
-						std::string keyname = std::string("USERMODE_") + scan_reply->element[1]->str;
-						reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", keyname.c_str());
-						freeReplyObject(reply);
+					if(scan_reply->element[1]->type == REDIS_REPLY_STRING) {
+						int usermode_id = atoi(scan_reply->element[1]->str);
+						if(usermode_id < 0) {
+							std::string keyname = std::string("USERMODE_") + scan_reply->element[1]->str;
+							reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", keyname.c_str());
+							freeReplyObject(reply);
+						}
 					}
+					
 				}
 			}
             freeReplyObject(scan_reply);
