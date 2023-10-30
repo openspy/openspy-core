@@ -105,34 +105,70 @@ namespace Peerchat {
 	}
 	void LoadUsermodeFromCache(TaskThreadData* thread_data, std::string cacheKey, UsermodeRecord &record) {
 		redisReply *reply;
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HMGET %s id chanmask hostname comment machineid profileid modeflags gameid expiresAt setAt setBy setByHost setByPid setByNick", cacheKey.c_str());
+		const char *args[] = {
+			"HMGET", cacheKey.c_str(), 
+			"chanmask",
+			"hostname",
+			"comment",
+			"machineid"	,
+			"profileid",
+			"modeflags",
+			"gameid",
+			"expiresAt",
+			"setAt",
+			"setBy",
+			"setByHost",
+			"setByPid",
+			"setByNick"
+		};
+		reply = (redisReply *)redisCommandArgv(thread_data->mp_redis_connection, sizeof(args) / sizeof(const char *), args, NULL);
 
 		record.usermodeid = atoi(reply->element[0]->str);
-		record.chanmask = reply->element[1]->str;
-		record.hostmask = reply->element[2]->str;
-		record.comment = reply->element[3]->str;
-		record.machineid = reply->element[4]->str;
-		record.profileid = atoi(reply->element[5]->str);
-		record.modeflags = atoi(reply->element[6]->str);
+
+		if(reply->element[1]->type == REDIS_REPLY_STRING) {
+			record.chanmask = reply->element[1]->str;
+		}
+		if(reply->element[2]->type == REDIS_REPLY_STRING) {
+			record.hostmask = reply->element[2]->str;
+		}
+		if(reply->element[3]->type == REDIS_REPLY_STRING) {
+			record.comment = reply->element[3]->str;
+		}
+		if(reply->element[4]->type == REDIS_REPLY_STRING) {
+			record.machineid = reply->element[4]->str;
+		}
+		if(reply->element[5]->type == REDIS_REPLY_STRING) {
+			record.profileid = atoi(reply->element[5]->str);
+		}
+		if(reply->element[6]->type == REDIS_REPLY_STRING) {
+			record.modeflags = atoi(reply->element[6]->str);
+		}
 
 		record.has_gameid = false;
 		if(reply->element[7]->type == REDIS_REPLY_STRING) {
 			record.gameid = atoi(reply->element[7]->str);
 			record.has_gameid = true;
 		}
-
-		record.expires_at.tv_sec = atoi(reply->element[8]->str);
-		record.set_at.tv_sec = atoi(reply->element[9]->str);
+		if(reply->element[8]->type == REDIS_REPLY_STRING) {
+			record.expires_at.tv_sec = atoi(reply->element[8]->str);
+		}
+		if(reply->element[9]->type == REDIS_REPLY_STRING) {
+			record.set_at.tv_sec = atoi(reply->element[9]->str);
+		}
 
 		if(reply->element[10]->type == REDIS_REPLY_STRING) {
 			record.setByUserSummary = UserSummary(reply->element[10]->str);
 		} else {
-			record.setByUserSummary.hostname = reply->element[11]->str;
-			record.setByUserSummary.profileid = atoi(reply->element[12]->str);
-			record.setByUserSummary.nick = reply->element[13]->str;
+			if(reply->element[11]->type == REDIS_REPLY_STRING) {
+				record.setByUserSummary.hostname = reply->element[11]->str;
+			}
+			if(reply->element[12]->type == REDIS_REPLY_STRING) {
+				record.setByUserSummary.profileid = atoi(reply->element[12]->str);
+			}
+			if(reply->element[13]->type == REDIS_REPLY_STRING) {
+				record.setByUserSummary.nick = reply->element[13]->str;
+			}
 		}
-		
-
 		freeReplyObject(reply);
 	}
 	bool UsermodeMatchesUser(UsermodeRecord usermode, UserSummary summary) {
@@ -207,39 +243,72 @@ namespace Peerchat {
 	}
 
 	void WriteUsermodeToCache(UsermodeRecord usermode, TaskThreadData* thread_data) { 
-		
-
 		std::ostringstream ss;
 		ss << "USERMODE_" << usermode.usermodeid;
 		std::string key_name = ss.str();
+		ss.str("");
+		
 
+		ss << usermode.usermodeid;
+		std::string id_str = ss.str();
 		ss.str("");
 
-		ss << "HMSET " << key_name;
-		ss << "id \"" << usermode.usermodeid << "\"";
-		ss << "chanmask \"" << usermode.chanmask << "\"";
-		ss << "hostmask \"" << usermode.hostmask << "\"";
-		ss << "comment \"" << usermode.comment << "\"";
-		ss << "machineid \"" << usermode.machineid << "\"";
-		ss << "profileid \"" << usermode.profileid << "\"";
-		ss << "modeflags \"" << usermode.modeflags << "\"";
+		ss << usermode.profileid;
+		std::string pid_str = ss.str();
+		ss.str("");
 
-		if(usermode.has_gameid) {
-			ss << "gameid \"" << usermode.gameid << "\"";
+		ss << usermode.modeflags;
+		std::string modeflags_str = ss.str();
+		ss.str("");
+
+		ss << usermode.setByUserSummary.profileid;
+		std::string setbypid_str = ss.str();
+		ss.str("");
+
+		ss << usermode.expires_at.tv_sec;
+		std::string expiresAt_str = ss.str();
+		ss.str("");
+
+		ss << usermode.gameid;
+		std::string gameid_str = ss.str();
+		ss.str("");
+
+		const char *args[] = {
+			"HMSET", key_name.c_str(), 
+			"id", id_str.c_str(),
+			"chanmask", usermode.chanmask.c_str(),
+			"hostmask", usermode.hostmask.c_str(),
+			"comment", usermode.comment.c_str(),
+			"machineid", usermode.machineid.c_str(),
+			"profileid", pid_str.c_str(),
+			"modeflags", modeflags_str.c_str(),
+			"isGlobal",  (usermode.usermodeid > 0) ? "1" : "0",
+			"setByNick", usermode.setByUserSummary.nick.c_str(),
+			"setByHost", usermode.setByUserSummary.hostname.c_str(),
+			"setByPid", setbypid_str.c_str(),
+			"expiresAt", expiresAt_str.c_str(),
+			"gameid", gameid_str.c_str()
+			
+		};
+
+		int num_args = sizeof(args) / sizeof(const char *);
+
+		if(!usermode.has_gameid) {
+			num_args -= 2;
 		}
 
-		ss << "isGlobal \"" << (usermode.usermodeid > 0) << "\"";
-		ss << "setByNick \"" << usermode.setByUserSummary.nick.c_str() << "\"";
-		ss << "setByHost \"" << usermode.setByUserSummary.hostname.c_str() << "\"";
-		ss << "setByPid \"" << usermode.setByUserSummary.profileid << "\"";
-		ss << "setAt \"" << usermode.set_at.tv_sec << "\"";
-		ss << "expiresAt \"" << usermode.expires_at.tv_sec << "\"";
+		redisAppendCommandArgv(thread_data->mp_redis_connection, num_args, args, NULL);
 
-		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, ss.str().c_str());
-		freeReplyObject(reply);
+		redisAppendCommand(thread_data->mp_redis_connection, "ZINCRBY usermodes 1 %d", usermode.usermodeid);
 
-		reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZINCRBY usermodes 1 %d", usermode.usermodeid);
-		freeReplyObject(reply);
+		redisReply *reply;
+		if(redisGetReply(thread_data->mp_redis_connection,(void**)&reply) == REDIS_OK) {
+			freeReplyObject(reply);
+		}
+		
+		if(redisGetReply(thread_data->mp_redis_connection,(void**)&reply) == REDIS_OK) {
+			freeReplyObject(reply);
+		}
 	}
 
 
