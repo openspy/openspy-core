@@ -18,7 +18,7 @@ namespace SB {
 		~V1Peer();
 		
 		void send_ping();
-		void think(bool packet_waiting); //called when no data is recieved
+		void think(); //called when no data is recieved
 		void Delete(bool timeout = false);
 		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 

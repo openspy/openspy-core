@@ -33,7 +33,7 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 
 		void SetAddress(OS::Address address) { m_address = address; }
 		virtual void OnConnectionReady() = 0;
-		virtual void think(bool packet_waiting) = 0;
+		virtual void think() = 0;
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }

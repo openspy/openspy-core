@@ -47,12 +47,12 @@ namespace FESL {
 		free((void *)req);
 	}
     void AddFESLTaskRequest(FESLRequest request) {
-			uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+		uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
 
-			FESLRequest *work_data = new FESLRequest();
-			*work_data = request;
+		FESLRequest *work_data = new FESLRequest();
+		*work_data = request;
 
-			uv_handle_set_data((uv_handle_t*) uv_req, work_data);
-			uv_queue_work(uv_default_loop(), uv_req, PerformUVWorkRequest, PerformUVWorkRequestCleanup);
+		uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+		uv_queue_work(uv_default_loop(), uv_req, PerformUVWorkRequest, PerformUVWorkRequestCleanup);
 	}
 }

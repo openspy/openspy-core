@@ -15,7 +15,7 @@ namespace QR {
 		buf->base = (char *)malloc(suggested_size);
 		buf->len = suggested_size;
 	}
-	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port) : OS::UDPDriver(server, host, port) {
 		gettimeofday(&m_server_start, NULL);
 
 		int r = uv_udp_init(uv_default_loop(), &m_recv_udp_socket);
@@ -40,8 +40,6 @@ namespace QR {
 	}
 	Driver::~Driver() {
 		uv_close((uv_handle_t *)&m_recv_udp_socket, NULL); //XXX: this should actually be moved to not be in the ctor..
-	}
-	void Driver::think(bool listener_waiting) {
 	}
 
 	void Driver::on_udp_read(uv_udp_t* handle,

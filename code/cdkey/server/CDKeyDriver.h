@@ -2,6 +2,7 @@
 #define _CDKEYDRIVER_H
 #include <stdint.h>
 #include <OS/Net/NetDriver.h>
+#include <OS/Net/drivers/UDPDriver.h>
 
 #include <queue>
 #include <map>
@@ -17,13 +18,11 @@
 #define MAX_DATA_SIZE 1400
 #define DRIVER_THREAD_TIME 1000
 namespace CDKey {
-	class Driver : public INetDriver {
+	class Driver : public OS::UDPDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
-		void think(bool packet_waiting);
 
-		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 
 		void handle_auth_packet(OS::Address from, OS::KVReader data_parser);
 		void SendPacket(OS::Address to, std::string message);

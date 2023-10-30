@@ -55,7 +55,7 @@ namespace SB {
 			public:
 				V2Peer(Driver *driver, uv_tcp_t *sd);
 				~V2Peer();
-				void think(bool packet_waiting);
+				void think();
 				void informDeleteServers(MM::Server *server);
 				void informNewServers(MM::Server *server);
 				void informUpdateServers(MM::Server *server);

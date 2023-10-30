@@ -109,7 +109,7 @@ namespace SB {
 					return;
 				}
 		}
-		void V1Peer::think(bool packet_waiting) {
+		void V1Peer::think() {
 			if (m_delete_flag) return;
 			if (m_waiting_gamedata == 2) {
 				m_waiting_gamedata = 0;

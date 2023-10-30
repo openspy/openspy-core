@@ -22,10 +22,6 @@ namespace FESL {
 		m_server_info.termsOfServiceData = public_info.termsOfServiceData;
 		m_server_info.gameid = public_info.gameid;
 
-		//mp_socket_interface = new SSLNetIOIFace::SSLNetIOInterface(ssl_version, rsa_priv_path, x509_path);		
-
-		//mp_socket = mp_socket_interface->BindTCP(address);
-
 		mp_string_crypter = new OS::StringCrypter(str_crypter_rsa_key);
 	}
 	Driver::~Driver() {

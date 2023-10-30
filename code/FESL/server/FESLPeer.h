@@ -111,7 +111,7 @@ namespace FESL {
 		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();
 		
-		void think(bool packet_waiting);
+		void think();
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }

@@ -78,7 +78,7 @@ namespace GS {
 		}
 		SendPacket(s.str());
 	}
-	void Peer::think(bool packet_waiting) {
+	void Peer::think() {
 		
 		if (m_delete_flag) return;
 		send_ping();

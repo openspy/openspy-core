@@ -61,7 +61,7 @@ namespace SM {
 		~Peer();
 		
 		void OnConnectionReady();
-		void think(bool packet_waiting);
+		void think();
 		void handle_packet(std::string data);
 
 		bool ShouldDelete() { return m_delete_flag; };

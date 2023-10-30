@@ -27,7 +27,7 @@ namespace SB {
 		
 		virtual void OnConnectionReady();
 		
-		virtual void think(bool packet_waiting) = 0;
+		//virtual void think() = 0;
 
 
 		bool ShouldDelete() { return m_delete_flag; };

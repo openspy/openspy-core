@@ -61,7 +61,7 @@ namespace Peerchat {
 		m_user_details.id = 0;
 		mp_user_address_visibility_list = new OS::LinkedListHead<UserAddressVisibiltyInfo*>();
 		m_sent_client_init = false;
-		m_stream_waiting = false;
+		//m_stream_waiting = false;
 		uv_mutex_init(&m_mutex);
 		m_using_encryption = false;
 		m_got_delete = false;
@@ -177,10 +177,10 @@ namespace Peerchat {
 			send_numeric(421, s.str(), true);
 		}
 	}
-	void Peer::think(bool packet_waiting) {
+	void Peer::think() {
 		if (m_delete_flag) return;
 
-		if(m_stream_waiting) {
+		/*if(m_stream_waiting) {
 			packet_waiting = true;
 			m_stream_waiting = false;
 		}
@@ -188,9 +188,8 @@ namespace Peerchat {
 		if(m_user_details.id == 0 && packet_waiting) {
 			m_stream_waiting = true;
 			packet_waiting = false; //don't process anything until you have a backend id
-		}
+		}*/
 
-	end:
 		send_ping();
 
 		perform_keepalive();

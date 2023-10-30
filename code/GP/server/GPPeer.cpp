@@ -66,7 +66,7 @@ namespace GP {
 		m_delete_flag = true;
 		m_timeout_flag = timeout;
 	}
-	void Peer::think(bool packet_waiting) {
+	void Peer::think() {
 		
 		if (m_delete_flag) return;
 

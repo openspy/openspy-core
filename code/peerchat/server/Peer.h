@@ -171,7 +171,7 @@ namespace Peerchat {
 		void Delete(bool timeout = false, std::string reason = "");
 		void Delete(bool timeout = false); //required, due to INetPeer inheritance
 		
-		void think(bool packet_waiting);
+		void think();
 		void handle_packet(OS::KVReader data_parser);
 
 		int GetProfileID();
@@ -359,7 +359,7 @@ namespace Peerchat {
 		static const CommandEntry m_commands[];
 
 		bool m_using_encryption;
-		bool m_stream_waiting;
+		//bool m_stream_waiting;
 		gs_peerchat_ctx m_crypt_key_in;
 		gs_peerchat_ctx m_crypt_key_out;
 

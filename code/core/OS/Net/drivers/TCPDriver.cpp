@@ -1,6 +1,8 @@
 #include "TCPDriver.h"
 namespace OS {
     TCPDriver::TCPDriver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
+        mp_peers = new OS::LinkedListHead<INetPeer*>();
+
         struct sockaddr_in saddr;
         uv_ip4_addr(host, port, &saddr);
 
@@ -21,6 +23,7 @@ namespace OS {
     }
     TCPDriver::~TCPDriver() {
         DeleteClients();
+        delete mp_peers;
     }
     void TCPDriver::on_new_connection(uv_stream_t *server, int status) {
         TCPDriver *driver = (TCPDriver*)uv_handle_get_data((uv_handle_t*)server);
@@ -29,7 +32,7 @@ namespace OS {
         driver->mp_peers->AddToList(peer);
 
     }
-    void TCPDriver::think(bool listener_waiting) {
+    void TCPDriver::think() {
         TickConnections();
     }
 
@@ -46,7 +49,7 @@ namespace OS {
             }
         }
         else {
-            peer->think(false);
+            peer->think();
         }
         return true;
     }

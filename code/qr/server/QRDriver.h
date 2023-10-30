@@ -4,6 +4,7 @@
 #include <queue>
 #include <OS/OpenSpy.h>
 #include <OS/Net/NetDriver.h>
+#include <OS/Net/drivers/UDPDriver.h>
 
 #include <uv.h>
 
@@ -24,11 +25,10 @@ namespace MM {
 	class MMTaskResponse;
 }
 namespace QR {
-	class Driver : public INetDriver {
+	class Driver : public OS::UDPDriver {
 	public:
 		Driver(INetServer *server, const char *host, uint16_t port);
 		~Driver();
-		void think(bool listener_waiting);
 
 		static void on_udp_read(uv_udp_t* handle,
                                ssize_t nread,

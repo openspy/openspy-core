@@ -42,7 +42,7 @@ namespace GS {
 		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();
 		
-		void think(bool packet_waiting);
+		void think();
 		void handle_packet(std::string packet_string);
 		void Delete(bool timeout = false);
 		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);

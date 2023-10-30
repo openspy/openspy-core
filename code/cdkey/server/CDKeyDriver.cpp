@@ -15,7 +15,7 @@ namespace CDKey {
 		buf->base = (char *)malloc(suggested_size);
 		buf->len = suggested_size;
 	}
-	Driver::Driver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port) : OS::UDPDriver(server, host, port) {
 		gettimeofday(&m_server_start, NULL);
 		
 		int r = uv_udp_init(uv_default_loop(), &m_recv_udp_socket);
@@ -67,11 +67,6 @@ namespace CDKey {
 		if(buf && buf->base) {
 			free((void *)buf->base);
 		}
-	}
-	void Driver::think(bool listener_waiting) {
-	}
-	const std::vector<INetPeer *> Driver::getPeers(bool inc_ref) {
-		return std::vector<INetPeer *>();
 	}
 	void Driver::SendPacket(OS::Address to, std::string message) {
 		OS::Buffer buffer;

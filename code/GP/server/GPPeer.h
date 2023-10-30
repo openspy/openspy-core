@@ -77,7 +77,7 @@ namespace GP {
 		void OnConnectionReady();
 		void Delete(bool timeout = false);
 		
-		void think(bool packet_waiting);
+		void think();
 		void handle_packet(OS::KVReader data_parser);
 
 		int GetProfileID();

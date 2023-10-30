@@ -25,7 +25,7 @@ namespace UT {
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
 	}
-	void Peer::think(bool packet_waiting) {
+	void Peer::think() {
 		if (m_delete_flag) return;
 
 		//check for timeout

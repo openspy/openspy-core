@@ -488,7 +488,7 @@ namespace SB {
 			this->handle_packet(buffer);
 		}
 	}
-	void V2Peer::think(bool waiting_packet) {
+	void V2Peer::think() {
 		if (m_delete_flag) return;
 
 		send_ping();

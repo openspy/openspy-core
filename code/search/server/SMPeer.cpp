@@ -62,7 +62,7 @@ namespace SM {
 			return;
 		}
 	}
-	void Peer::think(bool packet_waiting) {
+	void Peer::think() {
 		if (m_delete_flag) return;
 
 		//check for timeout

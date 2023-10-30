@@ -14,24 +14,11 @@ public:
 	/*
 		Check for incoming data, etc
 	*/
-	virtual void think(bool listen_waiting) = 0;
+	virtual void think() = 0;
 	INetServer *getServer() { return m_server; }
-
-	OS::LinkedListHead<INetPeer*>* GetPeerList() { return mp_peers; };
-
-
-	void SendUDPPacket(OS::Address to, OS::Buffer buffer);
-	static void on_udp_send_callback(uv_udp_send_t* req, int status);
 	struct sockaddr_in GetAddress() { return m_recv_addr; };
 protected:
-	static void clear_send_buffer(uv_async_t *handle);
 	INetServer *m_server;
-	OS::LinkedListHead<INetPeer *>* mp_peers;
-
-	uv_udp_t m_recv_udp_socket;
-	uv_async_t m_udp_send_async_handler;
-	std::stack<std::pair<OS::Address, OS::Buffer>> m_udp_send_buffer;
 	struct sockaddr_in m_recv_addr;
-	uv_mutex_t m_udp_send_mutex;
 };
 #endif //_NETDRIVER_H

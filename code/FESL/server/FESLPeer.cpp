@@ -92,7 +92,7 @@ namespace FESL {
 		type = (char *)&header.type;
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got Unknown Command: %c%c%c%c %s", getAddress().ToString().c_str(), type[3], type[2], type[1], type[0], kv_data.GetValue("TXN").c_str());
 	}
-	void Peer::think(bool packet_waiting) {
+	void Peer::think() {
 		if (m_delete_flag) return;
 
 		send_ping();
