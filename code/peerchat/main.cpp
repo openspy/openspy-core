@@ -37,7 +37,15 @@ int main() {
             port = atoi(port_buff);
         }
 
-        Peerchat::Driver *driver = new Peerchat::Driver(g_gameserver, "test", address_buff, port);
+        std::string server_name;
+        temp_env_sz = sizeof(server_name_buff);
+        if(uv_os_getenv("OPENSPY_PEERCHAT_SERVER_NAME", (char *)&server_name_buff, &temp_env_sz) != 0) {
+            server_name = "Matrix";
+        } else {
+            server_name = std::string(server_name_buff);
+        }
+
+        Peerchat::Driver *driver = new Peerchat::Driver(g_gameserver, server_name, address_buff, port);
 
         OS::LogText(OS::ELogLevel_Info, "Adding Peerchat Driver: %s:%d\n", address_buff, port);
         g_gameserver->addNetworkDriver(driver);
