@@ -7,7 +7,8 @@ namespace OS {
 		uv_handle_set_data((uv_handle_t *)&m_udp_send_async_handler, this);
 	}
 	UDPDriver::~UDPDriver() {
-		
+		uv_mutex_destroy(&m_udp_send_mutex);
+		//XXX: destroy async handle (and wait for it)
 	}
 	void UDPDriver::think() {
 		
