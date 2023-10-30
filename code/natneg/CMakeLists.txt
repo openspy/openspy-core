@@ -32,7 +32,7 @@ add_executable (natneg ${ALL_SRCS})
 target_compile_features(natneg PRIVATE cxx_unrestricted_unions)
 
 IF(WIN32)	
-	target_link_libraries(natneg openspy.lib SharedTasks)
+	target_link_libraries(natneg openspy.lib SharedTasks z)
 ELSE() #unix
-	target_link_libraries(natneg openspy SharedTasks)
+	target_link_libraries(natneg openspy SharedTasks z)
 ENDIF()
