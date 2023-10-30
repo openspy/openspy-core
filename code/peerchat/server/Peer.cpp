@@ -131,6 +131,9 @@ namespace Peerchat {
 		std::vector<std::string> commands = OS::KeyStringToVector(recv_buf, false, '\n');
 		std::vector<std::string>::iterator it = commands.begin();
 		while(it != commands.end() && !m_delete_flag) {
+			if(m_delete_flag) {
+				break;
+			}
 			std::string command_line = OS::strip_whitespace(*it);
 			std::vector<std::string> command_items = OS::KeyStringToVector(command_line, false, ' ');
 
