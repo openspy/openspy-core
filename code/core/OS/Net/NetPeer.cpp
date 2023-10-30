@@ -101,6 +101,9 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
 		uv_mutex_unlock(&peer->m_send_mutex);        
 	}
     void INetPeer::append_send_buffer(OS::Buffer buffer, bool close_after) {
+        if(m_delete_flag || m_socket_deleted) {
+            return;
+        }
 		uv_mutex_lock(&m_send_mutex);
 		m_send_buffer.push(buffer);
         IncRef();
