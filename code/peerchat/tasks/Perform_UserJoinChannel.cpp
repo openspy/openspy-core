@@ -60,7 +60,7 @@ namespace Peerchat {
 		
 		if(!is_in_channel) {
 			if(channel.basic_mode_flags & EChannelMode_UserCreated && created) {
-				Create_StagingRoom_UsermodeRecords(channel, request, thread_data);
+				initial_flags |= Create_StagingRoom_UsermodeRecords(channel, request, thread_data);
 			}
 
 			initial_flags |= getEffectiveUsermode(thread_data, channel.channel_id, userSummary, request.peer);
