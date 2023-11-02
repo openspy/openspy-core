@@ -5,6 +5,12 @@
 
 #ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN
+#else 
+	#define stricmp strcasecmp
+	#define sprintf_s snprintf
+	#define strnicmp strncasecmp
+	#define vsprintf_s vsnprintf
+	#define _strnicmp strnicmp
 #endif
 
 #include <stdlib.h>
