@@ -1,6 +1,8 @@
 #include "tasks.h"
 #include <sstream>
 #include <server/Server.h>
+#include <server/Peer.h>
+
 
 #include <rabbitmq-c/amqp.h>
 #include <rabbitmq-c/tcp_socket.h>
@@ -296,6 +298,10 @@ namespace Peerchat {
 		TaskThreadData temp_data;
 		temp_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
 		PeerchatBackendRequest *work_data = (PeerchatBackendRequest *) uv_handle_get_data((uv_handle_t*) req);
+
+		if (work_data->peer) {
+			work_data->channel_flags = work_data->peer->GetChannelFlagsMap();
+		}
         
         redisReply *reply = (redisReply *)redisCommand(temp_data.mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
         freeReplyObject(reply);

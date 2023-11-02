@@ -7,7 +7,7 @@ namespace Peerchat {
 	bool Perform_DeleteUser(PeerchatBackendRequest request, TaskThreadData* thread_data) {
         TaskResponse response;
 
-        UserSummary userDetails = request.peer->GetUserDetails();
+        UserSummary userDetails = request.summary;
 
         std::string formatted_name;
 		std::transform(userDetails.nick.begin(),userDetails.nick.end(),std::back_inserter(formatted_name),tolower);
@@ -30,7 +30,7 @@ namespace Peerchat {
         redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
         freeReplyObject(reply);
 
-        std::vector<int> channels = request.peer->GetChannels();
+        std::vector<int> channels = request.channel_id_list;
         std::vector<int>::iterator it = channels.begin();
         while (it != channels.end()) {
             int channel_id = *it;
@@ -40,6 +40,7 @@ namespace Peerchat {
         }
 
         response.error_details.response_code = TaskShared::WebErrorCode_Success;
+        response.summary = userDetails;
 
         if(request.callback)
             request.callback(response, request.peer);

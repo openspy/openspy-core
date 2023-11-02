@@ -224,6 +224,10 @@ namespace Peerchat {
 		//called by UserJoinEvents task
 		static void OnNames_FetchChannelInfo(TaskResponse response_data, Peer *peer);
 		static void OnTopic_FetchChannelInfo(TaskResponse response_data, Peer* peer);
+
+		std::map<int, int> GetChannelFlagsMap() {
+			return m_channel_flags;
+		}
 	private:
 		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
@@ -264,7 +268,6 @@ namespace Peerchat {
 		static void OnFetch_LUsers(TaskResponse response_data, Peer* peer);
 		static void m_registernick_callback(TaskShared::WebErrorDetails error_details, std::vector<OS::Profile> results, std::map<int, OS::User> result_users, void *extra, INetPeer *peer);
 		static void OnQuit_TaskComplete(TaskResponse response_data, Peer *peer);
-		static void OnDelete_TaskComplete(TaskResponse response_data, Peer *peer);
 
 		void handle_nick(std::vector<std::string> data_parser);
 		void handle_user(std::vector<std::string> data_parser);
@@ -329,6 +332,7 @@ namespace Peerchat {
 		//
 
 		void handle_message_command(std::string type, std::vector<std::string> data_parser);
+
 		void send_quit(std::string reason);
 		static void getChannelSpecialInfo(std::ostringstream &ss, ChannelSummary summary);
 		static void SerializeUsermodeRecord(UsermodeRecord record, std::ostringstream& ss);
@@ -365,7 +369,7 @@ namespace Peerchat {
 
 		int m_flood_weight;
 
-		bool m_got_delete;
+		std::string m_quit_reason;
 	};
 }
 #endif //_GPPEER_H

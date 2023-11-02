@@ -64,7 +64,6 @@ namespace Peerchat {
 		//m_stream_waiting = false;
 		uv_mutex_init(&m_mutex);
 		m_using_encryption = false;
-		m_got_delete = false;
 		m_flood_weight = 0;
 		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_sent_ping);
@@ -79,6 +78,9 @@ namespace Peerchat {
 		AddPeerchatTaskRequest(req);
 	}
 	Peer::~Peer() {
+
+		send_quit(m_quit_reason);
+
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
 
 		PurgeUserAddressVisibility();
@@ -100,13 +102,16 @@ namespace Peerchat {
 		Delete(false, "Client Exited");
 	}
 	void Peer::Delete(bool timeout, std::string reason) {
-		if(m_delete_flag || m_got_delete) {
+		if(m_delete_flag) {
 			return;
 		}
-		m_got_delete = true; //mark as "deleted", so that async delete related tasks can be completed, which will later set the true delete flag after async events complete
 		m_timeout_flag = timeout;
+		m_delete_flag = true;
+		m_quit_reason = reason;
 
-		send_quit(reason);
+		std::ostringstream s;
+		s << "ERROR: Closing Link: " << ((Peerchat::Server*)GetDriver()->getServer())->getServerName() << " (" << reason << ")" << std::endl;
+		SendPacket(s.str());
 	}
 	
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {

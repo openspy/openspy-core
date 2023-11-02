@@ -15,30 +15,21 @@
 
 namespace Peerchat {
 	void Peer::OnQuit_TaskComplete(TaskResponse response_data, Peer *peer) {
-		peer->m_delete_flag = true;
-	}
-	void Peer::OnDelete_TaskComplete(TaskResponse response_data, Peer *peer) {
-		if (peer->m_user_details.id != 0) {
-			PeerchatBackendRequest req;
-			req.type = EPeerchatRequestType_DeleteUser;
-			req.peer = peer;
-			req.peer->IncRef();
-			req.callback = OnQuit_TaskComplete;
-			AddPeerchatTaskRequest(req);
-		} else {
-			peer->m_delete_flag = true;
-		}
+		PeerchatBackendRequest req;
+		req.type = EPeerchatRequestType_DeleteUser;
+		req.peer = NULL;
+		req.summary = response_data.summary;
+		req.callback = NULL;
+		AddPeerchatTaskRequest(req);
 	}
     void Peer::send_quit(std::string reason) {
 
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_SetBroadcastToVisibleUsers_SendSummary;
-		req.peer = this;
 		req.summary = GetUserDetails();
-	
 		req.message_type = "QUIT";
-
 		req.message = reason;
+		req.channel_flags = GetChannelFlagsMap();
 
 		std::map<int, int>::iterator it = m_channel_flags.begin();
 		while (it != m_channel_flags.end()) {
@@ -48,15 +39,9 @@ namespace Peerchat {
 			it++;
 		}
 
-		req.peer->IncRef();
-		req.callback = OnDelete_TaskComplete;
+		req.callback = OnQuit_TaskComplete;
 		
         AddPeerchatTaskRequest(req);
-
-
-		std::ostringstream s;
-		s << "ERROR: Closing Link: " <<  ((Peerchat::Server *)GetDriver()->getServer())->getServerName() << " (" << reason << ")" << std::endl;
-		SendPacket(s.str());
     }
     void Peer::handle_quit(std::vector<std::string> data_parser) {
         std::string reason = "";

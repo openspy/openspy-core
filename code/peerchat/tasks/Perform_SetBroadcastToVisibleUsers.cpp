@@ -15,7 +15,7 @@ namespace Peerchat {
         std::ostringstream channel_modes;
         it = request.channel_id_list.begin();
         while(it != request.channel_id_list.end()) {
-            int modeflags = request.peer->GetChannelFlags(*it);
+            int modeflags = request.channel_flags[*it];
             channel_modes << modeflags << ",";
             it++;
         }
@@ -50,6 +50,7 @@ namespace Peerchat {
 
         TaskResponse response;
         response.error_details.response_code = TaskShared::WebErrorCode_Success;
+        response.summary = request.summary;
 		if (request.callback) {
 			request.callback(response, request.peer);
 		}

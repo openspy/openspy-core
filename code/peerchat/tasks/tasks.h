@@ -1,6 +1,7 @@
 #ifndef _PEERCHAT_TASKS_H
 #define _PEERCHAT_TASKS_H
 #include <string>
+#include <algorithm>
 
 #include <OS/SharedTasks/Auth/AuthTasks.h>
 
@@ -259,7 +260,7 @@ namespace Peerchat {
 	class PeerchatBackendRequest {
 		public:
 			PeerchatBackendRequest() {
-
+				peer = NULL;
 			}
 			int type;
 			Peer *peer;
@@ -277,6 +278,7 @@ namespace Peerchat {
 			std::string gamename;
 
 			std::vector<int> channel_id_list;
+			std::map<int, int> channel_flags;
 
 			UsermodeRecord usermodeRecord;
 			ChanpropsRecord chanpropsRecord;
