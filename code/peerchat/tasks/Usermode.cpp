@@ -107,6 +107,7 @@ namespace Peerchat {
 		redisReply *reply;
 		const char *args[] = {
 			"HMGET", cacheKey.c_str(), 
+			"id",
 			"chanmask",
 			"hostname",
 			"comment",
@@ -123,8 +124,9 @@ namespace Peerchat {
 		};
 		reply = (redisReply *)redisCommandArgv(thread_data->mp_redis_connection, sizeof(args) / sizeof(const char *), args, NULL);
 
-		record.usermodeid = atoi(reply->element[0]->str);
-
+		if (reply->element[0]->type == REDIS_REPLY_STRING) {
+			record.usermodeid = atoi(reply->element[0]->str);
+		}
 		if(reply->element[1]->type == REDIS_REPLY_STRING) {
 			record.chanmask = reply->element[1]->str;
 		}
@@ -172,22 +174,51 @@ namespace Peerchat {
 		freeReplyObject(reply);
 	}
 	bool UsermodeMatchesUser(UsermodeRecord usermode, UserSummary summary) {
-		if(usermode.profileid != 0 && summary.profileid == usermode.profileid) {
-			return true;
+		if(usermode.profileid != 0 && summary.profileid != usermode.profileid) {
+			return false;
 		}
 
-		if(usermode.hostmask.length() > 0 && (stricmp(usermode.hostmask.c_str(), summary.hostname.c_str()) == 0 || match(usermode.hostmask.c_str(), summary.hostname.c_str()) == 0)) {
-			return true;
+		if(usermode.hostmask.length() > 0 && (stricmp(usermode.hostmask.c_str(), summary.hostname.c_str()) == 0 || match(usermode.hostmask.c_str(), summary.hostname.c_str()) != 0)) {
+			return false;
 		}
 
-		if(usermode.machineid.length() > 0 && (stricmp(usermode.machineid.c_str(), summary.realname.c_str()) == 0 || match(usermode.machineid.c_str(), summary.realname.c_str()) == 0)) {
-			return true;
+		if(usermode.machineid.length() > 0 && (stricmp(usermode.machineid.c_str(), summary.realname.c_str()) == 0 || match(usermode.machineid.c_str(), summary.realname.c_str()) != 0)) {
+			return false;
 		}
 
-		if(usermode.has_gameid && usermode.gameid == summary.gameid) {
-			return true;
+		/*
+		*	usermode gameid special values:
+		*	gameid 0 is valid (gmtest)
+		*	gameid -1 = not set / uninit
+		*	gameid -2 = NOT USING ENCRYPTION
+		*	gameid -3 = ANY MATCH
+		*	gameid -4 = USING ENCRYPTION
+		*
+		*	usermode gameids:
+		*/
+		if (usermode.has_gameid) {
+			switch (usermode.gameid) {
+			case -2: //match if not using encryption
+				if (summary.gameid != -1) { //encrypted game, therefore not matching
+					return false;
+				}
+				break;
+			case -3: //any match / allow encrypted or unencrypted
+				return true;
+				break;
+			case -4:
+				if (summary.gameid == -1) {
+					return false;
+				}
+				break;
+			default: //direct match
+				if (summary.gameid != usermode.gameid) {
+					return false;
+				}
+			}
 		}
-		return false;
+		
+		return true;
 	}
 	int getEffectiveUsermode(TaskThreadData* thread_data, int channel_id, UserSummary summary, Peer *peer) {
 
@@ -234,7 +265,7 @@ namespace Peerchat {
 		/*
 			No permitted gameid match found, therefore user is banned
 		*/
-		/*if((modeflags & EUserChannelFlag_GameidPermitted) == 0) {
+		/*if ((modeflags & EUserChannelFlag_GameidPermitted) == 0) {
 			modeflags |= EUserChannelFlag_Banned;
 		}*/
 

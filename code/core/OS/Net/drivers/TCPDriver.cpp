@@ -6,8 +6,6 @@ namespace OS {
         struct sockaddr_in saddr;
         uv_ip4_addr(host, port, &saddr);
 
-        gettimeofday(&m_server_start, NULL);
-
 
         uv_tcp_init(uv_default_loop(), &m_listener_socket);
         int r = uv_tcp_bind(&m_listener_socket, (const sockaddr *)&saddr, 0);

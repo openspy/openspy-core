@@ -32,10 +32,10 @@ namespace OS {
 			case SIGINT:
 				uv_stop(uv_default_loop());
 			break;
-			case SIGUSR1:
-				uv_metrics_info(uv_default_loop(), &metrics);
-				OS::LogText(OS::ELogLevel_Info, "[UVMetrics]: loops: %d, events: %d, events_waiting: %d", metrics.loop_count, metrics.events, metrics.events_waiting);
-			break;
+			//case SIGUSR1:
+			//	uv_metrics_info(uv_default_loop(), &metrics);
+			//	OS::LogText(OS::ELogLevel_Info, "[UVMetrics]: loops: %d, events: %d, events_waiting: %d", metrics.loop_count, metrics.events, metrics.events_waiting);
+			//break;
 		}
 	}
 
@@ -44,9 +44,6 @@ namespace OS {
         
 		uv_signal_init(uv_default_loop(), &g_uv_signal_handler_shutdown);
 		uv_signal_start(&g_uv_signal_handler_shutdown, signal_handler, SIGINT);
-
-		uv_signal_init(uv_default_loop(), &g_uv_signal_handler_usr1);
-		uv_signal_start(&g_uv_signal_handler_usr1, signal_handler, SIGUSR1);
 
 		//SSL_library_init();
 		curl_global_init(CURL_GLOBAL_SSL);

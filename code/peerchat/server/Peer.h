@@ -343,7 +343,7 @@ namespace Peerchat {
 
 		OS::GameData m_game;
 		
-		struct timeval m_last_recv, m_last_ping, m_connect_time, m_last_keepalive, m_last_sent_ping;
+		uv_timespec64_t m_last_recv, m_last_ping, m_connect_time, m_last_keepalive, m_last_sent_ping;
 
 		OS::User m_user;
 		OS::Profile m_profile;

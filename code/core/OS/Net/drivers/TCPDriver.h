@@ -23,7 +23,6 @@ namespace OS {
 			static void on_new_connection(uv_stream_t *server, int status);			
 			OS::LinkedListHead<INetPeer *>* mp_peers;
 
-			struct timeval m_server_start;
 			uv_tcp_t m_listener_socket;	
 	};
 }

@@ -66,10 +66,10 @@ namespace Peerchat {
 		m_using_encryption = false;
 		m_got_delete = false;
 		m_flood_weight = 0;
-		gettimeofday(&m_last_recv, NULL);
-		gettimeofday(&m_last_sent_ping, NULL);
-		gettimeofday(&m_connect_time, NULL);		
-		gettimeofday(&m_last_keepalive, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_sent_ping);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_connect_time);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_keepalive);
 
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_SetUserDetails;
@@ -113,7 +113,7 @@ namespace Peerchat {
 		OS::Buffer recv_buffer;
 		recv_buffer.WriteBuffer(buf->base, nread);
 
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 
 		if(m_using_encryption) {
 			gs_peerchat(&m_crypt_key_in, (unsigned char*)recv_buffer.GetHead(), nread);
@@ -206,8 +206,8 @@ namespace Peerchat {
 		
 
 		//check for timeout
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if(current_time.tv_sec - m_connect_time.tv_sec > REGISTRATION_TIMEOUT && !m_sent_client_init) {
 			Delete(true, "Registration Timeout");
 		}
@@ -216,10 +216,10 @@ namespace Peerchat {
 		}
 	}
 	void Peer::send_ping() {
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if (current_time.tv_sec - m_last_sent_ping.tv_sec > PEERCHAT_PING_INTERVAL) {
-				gettimeofday(&m_last_sent_ping, NULL);
+				uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_sent_ping);
 				char ping_key[9];
 
 				memset(&ping_key, 0, sizeof(ping_key));
@@ -232,12 +232,12 @@ namespace Peerchat {
 		}
 	}
 	void Peer::perform_keepalive() {
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 
 
 		if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_PING_TIMEOUT_TIME) {
-			gettimeofday(&m_last_keepalive, NULL);
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_keepalive);
 			PeerchatBackendRequest req;
 			req.type = EPeerchatRequestType_KeepaliveUser;
 			req.summary = GetUserDetails();

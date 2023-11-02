@@ -58,7 +58,6 @@ namespace Peerchat {
 		else {
 			nick_update = true;
 		}
-
 		request.summary.address = request.peer->getAddress();
 		response.summary.address = request.summary.address;
 

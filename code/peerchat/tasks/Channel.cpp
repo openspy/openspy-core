@@ -141,14 +141,11 @@ namespace Peerchat {
 
 		
 
-		struct timeval curtime;
-		gettimeofday(&curtime, NULL);
+		uv_timespec64_t curtime;
+		uv_clock_gettime(UV_CLOCK_REALTIME , &curtime);
 		summary.created_at = curtime;
 
 		int total_redis_calls = 0;
-
-		struct timeval now;
-		gettimeofday(&now, NULL);
 
 		std::ostringstream ss;
 		ss << "channel_" << channel_id;
@@ -161,7 +158,7 @@ namespace Peerchat {
 		redisAppendCommand(thread_data->mp_redis_connection, "HSET channels %s %d", formatted_name.c_str(), channel_id); total_redis_calls++;
 
 		ss.str("");
-		ss << now.tv_sec;
+		ss << curtime.tv_sec;
 		std::string now_str = ss.str();
 
 		const char *args[] = {

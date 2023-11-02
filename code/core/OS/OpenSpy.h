@@ -4,35 +4,9 @@
 #include <stdio.h>
 
 #ifdef _WIN32
-#include <Windows.h>
-#include <WinSock.h>
-typedef int socklen_t;
-#ifndef snprintf
-	#define snprintf sprintf_s
+	#define WIN32_LEAN_AND_MEAN
 #endif
-#define strcasecmp _stricmp
-#define strncasecmp _strnicmp
-#define MSG_NOSIGNAL 0
-#define close closesocket
-int gettimeofday(struct timeval *tp, struct timezone *tzp);
-#else
-#include <unistd.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <signal.h>
-#include <netdb.h>
-#include <sys/times.h>
 
-#define stricmp strcasecmp
-#define sprintf_s snprintf
-#define strnicmp strncasecmp
-#define vsprintf_s vsnprintf
-#define _strnicmp strnicmp
-
-#endif
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string>

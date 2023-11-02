@@ -22,7 +22,7 @@ namespace Peerchat {
 				end = end.substr(1);
 			}
 		}
-		gettimeofday(&m_last_sent_ping, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_sent_ping);
         send_message("PONG", end, UserSummary(), ((Peerchat::Server*)GetDriver()->getServer())->getServerName());
 
 		perform_keepalive();

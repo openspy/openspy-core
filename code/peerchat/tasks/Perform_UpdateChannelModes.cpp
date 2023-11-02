@@ -217,8 +217,8 @@ namespace Peerchat {
 
 		if(request.channel_modify.update_topic && request.channel_modify.topic.length() != 0) {
 			redisAppendCommand(thread_data->mp_redis_connection, "HSET %s topic %s", channel_key.c_str(), request.channel_modify.topic.c_str()); cmd_count++;
-			struct timeval now;
-			gettimeofday(&now, NULL);
+			uv_timespec64_t now;
+			uv_clock_gettime(UV_CLOCK_REALTIME, &now);
 			redisAppendCommand(thread_data->mp_redis_connection, "HSET %s topic_time %d", channel_key.c_str(), now.tv_sec); cmd_count++;
 			redisAppendCommand(thread_data->mp_redis_connection, "HSET %s topic_user %s", channel_key.c_str(), request.peer->GetUserDetails().ToString().c_str()); cmd_count++;
 		} else if(request.channel_modify.update_topic) {

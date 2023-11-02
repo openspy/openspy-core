@@ -148,10 +148,10 @@ namespace Peerchat {
 			int basic_mode_flags;
 			std::string password;
 			int limit;
-			struct timeval created_at;
+			uv_timespec64_t created_at;
 
 			std::string topic;
-			struct timeval topic_time;
+			uv_timespec64_t topic_time;
 			std::string topic_user_summary;
 
 			std::vector<ChannelUserSummary> users;
