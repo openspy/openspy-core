@@ -49,10 +49,12 @@ namespace Peerchat {
 			std::ostringstream ss;
 			ChannelSummary summary = *(it++);
 			int user_count = peer->GetListUserCount(summary);
-			if (summary.basic_mode_flags & EChannelMode_Private || summary.basic_mode_flags & EChannelMode_Secret) {
-				if (~peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_IsInChannel) {
-					continue;
-				}				
+			if (!(peer->GetOperFlags() & OPERPRIVS_OPEROVERRIDE)) {
+				if (summary.basic_mode_flags & EChannelMode_Private || summary.basic_mode_flags & EChannelMode_Secret) {
+					if (~peer->GetChannelFlags(summary.channel_id) & EUserChannelFlag_IsInChannel) {
+						continue;
+					}
+				}
 			}
 			if(user_count == 0 && !(summary.basic_mode_flags & EChannelMode_StayOpen)) {
 				continue;
