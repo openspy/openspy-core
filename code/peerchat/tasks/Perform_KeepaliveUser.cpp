@@ -12,7 +12,9 @@ namespace Peerchat {
         ss << "user_" << request.summary.id;
         std::string user_key = ss.str();
 
-        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", user_key.c_str(), USER_EXPIRE_TIME);
+        int num_redis_cmds = 0;
+
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", user_key.c_str(), USER_EXPIRE_TIME); num_redis_cmds++;
         void *reply;
 
         if(request.summary.nick.length() != 0) {
@@ -24,14 +26,21 @@ namespace Peerchat {
             ss << "usernick_" << formatted_name_original;
             std::string usernick_key = ss.str();
 
-            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", usernick_key.c_str(), USER_EXPIRE_TIME);
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", usernick_key.c_str(), USER_EXPIRE_TIME); num_redis_cmds++;
 
-            redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
-            freeReplyObject(reply);
+            std::string user_channels_key;
+            ss.str("");
+            ss << "user_" << request.summary.id << "_channels";
+            user_channels_key = ss.str();
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", user_channels_key.c_str(), USER_EXPIRE_TIME); num_redis_cmds++;
+
         }
 
-        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
-        freeReplyObject(reply);
+
+        for (int i = 0; i < num_redis_cmds; i++) {
+            redisGetReply(thread_data->mp_redis_connection, (void**)&reply);
+            freeReplyObject(reply);
+        }
 
         response.error_details.response_code = TaskShared::WebErrorCode_Success;
 

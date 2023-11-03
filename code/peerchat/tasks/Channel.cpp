@@ -251,6 +251,12 @@ namespace Peerchat {
 
 		int total_redis_calls = 0;
 
+		std::string user_channels_key;
+		ss.str("");
+		ss << "user_" << user.id << "_channels";
+		user_channels_key = ss.str();
+		redisAppendCommand(thread_data->mp_redis_connection, "ZADD %s 1 %d", user_channels_key.c_str(), channel.channel_id); total_redis_calls++;
+
 		redisAppendCommand(thread_data->mp_redis_connection, "ZINCRBY %s 1 %d", channel_users_key.c_str(), user.id); total_redis_calls++;
 
 		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_users_key.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
@@ -315,6 +321,13 @@ namespace Peerchat {
 			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", channel_user_key.c_str());
 			freeReplyObject(reply);
 		}
+
+		std::string user_channels_key;
+		ss.str("");
+		ss << "user_" << user.id << "_channels";
+		user_channels_key = ss.str();
+		reply = (redisReply*)redisCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), channel.channel_id);
+		freeReplyObject(reply);
 
 		int old_modeflags = LookupUserChannelModeFlags(thread_data, channel.channel_id, user.id);
 

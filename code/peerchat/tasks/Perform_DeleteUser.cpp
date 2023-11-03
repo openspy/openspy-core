@@ -23,21 +23,48 @@ namespace Peerchat {
         redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", formated_key.c_str());
         redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", user_key.c_str());
 
-        void *reply;
+        redisReply *reply;
         redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
         freeReplyObject(reply);
 
         redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
         freeReplyObject(reply);
 
-        std::vector<int> channels = request.channel_id_list;
-        std::vector<int>::iterator it = channels.begin();
-        while (it != channels.end()) {
-            int channel_id = *it;
-            ChannelSummary channelSummary = LookupChannelById(thread_data, channel_id);
-            RemoveUserFromChannel(thread_data, userDetails, channelSummary, "NA", "NA", userDetails, true);
-            it++;
-        }
+        std::string user_channels_key;
+        ss.str("");
+        ss << "user_" << userDetails.id << "_channels";
+        user_channels_key = ss.str();
+        
+
+        int cursor = 0;
+        do {
+            reply = (redisReply*)redisCommand(thread_data->mp_redis_connection, "ZSCAN %s %d", user_channels_key.c_str(), cursor);
+
+            if (reply == NULL)
+                break;
+
+            if (reply->element[0]->type == REDIS_REPLY_STRING) {
+                cursor = atoi(reply->element[0]->str);
+            }
+            else if (reply->element[0]->type == REDIS_REPLY_INTEGER) {
+                cursor = reply->element[0]->integer;
+            }
+
+            for (size_t i = 0; i < reply->element[1]->elements; i += 2) {
+                if (reply->element[1]->element[i]->type == REDIS_REPLY_STRING) {
+                    int channel_id = atoi(reply->element[1]->element[i]->str);
+                    ChannelSummary channelSummary = LookupChannelById(thread_data, channel_id);
+                    RemoveUserFromChannel(thread_data, userDetails, channelSummary, "NA", "NA", userDetails, true);
+                }
+            }
+
+
+            if (reply->element[1]->type == REDIS_REPLY_STRING) {
+
+            }            
+
+            freeReplyObject(reply);
+        } while (cursor != 0);
 
         response.error_details.response_code = TaskShared::WebErrorCode_Success;
         response.summary = userDetails;
