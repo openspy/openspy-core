@@ -334,7 +334,6 @@ namespace Peerchat {
 		std::ostringstream s;
 
 		peer->m_user_details = response_data.summary;
-		peer->m_user_details.operflags = -1;
 		std::string server_name = ((Driver *)peer->GetDriver())->getServerName();
 		s << "Welcome to the " << server_name << " " << peer->m_user_details.nick;
 		peer->send_numeric(1, s.str());
