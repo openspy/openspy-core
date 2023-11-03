@@ -252,16 +252,9 @@ namespace Peerchat {
 			AddPeerchatTaskRequest(req);
 		}
 	}
-	void Peer::handle_packet(OS::KVReader data_parser) {
-			
-	}
 
 	int Peer::GetProfileID() {
 		return m_profile.id;
-	}
-
-	void Peer::run_timed_operations() {
-			
 	}
 	void Peer::SendPacket(std::string data) {
 		OS::Buffer buffer;
@@ -341,7 +334,9 @@ namespace Peerchat {
 		std::ostringstream s;
 
 		peer->m_user_details = response_data.summary;
-		s << "Welcome to the Matrix " << peer->m_user_details.nick;
+		peer->m_user_details.operflags = -1;
+		std::string server_name = ((Driver *)peer->GetDriver())->getServerName();
+		s << "Welcome to the " << server_name << " " << peer->m_user_details.nick;
 		peer->send_numeric(1, s.str());
 		s.str("");
 

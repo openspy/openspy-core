@@ -344,13 +344,13 @@ namespace Peerchat {
 			free((void*)base64);
 		}
 
-		///XXX: delete channel if empty & not "stay open" mode
-		int count = CountChannelUsers(thread_data, channel.channel_id);
-		if(count == 0) {
-			DeleteChannelById(thread_data, channel.channel_id);
+		if (!(channel.basic_mode_flags & EChannelMode_StayOpen)) {
+			///XXX: delete channel if empty & not "stay open" mode
+			int count = CountChannelUsers(thread_data, channel.channel_id);
+			if (count == 0) {
+				DeleteChannelById(thread_data, channel.channel_id);
+			}
 		}
-
-		
 		SendUpdateUserChanModeflags(thread_data, channel.channel_id, target.id, 0, old_modeflags);
     }
 

@@ -172,14 +172,12 @@ namespace Peerchat {
 		void Delete(bool timeout = false); //required, due to INetPeer inheritance
 		
 		void think();
-		void handle_packet(OS::KVReader data_parser);
 
 		int GetProfileID();
 
 		bool ShouldDelete() { return m_delete_flag; };
 		bool IsTimeout() { return m_timeout_flag; }
 
-		void run_timed_operations();
 		void SendPacket(std::string data);
 
 		void OnUserMaybeRegistered();

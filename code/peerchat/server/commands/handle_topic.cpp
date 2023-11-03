@@ -18,11 +18,11 @@ namespace Peerchat {
 		if(response_data.channel_summary.topic_time.tv_sec == 0) {
 			peer->send_numeric(331, "No topic set", false, response_data.channel_summary.channel_name);
 		} else {
-			peer->send_numeric(332, response_data.channel_summary.topic, false, response_data.channel_summary.channel_name);
-			s << response_data.channel_summary.topic_user_summary << " " << response_data.channel_summary.topic_time.tv_sec;
+			UserSummary topic_user_summary = response_data.channel_summary.topic_user_summary;
+			peer->send_numeric(332, response_data.channel_summary.topic, false, response_data.channel_summary.channel_name);			
+			s << topic_user_summary.nick << " " << response_data.channel_summary.topic_time.tv_sec;
 			peer->send_numeric(333, s.str(), true, response_data.channel_summary.channel_name);			
 		}
-
     }
 	void Peer::send_topic(std::string channel) {
 		PeerchatBackendRequest req;

@@ -57,12 +57,6 @@ namespace Peerchat {
                     RemoveUserFromChannel(thread_data, userDetails, channelSummary, "NA", "NA", userDetails, true);
                 }
             }
-
-
-            if (reply->element[1]->type == REDIS_REPLY_STRING) {
-
-            }            
-
             freeReplyObject(reply);
         } while (cursor != 0);
 

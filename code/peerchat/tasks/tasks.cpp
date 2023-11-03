@@ -67,10 +67,13 @@ namespace Peerchat {
 
 
 	void InitTasks() {
+		Peerchat::Server* server = (Peerchat::Server*)uv_loop_get_data(uv_default_loop());
+		std::string server_name = server->getServerName();
+
 		server_userSummary = new UserSummary();
 		server_userSummary->nick = "SERVER";
 		server_userSummary->username = "SERVER";
-		server_userSummary->hostname = "Matrix";
+		server_userSummary->hostname = server_name;
 		server_userSummary->id = -1;
 
 		channel_mode_flag_map = (ModeFlagMap*)&local_channel_mode_flag_map;
