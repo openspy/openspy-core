@@ -47,8 +47,20 @@ namespace Peerchat {
 		PeerchatBackendRequest req;
 
 		UsermodeRecord usermodeRecord;
+		usermodeRecord.isGlobal = 1; //default to global
 		usermodeRecord.chanmask = channel_target;
-		usermodeRecord.modeflags = channelUserModesStringToFlags(usermode_properties.GetValue("modeflags"));
+
+		usermodeRecord.modeflags = 0;
+		if (usermode_properties.HasKey("modeflags")) {
+			usermodeRecord.modeflags = channelUserModesStringToFlags(usermode_properties.GetValue("modeflags"));
+		}
+		else if (usermode_properties.HasKey("mode")) {
+			usermodeRecord.modeflags = channelUserModesStringToFlags(usermode_properties.GetValue("mode"));
+		}
+		if (usermodeRecord.modeflags == 0) {
+			send_message("PRIVMSG", "No modeflags specified", *server_userSummary, m_user_details.nick);
+		}
+
 		if (usermode_properties.HasKey("hostmask")) {
 			usermodeRecord.hostmask = usermode_properties.GetValue("hostmask");
 		}
