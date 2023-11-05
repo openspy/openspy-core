@@ -47,7 +47,7 @@ namespace Peerchat {
         } while(cursor != 0);
 	}
 	int CountUserChannels(TaskThreadData *thread_data, int user_id) {
-		redisReply *scan_reply, *reply;
+		redisReply *scan_reply;
 
 		int cursor = 0;
         int count = 0;
@@ -65,6 +65,7 @@ namespace Peerchat {
 		 	}
 
 			count += scan_reply->element[1]->elements;
+			freeReplyObject(scan_reply);
         } while(cursor != 0);
 		return count;
 	}
