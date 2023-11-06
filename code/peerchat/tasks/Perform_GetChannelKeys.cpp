@@ -80,7 +80,6 @@ namespace Peerchat {
 			for(size_t i = 0; i< reply->element[1]->elements;i += 2) {
 				if((i % 2) == 0) {
 					key = reply->element[1]->element[i]->str;
-					key = key.substr(8); //skip custkey_
 				} else {
 					ss << "\\" << key << "\\" << reply->element[1]->element[i]->str;
 				}

@@ -41,7 +41,6 @@ namespace Peerchat {
 				
 				if((i % 2) == 0) {
 					key = reply->element[1]->element[i]->str;
-					key = key.substr(8); //skip custkey_
 				} else {
 					ss << "\\" << key << "\\" << reply->element[1]->element[i]->str;
 				}
