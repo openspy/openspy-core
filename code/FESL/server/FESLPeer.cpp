@@ -35,7 +35,7 @@ namespace FESL {
 		{ FESL_TYPE_ACCOUNT, "SendAccountName", &Peer::m_acct_send_account_name},
 		{ FESL_TYPE_ACCOUNT, "SendPassword", &Peer::m_acct_send_account_password},
 	};
-	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
+	Peer::Peer(Driver *driver, uv_tcp_t *sd) : OS::SSLNetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 

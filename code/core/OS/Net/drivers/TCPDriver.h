@@ -20,7 +20,8 @@ namespace OS {
 			virtual INetPeer *CreatePeer(uv_tcp_t *socket) = 0;
 			virtual void TickConnections();
 			void DeleteClients();
-			static void on_new_connection(uv_stream_t *server, int status);			
+			static void s_on_new_connection(uv_stream_t *server, int status);			
+			virtual INetPeer *on_new_connection(uv_stream_t *server, int status);
 			OS::LinkedListHead<INetPeer *>* mp_peers;
 
 			uv_tcp_t m_listener_socket;	

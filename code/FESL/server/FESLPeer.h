@@ -12,6 +12,8 @@
 #include <OS/SharedTasks/Account/ProfileTasks.h>
 #include <OS/SharedTasks/Geo/GeographyTasks.h>
 
+#include <SSL/SSLPeer.h>
+
 #define FESL_READ_SIZE                  (16 * 1024)
 
 #define MAX_SSL_FAILS 5
@@ -106,7 +108,7 @@ namespace FESL {
 	
     class EntitledGameFeature;
     class ObjectInventoryItem;
-	class Peer : public INetPeer {
+	class Peer : public OS::SSLNetPeer {
 	public:
 		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();

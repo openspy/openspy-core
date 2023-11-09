@@ -14,7 +14,7 @@ namespace OS {
         }
         uv_handle_set_data((uv_handle_t*) &m_listener_socket, this);
 
-        r = uv_listen((uv_stream_t *)&m_listener_socket, 128, TCPDriver::on_new_connection);
+        r = uv_listen((uv_stream_t *)&m_listener_socket, 128, TCPDriver::s_on_new_connection);
         if(r != 0) {
             OS::LogText(OS::ELogLevel_Error, "[%s:%d] Failed to start listener: %s for address", host, port, uv_strerror(r));
         }
@@ -23,12 +23,14 @@ namespace OS {
         DeleteClients();
         delete mp_peers;
     }
-    void TCPDriver::on_new_connection(uv_stream_t *server, int status) {
+    void TCPDriver::s_on_new_connection(uv_stream_t *server, int status) {
         TCPDriver *driver = (TCPDriver*)uv_handle_get_data((uv_handle_t*)server);
-        INetPeer *peer = driver->CreatePeer((uv_tcp_t *)server);
-        //peer->SetAddress(sda->address);
-        driver->mp_peers->AddToList(peer);
-
+        driver->on_new_connection(server, status);
+    }
+    INetPeer *TCPDriver::on_new_connection(uv_stream_t *server, int status) {
+        INetPeer *peer = CreatePeer((uv_tcp_t *)server);
+        mp_peers->AddToList(peer);
+        return peer;
     }
     void TCPDriver::think() {
         TickConnections();

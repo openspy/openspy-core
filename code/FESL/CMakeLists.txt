@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 3.22)
 
 project(FESL)
+find_package(SSL)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -19,7 +20,7 @@ file (GLOB SERVER_TASKS_HDRS "server/tasks/*.h")
 
 set (ALL_SRCS ${MAIN_SRCS} ${MAIN_HDRS} ${SERVER_SRCS} ${SERVER_HDRS} ${SERVER_BASIC_COMMANDS_SRCS} ${SERVER_NU_COMMANDS_SRCS} ${SERVER_TASKS_SRCS} ${SERVER_TASKS_HDRS})
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${SSL_OS_INC})
 
 source_group("Sources" FILES ${MAIN_SRCS})
 source_group("Sources\\Server" FILES ${SERVER_SRCS})

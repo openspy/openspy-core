@@ -9,6 +9,9 @@
 #include "server/FESLDriver.h"
 #include <SSL/StringCrypter.h>
 #include <OS/tasks.h>
+
+#include <SSL/SSLTCPDriver.h>
+
 INetServer *g_gameserver = NULL;
 
 
@@ -115,7 +118,9 @@ int main() {
 		FESL::PublicInfo public_info = GetPublicInfo();
 		std::string str_crypter_rsa_key = GetStringCryptPrivateKey();
 
-		FESL::Driver *driver = new FESL::Driver(g_gameserver, address_buff, port, public_info, str_crypter_rsa_key);
+		void *ssl_ctx = OS::GetSSLContext();
+
+		FESL::Driver *driver = new FESL::Driver(g_gameserver, address_buff, port, public_info, str_crypter_rsa_key, ssl_ctx);
 
 		OS::LogText(OS::ELogLevel_Info, "Adding FESL Driver: %s:%d\n", address_buff, port);
 		g_gameserver->addNetworkDriver(driver);

@@ -11,7 +11,7 @@ find_package(pugixml REQUIRED)
 find_package(rabbitmq-c REQUIRED)
 find_package(CURL REQUIRED)
 
-#get_cmake_property(_variableNames VARIABLES)
+get_cmake_property(_variableNames VARIABLES)
 list (SORT _variableNames)
 foreach (_variableName ${_variableNames})
    message(STATUS "${_variableName}=${${_variableName}}")

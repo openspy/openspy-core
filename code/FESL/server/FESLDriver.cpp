@@ -10,7 +10,7 @@
 
 
 namespace FESL {
-	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key) : TCPDriver(server, host, port) {
+	Driver::Driver(INetServer *server, const char *host, uint16_t port, PublicInfo public_info, std::string str_crypter_rsa_key, void *ssl_ctx) : SSLTCPDriver(server, host, port, ssl_ctx) {
 
 		//setup config vars
 		m_server_info.domainPartition = public_info.domainPartition;

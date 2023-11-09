@@ -43,8 +43,10 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 
 		virtual void Delete(bool timeout = false) = 0;
 
-		static void stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
-		virtual void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) = 0;
+		static void s_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf); //just redirects to stream_read
+		virtual void stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf); //can be overridden by SSLPeer or other implementations
+
+		virtual void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) = 0; //implemented at lowest peer
 		static void write_callback(uv_write_t *req, int status);
 
 		static void close_callback(uv_handle_t *handle);
@@ -64,8 +66,9 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		bool m_delete_flag;
 		bool m_timeout_flag;
 
-		static void clear_send_buffer(uv_async_t *handle);
-		void append_send_buffer(OS::Buffer buffer, bool close_after = false);
+		static void s_clear_send_buffer(uv_async_t *handle);
+		void clear_send_buffer();
+		virtual void append_send_buffer(OS::Buffer buffer, bool close_after = false);
 		uv_async_t m_async_send_handle;
 		std::queue<OS::Buffer> m_send_buffer;
 		bool m_close_when_sendbuffer_empty;
