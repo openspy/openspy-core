@@ -2,23 +2,29 @@
 
 namespace OS {
     SSLNetPeer::SSLNetPeer(INetDriver* driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
-
+        mp_ssl = NULL;
+        mp_write_bio = NULL;
+        mp_read_bio = NULL;
     }
     void SSLNetPeer::InitSSL(void *ssl) {
-        printf("SSLNetPeer::InitSSL: %p\n", ssl);
-        SSL_CTX *ctx = (SSL_CTX*)ssl;
-        mp_ssl = SSL_new(ctx);
-        mp_write_bio = BIO_new(BIO_s_mem());
-        mp_read_bio = BIO_new(BIO_s_mem());
+        if(ssl != NULL) {
+            SSL_CTX *ctx = (SSL_CTX*)ssl;
+            mp_ssl = SSL_new(ctx);
+            mp_write_bio = BIO_new(BIO_s_mem());
+            mp_read_bio = BIO_new(BIO_s_mem());
 
-        BIO_set_nbio(mp_write_bio, 1);
-        BIO_set_nbio(mp_read_bio, 1);
-        
-        SSL_set_bio(mp_ssl, mp_read_bio, mp_write_bio);
-        SSL_set_accept_state(mp_ssl);
+            BIO_set_nbio(mp_write_bio, 1);
+            BIO_set_nbio(mp_read_bio, 1);
+            
+            SSL_set_bio(mp_ssl, mp_read_bio, mp_write_bio);
+            SSL_set_accept_state(mp_ssl);
+        }
     }
     void SSLNetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
-        printf("SSLNetPeer::stream_read: %d\n", nread);
+        if(mp_ssl == NULL) {
+            INetPeer::stream_read(stream, nread, buf);
+            return;
+        }
         if (nread < 0) {
             if (nread != UV_EOF) {
                 OS::LogText(OS::ELogLevel_Info, "[%s] Read error %s\n", m_address.ToString().c_str(), uv_err_name(nread));
@@ -27,21 +33,11 @@ namespace OS {
         } else if (nread > 0) {
             BIO_write(mp_read_bio, buf->base, nread);
             if (!SSL_is_init_finished(mp_ssl)) {
-                printf("init not finished\n");
-                int n = SSL_accept(mp_ssl);
-                printf("SSL_accept: %d\n", n);
-                int status = SSL_get_error(mp_ssl, n);
-                printf("ssl error: %d\n", status);
-                if(status == SSL_ERROR_WANT_READ) {                    
-                    printf("SSL WANT READ %d %d\n", BIO_pending(mp_read_bio), BIO_pending(mp_write_bio));
-                }
+                SSL_accept(mp_ssl);                
                 ssl_flush();
             }
             if (SSL_is_init_finished(mp_ssl)) {
-                printf("SSL INIT FINISHED... TRY READ\n");
                 int rc = SSL_read(mp_ssl, buf->base, nread);
-                printf("SSL READ: %d\n", rc);
-                //SSL_read
                 if(rc > 0) {
                     on_stream_read(stream, rc, buf);   
                 }
@@ -55,7 +51,6 @@ namespace OS {
 
     void SSLNetPeer::ssl_flush() {
         int ssl_write_sz = BIO_pending(mp_write_bio);
-        printf("ssl flush: %p\n", ssl_write_sz);
         if(ssl_write_sz > 0) {
             UVWriteData *write_data = new UVWriteData(1, this);
             uv_write_t *req = (uv_write_t *)malloc(sizeof(uv_write_t));
@@ -73,8 +68,10 @@ namespace OS {
         }
     }
     void SSLNetPeer::clear_send_buffer() {
-        printf("SSLNetPeer::clear_send_buffer");
-
+        if(mp_ssl == NULL) {
+            INetPeer::clear_send_buffer();
+            return;
+        }
         uv_mutex_lock(&m_send_mutex);
         if(!m_send_buffer.empty()) {        
             size_t num_buffers = m_send_buffer.size();
