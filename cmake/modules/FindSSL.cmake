@@ -13,3 +13,4 @@ ENDIF()
 
 message(SSL_SRCS="${SSL_SRCS}")
 message(SSL_LIBS="${SSL_LIBS}")
+message(SSL_INCS="${SSL_INCS}")
