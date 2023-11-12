@@ -34,14 +34,12 @@ namespace Peerchat {
 				std::string key = scan_reply->element[1]->element[i]->str;
 				
 				reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HGET %s channel_id" , key.c_str());
-
-				channel_id = atoi(reply->str);
-
-				freeReplyObject(reply);
-
-				ChannelSummary channel_summary = LookupChannelById(thread_data, channel_id);
-
-				response.channel_summaries.push_back(channel_summary);
+				if(reply && reply->type == REDIS_REPLY_STRING) {
+					channel_id = atoi(reply->str);
+					freeReplyObject(reply);
+					ChannelSummary channel_summary = LookupChannelById(thread_data, channel_id);
+					response.channel_summaries.push_back(channel_summary);
+				}
 			}
 			freeReplyObject(scan_reply);
         } while(cursor != 0);
