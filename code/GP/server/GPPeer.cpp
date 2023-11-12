@@ -172,7 +172,8 @@ namespace GP {
 		}
 	}
 	void Peer::SendPacket(const uint8_t *buff, size_t len) {
-		OS::Buffer buffer((void *)buff, len);
+		OS::Buffer buffer;
+		buffer.WriteBuffer(buff,len);
 		buffer.WriteBuffer((void *)"\\final\\", 7);
 		append_send_buffer(buffer);
 	}
