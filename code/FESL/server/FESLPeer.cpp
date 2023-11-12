@@ -51,6 +51,7 @@ namespace FESL {
 		uv_mutex_init(&m_mutex);
 
 		m_last_profile_lookup_tid = -1;
+		OnConnectionReady();
 
 		
 	}

@@ -33,6 +33,7 @@ namespace SB {
 		#endif
 
 		memset(&m_crypt_state,0,sizeof(m_crypt_state));
+		OnConnectionReady();
 	}
 	V2Peer::~V2Peer() {
 		if(mp_push_delay_buffer) {

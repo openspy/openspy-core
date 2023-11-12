@@ -19,6 +19,7 @@ namespace SM {
 		m_timeout_flag = false;
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
+		OnConnectionReady();
 		
 	}
 	void Peer::OnConnectionReady() {

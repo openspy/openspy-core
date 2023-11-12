@@ -40,6 +40,8 @@ namespace GP {
 		RegisterCommands();
 
 		mp_proto_processor = new KVProcessor();
+
+		OnConnectionReady();
 	}
 	void Peer::OnConnectionReady() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());

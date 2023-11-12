@@ -52,6 +52,8 @@ namespace GS {
 		m_updgame_increfs = 0;
 		m_last_authp_operation_id = 0;
 		m_xor_index = 0;
+
+		OnConnectionReady();
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", getAddress().ToString().c_str());
