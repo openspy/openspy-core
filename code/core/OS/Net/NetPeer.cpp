@@ -68,6 +68,7 @@ void INetPeer::write_callback(uv_write_t *req, int status) {
 
     if(write_data->peer->m_close_when_sendbuffer_empty) {
         write_data->peer->CloseSocket();
+        write_data->peer->Delete();
     }
     delete write_data;
 }
@@ -130,6 +131,8 @@ void INetPeer::CloseSocket() {
 
         IncRef();
         uv_close((uv_handle_t*)&m_socket, close_callback);
+    } else if(GetRefCount() == 0) {
+        delete this;
     }
 }
 void INetPeer::close_callback(uv_handle_t *handle) {
