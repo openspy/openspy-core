@@ -6,6 +6,7 @@ namespace GS {
 
 	void PerformUVWorkRequest(uv_work_t *req) {
 		TaskThreadData temp_data;
+		temp_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
 		PersistBackendRequest *request = (PersistBackendRequest *) uv_handle_get_data((uv_handle_t*) req);
 		
 		switch(request->type) {
