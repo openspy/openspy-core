@@ -127,6 +127,9 @@ namespace SM {
 		const char *str = string.c_str();
 		OS::Buffer buffer;
 		buffer.WriteBuffer(str, string.length());
+		if(attach_final) {
+			buffer.WriteBuffer((void *)"\\final\\", 7);
+		}
 		append_send_buffer(buffer, die_after);
 	}
 	void Peer::Delete(bool timeout) {
