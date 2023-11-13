@@ -1,7 +1,12 @@
 #include "SSLTCPDriver.h"
 #include "SSLPeer.h"
 namespace OS {
+     bool g_ssl_init = false;
      void *GetSSLContext() {
+         if(!g_ssl_init) {
+            g_ssl_init = true;
+            SSL_library_init();
+         }
          char temp_env_buffer[256];
          size_t temp_env_sz = sizeof(temp_env_buffer);
 
