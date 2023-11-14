@@ -68,7 +68,7 @@ namespace FESL {
 		if (nread < sizeof(FESL_HEADER)) {
 			return;
 		}
-		OS::Buffer recv_buffer;
+		
 		recv_buffer.WriteBuffer(buf->base, nread);
 		recv_buffer.resetReadCursor();
 
