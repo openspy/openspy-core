@@ -313,9 +313,9 @@ namespace MM {
             }
 
             std::ostringstream s;
-            if(request.version == 1 && GetNumHeartbeats(thread_data, server_key) == 0) { //fire V1 new event, which only occurs on first HB, instead of validation success
+            IncrNumHeartbeats(thread_data, server_key);
+            if(request.version == 1 && GetNumHeartbeats(thread_data, server_key) == 1) { //fire V1 new event, which only occurs on first HB, instead of validation success
                 s << "\\new\\" << server_key.c_str();
-                IncrNumHeartbeats(thread_data, server_key);
             } else {
                 s << "\\update\\" << server_key.c_str();
             }
