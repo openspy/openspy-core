@@ -12,7 +12,7 @@ namespace Peerchat {
 		UserSummary user_summary = GetUserSummaryByName(thread_data, request.summary.username);
 
 		std::ostringstream ss;
-		ss << "channel_" << summary.channel_id << "_user_" << user_summary.id;
+		ss << "channel_" << summary.channel_id << "_user_" << user_summary.id << "_custkeys";
 		std::string chan_user_key = ss.str();
 
 		if (user_summary.id != request.peer->GetBackendId()) {
@@ -41,7 +41,7 @@ namespace Peerchat {
 						broadcast_keys[p.first] = p.second;
 					}
 
-					std::string custkey_key = "custkey_" + p.first;
+					std::string custkey_key = p.first;
 					void *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSET %s %s %s", chan_user_key.c_str(), custkey_key.c_str(), p.second.c_str());
 					freeReplyObject(reply);
 					it++;

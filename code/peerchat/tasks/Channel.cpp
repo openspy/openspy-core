@@ -168,7 +168,6 @@ namespace Peerchat {
 
 		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
 		redisAppendCommand(thread_data->mp_redis_connection, "SET %s %d", channel_name.c_str(), channel_id); total_redis_calls++;
-		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_name.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
 
 		for(int i=0;i<total_redis_calls;i++) {
 			if(redisGetReply(thread_data->mp_redis_connection,(void**)&reply) == REDIS_OK) {
@@ -200,21 +199,17 @@ namespace Peerchat {
 			id = reply->integer;
 		}
 		freeReplyObject(reply);
-		if (id != 0) {
-
-			ss.str("");
-			ss << "channel_" << id;
-			std::string channel = ss.str();
-
-			redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_name.c_str(), CHANNEL_EXPIRE_TIME);
-			redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel.c_str(), CHANNEL_EXPIRE_TIME);
-		
-			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
-			freeReplyObject(reply);
-
-			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
-			freeReplyObject(reply);
-		}
+        if (id != 0) {
+            
+            ss.str("");
+            ss << "channel_" << id;
+            std::string channel = ss.str();
+            
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel.c_str(), CHANNEL_EXPIRE_TIME);
+            
+            redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+            freeReplyObject(reply);
+        }
 		return id;
 	}
 	ChannelSummary GetChannelSummaryByName(TaskThreadData* thread_data, std::string name, bool create, UserSummary creator, bool *created) {

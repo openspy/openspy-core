@@ -246,6 +246,7 @@ namespace Peerchat {
 			PeerchatBackendRequest req;
 			req.type = EPeerchatRequestType_KeepaliveUser;
 			req.summary = GetUserDetails();
+			req.channel_flags = GetChannelFlagsMap();
 			req.peer = this;
 			req.peer->IncRef();
 			req.callback = NULL;

@@ -80,8 +80,7 @@ namespace Peerchat {
 				if (key.length() <= 12)
 					continue;
 
-				key = key.substr(12);
-				summary = GetChannelSummaryByName(thread_data, key, false);
+				summary = GetChannelSummaryByName(thread_data, key.substr(12), false);
 
 				std::ostringstream chan_ss;
 				chan_ss << "channel_" << summary.channel_id << "_custkeys";
@@ -100,6 +99,11 @@ namespace Peerchat {
                     if (request.channel_summary.channel_name.compare(group) == 0 || match2(request.channel_summary.channel_name.c_str(), summary.channel_name.c_str()) == 0) {
                         channels.push_back(summary);
                     }
+				} else {
+					reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", key.c_str());
+					if(reply) {
+						freeReplyObject(reply);
+					}
 				}
 			}
         } while(cursor != 0 && (channels.size() < (size_t)request.channel_summary.limit || request.channel_summary.limit == 0));
