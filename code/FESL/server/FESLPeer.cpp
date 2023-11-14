@@ -63,11 +63,14 @@ namespace FESL {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection", getAddress().ToString().c_str());
 	}
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
-		OS::Buffer recv_buffer = OS::Buffer((void *)buf->base, nread);
+		OS::Buffer recv_buffer;
 
 		if (nread < sizeof(FESL_HEADER)) {
 			return;
 		}
+		OS::Buffer recv_buffer;
+		recv_buffer.WriteBuffer(buf->base, nread);
+		recv_buffer.resetReadCursor();
 
 		FESL_HEADER header;
 		recv_buffer.ReadBuffer(&header, sizeof(header));
