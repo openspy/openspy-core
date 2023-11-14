@@ -2,6 +2,8 @@
 #include <server/SBServer.h>
 #include <server/SBDriver.h>
 namespace MM {
+
+	//this event is handled by the "qr-service" project, which handles resending and other QR related logic
     bool Handle_ServerEventMsg(TaskThreadData *thread_data, std::string message) {
 		SBServer *server = (SBServer *)uv_loop_get_data(uv_default_loop());
 		if(!server) return false;

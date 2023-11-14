@@ -15,7 +15,7 @@ namespace MM {
 
     const char *mp_pk_name = "QRID";
 
-	TaskShared::ListenerEventHandler qrmsgs_event_handler = {mm_channel_exchange, mm_client_message_routingkey, Handle_QRMessage};
+	TaskShared::ListenerEventHandler qrmsgs_event_handler = {mm_channel_exchange, mm_client_message_routingkey, Handle_QRMessage}; //this event is sent from the "qr-service" project which handles requeueing and other logic
 	TaskShared::ListenerEventHandler all_events[] = {qrmsgs_event_handler};
 	TaskShared::ListenerArgs consume_qrmsgs_message = {all_events, sizeof(all_events) / sizeof(TaskShared::ListenerEventHandler)};
 
