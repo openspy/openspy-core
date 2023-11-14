@@ -85,7 +85,10 @@ namespace TaskShared {
 						if(json_obj)
 							register_data.user = OS::LoadUserFromJson(json_obj);
 					}
-				}
+                } else {
+                    register_data.profile.id = register_data.error_details.profileid;
+                    register_data.user.id = register_data.error_details.userid;
+                }
 			}
 			else {
 				register_data.error_details.response_code = TaskShared::WebErrorCode_BackendError;
