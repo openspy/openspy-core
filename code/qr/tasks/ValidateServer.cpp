@@ -54,6 +54,8 @@ namespace MM {
             if(request.version != 1) { //version 1 new event is only after collection of first heartbeat
                 std::ostringstream s;
                 s << "\\new\\" << server_key.c_str();
+
+                IncrNumHeartbeats(thread_data, server_key);
                 
                 std::string msg = s.str();
                 TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str(), &request.from_address);

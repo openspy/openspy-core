@@ -123,6 +123,7 @@ namespace MM {
 
 	std::string GetServerKeyBy_InstanceKey_Address(TaskThreadData *thread_data, uint32_t instance_key, OS::Address address);
 	int GetNumHeartbeats(TaskThreadData *thread_data, std::string server_key);
+	void IncrNumHeartbeats(TaskThreadData *thread_data, std::string server_key);
 
 	extern const char *mm_channel_exchange;
 

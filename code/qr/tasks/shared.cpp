@@ -165,6 +165,13 @@ namespace MM {
 		return ret;
 	}
 
+    void IncrNumHeartbeats(TaskThreadData *thread_data, std::string server_key) {
+        redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HINCRBY %s num_updates 1", server_key.c_str());
+        if(reply) {
+            freeReplyObject(reply);
+        }
+	}
+
 	void selectQRRedisDB(TaskThreadData *thread_data) {
 		void *reply;
 		reply = redisCommand(thread_data->mp_redis_connection, "SELECT %d", OS::ERedisDB_QR);
