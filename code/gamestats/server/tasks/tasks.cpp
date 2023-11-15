@@ -87,6 +87,9 @@ namespace GS {
 		uv_mutex_lock(&m_callback_mutex);
 		if(!m_callback_responses.empty()) {
 			PersistCallbackArgs args = m_callback_responses.front();
+			if(args.peer) {
+				args.peer->DecRef();
+			}
 			if(args.callback != NULL) {
 				args.callback(args.success, args.response_data, args.peer, args.extra);
 			} else if(args.authCallback != NULL) {
@@ -103,6 +106,9 @@ namespace GS {
 		PersistCallbackArgs args;
 		args.success = success;
 		args.peer = (GS::Peer *)peer;
+		if(args.peer) {
+			args.peer->IncRef();
+		}
 		args.extra = extra;
 		args.auth_data = auth_data;
 		args.user = user;
