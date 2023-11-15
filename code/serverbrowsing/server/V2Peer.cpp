@@ -25,6 +25,7 @@ namespace SB {
 		m_last_list_req.push_updates = false;
 		m_in_message = false;
 		m_got_game_pair = false;
+		m_read_remaining = 0;
 
 		#if HACKER_PATCH_MSG_SPAM_CHECKER
 				m_hp_msg_spam_count = 0;
