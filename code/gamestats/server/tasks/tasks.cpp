@@ -77,6 +77,7 @@ namespace GS {
 		args.extra = extra;
 		args.callback = callback;
 		args.response_data = response_data;
+        args.authCallback = NULL;
 		uv_mutex_unlock(&m_callback_mutex);
 		m_callback_responses.push(args);
 		uv_async_send(&m_async_callback_handle);
@@ -107,6 +108,7 @@ namespace GS {
 		args.user = user;
 		args.profile = profile;
 		args.authCallback = authCallback;
+        args.callback = NULL;
 		uv_mutex_unlock(&m_callback_mutex);
 		m_callback_responses.push(args);
 		uv_async_send(&m_async_callback_handle);
