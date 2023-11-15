@@ -76,6 +76,7 @@ namespace GS {
 		args.peer = peer;
 		args.extra = extra;
 		args.callback = callback;
+		args.response_data = response_data;
 		uv_mutex_unlock(&m_callback_mutex);
 		m_callback_responses.push(args);
 		uv_async_send(&m_async_callback_handle);
