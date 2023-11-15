@@ -50,7 +50,6 @@ namespace GS {
 		callback_dispatch_later(success, resp_data, request.mp_peer, request.mp_extra, request.callback);
 
 		json_decref(send_json);
-		request.mp_peer->DecRef();
 		return false;
 	}
 }

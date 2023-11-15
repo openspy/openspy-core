@@ -54,7 +54,6 @@ namespace GS {
 		}
 		authcallback_dispatch_later(success, auth_user, auth_profile, auth_data, request.mp_extra, request.mp_peer, request.authCallback);
 		json_decref(send_json);
-		request.mp_peer->DecRef();
 		return true;
 	}
 }
