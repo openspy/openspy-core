@@ -124,7 +124,7 @@ namespace TaskShared {
 			if(reply) {
 				freeReplyObject(reply);
 			}
-			if(connection->err != 0) {
+			if(reply == NULL || connection->err != 0) {
 				return doRedisReconnect();
 			}
 			return connection;
