@@ -14,7 +14,6 @@
 
 namespace SB {
 	V2Peer::V2Peer(Driver *driver, uv_tcp_t *sd) : SB::Peer(driver, sd, 2) {
-		m_next_packet_send_msg = false;
 		m_sent_crypt_header = false;
 		m_sent_push_keys = false;
 		m_game.secretkey[0] = 0;
@@ -143,12 +142,13 @@ namespace SB {
 
 	}
 	void V2Peer::ProcessSendMessage(OS::Buffer &buffer) {
-		m_send_msg_to.sin_addr.s_addr = (buffer.ReadInt());
-		m_send_msg_to.sin_port = buffer.ReadShort();
+		struct sockaddr_in send_msg_to;
+		send_msg_to.sin_addr.s_addr = (buffer.ReadInt());
+		send_msg_to.sin_port = buffer.ReadShort();
 
 		#if HACKER_PATCH_MSG_SPAM_CHECKER
-			if (m_hp_msg_spam_count == 0 || m_hp_msg_spam_last_msg_sent_to != m_send_msg_to) {
-				m_hp_msg_spam_last_msg_sent_to = m_send_msg_to;
+			if (m_hp_msg_spam_count == 0 || m_hp_msg_spam_last_msg_sent_to != send_msg_to) {
+				m_hp_msg_spam_last_msg_sent_to = send_msg_to;
 				m_hp_msg_spam_count = 0;
 			}
 			else if (m_hp_msg_spam_count > HACKER_PATCH_MSG_SPAM_CHECKER_DUPLICATE) {
@@ -159,21 +159,14 @@ namespace SB {
 		#endif
 
 
-		OS::LogText(OS::ELogLevel_Info, "[%s] Send msg to %s", getAddress().ToString().c_str(), OS::Address(m_send_msg_to).ToString().c_str());
-		if (buffer.readRemaining() > 0) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", getAddress().ToString().c_str(), buffer.readRemaining());
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got msg %s - %d", getAddress().ToString().c_str(), OS::Address(send_msg_to).ToString().c_str(), buffer.readRemaining());
 			MM::MMQueryRequest req;
 			req.type = MM::EMMQueryRequestType_SubmitData;
 			req.from = getAddress();
-			req.to = m_send_msg_to;
+			req.to = send_msg_to;
 			req.buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
 			req.req.m_for_game = m_game;
 			AddRequest(req);
-
-		}
-		else {
-			m_next_packet_send_msg = true;
-		}
 
 	}
 	/*		
