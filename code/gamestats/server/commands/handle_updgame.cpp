@@ -20,15 +20,15 @@ using namespace GPShared;
 namespace GS {
 
 	void Peer::updateGameCreateCallback(bool success, PersistBackendResponse response_data, GS::Peer *peer, void* extra) {
-		uv_mutex_lock(&peer->m_mutex);
+		//uv_mutex_lock(&peer->m_mutex);
 		int sesskey = (int)(ptrdiff_t)extra;
 		peer->m_updgame_sesskey_wait_list.erase(sesskey);
-		uv_mutex_unlock(&peer->m_mutex);
+		//uv_mutex_unlock(&peer->m_mutex);
 	}
 	void Peer::handle_updgame(OS::KVReader data_parser) {
 		//\updgame\\sesskey\%d\done\%d\gamedata\%s
 		int sesskey = data_parser.GetValueInt("sesskey");
-		uv_mutex_lock(&m_mutex);
+		//uv_mutex_lock(&m_mutex);
 		std::map<int, std::string>::iterator it = m_game_session_backend_identifier_map.find(sesskey);
 
 		//not found... must be a pending request XXX: check into this logic more!!
@@ -42,7 +42,7 @@ namespace GS {
 				}
 				send_error(GPShared::GP_BAD_SESSKEY);
 			}
-			uv_mutex_unlock(&m_mutex);
+			//uv_mutex_unlock(&m_mutex);
 			return;
 		}
 		std::map<std::string,std::string> game_data;
@@ -69,6 +69,6 @@ namespace GS {
 		IncRef();
 		AddRequest(req);
 
-		uv_mutex_unlock(&m_mutex);
+		//uv_mutex_unlock(&m_mutex);
 	}
 }

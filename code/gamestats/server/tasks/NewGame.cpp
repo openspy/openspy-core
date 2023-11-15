@@ -35,7 +35,7 @@ namespace GS {
 			success = true;
 			resp_data.game_instance_identifier = json_string_value(success_obj);
 		}
-		request.callback(success, resp_data, request.mp_peer, request.mp_extra);
+		callback_dispatch_later(success, resp_data, request.mp_peer, request.mp_extra, request.callback);
 
 		json_decref(send_json);
 		request.mp_peer->DecRef();

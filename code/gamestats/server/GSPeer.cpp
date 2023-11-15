@@ -22,8 +22,6 @@ namespace GS {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		
-		uv_mutex_init(&m_mutex);
-
 		gettimeofday(&m_last_ping, NULL);
 		gettimeofday(&m_last_recv, NULL);
 
@@ -37,17 +35,14 @@ namespace GS {
 		m_getpd_wait_ctx.wait_index = 0;
 		m_getpd_wait_ctx.top_index = 0;
 		m_get_request_index = 0;
-		uv_mutex_init(&m_getpd_wait_ctx.mutex);
 
 		m_setpd_wait_ctx.wait_index = 0;
 		m_setpd_wait_ctx.top_index = 0;
 		m_set_request_index = 0;
-		uv_mutex_init(&m_setpd_wait_ctx.mutex);
 
 		m_getpid_request_index = 0;
 		m_getpid_wait_ctx.wait_index = 0;
 		m_getpid_wait_ctx.top_index = 0;
-		uv_mutex_init(&m_getpid_wait_ctx.mutex);
 
 		m_updgame_increfs = 0;
 		m_last_authp_operation_id = 0;
@@ -57,10 +52,6 @@ namespace GS {
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed", getAddress().ToString().c_str());
-		uv_mutex_destroy(&m_getpd_wait_ctx.mutex);
-		uv_mutex_destroy(&m_setpd_wait_ctx.mutex);
-		uv_mutex_destroy(&m_getpid_wait_ctx.mutex);
-		uv_mutex_destroy(&m_mutex);
 	}
 	void Peer::OnConnectionReady() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] New connection",getAddress().ToString().c_str());
@@ -230,7 +221,6 @@ namespace GS {
 		m_timeout_flag = timeout;
 	}
 	void Peer::SendOrWaitBuffer(uint32_t index, WaitBufferCtx &wait_ctx, OS::Buffer buffer) {
-		uv_mutex_lock(&m_mutex);
 		if (index > wait_ctx.top_index) {
 			wait_ctx.top_index = index;
 		}
@@ -258,7 +248,6 @@ namespace GS {
 				break;
 			}
 		}
-		uv_mutex_unlock(&m_mutex);
 	}
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 		OS::Buffer recv_buffer;

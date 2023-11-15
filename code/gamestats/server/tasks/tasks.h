@@ -81,7 +81,6 @@ namespace GS {
 		bool complete;
 
 		OS::KVReader kv_set_data;
-
 		TaskShared::AuthCallback authCallback;
 	} PersistBackendRequest;
 
@@ -100,6 +99,13 @@ namespace GS {
 	void PerformUVWorkRequest(uv_work_t *req);
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
 
-	//void Handle_WebError(TaskShared::AuthData &data, json_t *error_obj);
+	void callback_dispatch_later(bool success,
+		PersistBackendResponse response_data,
+		GS::Peer *peer,
+		void* extra,
+		PersistBackendCallback callback);
+
+
+	void authcallback_dispatch_later(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer, TaskShared::AuthCallback authCallback);
 }
 #endif //_GS_TASKS_H

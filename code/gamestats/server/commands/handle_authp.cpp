@@ -95,7 +95,7 @@ namespace GS {
 	}
 	void Peer::m_nick_email_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
 
-		uv_mutex_lock(&((Peer *)peer)->m_mutex);
+		//uv_mutex_lock(&((Peer *)peer)->m_mutex);
 		if(!((Peer *)peer)->m_backend_session_key.length() && auth_data.session_key.length())
 			((Peer *)peer)->m_backend_session_key = auth_data.session_key;
 
@@ -152,6 +152,6 @@ namespace GS {
 			ss << "\\lid\\" << operation_id;
 			((Peer *)peer)->SendPacket(ss.str());
 		}
-		uv_mutex_unlock(&((Peer *)peer)->m_mutex);
+		//uv_mutex_unlock(&((Peer *)peer)->m_mutex);
 	}
 }

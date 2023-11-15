@@ -31,7 +31,6 @@ namespace GS {
 		public:
 			std::atomic<uint32_t> wait_index;
 			uint32_t top_index;
-			uv_mutex_t mutex;
 			std::map<int, OS::Buffer> buffer_map;
 	} ;
 
@@ -125,8 +124,6 @@ namespace GS {
 		std::string m_backend_session_key;
 		OS::User m_user;
 		OS::Profile m_profile;
-
-		uv_mutex_t m_mutex;
 
 		uint16_t m_game_port;
 
