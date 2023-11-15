@@ -120,6 +120,10 @@ namespace TaskShared {
 		redisContext *connection = (redisContext *)uv_key_get(&mm_redis_connection_key);
 
 		if(connection != NULL) {
+			redisReply *reply = (redisReply *)redisCommand(connection, "PING");
+			if(reply) {
+				freeReplyObject(reply);
+			}
 			if(connection->err != 0) {
 				return doRedisReconnect();
 			}
