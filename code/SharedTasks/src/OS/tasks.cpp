@@ -7,7 +7,7 @@
 
 #include <OS/OpenSpy.h>
 
-#define AMQP_DEBUG_MESSAGES 1
+//#define AMQP_DEBUG_MESSAGES 1
 
 namespace TaskShared {
 	uv_once_t mm_tls_init_once = UV_ONCE_INIT;
