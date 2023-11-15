@@ -48,7 +48,6 @@ void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
         }
         Delete();
     } else if (nread > 0) {
-        //BIO_write()
         on_stream_read(stream, nread, buf);
     }
 

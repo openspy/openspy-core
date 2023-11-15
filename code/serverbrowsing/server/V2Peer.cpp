@@ -26,7 +26,6 @@ namespace SB {
 		m_last_list_req.push_updates = false;
 		m_in_message = false;
 		m_got_game_pair = false;
-		mp_push_delay_buffer = NULL;
 
 		#if HACKER_PATCH_MSG_SPAM_CHECKER
 				m_hp_msg_spam_count = 0;
@@ -36,53 +35,44 @@ namespace SB {
 		OnConnectionReady();
 	}
 	V2Peer::~V2Peer() {
-		if(mp_push_delay_buffer) {
-			delete mp_push_delay_buffer;
-		}
 	}
 	void V2Peer::handle_packet(OS::Buffer &buffer) {
 		uint8_t request_type = 0;
 
 		bool break_flag = false;
 
-		while(buffer.readRemaining() > 0 && !break_flag) {
+		request_type = buffer.ReadByte();
 
-			htons(buffer.ReadShort()); //read length
+		gettimeofday(&m_last_recv, NULL);
 
-			request_type = buffer.ReadByte();
-
-			gettimeofday(&m_last_recv, NULL);
-
-			//TODO: get expected lengths for each packet type and test, prior to execution
-			switch (request_type) {
-				case SERVER_LIST_REQUEST:
-					ProcessListRequest(buffer);
-					break;
-				case KEEPALIVE_MESSAGE:
-					
-					break;
-				case SEND_MESSAGE_REQUEST:
-					ProcessSendMessage(buffer);
-					break_flag = true;
+		//TODO: get expected lengths for each packet type and test, prior to execution
+		switch (request_type) {
+			case SERVER_LIST_REQUEST:
+				ProcessListRequest(buffer);
 				break;
-				case MAPLOOP_REQUEST:
-					OS::LogText(OS::ELogLevel_Info, "[%s] Got map request", getAddress().ToString().c_str(), request_type);
-					break_flag = true;
+			case KEEPALIVE_MESSAGE:
+				
 				break;
-				case PLAYERSEARCH_REQUEST:
-					OS::LogText(OS::ELogLevel_Info, "[%s] Got playersearch request", getAddress().ToString().c_str(), request_type);
-					break_flag = true;
+			case SEND_MESSAGE_REQUEST:
+				ProcessSendMessage(buffer);
+				break_flag = true;
+			break;
+			case MAPLOOP_REQUEST:
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got map request", getAddress().ToString().c_str(), request_type);
+				break_flag = true;
+			break;
+			case PLAYERSEARCH_REQUEST:
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got playersearch request", getAddress().ToString().c_str(), request_type);
+				break_flag = true;
+			break;
+			case SERVER_INFO_REQUEST:
+				ProcessInfoRequest(buffer);
+			break;
+			default:
+				OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d", getAddress().ToString().c_str(), request_type);
+				break_flag = true;
 				break;
-				case SERVER_INFO_REQUEST:
-					ProcessInfoRequest(buffer);
-				break;
-				default:
-					OS::LogText(OS::ELogLevel_Info, "[%s] Got unknown packet type: %d", getAddress().ToString().c_str(), request_type);
-					break_flag = true;
-					break;
-			}
 		}
-
 	}
 	MM::sServerListReq V2Peer::ParseListRequest(OS::Buffer &buffer) {
 		uint32_t options;
@@ -475,19 +465,34 @@ namespace SB {
 		OS::Buffer buffer;
 		buffer.WriteBuffer(buf->base, nread);
 		buffer.resetReadCursor();
-		if(m_next_packet_send_msg) {
-			OS::LogText(OS::ELogLevel_Info, "[%s] Got msg length: %d", getAddress().ToString().c_str(), nread);
-			MM::MMQueryRequest req;
-			req.type = MM::EMMQueryRequestType_SubmitData;
-			req.from = getAddress();
-			req.to = m_send_msg_to;
-			req.buffer.WriteBuffer(buf->base, nread);
-			req.req.m_for_game = m_game;
-			AddRequest(req);
-			m_next_packet_send_msg = false;
-		} else {
-			this->handle_packet(buffer);
-		}
+        while(nread > 0) {
+            if(m_read_remaining == 0) {
+                m_read_buffer.resetCursors();
+                m_read_remaining = htons(buffer.ReadShort()); //read length
+
+                m_read_remaining -= sizeof(uint16_t); //skip length
+                nread -= sizeof(uint16_t);
+            }
+
+            if(buffer.readRemaining() >= m_read_remaining) { //buffer contains entire message, process entire thing
+                m_read_buffer.WriteBuffer(buffer.GetReadCursor(), m_read_remaining);
+                buffer.SkipRead(m_read_remaining);
+                nread -= m_read_remaining;
+                m_read_remaining = 0;
+            } else if(m_read_remaining >= buffer.readRemaining()) { //remaining message is larger than remaining recv data
+                m_read_buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
+                m_read_remaining -= buffer.readRemaining();
+                nread -= buffer.readRemaining();
+                buffer.SkipRead(buffer.readRemaining());
+            }
+
+            if(m_read_remaining == 0) {
+                this->handle_packet(m_read_buffer);
+                m_read_buffer.resetCursors();
+            }
+        }
+
+		
 	}
 	void V2Peer::think() {
 		if (m_delete_flag) return;

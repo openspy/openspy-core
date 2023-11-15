@@ -40,6 +40,8 @@ namespace OS {
 			void WriteNTS(std::string str);
 			void WriteBuffer(const void *buf, size_t len);
 
+			void SkipRead(size_t len) { IncReadCursor(len); }
+
 			size_t readRemaining();
 			size_t bytesWritten();
 			size_t allocSize();
