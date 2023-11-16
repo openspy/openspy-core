@@ -43,8 +43,8 @@ namespace Peerchat {
 		return false;
 	}
 	void Handle_GetChannelKeys_LookupWildcard(TaskThreadData* thread_data, ChannelSummary summary, std::string search_string, std::ostringstream &ss) {
-        redisReply *reply;
-        int cursor = 0;
+		redisReply *reply;
+		int cursor = 0;
 
 		std::string channel_key;
 		std::ostringstream chan_ss;
@@ -54,13 +54,6 @@ namespace Peerchat {
         do {
             reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "HSCAN %s %d MATCH *", channel_key.c_str(), cursor);
 			
-            // if (reply == NULL || thread_data->mp_redis_connection->err) {
-            //     goto error_cleanup;
-            // }
-			// if (reply->elements < 2) {
-			// 	goto error_cleanup;
-			// }
-
 			if(reply == NULL) {
 				return;
 			}
@@ -78,14 +71,10 @@ namespace Peerchat {
 
 			std::string key;
 			for(size_t i = 0; i< reply->element[1]->elements;i += 2) {
-				if((i % 2) == 0) {
-					key = reply->element[1]->element[i]->str;
-				} else {
-					ss << "\\" << key << "\\" << reply->element[1]->element[i]->str;
-				}
+				ss << "\\" << reply->element[1]->element[i]->str << "\\" << reply->element[1]->element[i + 1]->str;
 			}
 			freeReplyObject(reply);
-        } while(cursor != 0);
+		} while(cursor != 0);
 
 		Perform_GetChannelKeys_InjectOverrides(summary, search_string, ss);
 	}
