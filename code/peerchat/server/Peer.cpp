@@ -44,7 +44,7 @@ namespace Peerchat {
 		CommandEntry("GETCKEY", true, 5, &Peer::handle_getckey, 0, 10),
 		CommandEntry("SETCHANKEY", true, 2, &Peer::handle_setchankey, 0, 10),
 		CommandEntry("GETCHANKEY", true, 4, &Peer::handle_getchankey, 0, 10),
-		CommandEntry("SETKEY", true, 4, &Peer::handle_setkey, 0, 10),
+		CommandEntry("SETKEY", true, 1, &Peer::handle_setkey, 0, 10),
 		CommandEntry("GETKEY", true, 4, &Peer::handle_getkey, 0, 10),
 		CommandEntry("KICK", true, 2, &Peer::handle_kick, 0, 200),
 		CommandEntry("SETGROUP", true, 2, &Peer::handle_setgroup, 0, 100),

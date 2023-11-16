@@ -20,15 +20,21 @@ namespace Peerchat {
         ss << "user_" << userDetails.id;
         std::string user_key = ss.str();
 
-        redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", formated_key.c_str());
-        redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", user_key.c_str());
+
+        int num_redis_cmds = 0;
+
+        redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", formated_key.c_str()); num_redis_cmds++;
+        redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", user_key.c_str()); num_redis_cmds++;
+        redisAppendCommand(thread_data->mp_redis_connection, "DEL %s_custkeys", user_key.c_str()); num_redis_cmds++;
 
         redisReply *reply;
-        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
-        freeReplyObject(reply);
-
-        redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
-        freeReplyObject(reply);
+        for(int i=0;i<num_redis_cmds;i++) {            
+            int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+            if(r == REDIS_OK) {
+                freeReplyObject(reply);
+            }
+        }
+        
 
         std::string user_channels_key;
         ss.str("");
@@ -59,6 +65,11 @@ namespace Peerchat {
             }
             freeReplyObject(reply);
         } while (cursor != 0);
+
+        reply = (redisReply*)redisCommand(thread_data->mp_redis_connection, "DEL %s_channels", user_key.c_str());
+        if(reply) {
+            freeReplyObject(reply);
+        }
 
         response.error_details.response_code = TaskShared::WebErrorCode_Success;
         response.summary = userDetails;

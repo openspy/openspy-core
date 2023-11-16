@@ -28,13 +28,14 @@ namespace Peerchat {
 
             redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", usernick_key.c_str(), USER_EXPIRE_TIME); num_redis_cmds++;
 
-            std::string user_channels_key;
-            ss.str("");
-            ss << "user_" << request.summary.id << "_channels";
-            user_channels_key = ss.str();
-            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", user_channels_key.c_str(), USER_EXPIRE_TIME); num_redis_cmds++;
-
         }
+
+
+        std::string user_channels_key;
+        ss.str("");
+        ss << "user_" << request.summary.id << "_channels";
+        user_channels_key = ss.str();
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", user_channels_key.c_str(), USER_EXPIRE_TIME); num_redis_cmds++;
 
 
         //refresh user and associated channels expire time
@@ -53,6 +54,10 @@ namespace Peerchat {
 
             ss.str("");
             ss << "channel_" << p.first << "_users";
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", redis_key.c_str(), CHANNEL_EXPIRE_TIME); num_redis_cmds++;
+
+            ss.str("");
+            ss << "channel_" << p.first << "_usermodes";
             redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", redis_key.c_str(), CHANNEL_EXPIRE_TIME); num_redis_cmds++;
             
             it++;

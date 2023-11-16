@@ -16,7 +16,7 @@
 
 #define USER_EXPIRE_TIME 900
 
-#define CHANNEL_EXPIRE_TIME 86400
+#define CHANNEL_EXPIRE_TIME 3600
 #define CHANNEL_DELETE_EXPIRE_TIME 30
 
 using namespace TaskShared;

@@ -18,9 +18,9 @@ namespace Peerchat {
 		
 	}
 
-    //SETKEY CHC 0 000 :\b_test\1
+    //SETKEY :\test\1
     void Peer::handle_setkey(std::vector<std::string> data_parser) {
-        std::string kv_string  = data_parser.at(4);
+        std::string kv_string  = data_parser.at(1);
 		if (kv_string.length() > 1 && kv_string[0] == ':') {
 			kv_string = kv_string.substr(1);
 		}

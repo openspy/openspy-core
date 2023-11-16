@@ -246,7 +246,7 @@ namespace Peerchat {
 
         
 		redisAppendCommandArgv(thread_data->mp_redis_connection, num_args, args, NULL);
-		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", key.c_str(), CHANNEL_EXPIRE_TIME);
+		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", key.c_str(), USER_EXPIRE_TIME);
 
 
 		redisReply *reply;
