@@ -42,6 +42,8 @@ namespace GS {
 		json_t *success_obj = json_object_get(send_json, "modified");
 		if (success_obj) {
 			resp_data.mod_time = (uint32_t)json_integer_value(success_obj);
+		} else {
+			resp_data.mod_time = 0;
 		}
 		callback_dispatch_later(success, resp_data, request.mp_peer, request.mp_extra, request.callback);
 
