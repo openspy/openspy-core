@@ -17,6 +17,8 @@ namespace GS {
 	uv_async_t m_async_callback_handle;
 	std::queue<PersistCallbackArgs> m_callback_responses;
 	uv_mutex_t m_callback_mutex;
+
+
 	void uvworker_callback_dispatcher(uv_async_t *handle);
 
 	void InitTasks() {
@@ -61,6 +63,7 @@ namespace GS {
 				Perform_GetProfileIDFromCD(*request, &temp_data);
 			break;
 		}
+		maybe_dispatch_responses();
 	}
 
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status) {
@@ -117,5 +120,18 @@ namespace GS {
 		uv_mutex_unlock(&m_callback_mutex);
 		
 		uv_async_send(&m_async_callback_handle);
+	}
+	void maybe_dispatch_responses() {
+		bool do_dispatch = false;
+		uv_mutex_lock(&m_callback_mutex);
+		if(!m_callback_responses.empty()) {
+			do_dispatch = true;
+		}
+		uv_mutex_unlock(&m_callback_mutex);
+		
+		if(do_dispatch) {
+			uv_async_send(&m_async_callback_handle);
+		}
+
 	}
 }
