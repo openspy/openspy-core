@@ -3,6 +3,8 @@
 #include "GSServer.h"
 #include "GSDriver.h"
 
+#include "tasks/tasks.h"
+
 namespace GS {
 	Server::Server() : INetServer() {
 		uv_loop_set_data(uv_default_loop(), this);
@@ -18,5 +20,6 @@ namespace GS {
 			it++;
 		}
 		NetworkTick();
+		maybe_dispatch_responses();
 	}
 }

@@ -107,5 +107,7 @@ namespace GS {
 
 
 	void authcallback_dispatch_later(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer, TaskShared::AuthCallback authCallback);
+
+	void maybe_dispatch_responses();
 }
 #endif //_GS_TASKS_H
