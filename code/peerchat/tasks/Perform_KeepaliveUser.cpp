@@ -48,6 +48,8 @@ namespace Peerchat {
             ss << "channel_" << p.first << "_user_" << request.summary.id;
             redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", redis_key.c_str(), CHANNEL_EXPIRE_TIME); num_redis_cmds++;
 
+            redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s_custkeys %d", redis_key.c_str(), CHANNEL_EXPIRE_TIME); num_redis_cmds++;
+
             ss.str("");
             ss << "channel_" << p.first;
             redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", redis_key.c_str(), CHANNEL_EXPIRE_TIME); num_redis_cmds++;
