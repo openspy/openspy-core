@@ -70,6 +70,8 @@ namespace Peerchat {
 		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_connect_time);
 		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_keepalive);
 
+		OnConnectionReady();
+
 		PeerchatBackendRequest req;
 		req.type = EPeerchatRequestType_SetUserDetails;
 		req.peer = this;
