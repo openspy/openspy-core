@@ -80,6 +80,8 @@ namespace Peerchat {
 			freeReplyObject(reply);
             summary.users = GetChannelUsers(thread_data, summary.channel_id);
 		}
+
+		KeepaliveChannel(thread_data, summary);
 		return summary;
 	}
 	void AssociateUsermodeToChannel(UsermodeRecord record, ChannelSummary summary, TaskThreadData* thread_data) {
@@ -150,8 +152,6 @@ namespace Peerchat {
 		summary.limit = 0;
 		summary.basic_mode_flags = 0;
 
-		
-
 		uv_timespec64_t curtime;
 		uv_clock_gettime(UV_CLOCK_REALTIME , &curtime);
 		summary.created_at = curtime;
@@ -203,8 +203,6 @@ namespace Peerchat {
 		ss << "channelname_" << name.c_str();
 		std::string channel_name = ss.str();
 
-		bool do_delete = false;
-
 		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET %s", channel_name.c_str());
 
 		if(reply->type == REDIS_REPLY_STRING) {
@@ -225,20 +223,12 @@ namespace Peerchat {
 			if(r == REDIS_OK) {
 				if(reply->integer != 1) { //cache miss
 					id = 0;
-					do_delete = true;
 				}
 				freeReplyObject(reply);
 			}
 
 			r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
 			if(r == REDIS_OK) {
-				freeReplyObject(reply);
-			}
-		}
-
-		if(do_delete) {
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", channel_name.c_str());
-			if(reply) {
 				freeReplyObject(reply);
 			}
 		}
@@ -598,5 +588,33 @@ namespace Peerchat {
 		std::ostringstream message;
 		message << "\\type\\UPDATE_USER_CHANMODEFLAGS\\channel_id\\" << channel_id << "\\user_id\\" << user_id << "\\modeflags\\" << modeflags << "\\old_modeflags\\" << old_modeflags;
 		sendAMQPMessage(peerchat_channel_exchange, peerchat_key_updates_routingkey, message.str().c_str());		
+	}
+	void KeepaliveChannel(TaskThreadData* thread_data, ChannelSummary channel) {
+		int channel_id = channel.channel_id;
+		std::string redis_key;
+		std::ostringstream ss;
+
+		int num_redis_cmds = 0;
+
+		ss << "channel_" << channel_id;
+		redis_key = ss.str();
+		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", redis_key.c_str(), CHANNEL_EXPIRE_TIME); num_redis_cmds++;
+
+		ss.str("");
+		ss << "channel_" << channel_id << "_users";
+		redis_key = ss.str();
+		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", redis_key.c_str(), CHANNEL_EXPIRE_TIME); num_redis_cmds++;
+
+		ss.str("");
+		ss << "channel_" << channel_id << "_usermodes";
+		redis_key = ss.str();
+		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", redis_key.c_str(), CHANNEL_EXPIRE_TIME); num_redis_cmds++;
+
+		void *reply;
+        for (int i = 0; i < num_redis_cmds; i++) {
+            redisGetReply(thread_data->mp_redis_connection, (void**)&reply);
+            freeReplyObject(reply);
+        }
+
 	}
 }

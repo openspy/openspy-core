@@ -348,6 +348,7 @@ namespace Peerchat {
 	void DeleteTemporaryUsermodesForChannel(TaskThreadData* thread_data, ChannelSummary channel);
 	bool Is_Chankey_InjectKey(const char *key);
 	int CountServerUsers(TaskThreadData* thread_data);
+	void KeepaliveChannel(TaskThreadData* thread_data, ChannelSummary channel);
 
 	void ApplyUserKeys(TaskThreadData* thread_data, std::string base_key, UserSummary userSummary, std::string user_base = "", bool show_private = false);
 

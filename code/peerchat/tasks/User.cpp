@@ -2,7 +2,6 @@
 #include <sstream>
 #include <server/Server.h>
 
-#define CHANNEL_EXPIRE_TIME 300
 namespace Peerchat {
     UserSummary GetUserSummaryByName(TaskThreadData *thread_data, std::string name) {
         std::string formatted_name;
