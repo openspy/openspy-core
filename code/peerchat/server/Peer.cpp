@@ -231,7 +231,7 @@ namespace Peerchat {
 				OS::gen_random((char *)&ping_key, sizeof(ping_key)-1);
 				
 				std::ostringstream s;
-				s << " PING " << " :" << ping_key;
+				s << "PING " << " :" << ping_key;
 				s << std::endl;
 				SendPacket(s.str());
 		}
@@ -241,7 +241,7 @@ namespace Peerchat {
 		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 
 
-		if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_PING_TIMEOUT_TIME) {
+		if (current_time.tv_sec - m_last_keepalive.tv_sec > PEERCHAT_MIN_KEEPALIVE) {
 			uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_keepalive);
 			PeerchatBackendRequest req;
 			req.type = EPeerchatRequestType_KeepaliveUser;

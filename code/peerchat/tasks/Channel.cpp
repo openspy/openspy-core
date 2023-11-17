@@ -55,7 +55,7 @@ namespace Peerchat {
             }
             
             if(reply->element[3]->type == REDIS_REPLY_STRING) {
-                summary.password = atoi(reply->element[3]->str);
+                summary.password = reply->element[3]->str;
             }
             
             if(reply->element[4]->type == REDIS_REPLY_STRING) {
@@ -179,7 +179,7 @@ namespace Peerchat {
 
 		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
 		redisAppendCommand(thread_data->mp_redis_connection, "SET %s %d", channel_name.c_str(), channel_id); total_redis_calls++;
-		redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_name.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++;
+		//redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", channel_name.c_str(), CHANNEL_EXPIRE_TIME); total_redis_calls++; //don't expire this, since the keepalive logic is harder than the performance hit of misses for this
 
 		for(int i=0;i<total_redis_calls;i++) {
 			if(redisGetReply(thread_data->mp_redis_connection,(void**)&reply) == REDIS_OK) {
@@ -203,6 +203,8 @@ namespace Peerchat {
 		ss << "channelname_" << name.c_str();
 		std::string channel_name = ss.str();
 
+		bool do_delete = false;
+
 		redisReply *reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET %s", channel_name.c_str());
 
 		if(reply->type == REDIS_REPLY_STRING) {
@@ -223,13 +225,20 @@ namespace Peerchat {
 			if(r == REDIS_OK) {
 				if(reply->integer != 1) { //cache miss
 					id = 0;
-					printf("CACHE MISS!!!\n");
+					do_delete = true;
 				}
 				freeReplyObject(reply);
 			}
 
 			r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
 			if(r == REDIS_OK) {
+				freeReplyObject(reply);
+			}
+		}
+
+		if(do_delete) {
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET %s", channel_name.c_str());
+			if(reply) {
 				freeReplyObject(reply);
 			}
 		}
