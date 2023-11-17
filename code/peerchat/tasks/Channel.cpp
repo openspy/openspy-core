@@ -237,7 +237,7 @@ namespace Peerchat {
 		}
 
 		if(do_delete) {
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "GET %s", channel_name.c_str());
+			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", channel_name.c_str());
 			if(reply) {
 				freeReplyObject(reply);
 			}
