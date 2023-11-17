@@ -337,28 +337,28 @@ namespace Peerchat {
 		std::ostringstream message;
 		redisReply *reply;
 
+		int num_redis_cmds = 0;
+
 		if (target.id != 0) {
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), target.id);
-			freeReplyObject(reply);
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", channel_user_key.c_str());
-			freeReplyObject(reply);
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s_custkeys", channel_user_key.c_str());
-			freeReplyObject(reply);
+			redisAppendCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), target.id); num_redis_cmds++;
+			redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", channel_user_key.c_str()); num_redis_cmds++;
+			redisAppendCommand(thread_data->mp_redis_connection, "DEL %s_custkeys", channel_user_key.c_str()); num_redis_cmds++;
 		} else {
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), user.id);
-			freeReplyObject(reply);
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s", channel_user_key.c_str());
-			freeReplyObject(reply);
-			reply = (redisReply *)redisCommand(thread_data->mp_redis_connection, "DEL %s_custkeys", channel_user_key.c_str());
-			freeReplyObject(reply);
+			redisAppendCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), user.id); num_redis_cmds++;
+			redisAppendCommand(thread_data->mp_redis_connection, "DEL %s", channel_user_key.c_str()); num_redis_cmds++;
+			redisAppendCommand(thread_data->mp_redis_connection, "DEL %s_custkeys", channel_user_key.c_str()); num_redis_cmds++;
 		}
 
 		std::string user_channels_key;
 		ss.str("");
 		ss << "user_" << user.id << "_channels";
 		user_channels_key = ss.str();
-		reply = (redisReply*)redisCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), channel.channel_id);
-		freeReplyObject(reply);
+		redisAppendCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), channel.channel_id); num_redis_cmds++;
+
+		for(int i=0;i<num_redis_cmds;i++) {
+			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+			freeReplyObject(reply);
+		}
 
 		int old_modeflags = LookupUserChannelModeFlags(thread_data, channel.channel_id, user.id);
 
