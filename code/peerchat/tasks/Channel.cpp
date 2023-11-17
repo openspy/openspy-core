@@ -343,7 +343,7 @@ namespace Peerchat {
 		ss.str("");
 		ss << "user_" << user.id << "_channels";
 		user_channels_key = ss.str();
-		redisAppendCommand(thread_data->mp_redis_connection, "ZREM %s %d", channel_users_key.c_str(), channel.channel_id); num_redis_cmds++;
+		redisAppendCommand(thread_data->mp_redis_connection, "ZREM %s %d", user_channels_key.c_str(), channel.channel_id); num_redis_cmds++;
 
 		for(int i=0;i<num_redis_cmds;i++) {
 			redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
