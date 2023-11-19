@@ -103,7 +103,6 @@ int main() {
 	uv_timer_t tick_timer;
 
 	uv_timer_init(uv_default_loop(), &tick_timer);
-    uv_timer_start(&tick_timer, tick_handler, 0, 250);
 
 	OS::Init("utmaster");
 
@@ -138,6 +137,7 @@ int main() {
 	}
 
     MM::InitTasks();
+    uv_timer_start(&tick_timer, tick_handler, 0, 250);
     
     uv_run(loop, UV_RUN_DEFAULT);
 

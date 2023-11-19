@@ -17,7 +17,6 @@ int main() {
 	uv_timer_t tick_timer;
 
 	uv_timer_init(uv_default_loop(), &tick_timer);
-    uv_timer_start(&tick_timer, tick_handler, 0, 250);
 
 	OS::Init("GP");
 
@@ -45,12 +44,14 @@ int main() {
 	}
 
 	GP::InitTasks();
-    uv_run(loop, UV_RUN_DEFAULT);
+	uv_timer_start(&tick_timer, tick_handler, 0, 250);
 
-    uv_loop_close(loop);
+	uv_run(loop, UV_RUN_DEFAULT);
+
+	uv_loop_close(loop);
 	
-    delete g_gameserver;
+	delete g_gameserver;
 
-    OS::Shutdown();
-    return 0;
+	OS::Shutdown();
+	return 0;
 }
