@@ -231,6 +231,7 @@ namespace Peerchat {
 	private:
 		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 		void handle_command(std::string input);
+		void handle_commands(std::string input);
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void* extra, INetPeer* peer);
 		static void OnGetBackendId(TaskResponse response_data, Peer *peer);

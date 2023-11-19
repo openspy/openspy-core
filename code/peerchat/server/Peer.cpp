@@ -161,6 +161,14 @@ namespace Peerchat {
 			send_numeric(421, s.str(), true);
 		}
 	}
+	void Peer::handle_commands(std::string input) {
+		std::vector<std::string> commands = OS::KeyStringToVector(input, false, '\n');
+		std::vector<std::string>::iterator it = commands.begin();
+		while(it != commands.end() && !m_delete_flag) {
+			std::string command_line = OS::strip_whitespace(*it);
+			handle_command(command_line);
+		}
+	}
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 		OS::Buffer recv_buffer;
 		recv_buffer.WriteBuffer(buf->base, nread);
@@ -172,17 +180,22 @@ namespace Peerchat {
 		}
 		const char *p = (const char *)recv_buffer.GetHead();
 		while(nread > 0) {
-			const char *end = strchr(p, '\r');
+			const char *end = strstr(p, "\r\n");
 			if(end != NULL) {
 				size_t len = end - p;
 				std::string input = m_accumulator_buffer.append(std::string(p, len));
-				p = end + 2;
+				p = end + 2; 
 				nread -= len + 2; //skip \r\n... if overflows loop will just exit
 				handle_command(input);
 				m_accumulator_buffer.clear();
 			} else { //no new line... accumumate buffer
 				std::string remaining = std::string(p, nread);
 				m_accumulator_buffer = m_accumulator_buffer.append(remaining);
+
+				if(nread == 1 && remaining[0] == '\n') { //edge case for receiving last new line on its own
+					handle_command(m_accumulator_buffer);
+					m_channel_flags.clear();
+				}
 				break;
 			}
 		}
