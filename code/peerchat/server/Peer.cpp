@@ -112,10 +112,55 @@ namespace Peerchat {
 		m_quit_reason = reason;
 
 		std::ostringstream s;
-		s << "ERROR: Closing Link: " << ((Peerchat::Server*)GetDriver()->getServer())->getServerName() << " (" << reason << ")" << std::endl;
+		s << "ERROR: Closing Link: " << ((Peerchat::Server*)GetDriver()->getServer())->getServerName() << " (" << reason << ")\r\n";
 		SendPacket(s.str());
 	}
-	
+	void Peer::handle_command(std::string input) {
+		std::string command_upper;
+		bool command_found = false;
+
+		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s", getAddress().ToString().c_str(), m_profile.id, input.c_str());
+
+		std::vector<std::string> command_items = OS::KeyStringToVector(input, false, ' ');
+
+		if (command_items.size() == 0) return;
+		std::string command = command_items.at(0);
+
+		command_upper = "";
+		std::transform(command.begin(),command.end(),std::back_inserter(command_upper),toupper);
+
+		for(size_t i=0;i<sizeof(m_commands)/sizeof(CommandEntry);i++) {
+			CommandEntry entry = m_commands[i];
+			if (command_upper.compare(entry.name) == 0) {
+				if (entry.login_required) {
+					if(m_user_details.id == 0 || !m_sent_client_init) break;
+				}
+				if(entry.required_operflags != 0) {
+					if(!(GetOperFlags() & entry.required_operflags)) {
+						break;
+					}
+				}
+				command_found = true;
+
+				if (((int)command_items.size()) >= entry.minimum_args+1) {
+					m_flood_weight += entry.weight;
+					if(m_flood_weight >= WARNING_FLOOD_WEIGHT_THRESHOLD) {
+						send_flood_warning();
+					}
+					(*this.*entry.callback)(command_items);
+				}
+				else {
+					send_numeric(461, command_upper + " :Not enough parameters", true);
+				}
+				break;
+			}
+		}
+		if(!command_found) {
+			std::ostringstream s;
+			s << command_upper << " :Unknown Command";
+			send_numeric(421, s.str(), true);
+		}
+	}
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 		OS::Buffer recv_buffer;
 		recv_buffer.WriteBuffer(buf->base, nread);
@@ -125,60 +170,24 @@ namespace Peerchat {
 		if(m_using_encryption) {
 			gs_peerchat(&m_crypt_key_in, (unsigned char*)recv_buffer.GetHead(), nread);
 		}
-
-		
-
-		std::string command_upper;
-		bool command_found = false;
-		std::string recv_buf;
-		recv_buf.append((const char *)recv_buffer.GetHead(), nread);
-
-		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s", getAddress().ToString().c_str(), m_profile.id, recv_buf.c_str());
-
-		std::vector<std::string> commands = OS::KeyStringToVector(recv_buf, false, '\n');
-		std::vector<std::string>::iterator it = commands.begin();
-		while(it != commands.end() && !m_delete_flag) {
-			std::string command_line = OS::strip_whitespace(*it);
-			std::vector<std::string> command_items = OS::KeyStringToVector(command_line, false, ' ');
-
-			if (command_items.size() == 0) break;
-			std::string command = command_items.at(0);
-
-			command_upper = "";
-			std::transform(command.begin(),command.end(),std::back_inserter(command_upper),toupper);
-			
-			for(size_t i=0;i<sizeof(m_commands)/sizeof(CommandEntry);i++) {
-				CommandEntry entry = m_commands[i];
-				if (command_upper.compare(entry.name) == 0) {
-					if (entry.login_required) {
-						if(m_user_details.id == 0 || !m_sent_client_init) break;
-					}
-					if(entry.required_operflags != 0) {
-						if(!(GetOperFlags() & entry.required_operflags)) {
-							break;
-						}
-					}
-					command_found = true;
-
-					if (((int)command_items.size()) >= entry.minimum_args+1) {
-						m_flood_weight += entry.weight;
-						if(m_flood_weight >= WARNING_FLOOD_WEIGHT_THRESHOLD) {
-							send_flood_warning();
-						}
-						(*this.*entry.callback)(command_items);
-					}
-					else {
-						send_numeric(461, command_upper + " :Not enough parameters", true);
-					}
-					break;
-				}
-			}					
-			*it++;
+		const char *p = (const char *)recv_buffer.GetHead();
+		while(nread > 0) {
+			const char *end = strchr(p, '\r');
+			if(end != NULL) {
+				size_t len = end - p;
+				std::string input = m_accumulator_buffer.append(std::string(p, len));
+				p = end + 2;
+				nread -= len + 2; //skip \r\n... if overflows loop will just exit
+				handle_command(input);
+				m_accumulator_buffer.clear();
+			} else { //no new line... accumumate buffer
+				std::string remaining = std::string(p, nread);
+				m_accumulator_buffer = m_accumulator_buffer.append(remaining);
+				break;
+			}
 		}
-		if(!command_found) {
-			std::ostringstream s;
-			s << command_upper << " :Unknown Command";
-			send_numeric(421, s.str(), true);
+		if(m_accumulator_buffer.length() > ACCUMULATOR_MAX_BYTES) {
+			Delete(false, "Excess flood");
 		}
 	}
 	void Peer::think() {
@@ -233,8 +242,7 @@ namespace Peerchat {
 				OS::gen_random((char *)&ping_key, sizeof(ping_key)-1);
 				
 				std::ostringstream s;
-				s << "PING " << " :" << ping_key;
-				s << std::endl;
+				s << "PING " << " :" << ping_key << "\r\n";
 				SendPacket(s.str());
 		}
 	}
@@ -297,7 +305,7 @@ namespace Peerchat {
 		if(!no_colon) {
 			s << ":";
 		}
-		s << str << std::endl;
+		s << str << "\r\n";
 		SendPacket(s.str());
 	}
 	void Peer::send_message(std::string messageType, std::string messageContent, UserSummary from, std::string to, std::string target, bool no_colon) {
@@ -330,7 +338,7 @@ namespace Peerchat {
 			}
 			s << messageContent;
 		}
-		s << std::endl;
+		s << "\r\n";
 		SendPacket(s.str());
 	}
 	void Peer::OnUserRegistered(TaskResponse response_data, Peer *peer)  {

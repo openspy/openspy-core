@@ -25,6 +25,7 @@
 #define WARNING_FLOOD_WEIGHT_THRESHOLD 5500
 #define REGISTRATION_TIMEOUT 60
 #define MAX_USER_CHANNELS 32
+#define ACCUMULATOR_MAX_BYTES 1024
 
 
 namespace Peerchat {
@@ -229,6 +230,7 @@ namespace Peerchat {
 		}
 	private:
 		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
+		void handle_command(std::string input);
 		static void m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer);
 		static void m_login_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void* extra, INetPeer* peer);
 		static void OnGetBackendId(TaskResponse response_data, Peer *peer);
@@ -369,6 +371,7 @@ namespace Peerchat {
 		int m_flood_weight;
 
 		std::string m_quit_reason;
+		std::string m_accumulator_buffer;
 	};
 }
 #endif //_GPPEER_H
