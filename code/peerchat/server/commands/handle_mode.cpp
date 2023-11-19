@@ -247,7 +247,7 @@ namespace Peerchat {
 			req.channel_modify.set_mode_flags = set_flags;
 			req.channel_modify.unset_mode_flags = unset_flags;
 			req.peer->IncRef();
-			req.callback = OnMode_FetchChannelInfo;
+			req.callback = NULL;
 			AddPeerchatTaskRequest(req);
 
 

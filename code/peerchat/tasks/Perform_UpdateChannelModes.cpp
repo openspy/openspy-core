@@ -25,12 +25,12 @@ namespace Peerchat {
 
 			if (modes & EUserChannelFlag_Voice) {
 				ss << "v";
-				user_ss << name;
+				user_ss << name << " ";
 			}
 			
 			if (modes & EUserChannelFlag_Op || modes & EUserChannelFlag_HalfOp || modes & EUserChannelFlag_Owner) {
 				ss << "o";
-				user_ss << name;
+				user_ss << name << " ";
 			}
 
 			redisReply *reply;
