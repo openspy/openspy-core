@@ -167,6 +167,7 @@ namespace Peerchat {
 		while(it != commands.end() && !m_delete_flag) {
 			std::string command_line = OS::strip_whitespace(*it);
 			handle_command(command_line);
+			it++;
 		}
 	}
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
@@ -180,22 +181,19 @@ namespace Peerchat {
 		}
 		const char *p = (const char *)recv_buffer.GetHead();
 		while(nread > 0) {
-			const char *end = strstr(p, "\r\n");
+			const char *end = (const char *)memchr(p, '\n', nread);
 			if(end != NULL) {
-				size_t len = end - p;
-				std::string input = m_accumulator_buffer.append(std::string(p, len));
-				p = end + 2; 
-				nread -= len + 2; //skip \r\n... if overflows loop will just exit
-				handle_command(input);
-				m_accumulator_buffer.clear();
-			} else { //no new line... accumumate buffer
-				std::string remaining = std::string(p, nread);
-				m_accumulator_buffer = m_accumulator_buffer.append(remaining);
+				end++;
+				size_t size = end - p;
+				std::string input = m_accumulator_buffer.append(std::string(p, size));
+				handle_commands(input);
 
-				if(nread == 1 && remaining[0] == '\n') { //edge case for receiving last new line on its own
-					handle_command(m_accumulator_buffer);
-					m_channel_flags.clear();
-				}
+				size_t remaining = nread - size;
+				p = end + remaining;
+				m_accumulator_buffer = m_accumulator_buffer.append(std::string(end, remaining));
+				nread -= remaining + size;
+			} else {
+				m_accumulator_buffer = m_accumulator_buffer.append(p, nread);
 				break;
 			}
 		}
