@@ -185,15 +185,12 @@ namespace Peerchat {
 			if(end != NULL) {
 				end++;
 				size_t size = end - p;
-				std::string input = m_accumulator_buffer.append(std::string(p, size));
+				std::string input = m_accumulator_buffer  + (std::string(p, size));
 				handle_commands(input);
-
-				size_t remaining = nread - size;
-				p = end + remaining;
-				m_accumulator_buffer = m_accumulator_buffer.append(std::string(end, remaining));
-				nread -= remaining + size;
+                p = end;
+				nread -= size;
 			} else {
-				m_accumulator_buffer = m_accumulator_buffer.append(p, nread);
+				m_accumulator_buffer.append(p, nread);
 				break;
 			}
 		}
