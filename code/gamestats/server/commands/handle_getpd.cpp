@@ -137,7 +137,7 @@ namespace GS {
 		PersistBackendRequest req;
 		req.mp_peer = this;
 		req.mp_extra = persist_request_data;
-		req.type = keyList.size() > 0  ? EPersistRequestType_GetUserKeyedData : EPersistRequestType_GetUserData;
+		req.type = data_parser.HasKey("keys") ? EPersistRequestType_GetUserKeyedData : EPersistRequestType_GetUserData;
 		req.callback = getPersistDataCallback;
 		req.data_type = persist_type;
 		req.data_index = data_index;

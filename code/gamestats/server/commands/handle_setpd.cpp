@@ -82,7 +82,7 @@ namespace GS {
 		req.data_index = data_index;
 		req.kv_set_data = save_data;
 		req.data_kv_set = kv_set;
-		req.profileid = m_profile.id;
+		req.profileid = pid;
 		if (b64_str) {
 			req.game_instance_identifier = b64_str;
 			free((void *)b64_str);
