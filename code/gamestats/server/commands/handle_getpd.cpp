@@ -49,7 +49,7 @@ namespace GS {
 			while (it.first != it.second) {
 				std::pair< std::string, std::string> item = *it.first;
 				OS::Base64StrToBin(item.second.c_str(), &data, data_len);
-				kv_ss << "\\" << item.first << "\\" << data;
+				kv_ss << "\x01" << item.first << "\x01" << data;
 				free((void *)data);
 				data = NULL;
 				it.first++;
