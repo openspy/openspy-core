@@ -296,6 +296,7 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 
 		char user_buffer[32];
 		char pass_buffer[32];
+		char vhost_buffer[32];
 		size_t temp_env_sz = sizeof(address_buffer);
 
         if(uv_os_getenv("OPENSPY_AMQP_ADDRESS", (char *)&address_buffer, &temp_env_sz) == UV_ENOENT) {
@@ -320,6 +321,13 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 			return;
 		}
 
+		temp_env_sz = sizeof(vhost_buffer);
+        if(uv_os_getenv("OPENSPY_AMQP_VHOST", (char *)&vhost_buffer, &temp_env_sz) == UV_ENOENT) {
+			OS::LogText(OS::ELogLevel_Info, "Missing amqp vhost environment variable");
+			vhost_buffer[0] = '/';
+			vhost_buffer[1] = 0;
+		}
+
 
 
 		//setup generic presence listener
@@ -329,7 +337,7 @@ void sendAMQPMessage(const char *exchange, const char *routingkey, const char *m
 		if(status) {
 			OS::LogText(OS::ELogLevel_Error, "error opening amqp listener socket");
 		}
-		print_amqp_error(amqp_login(listener->amqp_listener_conn, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer), "Login");
+		print_amqp_error(amqp_login(listener->amqp_listener_conn, vhost_buffer, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer), "Login");
         amqp_channel_open_ok_t *channel_open = amqp_channel_open(listener->amqp_listener_conn, 1);
         if(channel_open) {
             uv_thread_create(&listener->amqp_authevent_consumer_thread, TaskShared::amqp_listenerargs_consume_thread, listener);
