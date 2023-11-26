@@ -2,6 +2,7 @@
 #define _TASKS_SHARED_H
 #include <string>
 #include <hiredis/hiredis.h>
+#include <hiredis/hiredis_ssl.h>
 #include <rabbitmq-c/amqp.h>
 #include <uv.h>
 namespace OS {

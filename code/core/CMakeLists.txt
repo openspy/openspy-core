@@ -6,16 +6,17 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 find_package(SSL)
 find_package(hiredis REQUIRED)
+find_package(hiredis_ssl REQUIRED)
 find_package(jansson REQUIRED)
 find_package(pugixml REQUIRED)
 find_package(rabbitmq-c REQUIRED)
 find_package(CURL REQUIRED)
 
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-#    message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+   message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
 
 file (GLOB OS_SRCS "OS/*.cpp")
 file (GLOB OS_HDRS "OS/*.h")
@@ -40,7 +41,7 @@ file (GLOB LOGGER_HDRS "OS/Logger/*.h")
 
 set (ALL_SRCS ${SSL_SRCS} ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${NET_DRIVERS_SRCS} ${NET_DRIVERS_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${NET_PROCESSORS_SRCS} ${NET_PROCESSORS_HDRS} )
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${hiredis_INCLUDE_DIRS} ${SSL_INCS})
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${hiredis_INCLUDE_DIRS}  ${hiredis_ssl_INCLUDE_DIRS} ${SSL_INCS})
 
 source_group("Sources\\OS\\Net" FILES ${NET_SRCS})
 source_group("Sources\\OS\\Net\\Drivers" FILES ${NET_DRIVERS_SRCS})
@@ -79,7 +80,7 @@ ELSE() #unix
 	
 ENDIF()
 add_library (openspy SHARED ${ALL_SRCS} ${ALL_PLAT})
-target_link_libraries(openspy ${CURL_LIBRARIES} pugixml rabbitmq::rabbitmq libuv::uv jansson::jansson ${hiredis_LIBRARIES} ${SSL_LIBS})
+target_link_libraries(openspy ${CURL_LIBRARIES} pugixml rabbitmq::rabbitmq libuv::uv jansson::jansson hiredis::hiredis hiredis::hiredis_ssl ${SSL_LIBS})
 
 INSTALL(TARGETS openspy
   ARCHIVE DESTINATION lib

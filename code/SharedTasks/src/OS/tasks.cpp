@@ -12,11 +12,13 @@
 namespace TaskShared {
 	uv_once_t mm_tls_init_once = UV_ONCE_INIT;
 	uv_key_t mm_redis_connection_key;
+	uv_key_t mm_redis_ssl_ctx_key;
 	uv_key_t mm_amqp_connection_key;
 
 	void do_init_thread_tls_key() {
 		uv_key_create(&mm_redis_connection_key);
 		uv_key_create(&mm_amqp_connection_key);
+		uv_key_create(&mm_redis_ssl_ctx_key);
 	}
 
     amqp_connection_state_t getThreadLocalAmqpConnection() {
@@ -143,15 +145,51 @@ namespace TaskShared {
 			return NULL;
 		}
 
+		int use_ssl = 0;
+		temp_env_sz = sizeof(port_buffer);
+		if(uv_os_getenv("OPENSPY_REDIS_SSL", (char *)&port_buffer, &temp_env_sz) == UV_ENOENT) {
+		} else {
+			use_ssl = atoi(port_buffer);
+		}
+
+		redisSSLContext *ssl_context = NULL;
+		if(use_ssl) {
+			redisSSLContextError ssl_error = REDIS_SSL_CTX_NONE;
+			redisInitOpenSSL();
+
+			/* Create SSL context */
+			ssl_context = redisCreateSSLContext(
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				&ssl_error);
+
+			if(ssl_context == NULL || ssl_error != REDIS_SSL_CTX_NONE) {
+				    OS::LogText(OS::ELogLevel_Error, "hiredis SSL error: %s\n", (ssl_error != REDIS_SSL_CTX_NONE) ? redisSSLContextGetError(ssl_error) : "Unknown error");
+			}
+
+		}
+
 
 		redisOptions redis_options = {0};
 		uint16_t port = atoi(port_buffer);
 		REDIS_OPTIONS_SET_TCP(&redis_options, address_buffer, port);
 		connection = redisConnectWithOptions(&redis_options);
 
+		if(ssl_context == NULL) {
+			/* Negotiate SSL/TLS */
+			if (redisInitiateSSLWithContext(connection, ssl_context) != REDIS_OK) {
+				/* Handle error, in c->err / c->errstr */
+				OS::LogText(OS::ELogLevel_Error, "hiredis SSL init error: %s", connection->errstr);
+			}
+		}
+
 		doRedisAuth(connection);
 
 		uv_key_set(&mm_redis_connection_key, connection);
+		uv_key_set(&mm_redis_ssl_ctx_key, ssl_context);
 
 		return connection;
 	}
