@@ -6,6 +6,17 @@ namespace OS {
         mp_write_bio = NULL;
         mp_read_bio = NULL;
     }
+    SSLNetPeer::~SSLNetPeer() {
+        if(mp_ssl) {
+           SSL_free(mp_ssl); 
+        }
+        if(mp_write_bio) {
+            BIO_free_all(mp_write_bio);
+        }
+        if(mp_read_bio) {
+            BIO_free_all(mp_read_bio);
+        }
+    }
     void SSLNetPeer::InitSSL(void *ssl) {
         if(ssl != NULL) {
             SSL_CTX *ctx = (SSL_CTX*)ssl;

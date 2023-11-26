@@ -6,6 +6,7 @@ namespace OS {
     class SSLNetPeer : public INetPeer {
         public:
             SSLNetPeer(INetDriver* driver, uv_tcp_t *sd);
+            virtual ~SSLNetPeer();
             void InitSSL(void *ssl);
             void stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
             void clear_send_buffer();
