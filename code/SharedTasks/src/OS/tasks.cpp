@@ -110,9 +110,21 @@ namespace TaskShared {
 			return NULL;
 		}
 
+		redisSSLContext *ssl_context = (redisSSLContext *)uv_key_get(&mm_redis_ssl_ctx_key);
+
+		if(ssl_context != NULL) {
+			/* Negotiate SSL/TLS */
+			if (redisInitiateSSLWithContext(connection, ssl_context) != REDIS_OK) {
+				/* Handle error, in c->err / c->errstr */
+				OS::LogText(OS::ELogLevel_Error, "hiredis SSL init error: %s", connection->errstr);
+			}
+		}
+
+
 		doRedisAuth(connection);
 
 		uv_key_set(&mm_redis_connection_key, connection);
+		uv_key_set(&mm_redis_ssl_ctx_key, ssl_context);
 		return connection;
 	}
 
