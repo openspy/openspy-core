@@ -178,7 +178,7 @@ namespace TaskShared {
 		REDIS_OPTIONS_SET_TCP(&redis_options, address_buffer, port);
 		connection = redisConnectWithOptions(&redis_options);
 
-		if(ssl_context == NULL) {
+		if(ssl_context != NULL) {
 			/* Negotiate SSL/TLS */
 			if (redisInitiateSSLWithContext(connection, ssl_context) != REDIS_OK) {
 				/* Handle error, in c->err / c->errstr */
