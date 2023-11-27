@@ -150,8 +150,7 @@ namespace TaskShared {
 
 		int use_ssl = 0;
 		temp_env_sz = sizeof(port_buffer);
-		if(uv_os_getenv("OPENSPY_REDIS_SSL", (char *)&port_buffer, &temp_env_sz) == UV_ENOENT) {
-		} else {
+		if(uv_os_getenv("OPENSPY_REDIS_SSL", (char *)&port_buffer, &temp_env_sz) == 0) {
 			use_ssl = atoi(port_buffer);
 		}
 
@@ -165,18 +164,16 @@ namespace TaskShared {
 			ssl_options.verify_mode = REDIS_SSL_VERIFY_PEER;
 
 			temp_env_sz = sizeof(port_buffer);
-			if(uv_os_getenv("OPENSSL_REDIS_SSL_NO_VERIFY", (char *)&port_buffer, &temp_env_sz) == UV_ENOENT) {
-			} else {
-				if(atoi(port_buffer)) {
+			if(uv_os_getenv("OPENSPY_REDIS_SSL_NO_VERIFY", (char *)&port_buffer, &temp_env_sz) == 0) {
+				if(atoi(port_buffer) == 1) {
 					ssl_options.verify_mode = REDIS_SSL_VERIFY_NONE;
-				}
+				}				
 			}
 
 			ssl_context = redisCreateSSLContextWithOptions(&ssl_options, &ssl_error);
 			if(ssl_context == NULL || ssl_error != REDIS_SSL_CTX_NONE) {
 				    OS::LogText(OS::ELogLevel_Error, "hiredis SSL error: %s\n", (ssl_error != REDIS_SSL_CTX_NONE) ? redisSSLContextGetError(ssl_error) : "Unknown error");
 			}
-
 		}
 
 
