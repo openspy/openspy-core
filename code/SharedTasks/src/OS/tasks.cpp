@@ -139,11 +139,14 @@ namespace TaskShared {
 			OS::LogText(OS::ELogLevel_Error, "Missing redis address environment variable");
 			return NULL;
 		}
+		
 		temp_env_sz = sizeof(port_buffer);
 		if(uv_os_getenv("OPENSPY_REDIS_PORT", (char *)&port_buffer, &temp_env_sz) == UV_ENOENT) {
 			OS::LogText(OS::ELogLevel_Error, "Missing redis port environment variable");
 			return NULL;
 		}
+
+		uint16_t redis_port = atoi(port_buffer);
 
 		int use_ssl = 0;
 		temp_env_sz = sizeof(port_buffer);
@@ -174,8 +177,8 @@ namespace TaskShared {
 
 
 		redisOptions redis_options = {0};
-		uint16_t port = atoi(port_buffer);
-		REDIS_OPTIONS_SET_TCP(&redis_options, address_buffer, port);
+		
+		REDIS_OPTIONS_SET_TCP(&redis_options, address_buffer, redis_port);
 		connection = redisConnectWithOptions(&redis_options);
 
 		if(ssl_context != NULL) {
