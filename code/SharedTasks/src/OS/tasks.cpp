@@ -124,7 +124,6 @@ namespace TaskShared {
 		doRedisAuth(connection);
 
 		uv_key_set(&mm_redis_connection_key, connection);
-		uv_key_set(&mm_redis_ssl_ctx_key, ssl_context);
 		return connection;
 	}
 
