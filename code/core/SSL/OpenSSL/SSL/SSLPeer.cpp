@@ -10,12 +10,6 @@ namespace OS {
         if(mp_ssl) {
            SSL_free(mp_ssl); 
         }
-        if(mp_write_bio) {
-            BIO_free_all(mp_write_bio);
-        }
-        if(mp_read_bio) {
-            BIO_free_all(mp_read_bio);
-        }
     }
     void SSLNetPeer::InitSSL(void *ssl) {
         if(ssl != NULL) {
