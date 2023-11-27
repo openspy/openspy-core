@@ -29,11 +29,11 @@ namespace TaskShared {
             return connection;
         }
 
-        char address_buffer[32];
-        char port_buffer[32];
+        char address_buffer[128];
+        char port_buffer[128];
 
-        char user_buffer[32];
-        char pass_buffer[32];
+        char user_buffer[128];
+        char pass_buffer[128];
         size_t temp_env_sz = sizeof(address_buffer);
 
         connection = amqp_new_connection();
@@ -80,8 +80,8 @@ namespace TaskShared {
     }
 
 	void doRedisAuth(redisContext *connection) {
-		char username_buffer[32];
-		char password_buffer[32];
+		char username_buffer[128];
+		char password_buffer[128];
 
 		size_t temp_env_sz = sizeof(username_buffer);
 		if(uv_os_getenv("OPENSPY_REDIS_USER", (char *)&username_buffer, &temp_env_sz) == UV_ENOENT) {
@@ -132,7 +132,7 @@ namespace TaskShared {
 			return connection;
 		}
 
-		char address_buffer[32];
+		char address_buffer[128];
 		char port_buffer[32];
 		size_t temp_env_sz = sizeof(address_buffer);
 		if(uv_os_getenv("OPENSPY_REDIS_ADDRESS", (char *)&address_buffer, &temp_env_sz) == UV_ENOENT) {
