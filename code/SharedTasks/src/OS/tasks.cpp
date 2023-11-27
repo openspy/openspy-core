@@ -160,15 +160,19 @@ namespace TaskShared {
 			redisSSLContextError ssl_error = REDIS_SSL_CTX_NONE;
 			redisInitOpenSSL();
 
-			/* Create SSL context */
-			ssl_context = redisCreateSSLContext(
-				NULL,
-				NULL,
-				NULL,
-				NULL,
-				NULL,
-				&ssl_error);
+			redisSSLOptions ssl_options;
+			memset(&ssl_options, 0, sizeof(ssl_options));
+			ssl_options.verify_mode = REDIS_SSL_VERIFY_PEER;
 
+			temp_env_sz = sizeof(port_buffer);
+			if(uv_os_getenv("OPENSSL_REDIS_SSL_NO_VERIFY", (char *)&port_buffer, &temp_env_sz) == UV_ENOENT) {
+			} else {
+				if(atoi(port_buffer)) {
+					ssl_options.verify_mode = REDIS_SSL_VERIFY_NONE;
+				}
+			}
+
+			ssl_context = redisCreateSSLContextWithOptions(&ssl_options, &ssl_error);
 			if(ssl_context == NULL || ssl_error != REDIS_SSL_CTX_NONE) {
 				    OS::LogText(OS::ELogLevel_Error, "hiredis SSL error: %s\n", (ssl_error != REDIS_SSL_CTX_NONE) ? redisSSLContextGetError(ssl_error) : "Unknown error");
 			}
