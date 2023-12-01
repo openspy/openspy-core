@@ -7,8 +7,7 @@ IF(OPENSSL_FOUND)
     file (GLOB SSL_SRCS "SSL/OpenSSL/SSL/*.cpp")
     
 ELSE()
-    file (GLOB SSL_SRCS "SSL/SSLNull/SSL/*.cpp" "SSL/SSLNull/SSL/*.c")
-    SET(SSL_OS_INC "${CMAKE_CURRENT_SOURCE_DIR}/../core/SSL/SSLNull")
+    message( FATAL_ERROR "OpenSSL not found!" )
 ENDIF()
 
 message(SSL_SRCS="${SSL_SRCS}")
