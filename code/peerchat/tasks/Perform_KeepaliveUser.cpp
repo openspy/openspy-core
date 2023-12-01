@@ -15,6 +15,7 @@ namespace Peerchat {
         int num_redis_cmds = 0;
 
         redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", user_key.c_str(), USER_EXPIRE_TIME); num_redis_cmds++;
+        redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s_custkeys %d", user_key.c_str(), USER_EXPIRE_TIME); num_redis_cmds++;
         void *reply;
 
         if(request.summary.nick.length() != 0) {
@@ -27,7 +28,6 @@ namespace Peerchat {
             std::string usernick_key = ss.str();
 
             redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", usernick_key.c_str(), USER_EXPIRE_TIME); num_redis_cmds++;
-
         }
 
 

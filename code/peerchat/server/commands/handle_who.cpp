@@ -71,7 +71,7 @@ namespace Peerchat {
 
 			std::ostringstream s;
 			s << summary.username << " ";
-			s << summary.hostname << " ";
+			s << summary.GetIRCAddress(peer->IsUserAddressVisible(summary.id)) << " ";
 			s << ((Peerchat::Server*)peer->GetDriver()->getServer())->getServerName() << " ";
 			s << summary.nick << " ";
 			s << "H";
