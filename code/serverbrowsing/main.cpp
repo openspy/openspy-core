@@ -42,6 +42,7 @@ int main() {
 		OS::LogText(OS::ELogLevel_Warning, "Missing SBV1 bind address environment variable");
 	}
 
+	temp_env_sz = sizeof(address_buff);
 	if(uv_os_getenv("OPENSPY_SBV2_BIND_ADDR", (char *)&address_buff, &temp_env_sz) != UV_ENOENT) {
 		temp_env_sz = sizeof(port_buff);
 

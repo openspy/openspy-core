@@ -12,8 +12,8 @@ namespace SB {
 		mp_driver = driver;
 		m_delete_flag = false;
 		m_timeout_flag = false;
-		gettimeofday(&m_last_ping, NULL);
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 
 		m_version = version;
 		

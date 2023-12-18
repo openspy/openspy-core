@@ -43,7 +43,7 @@ namespace SB {
 
 		request_type = buffer.ReadByte();
 
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 
 		//TODO: get expected lengths for each packet type and test, prior to execution
 		switch (request_type) {
@@ -263,7 +263,7 @@ namespace SB {
 			std::vector<MM::Server*>::iterator it = servers.list.begin();
 			while (it != servers.list.end()) {
 				MM::Server* server = *it;
-				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, false, &field_types, false, servers.first_set);
+				sendServerData(server, usepopularlist, false, servers.first_set ? &buffer : NULL, send_fullkeys, &field_types, false, servers.first_set);
 				it++;
 			}
 
@@ -279,7 +279,7 @@ namespace SB {
 
 		}
 
-		gettimeofday(&m_last_recv, NULL); //prevent timeout during long lists
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv); //prevent timeout during long lists
 
 		if (buffer.bytesWritten() > 0) {
 			SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), false);
@@ -408,6 +408,14 @@ namespace SB {
 			}
 			else {
 				req.type = MM::EMMQueryRequestType_GetServers;
+
+				//Gamespy arcade needs full keys on push update server list response, but this breaks other games...
+				// Return full keys if the querying game is not the source game
+				if (req.req.push_updates && req.req.m_for_game.gameid != req.req.m_from_game.gameid) {
+					req.req.all_keys = true;
+					req.req.all_player_keys = true;
+					req.req.all_team_keys = true;
+				}
 			}
 			m_in_message = true;
 			AddRequest(req);
@@ -441,12 +449,12 @@ namespace SB {
 	void V2Peer::send_ping() {
 		if (m_in_message) return;
 		//check for timeout
-		struct timeval current_time;
+		uv_timespec64_t current_time;
 
-		gettimeofday(&current_time, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
 			OS::Buffer buffer;
-			gettimeofday(&m_last_ping, NULL);
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
 			buffer.WriteByte(KEEPALIVE_MESSAGE);
 
 			//embed response into reply, as SB client just sends same data back
@@ -494,8 +502,8 @@ namespace SB {
 		send_ping();
 
 		//check for timeout
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
 			Delete(true);
 		}	
@@ -698,10 +706,14 @@ namespace SB {
 		OS::Buffer buffer;
 		if(!m_last_list_req.push_updates || m_in_message) return;
 
-		buffer.WriteByte(DELETE_SERVER_MESSAGE);
-		buffer.WriteInt(server->wan_address.ip);
-		buffer.WriteShort(htons(server->wan_address.port));
-		SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), true);
+		if (server) {
+			if (serverMatchesLastReq(server)) {
+				buffer.WriteByte(DELETE_SERVER_MESSAGE);
+				buffer.WriteInt(server->wan_address.ip);
+				buffer.WriteShort(htons(server->wan_address.port));
+				SendPacket((uint8_t*)buffer.GetHead(), buffer.bytesWritten(), true);
+			}
+		}
 	}
 	void V2Peer::informNewServers(MM::Server *server) {
 		if(!m_last_list_req.push_updates || m_in_message) return;
@@ -734,25 +746,21 @@ namespace SB {
 		SendPacket((uint8_t *)buffer.GetHead(), buffer.bytesWritten(), true);
 	}
 	void V2Peer::send_error(bool die, const char *fmt, ...) {
-		if (m_delete_flag) {
-			return;
-		}
-		
 		va_list args;
 		va_start(args, fmt);
 
 		char send_str[1092]; //mtu size
 		int len = vsnprintf(send_str, sizeof(send_str), fmt, args);
-		send_str[len] = 0;
 		va_end(args);
 
-		OS::Buffer buffer((void *)&send_str, len);
+		OS::Buffer buffer;
+		buffer.WriteBuffer(send_str, len);
 
-		append_send_buffer(buffer);
+		append_send_buffer(buffer, die);
 	}
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
-        SendListQueryResp(results, request.req, true);
+        SendListQueryResp(results, request.req, true, request.req.all_keys);
         if (!m_sent_push_keys && results.last_set) {
             m_sent_push_keys = true;
             SendPushKeys();

@@ -54,7 +54,7 @@ namespace SB {
 		OS::GameData m_game;
 		Driver *mp_driver;
 
-		struct timeval m_last_recv, m_last_ping;
+		uv_timespec64_t m_last_recv, m_last_ping;
 
 		std::vector<CToken> m_last_list_req_token_list;
 		MM::sServerListReq m_last_list_req;

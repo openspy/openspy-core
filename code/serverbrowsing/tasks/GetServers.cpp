@@ -303,18 +303,19 @@ namespace MM {
 
 		
 
-		for (int i = 0; i < idx; i++) {
+		for (int i = 0, x = 0; i < idx; i++) {
 			int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
 
 			if(r == REDIS_OK) {
 				for(size_t c = 0; c < reply->elements; c += 2) {
 					std::string field_name = reply->element[c]->str;
 					std::string field_value = reply->element[c + 1]->str;
-					server->kvPlayers[i][field_name] = field_value;
+					server->kvPlayers[x][field_name] = field_value;
 				}
-				
+				x++;
 				freeReplyObject(reply);
 			}
+
 		}
 	}
 
@@ -365,15 +366,16 @@ namespace MM {
 			redisAppendCommand(thread_data->mp_redis_connection, cmd.str().c_str());
 		}
 
-		for (int i = 0; i < idx; i++) {
+		for (int i = 0, x = 0; i < idx; i++) {
 			int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
 
 			if(r == REDIS_OK) {
 				for(size_t c = 0; c < reply->elements; c += 2) {
 					std::string field_name = reply->element[c]->str;
 					std::string field_value = reply->element[c + 1]->str;
-					server->kvTeams[i][field_name] = field_value;
+					server->kvTeams[x][field_name] = field_value;
 				}
+				x++;
 				
 				freeReplyObject(reply);
 			}

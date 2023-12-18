@@ -57,10 +57,10 @@ namespace SB {
 		}
 		void V1Peer::send_ping() {
 			//check for timeout
-			struct timeval current_time;
-			gettimeofday(&current_time, NULL);
+			uv_timespec64_t current_time;
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 			if(current_time.tv_sec - m_last_ping.tv_sec > SB_PING_TIME) {
-				gettimeofday(&m_last_ping, NULL);
+				uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
 				//SendPacket((uint8_t *)&buff, len, true);
 			}
 		}
@@ -119,8 +119,8 @@ namespace SB {
 			send_ping();
 
 			//check for timeout
-			struct timeval current_time;
-			gettimeofday(&current_time, NULL);
+			uv_timespec64_t current_time;
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 			if(current_time.tv_sec - m_last_recv.tv_sec > SB_PING_TIME*2) {
 				Delete(true);
 			}
@@ -141,7 +141,6 @@ namespace SB {
 			va_list args;
 			va_start(args, fmt);
 			int len = vsnprintf(str, sizeof(str), fmt, args);
-			str[len] = 0;
 			va_end(args);
 			if(disconnect) {
 				resp << "\\fatal\\1";
@@ -150,9 +149,10 @@ namespace SB {
 
 			OS::LogText(OS::ELogLevel_Info, "[%s] Got Error %s", getAddress().ToString().c_str(), str);
 
-			if (disconnect) {
-				Delete();
-			}
+			std::string ostr = resp.str();
+			OS::Buffer buffer;
+			buffer.WriteBuffer(ostr.c_str(), ostr.length());
+			append_send_buffer(buffer, disconnect);
 		}
 		void V1Peer::handle_gamename(std::string data) {
 			OS::KVReader data_parser = OS::KVReader(data);
@@ -198,7 +198,7 @@ namespace SB {
 			}
 
 			std::string command;
-			gettimeofday(&m_last_recv, NULL);
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 
 			command = kv_parser.GetKeyByIdx(0);
 			if(strcmp(command.c_str(),"gamename") == 0 && !m_validated) {
