@@ -178,7 +178,7 @@ namespace MM {
         
         std::string last_heartbeat;
         uv_timespec64_t current_time;
-        uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
+        uv_clock_gettime(UV_CLOCK_REALTIME, &current_time);
         
         ss << current_time.tv_sec;
         last_heartbeat = ss.str();

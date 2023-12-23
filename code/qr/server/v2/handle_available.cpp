@@ -10,9 +10,6 @@ namespace QR {
     void Driver::on_got_v2_available_data(MM::MMTaskResponse response) {
 		OS::Buffer buffer;
 
-		uv_timespec64_t current_time;
-		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
-
 		buffer.WriteByte(QR_MAGIC_1);
 		buffer.WriteByte(QR_MAGIC_2);
 

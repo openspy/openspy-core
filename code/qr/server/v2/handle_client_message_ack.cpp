@@ -14,9 +14,6 @@ namespace QR {
         OS::LogText(OS::ELogLevel_Info, "[%s] Send client message: %d - %d", to_address.ToString().c_str(), message_buffer.bytesWritten(), message_key);
 
         if(version == 2) {
-            uv_timespec64_t current_time;
-            uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
-
             buffer.WriteByte(QR_MAGIC_1);
             buffer.WriteByte(QR_MAGIC_2);
 

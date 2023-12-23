@@ -338,7 +338,7 @@ namespace MM {
     void WriteLastHeartbeatTime(TaskThreadData *thread_data, std::string server_key, OS::Address address, uint32_t instance_key, OS::Address from_address) {
         int count = 0;
         uv_timespec64_t current_time;
-        uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
+        uv_clock_gettime(UV_CLOCK_REALTIME, &current_time);
         redisAppendCommand(thread_data->mp_redis_connection, "HSET %s last_heartbeat %d", server_key.c_str(), current_time.tv_sec); count++;
 
         std::ostringstream s;
