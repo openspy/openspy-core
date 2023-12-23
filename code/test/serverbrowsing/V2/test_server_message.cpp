@@ -66,7 +66,7 @@ void onRedisMessage(Redis::Connection *c, Redis::Response reply, void *privdata)
     }
 }
 void *setup_redis_async(OS::CThread *thread) {
-    struct timeval t;
+    uv_timespec64_t t;
     t.tv_usec = 0;
     t.tv_sec = 60;
     mp_servermsg_redis_conn = Redis::Connect(OS::g_redisAddress, t);

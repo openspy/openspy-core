@@ -26,9 +26,9 @@ namespace GP {
 		m_timeout_flag = false;
 		m_got_buddies = false;
 		m_got_blocks = false;
-		gettimeofday(&m_last_ping, NULL);
-		gettimeofday(&m_last_recv, NULL);
-		gettimeofday(&m_status_refresh, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_status_refresh);
 		m_session_expires_at.tv_sec = 0;
 
 		m_status.status = GP_OFFLINE;
@@ -76,8 +76,8 @@ namespace GP {
 
 		//check for timeout
 		/* ping doesn't exist in older games -- XX: VERIFY?
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);		
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);		
 		if (current_time.tv_sec - m_last_recv.tv_sec > GP_PING_TIME * 2) {
 			Delete(true);
 		}*/
@@ -110,7 +110,7 @@ namespace GP {
 		m_commands = commands;
 	}
 	void Peer::handle_packet(OS::KVReader data_parser) {
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 
 		OS::LogText(OS::ELogLevel_Debug, "[%s] (%d) Recv: %s\n", getAddress().ToString().c_str(), m_profile.id, data_parser.ToString().c_str());
 
@@ -180,10 +180,10 @@ namespace GP {
 	void Peer::run_timed_operations() {
 		//check for timeout
 		
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if(current_time.tv_sec - m_last_ping.tv_sec > GP_PING_TIME) {
-			gettimeofday(&m_last_ping, NULL);
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
 			std::string ping_packet = "\\ka\\";
 			SendPacket((const uint8_t *)ping_packet.c_str(),ping_packet.length());
 		}
@@ -193,7 +193,7 @@ namespace GP {
 		}
 
 		if (current_time.tv_sec - m_status_refresh.tv_sec > (GP_STATUS_EXPIRE_TIME / 2)) {
-			gettimeofday(&m_status_refresh, NULL);
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_status_refresh);
 			//often called with keep alives
 			if (m_profile.id) {
 				GPBackendRedisRequest req;
@@ -262,8 +262,8 @@ namespace GP {
 		std::ostringstream ss;
 		ss << "\\lt\\" << auth_data.session_key;
 
-		struct timeval time_now;
-		gettimeofday(&time_now, NULL);
+		uv_timespec64_t time_now;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &time_now);
 		time_now.tv_sec += auth_data.expiresInSecs - SESSION_RENEW_OFFSET;
 		((GP::Peer *)peer)->m_session_expires_at = time_now;
 

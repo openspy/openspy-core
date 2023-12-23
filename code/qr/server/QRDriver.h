@@ -76,7 +76,7 @@ namespace QR {
 
 		void AddRequest(MM::MMPushRequest req);
 	private:
-		struct timeval m_server_start;
+		uv_timespec64_t m_server_start;
 
 	};
 }

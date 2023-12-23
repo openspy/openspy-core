@@ -9,10 +9,10 @@
 namespace FESL {
 	void Peer::send_ping() {
 		//check for timeout
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if(current_time.tv_sec - m_last_ping.tv_sec > FESL_PING_TIME) {
-			gettimeofday(&m_last_ping, NULL);
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
 			std::ostringstream s;
 			s << "TXN=Ping\n";
 			s << "TID=" << current_time.tv_sec << "\n";

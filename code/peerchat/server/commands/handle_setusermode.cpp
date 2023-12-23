@@ -86,7 +86,7 @@ namespace Peerchat {
 			usermodeRecord.has_gameid = true;
 		}
 
-		usermodeRecord.expires_at.tv_usec = 0;
+		usermodeRecord.expires_at.tv_nsec = 0;
 		usermodeRecord.expires_at.tv_sec = 0;
 		if (usermode_properties.HasKey("expiressec")) {
 			usermodeRecord.expires_at.tv_sec = usermode_properties.GetValueInt("expiressec");

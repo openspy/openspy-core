@@ -12,7 +12,7 @@ namespace NN {
 		buf->len = suggested_size;
 	}
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : OS::UDPDriver(server, host, port) {
-		gettimeofday(&m_server_start, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_server_start);
 		
 		int r = uv_udp_init(uv_default_loop(), &m_recv_udp_socket);
 		if(r < 0) {

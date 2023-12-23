@@ -33,7 +33,7 @@ namespace CDKey {
                                const struct sockaddr* addr,
                                unsigned flags);
 
-		struct timeval m_server_start;
+		uv_timespec64_t m_server_start;
 	};
 }
 #endif //_NNDRIVER_H

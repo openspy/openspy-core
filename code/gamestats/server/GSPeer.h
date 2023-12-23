@@ -113,7 +113,7 @@ namespace GS {
 
 		OS::GameData m_game;
 		
-		struct timeval m_last_recv, m_last_ping;
+		uv_timespec64_t m_last_recv, m_last_ping;
 
 		char m_challenge[CHALLENGE_LEN + 1];
 		int m_session_key;

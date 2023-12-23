@@ -17,8 +17,8 @@ namespace SM {
 	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
 		m_delete_flag = false;
 		m_timeout_flag = false;
-		gettimeofday(&m_last_ping, NULL);
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 		OnConnectionReady();
 		
 	}
@@ -67,8 +67,8 @@ namespace SM {
 		if (m_delete_flag) return;
 
 		//check for timeout
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if (current_time.tv_sec - m_last_recv.tv_sec > SM_PING_TIME * 2) {
 			Delete(true);
 		}
@@ -102,7 +102,7 @@ namespace SM {
 			handle_uniquesearch(data_parser);
 		}
 		
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 	}
 
 	void Peer::send_error(GPShared::GPErrorCode code, std::string addon_data) {

@@ -185,7 +185,7 @@ namespace GP {
 		Driver *mp_driver;
 		KVProcessor *mp_proto_processor;
 
-		struct timeval m_last_recv, m_last_ping, m_status_refresh, m_session_expires_at;
+		uv_timespec64_t m_last_recv, m_last_ping, m_status_refresh, m_session_expires_at;
 
 		char m_challenge[CHALLENGE_LEN + 1];
 

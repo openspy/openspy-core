@@ -59,7 +59,7 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 
 		uv_tcp_t m_socket;
 		INetDriver *mp_driver;
-		struct timeval m_last_recv, m_last_ping;
+		uv_timespec64_t m_last_recv, m_last_ping;
 		OS::Address m_address;
 
 		bool m_socket_deleted;

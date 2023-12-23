@@ -13,8 +13,8 @@ namespace QR {
 			return;
 		} else {
             OS::Buffer send_buffer;
-            struct timeval current_time;
-            gettimeofday(&current_time, NULL);
+            uv_timespec64_t current_time;
+            uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
             send_buffer.WriteByte(QR_MAGIC_1);
             send_buffer.WriteByte(QR_MAGIC_2);
             send_buffer.WriteByte(PACKET_KEEPALIVE);

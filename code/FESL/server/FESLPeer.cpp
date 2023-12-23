@@ -39,8 +39,8 @@ namespace FESL {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 
-		gettimeofday(&m_last_ping, NULL);
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 		
 		m_sequence_id = 1;
 		m_logged_in = false;
@@ -75,7 +75,7 @@ namespace FESL {
 		FESL_HEADER header;
 		recv_buffer.ReadBuffer(&header, sizeof(header));
 
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 
 		int buf_len = nread - sizeof(FESL_HEADER);
 
@@ -102,8 +102,8 @@ namespace FESL {
 		send_ping();
 
 		//check for timeout
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if (current_time.tv_sec - m_last_recv.tv_sec > FESL_PING_TIME * 2) {
 			Delete(true);
 		}

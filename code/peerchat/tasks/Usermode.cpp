@@ -73,7 +73,7 @@ namespace Peerchat {
 
 		subitem = json_object_get(item, "expiresAt");
 		record.expires_at.tv_sec = 0;
-		record.expires_at.tv_usec = 0;
+		record.expires_at.tv_nsec = 0;
 		if (subitem != NULL && !json_is_null(subitem)) {
 			record.expires_at.tv_sec = json_integer_value(subitem);
 		}
@@ -96,7 +96,7 @@ namespace Peerchat {
 
 		subitem = json_object_get(item, "setAt");
 		record.set_at.tv_sec = 0;
-		record.set_at.tv_usec = 0;
+		record.set_at.tv_nsec = 0;
 		if (subitem != NULL && !json_is_null(subitem)) {
 			record.set_at.tv_sec = json_integer_value(subitem);
 		}

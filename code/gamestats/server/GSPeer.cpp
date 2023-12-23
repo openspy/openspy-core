@@ -22,8 +22,8 @@ namespace GS {
 		m_delete_flag = false;
 		m_timeout_flag = false;
 		
-		gettimeofday(&m_last_ping, NULL);
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 
 		m_user.id = 0;
 		m_profile.id = 0;
@@ -87,7 +87,7 @@ namespace GS {
 		if(data_parser.Size() == 0) {
 			return;
 		}
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 
 		std::string command = data_parser.GetKeyByIdx(0);
 		if(command.compare("auth") == 0) {
@@ -140,11 +140,11 @@ namespace GS {
 	}
 	void Peer::send_ping() {
 		//check for timeout
-		struct timeval current_time;
+		uv_timespec64_t current_time;
 
-		gettimeofday(&current_time, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if(current_time.tv_sec - m_last_ping.tv_sec > GP_PING_TIME) {
-			gettimeofday(&m_last_ping, NULL);
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_ping);
 			std::string ping_packet = "\\ka\\";
 			SendPacket(ping_packet);
 		}

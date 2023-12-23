@@ -177,8 +177,8 @@ namespace Peerchat {
 			int profileid;
 			int modeflags; //EUserChannelFlag
 			bool isGlobal; //save to db, or only redis
-			struct timeval expires_at; //or "expires in secs" when setting
-			struct timeval set_at; //or "expires in secs" when setting
+			uv_timespec64_t expires_at; //or "expires in secs" when setting
+			uv_timespec64_t set_at; //or "expires in secs" when setting
 			UserSummary setByUserSummary;
 
 			bool has_gameid; //false if null, true if exists
@@ -198,13 +198,13 @@ namespace Peerchat {
 		std::string password;
 		std::string entrymsg;
 		std::string comment;
-		struct timeval expires_at;
+		uv_timespec64_t expires_at;
 		std::string groupname;
 		int limit;
 		int modeflags;
 		bool onlyOwner;
 		std::string topic;
-		struct timeval set_at;
+		uv_timespec64_t set_at;
 		std::string setByNick;
 		int setByPid;
 		std::string setByHost;

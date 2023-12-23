@@ -154,8 +154,8 @@ namespace GP {
 
 		std::ostringstream ss;
 		if(success) {
-			struct timeval time_now;
-			gettimeofday(&time_now, NULL);
+			uv_timespec64_t time_now;
+			uv_clock_gettime(UV_CLOCK_MONOTONIC, &time_now);
 			time_now.tv_sec += auth_data.expiresInSecs - SESSION_RENEW_OFFSET;
 			((GP::Peer *)peer)->m_session_expires_at = time_now;
 
