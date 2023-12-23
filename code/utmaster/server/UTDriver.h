@@ -22,6 +22,13 @@ namespace UT {
 		std::string hash;
 		int version;
 	};
+	class MapItem {
+		public:
+			int version;
+			std::string name;
+			std::string description;
+			std::string url;
+	};
 	class Config {
 		public:
 			Config() {
@@ -36,6 +43,8 @@ namespace UT {
 			bool is_server;
 			int latest_client_version;
 			std::vector<UT::PackageItem> packages;
+			std::string community_motd;
+			std::vector<UT::MapItem> maps;
 	};
 
 	class Driver : public OS::TCPDriver {

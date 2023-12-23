@@ -177,8 +177,8 @@ namespace MM {
         ss.str("");
         
         std::string last_heartbeat;
-        struct timeval current_time;
-        gettimeofday(&current_time, NULL);
+        uv_timespec64_t current_time;
+        uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
         
         ss << current_time.tv_sec;
         last_heartbeat = ss.str();

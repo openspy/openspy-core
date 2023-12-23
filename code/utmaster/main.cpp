@@ -52,6 +52,34 @@ void load_packages_data(UT::Config* cfg, std::vector<OS::ConfigNode> nodes) {
 	}
 }
 
+void load_community_maps(UT::Config* cfg, std::vector<OS::ConfigNode> nodes) {
+	std::vector<OS::ConfigNode>::iterator it = nodes.begin();
+	while (it != nodes.end()) {
+		UT::MapItem item;
+
+		OS::ConfigNode root = *it;
+		std::vector<OS::ConfigNode> children = root.GetArrayChildren();
+		std::vector<OS::ConfigNode>::iterator it2 = children.begin();
+		while (it2 != children.end()) {
+
+			OS::ConfigNode child = *it2;
+			std::string key = child.GetKey();
+			if (key.compare("version") == 0) {
+				item.version = child.GetValueInt();
+			} else if (key.compare("name") == 0) {
+				item.name = child.GetValue();
+			} else if (key.compare("description") == 0) {
+				item.description = child.GetValue();
+			} else if (key.compare("url") == 0) {
+				item.url = child.GetValue();
+			}
+			it2++;
+		}
+		cfg->maps.push_back(item);
+		it++;
+	}
+}
+
 std::vector<UT::Config *> LoadConfigMapping(std::string filePath) {
 	std::vector<UT::Config *> result;
 	OS::Config *cfg = new OS::Config(filePath);
@@ -83,6 +111,10 @@ std::vector<UT::Config *> LoadConfigMapping(std::string filePath) {
 					msConfig->latest_client_version = atoi(configNode.GetValue().c_str());
 				} else if (key.compare("packages") == 0) {
 					load_packages_data(msConfig, configNode.GetArrayChildren());
+				} else if (key.compare("community-motd") == 0) {
+					msConfig->community_motd = get_file_contents(configNode.GetValue());
+				} else if (key.compare("community-maps") == 0) {
+					load_community_maps(msConfig, configNode.GetArrayChildren());
 				}
 				it2++;
 			}

@@ -28,7 +28,8 @@ namespace UT {
 	*/
 	enum EClientIncomingRequest {
 		EClientIncomingRequest_ServerList,
-		EClientIncomingRequest_MOTD
+		EClientIncomingRequest_MOTD,
+		EClientIncomingRequest_CommunityData = 3
 	};
 
 	/*
@@ -54,6 +55,7 @@ namespace UT {
 
 	class Driver;
 	class Config;
+	class MapItem;
 
 	class Peer : public INetPeer {
 	public:
@@ -81,6 +83,8 @@ namespace UT {
 			void send_challenge_response(std::string response);
 			void send_challenge_authorization();
 			void send_motd();
+			void send_community_motd();
+			void send_community_map(UT::MapItem data);
 			void send_verified();
 			void send_server_id(int id);
 			void send_heartbeat_request(uint8_t id, uint32_t code);
@@ -105,6 +109,7 @@ namespace UT {
 			* "Game Client" command handlers
 			*/
 			void handle_motd(OS::Buffer recv_buffer);
+			void handle_community_data(OS::Buffer recv_buffer);
 			void handle_request_server_list(OS::Buffer recv_buffer);
 
 

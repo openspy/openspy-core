@@ -9,9 +9,7 @@
 
 namespace UT {
 	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
-		m_delete_flag = false;
-		m_timeout_flag = false;
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 		m_state = EConnectionState_WaitChallengeResponse;
 		m_config = NULL;
 		m_got_server_init = false;
@@ -29,15 +27,15 @@ namespace UT {
 		if (m_delete_flag) return;
 
 		//check for timeout
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		uv_timespec64_t current_time;
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &current_time);
 		if (current_time.tv_sec - m_last_recv.tv_sec > UTMASTER_PING_TIME) {
 			Delete(true);
 		}
 	}
 
 	void Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
-		gettimeofday(&m_last_recv, NULL);
+		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_recv);
 
 		OS::Buffer buffer;
 		buffer.WriteBuffer(buf->base, nread);
@@ -112,6 +110,9 @@ namespace UT {
 				break;
 			case EClientIncomingRequest_MOTD:
 				handle_motd(parse_buffer);
+				break;
+			case EClientIncomingRequest_CommunityData:
+				handle_community_data(parse_buffer);
 				break;
 			default:
 				return false;

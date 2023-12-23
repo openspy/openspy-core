@@ -253,7 +253,7 @@ namespace MM {
 			}
 		}
 		else if (string_comparision) {
-			comparison = strcasecmp(property.property.c_str(), p.second.c_str());
+			comparison = stricmp(property.property.c_str(), p.second.c_str());
 		}
 		else {
 			int values[2];

@@ -8,7 +8,7 @@ namespace UT {
 	Driver::Driver(INetServer *server, const char *host, uint16_t port) : TCPDriver(server, host, port) {
 	}
 	INetPeer *Driver::CreatePeer(uv_tcp_t *socket) {
-		return new Peer(this, socket);
+		return new UT::Peer(this, socket);
 	}
 	UT::Config *Driver::FindConfigByClientName(std::string clientName) {
 		std::vector<UT::Config *>::iterator it = m_config.begin();
