@@ -49,6 +49,7 @@ namespace MM {
 			}
 
 			bool isStandardServer() {
+#if 0
 				if(m_mutators.size() > 0) {
 					std::vector<std::string>::iterator it = m_mutators.begin();
 					while(it != m_mutators.end()) {
@@ -57,6 +58,7 @@ namespace MM {
 						it++;
 					}
 				}
+#endif
 				return true;
 			}
 	};
