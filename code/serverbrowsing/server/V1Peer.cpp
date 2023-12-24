@@ -265,12 +265,15 @@ namespace SB {
 				return;
 			}
 
-			if(!kv_parser.HasKey("list") || !kv_parser.HasKey("gamename")) {
-				send_error(true, "Data parsing error");
-				return;
-			} else {
+			if (kv_parser.HasKey("list")) {
 				mode = kv_parser.GetValue("list");
+			}
+
+			if (kv_parser.HasKey("gamename")) {
 				gamename = kv_parser.GetValue("gamename");
+			}
+			else {
+				gamename = m_game.gamename;
 			}
 
 			MM::MMQueryRequest req;
