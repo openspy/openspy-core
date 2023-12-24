@@ -113,12 +113,16 @@ namespace UT {
 
 			send_buffer.WriteByte(server.num_players);
 			send_buffer.WriteByte(server.max_players);
-			if(response.peer->m_client_version >= 3000) {
-				send_buffer.WriteInt(response.peer->get_server_flags(server)); //flags
-				Write_FString(server.bot_level, send_buffer);
-			} else {
-				send_buffer.WriteByte(response.peer->get_server_flags(server)); //flags
+			if (response.peer->m_client_version != 2226) { //if not UT2XMP
+				if (response.peer->m_client_version >= 3000) {
+					send_buffer.WriteInt(response.peer->get_server_flags(server)); //flags
+					Write_FString(server.bot_level, send_buffer);
+				}
+				else {
+					send_buffer.WriteByte(response.peer->get_server_flags(server)); //flags
+				}
 			}
+
 			response.peer->send_packet(send_buffer);
 			it++;
 		}

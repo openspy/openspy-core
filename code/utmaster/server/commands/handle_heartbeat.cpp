@@ -74,6 +74,9 @@ namespace UT {
 		for(int i=0;i<num_player_entries;i++) {
 			MM::PlayerRecord player_record;
 			player_record.id = buffer.ReadInt();
+			if (m_client_version == 2226) { //skip UT2XMP specific data
+				buffer.ReadInt();
+			}
 			player_record.name = Read_FString(buffer, true);
 
 			player_record.ping = buffer.ReadInt();
