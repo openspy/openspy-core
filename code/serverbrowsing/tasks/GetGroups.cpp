@@ -32,7 +32,8 @@ namespace MM {
 		std::vector<CToken> token_list = CToken::filterToTokenList(request->req.filter.c_str());
 		do {
 			ServerListQuery streamed_ret;
-			reply = (redisReply *) redisCommand(thread_data->mp_redis_connection, "ZSCAN %s %d COUNT 50", request->req.m_for_game.gamename.c_str(), cursor);
+            std::string for_gamename = OS::str_tolower(request->req.m_for_game.gamename);
+			reply = (redisReply *) redisCommand(thread_data->mp_redis_connection, "ZSCAN %s %d COUNT 50", for_gamename.c_str(), cursor);
             if (reply == NULL || thread_data->mp_redis_connection->err) {
                 goto error_cleanup;
             }
