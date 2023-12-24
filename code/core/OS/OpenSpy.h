@@ -163,6 +163,8 @@ namespace OS {
 
 	void curlLockCallback(CURL *handle, curl_lock_data data, curl_lock_access access, void *userptr);
 	void curlUnlockCallback(CURL *handle, curl_lock_data data, void *userptr);
+
+	std::string str_tolower(std::string s);
 }
 
 #ifdef _WIN32

@@ -31,7 +31,9 @@ namespace MM {
 		do {
 			ServerListQuery streamed_ret;
 			streamed_ret.requested_fields = request->req.field_list;
-			reply =  (redisReply *) redisCommand(thread_data->mp_redis_connection, "ZSCAN %s %d COUNT 50", request->req.m_for_game.gamename.c_str(), cursor);
+
+			std::string for_gamename = OS::str_tolower(request->req.m_for_game.gamename);
+			reply =  (redisReply *) redisCommand(thread_data->mp_redis_connection, "ZSCAN %s %d COUNT 50", for_gamename.c_str(), cursor);
 
             if (reply == NULL || thread_data->mp_redis_connection->err) {
                 goto error_cleanup;
