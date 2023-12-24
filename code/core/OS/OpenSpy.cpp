@@ -3,6 +3,7 @@
 #include <sstream>
 #include <curl/curl.h>
 #include <iomanip>
+#include <algorithm>
 
 #include "Logger.h"
 
@@ -180,14 +181,28 @@ namespace OS {
 		return game;
 
 	}
+
+	std::string str_tolower(std::string s)
+	{
+		std::transform(s.begin(), s.end(), s.begin(), 
+					// static_cast<int(*)(int)>(std::tolower)         // wrong
+					// [](int c){ return std::tolower(c); }           // wrong
+					// [](char c){ return std::tolower(c); }          // wrong
+					[](unsigned char c){ return std::tolower(c); } // correct
+					);
+		return s;
+	}
+
 	OS::GameData GetGameByName(const char *from_gamename, redisContext *redis_ctx) {
 		redisReply *reply;
 
 		OS::GameData game_data;
+
+		std::string lowercase_gamename = str_tolower(from_gamename);
         
         if(redis_ctx) {
             redisAppendCommand(redis_ctx, "SELECT %d", ERedisDB_Game);
-            redisAppendCommand(redis_ctx, "GET %s", from_gamename);
+            redisAppendCommand(redis_ctx, "GET %s", lowercase_gamename.c_str());
 
             int r = redisGetReply(redis_ctx,(void**)&reply);
             
