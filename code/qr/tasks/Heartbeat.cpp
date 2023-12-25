@@ -235,8 +235,6 @@ namespace MM {
         //check for server by instance key + ip:port
         std::string server_key = GetServerKey_FromRequest(request, thread_data);
 
-
-
         if (statechanged == 1) {
             //This is a transparent error (the server will not return an error) - 
             // this is because the throttling does not mean the server will removed / not registered - it just means this heartbeat is ignored
@@ -325,9 +323,7 @@ namespace MM {
 
             if(!(server_key.length() > 7 && server_key.substr(0, 7).compare("thugpro") == 0)) { //temporarily supress thugpro updates
                 std::string msg = s.str();
-                if(request.version != 1) {
-                    TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str(), &request.from_address);
-                }
+                TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str(), &request.from_address);
             }
             
             
@@ -392,8 +388,7 @@ namespace MM {
             std::string qr1map_key = s.str();
             s.str("");
             redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", qr1map_key.c_str(), server_key.c_str()); total_redis_calls++;
-        }
-            
+        } 
 
         redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", ipinstmap_str.c_str(), server_key.c_str()); total_redis_calls++;
         redisAppendCommand(thread_data->mp_redis_connection, "HSET %s instance_key %ld", server_key.c_str(), instance_key); total_redis_calls++;
@@ -415,16 +410,12 @@ namespace MM {
 
             std::map<std::string, std::string>::iterator it = server.m_keys.begin();
             while (it != server.m_keys.end()) {
-                std::pair<std::string, std::string> p = *it;
-                args[idx++] = strdup(p.first.c_str());
-                args[idx++] = strdup(p.second.c_str());
+                args[idx++] = it->first.c_str();
+                args[idx++] = it->second.c_str();
                 it++;
             }
             
             redisAppendCommandArgv(thread_data->mp_redis_connection, num_keys, args, NULL); total_redis_calls++;
-            for(int i = 2;i<num_keys;i++) {
-                free((void *)args[i]);
-            }
             free(args);
         }
 
@@ -498,16 +489,13 @@ namespace MM {
                     std::pair<std::string, std::string> kv_pair = *keys_it;
                     if (!kv_pair.second.empty()) {
                         //ss << " " << kv_pair.first << " \"" << kv_pair.second << "\"";
-                        args[idx++] = strdup(kv_pair.first.c_str());
-                        args[idx++] = strdup(kv_pair.second.c_str());
+                        args[idx++] = kv_pair.first.c_str();
+                        args[idx++] = kv_pair.second.c_str();
                     }
                     keys_it++;
                 }
 
                 redisAppendCommandArgv(thread_data->mp_redis_connection, idx, args, NULL); total_redis_calls++;
-                for(int i = 2;i<num_keys;i++) {
-                    free((void *)args[i]);
-                }
                 redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", p.first.c_str(), MM_PUSH_EXPIRE_TIME); total_redis_calls++;
                 free(args);
             }

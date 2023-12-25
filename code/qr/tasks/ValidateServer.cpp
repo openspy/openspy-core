@@ -7,7 +7,7 @@
 
 namespace MM {
 
-    std::string GetV2CalculatedChallenge(MMPushRequest request, TaskThreadData *thread_data, std::string server_key) {
+    std::string GetCalculatedChallenge(MMPushRequest request, TaskThreadData *thread_data, std::string server_key) {
         
 		redisReply *reply;
         std::string challenge = "";
@@ -17,6 +17,7 @@ namespace MM {
                 challenge = OS::strip_quotes(reply->str);
             }
             freeReplyObject(reply);
+            return challenge;
         }
 
         return "";
@@ -40,7 +41,7 @@ namespace MM {
         response.query_address = GetQueryAddressForServer(thread_data, server_key);
         response.challenge = server_key;
 
-        std::string expected_challenge = GetV2CalculatedChallenge(request, thread_data, server_key);
+        std::string expected_challenge = GetCalculatedChallenge(request, thread_data, server_key);
         std::string chopped_challenge = request.gamename;
         if(chopped_challenge.length() > expected_challenge.length()) {
             chopped_challenge = chopped_challenge.substr(0, expected_challenge.length());
@@ -59,8 +60,11 @@ namespace MM {
                 
                 std::string msg = s.str();
                 TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str(), &request.from_address);
-            }
-            
+            }   
+        } else if(request.version == 1) {
+            // server already registered, no need to perform registration events again (such as key scan)
+            // this scenario should only happen on v1, where both the game and query port get probed
+            return true;
         }
 
         request.callback(response);
