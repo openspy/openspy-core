@@ -11,6 +11,7 @@ namespace UT {
 	void Peer::handle_heartbeat(OS::Buffer buffer) {
 		MM::ServerRecord record;
 		record.m_address = getAddress();
+		record.gameid = m_config->gameid;
 
 		std::stringstream ss;
 		
