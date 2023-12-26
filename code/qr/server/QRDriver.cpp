@@ -81,12 +81,12 @@ namespace QR {
 	}
 
 	void Driver::send_v1_error(OS::Address to, const char *error_message) {
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got Error: %s", to.ToString().c_str(), error_message);
+		return; //some games don't handle error, so then it results in a loop of spam where it responds with an invalid packet (getting an error)
 		std::stringstream ss;
 		ss << "\\error\\" << error_message;
 
 		std::string message = ss.str();
-
-		OS::LogText(OS::ELogLevel_Info, "[%s] Send Error: %s", to.ToString().c_str(), error_message);
 
 		OS::Buffer buffer;
 		buffer.WriteBuffer(message.c_str(),message.length());
