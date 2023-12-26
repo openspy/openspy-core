@@ -105,28 +105,12 @@ namespace MM {
     }
     std::string GetServerKey_FromRequest(MMPushRequest request, TaskThreadData *thread_data) {
         std::string key;
-        bool use_stored_qr1_address = false;
         if(request.version == 1) {            
-            //qr1, do "query lookup" for non-data incoming queries
-            switch(request.type) {
-                //use from address
-                case EMMPushRequestType_Heartbeat:
-                break;
-
-                //use stored QR1 address
-                case EMMPushRequestType_ValidateServer:
-                case EMMPushRequestType_Keepalive:
-                default:
-                use_stored_qr1_address = true;
-                break;
-            }
-
-            if(use_stored_qr1_address) {
-                key = Get_QR1_Stored_Address_ServerKey(request, thread_data);
-            }
+            key = Get_QR1_Stored_Address_ServerKey(request, thread_data);
         }
-        if(!use_stored_qr1_address || key.length() == 0)
+        if(key.length() == 0) {
             key = GetServerKeyBy_InstanceKey_Address(thread_data, request.v2_instance_key, request.from_address);
+        }
         return key;
     }
     bool CheckServerKey_HasRecentHeartbeat_V1(MMPushRequest request, TaskThreadData* thread_data, std::string server_key) {
@@ -269,7 +253,6 @@ namespace MM {
                 return true;
             }
 
-
             int server_id;
             server_key = GetNewServerKey_FromRequest(request, thread_data, gamename, server_id);
 
@@ -339,11 +322,18 @@ namespace MM {
 
         std::ostringstream s;
 
-        if(instance_key == 0 && address.GetPort() != from_address.GetPort()) { //instance key is 0, likely QR1
-            s << "QR1MAP_" << from_address.ToString(true) << "-" << from_address.GetPort();
+        if(instance_key == 0) { //instance key is 0, likely QR1
+            s << "QR1MAP_" << address.ToString(true) << "-" << address.GetPort();
             std::string qr1map_key = s.str();
             s.str("");
             redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", qr1map_key.c_str(), MM_PUSH_EXPIRE_TIME); count++;
+
+             if(address.GetPort() != from_address.GetPort()) {
+                s << "QR1MAP_" << from_address.ToString(true) << "-" << from_address.GetPort();
+                qr1map_key = s.str();
+                s.str("");
+                redisAppendCommand(thread_data->mp_redis_connection, "EXPIRE %s %d", qr1map_key.c_str(), MM_PUSH_EXPIRE_TIME); count++;
+             }
         }
         std::string server_key_custkeys = server_key + "custkeys";
         
@@ -383,11 +373,18 @@ namespace MM {
 
 		redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", ipmap_str.c_str(), server_key.c_str()); total_redis_calls++;
 
-        if(instance_key == 0 && server.m_address.GetPort() != from_address.GetPort()) {
-            s << "QR1MAP_" << from_address.ToString(true) << "-" << from_address.GetPort();
+        if(instance_key == 0) {
+            s << "QR1MAP_" << server.m_address.ToString(true) << "-" << server.m_address.GetPort();
             std::string qr1map_key = s.str();
             s.str("");
             redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", qr1map_key.c_str(), server_key.c_str()); total_redis_calls++;
+
+            if(server.m_address.GetPort() != from_address.GetPort()) {
+                s << "QR1MAP_" << from_address.ToString(true) << "-" << from_address.GetPort();
+                qr1map_key = s.str();
+                s.str("");
+                redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", qr1map_key.c_str(), server_key.c_str()); total_redis_calls++;
+            }
         } 
 
         redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", ipinstmap_str.c_str(), server_key.c_str()); total_redis_calls++;
