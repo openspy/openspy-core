@@ -81,6 +81,7 @@ namespace QR {
 	}
 
 	void Driver::send_v1_error(OS::Address to, const char *error_message) {
+		return; //some games don't handle error, so then it results in a loop of spam where it responds with an invalid packet (getting an error)
 		std::stringstream ss;
 		ss << "\\error\\" << error_message;
 
