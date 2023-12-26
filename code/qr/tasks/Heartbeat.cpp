@@ -486,11 +486,9 @@ namespace MM {
                 int idx = 2;
 
                 while (keys_it != p.second.end()) {
-                    std::pair<std::string, std::string> kv_pair = *keys_it;
-                    if (!kv_pair.second.empty()) {
-                        //ss << " " << kv_pair.first << " \"" << kv_pair.second << "\"";
-                        args[idx++] = kv_pair.first.c_str();
-                        args[idx++] = kv_pair.second.c_str();
+                    if (!keys_it->second.empty()) {
+                        args[idx++] = keys_it->first.c_str();
+                        args[idx++] = keys_it->second.c_str();
                     }
                     keys_it++;
                 }
