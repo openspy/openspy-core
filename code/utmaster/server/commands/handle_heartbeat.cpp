@@ -115,7 +115,7 @@ namespace UT {
 		send_buffer.WriteInt(code);
 		send_packet(send_buffer);
 	}
-	void Peer::send_server_id(int id) {
+	void Peer::send_server_gamestatsid(int id) {
 		OS::Buffer send_buffer;
 		send_buffer.WriteByte(3);
 		send_buffer.WriteInt(id);

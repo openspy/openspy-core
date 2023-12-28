@@ -86,7 +86,7 @@ namespace UT {
 			void send_community_motd();
 			void send_community_map(UT::MapItem data);
 			void send_verified();
-			void send_server_id(int id);
+			void send_server_gamestatsid(int id);
 			void send_heartbeat_request(uint8_t id, uint32_t code);
 			void send_detected_ports();
 			void send_packages_data(uint32_t version);
@@ -139,7 +139,8 @@ namespace UT {
 
 			uint32_t m_client_version;
 
-			bool m_got_server_init;	
+			bool m_got_server_init;
+			uint32_t m_gamestats_id;
 
 	};
 }

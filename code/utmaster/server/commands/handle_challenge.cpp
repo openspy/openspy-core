@@ -34,16 +34,35 @@ namespace UT {
 		uint32_t gpu_device_id = 0;
 		uint32_t vendor_id = 0;
 		uint32_t cpu_cycles = 0;
-		uint32_t running_cpu = 0;
+		uint8_t running_cpu = 0;
+		m_gamestats_id = 1234;
 		if(m_client_version >= 3000) {
-			gpu_device_id = buffer.ReadInt();
-			vendor_id = buffer.ReadInt();
-			cpu_cycles = buffer.ReadInt();
-			running_cpu = buffer.ReadInt();
+			if(m_config->is_server) {
+				gpu_device_id = buffer.ReadInt();
+				running_cpu = buffer.ReadByte();
+				if(gpu_device_id == 0xffffffff) {
+					m_gamestats_id = -1;
+				} else if(gpu_device_id > 0) { //just use whatever their stats id is
+					m_gamestats_id = gpu_device_id;
+				}
+			} else {
+				gpu_device_id = buffer.ReadInt();
+				vendor_id = buffer.ReadInt();
+				cpu_cycles = buffer.ReadInt();
+				running_cpu = buffer.ReadByte();
+			}
+
 		}
-		OS::LogText(OS::ELogLevel_Info, "[%s] Got Game Info: cdkey hash: %s, cd key response: %s, client: %s, version: %d, os: %d, language: %s, gpu device id: %04x, gpu vendor id: %04x, cpu cycles: %d, running cpu: %d", getAddress().ToString().c_str(), cdkey_hash.c_str(), cdkey_response.c_str(), client.c_str(), running_version, running_os, language.c_str(),
-			gpu_device_id, vendor_id, cpu_cycles, running_cpu
-		);
+		if(m_config->is_server) {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Game Info: cdkey hash: %s, cd key response: %s, client: %s, version: %d, os: %d, language: %s, gamestats_id: %d, utans_bans_disabled: %d", getAddress().ToString().c_str(), cdkey_hash.c_str(), cdkey_response.c_str(), client.c_str(), running_version, running_os, language.c_str(),
+				gpu_device_id, running_cpu
+			);
+		} else {
+			OS::LogText(OS::ELogLevel_Info, "[%s] Got Game Info: cdkey hash: %s, cd key response: %s, client: %s, version: %d, os: %d, language: %s, gpu device id: %04x, gpu vendor id: %04x, cpu cycles: %d, running cpu: %d", getAddress().ToString().c_str(), cdkey_hash.c_str(), cdkey_response.c_str(), client.c_str(), running_version, running_os, language.c_str(),
+				gpu_device_id, vendor_id, cpu_cycles, running_cpu
+			);
+		}
+
 
 
 		
@@ -59,7 +78,7 @@ namespace UT {
 	void Peer::send_challenge_response(std::string response) {
 		OS::Buffer send_buffer;
 		Write_FString(response, send_buffer);	
-		if (!m_config->is_server && m_client_version >= 3000) {
+		if (m_config && !m_config->is_server && m_client_version >= 3000) {
 			send_buffer.WriteInt(3); //???
 		}
 		send_packet(send_buffer);

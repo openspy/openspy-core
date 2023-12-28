@@ -49,8 +49,10 @@ namespace UT {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got packages version: %d", getAddress().ToString().c_str(), version);
 
 
+		if(m_gamestats_id != 0xffffffff) {
+			send_server_gamestatsid(m_gamestats_id); //init stats backend, generate match id, for now not needed
+		}
 
-		send_server_id(1234); //init stats backend, generate match id, for now not needed
 		send_packages_data(version);
 	}
 
