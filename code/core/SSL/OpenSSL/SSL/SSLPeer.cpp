@@ -42,10 +42,18 @@ namespace OS {
                 ssl_flush();
             }
             if (SSL_is_init_finished(mp_ssl)) {
-                int rc = SSL_read(mp_ssl, buf->base, nread);
-                if(rc > 0) {
-                    on_stream_read(stream, rc, buf);   
-                }
+                int rc;
+                do {
+                     rc = SSL_read(mp_ssl, buf->base, nread);
+                    if (rc > 0) {
+                        on_stream_read(stream, rc, buf);
+                    }
+                    else {
+                        ssl_flush();
+                        break;
+                    }
+                } while (true);
+
             }
         }
 
