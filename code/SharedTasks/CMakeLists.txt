@@ -15,3 +15,9 @@ add_library (SharedTasks SHARED ${MAIN_SRCS})
 
 target_include_directories(SharedTasks PUBLIC "src/")
 target_link_libraries(SharedTasks openspy ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+INSTALL(TARGETS SharedTasks
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  COMPONENT library
+)
+install(DIRECTORY "src" DESTINATION include FILES_MATCHING PATTERN "*.h")
