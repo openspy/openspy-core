@@ -32,6 +32,16 @@ On Debian-based OS:
 
 Note: Debian 12 (Bookworm) and below ship `hiredis` without SSL support. If you want to compile OpenSpy Core on Debian 12 and derived OS (like Ubuntu 22.04), you need to compile `hiredis` with `USE_SSL=1` yourself. As of Debian 13 (Trixie) the SSL version is already included.
 
+#### Compile against legacy versions of rabbitmq-c
+If you compile against a version of `rabbitmq-c` prior to `0.12`, you need to enable the compiler flag `USE_LEGACYRABBITMQ`:
+
+```
+cd <openspy-core-v2-master>/code
+mkdir build && cd build
+cmake -DUSE_LEGACYRABBITMQ=ON ..
+cmake --build .
+```
+
 ## Running
 If you refer to the "openspy-web-backend" project, this will have everything you need to get openspy running.
 From the perspective of this application, the requirements are redis, rabbitmq, and then the openspy-web-backend.

@@ -2,7 +2,11 @@
 #define _NN_TASKS_H
 #include <OS/OpenSpy.h>
 #include <string>
-#include <rabbitmq-c/amqp.h>
+#ifdef LEGACYRABBITMQ
+	#include <amqp.h>
+#else
+	#include <rabbitmq-c/amqp.h>
+#endif
 #include <server/structs.h>
 #include <uv.h>
 
