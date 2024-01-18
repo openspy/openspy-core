@@ -1,9 +1,13 @@
 #include "tasks.h"
 #include <uv.h>
 
-
-#include <rabbitmq-c/amqp.h>
-#include <rabbitmq-c/tcp_socket.h>
+#ifdef LEGACYRABBITMQ
+	#include <amqp.h>
+	#include <amqp_tcp_socket.h>
+#else
+	#include <rabbitmq-c/amqp.h>
+	#include <rabbitmq-c/tcp_socket.h>
+#endif
 
 #include <OS/OpenSpy.h>
 

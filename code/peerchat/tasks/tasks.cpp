@@ -3,9 +3,13 @@
 #include <server/Server.h>
 #include <server/Peer.h>
 
-
-#include <rabbitmq-c/amqp.h>
-#include <rabbitmq-c/tcp_socket.h>
+#ifdef LEGACYRABBITMQ
+	#include <amqp.h>
+	#include <amqp_tcp_socket.h>
+#else
+	#include <rabbitmq-c/amqp.h>
+	#include <rabbitmq-c/tcp_socket.h>
+#endif
 
 namespace Peerchat {
 	const char *peerchat_channel_exchange = "peerchat.core";

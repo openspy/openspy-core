@@ -14,6 +14,11 @@ find_package(libuv REQUIRED)
 
 include_directories("core")
 
+#enable compiling agains rabbitmq-c <0.12
+option(USE_LEGACYRABBITMQ "Compiling against legacy versions of rabbitmq-c (<0.12)" OFF)
+if (USE_LEGACYRABBITMQ)
+  add_definitions(-DLEGACYRABBITMQ)
+endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/")
