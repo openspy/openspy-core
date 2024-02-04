@@ -32,8 +32,8 @@ namespace OS {
 	private:
 		int GetIndex(int n); //map internal index to external index
 		bool IsDataKey(std::string key);
-		std::vector<std::pair<std::string, std::string>>::const_iterator FindKey(std::string key);
-		std::vector<std::pair<std::string, std::string>>::const_iterator FindValue(std::string key);
+		std::vector<std::pair<std::string, std::string> >::const_iterator FindKey(std::string key);
+		std::vector<std::pair<std::string, std::string> >::const_iterator FindValue(std::string key);
 		std::vector< std::pair<std::string, std::string> > m_kv_map;
 		char m_delimitor;
 		char m_line_delimitor;
