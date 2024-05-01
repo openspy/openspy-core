@@ -50,6 +50,8 @@
 #define HAS_KEYS_FLAG					64
 #define HAS_FULL_RULES_FLAG				128
 
+#define MAX_INCOMING_BUFFER_SIZE 1024
+
 namespace SB {
 		class V2Peer : public Peer {
 			public:

@@ -465,36 +465,40 @@ namespace SB {
 	}
 	void V2Peer::on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 		OS::Buffer buffer;
-		buffer.WriteBuffer(buf->base, nread);
+		int64_t num_read = nread;
+		buffer.WriteBuffer(buf->base, num_read);
 		buffer.resetReadCursor();
-        while(nread > 0) {
-            if(m_read_remaining == 0) {
-                m_read_buffer.resetCursors();
-                m_read_remaining = htons(buffer.ReadShort()); //read length
+		while(num_read > 0) {
+			if(m_read_remaining == 0) {
+				m_read_buffer.resetCursors();
+				m_read_remaining = htons(buffer.ReadShort()); //read length
 
-                m_read_remaining -= sizeof(uint16_t); //skip length
-                nread -= sizeof(uint16_t);
-            }
+				m_read_remaining -= sizeof(uint16_t); //skip length
+				num_read -= sizeof(uint16_t);
+			}
 
-            if(buffer.readRemaining() >= m_read_remaining) { //buffer contains entire message, process entire thing
-                m_read_buffer.WriteBuffer(buffer.GetReadCursor(), m_read_remaining);
-                buffer.SkipRead(m_read_remaining);
-                nread -= m_read_remaining;
-                m_read_remaining = 0;
-            } else if(m_read_remaining >= buffer.readRemaining()) { //remaining message is larger than remaining recv data
-                m_read_buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
-                m_read_remaining -= buffer.readRemaining();
-                nread -= buffer.readRemaining();
-                buffer.SkipRead(buffer.readRemaining());
-            }
+			if(m_read_remaining > MAX_INCOMING_BUFFER_SIZE) {
+				Delete();
+				break;
+			}
 
-            if(m_read_remaining == 0) {
-                this->handle_packet(m_read_buffer);
-                m_read_buffer.resetCursors();
-            }
-        }
+			if(buffer.readRemaining() >= m_read_remaining) { //buffer contains entire message, process entire thing
+				m_read_buffer.WriteBuffer(buffer.GetReadCursor(), m_read_remaining);
+				buffer.SkipRead(m_read_remaining);
+				num_read -= m_read_remaining;
+				m_read_remaining = 0;
+			} else if(m_read_remaining >= buffer.readRemaining()) { //remaining message is larger than remaining recv data
+				m_read_buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
+				m_read_remaining -= buffer.readRemaining();
+				num_read -= buffer.readRemaining();
+				buffer.SkipRead(buffer.readRemaining());
+			}
 
-		
+			if(m_read_remaining == 0) {
+				this->handle_packet(m_read_buffer);
+				m_read_buffer.resetCursors();
+			}
+		}
 	}
 	void V2Peer::think() {
 		if (m_delete_flag) return;
@@ -760,12 +764,11 @@ namespace SB {
 	}
 
 	void V2Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
-        SendListQueryResp(results, request.req, true, request.req.all_keys);
-        if (!m_sent_push_keys && results.last_set) {
-            m_sent_push_keys = true;
-            SendPushKeys();
-        }
-
+		SendListQueryResp(results, request.req, true, request.req.all_keys);
+		if (!m_sent_push_keys && results.last_set) {
+			m_sent_push_keys = true;
+			SendPushKeys();
+		}
 	}
 	void V2Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 		SendListQueryResp(results, request.req);
