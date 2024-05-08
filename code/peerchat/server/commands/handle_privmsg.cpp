@@ -60,7 +60,7 @@ namespace Peerchat {
         req.message_target = target;
         req.peer->IncRef();
         req.callback = NULL;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
     }
     void Peer::handle_privmsg(std::vector<std::string> data_parser) {
         if(m_user_details.modeflags & EUserMode_Gagged) {

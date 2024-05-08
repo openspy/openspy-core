@@ -41,7 +41,7 @@ namespace Peerchat {
 
 		req.callback = OnQuit_TaskComplete;
 		
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
     }
     void Peer::handle_quit(std::vector<std::string> data_parser) {
         std::string reason = "";

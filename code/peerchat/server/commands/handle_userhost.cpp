@@ -41,7 +41,7 @@ namespace Peerchat {
 
             req.peer->IncRef();
             req.callback = OnUsrip_FetchUser;
-            AddPeerchatTaskRequest(req);
+            AddTaskRequest(req);
 		}
 	}
 }

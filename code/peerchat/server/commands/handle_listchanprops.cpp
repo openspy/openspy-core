@@ -83,7 +83,7 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnListChanProps;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 
     }
 }

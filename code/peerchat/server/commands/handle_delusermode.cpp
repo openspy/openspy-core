@@ -38,7 +38,7 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnDeleteUserMode;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 
     }
 }

@@ -33,6 +33,6 @@ namespace Peerchat {
         
         req.peer->IncRef();
         req.callback = OnSetGroup;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
     }
 }

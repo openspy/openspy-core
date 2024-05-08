@@ -67,7 +67,7 @@ namespace Peerchat {
         
         req.peer->IncRef();
         req.callback = OnWhois_FetchUser;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
         
     }
 }

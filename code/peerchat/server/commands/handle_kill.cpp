@@ -48,6 +48,6 @@ namespace Peerchat {
 
             req.peer->IncRef();
             req.callback = OnKillUser;
-            AddPeerchatTaskRequest(req);
+            AddTaskRequest(req);
 	}
 }

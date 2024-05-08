@@ -85,7 +85,7 @@ namespace Peerchat {
         
         req.peer->IncRef();
         req.callback = OnGetCKey;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
         
     }
 }

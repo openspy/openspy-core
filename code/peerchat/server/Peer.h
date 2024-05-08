@@ -13,6 +13,7 @@
 
 #include <sstream>
 #include <algorithm>
+#include <queue>
 
 #include "gs_peerchat.h"
 #include <server/irc_common.h>
@@ -37,6 +38,7 @@ namespace Peerchat {
 	class ChanpropsRecord;
 
 	class Peer;
+	class PeerchatBackendRequest;
 	typedef void(Peer::*CommandCallback)(std::vector<std::string>);
 	class CommandEntry {
 	public:
@@ -228,6 +230,7 @@ namespace Peerchat {
 		std::map<int, int> GetChannelFlagsMap() {
 			return m_channel_flags;
 		}
+		void ProcessNextTask();
 	private:
 		void on_stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 		void handle_command(std::string input);
@@ -323,6 +326,8 @@ namespace Peerchat {
 
 		int GetListUserCount(ChannelSummary summary);
 
+		void AddTaskRequest(PeerchatBackendRequest request);
+
 		//UserAddressVisibiltyInfo stuff
 		OS::LinkedListHead<UserAddressVisibiltyInfo *>* mp_user_address_visibility_list;
 		static bool LLIterator_IsUserAddressVisible(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state);
@@ -365,7 +370,6 @@ namespace Peerchat {
 		static const CommandEntry m_commands[];
 
 		bool m_using_encryption;
-		//bool m_stream_waiting;
 		gs_peerchat_ctx m_crypt_key_in;
 		gs_peerchat_ctx m_crypt_key_out;
 
@@ -373,6 +377,9 @@ namespace Peerchat {
 
 		std::string m_quit_reason;
 		std::string m_accumulator_buffer;
+
+		std::queue<PeerchatBackendRequest> *m_request_queue;
+		bool m_pending_request;
 	};
 }
 #endif //_GPPEER_H

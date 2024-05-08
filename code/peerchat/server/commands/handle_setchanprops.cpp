@@ -88,6 +88,6 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnSetChanProps;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
     }
 }

@@ -36,7 +36,7 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnDelChanProps;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 
     }
 }

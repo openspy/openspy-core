@@ -25,6 +25,6 @@ namespace Peerchat {
         req.peer = this;
         req.peer->IncRef();
         req.callback = OnFetch_LUsers;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
     }
 }

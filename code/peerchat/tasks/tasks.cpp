@@ -3,6 +3,8 @@
 #include <server/Server.h>
 #include <server/Peer.h>
 
+#include <queue>
+
 
 #include <rabbitmq-c/amqp.h>
 #include <rabbitmq-c/tcp_socket.h>
@@ -304,6 +306,7 @@ namespace Peerchat {
 
 		if (work_data->peer) {
 			work_data->channel_flags = work_data->peer->GetChannelFlagsMap();
+			work_data->peer->IncRef(); //for ProcessNextTask
 		}
         
         redisReply *reply = (redisReply *)redisCommand(temp_data.mp_redis_connection, "SELECT %d", OS::ERedisDB_Chat);
@@ -411,6 +414,11 @@ namespace Peerchat {
 			case EPeerchatRequestType_CountServerUsers:
 				Perform_CountServerUsers(*work_data, &temp_data);
 			break;
+		}
+
+		if(work_data->peer) {
+			work_data->peer->ProcessNextTask();
+			work_data->peer->DecRef();
 		}
 	}
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status) {

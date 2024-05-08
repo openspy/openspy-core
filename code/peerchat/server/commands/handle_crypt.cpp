@@ -49,7 +49,7 @@ namespace Peerchat {
         req.summary = peer->GetUserDetails();
         req.peer->IncRef();
         req.callback = NULL;
-        AddPeerchatTaskRequest(req);
+        peer->AddTaskRequest(req);
 
     }
 
@@ -64,6 +64,6 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnGetGameInfo_Crypt;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
     }
 }

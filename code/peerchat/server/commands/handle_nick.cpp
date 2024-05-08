@@ -30,7 +30,7 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = NULL;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 	}
     void Peer::OnNickReserve(TaskResponse response_data, Peer *peer) {
         if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
@@ -63,7 +63,7 @@ namespace Peerchat {
             req.summary.nick = response_data.profile.uniquenick;
             req.peer->IncRef();
             req.callback = OnNickReserve;
-            AddPeerchatTaskRequest(req);
+            peer->AddTaskRequest(req);
         }
     }
     void Peer::perform_acquire_uniquenick(UserSummary target) {
@@ -76,7 +76,7 @@ namespace Peerchat {
 
         req.peer->IncRef();
         req.callback = OnNickReserve_DuplicateRemoteKill;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
     }
     void Peer::handle_nick(std::vector<std::string> data_parser) {
         PeerchatBackendRequest req;
@@ -101,6 +101,6 @@ namespace Peerchat {
         req.summary.nick = nick;
         req.peer->IncRef();
         req.callback = OnNickReserve;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
     }
 }

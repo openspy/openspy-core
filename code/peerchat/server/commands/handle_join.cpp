@@ -25,7 +25,7 @@ namespace Peerchat {
         req.peer = this;
         req.peer->IncRef();
         req.callback = NULL;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
     }
 	void Peer::OnJoinChannel(TaskResponse response_data, Peer* peer) {
         if (response_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
@@ -72,7 +72,7 @@ namespace Peerchat {
             
             req.peer->IncRef();
             req.callback = OnJoinChannel;
-            AddPeerchatTaskRequest(req);
+            AddTaskRequest(req);
         }
 
 

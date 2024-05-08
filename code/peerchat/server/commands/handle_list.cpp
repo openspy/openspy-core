@@ -101,7 +101,7 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnListChannels;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 	}
 	void Peer::handle_listlimit(std::vector<std::string> data_parser) {
 		PeerchatBackendRequest req;
@@ -126,7 +126,7 @@ namespace Peerchat {
 
 		req.peer->IncRef();
 		req.callback = OnListChannels;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 
 	}
 }

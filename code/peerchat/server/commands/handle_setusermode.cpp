@@ -101,7 +101,7 @@ namespace Peerchat {
 		req.peer = this;
 		req.peer->IncRef();
 		req.callback = OnSetUserMode;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 
     }
 }

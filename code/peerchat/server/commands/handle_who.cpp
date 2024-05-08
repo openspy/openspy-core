@@ -95,7 +95,7 @@ namespace Peerchat {
 			req.channel_summary.channel_name = target;
 			req.peer->IncRef();
 			req.callback = OnWho_FetchChannelInfo;
-			AddPeerchatTaskRequest(req);
+			AddTaskRequest(req);
 		}
 		else {
 			req.type = EPeerchatRequestType_LookupUserDetailsByName;
@@ -103,7 +103,7 @@ namespace Peerchat {
 			req.summary.username = target;
 			req.peer->IncRef();
 			req.callback = OnWho_FetchUserInfo;
-			AddPeerchatTaskRequest(req);
+			AddTaskRequest(req);
 		}
     }
 }

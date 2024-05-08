@@ -31,7 +31,7 @@ namespace Peerchat {
 		req.channel_summary.channel_name = channel;
 		req.peer->IncRef();
 		req.callback = OnTopic_FetchChannelInfo;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 	}
     void Peer::handle_topic(std::vector<std::string> data_parser) {
 		if (data_parser.size() == 2) { //topic lookup
@@ -64,7 +64,7 @@ namespace Peerchat {
 			req.channel_modify.topic = message;
 			req.peer->IncRef();
 			req.callback = NULL;
-			AddPeerchatTaskRequest(req);
+			AddTaskRequest(req);
 		}
 		
     }

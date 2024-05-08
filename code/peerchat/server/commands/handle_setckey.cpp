@@ -15,7 +15,6 @@
 
 namespace Peerchat {
 	void Peer::OnSetCKey(TaskResponse response_data, Peer* peer) {
-		
 	}
 
     void Peer::handle_setckey(std::vector<std::string> data_parser) {
@@ -43,7 +42,7 @@ namespace Peerchat {
         
         req.peer->IncRef();
         req.callback = OnSetCKey;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
         
     }
 }

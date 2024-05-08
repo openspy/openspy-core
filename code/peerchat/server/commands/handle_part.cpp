@@ -56,7 +56,7 @@ namespace Peerchat {
 		req.message = message;
 		req.peer->IncRef();
 		req.callback = OnPartChannel;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 
 	}
 }

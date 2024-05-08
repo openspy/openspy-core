@@ -70,6 +70,9 @@ namespace Peerchat {
 		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_connect_time);
 		uv_clock_gettime(UV_CLOCK_MONOTONIC, &m_last_keepalive);
 
+		m_request_queue = new std::queue<PeerchatBackendRequest>();
+		m_pending_request = false;
+
 		OnConnectionReady();
 
 		PeerchatBackendRequest req;
@@ -77,7 +80,7 @@ namespace Peerchat {
 		req.peer = this;
 		req.peer->IncRef();
 		req.callback = OnGetBackendId;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 	}
 	Peer::~Peer() {
 
@@ -89,6 +92,8 @@ namespace Peerchat {
 		delete mp_user_address_visibility_list;
 		
 		uv_mutex_destroy(&m_mutex);
+
+		delete m_request_queue;
 		
 	}
 	void Peer::OnGetBackendId(TaskResponse response_data, Peer *peer) {
@@ -268,7 +273,7 @@ namespace Peerchat {
 			req.peer = this;
 			req.peer->IncRef();
 			req.callback = NULL;
-			AddPeerchatTaskRequest(req);
+			AddTaskRequest(req);
 		}
 	}
 
@@ -403,7 +408,7 @@ namespace Peerchat {
 		req.summary = GetUserDetails();
 		req.peer->IncRef();
 		req.callback = user_registration ? OnUserRegistered : NULL;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 	}
 	void Peer::OnUserMaybeRegistered() {
 		if(m_user_details.nick.length() == 0 || m_user_details.username.length() == 0 || m_sent_client_init) {
@@ -418,7 +423,7 @@ namespace Peerchat {
 		req.summary = m_user_details;
 		req.peer->IncRef();
 		req.callback = OnLookupGlobalUsermode;
-		AddPeerchatTaskRequest(req);
+		AddTaskRequest(req);
 	}
 	void Peer::OnRecvDirectMsg(UserSummary from, std::string msg, std::string type) {
 		send_message(type, msg, from.ToString(), m_user_details.nick);	
@@ -565,7 +570,7 @@ namespace Peerchat {
         req.channel_summary.channel_id = channel_id;
         req.peer->IncRef();
         req.callback = OnLookup_RefreshUserAddressVisibility_ByChannel;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
 	}
 	bool Peer::LLIterator_PurgeUserAddressVisibility(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
 		state->peer->mp_user_address_visibility_list->RemoveFromList(info);
@@ -589,6 +594,46 @@ namespace Peerchat {
 			AddUserToAddressVisbilityList(user_id, channel_id);
 		} else if(!(modeflags & EUserChannelFlag_IsInChannel)) {
 			RemoveUserAddressVisibility_ByChannelUser(user_id, channel_id);
+		}
+	}
+	void Peer::ProcessNextTask() {
+		uv_mutex_lock(&m_mutex);
+		if(!m_request_queue->empty()) {
+			PeerchatBackendRequest req = m_request_queue->front();
+			m_request_queue->pop();
+			AddPeerchatTaskRequest(req);
+		} else {
+			m_pending_request = false;
+		}
+		uv_mutex_unlock(&m_mutex);
+	}
+	void Peer::AddTaskRequest(PeerchatBackendRequest request) {
+		bool queue_event = false;
+		switch(request.type) {
+			case EPeerchatRequestType_SetChannelUserKeys:
+			case EPeerchatRequestType_GetChannelUserKeys:
+			case EPeerchatRequestType_SetUserKeys:
+			case EPeerchatRequestType_GetUserKeys:
+			case EPeerchatRequestType_SetChannelKeys:
+			case EPeerchatRequestType_GetChannelKeys:
+			queue_event = true;
+			break;
+			default:
+			queue_event = false;
+			break;
+		}
+
+		if(queue_event) {
+			if(m_pending_request) {
+				uv_mutex_lock(&m_mutex);
+				m_request_queue->push(request);
+				uv_mutex_unlock(&m_mutex);
+			} else {
+				AddPeerchatTaskRequest(request);
+			}
+		} else {
+			m_pending_request = true;
+			AddPeerchatTaskRequest(request);
 		}
 	}
 }

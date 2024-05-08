@@ -55,6 +55,6 @@ namespace Peerchat {
         req.channel_summary.channel_name = data_parser.at(1);
         req.peer->IncRef();
         req.callback = OnNames_FetchChannelInfo;
-        AddPeerchatTaskRequest(req);
+        AddTaskRequest(req);
     }
 }

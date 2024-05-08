@@ -35,7 +35,7 @@ namespace Peerchat {
         request.profile.id = m_profile.id;
         
 
-		AddPeerchatTaskRequest(request);
+		AddTaskRequest(request);
     }
     void Peer::m_oper_auth_cb(bool success, OS::User user, OS::Profile profile, TaskShared::AuthData auth_data, void *extra, INetPeer *peer) {
         if(auth_data.error_details.response_code == TaskShared::WebErrorCode_Success) {
