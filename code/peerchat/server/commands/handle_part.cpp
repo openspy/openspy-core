@@ -46,6 +46,10 @@ namespace Peerchat {
 				}
 			}
 		}
+        
+        if(message.empty()) {
+            message = "Parted";
+        }
 		
 
 		PeerchatBackendRequest req;
