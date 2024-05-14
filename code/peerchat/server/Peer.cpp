@@ -57,7 +57,7 @@ namespace Peerchat {
 		CommandEntry("SETCHANPROPS", true, 1, &Peer::handle_setchanprops, OPERPRIVS_GLOBALOWNER),
 		CommandEntry("DELCHANPROPS", true, 1, &Peer::handle_delchanprops, OPERPRIVS_GLOBALOWNER),
 	};
-	Peer::Peer(Driver *driver, uv_tcp_t *sd) : INetPeer(driver, sd) {
+	Peer::Peer(Driver *driver, uv_tcp_t *sd) : OS::SSLNetPeer(driver, sd) {
 		m_user_details.id = 0;
 		mp_user_address_visibility_list = new OS::LinkedListHead<UserAddressVisibiltyInfo*>();
 		m_sent_client_init = false;

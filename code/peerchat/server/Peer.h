@@ -5,7 +5,7 @@
 #include <OS/User.h>
 #include <OS/Profile.h>
 
-#include <OS/Net/NetPeer.h>
+#include <SSL/SSLPeer.h>
 #include <OS/KVReader.h>
 
 #include <OS/SharedTasks/Auth/AuthTasks.h>
@@ -17,6 +17,7 @@
 
 #include "gs_peerchat.h"
 #include <server/irc_common.h>
+
 
 #define PEERCHAT_PING_TIMEOUT_TIME 300
 #define PEERCHAT_PING_INTERVAL 120
@@ -166,7 +167,7 @@ namespace Peerchat {
 			Peer *peer;
 	};
 
-	class Peer : public INetPeer {
+	class Peer : public OS::SSLNetPeer {
 	public:
 		Peer(Driver *driver, uv_tcp_t *sd);
 		~Peer();

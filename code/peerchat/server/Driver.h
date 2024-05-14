@@ -2,7 +2,7 @@
 #define _PEERCHATDRIVER_H
 #include <stdint.h>
 #include "../main.h"
-#include <OS/Net/drivers/TCPDriver.h>
+#include <SSL/SSLTCPDriver.h>
 
 #include "Peer.h"
 
@@ -63,9 +63,9 @@ namespace Peerchat {
 			int modeflags;
 	};
 
-	class Driver : public OS::TCPDriver {
+	class Driver : public OS::SSLTCPDriver {
 	public:
-		Driver(INetServer *server, std::string server_name, const char *host, uint16_t port);
+		Driver(INetServer *server, std::string server_name, const char *host, uint16_t port, void *ssl_ctx);
 		virtual ~Driver();
 		Peer *FindPeerByProfileID(int profileid);		
 		Peer *FindPeerByUserSummary(UserSummary summary);

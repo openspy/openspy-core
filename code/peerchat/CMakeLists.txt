@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 3.22)
 
 project(peerchat)
+find_package(SSL)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -15,6 +16,8 @@ file (GLOB SERVER_CMDS_HDRS "server/commands/*.h")
 
 
 set (ALL_SRCS ${MAIN_SRCS} ${MAIN_HDRS} ${SERVER_SRCS} ${SERVER_HDRS} ${SERVER_CMDS_SRCS} ${SERVER_CMDS_HDRS} ${SERVER_TASKS_SRCS} ${SERVER_TASKS_HDRS})
+
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${SSL_OS_INC} ${SSL_INCS})
 
 source_group("Sources" FILES ${MAIN_SRCS})
 source_group("Sources\\Server" FILES ${SERVER_SRCS})

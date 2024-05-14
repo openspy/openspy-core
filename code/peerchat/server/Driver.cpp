@@ -7,7 +7,7 @@
 #include <sstream>
 namespace Peerchat {
 
-    Driver::Driver(INetServer *server, std::string server_name, const char *host, uint16_t port) : TCPDriver(server, host, port) {
+    Driver::Driver(INetServer *server, std::string server_name, const char *host, uint16_t port, void *ssl_ctx) : SSLTCPDriver(server, host, port, ssl_ctx) {
 		m_server_name = server_name;
     }
 	Driver::~Driver() {
