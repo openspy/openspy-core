@@ -31,9 +31,9 @@ namespace OS {
                ctx = SSL_CTX_new(TLSv1_1_method());
             } else if(strcmp(temp_env_buffer,"TLS1.2") == 0) {
                ctx = SSL_CTX_new(TLSv1_2_method());
-            } /*else if(strcmp(temp_env_buffer,"TLS1.3") == 0) {
-               ctx = SSL_CTX_new(TLSv1_3_method());
-            }*/ else {
+            } else if(strcmp(temp_env_buffer,"TLS") == 0) { //shorter len... put last
+               ctx = SSL_CTX_new(TLS_method());
+            } else {
                OS::LogText(OS::ELogLevel_Error, "Unknown SSL version");
                return NULL;
             }
