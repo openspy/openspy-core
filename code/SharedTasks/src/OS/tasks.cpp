@@ -29,12 +29,12 @@ namespace TaskShared {
 			return connection;
 		}
 
-		char address_buffer[128];
-		char port_buffer[128];
+		char address_buffer[32];
+		char port_buffer[32];
 
-		char user_buffer[128];
-		char pass_buffer[128];
-		char vhost_buffer[128];
+		char user_buffer[32];
+		char pass_buffer[32];
+		char vhost_buffer[32];
 		size_t temp_env_sz = sizeof(address_buffer);
 
 		connection = amqp_new_connection();
