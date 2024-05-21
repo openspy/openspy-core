@@ -8,7 +8,7 @@
 #include <tasks/tasks.h>
 #include <server/v2.h>
 namespace QR {
-    void Driver::on_v2_heartbeat_processed(MM::MMTaskResponse response) {
+	void Driver::on_v2_heartbeat_processed(MM::MMTaskResponse response) {
 		if(response.error_message != NULL) {
 			response.driver->send_v2_error(response.from_address, response.v2_instance_key, 1, response.error_message);		
 			return;
@@ -21,10 +21,10 @@ namespace QR {
 			buffer.WriteNTS(response.challenge);
 			response.driver->SendUDPPacket(response.from_address, buffer);
 		}
-    }
-    void Driver::handle_v2_heartbeat(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
-        uint32_t i = 0;
-        MM::ServerInfo server_info;
+	}
+	void Driver::handle_v2_heartbeat(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
+		uint32_t i = 0;
+		MM::ServerInfo server_info;
 		server_info.m_address = from_address;
 
 		std::string key, value;
@@ -103,15 +103,15 @@ namespace QR {
 		OS::LogText(OS::ELogLevel_Info, "[%s] HB Keys: %s", from_address.ToString().c_str(), ss.str().c_str());
 		ss.str("");
 
-        MM::MMPushRequest req;        
+		MM::MMPushRequest req;        
 
-        req.from_address = from_address;
-        req.v2_instance_key = *(uint32_t *)instance_key;
-        req.driver = this;
-        req.server = server_info;
-        req.version = 2;
-        req.type = MM::EMMPushRequestType_Heartbeat;
-        req.callback = on_v2_heartbeat_processed;
-        AddRequest(req);
-    }
+		req.from_address = from_address;
+		req.v2_instance_key = *(uint32_t *)instance_key;
+		req.driver = this;
+		req.server = server_info;
+		req.version = 2;
+		req.type = MM::EMMPushRequestType_Heartbeat;
+		req.callback = on_v2_heartbeat_processed;
+		AddRequest(req);
+	}
 }

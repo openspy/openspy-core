@@ -7,36 +7,36 @@
 #include <tasks/tasks.h>
 #include <server/v2.h>
 namespace QR {
-    void Driver::on_v2_keepalive_processed(MM::MMTaskResponse response) {
+	void Driver::on_v2_keepalive_processed(MM::MMTaskResponse response) {
 		if(response.error_message != NULL) {
 			//response.driver->send_v2_error(response.from_address, response.v2_instance_key, 1, response.error_message);		
 			return;
 		} else {
-            OS::Buffer send_buffer;
-            uv_timespec64_t current_time;
-            uv_clock_gettime(UV_CLOCK_REALTIME, &current_time);
-            send_buffer.WriteByte(QR_MAGIC_1);
-            send_buffer.WriteByte(QR_MAGIC_2);
-            send_buffer.WriteByte(PACKET_KEEPALIVE);
-            send_buffer.WriteInt(response.v2_instance_key);
-            send_buffer.WriteInt(current_time.tv_sec);
-            response.driver->SendUDPPacket(response.from_address, send_buffer);			
+			OS::Buffer send_buffer;
+			uv_timespec64_t current_time;
+			uv_clock_gettime(UV_CLOCK_REALTIME, &current_time);
+			send_buffer.WriteByte(QR_MAGIC_1);
+			send_buffer.WriteByte(QR_MAGIC_2);
+			send_buffer.WriteByte(PACKET_KEEPALIVE);
+			send_buffer.WriteInt(response.v2_instance_key);
+			send_buffer.WriteInt(current_time.tv_sec);
+			response.driver->SendUDPPacket(response.from_address, send_buffer);			
 		}
-    }
-    void Driver::handle_v2_keepalive(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
-        //send response
-        OS::LogText(OS::ELogLevel_Info, "[%s] Got keepalive", from_address.ToString().c_str());
-        
-        MM::MMPushRequest req;
+	}
+	void Driver::handle_v2_keepalive(OS::Address from_address, uint8_t *instance_key, OS::Buffer &buffer) {
+		//send response
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got keepalive", from_address.ToString().c_str());
+		
+		MM::MMPushRequest req;
 
-        req.callback = on_v2_keepalive_processed;
-        req.from_address = from_address;
-        req.v2_instance_key = *(uint32_t *)instance_key;
-        req.driver = this;
-        req.version = 2;
+		req.callback = on_v2_keepalive_processed;
+		req.from_address = from_address;
+		req.v2_instance_key = *(uint32_t *)instance_key;
+		req.driver = this;
+		req.version = 2;
 
-        
-        req.type = MM::EMMPushRequestType_Keepalive;
-        AddRequest(req);
-    }
+		
+		req.type = MM::EMMPushRequestType_Keepalive;
+		AddRequest(req);
+	}
 }

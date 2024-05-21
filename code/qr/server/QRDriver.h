@@ -31,10 +31,10 @@ namespace QR {
 		~Driver();
 
 		static void on_udp_read(uv_udp_t* handle,
-                               ssize_t nread,
-                               const uv_buf_t* buf,
-                               const struct sockaddr* addr,
-                               unsigned flags);
+							ssize_t nread,
+							const uv_buf_t* buf,
+							const struct sockaddr* addr,
+							unsigned flags);
 
 		static void on_send_callback(uv_udp_send_t* req, int status);
 

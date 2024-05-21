@@ -10,7 +10,7 @@
 
 #define NN_REDIS_EXPIRE_TIME 500
 namespace QR {
-    class Server;
+	class Server;
 	class Driver;
 }
 
@@ -91,17 +91,17 @@ namespace MM {
 
 	void PerformUVWorkRequest(uv_work_t *req);
 	void PerformUVWorkRequestCleanup(uv_work_t *req, int status);
-    
-    bool PerformGetGameInfo(MMPushRequest request, TaskThreadData *thread_data);
+	
+	bool PerformGetGameInfo(MMPushRequest request, TaskThreadData *thread_data);
 	bool PerformKeepalive(MMPushRequest request, TaskThreadData *thread_data);
 	bool PerformHeartbeat(MMPushRequest request, TaskThreadData *thread_data);
 	bool PerformValidate(MMPushRequest request, TaskThreadData *thread_data);
 	bool PerformClientMessageAck(MMPushRequest request, TaskThreadData *thread_data);
 
-    //server update functions
-    bool PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request, TaskThreadData *thread_data);
+	//server update functions
+	bool PerformDeleteMissingKeysAndUpdateChanged(MMPushRequest request, TaskThreadData *thread_data);
 
-    bool Handle_QRMessage(TaskShared::TaskThreadData *thread_data, std::string message);
+	bool Handle_QRMessage(TaskShared::TaskThreadData *thread_data, std::string message);
 
 	//shared functions
 	int TryFindServerID(TaskThreadData *thread_data, OS::Address address);
@@ -131,7 +131,7 @@ namespace MM {
 	extern const char *mm_server_event_routingkey;
 	extern const char *mm_server_client_acks_routingkey;
 
-    extern const char *mp_pk_name;
+	extern const char *mp_pk_name;
 
 	//#define NUM_MM_PUSH_THREADS 8
 	#define MM_WAIT_MAX_TIME 1500

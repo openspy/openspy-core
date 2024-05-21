@@ -13,7 +13,7 @@ namespace MM {
 	const char *mm_server_event_routingkey = "server.event";
 	const char *mm_server_client_acks_routingkey = "client-messages.acks";
 
-    const char *mp_pk_name = "QRID";
+	const char *mp_pk_name = "QRID";
 
 	TaskShared::ListenerEventHandler qrmsgs_event_handler = {mm_channel_exchange, mm_client_message_routingkey, Handle_QRMessage}; //this event is sent from the "qr-service" project which handles requeueing and other logic
 	TaskShared::ListenerEventHandler all_events[] = {qrmsgs_event_handler};
@@ -22,10 +22,10 @@ namespace MM {
 	void PerformUVWorkRequest(uv_work_t *req) {
 		TaskThreadData temp_data;
 		temp_data.mp_redis_connection = TaskShared::getThreadLocalRedisContext();
-        if(temp_data.mp_redis_connection == NULL) {
-            return;
-        }
-        
+		if(temp_data.mp_redis_connection == NULL) {
+			return;
+		}
+		
 		MM::MMWorkData *work_data = (MM::MMWorkData *) uv_handle_get_data((uv_handle_t*) req);
 		
 		switch(work_data->request.type) {

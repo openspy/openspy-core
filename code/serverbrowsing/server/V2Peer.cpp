@@ -347,9 +347,9 @@ namespace SB {
 		}
 		buffer.WriteBuffer(buff, len);
 
-        uv_mutex_lock(&m_crypto_mutex);
+		uv_mutex_lock(&m_crypto_mutex);
 		GOAEncrypt(&m_crypt_state, ((unsigned char *)buffer.GetHead()) + header_len, buffer.bytesWritten() - header_len);
-        uv_mutex_unlock(&m_crypto_mutex);
+		uv_mutex_unlock(&m_crypto_mutex);
 
 		append_send_buffer(buffer);
 	}

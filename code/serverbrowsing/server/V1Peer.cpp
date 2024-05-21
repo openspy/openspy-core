@@ -113,7 +113,7 @@ namespace SB {
 			if (m_delete_flag) return;
 			if (m_waiting_gamedata == 2) {
 				m_waiting_gamedata = 0;
-                flushWaitingPackets();
+				flushWaitingPackets();
 			}
 			
 			send_ping();
@@ -216,45 +216,45 @@ namespace SB {
 		}
 		void V1Peer::OnRetrievedServerInfo(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 			SendServerInfo(results);
-            //if(results.last_set) {
-            //   Delete();
-            //}
+			//if(results.last_set) {
+			//   Delete();
+			//}
 		}
 		void V1Peer::OnRetrievedServers(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 			if (request.req.all_keys) {
 				SendServerInfo(results);
 			}
-            else {
-                SendServers(results);
-            }
-            if(results.last_set) {
-                Delete();
-            }
+			else {
+				SendServers(results);
+			}
+			if(results.last_set) {
+				Delete();
+			}
 		}
 		void V1Peer::OnRetrievedGroups(const MM::MMQueryRequest request, MM::ServerListQuery results, void *extra) {
 			SendGroups(results);
-            
-            if(results.last_set) {
-                Delete();
-            }
+			
+			if(results.last_set) {
+				Delete();
+			}
 		}
 		void V1Peer::OnRecievedGameInfo(const OS::GameData game_data, void *extra) {
 			m_waiting_gamedata = 2;
-            char realvalidate[16];
-            if (game_data.secretkey[0] == 0) {
-                send_error(true, "Invalid source gamename");
-                return;
-            }
-            m_game = game_data;
-            gsseckey((unsigned char *)&realvalidate, (const char *)&m_challenge, (const unsigned char *)m_game.secretkey.c_str(), m_enctype);
-            if(!m_validated) {
-                if(strcmp(realvalidate,m_validation.c_str()) == 0) {
-                    m_validated = true;
-                } else {
-                    send_error(true, "Validation error");
-                    return;
-                }
-            }
+			char realvalidate[16];
+			if (game_data.secretkey[0] == 0) {
+				send_error(true, "Invalid source gamename");
+				return;
+			}
+			m_game = game_data;
+			gsseckey((unsigned char *)&realvalidate, (const char *)&m_challenge, (const unsigned char *)m_game.secretkey.c_str(), m_enctype);
+			if(!m_validated) {
+				if(strcmp(realvalidate,m_validation.c_str()) == 0) {
+					m_validated = true;
+				} else {
+					send_error(true, "Validation error");
+					return;
+				}
+			}
 		}
 		void V1Peer::handle_list(std::string data) {
 			std::string mode, gamename;
@@ -306,8 +306,8 @@ namespace SB {
 
 			OS::LogText(OS::ELogLevel_Info, "[%s] List Request: gamenames: (%s) - (%s), filter: %s  is_group: %d, all_keys: %d", getAddress().ToString().c_str(), req.req.m_from_game.gamename.c_str(), req.req.m_for_gamename.c_str(), req.req.filter.c_str(), req.req.send_groups, req.req.all_keys);
 
-            req.req.m_for_game.gamename = gamename;
-            req.type = req.req.send_groups ? MM::EMMQueryRequestType_GetGroups : MM::EMMQueryRequestType_GetServers;
+			req.req.m_for_game.gamename = gamename;
+			req.type = req.req.send_groups ? MM::EMMQueryRequestType_GetGroups : MM::EMMQueryRequestType_GetServers;
 			
 			m_last_list_req = req.req;
 
@@ -530,11 +530,11 @@ namespace SB {
 			}
 			return s;
 		}
-        void V1Peer::flushWaitingPackets() {
-            while (!m_waiting_packets.empty()) {
-                std::string cmd = m_waiting_packets.front();
-                m_waiting_packets.pop();
-                handle_packet(cmd);
-            }
-        }
+		void V1Peer::flushWaitingPackets() {
+			while (!m_waiting_packets.empty()) {
+				std::string cmd = m_waiting_packets.front();
+				m_waiting_packets.pop();
+				handle_packet(cmd);
+			}
+		}
 }

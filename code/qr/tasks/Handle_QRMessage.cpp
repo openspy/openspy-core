@@ -4,7 +4,7 @@
 #include <sstream>
 #include <jansson.h>
 namespace MM {
-    bool Handle_QRMessage(TaskShared::TaskThreadData *thread_data, std::string message) {
+	bool Handle_QRMessage(TaskShared::TaskThreadData *thread_data, std::string message) {
 		QR::Server *server = (QR::Server *)uv_loop_get_data(uv_default_loop());
 
 		json_t *root = json_loads(message.c_str(), 0, NULL);
@@ -49,7 +49,7 @@ namespace MM {
 		json_t *message_json = json_object_get(root, "message");
 		std::string base64_string;
 		if(message_json && json_is_string(message_json)) {
-			 base64_string = json_string_value(message_json);
+			base64_string = json_string_value(message_json);
 		}
 
 		OS::Base64StrToBin((const char *)base64_string.c_str(), &data_out, data_len);
@@ -80,5 +80,5 @@ namespace MM {
 		}
 		json_decref(root);
 		return true;
-    }
+	}
 }

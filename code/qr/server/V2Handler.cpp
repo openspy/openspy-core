@@ -14,6 +14,7 @@ namespace QR {
 		uint8_t instance_key[REQUEST_KEY_LEN];
 		buffer.ReadBuffer(&instance_key, REQUEST_KEY_LEN);
 
+		OS::LogText(OS::ELogLevel_Info, "[%s] Got request %d with instance key: %d", address.ToString().c_str(), *(uint32_t*)&instance_key[0])
 		switch(type) {
 			case PACKET_AVAILABLE:
 				handle_v2_available(address, (uint8_t *)&instance_key, buffer);
