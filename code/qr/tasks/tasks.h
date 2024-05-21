@@ -113,7 +113,7 @@ namespace MM {
 	void selectQRRedisDB(TaskThreadData *thread_data);
 
 	void WriteServerData(TaskThreadData *thread_data, std::string server_key, ServerInfo server, uint32_t instance_key, OS::Address from_address);
-	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted);
+	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted, bool reset_hbcount = true);
 	void SetServerInitialInfo(TaskThreadData *thread_data, OS::Address driver_address, std::string server_key, OS::GameData game_info, std::string challenge_response, OS::Address address, int id, OS::Address from_address);
 	void ClearServerCustKeys(TaskThreadData *thread_data, std::string server_key);
 	void WriteLastHeartbeatTime(TaskThreadData *thread_data, std::string server_key, OS::Address address, uint32_t instance_key, OS::Address from_address);
@@ -123,7 +123,7 @@ namespace MM {
 
 	std::string GetServerKeyBy_InstanceKey_Address(TaskThreadData *thread_data, uint32_t instance_key, OS::Address address);
 	int GetNumHeartbeats(TaskThreadData *thread_data, std::string server_key);
-	void IncrNumHeartbeats(TaskThreadData *thread_data, std::string server_key);
+	int IncrNumHeartbeats(TaskThreadData *thread_data, std::string server_key);
 
 	extern const char *mm_channel_exchange;
 

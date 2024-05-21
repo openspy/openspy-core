@@ -50,7 +50,7 @@ namespace MM {
 		if(expected_challenge.compare(chopped_challenge) != 0) {
 			response.error_message = "Invalid challenge response";
 		} else if(isServerDeleted(thread_data, server_key, true)) {
-			SetServerDeleted(thread_data, server_key, 0);
+			SetServerDeleted(thread_data, server_key, 0, request.version != 1);
 
 			if(request.version != 1) { //version 1 new event is only after collection of first heartbeat
 				std::ostringstream s;

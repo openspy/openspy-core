@@ -271,7 +271,7 @@ namespace MM {
 				ClearServerCustKeys(thread_data, server_key);
 			}
 			WriteServerData(thread_data, server_key, request.server, request.v2_instance_key, request.from_address);
-			SetServerDeleted(thread_data, server_key, 1);
+			SetServerDeleted(thread_data, server_key, 1, request.version != 1);
 			SetServerInitialInfo(thread_data, request.driver->GetAddress(), server_key, game_info, challenge_resp, request.server.m_address, server_id, request.from_address);
 
 			response.challenge = challenge_string;
@@ -294,20 +294,18 @@ namespace MM {
 			}
 
 			std::ostringstream s;
-			IncrNumHeartbeats(thread_data, server_key);
-			if(request.version == 1 && GetNumHeartbeats(thread_data, server_key) == 1) { //fire V1 new event, which only occurs on first HB, instead of validation success
+
+			if(IncrNumHeartbeats(thread_data, server_key) == 1 && request.version == 1) { //fire V1 new event, which only occurs on first HB, instead of validation success
 				s << "\\new\\" << server_key.c_str();
 			} else {
 				s << "\\update\\" << server_key.c_str();
 			}
 
 			WriteServerData(thread_data, server_key, request.server, request.v2_instance_key, request.from_address);
-			
+		
 
-			if(!(server_key.length() > 7 && server_key.substr(0, 7).compare("thugpro") == 0)) { //temporarily supress thugpro updates
-				std::string msg = s.str();
-				TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str(), &request.from_address);
-			}
+			std::string msg = s.str();
+			TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str(), &request.from_address);
 			
 			
 			request.callback(response);
@@ -390,7 +388,7 @@ namespace MM {
 		redisAppendCommand(thread_data->mp_redis_connection, "SET %s %s", ipinstmap_str.c_str(), server_key.c_str()); total_redis_calls++;
 		redisAppendCommand(thread_data->mp_redis_connection, "HSET %s instance_key %ld", server_key.c_str(), instance_key); total_redis_calls++;
 
-		redisAppendCommand(thread_data->mp_redis_connection, "HINCRBY %s num_updates 1", server_key.c_str()); total_redis_calls++;
+		//redisAppendCommand(thread_data->mp_redis_connection, "HINCRBY %s num_updates 1", server_key.c_str()); total_redis_calls++;
 	
 		if (!server.m_keys.empty()) {
 			std::string custkeys_key = server_key + "custkeys";
@@ -508,19 +506,24 @@ namespace MM {
 		WriteLastHeartbeatTime(thread_data, server_key, server.m_address, instance_key, from_address);
 
 	}
-	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted) {
+	void SetServerDeleted(TaskThreadData *thread_data, std::string server_key, bool deleted, bool reset_hbcount) {
 		void *reply;
 		redisAppendCommand(thread_data->mp_redis_connection, "HSET %s deleted %d", server_key.c_str(), deleted);
-		redisAppendCommand(thread_data->mp_redis_connection, "HDEL %s num_updates", server_key.c_str());
+
+		if(reset_hbcount) { //typically we don't want to reset hbcount in QR1 because some games will request a new 
+			redisAppendCommand(thread_data->mp_redis_connection, "HDEL %s num_updates", server_key.c_str());
+		}		
 
 		int r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);
 		if(r == REDIS_OK) {
 			freeReplyObject(reply);  
 		}
 
-		r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
-		if(r == REDIS_OK) {
-			freeReplyObject(reply);  
+		if(reset_hbcount) {
+			r = redisGetReply(thread_data->mp_redis_connection,(void**)&reply);		
+			if(r == REDIS_OK) {
+				freeReplyObject(reply);  
+			}
 		}
 	}
 	void SetServerInitialInfo(TaskThreadData *thread_data, OS::Address driver_address, std::string server_key, OS::GameData game_info, std::string challenge_response, OS::Address address, int id, OS::Address from_address) {
