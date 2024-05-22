@@ -209,7 +209,6 @@ namespace MM {
             LoadCustomServerInfo_AllKeys(&server, custom_reply);
             server.kvFields["backend_id"] = server_key;
             server.key = server_key;
-            server.game = req->m_for_game;
             
             if(basic_reply != NULL) {
                 freeReplyObject(basic_reply);
