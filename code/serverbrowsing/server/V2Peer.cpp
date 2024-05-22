@@ -411,11 +411,11 @@ namespace SB {
 
 				//Gamespy arcade needs full keys on push update server list response, but this breaks other games...
 				// Return full keys if the querying game is not the source game
-				if (req.req.push_updates && req.req.m_for_game.gameid != req.req.m_from_game.gameid) {
+				/*if (req.req.push_updates && req.req.m_for_game.gameid != req.req.m_from_game.gameid) {
 					req.req.all_keys = true;
 					req.req.all_player_keys = true;
 					req.req.all_team_keys = true;
-				}
+				}*/
 			}
 			m_in_message = true;
 			AddRequest(req);
