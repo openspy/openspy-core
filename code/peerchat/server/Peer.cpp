@@ -191,8 +191,9 @@ namespace Peerchat {
 				end++;
 				size_t size = end - p;
 				std::string input = m_accumulator_buffer  + (std::string(p, size));
+				m_accumulator_buffer.clear();
 				handle_commands(input);
-                p = end;
+				p = end;
 				nread -= size;
 			} else {
 				m_accumulator_buffer.append(p, nread);
@@ -564,13 +565,13 @@ namespace Peerchat {
 		}
 	}
 	void Peer::RefreshUserAddressVisibility_ByChannel(int channel_id) {
-        PeerchatBackendRequest req;
-        req.type = EPeerchatRequestType_LookupChannelDetails;
-        req.peer = this;
-        req.channel_summary.channel_id = channel_id;
-        req.peer->IncRef();
-        req.callback = OnLookup_RefreshUserAddressVisibility_ByChannel;
-        AddTaskRequest(req);
+		PeerchatBackendRequest req;
+		req.type = EPeerchatRequestType_LookupChannelDetails;
+		req.peer = this;
+		req.channel_summary.channel_id = channel_id;
+		req.peer->IncRef();
+		req.callback = OnLookup_RefreshUserAddressVisibility_ByChannel;
+		AddTaskRequest(req);
 	}
 	bool Peer::LLIterator_PurgeUserAddressVisibility(UserAddressVisibiltyInfo* info, IterateUserAddressVisibiltyInfoState* state) {
 		state->peer->mp_user_address_visibility_list->RemoveFromList(info);
