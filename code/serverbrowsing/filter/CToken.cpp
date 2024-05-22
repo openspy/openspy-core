@@ -293,7 +293,7 @@ int string_compare_equals(std::string s1, std::string s2) {
 }
 int string_compare_like(std::string s1, std::string s2) {
 	int match_count;
-	return OS::match2(s2.c_str(), s1.c_str(), match_count, '%') == 0;
+	return OS::match2(s1.c_str(), s2.c_str(), match_count, '%') == 0;
 }
 
 int string_compare_greater_than(std::string s1, std::string s2) {
@@ -363,10 +363,10 @@ CToken divide(std::stack<CToken> &stack) {
 	float fsum = 0.0f;
 	ETokenType type;
 	CToken ret;
-	if (stack.size() > 2) {
+	if (stack.size() >= 2) {
 		CToken lh, rh;
-		lh = stack.top(); stack.pop();
 		rh = stack.top(); stack.pop();
+		lh = stack.top(); stack.pop();
 		type = lh.getType();
 		if (rh.getInt() == 0) return ret;
 		switch (type) {
@@ -390,14 +390,14 @@ CToken multiply(std::stack<CToken> &stack) {
 	float fsum = 0.0f;
 	ETokenType type;
 	CToken ret;
-	if (stack.size() > 2) {
+	if (stack.size() >= 2) {
 		CToken lh, rh;
-		lh = stack.top(); stack.pop();
 		rh = stack.top(); stack.pop();
+		lh = stack.top(); stack.pop();
 		type = lh.getType();
 		switch (type) {
 		case EToken_Integer:
-			isum = lh.getInt() / rh.getInt();
+			isum = lh.getInt() * rh.getInt();
 			ret = CToken(isum);
 			break;
 		case EToken_Float:
@@ -418,10 +418,10 @@ CToken addition(std::stack<CToken> &stack) {
 	float fsum = 0.0f;
 	ETokenType type;
 	CToken ret;
-	if (stack.size() > 2) {
+	if (stack.size() >= 2) {
 		CToken lh, rh;
-		lh = stack.top(); stack.pop();
 		rh = stack.top(); stack.pop();
+		lh = stack.top(); stack.pop();
 		type = lh.getType();
 		switch (type) {
 		case EToken_Integer:
@@ -445,10 +445,10 @@ CToken subtraction(std::stack<CToken> &stack) {
 	float fsum = 0.0f;
 	ETokenType type;
 	CToken ret;
-	if (stack.size() > 2) {
+	if (stack.size() >= 2) {
 		CToken lh, rh;
-		lh = stack.top(); stack.pop();
 		rh = stack.top(); stack.pop();
+		lh = stack.top(); stack.pop();
 		type = lh.getType();
 		switch (type) {
 		case EToken_Integer:

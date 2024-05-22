@@ -35,3 +35,5 @@ IF(WIN32)
 ELSE() #unix
 	target_link_libraries(serverbrowsing openspy libuv::uv SharedTasks z)
 ENDIF()
+
+add_subdirectory(test)
