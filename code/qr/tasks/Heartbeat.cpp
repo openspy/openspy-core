@@ -295,7 +295,9 @@ namespace MM {
 
 			std::ostringstream s;
 
-			if(IncrNumHeartbeats(thread_data, server_key) == 1 && request.version == 1) { //fire V1 new event, which only occurs on first HB, instead of validation success
+			int hb_count = IncrNumHeartbeats(thread_data, server_key);
+
+			if(hb_count == 1 && request.version == 1) { //fire V1 new event, which only occurs on first HB, instead of validation success
 				s << "\\new\\" << server_key.c_str();
 			} else {
 				s << "\\update\\" << server_key.c_str();
@@ -306,7 +308,6 @@ namespace MM {
 
 			std::string msg = s.str();
 			TaskShared::sendAMQPMessage(mm_channel_exchange, mm_server_event_routingkey, msg.c_str(), &request.from_address);
-			
 			
 			request.callback(response);
 		}
