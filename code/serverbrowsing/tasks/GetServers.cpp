@@ -237,22 +237,24 @@ namespace MM {
             }
         }
         
-        std::vector<std::string>::iterator del_it = keys_to_delete.begin();
-        while(del_it != keys_to_delete.end()) {
-            std::string server_key = *del_it;
-            std::string gamename =  req->m_for_game.gamename; //incase of reference issue
-            const char *args[] = {"ZREM" , gamename.c_str(), server_key.c_str()};
-            redisAppendCommandArgv(thread_data->mp_redis_connection, 3, args, NULL);
-            del_it++;
-        }
-        
-        for(size_t i=0;i<keys_to_delete.size();i++) {
-            void *reply;
-            int r = redisGetReply(thread_data->mp_redis_connection, (void **)&reply);
-            if (r == REDIS_OK) {
-                freeReplyObject(reply);
-            }
-        }
+		if(!req->m_for_game.gamename.empty()) {
+			std::vector<std::string>::iterator del_it = keys_to_delete.begin();
+			while(del_it != keys_to_delete.end()) {
+				std::string server_key = *del_it;
+				std::string gamename =  req->m_for_game.gamename; //incase of reference issue
+				const char *args[] = {"ZREM" , gamename.c_str(), server_key.c_str()};
+				redisAppendCommandArgv(thread_data->mp_redis_connection, 3, args, NULL);
+				del_it++;
+			}
+			
+			for(size_t i=0;i<keys_to_delete.size();i++) {
+				void *reply;
+				int r = redisGetReply(thread_data->mp_redis_connection, (void **)&reply);
+				if (r == REDIS_OK) {
+					freeReplyObject(reply);
+				}
+			}
+		}
 	}
 
 	void LoadCustomInfo_AllPlayerKeys(TaskThreadData* thread_data, MM::Server* server, std::string server_key) {
