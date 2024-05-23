@@ -90,4 +90,6 @@ INSTALL(TARGETS openspy
 install(DIRECTORY "OS" DESTINATION include FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY "SSL/OpenSSL/" DESTINATION include FILES_MATCHING PATTERN "*.h")
 
+if(BUILD_TESTING)
 add_subdirectory(test)
+endif()

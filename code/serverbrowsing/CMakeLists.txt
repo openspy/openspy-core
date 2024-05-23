@@ -36,4 +36,6 @@ ELSE() #unix
 	target_link_libraries(serverbrowsing openspy libuv::uv SharedTasks z)
 ENDIF()
 
+if(BUILD_TESTING)
 add_subdirectory(test)
+endif()
