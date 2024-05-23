@@ -471,7 +471,9 @@ namespace SB {
 			if (!skip_encryption) {
 				switch (m_enctype) {
 				case 1:
+					uv_mutex_lock(&m_crypto_mutex);
 					SendPacket_Enctype1(buffer);
+					uv_mutex_unlock(&m_crypto_mutex);
 					return;
 				case 2:
 					uv_mutex_lock(&m_crypto_mutex);
