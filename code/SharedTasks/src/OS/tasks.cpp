@@ -15,6 +15,8 @@ namespace TaskShared {
 	uv_key_t mm_redis_ssl_ctx_key;
 	uv_key_t mm_amqp_connection_key;
 
+	void amqp_listener_loop(const ListenerArgs *listener_args);
+
 	void do_init_thread_tls_key() {
 		uv_key_create(&mm_redis_connection_key);
 		uv_key_create(&mm_amqp_connection_key);
@@ -314,6 +316,15 @@ namespace TaskShared {
 	}
 
 	void setup_listener(ListenerArgs *listener) {
+		listener->exit_flag = false;
+		uv_thread_create(&listener->amqp_authevent_consumer_thread, TaskShared::amqp_listenerargs_consume_thread, listener);
+		
+	}
+
+	void amqp_listenerargs_consume_thread(void *arg) {
+		ListenerArgs *listener = (ListenerArgs *)arg;
+
+
 		char address_buffer[32];
 		char port_buffer[32];
 
@@ -352,26 +363,33 @@ namespace TaskShared {
 		}
 
 
-
-		//setup generic presence listener
-		listener->amqp_listener_conn = amqp_new_connection();
-		listener->amqp_socket = amqp_tcp_socket_new(listener->amqp_listener_conn);
-		int status = amqp_socket_open(listener->amqp_socket, address_buffer, atoi(port_buffer));
-		if(status) {
-			OS::LogText(OS::ELogLevel_Error, "error opening amqp listener socket");
+		while(!listener->exit_flag) {
+			//setup generic presence listener
+			listener->amqp_listener_conn = amqp_new_connection();
+			listener->amqp_socket = amqp_tcp_socket_new(listener->amqp_listener_conn);
+			int status = amqp_socket_open(listener->amqp_socket, address_buffer, atoi(port_buffer));
+			if(status) {
+				OS::LogText(OS::ELogLevel_Error, "error opening amqp listener socket");
+				amqp_maybe_release_buffers(listener->amqp_listener_conn);
+				amqp_connection_close(listener->amqp_listener_conn, AMQP_REPLY_SUCCESS);
+				amqp_destroy_connection(listener->amqp_listener_conn);
+			} else {
+				print_amqp_error(amqp_login(listener->amqp_listener_conn, vhost_buffer, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer), "Login");
+				amqp_channel_open_ok_t *channel_open = amqp_channel_open(listener->amqp_listener_conn, 1);
+				if(channel_open) {
+					amqp_listener_loop(listener); //blocks forever, unless there is a problem
+				} else {
+					OS::LogText(OS::ELogLevel_Error, "error opening async AMQP channel");
+					amqp_maybe_release_buffers(listener->amqp_listener_conn);
+					amqp_connection_close(listener->amqp_listener_conn, AMQP_REPLY_SUCCESS);
+					amqp_destroy_connection(listener->amqp_listener_conn);
+				}
+			}
+			uv_sleep(5000); //brief delay so its not spamming connections
 		}
-		print_amqp_error(amqp_login(listener->amqp_listener_conn, vhost_buffer, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, user_buffer, pass_buffer), "Login");
-		amqp_channel_open_ok_t *channel_open = amqp_channel_open(listener->amqp_listener_conn, 1);
-		if(channel_open) {
-			uv_thread_create(&listener->amqp_authevent_consumer_thread, TaskShared::amqp_listenerargs_consume_thread, listener);
-		} else {
-			OS::LogText(OS::ELogLevel_Error, "error opening async AMQP channel");
-		}
-		
 	}
 
-	void amqp_listenerargs_consume_thread(void *arg) {
-		const ListenerArgs *listener_args = (ListenerArgs *)arg;
+	void amqp_listener_loop(const ListenerArgs *listener_args) {
 		amqp_rpc_reply_t res;
 		amqp_envelope_t envelope;		
 	

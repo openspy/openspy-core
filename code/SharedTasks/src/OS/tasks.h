@@ -29,6 +29,7 @@ namespace TaskShared {
 		uv_thread_t amqp_authevent_consumer_thread;
 		amqp_connection_state_t amqp_listener_conn;
 		amqp_socket_t *amqp_socket;
+		bool exit_flag;
 	} ListenerArgs;
 
     size_t curl_callback(void *contents, size_t size, size_t nmemb, void *userp);
