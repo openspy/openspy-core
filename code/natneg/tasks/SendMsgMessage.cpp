@@ -10,115 +10,42 @@
 #include <jansson.h>
 
 namespace NN {
-	/*
-	{"type":"connect","to_address":"127.0.0.1:51652",
-	"data":
-	[
-		{"from_address":"127.0.0.1:58435","driver_address":"0.0.0.0:27901","hostname":"OS-dev","gamename":"gmtest","version":4,"type":"init","cookie":666,
-		
-		"data":{"porttype":0,"clientindex":0,"usegameport":1,"private_address":"127.0.1.1:0"}}
-		,{"from_address":"127.0.0.1:52566","driver_address":"0.0.0.0:27901","hostname":"OS-dev","gamename":"gmtest","version":4,"type":"init","cookie":666,
-		
-		"data":{"porttype":1,"clientindex":0,"usegameport":1,"private_address":"127.0.1.1:0"}}
-		,{"from_address":"127.0.0.1:52566","driver_address":"0.0.0.0:27901","hostname":"OS-dev","gamename":"gmtest","version":4,"type":"init","cookie":666,
-		
-		"data":{"porttype":2,"clientindex":0,"usegameport":1,"private_address":"127.0.1.1:58435"}}
-		,{"from_address":"127.0.0.1:52566","driver_address":"0.0.0.0:27901","hostname":"OS-dev","gamename":"gmtest","version":4,"type":"init","cookie":666,
-		
-		"data":{"porttype":3,"clientindex":0,"usegameport":1,"private_address":"127.0.1.1:58435"}}]}
-	*/
-	ConnectionSummary LoadSummaryFromJson(json_t *data) {
-		json_t *j = NULL;
-		json_t *first_item = json_array_get(data, 0);
-		json_t *last_item;
-		ConnectionSummary summary;
+	bool read_amqp_message(json_t *root, NatNegPacket *packet) {
+		json_t *obj = NULL;
+		switch(packet->packettype) {
+			case NN_ERTTEST:
+			case NN_INITACK:
+				obj = json_object_get(root, "porttype");
+				packet->Packet.Init.porttype = json_integer_value(obj);
 
-		j = json_object_get(first_item, "cookie");
-		summary.cookie = json_integer_value(j);
+				obj = json_object_get(root, "client_index");
+				packet->Packet.Init.clientindex = json_integer_value(obj);
 
-		j = json_object_get(first_item, "version");
-		summary.version = json_integer_value(j);
+				obj = json_object_get(root, "use_gameport");
+				packet->Packet.Init.usegameport = obj == json_true() || json_integer_value(obj);
 
-		summary.address_hits = json_array_size(data);
-		summary.required_addresses = summary.address_hits; //XXX: remove this
-		last_item = json_array_get(data, summary.address_hits - 1);
+				obj = json_object_get(root, "localip");
+				packet->Packet.Init.localip = json_integer_value(obj);
 
-		j = json_object_get(first_item, "usegameport");
-		summary.usegameport = json_integer_value(j);
-
-		j = json_object_get(last_item, "data");
-		j = json_object_get(j, "private_address");
-		summary.private_address = OS::Address(json_string_value(j));
-
-		for(int i=0;i<summary.address_hits;i++) {
-			j = json_array_get(data, i);
-			if(j != NULL) {
-				j = json_object_get(j, "from_address");
-				summary.m_port_type_addresses[i] = OS::Address(json_string_value(j));
-			}
-		}
-
-		return summary;
-	}
-	void Handle_ConnectPacket(json_t *root, NN::Driver *driver) {
-		json_t *to_address_json = json_object_get(root, "to_address");
-		OS::Address to_address(json_string_value(to_address_json));
-
-		
-
-		json_t *data = json_object_get(root, "data");
-		json_t *error = json_object_get(data, "finished");
-
-		NatNegPacket packet;
-		memcpy(&packet.magic, NNMagicData, NATNEG_MAGIC_LEN);
-		
-		packet.packettype = NN_CONNECT;
-
-		if(error != NULL) {
-			json_t *j = json_object_get(data, "cookie");
-			if(j != NULL) {
-				packet.cookie = htonl(json_integer_value(j));
-			} else {
-				packet.cookie = 0;
-			}
+				obj = json_object_get(root, "localport");
+				packet->Packet.Init.localport = json_integer_value(obj);
 				
-			j = json_object_get(root, "version");
-			packet.version = json_integer_value(j);
-			packet.Packet.Connect.finished = json_integer_value(error);
-			packet.Packet.Connect.gotyourdata = 0;
-			packet.Packet.Connect.remoteIP = 0;
-			packet.Packet.Connect.remotePort = 0;
-			driver->SendPacket(to_address, &packet);
-			OS::LogText(OS::ELogLevel_Info, "[%s] Send Connection Error: %d %d", to_address.ToString().c_str(), packet.Packet.Connect.finished, ntohl(packet.cookie));
-		} else {
-			ConnectionSummary summary = LoadSummaryFromJson(data);
+			break;
+			case NN_CONNECT:
+				obj = json_object_get(root, "remote_ip");
+				packet->Packet.Connect.remoteIP = json_integer_value(obj);
 
-			NAT nat;
-			OS::Address next_public_address, next_private_address, connect_address;
-			NN::LoadSummaryIntoNAT(summary, nat);
-			NN::DetermineNatType(nat);
-			NN::DetermineNextAddress(nat, next_public_address, next_private_address);
+				obj = json_object_get(root, "remote_port");
+				packet->Packet.Connect.remotePort = htons(json_integer_value(obj));
 
+				obj = json_object_get(root, "got_your_data");
+				packet->Packet.Connect.gotyourdata = json_integer_value(obj);
 
-			if(next_public_address.ip == to_address.ip && summary.version != 1) {
-				connect_address = next_private_address;
-				if(connect_address.GetPort() == 0) {
-					connect_address.port = next_public_address.port;
-				}
-			} else {
-				connect_address = next_public_address;
-			}
-			packet.version = summary.version;
-			packet.cookie = htonl(summary.cookie);
-			packet.Packet.Connect.remoteIP = connect_address.GetIP();
-			packet.Packet.Connect.remotePort = htons(connect_address.GetPort());
-
-			packet.Packet.Connect.finished = 0;
-			packet.Packet.Connect.gotyourdata = 0;
-
-			driver->SendPacket(to_address, &packet);
-			OS::LogText(OS::ELogLevel_Info, "[%s] Connect Packet (to: %s) - %d", to_address.ToString().c_str(), connect_address.ToString().c_str(), summary.cookie);
+				obj = json_object_get(root, "finished");
+				packet->Packet.Connect.finished = json_integer_value(obj);
+			break;
 		}
+		return true;
 	}
 	bool Handle_HandleRecvMessage(TaskShared::TaskThreadData *thread_data, std::string message) {
 		NN::Server *server = (NN::Server*)uv_loop_get_data(uv_default_loop());
@@ -126,30 +53,68 @@ namespace NN {
 		if(!root) return false;
 
 		json_t *type = json_object_get(root, "type");
+		uint8_t packet_type = NN_INITACK;
 		if(type) {
+			json_t *gamename_obj = json_object_get(root, "gamename");
+			std::string gamename;
+			if(gamename_obj) {
+				gamename = json_string_value(gamename_obj);
+			}
 			const char *type_str = json_string_value(type);
 			json_t *driver_address_json = json_object_get(root, "driver_address");
 
-			json_t *hostname_json = json_object_get(root, "hostname");
-
-			bool should_process = true;
-
-			if(hostname_json && json_is_string(hostname_json)) {
-				const char *hostname = json_string_value(hostname_json);
-				if(stricmp(OS::g_hostName, hostname) != 0) {
-					should_process = false;
-				}
-			}
-
-			if(should_process) {
+			json_t *version_obj = json_object_get(root, "version");
+			json_t *data_obj = json_object_get(root, "data");
+			json_t *cookie_obj = json_object_get(root, "cookie");
+			if (version_obj != NULL) {
+				int cookie = json_integer_value(cookie_obj);
+				int version = json_integer_value(version_obj);
 				OS::Address driver_address;
 				driver_address = OS::Address(json_string_value(driver_address_json));
-				
+			
+				OS::Address to_address;
+				driver_address_json = json_object_get(root, "address");
+				to_address = OS::Address(json_string_value(driver_address_json));
+
 
 				NN::Driver *driver = server->findDriverByAddress(driver_address);
-				
+				if(!driver) {
+					return true;
+				}
+				NatNegPacket nn_packet;
 				if(stricmp(type_str, "connect") == 0) {
-					Handle_ConnectPacket(root, driver);
+					packet_type = NN_CONNECT;
+				} else if (stricmp(type_str, "ert") == 0) {
+					packet_type = NN_ERTTEST;
+				} else if (stricmp(type_str, "preinit_ack") == 0) { 
+					packet_type = NN_PREINIT_ACK;
+				} else if (stricmp(type_str, "init_ack") == 0) { 
+					packet_type = NN_INITACK;
+				} else if (stricmp(type_str, "report_ack") == 0) { 
+					packet_type = NN_REPORT_ACK;
+				}
+				nn_packet.packettype = packet_type;
+				nn_packet.version = version;
+				nn_packet.cookie = htonl(cookie);
+
+				read_amqp_message(data_obj, &nn_packet);
+				
+				switch(packet_type) {
+					case NN_CONNECT:
+					driver->send_connect(to_address, &nn_packet);
+					break;
+					case NN_ERTTEST:
+					driver->send_ert_test(to_address, &nn_packet);
+					break;
+					case NN_PREINIT_ACK:
+					driver->send_preinit_ack(to_address, &nn_packet);
+					break;
+					case NN_INITACK:
+					driver->send_init_ack(to_address, &nn_packet, gamename);
+					break;
+					case NN_REPORT_ACK:
+					driver->send_report_ack(to_address, &nn_packet);
+					break;
 				}
 			}
 		}

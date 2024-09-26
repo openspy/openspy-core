@@ -16,4 +16,9 @@ namespace NN {
         packet->Packet.Preinit.state = NN_PREINIT_READY;
 		SendPacket(from, packet);
     }
+    
+    void Driver::send_preinit_ack(OS::Address from, NatNegPacket *packet) {
+        OS::LogText(OS::ELogLevel_Info, "[%s] Send Pre-init ack", from.ToString().c_str());
+		SendPacket(from, packet);
+    }
 }

@@ -23,6 +23,12 @@ namespace NN {
 
 		const std::vector<INetPeer *> getPeers(bool inc_ref = false);
 		void SendPacket(OS::Address to, NatNegPacket *packet);
+
+		void send_init_ack(OS::Address to_address, NatNegPacket *packet, std::string gamename);
+		void send_ert_test(OS::Address to_address, NatNegPacket *packet);
+		void send_connect(OS::Address to_address, NatNegPacket *packet);
+		void send_preinit_ack(OS::Address to_address, NatNegPacket *packet);
+		void send_report_ack(OS::Address to_address, NatNegPacket *packet);
 	private:
 		static void on_udp_read(uv_udp_t* handle,
                                ssize_t nread,

@@ -14,4 +14,8 @@ namespace NN {
 		packet->packettype = NN_REPORT_ACK;
 		SendPacket(from, packet);
 	}
+    void Driver::send_report_ack(OS::Address to_address, NatNegPacket *packet) {
+        OS::LogText(OS::ELogLevel_Info, "[%s] Send Report ack", to_address.ToString().c_str());
+		SendPacket(to_address, packet);
+	}
 }

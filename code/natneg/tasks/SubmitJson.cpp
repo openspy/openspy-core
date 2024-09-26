@@ -8,7 +8,7 @@
 
 namespace NN {
     bool PerformSubmitJson(NNRequestData request) {
-        TaskShared::sendAMQPMessage(nn_channel_exchange, nn_channel_routingkey, request.send_string.c_str());		
+        TaskShared::sendAMQPMessage(nn_channel_exchange, "natneg.core", request.send_string.c_str());		
         return true;
     }
 }

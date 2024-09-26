@@ -13,14 +13,15 @@ namespace NN {
 
 		json_t *packet_obj = json_object();
 
-		json_object_set_new(packet_obj, "from_address", json_string(from.ToString().c_str()));
+		json_object_set_new(packet_obj, "address", json_string(from.ToString().c_str()));
         json_object_set_new(packet_obj, "driver_address", json_string(address.ToString().c_str()));
         json_object_set_new(packet_obj, "hostname", json_string(OS::g_hostName));
         //
         json_object_set_new(packet_obj, "version", json_integer(packet->version));
         json_object_set_new(packet_obj, "type", json_string("connect_ack"));
 
-        json_object_set_new(packet_obj, "cookie", json_integer(ntohl(packet->cookie)));
+        int cookie = ntohl(packet->cookie);
+        json_object_set_new(packet_obj, "cookie", json_integer(cookie));
         json_object_set_new(packet_obj, "clientindex", json_integer(packet->Packet.Init.clientindex));
         return packet_obj;
    }
@@ -38,5 +39,12 @@ namespace NN {
 			free((void *)json_data);
 
         OS::LogText(OS::ELogLevel_Info, "[%s] Got connection ACK - %d", from.ToString().c_str(), ntohl(packet->cookie));
+    }
+
+    void Driver::send_connect(OS::Address to_address, NatNegPacket *packet) {
+        OS::Address connect_to = OS::Address(packet->Packet.Connect.remoteIP, packet->Packet.Connect.remotePort);
+        OS::LogText(OS::ELogLevel_Info, "[%s] Connect to: %s (cookie: %d, version: %d)", to_address.ToString().c_str(), connect_to.ToString(false).c_str(), packet->cookie, packet->version);
+
+        SendPacket(to_address, packet);
     }
 }
