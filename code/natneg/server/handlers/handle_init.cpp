@@ -28,7 +28,7 @@ namespace NN {
         json_t *init_obj = json_object();
         json_object_set_new(init_obj, "porttype", json_integer(packet->Packet.Init.porttype));
         json_object_set_new(init_obj, "clientindex", json_integer(packet->Packet.Init.clientindex));
-        json_object_set_new(init_obj, "usegameport", json_integer(packet->Packet.Init.usegameport));
+        json_object_set_new(init_obj, "use_gameport", json_integer(packet->Packet.Init.usegameport));
 
         OS::Address private_address = OS::Address(packet->Packet.Init.localip, ntohs(packet->Packet.Init.localport));
 
