@@ -79,6 +79,7 @@ namespace NN {
 
 				NN::Driver *driver = server->findDriverByAddress(driver_address);
 				if(!driver) {
+					json_decref(root);
 					return true;
 				}
 				NatNegPacket nn_packet;
