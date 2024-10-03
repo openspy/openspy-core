@@ -42,9 +42,12 @@ namespace NN {
     }
 
     void Driver::send_connect(OS::Address to_address, NatNegPacket *packet) {
-        OS::Address connect_to = OS::Address(packet->Packet.Connect.remoteIP, packet->Packet.Connect.remotePort);
-        OS::LogText(OS::ELogLevel_Info, "[%s] Connect to: %s (cookie: %d, version: %d)", to_address.ToString().c_str(), connect_to.ToString(false).c_str(), packet->cookie, packet->version);
-
+        if (packet->Packet.Connect.finished == 1) {
+            OS::LogText(OS::ELogLevel_Info, "[%s] Send deadbeat (cookie: %d, version: %d)", to_address.ToString().c_str(), packet->cookie, packet->version);
+        } else {
+            OS::Address connect_to = OS::Address(packet->Packet.Connect.remoteIP, packet->Packet.Connect.remotePort);
+            OS::LogText(OS::ELogLevel_Info, "[%s] Connect to: %s (cookie: %d, version: %d)", to_address.ToString().c_str(), connect_to.ToString(false).c_str(), packet->cookie, packet->version);
+        }
         SendPacket(to_address, packet);
     }
 }
