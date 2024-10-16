@@ -309,9 +309,19 @@ namespace TaskShared {
 		#endif //AMQP_DEBUG_MESSAGES
 
 
-		amqp_basic_publish(connection, 1, amqp_cstring_bytes(exchange),
+		int status = amqp_basic_publish(connection, 1, amqp_cstring_bytes(exchange),
 									amqp_cstring_bytes(routingkey), 0, 0,
 									&props, amqp_cstring_bytes(messagebody));
+
+		//got AMQP send error... clear connection and force reconnect
+		if (status != AMQP_STATUS_OK) {
+			OS::LogText(OS::ELogLevel_Error, "error publishing message");
+			amqp_maybe_release_buffers(connection);
+			amqp_channel_close(connection, 1, AMQP_REPLY_SUCCESS);
+			amqp_connection_close(connection, AMQP_REPLY_SUCCESS);
+			amqp_destroy_connection(connection);
+			uv_key_set(&mm_amqp_connection_key, NULL); //clear key to force reconnect
+		}
 
 	}
 
