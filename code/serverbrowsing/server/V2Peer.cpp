@@ -161,13 +161,13 @@ namespace SB {
 
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got msg %s - %d", getAddress().ToString().c_str(), OS::Address(send_msg_to).ToString().c_str(), buffer.readRemaining());
-		MM::MMQueryRequest req;
-		req.type = MM::EMMQueryRequestType_SubmitData;
-		req.from = getAddress();
-		req.to = send_msg_to;
-		req.buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
-		req.req.m_for_game = m_game;
-		AddRequest(req);
+			MM::MMQueryRequest req;
+			req.type = MM::EMMQueryRequestType_SubmitData;
+			req.from = getAddress();
+			req.to = send_msg_to;
+			req.buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
+			req.req.m_for_game = m_game;
+			AddRequest(req);
 
 	}
 	/*		

@@ -60,6 +60,14 @@ namespace SB {
 		MM::sServerListReq m_last_list_req;
 
 		void AddRequest(MM::MMQueryRequest req);
+		void FlushPendingRequests();
+		std::stack<MM::MMQueryRequest> m_pending_request_list; //process after we retrieve src/dst gamenames
+
+
+		uv_mutex_t mp_mutex;
+		uv_async_t mp_pending_request_flush_async;
+		static void flush_pending_requests(uv_async_t *handle);
+
 		uv_mutex_t m_crypto_mutex;
 	private:
 
