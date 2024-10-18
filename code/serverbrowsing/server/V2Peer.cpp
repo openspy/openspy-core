@@ -161,13 +161,13 @@ namespace SB {
 
 
 		OS::LogText(OS::ELogLevel_Info, "[%s] Got msg %s - %d", getAddress().ToString().c_str(), OS::Address(send_msg_to).ToString().c_str(), buffer.readRemaining());
-			MM::MMQueryRequest req;
-			req.type = MM::EMMQueryRequestType_SubmitData;
-			req.from = getAddress();
-			req.to = send_msg_to;
-			req.buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
-			req.req.m_for_game = m_game;
-			AddRequest(req);
+		MM::MMQueryRequest req;
+		req.type = MM::EMMQueryRequestType_SubmitData;
+		req.from = getAddress();
+		req.to = send_msg_to;
+		req.buffer.WriteBuffer(buffer.GetReadCursor(), buffer.readRemaining());
+		req.req.m_for_game = m_game;
+		AddRequest(req, true);
 
 	}
 	/*		
@@ -370,7 +370,7 @@ namespace SB {
 			req.gamenames[0] = req.req.m_from_gamename;
 			req.gamenames[1] = req.req.m_for_gamename;
 			m_in_message = true;
-			AddRequest(req);
+			AddRequest(req, true);
 		}
 		else {
 			this->OnRecievedGameInfoPair(m_game, m_last_list_req.m_for_game, NULL);
@@ -444,7 +444,7 @@ namespace SB {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Get info request, non-cached %s", getAddress().ToString().c_str(), req.address.ToString().c_str());
 
 		req.req.m_for_game = m_game;
-		AddRequest(req);
+		AddRequest(req, true);
 	}
 	void V2Peer::send_ping() {
 		if (m_in_message) return;

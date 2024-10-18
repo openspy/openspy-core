@@ -59,7 +59,7 @@ namespace SB {
 		std::vector<CToken> m_last_list_req_token_list;
 		MM::sServerListReq m_last_list_req;
 
-		void AddRequest(MM::MMQueryRequest req);
+		void AddRequest(MM::MMQueryRequest req, bool skip_pending_queue = false);
 		void FlushPendingRequests();
 		std::stack<MM::MMQueryRequest> m_pending_request_list; //process after we retrieve src/dst gamenames
 

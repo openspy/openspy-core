@@ -46,11 +46,24 @@ namespace SB {
 		}
 		return false;
 	}
-	void Peer::AddRequest(MM::MMQueryRequest req) {
-		uv_mutex_lock(&mp_mutex);
-		m_pending_request_list.push(req);
-		uv_mutex_unlock(&mp_mutex);
-		uv_async_send(&mp_pending_request_flush_async);
+	void Peer::AddRequest(MM::MMQueryRequest req, bool skip_pending_queue) {
+		if(skip_pending_queue) {
+			uv_work_t *uv_req = (uv_work_t*)malloc(sizeof(uv_work_t));
+			MM::MMWorkData *work_data = new MM::MMWorkData();
+			req.peer = this;
+			this->IncRef();
+			work_data->request = req;
+
+			uv_handle_set_data((uv_handle_t*) uv_req, work_data);
+
+			uv_queue_work(uv_default_loop(), uv_req, MM::PerformUVWorkRequest, MM::PerformUVWorkRequestCleanup);
+		} else {
+			uv_mutex_lock(&mp_mutex);
+			m_pending_request_list.push(req);
+			uv_mutex_unlock(&mp_mutex);
+			uv_async_send(&mp_pending_request_flush_async);
+		}
+
 	}
 	void Peer::FlushPendingRequests() {
 		uv_mutex_lock(&mp_mutex);

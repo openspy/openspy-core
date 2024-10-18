@@ -171,7 +171,7 @@ namespace SB {
 			m_waiting_gamedata = 1;
 			req.gamenames[0] = gamename;
 			m_enctype = enctype;
-			AddRequest(req);
+			AddRequest(req, true);
 		}
 		void V1Peer::handle_packet(std::string data) {
 			if (m_waiting_gamedata == 1) {
@@ -313,7 +313,7 @@ namespace SB {
 
 			m_last_list_req_token_list = CToken::filterToTokenList(m_last_list_req.filter.c_str());
 
-			AddRequest(req);
+			AddRequest(req, true);
 			// //server disconnects after this
 		}
 		void V1Peer::SendServerInfo(MM::ServerListQuery results) {
