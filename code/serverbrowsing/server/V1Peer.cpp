@@ -339,8 +339,8 @@ namespace SB {
 				MM::Server *serv = *it2;
 
 				it = results.captured_basic_fields.begin();
+				serv->kvFields["ip"] = serv->wan_address.ToString(false);
 
-				resp << "\\" << serv->wan_address.ToString(true) << ":" << serv->wan_address.port; //add ip/port
 				while(it != results.captured_basic_fields.end()) {
 					std::string field = *it;
 					resp << "\\" << field_cleanup(serv->kvFields[field]);

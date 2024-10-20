@@ -65,6 +65,7 @@ namespace MM {
 				if (!sent_servers) {
 					streamed_ret.first_set = true;
 					sent_servers = true;
+					
 				}
 				request->peer->OnRetrievedServers(*request, streamed_ret, request->extra);
 			}
@@ -131,6 +132,12 @@ namespace MM {
 	void AppendServerEntries_AllKeys(TaskThreadData* thread_data, std::vector<std::string> server_keys, ServerListQuery* query_response, const sServerListReq* req) {
 		std::vector<std::string> basic_lookup_keys;
 
+		bool do_populate = false;
+
+		if(query_response->captured_basic_fields.empty()) {
+			do_populate = true;
+		}
+
 		std::vector<std::string> lookup_keys;
 
 		std::vector<CToken> token_list;
@@ -139,6 +146,7 @@ namespace MM {
 		freeReplyObject(reply);
 
 		BuildServerListRequestData(req, basic_lookup_keys, lookup_keys, token_list, 0);
+
 
 		std::ostringstream cmds;
         
@@ -209,6 +217,18 @@ namespace MM {
             LoadCustomServerInfo_AllKeys(&server, custom_reply);
             server.kvFields["backend_id"] = server_key;
             server.key = server_key;
+			
+			if(do_populate) {
+				
+				std::map<std::string, std::string>::iterator it = server.kvFields.begin();
+				while(it != server.kvFields.end()) {
+					std::pair<std::string, std::string> p = *it;
+					if(std::find(query_response->captured_basic_fields.begin(), query_response->captured_basic_fields.end(), p.first) == query_response->captured_basic_fields.end()) {
+						query_response->captured_basic_fields.push_back(p.first);
+					}
+					it++;
+				}
+			}
             
             if(basic_reply != NULL) {
                 freeReplyObject(basic_reply);
