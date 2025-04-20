@@ -7,7 +7,7 @@ find_package(CURL REQUIRED)
 
 file(GLOB MAIN_SRCS "src/OS/*.cpp" "src/OS/SharedTasks/Account/*.cpp" "src/OS/SharedTasks/Account/tasks/*.cpp" "src/OS/SharedTasks/Auth/*.cpp" "src/OS/SharedTasks/Auth/tasks/*.cpp" "src/OS/SharedTasks/CDKey/*.cpp" "src/OS/SharedTasks/CDKey/tasks/*.cpp" "src/OS/SharedTasks/Geo/*.cpp" "src/OS/SharedTasks/Geo/tasks/*.cpp")
 
-SET(OPENSPY_SharedTasks_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${JANSSON_INCLUDE_DIRS})
+SET(OPENSPY_SharedTasks_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${JANSSON_INCLUDE_DIRS} ${CURL_INCLUDE_DIR})
 include_directories (${OPENSPY_SharedTasks_INCLUDE_DIRS})
 
 

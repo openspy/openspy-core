@@ -4,7 +4,7 @@ project(serverbrowsing_v1_test)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CURL_INCLUDE_DIR})
 
 add_executable (test_sbv1_groups ${ALL_SRCS} test_common.cpp test_groups.cpp)
 add_test(NAME test_sbv1_groups COMMAND test_sbv1_groups WORKING_DIRECTORY .)

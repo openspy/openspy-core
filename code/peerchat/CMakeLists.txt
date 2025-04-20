@@ -29,13 +29,13 @@ source_group("Headers\\Server" FILES ${SERVER_HDRS})
 source_group("Headers\\Server\\Tasks" FILES ${SERVER_TASKS_HDRS})
 source_group("Headers\\Server\\Commands" FILES ${SERVER_CMDS_HDRS})
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CURL_INCLUDE_DIR})
 
 
 add_executable (peerchat ${ALL_SRCS})
 
 IF(WIN32)	
-	target_link_libraries(peerchat openspy.lib SharedTasks.lib z)
+	target_link_libraries(peerchat openspy.lib SharedTasks.lib ZLIB::ZLIB)
 ELSE() #unix
-	target_link_libraries(peerchat openspy SharedTasks z)
+	target_link_libraries(peerchat openspy SharedTasks ZLIB::ZLIB)
 ENDIF()

@@ -20,7 +20,7 @@ file (GLOB TASKS_HDRS "tasks/*.h")
 
 set (ALL_SRCS ${SERVER_SRCS} ${SERVER_HDRS} ${V2_SERVER_SRCS} ${V2_SERVER_HDRS} ${V1_SERVER_SRCS} ${V1_SERVER_HDRS} ${TASKS_SRCS})
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CURL_INCLUDE_DIR})
 
 source_group("Sources" FILES ${MAIN_SRCS})
 source_group("Sources\\Server" FILES ${SERVER_SRCS})
@@ -33,7 +33,7 @@ source_group("Headers\\Tasks" FILES ${TASK_HDRS})
 add_executable (qr ${ALL_SRCS} ${MAIN_SRCS} ${MAIN_HDRS})
 
 IF(WIN32)	
-	target_link_libraries(qr openspy.lib SharedTasks.lib z)
+	target_link_libraries(qr openspy.lib SharedTasks.lib ZLIB::ZLIB)
 ELSE() #unix
-	target_link_libraries(qr openspy libuv::uv SharedTasks z)
+	target_link_libraries(qr openspy libuv::uv SharedTasks ZLIB::ZLIB)
 ENDIF()

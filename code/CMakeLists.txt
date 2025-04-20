@@ -5,6 +5,9 @@ set(OS_CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../cmake/modules)
 message(OS_CMAKE_MODULE_PATH="${OS_CMAKE_MODULE_PATH}")
 set(CMAKE_MODULE_PATH ${OS_CMAKE_MODULE_PATH})
 
+
+find_package(ZLIB REQUIRED)
+
 project(openspy)
 enable_testing()
 
@@ -20,7 +23,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/")
 
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/core/SSL/SSLNull)
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/core/SSL/SSLNull ${CURL_INCLUDE_DIR})
 
 if(UNIX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++0x -fpermissive")

@@ -4,7 +4,7 @@ project(core_test)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CURL_INCLUDE_DIR})
 
 
 add_executable (test_buffer ${ALL_SRCS} OS/test_buffer.cpp)

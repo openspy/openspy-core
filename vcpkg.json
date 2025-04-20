@@ -1,0 +1,16 @@
+{
+  "dependencies": [
+    "curl",
+    {
+      "name": "hiredis",
+      "features": [
+        "ssl"
+      ]
+    },
+    "jansson",
+    "librabbitmq",
+    "libuv",
+    "openssl",
+    "pugixml"
+  ]
+}
