@@ -2,9 +2,12 @@ name: build-and-push
 
 on:
   push:
+    branches:
+      - 'master'
+      - 'docker'
 
 jobs:
-  docker:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       -

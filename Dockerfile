@@ -21,7 +21,6 @@ COPY vcpkg-configuration.json /root/
 RUN vcpkg install
 
 #we need to dynamically generate a script due to weirdness of vcpkg + cmake within docker (essentially the cmake packages won't find it otherwise)
-RUN ls -l /vcpkg/packages/curl_arm64-linux
 RUN echo "export LIBUV_DIR=`realpath /vcpkg/packages/libuv*/`" >> build.sh
 RUN echo "export OPENSSL_ROOT_DIR=`realpath /vcpkg/packages/openssl*/`" >> build.sh
 RUN echo "export HIREDIS_ROOT_DIR=`realpath /vcpkg/packages/hiredis*/`" >> build.sh
