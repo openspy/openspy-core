@@ -47,18 +47,11 @@ run make
 RUN mkdir -p /root/fs-out/opt/openspy/bin /root/fs-out/opt/openspy/lib
 RUN mv /root/os-make/bin/* /root/fs-out/opt/openspy/bin
 RUN mv /root/os-make/lib/* /root/fs-out/opt/openspy/lib
-# COPY docker-support/openspy.xml /root/fs-out/opt/openspy/openspy.xml
-# COPY docker-support/x509.pem /root/fs-out/opt/openspy/x509.pem
-# COPY docker-support/rsa_priv.pem /root/fs-out/opt/openspy/rsa_priv.pem
-# COPY docker-support/password_key.pem /root/fs-out/opt/openspy/password_key.pem
-# COPY docker-support/tos_battlefield.txt /root/fs-out/opt/openspy/tos_battlefield.txt
 COPY docker-support/run.sh /root/fs-out/opt/openspy/run.sh
 RUN chmod a+x /root/fs-out/opt/openspy/run.sh
 
 WORKDIR /root/fs-out
 RUN tar -cvzf /fs-out.tar.gz *
-#RUN cp -rv /root/fs-out/* /
-
 
 FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND noninteractive
