@@ -2,6 +2,7 @@ version: "3.3"
 services:
   serverbrowsing:
     ports:
+      - "28900:30692"
       - "28910:30693"
     env_file: .env-local
     environment:
@@ -38,7 +39,6 @@ services:
   gstats:
     ports:
       - "29920:30836"
-    command: /opt/openspy/bin/gstats
     environment:
       RUN_FILE: gstats
     env_file: .env-local
@@ -48,6 +48,13 @@ services:
       - "18300:30837"
     environment:
       RUN_FILE: FESL      
+    env_file: .env-local
+    image: chcniz/openspy-core
+  peerchat:
+    ports:
+      - "6667:30838"
+    environment:
+      RUN_FILE: peerchat
     env_file: .env-local
     image: chcniz/openspy-core
     
