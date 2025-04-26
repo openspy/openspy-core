@@ -3,43 +3,51 @@ services:
   serverbrowsing:
     ports:
       - "28910:30693"
-    command: /opt/openspy/bin/serverbrowsing
     env_file: .env-local
-    image: os-core
+    environment:
+      RUN_FILE: serverbrowsing
+    image: chcniz/openspy-core
   qr:
     ports:
-      - "27900:30694"
-    command: /opt/openspy/bin/qr
+      - "27900:30694/udp"
     env_file: .env-local
-    image: os-core
+    environment:
+      RUN_FILE: qr
+    image: chcniz/openspy-core
   natneg:
     ports:
-      - "27901:30695"
-    command: /opt/openspy/bin/qr
+      - "27901:30695/udp"
+    environment:
+      RUN_FILE: natneg
     env_file: .env-local
-    image: os-core
+    image: chcniz/openspy-core
   GP:
     ports:
       - "29900:30974"
-    command: /opt/openspy/bin/GP
+    environment:
+      RUN_FILE: GP
     env_file: .env-local
-    image: os-core
+    image: chcniz/openspy-core
   SM:
     ports:
       - "29901:30734"
-    command: /opt/openspy/bin/SM
+    environment:
+      RUN_FILE: SM
     env_file: .env-local
-    image: os-core
+    image: chcniz/openspy-core
   gstats:
     ports:
       - "29920:30836"
     command: /opt/openspy/bin/gstats
+    environment:
+      RUN_FILE: gstats
     env_file: .env-local
-    image: os-core
+    image: chcniz/openspy-core
   FESL-bf2142:
     ports:
       - "18300:30837"
-    command: /opt/openspy/bin/FESL
+    environment:
+      RUN_FILE: FESL      
     env_file: .env-local
-    image: os-core
+    image: chcniz/openspy-core
     
