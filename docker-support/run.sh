@@ -18,5 +18,12 @@ if [[ -n $SSL_KEY_DATA ]]; then
     export OPENSPY_SSL_KEY=ssl_key.pem
 fi
 
+if [[ -n $UTMASTER_MOTD_DATA ]]; then
+    echo $UTMASTER_MOTD_DATA | base64 -d > motd.txt
+fi
+
+if [[ -n $UTMASTER_MOTD_COMMUNITY_DATA ]]; then
+    echo $UTMASTER_MOTD_COMMUNITY_DATA | base64 -d > motd_community.txt
+fi
 
 eval bash -c $FILE_TO_RUN

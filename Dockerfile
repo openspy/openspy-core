@@ -1,14 +1,14 @@
 FROM ubuntu:24.04 AS build
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 RUN apt-get install -y build-essential cmake git curl unzip zip pkg-config
 
 RUN git clone https://github.com/microsoft/vcpkg.git
-ENV VCPKG_ROOT /vcpkg
-ENV PATH "$PATH:$VCPKG_ROOT"
+ENV VCPKG_ROOT=/vcpkg
+ENV PATH="$PATH:$VCPKG_ROOT"
 WORKDIR /vcpkg
 RUN ./bootstrap-vcpkg.sh
-ENV VCPKG_TC_PATH "$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+ENV VCPKG_TC_PATH="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
 
 
 RUN mkdir /root/fs-out
@@ -41,19 +41,20 @@ COPY cmake /root/cmake
 COPY code /root/code
 RUN mkdir /root/os-bin /root/os-make
 WORKDIR /root/os-make
-run ../build.sh
-run make
+RUN ../build.sh
+RUN make
 RUN mkdir -p /root/fs-out/opt/openspy/bin /root/fs-out/opt/openspy/lib
 RUN mv /root/os-make/bin/* /root/fs-out/opt/openspy/bin
 RUN mv /root/os-make/lib/* /root/fs-out/opt/openspy/lib
 COPY docker-support/run.sh /root/fs-out/opt/openspy/run.sh
+COPY docker-support/utmaster.xml /root/fs-out/opt/openspy/
 RUN chmod a+x /root/fs-out/opt/openspy/run.sh
 
 WORKDIR /root/fs-out
 RUN tar -cvzf /fs-out.tar.gz *
 
 FROM ubuntu:24.04
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -y dist-upgrade
 COPY --from=build /fs-out.tar.gz /root/fs.tar.gz
 RUN tar -xvzf /root/fs.tar.gz -C /

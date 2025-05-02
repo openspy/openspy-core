@@ -57,4 +57,11 @@ services:
       RUN_FILE: peerchat
     env_file: .env-local
     image: chcniz/openspy-core
+  utmaster:
+    ports:
+      - "28902:30839"
+    environment:
+      RUN_FILE: utmaster
+    env_file: .env-local
+    image: chcniz/openspy-core
     
