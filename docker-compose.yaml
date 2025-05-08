@@ -8,6 +8,8 @@ services:
     environment:
       RUN_FILE: serverbrowsing
     image: chcniz/openspy-core
+    volumes:
+      - ./docker-support/:/app-workdir
   qr:
     ports:
       - "27900:30694/udp"
@@ -15,6 +17,8 @@ services:
     environment:
       RUN_FILE: qr
     image: chcniz/openspy-core
+    volumes:
+      - ./docker-support/:/app-workdir
   natneg:
     ports:
       - "27901:30695/udp"
@@ -22,6 +26,8 @@ services:
       RUN_FILE: natneg
     env_file: .env-local
     image: chcniz/openspy-core
+    volumes:
+      - ./docker-support/:/app-workdir
   GP:
     ports:
       - "29900:30974"
@@ -29,6 +35,8 @@ services:
       RUN_FILE: GP
     env_file: .env-local
     image: chcniz/openspy-core
+    volumes:
+      - ./docker-support/:/app-workdir
   SM:
     ports:
       - "29901:30734"
@@ -36,6 +44,8 @@ services:
       RUN_FILE: SM
     env_file: .env-local
     image: chcniz/openspy-core
+    volumes:
+      - ./docker-support/:/app-workdir
   gstats:
     ports:
       - "29920:30836"
@@ -43,6 +53,8 @@ services:
       RUN_FILE: gstats
     env_file: .env-local
     image: chcniz/openspy-core
+    volumes:
+      - ./docker-support/:/app-workdir
   FESL-bf2142:
     ports:
       - "18300:30837"
@@ -50,6 +62,8 @@ services:
       RUN_FILE: FESL      
     env_file: .env-local
     image: chcniz/openspy-core
+    volumes:
+      - ./docker-support/:/app-workdir
   peerchat:
     ports:
       - "6667:30838"
@@ -57,6 +71,8 @@ services:
       RUN_FILE: peerchat
     env_file: .env-local
     image: chcniz/openspy-core
+    volumes:
+      - ./docker-support/:/app-workdir
   utmaster:
     ports:
       - "28902:30839"
@@ -64,4 +80,6 @@ services:
       RUN_FILE: utmaster
     env_file: .env-local
     image: chcniz/openspy-core
+    volumes:
+      - ./docker-support/:/app-workdir
     
