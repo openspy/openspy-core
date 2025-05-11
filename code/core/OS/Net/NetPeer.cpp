@@ -40,6 +40,7 @@ INetPeer::INetPeer(INetDriver* driver, uv_tcp_t *sd) : OS::Ref(), OS::LinkedList
     }
 }
 INetPeer::~INetPeer() {
+    uv_mutex_destroy(&m_send_mutex);
 }
 void INetPeer::stream_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     if (nread < 0) {
