@@ -167,8 +167,9 @@ namespace UT {
 			Value = (Value << 7) + (B[1] & 0x7f);
 		}
 		Value = (Value << 6) + (B[0] & 0x3f);
-		if ((B[0] & 0x80) != 0)
-			Value = -Value;
+		if ((B[0] & 0x80) != 0) {
+			Value *= 2;
+		}
 		return Value;
 	}
 
