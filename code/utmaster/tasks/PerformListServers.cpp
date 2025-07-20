@@ -196,23 +196,30 @@ namespace MM {
         
         //delete deferred cache misses
         std::vector<std::string>::iterator del_it = keys_to_delete.begin();
-        int cmd_count = 0;
-        while(del_it != keys_to_delete.end()) {
-            std::string key = *del_it;
-            std::string gamename =  request.peer->GetGameData().gamename; //incase of reference issue
-            const char *args[] = {"ZREM" , gamename.c_str(), key.c_str()};
-            redisAppendCommandArgv(thread_data->mp_redis_connection, 3, args, NULL);
-            cmd_count++;
-            del_it++;
-        }
-        
-        for(int i=0;i<cmd_count;i++) {
-            void *reply;
-            int r = redisGetReply(thread_data->mp_redis_connection, (void**)&reply);
-            if(r == REDIS_OK) {
-                freeReplyObject(reply);
-            }
-        }
+		if(!keys_to_delete.empty()) {
+			std::string gamename =  request.peer->GetGameData().gamename;
+			size_t num_keys = keys_to_delete.size();
+
+			size_t num_args = 2 + num_keys;
+			const char **args = (const char **)malloc(num_args * sizeof(const char *));
+			std::vector<std::string>::iterator del_it = keys_to_delete.begin();
+			args[0] = "ZREM";
+			args[1] = gamename.c_str();
+
+			int idx = 2;
+			while(del_it != keys_to_delete.end()) {
+				args[idx] = (*del_it).c_str();
+				idx++;
+				del_it++;
+			}
+
+            redisReply* reply = (redisReply*)redisCommandArgv(thread_data->mp_redis_connection, num_args, args, NULL);
+
+			if (reply != NULL) {
+				freeReplyObject(reply);
+			}
+			free((void *)args);
+		}
 
 		return records;
     }
