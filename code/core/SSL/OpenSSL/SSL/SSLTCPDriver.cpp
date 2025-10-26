@@ -47,7 +47,7 @@ namespace OS {
 
          temp_env_sz = sizeof(temp_env_buffer);
          if(uv_os_getenv("OPENSPY_SSL_CERT", (char *)&temp_env_buffer, &temp_env_sz) == 0) {
-            int r = SSL_CTX_use_certificate_chain_file(ctx, temp_env_buffer, SSL_FILETYPE_PEM);
+            int r = SSL_CTX_use_certificate_chain_file(ctx, temp_env_buffer);
             if(r != 1) {
                OS::LogText(OS::ELogLevel_Error, "Error loading certificate file: %d", r);
                SSL_CTX_free(ctx);
