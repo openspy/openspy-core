@@ -562,6 +562,7 @@ namespace MM {
 			"wan_port", wanport_str.c_str(),
 			"wan_ip", wanip_str.c_str(),
 			"gameid", gameid_str.c_str(),
+			"gamename", game_info.gamename.c_str(),
 			"id", id_str.c_str(),
 			"challenge", challenge_response.c_str()
 		};
