@@ -1,6 +1,5 @@
 #include <server/NNServer.h>
 #include <server/NNDriver.h>
-#include <server/NATMapper.h>
 #include <algorithm>
 
 #include <sstream>

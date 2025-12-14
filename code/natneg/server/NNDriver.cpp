@@ -5,6 +5,7 @@
 
 #include "NNDriver.h"
 namespace NN {
+	uint8_t NNMagicData[] = { NN_MAGIC_0, NN_MAGIC_1, NN_MAGIC_2, NN_MAGIC_3, NN_MAGIC_4, NN_MAGIC_5 };
 	void alloc_buffer(uv_handle_t* handle,
                             size_t suggested_size,
                             uv_buf_t* buf) {
