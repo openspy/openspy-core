@@ -55,55 +55,52 @@ namespace NN {
 
 			void *begin = buffer.GetReadCursor();
 			buffer.ReadBuffer(&packet.magic, NATNEG_MAGIC_LEN);
-			if(memcmp(&NNMagicData,&packet.magic, NATNEG_MAGIC_LEN) != 0) {
-				//skip invalid packet
-				return;
+			if(memcmp(&NNMagicData,&packet.magic, NATNEG_MAGIC_LEN) == 0) { //valid natneg packet
+				memset(&packet.Packet.Init, 0, sizeof(packet.Packet.Init));
+				packet.version = buffer.ReadByte();
+				packet.packettype = buffer.ReadByte();
+				packet.cookie = buffer.ReadInt();
+
+				int packetSize = packetSizeFromType(packet.packettype, packet.version);
+				std::string gamename;
+
+				size_t new_pos = 0;
+				switch(packet.packettype) {
+					case NN_INIT:
+						buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+						if(packet.version > 1) {
+							gamename = buffer.ReadNTS();
+						}
+						driver->handle_init_packet(address, &packet, gamename);
+					break;
+					case NN_CONNECT_ACK:
+						buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+						driver->handle_connect_ack_packet(address, &packet);
+					break;
+					case NN_ADDRESS_CHECK:
+						buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+						new_pos = ((size_t)begin-(size_t)buffer.GetHead());
+						new_pos += sizeof(packet);
+						buffer.SetReadCursor(new_pos);
+						driver->handle_address_check_packet(address, &packet);
+					break;
+					case NN_REPORT:
+						buffer.ReadBuffer(&packet.Packet.Report, packetSize);
+						driver->handle_report_packet(address, &packet);
+					break;
+					case NN_NATIFY_REQUEST:
+						buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+						new_pos = ((size_t)begin-(size_t)buffer.GetHead());
+						new_pos += sizeof(packet);
+						buffer.SetReadCursor(new_pos);
+						driver->handle_natify_packet(address, &packet);
+					break;
+					case NN_ERTACK:
+						buffer.ReadBuffer(&packet.Packet.Init, packetSize);
+						driver->handle_ert_ack_packet(address, &packet);
+					break;
+				}
 			}
-			memset(&packet.Packet.Init, 0, sizeof(packet.Packet.Init));
-			packet.version = buffer.ReadByte();
-			packet.packettype = buffer.ReadByte();
-			packet.cookie = buffer.ReadInt();
-
-			int packetSize = packetSizeFromType(packet.packettype, packet.version);
-			std::string gamename;
-
-			
-			size_t new_pos = 0;
-			switch(packet.packettype) {
-				case NN_INIT:
-					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-					if(packet.version > 1) {
-						gamename = buffer.ReadNTS();
-					}								
-					driver->handle_init_packet(address, &packet, gamename);
-				break;
-				case NN_CONNECT_ACK:
-					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-					driver->handle_connect_ack_packet(address, &packet);
-				break;
-				case NN_ADDRESS_CHECK:
-					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-					new_pos = ((size_t)begin-(size_t)buffer.GetHead());
-					new_pos += sizeof(packet);
-					buffer.SetReadCursor(new_pos);
-					driver->handle_address_check_packet(address, &packet);
-				break;
-				case NN_REPORT:
-					buffer.ReadBuffer(&packet.Packet.Report, packetSize);
-					driver->handle_report_packet(address, &packet);
-				break;
-				case NN_NATIFY_REQUEST:
-					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-					new_pos = ((size_t)begin-(size_t)buffer.GetHead());
-					new_pos += sizeof(packet);
-					buffer.SetReadCursor(new_pos);
-					driver->handle_natify_packet(address, &packet);
-				break;
-				case NN_ERTACK:
-					buffer.ReadBuffer(&packet.Packet.Init, packetSize);
-					driver->handle_ert_ack_packet(address, &packet);
-				break;
-			}			
 		}
 		if(buf && buf->base) {
 			free((void *)buf->base);
