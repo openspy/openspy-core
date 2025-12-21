@@ -49,10 +49,10 @@ namespace OS {
 							line_ss.read((char *)binary_data.GetHead(), data_len);
 							line_ss.seekg(1, std::ios_base::cur);
 							value = std::string((const char *)binary_data.GetHead(), data_len);
-							m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
+							m_kv_map.push_back(std::pair<std::string, std::string>(cleanup_string(key), cleanup_string(value)));
 						}
 						else {
-							m_kv_map.push_back(std::pair<std::string, std::string>(key, value));
+							m_kv_map.push_back(std::pair<std::string, std::string>(cleanup_string(key), cleanup_string(value)));
 						}
 					}
 					key = "";
@@ -129,17 +129,6 @@ namespace OS {
 		}
 		return m_kv_map.cend();
 	}
-	std::vector<std::pair<std::string, std::string>>::const_iterator KVReader::FindValue(std::string key) {
-		std::vector<std::pair<std::string, std::string>>::const_iterator it = m_kv_map.cbegin();
-		while (it != m_kv_map.cend()) {
-			std::pair<std::string, std::string> p = *it;
-			if (p.second.compare(key) == 0) {
-				return it;
-			}
-			it++;
-		}
-		return m_kv_map.cend();
-	}
 	std::map<std::string, std::string> KVReader::GetKVMap() const {
 		std::map<std::string, std::string> ret;
 		std::vector<std::pair<std::string, std::string>>::const_iterator it = m_kv_map.cbegin();
@@ -167,5 +156,22 @@ namespace OS {
 			it++;
 		}
 		return ret;
+	}
+	/*
+		This cleanup is due to issues handling encodings. Games will send data of *any* code page, and the json serialzier would reject those chars resulting in a crash
+
+		for the user input data we should base64 encode / decode instead, but for now, this will just strip those chars out
+	*/
+	std::string KVReader::cleanup_string(std::string input) {
+		std::string::iterator it = input.begin();
+		std::string result;
+		while(it != input.end()) {
+			char ch = *it;
+			if(ch <= 127) {
+				result += ch;
+			}
+			it++;
+		}
+		return result;
 	}
 }
