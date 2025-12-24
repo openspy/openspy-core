@@ -107,7 +107,7 @@ void INetPeer::clear_send_buffer() {
     }
     uv_mutex_unlock(&m_send_mutex);
 }
-void INetPeer::append_send_buffer(OS::Buffer buffer, bool close_after) {
+void INetPeer::append_send_buffer(OS::Buffer &buffer, bool close_after) {
     if(m_delete_flag || m_socket_deleted) {
         return;
     }

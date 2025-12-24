@@ -68,7 +68,7 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 
 		static void s_clear_send_buffer(uv_async_t *handle);
 		virtual void clear_send_buffer();
-		void append_send_buffer(OS::Buffer buffer, bool close_after = false);
+		void append_send_buffer(OS::Buffer &buffer, bool close_after = false);
 		uv_async_t m_async_send_handle;
 		std::queue<OS::Buffer> m_send_buffer;
 		bool m_close_when_sendbuffer_empty;
