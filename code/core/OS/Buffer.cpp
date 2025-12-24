@@ -39,9 +39,7 @@ namespace OS {
 			resetCursors();
 		}
 		Buffer::~Buffer() {
-			mp_ctx->DecRef();
-			int ref = mp_ctx->GetRefCount();
-			if (ref == 0) {
+			if (mp_ctx->DecRef() == 0) {
 				delete mp_ctx;
 			}
 		}	

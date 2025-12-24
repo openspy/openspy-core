@@ -137,8 +137,8 @@ void INetPeer::CloseSocket() {
 }
 void INetPeer::close_callback(uv_handle_t *handle) {
     INetPeer *peer = (INetPeer *)uv_handle_get_data(handle);
-    peer->DecRef();
-    if(peer->GetRefCount() == 0) {
+    
+    if(peer->DecRef() == 0) {
         delete peer;
     }
     
