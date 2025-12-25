@@ -76,6 +76,7 @@ namespace MM {
 				protocol_version = 0;
 				encoding_version = 0;
 				game_version = 0;
+				max_results = 0;
 				send_groups = false;
 				push_updates = false;
 				no_server_list = false;
@@ -85,6 +86,7 @@ namespace MM {
 				all_player_keys = false;
 				all_team_keys = false;
 				send_compressed = true;
+				include_deleted = false;
 			}
 			~sServerListReq() {
 
