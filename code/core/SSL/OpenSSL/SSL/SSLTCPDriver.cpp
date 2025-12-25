@@ -1,7 +1,35 @@
 #include "SSLTCPDriver.h"
 #include "SSLPeer.h"
+/*
+   Previously this supported SSL2 and even SSL3 for FESL
+
+   MOHPA uses SSL2
+   BF2142 uses SSL3
+
+   now BF2142 has been updated to support TLS1.2 so SSL3 is dropped
+*/
 namespace OS {
      bool g_ssl_init = false;
+     int get_ssl_version(const char *string) {
+         if(strcmp(string,"TLS1.0") == 0) {
+            return TLS1_VERSION;
+         }
+         # if !defined(OPENSSL_NO_SSL3_METHOD) && !defined(OPENSSL_NO_DEPRECATED_1_1_0)
+         else if(strcmp(string,"SSLv3") == 0) {
+            return SSL3_VERSION;
+         }
+         #endif
+            else if(strcmp(string,"TLS1.0") == 0) {
+            return TLS1_VERSION;
+         } else if(strcmp(string,"TLS1.1") == 0) {
+            return TLS1_1_VERSION;
+         } else if(strcmp(string,"TLS1.2") == 0) {
+            return TLS1_2_VERSION;
+         } else if(strcmp(string,"TLS1.3") == 0) {
+            return TLS1_3_VERSION;
+         }
+         return -1; //default
+     }
      void *GetSSLContext() {
          if(!g_ssl_init) {
             g_ssl_init = true;
@@ -12,38 +40,27 @@ namespace OS {
 
          temp_env_sz = sizeof(temp_env_buffer);
 
-         SSL_CTX *ctx = NULL;
+         SSL_CTX *ctx = SSL_CTX_new(TLS_method());
 
-         if(uv_os_getenv("OPENSPY_SSL_VERSION", (char *)&temp_env_buffer, &temp_env_sz) == 0) {
-            if(strcmp(temp_env_buffer,"SSLv23") == 0) {
-               ctx = SSL_CTX_new(SSLv23_method());
-            } 
-            # if !defined(OPENSSL_NO_SSL3_METHOD) && !defined(OPENSSL_NO_DEPRECATED_1_1_0)
-            else if(strcmp(temp_env_buffer,"SSLv2") == 0) {
-               ctx = SSL_CTX_new(SSLv2_method());
-            } else if(strcmp(temp_env_buffer,"SSLv3") == 0) {
-               ctx = SSL_CTX_new(SSLv3_method());
+         if(uv_os_getenv("OPENSPY_SSL_MIN_VER", (char *)&temp_env_buffer, &temp_env_sz) == 0) {
+            int version = get_ssl_version(temp_env_buffer);
+            if(version != -1) {
+               SSL_CTX_set_min_proto_version(ctx, version);
             }
-            #endif
-             else if(strcmp(temp_env_buffer,"TLS1.0") == 0) {
-               ctx = SSL_CTX_new(TLSv1_method());
-            } else if(strcmp(temp_env_buffer,"TLS1.1") == 0) {
-               ctx = SSL_CTX_new(TLSv1_1_method());
-            } else if(strcmp(temp_env_buffer,"TLS1.2") == 0) {
-               ctx = SSL_CTX_new(TLSv1_2_method());
-            } else if(strcmp(temp_env_buffer,"TLS") == 0) { //shorter len... put last
-               ctx = SSL_CTX_new(TLS_method());
-            } else {
-               OS::LogText(OS::ELogLevel_Error, "Unknown SSL version");
-               return NULL;
-            }
-         } else {
-            OS::LogText(OS::ELogLevel_Error, "Missing SSL version");
-            return NULL;
          }
 
-         SSL_CTX_set_cipher_list(ctx, "ALL");
-         SSL_CTX_set_options(ctx, SSL_OP_ALL);
+         if(uv_os_getenv("OPENSPY_SSL_MAX_VER", (char *)&temp_env_buffer, &temp_env_sz) == 0) {
+            int version = get_ssl_version(temp_env_buffer);
+            if(version != -1) {
+               SSL_CTX_set_max_proto_version(ctx, version);
+            }
+         }
+
+         if(uv_os_getenv("OPENSPY_SSL_CIPHER_LIST", (char *)&temp_env_buffer, &temp_env_sz) == 0) {
+            SSL_CTX_set_cipher_list(ctx, temp_env_buffer);
+         }
+
+         //SSL_CTX_set_options(ctx, SSL_OP_ALL);
 
          temp_env_sz = sizeof(temp_env_buffer);
          if(uv_os_getenv("OPENSPY_SSL_CERT", (char *)&temp_env_buffer, &temp_env_sz) == 0) {
