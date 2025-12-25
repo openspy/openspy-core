@@ -50,7 +50,7 @@ class INetPeer : public OS::Ref, public OS::LinkedList<INetPeer *> {
 		static void write_callback(uv_write_t *req, int status);
 
 		static void close_callback(uv_handle_t *handle);
-		void CloseSocket();
+		virtual void CloseSocket();
 	protected:
 		static void read_alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
 			buf->base = (char*)malloc(suggested_size);

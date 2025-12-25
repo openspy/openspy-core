@@ -92,11 +92,19 @@ namespace SB {
 		peer->FlushPendingRequests();
 	}
 
-	void Peer::Delete(bool timeout) {
-		if(!m_delete_flag) {
+	/*
+		This override exists to close the handle in the main thread, as this CloseSocket is only called there
+
+		while this was originally only for sockets, it should maybe be renamed CloseHandles
+	*/
+	void Peer::CloseSocket() {
+		if(!m_socket_deleted) { //this will get set to true by INetPeer::CloseSocket on first call, so its only ever called once
 			IncRef();
 			uv_close((uv_handle_t*)&mp_pending_request_flush_async, close_callback);
 		}
+		INetPeer::CloseSocket();
+	}
+	void Peer::Delete(bool timeout) {
 		m_timeout_flag = timeout;
 		m_delete_flag = true;
 	}
