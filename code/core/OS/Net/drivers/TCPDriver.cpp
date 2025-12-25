@@ -41,8 +41,12 @@ namespace OS {
         iterator.Iterate(LLIterator_TickOrDeleteClient, this);
     }
     bool TCPDriver::LLIterator_TickOrDeleteClient(INetPeer* peer, TCPDriver* driver) {
+        int ref = peer->GetRefCount();
+        if(ref == 0) { //may not yet be deleted
+            return true;
+        }
         if (peer->ShouldDelete()) {
-            if (peer->GetRefCount() == 1) { //only 1 reference (the drivers reference)
+            if (ref == 1) { //only 1 reference (the drivers reference)
                 driver->mp_peers->RemoveFromList(peer);
                 peer->DecRef();
                 peer->CloseSocket(); //this will delete itself
