@@ -22,6 +22,8 @@ namespace SB {
 		uv_handle_set_data((uv_handle_t*)&mp_pending_request_flush_async, this);
 
 		uv_mutex_init(&m_crypto_mutex);
+
+		uv_tcp_nodelay(sd, 1);
 	}
 	Peer::~Peer() {
 		OS::LogText(OS::ELogLevel_Info, "[%s] Connection closed, timeout: %d", getAddress().ToString().c_str(), m_timeout_flag);
