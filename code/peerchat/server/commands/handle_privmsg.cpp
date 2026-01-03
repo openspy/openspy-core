@@ -49,18 +49,22 @@ namespace Peerchat {
             return;
         }
 
-        PeerchatBackendRequest req;
-        req.type = EPeerchatRequestType_SendMessageToTarget;
-        req.peer = this;
-        req.profile = m_profile;
-        req.user = m_user;
-        req.summary = m_user_details;
-        req.message = message;
-        req.message_type = type;
-        req.message_target = target;
-        req.peer->IncRef();
-        req.callback = NULL;
-        AddTaskRequest(req);
+        std::string current_target;
+        std::istringstream targetstream = std::istringstream(target);
+        while (std::getline(targetstream, current_target, ',')) {
+            PeerchatBackendRequest req;
+            req.type = EPeerchatRequestType_SendMessageToTarget;
+            req.peer = this;
+            req.profile = m_profile;
+            req.user = m_user;
+            req.summary = m_user_details;
+            req.message = message;
+            req.message_type = type;
+            req.message_target = current_target;
+            req.peer->IncRef();
+            req.callback = NULL;
+            AddTaskRequest(req);
+        }
     }
     void Peer::handle_privmsg(std::vector<std::string> data_parser) {
         if(m_user_details.modeflags & EUserMode_Gagged) {

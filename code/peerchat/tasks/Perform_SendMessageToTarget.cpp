@@ -108,17 +108,20 @@ namespace Peerchat {
 				else {
 					request.peer->send_no_such_target_error(target);
 				}
-				request.peer->DecRef();
-				return true;
+			} else {
+				mq_message << "\\type\\" << request.message_type.c_str() << "\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id;
+				sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
 			}
-			mq_message << "\\type\\" << request.message_type.c_str() << "\\toChannelId\\" << summary.channel_id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id;
 		}
 		else {
-			UserSummary to_summary = GetUserSummaryByName(thread_data, request.message_target);			
-			mq_message << "\\type\\" << request.message_type.c_str() << "\\toUserId\\" << to_summary.id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id;
+			UserSummary to_summary = GetUserSummaryByName(thread_data, request.message_target);
+			if(to_summary.id == 0) {
+				request.peer->send_no_such_target_error(target);
+			} else {
+				mq_message << "\\type\\" << request.message_type.c_str() << "\\toUserId\\" << to_summary.id << "\\message\\" << b64_string << "\\fromUserId\\" << request.summary.id;
+				sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
+			}
 		}
-	 	
-        sendAMQPMessage(peerchat_channel_exchange, peerchat_client_message_routingkey, mq_message.str().c_str());
 
 		if (request.peer) {
 			request.peer->DecRef();
