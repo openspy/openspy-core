@@ -12,10 +12,5 @@ add_test(NAME test_sbv2_server_message COMMAND test_sbv2_server_message WORKING_
 
 add_executable (test_sbv2_groups ${ALL_SRCS} test_common.cpp test_groups.cpp)
 add_test(NAME test_sbv2_groups COMMAND test_sbv2_groups WORKING_DIRECTORY .)
-IF(WIN32)	
-	target_link_libraries(test_sbv2_server_message openspy.lib)
-	target_link_libraries(test_sbv2_groups openspy.lib)
-ELSE() #unix
-	target_link_libraries(test_sbv2_server_message openspy)
-	target_link_libraries(test_sbv2_groups openspy)
-ENDIF()
+target_link_libraries(test_sbv2_server_message openspy)
+target_link_libraries(test_sbv2_groups openspy)

@@ -30,11 +30,7 @@ source_group("Headers\\Tasks" FILES ${TASKS_HDRS})
 
 add_executable (serverbrowsing ${ALL_SRCS} ${MAIN_SRCS} ${MAIN_HDRS})
 
-IF(WIN32)	
-	target_link_libraries(serverbrowsing openspy.lib SharedTasks.lib ZLIB::ZLIB)
-ELSE() #unix
-	target_link_libraries(serverbrowsing openspy libuv::uv SharedTasks ZLIB::ZLIB)
-ENDIF()
+target_link_libraries(serverbrowsing openspy libuv::uv SharedTasks ZLIB::ZLIB)
 
 if(BUILD_TESTING)
 add_subdirectory(test)

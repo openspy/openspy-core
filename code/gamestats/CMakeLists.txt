@@ -29,8 +29,4 @@ source_group("Headers\\Server\\tasks" FILES ${SERVER_TASKS_HDRS})
 
 add_executable (gstats ${ALL_SRCS})
 
-IF(WIN32)	
-	target_link_libraries(gstats openspy.lib SharedTasks.lib ZLIB::ZLIB)
-ELSE() #unix
-	target_link_libraries(gstats openspy SharedTasks ZLIB::ZLIB)
-ENDIF()
+target_link_libraries(gstats openspy SharedTasks ZLIB::ZLIB)

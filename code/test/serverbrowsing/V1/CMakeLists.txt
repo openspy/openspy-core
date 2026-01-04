@@ -8,8 +8,4 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CURL_INCLUDE_DIR})
 
 add_executable (test_sbv1_groups ${ALL_SRCS} test_common.cpp test_groups.cpp)
 add_test(NAME test_sbv1_groups COMMAND test_sbv1_groups WORKING_DIRECTORY .)
-IF(WIN32)	
-	target_link_libraries(test_sbv1_groups openspy.lib)
-ELSE() #unix
-	target_link_libraries(test_sbv1_groups openspy)
-ENDIF()
+target_link_libraries(test_sbv1_groups openspy)

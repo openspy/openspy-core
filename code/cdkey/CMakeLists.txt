@@ -29,8 +29,4 @@ add_executable (cdkey ${ALL_SRCS})
 
 target_compile_features(cdkey PRIVATE cxx_unrestricted_unions)
 
-IF(WIN32)	
-	target_link_libraries(cdkey openspy.lib ZLIB::ZLIB)
-ELSE() #unix
-	target_link_libraries(cdkey openspy ZLIB::ZLIB)
-ENDIF()
+target_link_libraries(cdkey openspy ZLIB::ZLIB)

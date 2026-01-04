@@ -39,7 +39,6 @@ file (GLOB LEGACY_HDRS "OS/gamespy/*.h")
 file (GLOB LOGGER_SRCS "OS/Logger/*.cpp")
 file (GLOB LOGGER_HDRS "OS/Logger/*.h")
 
-
 set (ALL_SRCS ${SSL_SRCS} ${SERVER_SRCS} ${SERVER_HDRS} ${LEGACY_SRCS} ${LEGACY_HDRS} ${CONFIG_SRCS} ${CONFIG_HDRS} ${OS_SRCS} ${OS_HDRS} ${NET_SRCS} ${NET_HDRS} ${NET_DRIVERS_SRCS} ${NET_DRIVERS_HDRS} ${LOGGER_SRCS} ${LOGGER_HDRS} ${NET_PROCESSORS_SRCS} ${NET_PROCESSORS_HDRS} )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CURL_INCLUDE_DIR} ${hiredis_INCLUDE_DIRS}  ${hiredis_ssl_INCLUDE_DIRS} ${SSL_INCS})
@@ -80,8 +79,24 @@ ELSE() #unix
 
 	
 ENDIF()
-add_library (openspy SHARED ${ALL_SRCS} ${ALL_PLAT})
-target_link_libraries(openspy ${CURL_LIBRARIES} ZLIB::ZLIB pugixml rabbitmq::rabbitmq-static libuv::uv jansson::jansson hiredis::hiredis hiredis::hiredis_ssl ${SSL_LIBS})
+IF(OPENSPY_STATIC)
+	add_library (openspy STATIC ${ALL_SRCS} ${ALL_PLAT})
+ELSE()
+	add_library (openspy SHARED ${ALL_SRCS} ${ALL_PLAT})
+ENDIF()
+
+if(RMQ_STATIC)
+	add_library(libRMQ ALIAS rabbitmq::rabbitmq-static)
+ELSE()
+	add_library(libRMQ ALIAS rabbitmq::rabbitmq)
+ENDIF()
+
+
+target_link_libraries(openspy ${CURL_LIBRARIES} ZLIB::ZLIB pugixml libRMQ libuv::uv jansson::jansson hiredis::hiredis hiredis::hiredis_ssl ${SSL_LIBS})
+
+IF(WIN32)
+	target_link_libraries(openspy ws2_32)
+ENDIF()
 
 INSTALL(TARGETS openspy
   ARCHIVE DESTINATION lib

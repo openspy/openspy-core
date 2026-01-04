@@ -10,11 +10,15 @@ file(GLOB MAIN_SRCS "src/OS/*.cpp" "src/OS/SharedTasks/Account/*.cpp" "src/OS/Sh
 SET(OPENSPY_SharedTasks_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} ${JANSSON_INCLUDE_DIRS} ${CURL_INCLUDE_DIR})
 include_directories (${OPENSPY_SharedTasks_INCLUDE_DIRS})
 
+IF(OPENSPY_STATIC)
+  add_library (SharedTasks STATIC ${MAIN_SRCS})
+ELSE()
+  add_library (SharedTasks SHARED ${MAIN_SRCS})
+ENDIF()
 
-add_library (SharedTasks SHARED ${MAIN_SRCS})
 
 target_include_directories(SharedTasks PUBLIC "src/")
-target_link_libraries(SharedTasks openspy ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+target_link_libraries(SharedTasks PRIVATE openspy ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 INSTALL(TARGETS SharedTasks
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

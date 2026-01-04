@@ -35,8 +35,4 @@ source_group("Headers\\Server\\commands\\basic" FILES ${SERVER_BASIC_COMMANDS_HD
 source_group("Headers\\Server\\commands\\nu" FILES ${SERVER_NU_COMMANDS_HDRS})
 add_executable (FESL ${ALL_SRCS})
 
-IF(WIN32)	
-	target_link_libraries(FESL openspy.lib SharedTasks.lib ZLIB::ZLIB)
-ELSE() #unix
-	target_link_libraries(FESL openspy SharedTasks ZLIB::ZLIB)
-ENDIF()
+target_link_libraries(FESL openspy SharedTasks ZLIB::ZLIB)

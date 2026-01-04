@@ -28,8 +28,4 @@ source_group("Headers\\Tasks" FILES ${TASKS_HDRS})
 
 add_executable (utmaster ${ALL_SRCS} ${MAIN_SRCS} ${MAIN_HDRS})
 
-IF(WIN32)	
-	target_link_libraries(utmaster openspy.lib SharedTasks.lib ZLIB::ZLIB)
-ELSE() #unix
-	target_link_libraries(utmaster openspy SharedTasks ZLIB::ZLIB)
-ENDIF()
+target_link_libraries(utmaster openspy SharedTasks ZLIB::ZLIB)
