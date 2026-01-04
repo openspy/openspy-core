@@ -9,10 +9,16 @@ namespace TaskShared {
 
 		if (request.profile.nick.length() > 0) {
 			json_object_set_new(profile_obj, "nick", json_string(request.profile.nick.c_str()));
+			if (request.profile.namespaceid != -1)
+				json_object_set_new(profile_obj, "namespaceid", json_integer(request.profile.namespaceid));
 			json_object_set_new(send_obj, "profileLookup", profile_obj);
 		}
 
 		json_object_set_new(user_obj, "email", json_string(request.user.email.c_str()));
+
+		if (request.user.partnercode != -1) {
+			json_object_set_new(user_obj, "partnercode", json_integer(request.user.partnercode));
+		}
 
 		json_object_set_new(send_obj, "userLookup", user_obj);
 
